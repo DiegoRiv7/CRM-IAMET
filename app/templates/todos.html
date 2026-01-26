@@ -21,7 +21,8 @@
     .content-block {
         width: 95%;
         max-width: 1600px;
-        margin: 2rem auto; /* Vertical spacing and horizontal centering */
+        margin: 2rem auto;
+        /* Vertical spacing and horizontal centering */
     }
 
     /* Apple-inspired design */
@@ -62,93 +63,222 @@
         gap: 1rem;
     }
 
-    /* Search Bar - Always Visible */
-    .search-bar-container {
+    /* Smart Filter Search Bar Styles */
+    .smart-filter-container {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
         background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        /* Slightly more opaque */
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 12px;
-        padding: 0 14px;
-        height: 44px;
-        min-width: 180px;
+        padding: 6px 12px;
+        min-height: 48px;
+        width: 100%;
+        max-width: 600px;
+        /* Limit width */
         transition: all 0.3s ease;
+        position: relative;
+        cursor: text;
     }
 
-    .search-bar-container:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .search-bar-container:focus-within {
+    .smart-filter-container:focus-within {
         background: rgba(255, 255, 255, 0.12);
         border-color: var(--apple-blue);
-        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
     }
 
-    .search-bar-icon {
+    .smart-filter-icon {
         color: rgba(255, 255, 255, 0.5);
-        flex-shrink: 0;
-        margin-right: 10px;
+        margin-right: 4px;
+        display: flex;
+        align-items: center;
     }
 
-    .search-bar-input {
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(10, 132, 255, 0.2);
+        color: #fff;
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        gap: 6px;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+    .filter-chip:hover {
+        background: rgba(10, 132, 255, 0.3);
+    }
+
+    .filter-chip .chip-label {
+        font-weight: 600;
+        opacity: 0.9;
+        margin-right: 2px;
+        color: #81b0ff;
+        /* Light blue for key */
+    }
+
+    .filter-chip .chip-remove {
+        cursor: pointer;
+        opacity: 0.7;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        transition: all 0.2s;
+    }
+
+    .filter-chip .chip-remove:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .smart-input {
+        flex: 1;
+        min-width: 150px;
         background: transparent;
         border: none;
         outline: none;
         color: var(--apple-label);
         font-size: 0.95rem;
-        width: 100%;
-        height: 100%;
+        height: 32px;
     }
 
-    .search-bar-input::placeholder {
+    .smart-input::placeholder {
         color: rgba(255, 255, 255, 0.4);
     }
-    
+
+    /* Dropdown for Smart Filters */
+    .smart-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        width: 100%;
+        min-width: 300px;
+        background: rgba(30, 30, 32, 0.95);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        overflow: hidden;
+        display: none;
+        /* Hidden by default */
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .smart-dropdown.open {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .dropdown-section {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dropdown-section:last-child {
+        border-bottom: none;
+    }
+
+    .dropdown-header {
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--apple-gray);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .dropdown-item {
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        transition: background 0.1s;
+    }
+
+    .dropdown-item:hover {
+        background: var(--apple-blue);
+        color: white;
+    }
+
+    .dropdown-item .icon {
+        width: 18px;
+        height: 18px;
+        opacity: 0.7;
+    }
+
+    .dropdown-item:hover .icon {
+        opacity: 1;
+    }
+
     /* Filter Widget - Enhanced Apple Design */
     .filter-icon-container {
-        width: 44px; height: 44px; border-radius: 12px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
         background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         box-shadow:
-            0 1px 3px rgba(0,0,0,0.12),
-            0 1px 2px rgba(0,0,0,0.24),
+            0 1px 3px rgba(0, 0, 0, 0.12),
+            0 1px 2px rgba(0, 0, 0, 0.24),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         color: var(--apple-label);
         position: relative;
         overflow: hidden;
     }
-    
+
     .filter-icon-container::before {
         content: '';
         position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
         opacity: 0;
         transition: opacity 0.3s ease;
     }
-    
+
     .filter-icon-container:hover {
         background: rgba(255, 255, 255, 0.12);
         transform: scale(1.05) translateY(-1px);
         border-color: rgba(255, 255, 255, 0.25);
         box-shadow:
-            0 4px 12px rgba(0,0,0,0.15),
-            0 2px 4px rgba(0,0,0,0.12),
+            0 4px 12px rgba(0, 0, 0, 0.15),
+            0 2px 4px rgba(0, 0, 0, 0.12),
             inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
-    
+
     .filter-icon-container:hover::before {
         opacity: 1;
     }
-    
+
     .filter-icon-container.active {
         background: linear-gradient(135deg, var(--apple-blue) 0%, #0077ED 100%);
         color: white;
@@ -159,35 +289,51 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.3);
         transform: scale(1.02);
     }
-    
+
     .filter-icon-container.active::before {
-        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
         opacity: 1;
     }
-    
+
     /* Enhanced icon animation */
     .filter-icon-container svg {
         transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
-    
+
     .filter-icon-container:hover svg {
         transform: rotate(90deg) scale(1.1);
     }
-    
+
     .filter-icon-container.active svg {
         transform: rotate(180deg);
     }
-    
+
 
     /* Buttons */
     .create-btn {
-        background: var(--apple-blue); color: white; border: none; border-radius: 22px;
-        padding: 0 24px; height: 44px; font-weight: 600; font-size: 1rem;
-        cursor: pointer; transition: all 0.25s ease; display: flex;
-        align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        background: var(--apple-blue);
+        color: white;
+        border: none;
+        border-radius: 22px;
+        padding: 0 24px;
+        height: 44px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         text-decoration: none;
     }
-    .create-btn:hover { filter: brightness(1.1); transform: scale(1.02); color: white; }
+
+    .create-btn:hover {
+        filter: brightness(1.1);
+        transform: scale(1.02);
+        color: white;
+    }
+
     .create-btn.secondary {
         background: rgba(255, 255, 255, 0.1);
     }
@@ -200,37 +346,51 @@
         border-radius: 16px;
         border: 1px solid var(--apple-separator);
         overflow: hidden;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
         position: relative;
         z-index: 1;
     }
+
     .data-table {
         width: 100%;
         border-collapse: collapse;
     }
-    .data-table th, .data-table td {
+
+    .data-table th,
+    .data-table td {
         padding: 16px 20px;
         text-align: left;
         border-bottom: 1px solid var(--apple-separator);
         font-size: 0.95rem;
     }
+
     .data-table th {
-        font-weight: 600; color: var(--apple-label-secondary);
-        font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px;
+        font-weight: 600;
+        color: var(--apple-label-secondary);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
     }
+
     .data-table tbody tr:hover {
         background: var(--apple-background-secondary);
     }
+
     .data-table tbody tr:last-child td {
         border-bottom: none;
     }
+
     .probability-bar-bg {
         width: 100px;
         height: 6px;
         background: var(--apple-separator);
         border-radius: 3px;
     }
-    .probability-bar-fill { height: 100%; border-radius: 3px; }
+
+    .probability-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+    }
 
     /* Pagination Styles */
     .pagination-btn {
@@ -243,14 +403,17 @@
         font-size: 0.9rem;
         transition: background-color 0.2s ease;
     }
+
     .pagination-btn:hover {
         background: rgba(255, 255, 255, 0.2);
     }
+
     .pagination-btn.disabled {
         background: rgba(255, 255, 255, 0.05);
         color: var(--apple-label-secondary);
         cursor: not-allowed;
     }
+
     .pagination-info {
         background: var(--apple-blue);
         color: white;
@@ -261,12 +424,12 @@
     }
 
 
-    
+
     .filter-group {
         margin-bottom: 1.5rem;
         position: relative;
     }
-    
+
     .filter-label {
         display: block;
         font-weight: 600;
@@ -277,7 +440,7 @@
         text-transform: uppercase;
         opacity: 0.8;
     }
-    
+
     .filter-input {
         width: 100%;
         padding: 14px 18px;
@@ -294,7 +457,7 @@
             0 1px 3px rgba(0, 0, 0, 0.12),
             inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
-    
+
     .filter-input:focus {
         border-color: var(--apple-blue);
         background: rgba(255, 255, 255, 0.1);
@@ -304,12 +467,12 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         transform: translateY(-1px);
     }
-    
+
     .filter-input::placeholder {
         color: var(--apple-label-secondary);
         opacity: 0.7;
     }
-    
+
     /* Enhanced select styling */
     select.filter-input {
         appearance: none;
@@ -319,19 +482,19 @@
         background-size: 20px;
         padding-right: 40px;
     }
-    
+
     .filter-range-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 1rem;
     }
-    
+
     .filter-actions {
         display: flex;
         gap: 1rem;
         margin-top: 2rem;
     }
-    
+
     .filter-btn {
         flex: 1;
         padding: 14px 24px;
@@ -345,7 +508,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .filter-btn::before {
         content: '';
         position: absolute;
@@ -356,11 +519,11 @@
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s;
     }
-    
+
     .filter-btn:hover::before {
         left: 100%;
     }
-    
+
     .filter-btn.primary {
         background: linear-gradient(135deg, var(--apple-blue) 0%, #0077ED 100%);
         color: white;
@@ -368,18 +531,18 @@
             0 4px 12px rgba(10, 132, 255, 0.3),
             0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .filter-btn.primary:hover {
         transform: translateY(-2px);
         box-shadow:
             0 6px 16px rgba(10, 132, 255, 0.4),
             0 4px 8px rgba(0, 0, 0, 0.15);
     }
-    
+
     .filter-btn.primary:active {
         transform: translateY(0);
     }
-    
+
     .filter-btn.secondary {
         background: rgba(255, 255, 255, 0.08);
         color: var(--apple-label);
@@ -387,444 +550,448 @@
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
     }
-    
+
     .filter-btn.secondary:hover {
         background: rgba(255, 255, 255, 0.12);
         transform: translateY(-1px);
         border-color: rgba(255, 255, 255, 0.25);
     }
 
-/* ========== FILTROS COMPACTOS ========== */
-.compact-filters-container {
-    background: rgba(28, 28, 30, 0.95);
-    backdrop-filter: blur(25px) saturate(180%);
-    -webkit-backdrop-filter: blur(25px) saturate(180%);
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 
-        0 12px 40px rgba(0, 0, 0, 0.4),
-        0 4px 16px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    position: relative;
-    z-index: 10000;
-}
+    /* ========== FILTROS COMPACTOS ========== */
+    .compact-filters-container {
+        background: rgba(28, 28, 30, 0.95);
+        backdrop-filter: blur(25px) saturate(180%);
+        -webkit-backdrop-filter: blur(25px) saturate(180%);
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow:
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            0 4px 16px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        position: relative;
+        z-index: 10000;
+    }
 
-.filters-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-@media (max-width: 1200px) {
     .filters-grid {
-        grid-template-columns: repeat(3, 1fr);
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
     }
-}
 
-@media (max-width: 768px) {
-    .filters-grid {
-        grid-template-columns: repeat(2, 1fr);
+    @media (max-width: 1200px) {
+        .filters-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
     }
-}
 
-@media (max-width: 480px) {
-    .filters-grid {
-        grid-template-columns: 1fr;
+    @media (max-width: 768px) {
+        .filters-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
-}
 
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.filter-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--apple-label);
-    margin: 0;
-}
-
-.filter-input {
-    padding: 0.7rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    color: var(--apple-label);
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    outline: none;
-}
-
-.filter-input:focus {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: var(--apple-blue);
-    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
-}
-
-.filter-actions {
-    display: flex;
-    gap: 0.8rem;
-    justify-content: flex-end;
-    align-items: center;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
-    z-index: 10;
-}
-
-/* Estilos específicos para TomSelect en filtros */
-.compact-filters-container .ts-control {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 12px !important;
-    color: var(--apple-label) !important;
-    min-height: 42px !important;
-}
-
-.compact-filters-container .ts-control:focus {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: var(--apple-blue) !important;
-    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2) !important;
-}
-
-.compact-filters-container .ts-control.single .ts-control-input {
-    color: var(--apple-label) !important;
-}
-
-.compact-filters-container .ts-control .ts-item {
-    background: rgba(10, 132, 255, 0.8) !important;
-    color: white !important;
-    border-radius: 8px !important;
-}
-
-
-/* TomSelect simple y limpio para filtros */
-.compact-filters-container .ts-control {
-    background: rgba(44, 44, 46, 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    border-radius: 12px !important;
-    min-height: 42px !important;
-    padding: 6px 10px !important;
-    color: white !important;
-    font-size: 14px !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    box-shadow: 
-        0 2px 8px rgba(0, 0, 0, 0.3) !important,
-        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
-}
-
-.compact-filters-container .ts-control:focus {
-    border-color: #007AFF !important;
-    background: rgba(52, 52, 54, 0.98) !important;
-    outline: none !important;
-    box-shadow: 
-        0 0 0 2px rgba(0, 122, 255, 0.3) !important,
-        0 4px 12px rgba(0, 0, 0, 0.4) !important,
-        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-}
-
-.compact-filters-container .ts-control .ts-item {
-    background: #007AFF !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 6px !important;
-    padding: 3px 8px !important;
-    margin: 2px 4px 2px 0 !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-}
-
-.compact-filters-container .ts-control .ts-item .remove {
-    color: rgba(255, 255, 255, 0.8) !important;
-    margin-left: 4px !important;
-}
-
-.compact-filters-container .ts-control .ts-item .remove:hover {
-    color: white !important;
-}
-
-.compact-filters-container .ts-dropdown,
-.ts-dropdown {
-    background: rgba(34, 34, 36, 0.98) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 12px !important;
-    z-index: 999999 !important;
-    position: absolute !important;
-    margin-top: 2px !important;
-    min-width: 200px !important;
-    max-height: 250px !important;
-    overflow-y: auto !important;
-    backdrop-filter: blur(25px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
-    box-shadow: 
-        0 12px 32px rgba(0, 0, 0, 0.9) !important,
-        0 4px 12px rgba(0, 0, 0, 0.6) !important,
-        inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-    transform: translateZ(1000px) !important;
-}
-
-/* Select nativo para cliente - sin TomSelect */
-#filterCliente {
-    background: #484848 !important;
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 12px !important;
-    padding: 12px 16px !important;
-    font-size: 14px !important;
-    min-height: 42px !important;
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-    padding-right: 40px;
-}
-
-#filterCliente:focus {
-    border-color: #007AFF !important;
-    outline: none !important;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3) !important;
-}
-
-#filterCliente option {
-    background: #484848 !important;
-    color: #FFFFFF !important;
-    padding: 8px 12px !important;
-}
-
-.compact-filters-container .ts-dropdown .ts-option.active::after,
-.compact-filters-container .ts-dropdown .ts-option.selected::after {
-    content: '✓' !important;
-    position: absolute !important;
-    right: 16px !important;
-    color: #007AFF !important;
-    font-weight: bold !important;
-}
-
-.compact-filters-container .ts-control input {
-    color: white !important;
-    background: transparent !important;
-}
-
-.compact-filters-container .ts-control input::placeholder {
-    color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Custom multiselect styles */
-.custom-multiselect {
-    position: relative;
-    width: 100%;
-}
-
-.multiselect-display {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    padding: 8px 12px;
-    min-height: 42px;
-    color: var(--apple-label);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    transition: all 0.3s ease;
-}
-
-.multiselect-display:hover {
-    border-color: rgba(255, 255, 255, 0.25);
-}
-
-.multiselect-display.active {
-    border-color: var(--apple-blue);
-    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
-}
-
-.placeholder {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 14px;
-}
-
-.selected-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    flex: 1;
-}
-
-.selected-item {
-    background: var(--apple-blue);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.selected-item .remove {
-    cursor: pointer;
-    font-weight: bold;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.selected-item .remove:hover {
-    color: white;
-}
-
-.dropdown-arrow {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 12px;
-    transition: transform 0.3s ease;
-}
-
-.multiselect-display.active .dropdown-arrow {
-    transform: rotate(180deg);
-}
-
-.multiselect-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 10000;
-    background: rgba(40, 40, 42, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 12px;
-    margin-top: 4px;
-    max-height: 200px;
-    overflow-y: auto;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(20px);
-}
-
-.multiselect-option {
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.multiselect-option:last-child {
-    border-bottom: none;
-}
-
-.multiselect-option:hover {
-    background: rgba(0, 122, 255, 0.2);
-}
-
-.multiselect-option input[type="checkbox"] {
-    margin: 0;
-    accent-color: var(--apple-blue);
-}
-
-.multiselect-option label {
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    margin: 0;
-    flex: 1;
-}
-
-.report-filters-container {
-    display: flex;
-    gap: 1.5rem;
-    align-items: stretch;
-    width: 100%;
-    animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
+    @media (max-width: 480px) {
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
     }
-}
 
-@keyframes sparkle {
-    0%, 100% {
-        opacity: 0;
-        transform: scale(0);
+    .filter-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin: 0;
     }
-    50% {
-        opacity: 1;
-        transform: scale(1);
+
+    .filter-input {
+        padding: 0.7rem;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        outline: none;
     }
-}
 
-.filter-box {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    padding: 2rem;
-    border: 1px solid var(--apple-separator);
-    border-radius: 20px;
-    background: rgba(28, 28, 30, 0.8);
-    backdrop-filter: blur(25px) saturate(180%);
-    -webkit-backdrop-filter: blur(25px) saturate(180%);
-    flex-grow: 1;
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        0 4px 12px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    position: relative;
-    overflow: hidden;
-}
+    .filter-input:focus {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+    }
 
-.filter-box::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.2) 50%,
-        transparent 100%);
-}
+    .filter-actions {
+        display: flex;
+        gap: 0.8rem;
+        justify-content: flex-end;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        z-index: 10;
+    }
 
-.report-filters-container .filter-group {
-    margin-bottom: 0;
-    position: relative;
-}
+    /* Estilos específicos para TomSelect en filtros */
+    .compact-filters-container .ts-control {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 12px !important;
+        color: var(--apple-label) !important;
+        min-height: 42px !important;
+    }
 
-.report-filters-container .filter-group::after {
-    content: '';
-    position: absolute;
-    bottom: -0.75rem;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--apple-separator);
-    opacity: 0.3;
-}
+    .compact-filters-container .ts-control:focus {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: var(--apple-blue) !important;
+        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2) !important;
+    }
 
-.report-filters-container .filter-actions {
-    margin-top: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    flex-shrink: 0;
-    justify-content: center;
-}
+    .compact-filters-container .ts-control.single .ts-control-input {
+        color: var(--apple-label) !important;
+    }
+
+    .compact-filters-container .ts-control .ts-item {
+        background: rgba(10, 132, 255, 0.8) !important;
+        color: white !important;
+        border-radius: 8px !important;
+    }
+
+
+    /* TomSelect simple y limpio para filtros */
+    .compact-filters-container .ts-control {
+        background: rgba(44, 44, 46, 0.95) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 12px !important;
+        min-height: 42px !important;
+        padding: 6px 10px !important;
+        color: white !important;
+        font-size: 14px !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        box-shadow:
+            0 2px 8px rgba(0, 0, 0, 0.3) !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .compact-filters-container .ts-control:focus {
+        border-color: #007AFF !important;
+        background: rgba(52, 52, 54, 0.98) !important;
+        outline: none !important;
+        box-shadow:
+            0 0 0 2px rgba(0, 122, 255, 0.3) !important,
+            0 4px 12px rgba(0, 0, 0, 0.4) !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    }
+
+    .compact-filters-container .ts-control .ts-item {
+        background: #007AFF !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 3px 8px !important;
+        margin: 2px 4px 2px 0 !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+    }
+
+    .compact-filters-container .ts-control .ts-item .remove {
+        color: rgba(255, 255, 255, 0.8) !important;
+        margin-left: 4px !important;
+    }
+
+    .compact-filters-container .ts-control .ts-item .remove:hover {
+        color: white !important;
+    }
+
+    .compact-filters-container .ts-dropdown,
+    .ts-dropdown {
+        background: rgba(34, 34, 36, 0.98) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 12px !important;
+        z-index: 999999 !important;
+        position: absolute !important;
+        margin-top: 2px !important;
+        min-width: 200px !important;
+        max-height: 250px !important;
+        overflow-y: auto !important;
+        backdrop-filter: blur(25px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+        box-shadow:
+            0 12px 32px rgba(0, 0, 0, 0.9) !important,
+            0 4px 12px rgba(0, 0, 0, 0.6) !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+        transform: translateZ(1000px) !important;
+    }
+
+    /* Select nativo para cliente - sin TomSelect */
+    #filterCliente {
+        background: #484848 !important;
+        color: #FFFFFF !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+        min-height: 42px !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px;
+        padding-right: 40px;
+    }
+
+    #filterCliente:focus {
+        border-color: #007AFF !important;
+        outline: none !important;
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3) !important;
+    }
+
+    #filterCliente option {
+        background: #484848 !important;
+        color: #FFFFFF !important;
+        padding: 8px 12px !important;
+    }
+
+    .compact-filters-container .ts-dropdown .ts-option.active::after,
+    .compact-filters-container .ts-dropdown .ts-option.selected::after {
+        content: '✓' !important;
+        position: absolute !important;
+        right: 16px !important;
+        color: #007AFF !important;
+        font-weight: bold !important;
+    }
+
+    .compact-filters-container .ts-control input {
+        color: white !important;
+        background: transparent !important;
+    }
+
+    .compact-filters-container .ts-control input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    /* Custom multiselect styles */
+    .custom-multiselect {
+        position: relative;
+        width: 100%;
+    }
+
+    .multiselect-display {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 8px 12px;
+        min-height: 42px;
+        color: var(--apple-label);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .multiselect-display:hover {
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .multiselect-display.active {
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+    }
+
+    .placeholder {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 14px;
+    }
+
+    .selected-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        flex: 1;
+    }
+
+    .selected-item {
+        background: var(--apple-blue);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .selected-item .remove {
+        cursor: pointer;
+        font-weight: bold;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .selected-item .remove:hover {
+        color: white;
+    }
+
+    .dropdown-arrow {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 12px;
+        transition: transform 0.3s ease;
+    }
+
+    .multiselect-display.active .dropdown-arrow {
+        transform: rotate(180deg);
+    }
+
+    .multiselect-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 10000;
+        background: rgba(40, 40, 42, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 12px;
+        margin-top: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(20px);
+    }
+
+    .multiselect-option {
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .multiselect-option:last-child {
+        border-bottom: none;
+    }
+
+    .multiselect-option:hover {
+        background: rgba(0, 122, 255, 0.2);
+    }
+
+    .multiselect-option input[type="checkbox"] {
+        margin: 0;
+        accent-color: var(--apple-blue);
+    }
+
+    .multiselect-option label {
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        margin: 0;
+        flex: 1;
+    }
+
+    .report-filters-container {
+        display: flex;
+        gap: 1.5rem;
+        align-items: stretch;
+        width: 100%;
+        animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes sparkle {
+
+        0%,
+        100% {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .filter-box {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        padding: 2rem;
+        border: 1px solid var(--apple-separator);
+        border-radius: 20px;
+        background: rgba(28, 28, 30, 0.8);
+        backdrop-filter: blur(25px) saturate(180%);
+        -webkit-backdrop-filter: blur(25px) saturate(180%);
+        flex-grow: 1;
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 4px 12px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .filter-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.2) 50%,
+                transparent 100%);
+    }
+
+    .report-filters-container .filter-group {
+        margin-bottom: 0;
+        position: relative;
+    }
+
+    .report-filters-container .filter-group::after {
+        content: '';
+        position: absolute;
+        bottom: -0.75rem;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: var(--apple-separator);
+        opacity: 0.3;
+    }
+
+    .report-filters-container .filter-actions {
+        margin-top: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        flex-shrink: 0;
+        justify-content: center;
+    }
 
     .light-theme .data-table-container {
         background: linear-gradient(135deg, rgba(255, 240, 245, 0.9) 0%, rgba(255, 232, 239, 0.85) 100%) !important;
@@ -901,8 +1068,8 @@
     html[data-theme="pink"] body .filter-box,
     html.light-theme[data-theme="pink"] body .filter-box {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -920,8 +1087,8 @@
     html[data-theme="pink"] body .filter-input,
     html.light-theme[data-theme="pink"] body .filter-input {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.9) 0%,
-            rgba(255, 248, 250, 0.85) 100%);
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(255, 248, 250, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -939,8 +1106,8 @@
     html.light-theme[data-theme="pink"] body .filter-input:focus {
         border-color: #FF6B9D;
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
     }
 
     .light-theme .filter-btn.primary,
@@ -972,7 +1139,7 @@
     html.light-theme[data-theme="pink"] body .bg-blue-600 {
         background: #FF6B9D !important;
     }
-    
+
     /* Additional styles for table elements in pink theme */
     .light-theme .data-table,
     body[data-theme="pink"] .data-table,
@@ -980,42 +1147,42 @@
     html.light-theme[data-theme="pink"] body .data-table {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table a,
     body[data-theme="pink"] .data-table a,
     html[data-theme="pink"] body .data-table a,
     html.light-theme[data-theme="pink"] body .data-table a {
         color: #E55A87 !important;
     }
-    
+
     .light-theme .data-table a:hover,
     body[data-theme="pink"] .data-table a:hover,
     html[data-theme="pink"] body .data-table a:hover,
     html.light-theme[data-theme="pink"] body .data-table a:hover {
         color: #FF6B9D !important;
     }
-    
+
     .light-theme .probability-bar-bg,
     body[data-theme="pink"] .probability-bar-bg,
     html[data-theme="pink"] body .probability-bar-bg,
     html.light-theme[data-theme="pink"] body .probability-bar-bg {
         background: rgba(255, 107, 157, 0.2) !important;
     }
-    
+
     .light-theme .text-sm,
     body[data-theme="pink"] .text-sm,
     html[data-theme="pink"] body .text-sm,
     html.light-theme[data-theme="pink"] body .text-sm {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .font-medium,
     body[data-theme="pink"] .font-medium,
     html[data-theme="pink"] body .font-medium,
     html.light-theme[data-theme="pink"] body .font-medium {
         color: #2D1B2E !important;
     }
-    
+
     /* Ensure all text in table is black in pink theme */
     .light-theme .data-table *,
     body[data-theme="pink"] .data-table *,
@@ -1023,14 +1190,14 @@
     html.light-theme[data-theme="pink"] body .data-table * {
         color: inherit !important;
     }
-    
+
     .light-theme .data-table td,
     body[data-theme="pink"] .data-table td,
     html[data-theme="pink"] body .data-table td,
     html.light-theme[data-theme="pink"] body .data-table td {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table th,
     body[data-theme="pink"] .data-table th,
     html[data-theme="pink"] body .data-table th,
@@ -1068,8 +1235,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container,
     html.light-theme[data-theme="pink"] body .filter-icon-container {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #E55A87;
     }
@@ -1083,8 +1250,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container:hover,
     html.light-theme[data-theme="pink"] body .filter-icon-container:hover {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
         border-color: rgba(255, 107, 157, 0.5);
     }
 
@@ -1101,8 +1268,8 @@
     html[data-theme="pink"] body .search-input,
     html.light-theme[data-theme="pink"] body .search-input {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -1127,8 +1294,8 @@
     html[data-theme="pink"] body .create-btn.secondary,
     html.light-theme[data-theme="pink"] body .create-btn.secondary {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         color: white !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
     }
@@ -1138,8 +1305,8 @@
     html[data-theme="pink"] body .data-table-container,
     html.light-theme[data-theme="pink"] body .data-table-container {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -1220,8 +1387,8 @@
     html[data-theme="pink"] body .filter-box,
     html.light-theme[data-theme="pink"] body .filter-box {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -1239,8 +1406,8 @@
     html[data-theme="pink"] body .filter-input,
     html.light-theme[data-theme="pink"] body .filter-input {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.9) 0%,
-            rgba(255, 248, 250, 0.85) 100%);
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(255, 248, 250, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -1258,8 +1425,8 @@
     html.light-theme[data-theme="pink"] body .filter-input:focus {
         border-color: #FF6B9D;
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
     }
 
     .light-theme .filter-btn.primary,
@@ -1291,7 +1458,7 @@
     html.light-theme[data-theme="pink"] body .bg-blue-600 {
         background: #FF6B9D !important;
     }
-    
+
     /* Additional styles for table elements in pink theme */
     .light-theme .data-table,
     body[data-theme="pink"] .data-table,
@@ -1299,42 +1466,42 @@
     html.light-theme[data-theme="pink"] body .data-table {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table a,
     body[data-theme="pink"] .data-table a,
     html[data-theme="pink"] body .data-table a,
     html.light-theme[data-theme="pink"] body .data-table a {
         color: #E55A87 !important;
     }
-    
+
     .light-theme .data-table a:hover,
     body[data-theme="pink"] .data-table a:hover,
     html[data-theme="pink"] body .data-table a:hover,
     html.light-theme[data-theme="pink"] body .data-table a:hover {
         color: #FF6B9D !important;
     }
-    
+
     .light-theme .probability-bar-bg,
     body[data-theme="pink"] .probability-bar-bg,
     html[data-theme="pink"] body .probability-bar-bg,
     html.light-theme[data-theme="pink"] body .probability-bar-bg {
         background: rgba(255, 107, 157, 0.2) !important;
     }
-    
+
     .light-theme .text-sm,
     body[data-theme="pink"] .text-sm,
     html[data-theme="pink"] body .text-sm,
     html.light-theme[data-theme="pink"] body .text-sm {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .font-medium,
     body[data-theme="pink"] .font-medium,
     html[data-theme="pink"] body .font-medium,
     html.light-theme[data-theme="pink"] body .font-medium {
         color: #2D1B2E !important;
     }
-    
+
     /* Ensure all text in table is black in pink theme */
     .light-theme .data-table *,
     body[data-theme="pink"] .data-table *,
@@ -1342,14 +1509,14 @@
     html.light-theme[data-theme="pink"] body .data-table * {
         color: inherit !important;
     }
-    
+
     .light-theme .data-table td,
     body[data-theme="pink"] .data-table td,
     html[data-theme="pink"] body .data-table td,
     html.light-theme[data-theme="pink"] body .data-table td {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table th,
     body[data-theme="pink"] .data-table th,
     html[data-theme="pink"] body .data-table th,
@@ -1387,8 +1554,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container,
     html.light-theme[data-theme="pink"] body .filter-icon-container {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #E55A87;
     }
@@ -1402,8 +1569,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container:hover,
     html.light-theme[data-theme="pink"] body .filter-icon-container:hover {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
         border-color: rgba(255, 107, 157, 0.5);
     }
 
@@ -1420,8 +1587,8 @@
     html[data-theme="pink"] body .search-input,
     html.light-theme[data-theme="pink"] body .search-input {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -1446,8 +1613,8 @@
     html[data-theme="pink"] body .create-btn.secondary,
     html.light-theme[data-theme="pink"] body .create-btn.secondary {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         color: white !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
     }
@@ -1457,8 +1624,8 @@
     html[data-theme="pink"] body .data-table-container,
     html.light-theme[data-theme="pink"] body .data-table-container {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -1539,8 +1706,8 @@
     html[data-theme="pink"] body .filter-box,
     html.light-theme[data-theme="pink"] body .filter-box {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -1558,8 +1725,8 @@
     html[data-theme="pink"] body .filter-input,
     html.light-theme[data-theme="pink"] body .filter-input {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.9) 0%,
-            rgba(255, 248, 250, 0.85) 100%);
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(255, 248, 250, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -1577,8 +1744,8 @@
     html.light-theme[data-theme="pink"] body .filter-input:focus {
         border-color: #FF6B9D;
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
     }
 
     .light-theme .filter-btn.primary,
@@ -1610,7 +1777,7 @@
     html.light-theme[data-theme="pink"] body .bg-blue-600 {
         background: #FF6B9D !important;
     }
-    
+
     /* Additional styles for table elements in pink theme */
     .light-theme .data-table,
     body[data-theme="pink"] .data-table,
@@ -1618,42 +1785,42 @@
     html.light-theme[data-theme="pink"] body .data-table {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table a,
     body[data-theme="pink"] .data-table a,
     html[data-theme="pink"] body .data-table a,
     html.light-theme[data-theme="pink"] body .data-table a {
         color: #E55A87 !important;
     }
-    
+
     .light-theme .data-table a:hover,
     body[data-theme="pink"] .data-table a:hover,
     html[data-theme="pink"] body .data-table a:hover,
     html.light-theme[data-theme="pink"] body .data-table a:hover {
         color: #FF6B9D !important;
     }
-    
+
     .light-theme .probability-bar-bg,
     body[data-theme="pink"] .probability-bar-bg,
     html[data-theme="pink"] body .probability-bar-bg,
     html.light-theme[data-theme="pink"] body .probability-bar-bg {
         background: rgba(255, 107, 157, 0.2) !important;
     }
-    
+
     .light-theme .text-sm,
     body[data-theme="pink"] .text-sm,
     html[data-theme="pink"] body .text-sm,
     html.light-theme[data-theme="pink"] body .text-sm {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .font-medium,
     body[data-theme="pink"] .font-medium,
     html[data-theme="pink"] body .font-medium,
     html.light-theme[data-theme="pink"] body .font-medium {
         color: #2D1B2E !important;
     }
-    
+
     /* Ensure all text in table is black in pink theme */
     .light-theme .data-table *,
     body[data-theme="pink"] .data-table *,
@@ -1661,14 +1828,14 @@
     html.light-theme[data-theme="pink"] body .data-table * {
         color: inherit !important;
     }
-    
+
     .light-theme .data-table td,
     body[data-theme="pink"] .data-table td,
     html[data-theme="pink"] body .data-table td,
     html.light-theme[data-theme="pink"] body .data-table td {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table th,
     body[data-theme="pink"] .data-table th,
     html[data-theme="pink"] body .data-table th,
@@ -1706,8 +1873,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container,
     html.light-theme[data-theme="pink"] body .filter-icon-container {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #E55A87;
     }
@@ -1721,8 +1888,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container:hover,
     html.light-theme[data-theme="pink"] body .filter-icon-container:hover {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
         border-color: rgba(255, 107, 157, 0.5);
     }
 
@@ -1739,8 +1906,8 @@
     html[data-theme="pink"] body .search-input,
     html.light-theme[data-theme="pink"] body .search-input {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -1765,8 +1932,8 @@
     html[data-theme="pink"] body .create-btn.secondary,
     html.light-theme[data-theme="pink"] body .create-btn.secondary {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         color: white !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
     }
@@ -1776,8 +1943,8 @@
     html[data-theme="pink"] body .data-table-container,
     html.light-theme[data-theme="pink"] body .data-table-container {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -1858,8 +2025,8 @@
     html[data-theme="pink"] body .filter-box,
     html.light-theme[data-theme="pink"] body .filter-box {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -1877,8 +2044,8 @@
     html[data-theme="pink"] body .filter-input,
     html.light-theme[data-theme="pink"] body .filter-input {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.9) 0%,
-            rgba(255, 248, 250, 0.85) 100%);
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(255, 248, 250, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -1896,8 +2063,8 @@
     html.light-theme[data-theme="pink"] body .filter-input:focus {
         border-color: #FF6B9D;
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
     }
 
     .light-theme .filter-btn.primary,
@@ -1929,7 +2096,7 @@
     html.light-theme[data-theme="pink"] body .bg-blue-600 {
         background: #FF6B9D !important;
     }
-    
+
     /* Additional styles for table elements in pink theme */
     .light-theme .data-table,
     body[data-theme="pink"] .data-table,
@@ -1937,42 +2104,42 @@
     html.light-theme[data-theme="pink"] body .data-table {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table a,
     body[data-theme="pink"] .data-table a,
     html[data-theme="pink"] body .data-table a,
     html.light-theme[data-theme="pink"] body .data-table a {
         color: #E55A87 !important;
     }
-    
+
     .light-theme .data-table a:hover,
     body[data-theme="pink"] .data-table a:hover,
     html[data-theme="pink"] body .data-table a:hover,
     html.light-theme[data-theme="pink"] body .data-table a:hover {
         color: #FF6B9D !important;
     }
-    
+
     .light-theme .probability-bar-bg,
     body[data-theme="pink"] .probability-bar-bg,
     html[data-theme="pink"] body .probability-bar-bg,
     html.light-theme[data-theme="pink"] body .probability-bar-bg {
         background: rgba(255, 107, 157, 0.2) !important;
     }
-    
+
     .light-theme .text-sm,
     body[data-theme="pink"] .text-sm,
     html[data-theme="pink"] body .text-sm,
     html.light-theme[data-theme="pink"] body .text-sm {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .font-medium,
     body[data-theme="pink"] .font-medium,
     html[data-theme="pink"] body .font-medium,
     html.light-theme[data-theme="pink"] body .font-medium {
         color: #2D1B2E !important;
     }
-    
+
     /* Ensure all text in table is black in pink theme */
     .light-theme .data-table *,
     body[data-theme="pink"] .data-table *,
@@ -1980,14 +2147,14 @@
     html.light-theme[data-theme="pink"] body .data-table * {
         color: inherit !important;
     }
-    
+
     .light-theme .data-table td,
     body[data-theme="pink"] .data-table td,
     html[data-theme="pink"] body .data-table td,
     html.light-theme[data-theme="pink"] body .data-table td {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table th,
     body[data-theme="pink"] .data-table th,
     html[data-theme="pink"] body .data-table th,
@@ -2025,8 +2192,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container,
     html.light-theme[data-theme="pink"] body .filter-icon-container {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #E55A87;
     }
@@ -2040,8 +2207,8 @@
     html.light-theme[data-theme="pink"] body .search-icon-container:hover,
     html.light-theme[data-theme="pink"] body .filter-icon-container:hover {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
         border-color: rgba(255, 107, 157, 0.5);
     }
 
@@ -2058,8 +2225,8 @@
     html[data-theme="pink"] body .search-input,
     html.light-theme[data-theme="pink"] body .search-input {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -2084,8 +2251,8 @@
     html[data-theme="pink"] body .create-btn.secondary,
     html.light-theme[data-theme="pink"] body .create-btn.secondary {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%);
         color: white !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
     }
@@ -2095,8 +2262,8 @@
     html[data-theme="pink"] body .data-table-container,
     html.light-theme[data-theme="pink"] body .data-table-container {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -2177,8 +2344,8 @@
     html[data-theme="pink"] body .filter-box,
     html.light-theme[data-theme="pink"] body .filter-box {
         background: linear-gradient(135deg,
-            rgba(255, 240, 245, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 100%) !important;
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 100%) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -2196,8 +2363,8 @@
     html[data-theme="pink"] body .filter-input,
     html.light-theme[data-theme="pink"] body .filter-input {
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.9) 0%,
-            rgba(255, 248, 250, 0.85) 100%);
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(255, 248, 250, 0.85) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         color: #2D1B2E;
     }
@@ -2215,8 +2382,8 @@
     html.light-theme[data-theme="pink"] body .filter-input:focus {
         border-color: #FF6B9D;
         background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 245, 248, 0.9) 100%);
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 100%);
     }
 
     .light-theme .filter-btn.primary,
@@ -2248,7 +2415,7 @@
     html.light-theme[data-theme="pink"] body .bg-blue-600 {
         background: #FF6B9D !important;
     }
-    
+
     /* Additional styles for table elements in pink theme */
     .light-theme .data-table,
     body[data-theme="pink"] .data-table,
@@ -2256,42 +2423,42 @@
     html.light-theme[data-theme="pink"] body .data-table {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table a,
     body[data-theme="pink"] .data-table a,
     html[data-theme="pink"] body .data-table a,
     html.light-theme[data-theme="pink"] body .data-table a {
         color: #E55A87 !important;
     }
-    
+
     .light-theme .data-table a:hover,
     body[data-theme="pink"] .data-table a:hover,
     html[data-theme="pink"] body .data-table a:hover,
     html.light-theme[data-theme="pink"] body .data-table a:hover {
         color: #FF6B9D !important;
     }
-    
+
     .light-theme .probability-bar-bg,
     body[data-theme="pink"] .probability-bar-bg,
     html[data-theme="pink"] body .probability-bar-bg,
     html.light-theme[data-theme="pink"] body .probability-bar-bg {
         background: rgba(255, 107, 157, 0.2) !important;
     }
-    
+
     .light-theme .text-sm,
     body[data-theme="pink"] .text-sm,
     html[data-theme="pink"] body .text-sm,
     html.light-theme[data-theme="pink"] body .text-sm {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .font-medium,
     body[data-theme="pink"] .font-medium,
     html[data-theme="pink"] body .font-medium,
     html.light-theme[data-theme="pink"] body .font-medium {
         color: #2D1B2E !important;
     }
-    
+
     /* Ensure all text in table is black in pink theme */
     .light-theme .data-table *,
     body[data-theme="pink"] .data-table *,
@@ -2299,14 +2466,14 @@
     html.light-theme[data-theme="pink"] body .data-table * {
         color: inherit !important;
     }
-    
+
     .light-theme .data-table td,
     body[data-theme="pink"] .data-table td,
     html[data-theme="pink"] body .data-table td,
     html.light-theme[data-theme="pink"] body .data-table td {
         color: #2D1B2E !important;
     }
-    
+
     .light-theme .data-table th,
     body[data-theme="pink"] .data-table th,
     html[data-theme="pink"] body .data-table th,
@@ -2815,8 +2982,13 @@
     }
 
     @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(200%); }
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(200%);
+        }
     }
 
     /* ========== NEW OPPORTUNITY CARD ========== */
@@ -3019,14 +3191,29 @@
     }
 
     /* View visibility controls */
-    .view-grid { display: none; }
-    .view-table { display: block; }
+    .view-grid {
+        display: none;
+    }
 
-    .view-mode-grid .view-grid { display: grid; }
-    .view-mode-grid .view-table { display: none; }
+    .view-table {
+        display: block;
+    }
 
-    .view-mode-table .view-grid { display: none; }
-    .view-mode-table .view-table { display: block; }
+    .view-mode-grid .view-grid {
+        display: grid;
+    }
+
+    .view-mode-grid .view-table {
+        display: none;
+    }
+
+    .view-mode-table .view-grid {
+        display: none;
+    }
+
+    .view-mode-table .view-table {
+        display: block;
+    }
 
     /* Pink theme adjustments for cards */
     .light-theme .opportunity-card,
@@ -3156,7 +3343,6 @@
     body[data-theme="pink"] .search-bar-input::placeholder {
         color: #6B4C6D !important;
     }
-
 </style>
 
 <div class="todos-container">
@@ -3165,7 +3351,8 @@
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <h1 class="page-title">Oportunidades</h1>
                 <div class="filter-icon-container {% if reporte_activo %}active{% endif %}" id="filter-icon">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
                     </svg>
                 </div>
@@ -3175,7 +3362,8 @@
                 <!-- View Switcher -->
                 <div class="view-switcher">
                     <button class="view-switcher-btn active" id="view-grid-btn" title="Vista Cuadrícula">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7"></rect>
                             <rect x="14" y="3" width="7" height="7"></rect>
                             <rect x="14" y="14" width="7" height="7"></rect>
@@ -3183,7 +3371,8 @@
                         </svg>
                     </button>
                     <button class="view-switcher-btn" id="view-table-btn" title="Vista Tabla">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
                             <line x1="8" y1="6" x2="21" y2="6"></line>
                             <line x1="8" y1="12" x2="21" y2="12"></line>
                             <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -3195,153 +3384,158 @@
                 </div>
 
                 <div class="search-bar-container" id="search-bar">
-                    <svg class="search-bar-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="searchOportunidad" placeholder="Buscar..." class="search-bar-input" value="{{ search_query }}">
+                    <svg class="search-bar-icon" width="18" height="18" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" id="searchOportunidad" placeholder="Buscar..." class="search-bar-input"
+                        value="{{ search_query }}">
                 </div>
             </div>
             {% else %}
-                        <div class="compact-filters-container">
-                            <div class="filters-grid">
-                                <div class="filter-group">
-                                    <label class="filter-label">Búsqueda</label>
-                                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar oportunidad...">
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">Tipo</label>
-                                    <select class="filter-input" id="filterTipo">
-                                        <option value="">Todos</option>
-                                        <option value="runrate">Runrate</option>
-                                        <option value="proyecto">Proyecto</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">Estado</label>
-                                    <div class="custom-multiselect" id="filterEtapa">
-                                        <div class="multiselect-display">
-                                            <span class="placeholder">Seleccionar estados...</span>
-                                            <div class="selected-items"></div>
-                                            <span class="dropdown-arrow">▼</span>
-                                        </div>
-                                        <div class="multiselect-dropdown" style="display: none;">
-                                            <div class="multiselect-option" data-value="vigentes">
-                                                <input type="checkbox" id="etapa_vigentes">
-                                                <label for="etapa_vigentes">Solo vigentes</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="ganadas">
-                                                <input type="checkbox" id="etapa_ganadas">
-                                                <label for="etapa_ganadas">Solo cerradas ganadas</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="perdidas">
-                                                <input type="checkbox" id="etapa_perdidas">
-                                                <label for="etapa_perdidas">Solo cerradas perdidas</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">Cliente</label>
-                                    <select class="filter-input" id="filterCliente">
-                                        <option value="">Todos los clientes</option>
-                                        {% regroup items by cliente.nombre_empresa as cliente_list %}
-                                        {% for cliente in cliente_list %}
-                                            {% if cliente.grouper %}
-                                                <option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">Empleado</label>
-                                    <div class="custom-multiselect" id="filterEmpleado">
-                                        <div class="multiselect-display">
-                                            <span class="placeholder">Seleccionar empleados...</span>
-                                            <div class="selected-items"></div>
-                                            <span class="dropdown-arrow">▼</span>
-                                        </div>
-                                        <div class="multiselect-dropdown" style="display: none;">
-                                            {% for user in empleados %}
-                                            <div class="multiselect-option" data-value="{{ user.id }}">
-                                                <input type="checkbox" id="emp_{{ user.id }}">
-                                                <label for="emp_{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</label>
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">Mes Cierre</label>
-                                    <div class="custom-multiselect" id="filterMesCierre">
-                                        <div class="multiselect-display">
-                                            <span class="placeholder">Seleccionar meses...</span>
-                                            <div class="selected-items"></div>
-                                            <span class="dropdown-arrow">▼</span>
-                                        </div>
-                                        <div class="multiselect-dropdown" style="display: none;">
-                                            <div class="multiselect-option" data-value="01">
-                                                <input type="checkbox" id="mes_01">
-                                                <label for="mes_01">Enero</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="02">
-                                                <input type="checkbox" id="mes_02">
-                                                <label for="mes_02">Febrero</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="03">
-                                                <input type="checkbox" id="mes_03">
-                                                <label for="mes_03">Marzo</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="04">
-                                                <input type="checkbox" id="mes_04">
-                                                <label for="mes_04">Abril</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="05">
-                                                <input type="checkbox" id="mes_05">
-                                                <label for="mes_05">Mayo</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="06">
-                                                <input type="checkbox" id="mes_06">
-                                                <label for="mes_06">Junio</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="07">
-                                                <input type="checkbox" id="mes_07">
-                                                <label for="mes_07">Julio</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="08">
-                                                <input type="checkbox" id="mes_08">
-                                                <label for="mes_08">Agosto</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="09">
-                                                <input type="checkbox" id="mes_09">
-                                                <label for="mes_09">Septiembre</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="10">
-                                                <input type="checkbox" id="mes_10">
-                                                <label for="mes_10">Octubre</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="11">
-                                                <input type="checkbox" id="mes_11">
-                                                <label for="mes_11">Noviembre</label>
-                                            </div>
-                                            <div class="multiselect-option" data-value="12">
-                                                <input type="checkbox" id="mes_12">
-                                                <label for="mes_12">Diciembre</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+            <div class="compact-filters-container">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">Búsqueda</label>
+                        <input type="text" class="filter-input" id="filterOportunidad"
+                            placeholder="Buscar oportunidad...">
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Tipo</label>
+                        <select class="filter-input" id="filterTipo">
+                            <option value="">Todos</option>
+                            <option value="runrate">Runrate</option>
+                            <option value="proyecto">Proyecto</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Estado</label>
+                        <div class="custom-multiselect" id="filterEtapa">
+                            <div class="multiselect-display">
+                                <span class="placeholder">Seleccionar estados...</span>
+                                <div class="selected-items"></div>
+                                <span class="dropdown-arrow">▼</span>
                             </div>
-                            
-                            <div class="filter-actions">
-                                <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
-                                <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
-                                <button class="filter-btn primary" onclick="generarReporteCSV()">Generar Reporte</button>
-                                <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
+                            <div class="multiselect-dropdown" style="display: none;">
+                                <div class="multiselect-option" data-value="vigentes">
+                                    <input type="checkbox" id="etapa_vigentes">
+                                    <label for="etapa_vigentes">Solo vigentes</label>
+                                </div>
+                                <div class="multiselect-option" data-value="ganadas">
+                                    <input type="checkbox" id="etapa_ganadas">
+                                    <label for="etapa_ganadas">Solo cerradas ganadas</label>
+                                </div>
+                                <div class="multiselect-option" data-value="perdidas">
+                                    <input type="checkbox" id="etapa_perdidas">
+                                    <label for="etapa_perdidas">Solo cerradas perdidas</label>
+                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Cliente</label>
+                        <select class="filter-input" id="filterCliente">
+                            <option value="">Todos los clientes</option>
+                            {% regroup items by cliente.nombre_empresa as cliente_list %}
+                            {% for cliente in cliente_list %}
+                            {% if cliente.grouper %}
+                            <option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Empleado</label>
+                        <div class="custom-multiselect" id="filterEmpleado">
+                            <div class="multiselect-display">
+                                <span class="placeholder">Seleccionar empleados...</span>
+                                <div class="selected-items"></div>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="multiselect-dropdown" style="display: none;">
+                                {% for user in empleados %}
+                                <div class="multiselect-option" data-value="{{ user.id }}">
+                                    <input type="checkbox" id="emp_{{ user.id }}">
+                                    <label for="emp_{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Mes Cierre</label>
+                        <div class="custom-multiselect" id="filterMesCierre">
+                            <div class="multiselect-display">
+                                <span class="placeholder">Seleccionar meses...</span>
+                                <div class="selected-items"></div>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="multiselect-dropdown" style="display: none;">
+                                <div class="multiselect-option" data-value="01">
+                                    <input type="checkbox" id="mes_01">
+                                    <label for="mes_01">Enero</label>
+                                </div>
+                                <div class="multiselect-option" data-value="02">
+                                    <input type="checkbox" id="mes_02">
+                                    <label for="mes_02">Febrero</label>
+                                </div>
+                                <div class="multiselect-option" data-value="03">
+                                    <input type="checkbox" id="mes_03">
+                                    <label for="mes_03">Marzo</label>
+                                </div>
+                                <div class="multiselect-option" data-value="04">
+                                    <input type="checkbox" id="mes_04">
+                                    <label for="mes_04">Abril</label>
+                                </div>
+                                <div class="multiselect-option" data-value="05">
+                                    <input type="checkbox" id="mes_05">
+                                    <label for="mes_05">Mayo</label>
+                                </div>
+                                <div class="multiselect-option" data-value="06">
+                                    <input type="checkbox" id="mes_06">
+                                    <label for="mes_06">Junio</label>
+                                </div>
+                                <div class="multiselect-option" data-value="07">
+                                    <input type="checkbox" id="mes_07">
+                                    <label for="mes_07">Julio</label>
+                                </div>
+                                <div class="multiselect-option" data-value="08">
+                                    <input type="checkbox" id="mes_08">
+                                    <label for="mes_08">Agosto</label>
+                                </div>
+                                <div class="multiselect-option" data-value="09">
+                                    <input type="checkbox" id="mes_09">
+                                    <label for="mes_09">Septiembre</label>
+                                </div>
+                                <div class="multiselect-option" data-value="10">
+                                    <input type="checkbox" id="mes_10">
+                                    <label for="mes_10">Octubre</label>
+                                </div>
+                                <div class="multiselect-option" data-value="11">
+                                    <input type="checkbox" id="mes_11">
+                                    <label for="mes_11">Noviembre</label>
+                                </div>
+                                <div class="multiselect-option" data-value="12">
+                                    <input type="checkbox" id="mes_12">
+                                    <label for="mes_12">Diciembre</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-actions">
+                    <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
+                    <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
+                    <button class="filter-btn primary" onclick="generarReporteCSV()">Generar Reporte</button>
+                    <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
+                </div>
+            </div>
             {% endif %}
         </div>
 
@@ -3354,7 +3548,10 @@
                 <!-- Summary Widget Card -->
                 <div class="summary-widget-card">
                     <div class="summary-badge">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z" />
+                        </svg>
                         <span>Total Cobrado del Mes</span>
                     </div>
                     <div class="summary-amount">
@@ -3374,20 +3571,18 @@
 
                 <!-- Opportunity Cards -->
                 {% for item in items %}
-                <div class="opportunity-card"
-                     data-opp-id="{{ item.id }}"
-                     data-monto="{{ item.monto }}"
-                     data-area="{{ item.area }}"
-                     data-usuario-id="{{ item.usuario.id }}"
-                     data-etapa="{{ item.etapa_corta|default:''|lower }}"
-                     data-etapa-completa="{{ item.etapa_completa|default:''|lower }}"
-                     data-fecha-actualizacion="{{ item.fecha_actualizacion|date:'Y-m' }}"
-                     onclick="window.location.href='{% url 'cotizaciones_por_oportunidad' item.id %}'">
+                <div class="opportunity-card" data-opp-id="{{ item.id }}" data-monto="{{ item.monto }}"
+                    data-area="{{ item.area }}" data-usuario-id="{{ item.usuario.id }}"
+                    data-etapa="{{ item.etapa_corta|default:''|lower }}"
+                    data-etapa-completa="{{ item.etapa_completa|default:''|lower }}"
+                    data-fecha-actualizacion="{{ item.fecha_actualizacion|date:'Y-m' }}"
+                    onclick="window.location.href='{% url 'cotizaciones_por_oportunidad' item.id %}'">
 
                     <!-- Card Header -->
                     <div class="card-header">
                         <h3 class="card-title">{{ item.oportunidad }}</h3>
-                        <p class="card-client">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}Sin cliente{% endif %}</p>
+                        <p class="card-client">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}Sin
+                            cliente{% endif %}</p>
                     </div>
 
                     <!-- Card Stats -->
@@ -3398,7 +3593,12 @@
                         </div>
                         <div class="stat-box">
                             <p class="stat-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
                                 Mes de Cierre
                             </p>
                             <p class="stat-value small">{{ item.get_mes_cierre_display }}</p>
@@ -3413,32 +3613,38 @@
                                 <div class="health-ring">
                                     {% with prob=item.probabilidad_cierre %}
                                     {% if prob > 70 %}
-                                        {% with color="#32D74B" %}
-                                        <svg width="44" height="44" viewBox="0 0 44 44">
-                                            <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3" fill="none"/>
-                                            <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}" stroke-width="3" fill="none"
-                                                    stroke-dasharray="113.1" stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
-                                                    style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});"/>
-                                        </svg>
-                                        {% endwith %}
+                                    {% with color="#32D74B" %}
+                                    <svg width="44" height="44" viewBox="0 0 44 44">
+                                        <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3"
+                                            fill="none" />
+                                        <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}"
+                                            stroke-width="3" fill="none" stroke-dasharray="113.1"
+                                            stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
+                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});" />
+                                    </svg>
+                                    {% endwith %}
                                     {% elif prob > 50 %}
-                                        {% with color="#FFD60A" %}
-                                        <svg width="44" height="44" viewBox="0 0 44 44">
-                                            <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3" fill="none"/>
-                                            <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}" stroke-width="3" fill="none"
-                                                    stroke-dasharray="113.1" stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
-                                                    style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});"/>
-                                        </svg>
-                                        {% endwith %}
+                                    {% with color="#FFD60A" %}
+                                    <svg width="44" height="44" viewBox="0 0 44 44">
+                                        <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3"
+                                            fill="none" />
+                                        <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}"
+                                            stroke-width="3" fill="none" stroke-dasharray="113.1"
+                                            stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
+                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});" />
+                                    </svg>
+                                    {% endwith %}
                                     {% else %}
-                                        {% with color="#FF453A" %}
-                                        <svg width="44" height="44" viewBox="0 0 44 44">
-                                            <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3" fill="none"/>
-                                            <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}" stroke-width="3" fill="none"
-                                                    stroke-dasharray="113.1" stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
-                                                    style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});"/>
-                                        </svg>
-                                        {% endwith %}
+                                    {% with color="#FF453A" %}
+                                    <svg width="44" height="44" viewBox="0 0 44 44">
+                                        <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3"
+                                            fill="none" />
+                                        <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}"
+                                            stroke-width="3" fill="none" stroke-dasharray="113.1"
+                                            stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
+                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});" />
+                                    </svg>
+                                    {% endwith %}
                                     {% endif %}
                                     {% endwith %}
                                     <span class="health-ring-percent">{{ item.probabilidad_cierre }}%</span>
@@ -3451,27 +3657,30 @@
 
                             <!-- Owner Avatar -->
                             {% if item.usuario.userprofile.get_avatar_url %}
-                            <img class="card-owner-avatar-img"
-                                 src="{{ item.usuario.userprofile.get_avatar_url }}"
-                                 alt="{{ item.usuario.first_name }} {{ item.usuario.last_name }}"
-                                 title="{{ item.usuario.first_name }} {{ item.usuario.last_name }}">
+                            <img class="card-owner-avatar-img" src="{{ item.usuario.userprofile.get_avatar_url }}"
+                                alt="{{ item.usuario.first_name }} {{ item.usuario.last_name }}"
+                                title="{{ item.usuario.first_name }} {{ item.usuario.last_name }}">
                             {% else %}
-                            <div class="card-owner-avatar" title="{{ item.usuario.first_name }} {{ item.usuario.last_name }}">
+                            <div class="card-owner-avatar"
+                                title="{{ item.usuario.first_name }} {{ item.usuario.last_name }}">
                                 {{ item.usuario.first_name|slice:":1" }}{{ item.usuario.last_name|slice:":1" }}
                             </div>
                             {% endif %}
                         </div>
 
                         <!-- CTA Button -->
-                        <a href="{% url 'crear_cotizacion_with_opportunity' item.id %}" class="card-cta-btn" onclick="event.stopPropagation();">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <a href="{% url 'crear_cotizacion_with_opportunity' item.id %}" class="card-cta-btn"
+                            onclick="event.stopPropagation();">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
                                 <line x1="12" y1="18" x2="12" y2="12"></line>
                                 <line x1="9" y1="15" x2="15" y2="15"></line>
                             </svg>
                             <span>Crear Cotización</span>
-                            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
                         </a>
@@ -3509,7 +3718,8 @@
                                         {{ item.oportunidad }}
                                     </a>
                                 </td>
-                                <td data-label="Cliente">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}N/A{% endif %}</td>
+                                <td data-label="Cliente">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else
+                                    %}N/A{% endif %}</td>
                                 <td data-label="Tipo">
                                     <span class="table-tag">
                                         {{ item.get_tipo_negociacion_display }}
@@ -3517,7 +3727,7 @@
                                 </td>
                                 <td data-label="Etapa">
                                     <span class="table-stage-badge"
-                                          style="background-color: {{ item.etapa_color|default:'#CCCCCC' }}22; border: 1px solid {{ item.etapa_color|default:'#CCCCCC' }}55; color: {{ item.etapa_color|default:'#888888' }};">
+                                        style="background-color: {{ item.etapa_color|default:'#CCCCCC' }}22; border: 1px solid {{ item.etapa_color|default:'#CCCCCC' }}55; color: {{ item.etapa_color|default:'#888888' }};">
                                         {{ item.etapa_corta|default:'N/A' }}
                                     </span>
                                 </td>
@@ -3539,7 +3749,8 @@
                                 </td>
                                 <td data-label="Mes Cierre">
                                     <span style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.5;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" style="opacity: 0.5;">
                                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                             <line x1="16" y1="2" x2="16" y2="6"></line>
                                             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -3558,7 +3769,9 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="8" style="text-align: center; padding: 3rem; color: rgba(255,255,255,0.5);">No hay oportunidades registradas.</td>
+                                <td colspan="8"
+                                    style="text-align: center; padding: 3rem; color: rgba(255,255,255,0.5);">No hay
+                                    oportunidades registradas.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -3567,7 +3780,7 @@
             </div>
 
         </div>
-        
+
         {% if page_obj and page_obj.has_other_pages %}
         <div class="mt-6 flex items-center justify-between">
             <div class="text-sm text-gray-400">
@@ -3578,11 +3791,11 @@
                 </span>
                 {% endif %}
             </div>
-            
+
             <div class="flex items-center space-x-2">
                 {% if page_obj.has_previous %}
-                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" 
-                   class="pagination-btn">
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+                    class="pagination-btn">
                     ← Anterior
                 </a>
                 {% else %}
@@ -3590,14 +3803,14 @@
                     ← Anterior
                 </span>
                 {% endif %}
-                
+
                 <span class="pagination-info">
                     {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
                 </span>
-                
+
                 {% if page_obj.has_next %}
-                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" 
-                   class="pagination-btn">
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+                    class="pagination-btn">
                     Siguiente →
                 </a>
                 {% else %}
@@ -3613,65 +3826,65 @@
 
 <!-- Generar datos de clientes para JavaScript -->
 <script>
-// Preparar lista de clientes únicos
-var clientesOptions = [
-    {value: '', text: 'Todos los clientes'}
-];
+    // Preparar lista de clientes únicos
+    var clientesOptions = [
+        { value: '', text: 'Todos los clientes' }
+    ];
 </script>
 
 {% regroup items by cliente.nombre_empresa as cliente_list %}
 {% for cliente in cliente_list %}
-    {% if cliente.grouper %}
-        <script>
-        clientesOptions.push({
-            value: "{{ cliente.grouper|escapejs }}",
-            text: "{{ cliente.grouper|escapejs }}"
-        });
-        </script>
-    {% endif %}
+{% if cliente.grouper %}
+<script>
+    clientesOptions.push({
+        value: "{{ cliente.grouper|escapejs }}",
+        text: "{{ cliente.grouper|escapejs }}"
+    });
+</script>
+{% endif %}
 {% endfor %}
 
 <script>
-// Cliente ahora usa select nativo con funcionalidad de búsqueda
-let clienteSelect = null;
-console.log('🔍 Cliente now uses native select with search functionality');
+    // Cliente ahora usa select nativo con funcionalidad de búsqueda
+    let clienteSelect = null;
+    console.log('🔍 Cliente now uses native select with search functionality');
 
-// Agregar funcionalidad de búsqueda al select de cliente
-function initClienteSearch() {
-    const selectElement = document.getElementById('filterCliente');
-    if (!selectElement) return;
-    
-    // Guardar todas las opciones originales y eliminar duplicados
-    const allOptions = Array.from(selectElement.options);
-    const uniqueOptions = [];
-    const seenValues = new Set();
-    
-    allOptions.forEach(option => {
-        const value = option.value;
-        const text = option.textContent;
-        
-        if (!seenValues.has(value)) {
-            seenValues.add(value);
-            uniqueOptions.push({ value, text });
-        }
-    });
-    
-    // Limpiar el select y agregar solo opciones únicas
-    selectElement.innerHTML = '';
-    uniqueOptions.forEach(optionData => {
-        const option = document.createElement('option');
-        option.value = optionData.value;
-        option.textContent = optionData.text;
-        selectElement.appendChild(option);
-    });
-    
-    const originalOptions = uniqueOptions;
-    
-    // Crear input de búsqueda
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.placeholder = 'Buscar cliente...';
-    searchInput.style.cssText = `
+    // Agregar funcionalidad de búsqueda al select de cliente
+    function initClienteSearch() {
+        const selectElement = document.getElementById('filterCliente');
+        if (!selectElement) return;
+
+        // Guardar todas las opciones originales y eliminar duplicados
+        const allOptions = Array.from(selectElement.options);
+        const uniqueOptions = [];
+        const seenValues = new Set();
+
+        allOptions.forEach(option => {
+            const value = option.value;
+            const text = option.textContent;
+
+            if (!seenValues.has(value)) {
+                seenValues.add(value);
+                uniqueOptions.push({ value, text });
+            }
+        });
+
+        // Limpiar el select y agregar solo opciones únicas
+        selectElement.innerHTML = '';
+        uniqueOptions.forEach(optionData => {
+            const option = document.createElement('option');
+            option.value = optionData.value;
+            option.textContent = optionData.text;
+            selectElement.appendChild(option);
+        });
+
+        const originalOptions = uniqueOptions;
+
+        // Crear input de búsqueda
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Buscar cliente...';
+        searchInput.style.cssText = `
         background: #484848 !important;
         color: #FFFFFF !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -3683,757 +3896,964 @@ function initClienteSearch() {
         box-sizing: border-box !important;
         margin-bottom: 4px !important;
     `;
-    
-    // Insertar el input antes del select
-    selectElement.parentNode.insertBefore(searchInput, selectElement);
-    
-    // Ocultar el select original inicialmente
-    selectElement.style.display = 'none';
-    
-    // Función para filtrar opciones
-    function filterOptions(searchTerm) {
-        if (searchTerm.length === 0) {
-            // Si no hay búsqueda, ocultar select
-            selectElement.style.display = 'none';
-            selectElement.value = '';
-            return;
-        }
-        
-        // Mostrar select si hay búsqueda
-        selectElement.style.display = 'block';
-        
-        // Limpiar select
-        selectElement.innerHTML = '';
-        
-        // Filtrar opciones
-        const filteredOptions = originalOptions.filter(option => 
-            option.text.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        
-        // Agregar opciones filtradas
-        filteredOptions.forEach(optionData => {
-            const option = document.createElement('option');
-            option.value = optionData.value;
-            option.textContent = optionData.text;
-            selectElement.appendChild(option);
-        });
-        
-        // Auto-redimensionar el select si hay opciones
-        if (filteredOptions.length > 0) {
-            selectElement.size = Math.min(filteredOptions.length, 8);
-            selectElement.selectedIndex = -1; // No seleccionar nada automáticamente
-        }
-    }
-    
-    // Event listener para el input de búsqueda
-    searchInput.addEventListener('input', function(e) {
-        filterOptions(e.target.value);
-    });
-    
-    // Cuando se selecciona una opción, actualizar el input de búsqueda
-    selectElement.addEventListener('change', function(e) {
-        if (e.target.value) {
-            searchInput.value = e.target.options[e.target.selectedIndex].text;
-            selectElement.style.display = 'none';
-            selectElement.size = 1;
-        } else {
-            searchInput.value = '';
-            selectElement.style.display = 'none';
-        }
-    });
-    
-    // Manejar clicks fuera del elemento para cerrar el dropdown
-    document.addEventListener('click', function(e) {
-        if (!selectElement.contains(e.target) && !searchInput.contains(e.target)) {
-            selectElement.style.display = 'none';
-            selectElement.size = 1;
-        }
-    });
-    
-    // Permitir navegación con teclas
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'ArrowDown' && selectElement.style.display === 'block') {
-            e.preventDefault();
-            selectElement.focus();
-            if (selectElement.options.length > 0) {
-                selectElement.selectedIndex = 0;
-            }
-        } else if (e.key === 'Escape') {
-            selectElement.style.display = 'none';
-            selectElement.size = 1;
-            searchInput.blur();
-        }
-    });
-    
-    // Manejar selección con teclas en el select
-    selectElement.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            selectElement.dispatchEvent(new Event('change'));
-        } else if (e.key === 'Escape') {
-            selectElement.style.display = 'none';
-            selectElement.size = 1;
-            searchInput.focus();
-        }
-    });
-}
 
-// Custom multiselect functionality
-function initCustomMultiselects() {
-    const multiselects = document.querySelectorAll('.custom-multiselect');
-    
-    multiselects.forEach(multiselect => {
-        const display = multiselect.querySelector('.multiselect-display');
-        const dropdown = multiselect.querySelector('.multiselect-dropdown');
-        const placeholder = multiselect.querySelector('.placeholder');
-        const selectedItems = multiselect.querySelector('.selected-items');
-        const options = multiselect.querySelectorAll('.multiselect-option');
-        
-        // Toggle dropdown
-        display.addEventListener('click', () => {
-            const isActive = display.classList.contains('active');
-            
-            // Close all other dropdowns
-            document.querySelectorAll('.custom-multiselect .multiselect-display').forEach(d => {
-                d.classList.remove('active');
-                d.parentElement.querySelector('.multiselect-dropdown').style.display = 'none';
+        // Insertar el input antes del select
+        selectElement.parentNode.insertBefore(searchInput, selectElement);
+
+        // Ocultar el select original inicialmente
+        selectElement.style.display = 'none';
+
+        // Función para filtrar opciones
+        function filterOptions(searchTerm) {
+            if (searchTerm.length === 0) {
+                // Si no hay búsqueda, ocultar select
+                selectElement.style.display = 'none';
+                selectElement.value = '';
+                return;
+            }
+
+            // Mostrar select si hay búsqueda
+            selectElement.style.display = 'block';
+
+            // Limpiar select
+            selectElement.innerHTML = '';
+
+            // Filtrar opciones
+            const filteredOptions = originalOptions.filter(option =>
+                option.text.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            // Agregar opciones filtradas
+            filteredOptions.forEach(optionData => {
+                const option = document.createElement('option');
+                option.value = optionData.value;
+                option.textContent = optionData.text;
+                selectElement.appendChild(option);
             });
-            
-            if (!isActive) {
-                display.classList.add('active');
-                dropdown.style.display = 'block';
+
+            // Auto-redimensionar el select si hay opciones
+            if (filteredOptions.length > 0) {
+                selectElement.size = Math.min(filteredOptions.length, 8);
+                selectElement.selectedIndex = -1; // No seleccionar nada automáticamente
+            }
+        }
+
+        // Event listener para el input de búsqueda
+        searchInput.addEventListener('input', function (e) {
+            filterOptions(e.target.value);
+        });
+
+        // Cuando se selecciona una opción, actualizar el input de búsqueda
+        selectElement.addEventListener('change', function (e) {
+            if (e.target.value) {
+                searchInput.value = e.target.options[e.target.selectedIndex].text;
+                selectElement.style.display = 'none';
+                selectElement.size = 1;
+            } else {
+                searchInput.value = '';
+                selectElement.style.display = 'none';
             }
         });
-        
-        // Handle option selection
-        options.forEach(option => {
-            const checkbox = option.querySelector('input[type="checkbox"]');
-            const label = option.querySelector('label');
-            
-            option.addEventListener('click', (e) => {
-                if (e.target !== checkbox) {
-                    checkbox.checked = !checkbox.checked;
+
+        // Manejar clicks fuera del elemento para cerrar el dropdown
+        document.addEventListener('click', function (e) {
+            if (!selectElement.contains(e.target) && !searchInput.contains(e.target)) {
+                selectElement.style.display = 'none';
+                selectElement.size = 1;
+            }
+        });
+
+        // Permitir navegación con teclas
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown' && selectElement.style.display === 'block') {
+                e.preventDefault();
+                selectElement.focus();
+                if (selectElement.options.length > 0) {
+                    selectElement.selectedIndex = 0;
                 }
-                updateSelectedItems(multiselect);
+            } else if (e.key === 'Escape') {
+                selectElement.style.display = 'none';
+                selectElement.size = 1;
+                searchInput.blur();
+            }
+        });
+
+        // Manejar selección con teclas en el select
+        selectElement.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                selectElement.dispatchEvent(new Event('change'));
+            } else if (e.key === 'Escape') {
+                selectElement.style.display = 'none';
+                selectElement.size = 1;
+                searchInput.focus();
+            }
+        });
+    }
+
+    // Custom multiselect functionality
+    function initCustomMultiselects() {
+        const multiselects = document.querySelectorAll('.custom-multiselect');
+
+        multiselects.forEach(multiselect => {
+            const display = multiselect.querySelector('.multiselect-display');
+            const dropdown = multiselect.querySelector('.multiselect-dropdown');
+            const placeholder = multiselect.querySelector('.placeholder');
+            const selectedItems = multiselect.querySelector('.selected-items');
+            const options = multiselect.querySelectorAll('.multiselect-option');
+
+            // Toggle dropdown
+            display.addEventListener('click', () => {
+                const isActive = display.classList.contains('active');
+
+                // Close all other dropdowns
+                document.querySelectorAll('.custom-multiselect .multiselect-display').forEach(d => {
+                    d.classList.remove('active');
+                    d.parentElement.querySelector('.multiselect-dropdown').style.display = 'none';
+                });
+
+                if (!isActive) {
+                    display.classList.add('active');
+                    dropdown.style.display = 'block';
+                }
+            });
+
+            // Handle option selection
+            options.forEach(option => {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                const label = option.querySelector('label');
+
+                option.addEventListener('click', (e) => {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                    }
+                    updateSelectedItems(multiselect);
+                });
             });
         });
-    });
-    
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-multiselect')) {
-            document.querySelectorAll('.custom-multiselect .multiselect-display').forEach(d => {
-                d.classList.remove('active');
-                d.parentElement.querySelector('.multiselect-dropdown').style.display = 'none';
-            });
-        }
-    });
-}
 
-function updateSelectedItems(multiselect) {
-    const selectedItems = multiselect.querySelector('.selected-items');
-    const placeholder = multiselect.querySelector('.placeholder');
-    const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]:checked');
-    
-    selectedItems.innerHTML = '';
-    
-    if (checkboxes.length === 0) {
-        placeholder.style.display = 'block';
-    } else {
-        placeholder.style.display = 'none';
-        
-        checkboxes.forEach(checkbox => {
-            const label = checkbox.parentElement.querySelector('label').textContent;
-            const selectedItem = document.createElement('span');
-            selectedItem.className = 'selected-item';
-            selectedItem.innerHTML = `
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-multiselect')) {
+                document.querySelectorAll('.custom-multiselect .multiselect-display').forEach(d => {
+                    d.classList.remove('active');
+                    d.parentElement.querySelector('.multiselect-dropdown').style.display = 'none';
+                });
+            }
+        });
+    }
+
+    function updateSelectedItems(multiselect) {
+        const selectedItems = multiselect.querySelector('.selected-items');
+        const placeholder = multiselect.querySelector('.placeholder');
+        const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]:checked');
+
+        selectedItems.innerHTML = '';
+
+        if (checkboxes.length === 0) {
+            placeholder.style.display = 'block';
+        } else {
+            placeholder.style.display = 'none';
+
+            checkboxes.forEach(checkbox => {
+                const label = checkbox.parentElement.querySelector('label').textContent;
+                const selectedItem = document.createElement('span');
+                selectedItem.className = 'selected-item';
+                selectedItem.innerHTML = `
                 ${label}
                 <span class="remove" data-value="${checkbox.parentElement.dataset.value}">×</span>
             `;
-            selectedItems.appendChild(selectedItem);
-            
-            // Handle remove
-            selectedItem.querySelector('.remove').addEventListener('click', (e) => {
-                e.stopPropagation();
-                checkbox.checked = false;
-                updateSelectedItems(multiselect);
+                selectedItems.appendChild(selectedItem);
+
+                // Handle remove
+                selectedItem.querySelector('.remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    checkbox.checked = false;
+                    updateSelectedItems(multiselect);
+                });
             });
-        });
+        }
     }
-}
 
-// Helper functions for getting values
-function getMultiselectValues(id) {
-    const multiselect = document.getElementById(id);
-    if (!multiselect) return [];
-    
-    const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]:checked');
-    return Array.from(checkboxes).map(cb => cb.parentElement.dataset.value);
-}
+    // Helper functions for getting values
+    function getMultiselectValues(id) {
+        const multiselect = document.getElementById(id);
+        if (!multiselect) return [];
 
-function clearMultiselect(id) {
-    const multiselect = document.getElementById(id);
-    if (!multiselect) return;
-    
-    const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(cb => cb.checked = false);
-    updateSelectedItems(multiselect);
-}
+        const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(cb => cb.parentElement.dataset.value);
+    }
 
-// Initialize after DOM load
-initCustomMultiselects();
+    function clearMultiselect(id) {
+        const multiselect = document.getElementById(id);
+        if (!multiselect) return;
+
+        const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+        updateSelectedItems(multiselect);
+    }
+
+    // Initialize after DOM load
+    initCustomMultiselects();
 
 </script>
 
 <!-- Generar datos de empleados para JavaScript -->
 <script>
-// Preparar lista de empleados
-var empleadosOptions = [
-    {value: '', text: 'Todos los empleados'}
-];
+    // Preparar lista de empleados
+    var empleadosOptions = [
+        { value: '', text: 'Todos los empleados' }
+    ];
 </script>
 
 {% for user in users %}
 <script>
-empleadosOptions.push({
-    value: '{{ user.id }}',
-    text: '{{ user.get_full_name|default:user.username|escapejs }}'
-});
+    empleadosOptions.push({
+        value: '{{ user.id }}',
+        text: '{{ user.get_full_name|default:user.username|escapejs }}'
+    });
 </script>
 {% endfor %}
 
 <script>
-// El empleado es un select normal, no necesita TomSelect
-console.log('🔍 Empleado filter is a normal select, no TomSelect needed');
+    // El empleado es un select normal, no necesita TomSelect
+    console.log('🔍 Empleado filter is a normal select, no TomSelect needed');
 
-function generarReporteCSV() {
-    const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
-    const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
-    const etapas = getMultiselectValues('filterEtapa');
-    const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value : '';
-    const empleados = getMultiselectValues('filterEmpleado');
-    const mesesCierre = getMultiselectValues('filterMesCierre');
+    function generarReporteCSV() {
+        const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
+        const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
+        const etapas = getMultiselectValues('filterEtapa');
+        const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value : '';
+        const empleados = getMultiselectValues('filterEmpleado');
+        const mesesCierre = getMultiselectValues('filterMesCierre');
 
-    // URL para exportar CSV
-    var csvPath = '{% url "exportar_oportunidades_csv" %}';
-    const url = new URL(window.location.origin + csvPath);
-    if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
-    if (tipo) url.searchParams.set('filterTipo', tipo);
-    if (etapas.length > 0) url.searchParams.set('filterEtapa', etapas.join(','));
-    if (cliente) url.searchParams.set('filterCliente', cliente);
-    if (empleados.length > 0) url.searchParams.set('empleado', empleados.join(','));
-    if (mesesCierre.length > 0) url.searchParams.set('filterMesCierre', mesesCierre.join(','));
+        // URL para exportar CSV
+        var csvPath = '{% url "exportar_oportunidades_csv" %}';
+        const url = new URL(window.location.origin + csvPath);
+        if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
+        if (tipo) url.searchParams.set('filterTipo', tipo);
+        if (etapas.length > 0) url.searchParams.set('filterEtapa', etapas.join(','));
+        if (cliente) url.searchParams.set('filterCliente', cliente);
+        if (empleados.length > 0) url.searchParams.set('empleado', empleados.join(','));
+        if (mesesCierre.length > 0) url.searchParams.set('filterMesCierre', mesesCierre.join(','));
 
-    window.location.href = url.toString();
-}
-
-let originalRows = [];
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOMContentLoaded fired - todos.html script starting');
-    
-    const tableBody = document.getElementById('tablaOportunidades');
-    if (tableBody) {
-        originalRows = Array.from(tableBody.getElementsByTagName('tr'));
-    }
-    
-    // Inicializar búsqueda de cliente
-    initClienteSearch();
-
-    // ========== VIEW SWITCHER FUNCTIONALITY ==========
-    const viewsContainer = document.getElementById('views-container');
-    const gridBtn = document.getElementById('view-grid-btn');
-    const tableBtn = document.getElementById('view-table-btn');
-
-    // Load saved view preference
-    const savedView = localStorage.getItem('todosViewMode') || 'grid';
-    if (viewsContainer) {
-        viewsContainer.className = 'view-mode-' + savedView;
-        if (savedView === 'table') {
-            gridBtn && gridBtn.classList.remove('active');
-            tableBtn && tableBtn.classList.add('active');
-        }
-    }
-
-    // Grid view button click
-    if (gridBtn) {
-        gridBtn.addEventListener('click', function() {
-            viewsContainer.className = 'view-mode-grid';
-            gridBtn.classList.add('active');
-            tableBtn.classList.remove('active');
-            localStorage.setItem('todosViewMode', 'grid');
-        });
-    }
-
-    // Table view button click
-    if (tableBtn) {
-        tableBtn.addEventListener('click', function() {
-            viewsContainer.className = 'view-mode-table';
-            tableBtn.classList.add('active');
-            gridBtn.classList.remove('active');
-            localStorage.setItem('todosViewMode', 'table');
-        });
-    }
-
-    // ========== CALCULATE PIPELINE TOTAL (WON OPPORTUNITIES) ==========
-    function calculatePipelineTotal() {
-        const cards = document.querySelectorAll('.opportunity-card[data-monto]');
-        let totalGanado = 0;
-
-        // Get current month in format YYYY-MM
-        const now = new Date();
-        const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-
-        // Keywords that indicate a won/closed opportunity
-        const wonKeywords = ['ganado', 'ganada', 'cerrado ganado', 'cerrada ganada', 'won', 'closed won', 'cerrado', 'cerrada'];
-
-        cards.forEach(card => {
-            const monto = parseFloat(card.dataset.monto) || 0;
-            const etapa = (card.dataset.etapa || '').toLowerCase();
-            const etapaCompleta = (card.dataset.etapaCompleta || '').toLowerCase();
-            const fechaActualizacion = card.dataset.fechaActualizacion || '';
-
-            // Check if the opportunity is won
-            const isWon = wonKeywords.some(keyword =>
-                etapa.includes(keyword) || etapaCompleta.includes(keyword)
-            );
-
-            // Check if it was updated in the current month
-            const isCurrentMonth = fechaActualizacion === currentMonth;
-
-            // Only count if won AND updated this month
-            if (isWon && isCurrentMonth) {
-                totalGanado += monto;
-            }
-        });
-
-        // Update the summary widget
-        const totalElement = document.getElementById('totalPipelineAmount');
-        const progressPercent = document.getElementById('progressPercent');
-        const progressBar = document.getElementById('progressBarFill');
-
-        if (totalElement) {
-            // Format as currency
-            if (totalGanado >= 1000000) {
-                totalElement.textContent = '$' + (totalGanado / 1000000).toFixed(2) + 'M';
-            } else if (totalGanado >= 1000) {
-                totalElement.textContent = '$' + (totalGanado / 1000).toFixed(1) + 'k';
-            } else {
-                totalElement.textContent = '$' + totalGanado.toFixed(0);
-            }
-        }
-
-        // Monthly goal: $300,000
-        const monthlyGoal = 300000;
-        const progress = Math.min((totalGanado / monthlyGoal) * 100, 100);
-
-        if (progressPercent) {
-            progressPercent.textContent = Math.round(progress) + '%';
-        }
-
-        if (progressBar) {
-            progressBar.style.width = progress + '%';
-        }
-    }
-
-    // Calculate on page load
-    calculatePipelineTotal();
-
-    // Handle filter icon click - PREVENT DOUBLE RELOAD
-    const filterIcon = document.getElementById('filter-icon');
-    let isNavigating = false;
-    
-    if (filterIcon) {
-        filterIcon.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Prevent multiple clicks during navigation
-            if (isNavigating) {
-                console.log('🔧 Navigation already in progress, ignoring click');
-                return;
-            }
-            
-            isNavigating = true;
-            filterIcon.style.pointerEvents = 'none'; // Disable button temporarily
-            
-            console.log('🔧 Filter icon clicked, preventing double reload');
-            const isActive = filterIcon.classList.contains('active');
-            const url = isActive ? '{% url "todos" %}' : '?reporte=true';
-            
-            // Add a small delay to show visual feedback
-            setTimeout(() => {
-                window.location.href = url;
-            }, 150);
-        });
-    }
-    
-    // Los filtros básicos ya funcionan con la función applyFilters() existente
-
-    // ========== SIMPLE SEARCH (Always visible bar) ==========
-    const searchInput = document.getElementById('searchOportunidad');
-    if (searchInput) {
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                performSearch();
-            }
-        });
-    }
-
-    function performSearch() {
-        const searchInput = document.getElementById('searchOportunidad');
-        if (!searchInput) return;
-
-        const searchValue = searchInput.value.trim();
-        const url = new URL(window.location);
-        if (searchValue === '') {
-            url.searchParams.delete('search');
-            url.searchParams.delete('page');
-        } else {
-            url.searchParams.set('search', searchValue);
-            url.searchParams.delete('page');
-        }
         window.location.href = url.toString();
     }
-});
 
+    let originalRows = [];
 
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('🚀 DOMContentLoaded fired - todos.html script starting');
 
-function clearFilters() {
-    // Limpiar campos básicos
-    const inputs = ['filterOportunidad', 'filterTipo'];
-    inputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) input.value = '';
-    });
-    
-    // Limpiar select nativo y custom multiselects
-    const clienteSelect = document.getElementById('filterCliente');
-    if (clienteSelect) clienteSelect.value = '';
-    
-    // Limpiar input de búsqueda de cliente
-    const clienteSearchInput = clienteSelect ? clienteSelect.parentNode.querySelector('input[placeholder="Buscar cliente..."]') : null;
-    if (clienteSearchInput) {
-        clienteSearchInput.value = '';
-        // Restaurar todas las opciones
-        if (typeof initClienteSearch === 'function') {
-            const originalOptions = Array.from(clienteSelect.options);
-            clienteSelect.innerHTML = '';
-            originalOptions.forEach(option => clienteSelect.appendChild(option.cloneNode(true)));
-        }
-    }
-    
-    clearMultiselect('filterEtapa');
-    clearMultiselect('filterEmpleado');
-    clearMultiselect('filterMesCierre');
-    
-    // Mostrar todas las filas
-    const tableBody = document.getElementById('tablaOportunidades');
-    tableBody.innerHTML = '';
-    originalRows.forEach(row => tableBody.appendChild(row));
-    
-    updateNoResultsMessage(originalRows.length, tableBody);
-}
-
-function applyFilters() {
-    const monthMap = {
-        'enero': '01',
-        'febrero': '02',
-        'marzo': '03',
-        'abril': '04',
-        'mayo': '05',
-        'junio': '06',
-        'julio': '07',
-        'agosto': '08',
-        'septiembre': '09',
-        'octubre': '10',
-        'noviembre': '11',
-        'diciembre': '12'
-    };
-
-    const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
-    const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
-    const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
-    const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
-    const ordenMonto = document.getElementById('filterOrdenMonto').value;
-    const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
-    
-    const tableBody = document.getElementById('tablaOportunidades');
-    const rows = originalRows;
-    
-    let filteredRows = [];
-
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const cells = row.getElementsByTagName('td');
-        
-        if (cells.length < 6) continue; // Skip rows that don't have enough cells
-
-        let showRow = true;
-        
-        if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
-            showRow = false;
-        }
-        
-        if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
-            showRow = false;
-        }
-        
-        if (empleado && row.dataset.usuarioId !== empleado) {
-            showRow = false;
-        }
-        
-        const mesCierreCell = cells[4].textContent.toLowerCase().trim();
-        if (mesCierre && monthMap[mesCierreCell] !== mesCierre) {
-            showRow = false;
+        const tableBody = document.getElementById('tablaOportunidades');
+        if (tableBody) {
+            originalRows = Array.from(tableBody.getElementsByTagName('tr'));
         }
 
-        if (showRow) {
-            filteredRows.push(row);
-        }
-    }
+        // Inicializar búsqueda de cliente
+        initClienteSearch();
 
-    // Now, sort the filtered rows
-    if (ordenMonto) {
-        filteredRows.sort((a, b) => {
-            const montoA = parseFloat(a.cells[2].textContent.replace('$', '').replace(/,/g, '')) || 0;
-            const montoB = parseFloat(b.cells[2].textContent.replace('$', '').replace(/,/g, '')) || 0;
+        // ========== VIEW SWITCHER FUNCTIONALITY ==========
+        const viewsContainer = document.getElementById('views-container');
+        const gridBtn = document.getElementById('view-grid-btn');
+        const tableBtn = document.getElementById('view-table-btn');
 
-            if (ordenMonto === 'monto_asc') {
-                return montoA - montoB;
-            } else {
-                return montoB - montoA;
-            }
-        });
-    } else if (ordenProbabilidad) {
-        filteredRows.sort((a, b) => {
-            const probA = parseFloat(a.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
-            const probB = parseFloat(b.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
-
-            if (ordenProbabilidad === 'prob_asc') {
-                return probA - probB;
-            } else {
-                return probB - probA;
-            }
-        });
-    }
-
-    // Re-append sorted rows to the table body
-    tableBody.innerHTML = '';
-    filteredRows.forEach(row => tableBody.appendChild(row));
-    
-    updateNoResultsMessage(filteredRows.length, tableBody);
-}
-
-function updateNoResultsMessage(visibleCount, tableBody) {
-    // Remove existing no-results message
-    const existingMessage = tableBody.querySelector('.no-results-row');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-    
-    // Add no-results message if needed
-    if (visibleCount === 0) {
-        const noResultsRow = document.createElement('tr');
-        noResultsRow.className = 'no-results-row';
-        noResultsRow.innerHTML = '<td colspan="8" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
-        tableBody.appendChild(noResultsRow);
-    }
-}
-
-// ========== FILTROS SIMPLIFICADOS ==========
-
-// Actualizar función applyFilters para incluir nuevos campos
-function applyFilters() {
-    console.log('🔧 Iniciando applyFilters...');
-    
-    const monthMap = {
-        'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-        'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-        'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
-    };
-
-    const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
-    const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
-    const etapas = getMultiselectValues('filterEtapa'); // Array de estados seleccionados
-    const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
-    const empleados = getMultiselectValues('filterEmpleado'); // Array de empleados seleccionados
-    const mesesCierre = getMultiselectValues('filterMesCierre'); // Array de meses seleccionados
-    
-    console.log('🔧 Valores de filtros:', {
-        oportunidad,
-        tipo, 
-        etapas,
-        cliente,
-        empleados,
-        mesesCierre
-    });
-    
-    const tableBody = document.getElementById('tablaOportunidades');
-    const rows = originalRows;
-    let filteredRows = [];
-
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const cells = row.getElementsByTagName('td');
-        
-        if (cells.length < 8) continue;
-
-        let showRow = true;
-        
-        // Filtro de oportunidad
-        if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
-            showRow = false;
-        }
-        
-        // Filtro de cliente
-        if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
-            showRow = false;
-        }
-        
-        // Filtro de empleado (múltiple)
-        if (empleados.length > 0 && row.dataset.usuarioId) {
-            console.log('🔧 Filtro empleados:', empleados, 'vs dataset:', row.dataset.usuarioId);
-            if (!empleados.includes(row.dataset.usuarioId)) {
-                showRow = false;
+        // Load saved view preference
+        const savedView = localStorage.getItem('todosViewMode') || 'grid';
+        if (viewsContainer) {
+            viewsContainer.className = 'view-mode-' + savedView;
+            if (savedView === 'table') {
+                gridBtn && gridBtn.classList.remove('active');
+                tableBtn && tableBtn.classList.add('active');
             }
         }
 
-        // Filtro de tipo (columna 2)
-        if (tipo && cells.length > 2) {
-            const tipoCell = cells[2];
-            const tipoBadge = tipoCell.querySelector('.tipo-negociacion-badge');
-            if (tipoBadge) {
-                const tipoText = tipoBadge.textContent.toLowerCase().trim();
-                console.log('🔧 Comparando tipo:', tipo, 'con texto:', tipoText);
-                let tipoMatch = false;
-                if (tipo === 'runrate' && tipoText.includes('runrate')) tipoMatch = true;
-                if (tipo === 'proyecto' && tipoText.includes('proyecto')) tipoMatch = true;
-                if (!tipoMatch) showRow = false;
-            }
+        // Grid view button click
+        if (gridBtn) {
+            gridBtn.addEventListener('click', function () {
+                viewsContainer.className = 'view-mode-grid';
+                gridBtn.classList.add('active');
+                tableBtn.classList.remove('active');
+                localStorage.setItem('todosViewMode', 'grid');
+            });
         }
 
-        // Filtro de estado/etapa múltiple (columna 3)
-        if (etapas.length > 0 && cells.length > 3) {
-            const etapaCell = cells[3];
-            const etapaBadge = etapaCell.querySelector('.etapa-badge');
-            if (etapaBadge) {
-                const etapaText = etapaBadge.textContent.toLowerCase().trim();
-                console.log('🔧 Comparando etapas:', etapas, 'con texto:', etapaText);
-                let etapaMatch = false;
-                
-                // Verificar si coincide con alguna de las etapas seleccionadas
-                for (const etapaSeleccionada of etapas) {
-                    switch(etapaSeleccionada) {
-                        case 'vigentes':
-                            // Excluir cerradas (ganadas y perdidas)
-                            if (!etapaText.includes('ganado') && !etapaText.includes('perdido') && !etapaText.includes('pagado')) {
-                                etapaMatch = true;
-                            }
-                            break;
-                        case 'ganadas':
-                            // Solo cerradas ganadas, incluir pagado
-                            if (etapaText.includes('ganado') || etapaText.includes('pagado')) {
-                                etapaMatch = true;
-                            }
-                            break;
-                        case 'perdidas':
-                            // Solo cerradas perdidas
-                            if (etapaText.includes('perdido')) {
-                                etapaMatch = true;
-                            }
-                            break;
-                    }
-                    if (etapaMatch) break; // Si ya encontró una coincidencia, salir del loop
+        // Table view button click
+        if (tableBtn) {
+            tableBtn.addEventListener('click', function () {
+                viewsContainer.className = 'view-mode-table';
+                tableBtn.classList.add('active');
+                gridBtn.classList.remove('active');
+                localStorage.setItem('todosViewMode', 'table');
+            });
+        }
+
+        // ========== CALCULATE PIPELINE TOTAL (WON OPPORTUNITIES) ==========
+        function calculatePipelineTotal() {
+            const cards = document.querySelectorAll('.opportunity-card[data-monto]');
+            let totalGanado = 0;
+
+            // Get current month in format YYYY-MM
+            const now = new Date();
+            const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+            // Keywords that indicate a won/closed opportunity
+            const wonKeywords = ['ganado', 'ganada', 'cerrado ganado', 'cerrada ganada', 'won', 'closed won', 'cerrado', 'cerrada'];
+
+            cards.forEach(card => {
+                const monto = parseFloat(card.dataset.monto) || 0;
+                const etapa = (card.dataset.etapa || '').toLowerCase();
+                const etapaCompleta = (card.dataset.etapaCompleta || '').toLowerCase();
+                const fechaActualizacion = card.dataset.fechaActualizacion || '';
+
+                // Check if the opportunity is won
+                const isWon = wonKeywords.some(keyword =>
+                    etapa.includes(keyword) || etapaCompleta.includes(keyword)
+                );
+
+                // Check if it was updated in the current month
+                const isCurrentMonth = fechaActualizacion === currentMonth;
+
+                // Only count if won AND updated this month
+                if (isWon && isCurrentMonth) {
+                    totalGanado += monto;
                 }
-                
-                if (!etapaMatch) showRow = false;
+            });
+
+            // Update the summary widget
+            const totalElement = document.getElementById('totalPipelineAmount');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressBar = document.getElementById('progressBarFill');
+
+            if (totalElement) {
+                // Format as currency
+                if (totalGanado >= 1000000) {
+                    totalElement.textContent = '$' + (totalGanado / 1000000).toFixed(2) + 'M';
+                } else if (totalGanado >= 1000) {
+                    totalElement.textContent = '$' + (totalGanado / 1000).toFixed(1) + 'k';
+                } else {
+                    totalElement.textContent = '$' + totalGanado.toFixed(0);
+                }
+            }
+
+            // Monthly goal: $300,000
+            const monthlyGoal = 300000;
+            const progress = Math.min((totalGanado / monthlyGoal) * 100, 100);
+
+            if (progressPercent) {
+                progressPercent.textContent = Math.round(progress) + '%';
+            }
+
+            if (progressBar) {
+                progressBar.style.width = progress + '%';
             }
         }
-        
-        // Filtro de mes de cierre múltiple (columna 6)
-        if (mesesCierre.length > 0 && cells.length > 6) {
-            const mesCierreCell = cells[6].textContent.toLowerCase().trim();
-            console.log('🔧 Debug meses cierre - Cell text:', mesCierreCell, 'Filter values:', mesesCierre);
-            
-            // Comparar tanto por nombre del mes como por número
-            const cellAsNumber = monthMap[mesCierreCell]; // nombre -> número
-            console.log('🔧 Month map lookup:', cellAsNumber);
-            
-            // Verificar si el mes de la celda coincide con alguno de los seleccionados
-            const mesMatch = mesesCierre.includes(cellAsNumber) || mesesCierre.includes(mesCierreCell);
-            console.log('🔧 Month match:', mesMatch);
-            
-            if (!mesMatch) {
-                showRow = false;
+
+        // Calculate on page load
+        calculatePipelineTotal();
+
+        // Handle filter icon click - PREVENT DOUBLE RELOAD
+        const filterIcon = document.getElementById('filter-icon');
+        let isNavigating = false;
+
+        if (filterIcon) {
+            filterIcon.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Prevent multiple clicks during navigation
+                if (isNavigating) {
+                    console.log('🔧 Navigation already in progress, ignoring click');
+                    return;
+                }
+
+                isNavigating = true;
+                filterIcon.style.pointerEvents = 'none'; // Disable button temporarily
+
+                console.log('🔧 Filter icon clicked, preventing double reload');
+                const isActive = filterIcon.classList.contains('active');
+                const url = isActive ? '{% url "todos" %}' : '?reporte=true';
+
+                // Add a small delay to show visual feedback
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 150);
+            });
+        }
+
+        // Los filtros básicos ya funcionan con la función applyFilters() existente
+
+        // ========== SMART NOTION-STYLE SEARCH ==========
+        const smartInput = document.getElementById('smartSearchInput');
+        const activeChipsContainer = document.getElementById('activeChips');
+        const smartDropdown = document.getElementById('smartDropdown');
+        const container = document.getElementById('smartFilterContainer');
+
+        let activeFilters = {
+            etapa: [],
+            tipo: '',
+            mes: [],
+            search: ''
+        };
+
+        if (smartInput) {
+            // Show dropdown on focus
+            smartInput.addEventListener('focus', () => {
+                smartDropdown.classList.add('open');
+                container.style.borderColor = 'var(--apple-blue)';
+            });
+
+            // Hide dropdown on blur (delayed to allow clicks)
+            // Handle clicking outside
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    smartDropdown.classList.remove('open');
+                    container.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                }
+            });
+
+            // Handle typing / ENTER
+            smartInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const val = smartInput.value.trim();
+                    if (val) {
+                        // Treat as text search
+                        activeFilters.search = val;
+                        // Add visual chip for search term? Or just keep in input?
+                        // For now, let's just trigger unified filter
+                        applySmartFilters();
+                    }
+                }
+                if (e.key === 'Backspace' && smartInput.value === '' && activeChipsContainer.lastElementChild) {
+                    // Remove last chip
+                    removeLastChip();
+                }
+            });
+
+            // Live filter on typing (debounced)
+            let debounceTimer;
+            smartInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    activeFilters.search = smartInput.value.trim();
+                    applySmartFilters();
+                }, 300);
+            });
+        }
+
+        // Global function to add chips from Dropdown
+        window.triggerFilterSelect = function (type) {
+            // In a real app, this would change the dropdown content to show options
+            // For now, we'll simulate adding a filter or showing a prompt
+
+            // Example simplified logic: Prompt user (Upgrade this to sub-menu later)
+            // Or swap dropdown content
+
+            if (type === 'Etapa') {
+                showSubMenu('etapa', ['Vigentes', 'Ganadas', 'Perdidas']);
+            } else if (type === 'Tipo') {
+                showSubMenu('tipo', ['Proyecto', 'RunRate']);
+            } else if (type === 'Mes') {
+                showSubMenu('mes', ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']);
+            }
+        };
+
+        function showSubMenu(filterType, options) {
+            const dropdown = document.getElementById('smartDropdown');
+            let html = `<div class="dropdown-section"><div class="dropdown-header">Selecciona ${filterType}</div>`;
+            options.forEach(opt => {
+                html += `<div class="dropdown-item" onclick="addSmartChip('${filterType}', '${opt}')">
+                            <span>${opt}</span>
+                         </div>`;
+            });
+            html += `</div>`;
+
+            // Add back button or keep simple
+            dropdown.innerHTML = html;
+        }
+
+        window.addSmartChip = function (type, value) {
+            // Create visible chip
+            const chip = document.createElement('div');
+            chip.className = 'filter-chip apple-fade-in';
+            chip.dataset.type = type.toLowerCase();
+            chip.dataset.value = value.toLowerCase();
+            chip.innerHTML = `
+                <span class="chip-label">${type}:</span>
+                <span>${value}</span>
+                <span class="chip-remove" onclick="removeSmartChip(this)">×</span>
+            `;
+            activeChipsContainer.appendChild(chip);
+
+            // Update state
+            if (type.toLowerCase() === 'etapa') activeFilters.etapa.push(value.toLowerCase());
+            if (type.toLowerCase() === 'tipo') activeFilters.tipo = value.toLowerCase(); // single select for simplicity?
+            if (type.toLowerCase() === 'mes') activeFilters.mes.push(value.toLowerCase());
+
+            // Reset dropdown
+            resetDropdown();
+            smartInput.value = '';
+            smartInput.focus();
+
+            applySmartFilters();
+        };
+
+        window.removeSmartChip = function (element) {
+            const chip = element.parentElement;
+            const type = chip.dataset.type;
+            const value = chip.dataset.value;
+
+            chip.remove();
+
+            // Update state
+            if (type === 'etapa') activeFilters.etapa = activeFilters.etapa.filter(v => v !== value);
+            if (type === 'tipo') activeFilters.tipo = '';
+            if (type === 'mes') activeFilters.mes = activeFilters.mes.filter(v => v !== value);
+
+            applySmartFilters();
+        };
+
+        function removeLastChip() {
+            const last = activeChipsContainer.lastElementChild;
+            if (last) {
+                removeSmartChip(last.querySelector('.chip-remove'));
             }
         }
 
-        if (showRow) {
-            filteredRows.push(row);
+        function resetDropdown() {
+            document.getElementById('smartDropdown').innerHTML = `
+                <div class="dropdown-section">
+                    <div class="dropdown-header">Filtros Rápidos</div>
+                    <div class="dropdown-item" onclick="triggerFilterSelect('Etapa')">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                        <span>Etapa</span>
+                    </div>
+                    <div class="dropdown-item" onclick="triggerFilterSelect('Tipo')">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <span>Tipo (Proyecto/RunRate)</span>
+                    </div>
+                    <div class="dropdown-item" onclick="triggerFilterSelect('Mes')">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span>Mes de Cierre</span>
+                    </div>
+                </div>
+            `;
         }
-    }
 
-    // Re-append filtered rows to the table body
-    tableBody.innerHTML = '';
-    filteredRows.forEach(row => tableBody.appendChild(row));
-    
-    console.log('🔧 Filtros aplicados:', filteredRows.length, 'de', rows.length, 'filas');
-    updateNoResultsMessage(filteredRows.length, tableBody);
-}
+        // UNIFIED FILTERING LOGIC (Replacing old applyFilters logic mostly)
+        function applySmartFilters() {
+            console.log('🧠 Applying Smart Filters:', activeFilters);
+            const term = activeFilters.search.toLowerCase();
+            const rows = originalRows; // From global scope
+            const tableBody = document.getElementById('tablaOportunidades');
 
-// Función para expandir/contraer etapas con lógica inteligente
-function toggleEtapaExpanded(element) {
-    const originalText = element.getAttribute('data-original-text') || element.textContent.trim();
-    const fullText = element.getAttribute('title') || originalText;
-    
-    // Solo expandir si el texto completo es diferente del texto corto
-    if (originalText === fullText) {
-        console.log('🎯 Etapa completa ya cabe, no expandir:', originalText);
-        return; // No hacer nada si ya está completo
-    }
-    
-    const isExpanded = element.classList.contains('expanded');
-    
-    if (!isExpanded) {
-        console.log('🎯 Expandiendo etapa:', originalText, '->', fullText);
-        element.classList.add('expanded');
-        element.textContent = fullText;
-    } else {
-        console.log('🎯 Contrayendo etapa:', fullText, '->', originalText);
-        element.classList.remove('expanded');
-        element.textContent = originalText;
-    }
-}
+            let visibleCount = 0;
+            const updatedRows = [];
 
-// Guardar textos originales y configurar expandibilidad al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    const etapaBadges = document.querySelectorAll('.etapa-badge');
-    etapaBadges.forEach(badge => {
-        const originalText = badge.textContent.trim();
-        const fullText = badge.getAttribute('title') || originalText;
-        
-        // Guardar texto original si no existe
-        if (!badge.getAttribute('data-original-text')) {
-            badge.setAttribute('data-original-text', originalText);
-        }
-        
-        // Determinar si es expandible
-        const isExpandable = originalText !== fullText && fullText.length > originalText.length;
-        
-        if (isExpandable) {
-            console.log('🎯 Badge expandible:', originalText, '->', fullText);
-            badge.classList.add('expandable');
-            badge.classList.remove('no-expand');
-        } else {
-            console.log('🎯 Badge NO expandible:', originalText);
-            badge.classList.add('no-expand');
-            badge.classList.remove('expandable');
-            // Remover el onclick si no es expandible
-            badge.removeAttribute('onclick');
+            // Helper map for months
+            const monthMap = {
+                'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+                'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+                'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+            };
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const cells = row.getElementsByTagName('td');
+                if (cells.length < 5) continue;
+
+                let show = true;
+
+                // 1. Text Search (Oportunidad or Cliente)
+                if (term) {
+                    const text = (cells[0].textContent + ' ' + cells[1].textContent).toLowerCase();
+                    if (!text.includes(term)) show = false;
+                }
+
+                // 2. Etapa Filter (Multiple)
+                if (show && activeFilters.etapa.length > 0) {
+                    const etapaText = cells[3].textContent.toLowerCase();
+                    // Simple check: does row match ANY of selector chips?
+                    // normalize logic: 
+                    // 'ganadas' -> matches 'ganada' or 'cerrada ganada' or 'pagado'
+                    // 'perdidas' -> matches 'perdida' or 'cerrada perdida'
+                    // 'vigentes' -> matches anything NOT won/lost
+
+                    let matchAny = false;
+                    for (const f of activeFilters.etapa) {
+                        if (f === 'ganadas' && (etapaText.includes('ganada') || etapaText.includes('pagado'))) matchAny = true;
+                        else if (f === 'perdidas' && etapaText.includes('perdida')) matchAny = true;
+                        else if (f === 'vigentes' && !etapaText.includes('ganada') && !etapaText.includes('perdida') && !etapaText.includes('pagado')) matchAny = true;
+                    }
+                    if (!matchAny) show = false;
+                }
+
+                // 3. Tipo Filter
+                if (show && activeFilters.tipo) {
+                    const tipoText = cells[2].textContent.toLowerCase();
+                    if (!tipoText.includes(activeFilters.tipo)) show = false;
+                }
+
+                // 4. Mes Filter
+                if (show && activeFilters.mes.length > 0) {
+                    const mesText = cells[6]?.textContent?.toLowerCase().trim() || '';
+                    // Match against month name OR number
+                    // activeFilters.mes contains ['enero', 'febrero']
+                    if (!activeFilters.mes.includes(mesText)) show = false;
+                }
+
+                if (show) {
+                    updatedRows.push(row);
+                    visibleCount++;
+                }
+            }
+
+            // Update DOM
+            tableBody.innerHTML = '';
+            updatedRows.forEach(r => tableBody.appendChild(r));
+
+            // Check empty state
+            updateNoResultsMessage(visibleCount, tableBody);
         }
     });
-});
+
+
+
+    function clearFilters() {
+        // Limpiar campos básicos
+        const inputs = ['filterOportunidad', 'filterTipo'];
+        inputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.value = '';
+        });
+
+        // Limpiar select nativo y custom multiselects
+        const clienteSelect = document.getElementById('filterCliente');
+        if (clienteSelect) clienteSelect.value = '';
+
+        // Limpiar input de búsqueda de cliente
+        const clienteSearchInput = clienteSelect ? clienteSelect.parentNode.querySelector('input[placeholder="Buscar cliente..."]') : null;
+        if (clienteSearchInput) {
+            clienteSearchInput.value = '';
+            // Restaurar todas las opciones
+            if (typeof initClienteSearch === 'function') {
+                const originalOptions = Array.from(clienteSelect.options);
+                clienteSelect.innerHTML = '';
+                originalOptions.forEach(option => clienteSelect.appendChild(option.cloneNode(true)));
+            }
+        }
+
+        clearMultiselect('filterEtapa');
+        clearMultiselect('filterEmpleado');
+        clearMultiselect('filterMesCierre');
+
+        // Mostrar todas las filas
+        const tableBody = document.getElementById('tablaOportunidades');
+        tableBody.innerHTML = '';
+        originalRows.forEach(row => tableBody.appendChild(row));
+
+        updateNoResultsMessage(originalRows.length, tableBody);
+    }
+
+    function applyFilters() {
+        const monthMap = {
+            'enero': '01',
+            'febrero': '02',
+            'marzo': '03',
+            'abril': '04',
+            'mayo': '05',
+            'junio': '06',
+            'julio': '07',
+            'agosto': '08',
+            'septiembre': '09',
+            'octubre': '10',
+            'noviembre': '11',
+            'diciembre': '12'
+        };
+
+        const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
+        const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
+        const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
+        const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
+        const ordenMonto = document.getElementById('filterOrdenMonto').value;
+        const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
+
+        const tableBody = document.getElementById('tablaOportunidades');
+        const rows = originalRows;
+
+        let filteredRows = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+
+            if (cells.length < 6) continue; // Skip rows that don't have enough cells
+
+            let showRow = true;
+
+            if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
+                showRow = false;
+            }
+
+            if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
+                showRow = false;
+            }
+
+            if (empleado && row.dataset.usuarioId !== empleado) {
+                showRow = false;
+            }
+
+            const mesCierreCell = cells[4].textContent.toLowerCase().trim();
+            if (mesCierre && monthMap[mesCierreCell] !== mesCierre) {
+                showRow = false;
+            }
+
+            if (showRow) {
+                filteredRows.push(row);
+            }
+        }
+
+        // Now, sort the filtered rows
+        if (ordenMonto) {
+            filteredRows.sort((a, b) => {
+                const montoA = parseFloat(a.cells[2].textContent.replace('$', '').replace(/,/g, '')) || 0;
+                const montoB = parseFloat(b.cells[2].textContent.replace('$', '').replace(/,/g, '')) || 0;
+
+                if (ordenMonto === 'monto_asc') {
+                    return montoA - montoB;
+                } else {
+                    return montoB - montoA;
+                }
+            });
+        } else if (ordenProbabilidad) {
+            filteredRows.sort((a, b) => {
+                const probA = parseFloat(a.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
+                const probB = parseFloat(b.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
+
+                if (ordenProbabilidad === 'prob_asc') {
+                    return probA - probB;
+                } else {
+                    return probB - probA;
+                }
+            });
+        }
+
+        // Re-append sorted rows to the table body
+        tableBody.innerHTML = '';
+        filteredRows.forEach(row => tableBody.appendChild(row));
+
+        updateNoResultsMessage(filteredRows.length, tableBody);
+    }
+
+    function updateNoResultsMessage(visibleCount, tableBody) {
+        // Remove existing no-results message
+        const existingMessage = tableBody.querySelector('.no-results-row');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+
+        // Add no-results message if needed
+        if (visibleCount === 0) {
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.className = 'no-results-row';
+            noResultsRow.innerHTML = '<td colspan="8" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
+            tableBody.appendChild(noResultsRow);
+        }
+    }
+
+    // ========== FILTROS SIMPLIFICADOS ==========
+
+    // Actualizar función applyFilters para incluir nuevos campos
+    function applyFilters() {
+        console.log('🔧 Iniciando applyFilters...');
+
+        const monthMap = {
+            'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+            'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+            'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+        };
+
+        const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
+        const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
+        const etapas = getMultiselectValues('filterEtapa'); // Array de estados seleccionados
+        const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
+        const empleados = getMultiselectValues('filterEmpleado'); // Array de empleados seleccionados
+        const mesesCierre = getMultiselectValues('filterMesCierre'); // Array de meses seleccionados
+
+        console.log('🔧 Valores de filtros:', {
+            oportunidad,
+            tipo,
+            etapas,
+            cliente,
+            empleados,
+            mesesCierre
+        });
+
+        const tableBody = document.getElementById('tablaOportunidades');
+        const rows = originalRows;
+        let filteredRows = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+
+            if (cells.length < 8) continue;
+
+            let showRow = true;
+
+            // Filtro de oportunidad
+            if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
+                showRow = false;
+            }
+
+            // Filtro de cliente
+            if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
+                showRow = false;
+            }
+
+            // Filtro de empleado (múltiple)
+            if (empleados.length > 0 && row.dataset.usuarioId) {
+                console.log('🔧 Filtro empleados:', empleados, 'vs dataset:', row.dataset.usuarioId);
+                if (!empleados.includes(row.dataset.usuarioId)) {
+                    showRow = false;
+                }
+            }
+
+            // Filtro de tipo (columna 2)
+            if (tipo && cells.length > 2) {
+                const tipoCell = cells[2];
+                const tipoBadge = tipoCell.querySelector('.tipo-negociacion-badge');
+                if (tipoBadge) {
+                    const tipoText = tipoBadge.textContent.toLowerCase().trim();
+                    console.log('🔧 Comparando tipo:', tipo, 'con texto:', tipoText);
+                    let tipoMatch = false;
+                    if (tipo === 'runrate' && tipoText.includes('runrate')) tipoMatch = true;
+                    if (tipo === 'proyecto' && tipoText.includes('proyecto')) tipoMatch = true;
+                    if (!tipoMatch) showRow = false;
+                }
+            }
+
+            // Filtro de estado/etapa múltiple (columna 3)
+            if (etapas.length > 0 && cells.length > 3) {
+                const etapaCell = cells[3];
+                const etapaBadge = etapaCell.querySelector('.etapa-badge');
+                if (etapaBadge) {
+                    const etapaText = etapaBadge.textContent.toLowerCase().trim();
+                    console.log('🔧 Comparando etapas:', etapas, 'con texto:', etapaText);
+                    let etapaMatch = false;
+
+                    // Verificar si coincide con alguna de las etapas seleccionadas
+                    for (const etapaSeleccionada of etapas) {
+                        switch (etapaSeleccionada) {
+                            case 'vigentes':
+                                // Excluir cerradas (ganadas y perdidas)
+                                if (!etapaText.includes('ganado') && !etapaText.includes('perdido') && !etapaText.includes('pagado')) {
+                                    etapaMatch = true;
+                                }
+                                break;
+                            case 'ganadas':
+                                // Solo cerradas ganadas, incluir pagado
+                                if (etapaText.includes('ganado') || etapaText.includes('pagado')) {
+                                    etapaMatch = true;
+                                }
+                                break;
+                            case 'perdidas':
+                                // Solo cerradas perdidas
+                                if (etapaText.includes('perdido')) {
+                                    etapaMatch = true;
+                                }
+                                break;
+                        }
+                        if (etapaMatch) break; // Si ya encontró una coincidencia, salir del loop
+                    }
+
+                    if (!etapaMatch) showRow = false;
+                }
+            }
+
+            // Filtro de mes de cierre múltiple (columna 6)
+            if (mesesCierre.length > 0 && cells.length > 6) {
+                const mesCierreCell = cells[6].textContent.toLowerCase().trim();
+                console.log('🔧 Debug meses cierre - Cell text:', mesCierreCell, 'Filter values:', mesesCierre);
+
+                // Comparar tanto por nombre del mes como por número
+                const cellAsNumber = monthMap[mesCierreCell]; // nombre -> número
+                console.log('🔧 Month map lookup:', cellAsNumber);
+
+                // Verificar si el mes de la celda coincide con alguno de los seleccionados
+                const mesMatch = mesesCierre.includes(cellAsNumber) || mesesCierre.includes(mesCierreCell);
+                console.log('🔧 Month match:', mesMatch);
+
+                if (!mesMatch) {
+                    showRow = false;
+                }
+            }
+
+            if (showRow) {
+                filteredRows.push(row);
+            }
+        }
+
+        // Re-append filtered rows to the table body
+        tableBody.innerHTML = '';
+        filteredRows.forEach(row => tableBody.appendChild(row));
+
+        console.log('🔧 Filtros aplicados:', filteredRows.length, 'de', rows.length, 'filas');
+        updateNoResultsMessage(filteredRows.length, tableBody);
+    }
+
+    // Función para expandir/contraer etapas con lógica inteligente
+    function toggleEtapaExpanded(element) {
+        const originalText = element.getAttribute('data-original-text') || element.textContent.trim();
+        const fullText = element.getAttribute('title') || originalText;
+
+        // Solo expandir si el texto completo es diferente del texto corto
+        if (originalText === fullText) {
+            console.log('🎯 Etapa completa ya cabe, no expandir:', originalText);
+            return; // No hacer nada si ya está completo
+        }
+
+        const isExpanded = element.classList.contains('expanded');
+
+        if (!isExpanded) {
+            console.log('🎯 Expandiendo etapa:', originalText, '->', fullText);
+            element.classList.add('expanded');
+            element.textContent = fullText;
+        } else {
+            console.log('🎯 Contrayendo etapa:', fullText, '->', originalText);
+            element.classList.remove('expanded');
+            element.textContent = originalText;
+        }
+    }
+
+    // Guardar textos originales y configurar expandibilidad al cargar la página
+    document.addEventListener('DOMContentLoaded', function () {
+        const etapaBadges = document.querySelectorAll('.etapa-badge');
+        etapaBadges.forEach(badge => {
+            const originalText = badge.textContent.trim();
+            const fullText = badge.getAttribute('title') || originalText;
+
+            // Guardar texto original si no existe
+            if (!badge.getAttribute('data-original-text')) {
+                badge.setAttribute('data-original-text', originalText);
+            }
+
+            // Determinar si es expandible
+            const isExpandable = originalText !== fullText && fullText.length > originalText.length;
+
+            if (isExpandable) {
+                console.log('🎯 Badge expandible:', originalText, '->', fullText);
+                badge.classList.add('expandable');
+                badge.classList.remove('no-expand');
+            } else {
+                console.log('🎯 Badge NO expandible:', originalText);
+                badge.classList.add('no-expand');
+                badge.classList.remove('expandable');
+                // Remover el onclick si no es expandible
+                badge.removeAttribute('onclick');
+            }
+        });
+    });
 
 </script>
 {% endblock %}

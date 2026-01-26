@@ -5,6 +5,23 @@
 {% block title %}{{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
+<script>
+// Ocultar dock inmediatamente
+(function(){
+    const style = document.createElement('style');
+    style.id = 'hide-dock-style';
+    style.textContent = `
+        .macos-dock, #dock-left, #dock-right, #dock-top, #dock-bottom, #floating-menu,
+        .dock-activation-zone, #design-panel, #position-controls {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+    `;
+    document.head.appendChild(style);
+})();
+</script>
 <style>
 *{box-sizing:border-box}
 body{background:#000;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -89,7 +106,7 @@ body{background:#000;margin:0;padding:0;font-family:-apple-system,BlinkMacSystem
 @media(max-width:900px){.content-grid{grid-template-columns:1fr}.col-left,.col-right{grid-column:span 1}.modal-container{border-radius:1.5rem;max-height:95vh}.modal-backdrop{padding:1rem}.modal-title{font-size:1.75rem}.info-grid{grid-template-columns:1fr}}
 </style>
 
-<div class="modal-backdrop" onclick="if(event.target===this)window.location.href='{% url 'todos' %}'">
+<div class="modal-backdrop" onclick="if(event.target===this)history.back()">
     <div class="modal-container">
         <!-- Header -->
         <div class="modal-header">
@@ -105,9 +122,9 @@ body{background:#000;margin:0;padding:0;font-family:-apple-system,BlinkMacSystem
                     </div>
                     <h1 class="modal-title">{{ oportunidad.oportunidad }}</h1>
                 </div>
-                <a href="{% url 'todos' %}" class="close-btn" title="Cerrar">
+                <button onclick="history.back()" class="close-btn" title="Cerrar">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </a>
+                </button>
             </div>
         </div>
 
@@ -228,7 +245,6 @@ body{background:#000;margin:0;padding:0;font-family:-apple-system,BlinkMacSystem
                                 </div>
                                 <div class="stakeholder-details">
                                     <h4>{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</h4>
-                                    <p>Sales Manager</p>
                                 </div>
                             </div>
                         </div>
