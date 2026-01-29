@@ -16,20 +16,20 @@ let defaultDockOrder = [
 // Función para abrir configuración de avatar
 function openAvatarSettings() {
     console.log('Abriendo configuración de avatar...');
-    
+
     const modal = document.getElementById('avatarModal');
     if (!modal) {
         console.error('No se encontró el modal de avatar');
         return;
     }
-    
+
     showModal('avatarModal');
-    
+
     setTimeout(() => {
         try {
             console.log('Inicializando sistema de avatar...');
             initializeAvatarSystem();
-            
+
             // Asegurarse de que los botones sean visibles
             const uploadButton = document.querySelector('.avatar-section .btn-primary');
             if (uploadButton) {
@@ -39,7 +39,7 @@ function openAvatarSettings() {
                 uploadButton.style.position = 'relative';
                 uploadButton.style.zIndex = '100';
             }
-            
+
             console.log('Sistema de avatar inicializado correctamente');
         } catch (error) {
             console.error('Error al inicializar el sistema de avatar:', error);
@@ -51,28 +51,28 @@ function openAvatarSettings() {
 // Función para abrir configuración de diseño
 function openDesignSettings() {
     console.log('Abriendo configuración de diseño...');
-    
+
     const modal = document.getElementById('designModal');
     if (!modal) {
         console.error('No se encontró el modal de diseño');
         return;
     }
-    
+
     showModal('designModal');
-    
+
     setTimeout(() => {
         try {
             // Inicializar el dock preview
             initializeDockPreview();
-            
+
             // Inicializar el tema actual
             const currentTheme = localStorage.getItem('theme') || 'dark';
             updateThemePreview(currentTheme);
-            
+
             // Inicializar el tipo de dock actual
             const currentDockType = localStorage.getItem('dockType') || 'normal';
             setDockTypeWithAnimation(currentDockType, false);
-            
+
             console.log('Configuración de diseño inicializada correctamente');
         } catch (error) {
             console.error('Error al inicializar la configuración de diseño:', error);
@@ -100,7 +100,7 @@ function showModal(modalId) {
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
-    
+
     void modal.offsetWidth;
     console.log(`Mostrando modal: ${modalId}`);
 }
@@ -163,15 +163,15 @@ function initializeAvatarSystem() {
     const animGalleryPreview = document.getElementById('animGalleryPreview');
     const uploadedAvatar = document.getElementById('uploadedAvatar');
     const avatarUpload = document.getElementById('avatarUpload');
-    
+
     if (avatarUpload) {
         console.log('Elemento de carga de archivo encontrado');
-        avatarUpload.onchange = function(e) {
+        avatarUpload.onchange = function (e) {
             const file = e.target.files[0];
             if (file) {
                 selectedImageFile = file;
                 const reader = new FileReader();
-                reader.onload = function(event) {
+                reader.onload = function (event) {
                     if (uploadedAvatar) {
                         uploadedAvatar.src = event.target.result;
                         uploadedAvatar.style.display = 'block';
@@ -186,19 +186,19 @@ function initializeAvatarSystem() {
     } else {
         console.error('No se encontró el elemento de carga de archivo');
     }
-    
+
     let selectedAvatar = 'dinosaur';
-    
+
     function setAnimPreview(idx) {
-        const btn = document.querySelector('.avatar-choice[data-avatar="'+idx+'"]');
+        const btn = document.querySelector('.avatar-choice[data-avatar="' + idx + '"]');
         if (!btn) return;
-        
+
         const previewContent = btn.cloneNode(true);
-        
+
         animGalleryPreview.innerHTML = '';
         animGalleryPreview.className = 'avatar-preview-content';
         animGalleryPreview.style = '';
-        
+
         const previewImg = previewContent.querySelector('img');
         if (previewImg) {
             previewImg.style.width = '100%';
@@ -206,54 +206,54 @@ function initializeAvatarSystem() {
             previewImg.style.objectFit = 'cover';
             previewImg.style.borderRadius = '50%';
         }
-        
+
         animGalleryPreview.style.display = 'flex';
         animGalleryPreview.style.alignItems = 'center';
         animGalleryPreview.style.justifyContent = 'center';
         animGalleryPreview.style.width = '100%';
         animGalleryPreview.style.height = '100%';
-        
+
         previewContent.style.width = '100%';
         previewContent.style.height = '100%';
         previewContent.style.padding = '0';
         previewContent.style.border = 'none';
         previewContent.style.background = 'transparent';
         previewContent.style.boxShadow = 'none';
-        
+
         animGalleryPreview.appendChild(previewContent);
         uploadedAvatar.style.display = 'none';
     }
-    
+
     avatarChoices.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             avatarChoices.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             btn.style.borderColor = 'var(--apple-blue)';
             btn.style.boxShadow = '0 0 10px rgba(0, 122, 255, 0.5)';
-            
+
             avatarChoices.forEach(b => {
                 if (b !== btn) {
                     b.style.borderColor = 'transparent';
                     b.style.boxShadow = 'none';
                 }
             });
-            
+
             selectedAvatar = btn.getAttribute('data-avatar');
             setAnimPreview(selectedAvatar);
             document.getElementById('avatarChoice').value = selectedAvatar;
         });
     });
-    
+
     // Inicializar con el avatar actual del usuario
     const defaultAvatar = window.avatarConfig ? window.avatarConfig.avatarTipo : 'dinosaur';
     const initialAvatar = document.querySelector(`.avatar-choice[data-avatar="${defaultAvatar}"]`);
-    
+
     if (window.avatarConfig && window.avatarConfig.hasCustomAvatar && window.avatarConfig.customAvatarUrl) {
         console.log('Usuario tiene foto personalizada, mostrándola en la vista previa');
         uploadedAvatar.src = window.avatarConfig.customAvatarUrl;
         uploadedAvatar.style.display = 'block';
         animGalleryPreview.style.display = 'none';
-        
+
         avatarChoices.forEach(b => {
             b.classList.remove('selected');
             b.style.borderColor = 'transparent';
@@ -271,11 +271,11 @@ function initializeAvatarSystem() {
             }
         }
     }
-    
+
     // Manejar el botón de edición
     const editBtn = document.getElementById('editAvatarBtn');
     if (editBtn) {
-        editBtn.addEventListener('click', function(e) {
+        editBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             document.getElementById('avatarUpload').click();
         });
@@ -288,41 +288,41 @@ function applyCrop() {
         showNotification('No hay ninguna imagen seleccionada', 'error');
         return;
     }
-    
+
     const formData = new FormData();
     formData.append('avatar', selectedImageFile);
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    
+
     const applyButton = document.querySelector('button[onclick="applyCrop()"]');
     const originalText = applyButton ? applyButton.innerHTML : '';
     if (applyButton) {
         applyButton.disabled = true;
         applyButton.innerHTML = '<span>⏳</span> Guardando...';
     }
-    
+
     fetch('/actualizar_avatar/', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Foto de perfil actualizada correctamente', 'success');
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            throw new Error(data.error || 'Error al guardar la imagen');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error al guardar la foto: ' + error.message, 'error');
-    })
-    .finally(() => {
-        if (applyButton) {
-            applyButton.disabled = false;
-            applyButton.innerHTML = originalText;
-        }
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Foto de perfil actualizada correctamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                throw new Error(data.error || 'Error al guardar la imagen');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error al guardar la foto: ' + error.message, 'error');
+        })
+        .finally(() => {
+            if (applyButton) {
+                applyButton.disabled = false;
+                applyButton.innerHTML = originalText;
+            }
+        });
 }
 
 function cancelCrop() {
@@ -343,7 +343,7 @@ function cancelCrop() {
 function updateThemePreview(theme) {
     const welcomePreview = document.getElementById('welcomePreview');
     if (!welcomePreview) return;
-    
+
     const appleBg = welcomePreview.querySelector('.apple-bg');
     const userAvatar = welcomePreview.querySelector('.user-avatar-preview');
     const welcomeTitle = welcomePreview.querySelector('h1');
@@ -351,14 +351,14 @@ function updateThemePreview(theme) {
     const searchBar = welcomePreview.querySelector('.central-search-bar');
     const searchIcon = searchBar ? searchBar.querySelector('svg') : null;
     const searchText = searchBar ? searchBar.querySelector('span') : null;
-    
+
     welcomePreview.classList.remove('dark-preview', 'pink-preview', 'white-preview', 'coffee-preview');
     welcomePreview.classList.add(`${theme}-preview`);
-    
+
     welcomePreview.style.transform = 'scale(0.95)';
     welcomePreview.style.opacity = '0.7';
     welcomePreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    
+
     setTimeout(() => {
         if (theme === 'dark') {
             welcomePreview.style.background = '#000000';
@@ -406,10 +406,10 @@ function updateThemePreview(theme) {
             if (searchIcon) searchIcon.style.color = '#6B7280';
             if (searchText) searchText.style.color = '#6B7280';
         }
-        
+
         welcomePreview.style.transform = 'scale(1.05)';
         welcomePreview.style.opacity = '1';
-        
+
         setTimeout(() => {
             welcomePreview.style.transform = 'scale(1)';
         }, 200);
@@ -422,12 +422,12 @@ let previousDockType = 'normal';
 function setDockTypeWithAnimation(type, animate = true) {
     console.log('setDockTypeWithAnimation called with type:', type, 'and animate:', animate);
     const dockPreview = document.getElementById('dockPreview');
-    
+
     if (!dockPreview) {
         console.error('dockPreview element not found!');
         return;
     }
-    
+
     document.querySelectorAll('.dock-type-option').forEach(option => {
         option.classList.remove('active');
         const previewCircle = option.querySelector('.dock-type-preview');
@@ -444,7 +444,7 @@ function setDockTypeWithAnimation(type, animate = true) {
             }
         }
     });
-    
+
     if (previousDockType !== type) {
         const previousOption = document.getElementById(`${previousDockType}-dock-option`);
         if (previousOption) {
@@ -455,7 +455,7 @@ function setDockTypeWithAnimation(type, animate = true) {
             }
         }
     }
-    
+
     const selectedOption = document.getElementById(`${type}-dock-option`);
     if (selectedOption) {
         selectedOption.classList.add('active');
@@ -465,13 +465,13 @@ function setDockTypeWithAnimation(type, animate = true) {
             selectedPreviewCircle.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
         }
     }
-    
+
     previousDockType = type;
-    
+
     dockPreview.style.transform = 'scale(0.95)';
     dockPreview.style.opacity = '0.7';
     dockPreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    
+
     const generateDock = (isTransparent, isCompact) => {
         console.log('generateDock called with isTransparent:', isTransparent, 'isCompact:', isCompact);
         const dock = document.createElement('div');
@@ -481,7 +481,7 @@ function setDockTypeWithAnimation(type, animate = true) {
         dock.style.padding = '10px';
         dock.style.borderRadius = '16px';
         dock.style.transition = 'all 0.3s ease';
-        
+
         if (isCompact) {
             dock.style.borderRadius = '50%';
             dock.style.width = '60px';
@@ -516,7 +516,7 @@ function setDockTypeWithAnimation(type, animate = true) {
                 dock.appendChild(iconElement);
             });
         }
-        
+
         if (isTransparent) {
             dock.style.background = 'rgba(255, 255, 255, 0.01)';
             dock.style.backdropFilter = 'blur(40px) saturate(500%) contrast(180%) brightness(140%)';
@@ -526,11 +526,11 @@ function setDockTypeWithAnimation(type, animate = true) {
             dock.style.background = 'rgba(29, 29, 31, 0.85)';
             dock.style.border = '1px solid rgba(255, 255, 255, 0.15)';
         }
-        
+
         console.log('Generated dock:', dock);
         return dock;
     };
-    
+
     if (animate) {
         dockPreview.style.transform = 'scale(0.9)';
         dockPreview.style.opacity = '0';
@@ -554,7 +554,7 @@ function setDockTypeWithAnimation(type, animate = true) {
         dockPreview.appendChild(newDock);
         console.log('Appended new dock to preview (no animation):', newDock);
     }
-    
+
     setDockType(type);
 }
 
@@ -564,7 +564,7 @@ function initializeDockPreview() {
         console.error('dockPreview element not found during initialization');
         return;
     }
-    
+
     const currentDockType = localStorage.getItem('dockType') || 'normal';
     setDockTypeWithAnimation(currentDockType, false);
 }
@@ -575,21 +575,21 @@ function setDockType(type) {
 
 function setDockPosition(position) {
     localStorage.setItem('dockPosition', position);
-    
+
     document.querySelectorAll('.dock-option').forEach(option => {
         option.classList.remove('active');
         if (option.getAttribute('data-position') === position) {
             option.classList.add('active');
         }
     });
-    
+
     const positionNames = {
         'bottom': 'Inferior',
         'top': 'Superior',
         'left': 'Izquierda',
         'right': 'Derecha'
     };
-    
+
     showNotification(`Posición del dock cambiada a ${positionNames[position]}`, 'success');
 }
 
@@ -597,10 +597,10 @@ function setDockPosition(position) {
 function resetDockOrder() {
     const editableDock = document.getElementById('editable-dock');
     if (!editableDock) return;
-    
+
     // Limpiar el dock actual
     editableDock.innerHTML = '';
-    
+
     // Restaurar el orden por defecto
     defaultDockOrder.forEach(item => {
         if (item.id === 'separator') {
@@ -612,7 +612,7 @@ function resetDockOrder() {
             editableDock.appendChild(dockItem);
         }
     });
-    
+
     showNotification('Orden del dock restablecido', 'success');
 }
 
@@ -621,7 +621,7 @@ function createDockEditorItem(item) {
     dockItem.className = 'dock-editor-item';
     dockItem.draggable = true;
     dockItem.dataset.itemId = item.id;
-    
+
     // Crear el icono SVG
     const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     iconSvg.setAttribute('width', '28');
@@ -630,13 +630,13 @@ function createDockEditorItem(item) {
     iconSvg.setAttribute('fill', 'none');
     iconSvg.setAttribute('stroke', 'white');
     iconSvg.setAttribute('stroke-width', '2');
-    
+
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', item.icon);
-    
+
     iconSvg.appendChild(path);
     dockItem.appendChild(iconSvg);
-    
+
     // Añadir event listeners para drag and drop
     dockItem.addEventListener('dragstart', handleDragStart);
     dockItem.addEventListener('dragend', handleDragEnd);
@@ -644,17 +644,17 @@ function createDockEditorItem(item) {
     dockItem.addEventListener('drop', handleDrop);
     dockItem.addEventListener('dragenter', handleDragEnter);
     dockItem.addEventListener('dragleave', handleDragLeave);
-    
+
     return dockItem;
 }
 
 function saveDockOrder() {
     const editableDock = document.getElementById('editable-dock');
     if (!editableDock) return;
-    
+
     const dockItems = editableDock.querySelectorAll('.dock-editor-item');
     const newOrder = [];
-    
+
     dockItems.forEach(item => {
         const itemId = item.dataset.itemId;
         const originalItem = defaultDockOrder.find(i => i.id === itemId);
@@ -662,12 +662,12 @@ function saveDockOrder() {
             newOrder.push(originalItem);
         }
     });
-    
+
     // Guardar el nuevo orden en localStorage
     localStorage.setItem('dockOrder', JSON.stringify(newOrder));
-    
+
     showNotification('Orden del dock guardado correctamente', 'success');
-    
+
     // Actualizar el dock preview
     setTimeout(() => {
         const currentDockType = localStorage.getItem('dockType') || 'normal';
@@ -687,7 +687,7 @@ function handleDragStart(e) {
 
 function handleDragEnd(e) {
     this.classList.remove('dragging');
-    
+
     // Limpiar todas las clases de drop target
     const allItems = document.querySelectorAll('.dock-editor-item');
     allItems.forEach(item => {
@@ -699,7 +699,7 @@ function handleDragOver(e) {
     if (e.preventDefault) {
         e.preventDefault();
     }
-    
+
     e.dataTransfer.dropEffect = 'move';
     return false;
 }
@@ -718,20 +718,20 @@ function handleDrop(e) {
     if (e.stopPropagation) {
         e.stopPropagation();
     }
-    
+
     if (draggedElement !== this) {
         const editableDock = document.getElementById('editable-dock');
         const allItems = [...editableDock.querySelectorAll('.dock-editor-item')];
         const draggedIndex = allItems.indexOf(draggedElement);
         const targetIndex = allItems.indexOf(this);
-        
+
         if (draggedIndex < targetIndex) {
             this.parentNode.insertBefore(draggedElement, this.nextSibling);
         } else {
             this.parentNode.insertBefore(draggedElement, this);
         }
     }
-    
+
     return false;
 }
 
@@ -739,14 +739,14 @@ function handleDrop(e) {
 function initializeDockEditor() {
     const editableDock = document.getElementById('editable-dock');
     if (!editableDock) return;
-    
+
     // Limpiar el dock actual
     editableDock.innerHTML = '';
-    
+
     // Cargar el orden guardado o usar el por defecto
     let dockOrder = defaultDockOrder;
     const savedOrder = localStorage.getItem('dockOrder');
-    
+
     if (savedOrder) {
         try {
             dockOrder = JSON.parse(savedOrder);
@@ -755,7 +755,7 @@ function initializeDockEditor() {
             dockOrder = defaultDockOrder;
         }
     }
-    
+
     // Crear los elementos del dock
     dockOrder.forEach(item => {
         if (item.id === 'separator') {
@@ -771,9 +771,9 @@ function initializeDockEditor() {
 
 // Modificar la función openDesignSettings para inicializar el dock editor
 const originalOpenDesignSettings = openDesignSettings;
-openDesignSettings = function() {
+openDesignSettings = function () {
     originalOpenDesignSettings();
-    
+
     setTimeout(() => {
         initializeDockEditor();
     }, 200);
@@ -784,39 +784,94 @@ function saveDesignSettings() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     const savedDockType = localStorage.getItem('dockType') || 'normal';
     const savedDockPosition = localStorage.getItem('dockPosition') || 'bottom';
-    
+
+    // Obtener CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    if (!csrfToken) {
+        console.error('Error: CSRF Token no encontrado');
+        showNotification('Error de seguridad al guardar', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('theme', savedTheme);
+    formData.append('dock_type', savedDockType);
+    formData.append('dock_position', savedDockPosition);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    // Nombres para mostrar
     const themeNames = {
         'dark': 'Oscuro',
         'pink': 'Rosa',
         'white': 'Blanco',
-        'coffee': 'Café'
+        'coffee': 'Café',
+        'perla': 'Perla'
     };
-    
+
     const typeNames = {
         'normal': 'Normal',
         'transparent': 'Transparente',
         'compact': 'Compacto'
     };
-    
+
     const positionNames = {
         'bottom': 'Inferior',
         'top': 'Superior',
         'left': 'Izquierda',
         'right': 'Derecha'
     };
-    
-    showNotification(
-        `Configuración guardada:\n` +
-        `Tema: ${themeNames[savedTheme] || savedTheme}\n` +
-        `Tipo de dock: ${typeNames[savedDockType] || savedDockType}\n` +
-        `Posición: ${positionNames[savedDockPosition] || savedDockPosition}`,
-        'success'
-    );
-    
-    hideModal('designModal');
-    setTimeout(() => {
-        location.reload(true);
-    }, 500);
+
+    // Botón de guardar (si existe en el modal) para mostrar estado de carga
+    const saveBtn = document.querySelector('#designModal .btn-primary');
+    const originalBtnText = saveBtn ? saveBtn.textContent : '';
+    if (saveBtn) {
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        saveBtn.disabled = true;
+    }
+
+    fetch('/configuracion_avanzada/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .then(response => {
+            if (!response.ok) throw new Error('Error en la respuesta del servidor');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification(
+                    `Configuración guardada:\n` +
+                    `Tema: ${themeNames[savedTheme] || savedTheme}\n` +
+                    `Tipo de dock: ${typeNames[savedDockType] || savedDockType}`,
+                    'success'
+                );
+
+                hideModal('designModal');
+
+                // Recargar para aplicar cambios globales si es necesario
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                throw new Error(data.error || 'Error desconocido al guardar');
+            }
+        })
+        .catch(error => {
+            console.error('Error al guardar diseño:', error);
+            showNotification('Error al guardar la configuración: ' + error.message, 'error');
+            // Aún así intentamos ocultar el modal si falla por red pero localstorage funcionó
+            // hideModal('designModal'); 
+        })
+        .finally(() => {
+            if (saveBtn) {
+                saveBtn.innerHTML = originalBtnText;
+                saveBtn.disabled = false;
+            }
+        });
 }
 
 // Sistema de idioma
@@ -828,12 +883,12 @@ function changeLanguage(langCode, langName) {
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${btn.textContent}`;
         }
     });
-    
+
     const formData = new FormData();
     formData.append('language', langCode);
     formData.append('next', window.location.pathname);
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    
+
     fetch('/i18n/setlang/', {
         method: 'POST',
         body: formData,
@@ -843,33 +898,33 @@ function changeLanguage(langCode, langName) {
         },
         credentials: 'same-origin'
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.status === 'success') {
-            document.documentElement.lang = langCode;
-            showNotification(`Idioma cambiado a ${langName}`, 'success');
-            setTimeout(() => {
-                window.location.reload(true);
-            }, 500);
-        } else {
-            throw new Error(data.message || 'Error al cambiar el idioma');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification(error.message || 'Error al cambiar el idioma', 'error');
-        
-        languageButtons.forEach(btn => {
-            btn.disabled = false;
-            const langText = btn.textContent.trim();
-            btn.textContent = langText;
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                document.documentElement.lang = langCode;
+                showNotification(`Idioma cambiado a ${langName}`, 'success');
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 500);
+            } else {
+                throw new Error(data.message || 'Error al cambiar el idioma');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification(error.message || 'Error al cambiar el idioma', 'error');
+
+            languageButtons.forEach(btn => {
+                btn.disabled = false;
+                const langText = btn.textContent.trim();
+                btn.textContent = langText;
+            });
         });
-    });
 }
 
 // Sistema de información de usuario
@@ -882,25 +937,25 @@ function saveUserInfo() {
     formData.append('birthday', document.getElementById('birthday').value);
     formData.append('gender', document.getElementById('gender').value);
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    
+
     fetch('/configuracion_avanzada/', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Información actualizada correctamente', 'success');
-            hideModal('userInfoModal');
-            setTimeout(() => location.reload(), 500);
-        } else {
-            showNotification('Error: ' + (data.error || 'Error desconocido'), 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error al guardar la información', 'error');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Información actualizada correctamente', 'success');
+                hideModal('userInfoModal');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showNotification('Error: ' + (data.error || 'Error desconocido'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error al guardar la información', 'error');
+        });
 }
 
 function logout() {
@@ -917,7 +972,7 @@ function showNotification(message, type = 'info') {
         container.className = 'notification-container';
         document.body.appendChild(container);
     }
-    
+
     const notification = document.createElement('div');
     notification.className = `notification ${type} show`;
     notification.innerHTML = `
@@ -926,9 +981,9 @@ function showNotification(message, type = 'info') {
         </span>
         <span>${message}</span>
     `;
-    
+
     container.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -941,21 +996,21 @@ function showNotification(message, type = 'info') {
 }
 
 // Inicialización al cargar el documento
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('DOMContentLoaded started');
-    
+
     let currentTheme = localStorage.getItem('theme');
     if (currentTheme === 'auto') {
         currentTheme = 'dark';
         localStorage.setItem('theme', 'dark');
     }
     console.log('DOMContentLoaded - currentTheme:', currentTheme);
-    
+
     if (currentTheme) {
         setTimeout(() => {
             initializeActiveTheme(currentTheme);
             initializeThemeDots(currentTheme);
-            
+
             setTimeout(() => {
                 const savedTheme = localStorage.getItem('theme');
                 if (savedTheme !== currentTheme) {
@@ -967,11 +1022,11 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.log('No saved theme found, will use default from base.html');
     }
-    
-    setTimeout(function() {
+
+    setTimeout(function () {
         const currentDockPosition = localStorage.getItem('dockPosition') || 'bottom';
         initializeActiveDockOption(currentDockPosition);
-        
+
         const currentDockType = localStorage.getItem('dockType') || 'normal';
         initializeActiveDockType(currentDockType);
     }, 200);
@@ -982,22 +1037,22 @@ function initializeActiveTheme(theme) {
         console.log('No theme provided to initializeActiveTheme, skipping');
         return;
     }
-    
+
     console.log('initializeActiveTheme called with:', theme);
-    
+
     // Desactivar todos los temas primero
     document.querySelectorAll('.theme-dot-container').forEach(option => {
         option.classList.remove('active');
         option.style.boxShadow = 'none';
         option.style.transform = 'translateY(0)';
     });
-    
+
     // Activar el tema correcto por ID
     const activeOption = document.getElementById(`${theme}-theme-dot`);
     if (activeOption) {
         activeOption.classList.add('active');
         activeOption.style.transform = 'translateY(-5px)';
-        
+
         // Aplicar la sombra correcta según el tema
         const dot = activeOption.querySelector('.theme-dot');
         if (dot) {
@@ -1021,11 +1076,11 @@ function initializeActiveTheme(theme) {
 
 function initializeThemeDots(theme) {
     console.log('initializeThemeDots called with:', theme);
-    
+
     document.querySelectorAll('.theme-dot').forEach(dot => {
         dot.style.boxShadow = '';
     });
-    
+
     const selectedDot = document.getElementById(`${theme}-theme-dot`);
     if (selectedDot) {
         const dot = selectedDot.querySelector('.theme-dot');
