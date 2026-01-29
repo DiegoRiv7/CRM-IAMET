@@ -48,6 +48,8 @@
         align-items: center;
         margin-bottom: 2rem;
         padding: 0;
+        position: relative;
+        z-index: 10000;
     }
 
     .page-title {
@@ -61,6 +63,14 @@
         display: flex;
         align-items: center;
         gap: 1rem;
+        position: relative;
+        z-index: 10001;
+        overflow: visible;
+    }
+
+    #views-container {
+        position: relative;
+        z-index: 1;
     }
 
     /* Smart Filter Search Bar Styles */
@@ -176,6 +186,7 @@
         transition: all 0.2s ease;
         position: relative;
         cursor: text;
+        z-index: 9999;
     }
 
     .super-search-container:focus-within {
@@ -312,7 +323,7 @@
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 12px;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.1);
-        z-index: 99999;
+        z-index: 999999 !important;
         overflow: visible;
         display: none;
         opacity: 0;
@@ -2945,6 +2956,8 @@
         grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
         gap: 1.5rem;
         padding: 1rem 0;
+        position: relative;
+        z-index: 1;
     }
 
     @media (max-width: 768px) {
@@ -2967,6 +2980,7 @@
         display: flex;
         flex-direction: column;
         min-height: 320px;
+        z-index: 1;
     }
 
     .opportunity-card:hover {
@@ -3193,6 +3207,7 @@
         min-height: 320px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 8px 32px rgba(10, 132, 255, 0.2);
+        z-index: 1;
     }
 
     .summary-widget-card::before {
