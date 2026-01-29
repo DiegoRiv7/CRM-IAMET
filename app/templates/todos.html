@@ -158,6 +158,312 @@
         color: rgba(255, 255, 255, 0.4);
     }
 
+    /* ========== SUPER SEARCH BAR ========== */
+    .super-search-container {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 8px 12px;
+        min-height: 44px;
+        width: 100%;
+        max-width: 600px;
+        transition: all 0.2s ease;
+        position: relative;
+        cursor: text;
+    }
+
+    .super-search-container:focus-within {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+    }
+
+    .super-search-icon {
+        color: rgba(255, 255, 255, 0.5);
+        flex-shrink: 0;
+    }
+
+    .super-search-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .super-search-chip {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(10, 132, 255, 0.25);
+        color: #fff;
+        border: 1px solid rgba(10, 132, 255, 0.4);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        gap: 6px;
+        user-select: none;
+        animation: chipIn 0.15s ease;
+    }
+
+    @keyframes chipIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .super-search-chip .chip-type {
+        font-weight: 600;
+        color: #81b0ff;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+    }
+
+    .super-search-chip .chip-remove {
+        cursor: pointer;
+        opacity: 0.7;
+        font-size: 14px;
+        line-height: 1;
+        transition: all 0.15s;
+        margin-left: 2px;
+    }
+
+    .super-search-chip .chip-remove:hover {
+        opacity: 1;
+        color: #ff6b6b;
+    }
+
+    .super-search-input {
+        flex: 1;
+        min-width: 120px;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        height: 28px;
+        padding: 0 8px;
+    }
+
+    .super-search-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .super-search-clear {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.6);
+        transition: all 0.15s;
+        flex-shrink: 0;
+    }
+
+    .super-search-clear:hover {
+        background: rgba(255, 100, 100, 0.2);
+        color: #ff6b6b;
+    }
+
+    .super-search-export {
+        background: linear-gradient(135deg, #34C759 0%, #30B350 100%);
+        border: none;
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: white;
+        transition: all 0.15s;
+        flex-shrink: 0;
+        margin-left: 4px;
+    }
+
+    .super-search-export:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
+    }
+
+    .super-search-export:active {
+        transform: scale(0.95);
+    }
+
+    /* Super Search Dropdown */
+    .super-search-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        width: 100%;
+        min-width: 280px;
+        background: rgba(30, 30, 32, 0.98);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        overflow: hidden;
+        display: none;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .super-search-dropdown.open {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .super-search-dropdown .dropdown-section {
+        padding: 8px 0;
+    }
+
+    .super-search-dropdown .dropdown-header {
+        padding: 8px 16px 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .super-search-dropdown .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: background 0.15s;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+    }
+
+    .super-search-dropdown .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .super-search-dropdown .dropdown-item .icon {
+        width: 18px;
+        height: 18px;
+        opacity: 0.7;
+    }
+
+    .super-search-dropdown .dropdown-arrow-right {
+        margin-left: auto;
+        opacity: 0.5;
+        font-size: 1.2rem;
+    }
+
+    .super-search-dropdown .dropdown-back {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        cursor: pointer;
+        color: var(--apple-blue);
+        font-size: 0.85rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .super-search-dropdown .dropdown-back:hover {
+        background: rgba(10, 132, 255, 0.1);
+    }
+
+    .super-search-dropdown .dropdown-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: background 0.15s;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+    }
+
+    .super-search-dropdown .dropdown-option:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .super-search-dropdown .dropdown-option.selected {
+        background: rgba(10, 132, 255, 0.15);
+    }
+
+    .super-search-dropdown .dropdown-option .check {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+
+    .super-search-dropdown .dropdown-option.selected .check {
+        background: var(--apple-blue);
+        border-color: var(--apple-blue);
+    }
+
+    .super-search-dropdown .dropdown-option.selected .check::after {
+        content: '✓';
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .super-search-dropdown .dropdown-search {
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .super-search-dropdown .dropdown-search input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        outline: none;
+    }
+
+    .super-search-dropdown .dropdown-search input:focus {
+        border-color: var(--apple-blue);
+    }
+
+    .super-search-dropdown .dropdown-search input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .super-search-dropdown .dropdown-options {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .super-search-dropdown .dropdown-options::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .super-search-dropdown .dropdown-options::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .super-search-dropdown .dropdown-options::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
     /* Dropdown for Smart Filters */
     .smart-dropdown {
         position: absolute;
@@ -3350,14 +3656,7 @@
         <div class="ipados-header">
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <h1 class="page-title">Oportunidades</h1>
-                <div class="filter-icon-container {% if reporte_activo %}active{% endif %}" id="filter-icon">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
-                    </svg>
-                </div>
             </div>
-            {% if not reporte_activo %}
             <div class="header-controls">
                 <!-- View Switcher -->
                 <div class="view-switcher">
@@ -3383,161 +3682,79 @@
                     </button>
                 </div>
 
-                <div class="search-bar-container" id="search-bar">
-                    <svg class="search-bar-icon" width="18" height="18" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Super Search Bar -->
+                <div class="super-search-container" id="superSearchContainer">
+                    <svg class="super-search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <input type="text" id="searchOportunidad" placeholder="Buscar..." class="search-bar-input"
-                        value="{{ search_query }}">
+                    <div class="super-search-chips" id="superSearchChips"></div>
+                    <input type="text" id="superSearchInput" placeholder="Buscar o filtrar..." class="super-search-input" autocomplete="off">
+                    <button class="super-search-clear" id="superSearchClear" title="Limpiar filtros" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button class="super-search-export" id="superSearchExport" title="Exportar a Excel">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown de filtros -->
+                    <div class="super-search-dropdown" id="superSearchDropdown">
+                        <div class="dropdown-section" id="dropdownMainMenu">
+                            <div class="dropdown-header">Filtros</div>
+                            <div class="dropdown-item" data-filter="tipo">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                <span>Tipo</span>
+                                <span class="dropdown-arrow-right">›</span>
+                            </div>
+                            <div class="dropdown-item" data-filter="etapa">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>
+                                <span>Etapa</span>
+                                <span class="dropdown-arrow-right">›</span>
+                            </div>
+                            <div class="dropdown-item" data-filter="cliente">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                                <span>Cliente</span>
+                                <span class="dropdown-arrow-right">›</span>
+                            </div>
+                            <div class="dropdown-item" data-filter="empleado">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                <span>Empleado</span>
+                                <span class="dropdown-arrow-right">›</span>
+                            </div>
+                            <div class="dropdown-item" data-filter="mes">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                <span>Mes de Cierre</span>
+                                <span class="dropdown-arrow-right">›</span>
+                            </div>
+                        </div>
+                        <div class="dropdown-section dropdown-submenu" id="dropdownSubmenu" style="display: none;"></div>
+                    </div>
                 </div>
             </div>
-            {% else %}
-            <div class="compact-filters-container">
-                <div class="filters-grid">
-                    <div class="filter-group">
-                        <label class="filter-label">Búsqueda</label>
-                        <input type="text" class="filter-input" id="filterOportunidad"
-                            placeholder="Buscar oportunidad...">
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Tipo</label>
-                        <select class="filter-input" id="filterTipo">
-                            <option value="">Todos</option>
-                            <option value="runrate">Runrate</option>
-                            <option value="proyecto">Proyecto</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Estado</label>
-                        <div class="custom-multiselect" id="filterEtapa">
-                            <div class="multiselect-display">
-                                <span class="placeholder">Seleccionar estados...</span>
-                                <div class="selected-items"></div>
-                                <span class="dropdown-arrow">▼</span>
-                            </div>
-                            <div class="multiselect-dropdown" style="display: none;">
-                                <div class="multiselect-option" data-value="vigentes">
-                                    <input type="checkbox" id="etapa_vigentes">
-                                    <label for="etapa_vigentes">Solo vigentes</label>
-                                </div>
-                                <div class="multiselect-option" data-value="ganadas">
-                                    <input type="checkbox" id="etapa_ganadas">
-                                    <label for="etapa_ganadas">Solo cerradas ganadas</label>
-                                </div>
-                                <div class="multiselect-option" data-value="perdidas">
-                                    <input type="checkbox" id="etapa_perdidas">
-                                    <label for="etapa_perdidas">Solo cerradas perdidas</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Cliente</label>
-                        <select class="filter-input" id="filterCliente">
-                            <option value="">Todos los clientes</option>
-                            {% regroup items by cliente.nombre_empresa as cliente_list %}
-                            {% for cliente in cliente_list %}
-                            {% if cliente.grouper %}
-                            <option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>
-                            {% endif %}
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Empleado</label>
-                        <div class="custom-multiselect" id="filterEmpleado">
-                            <div class="multiselect-display">
-                                <span class="placeholder">Seleccionar empleados...</span>
-                                <div class="selected-items"></div>
-                                <span class="dropdown-arrow">▼</span>
-                            </div>
-                            <div class="multiselect-dropdown" style="display: none;">
-                                {% for user in empleados %}
-                                <div class="multiselect-option" data-value="{{ user.id }}">
-                                    <input type="checkbox" id="emp_{{ user.id }}">
-                                    <label for="emp_{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Mes Cierre</label>
-                        <div class="custom-multiselect" id="filterMesCierre">
-                            <div class="multiselect-display">
-                                <span class="placeholder">Seleccionar meses...</span>
-                                <div class="selected-items"></div>
-                                <span class="dropdown-arrow">▼</span>
-                            </div>
-                            <div class="multiselect-dropdown" style="display: none;">
-                                <div class="multiselect-option" data-value="01">
-                                    <input type="checkbox" id="mes_01">
-                                    <label for="mes_01">Enero</label>
-                                </div>
-                                <div class="multiselect-option" data-value="02">
-                                    <input type="checkbox" id="mes_02">
-                                    <label for="mes_02">Febrero</label>
-                                </div>
-                                <div class="multiselect-option" data-value="03">
-                                    <input type="checkbox" id="mes_03">
-                                    <label for="mes_03">Marzo</label>
-                                </div>
-                                <div class="multiselect-option" data-value="04">
-                                    <input type="checkbox" id="mes_04">
-                                    <label for="mes_04">Abril</label>
-                                </div>
-                                <div class="multiselect-option" data-value="05">
-                                    <input type="checkbox" id="mes_05">
-                                    <label for="mes_05">Mayo</label>
-                                </div>
-                                <div class="multiselect-option" data-value="06">
-                                    <input type="checkbox" id="mes_06">
-                                    <label for="mes_06">Junio</label>
-                                </div>
-                                <div class="multiselect-option" data-value="07">
-                                    <input type="checkbox" id="mes_07">
-                                    <label for="mes_07">Julio</label>
-                                </div>
-                                <div class="multiselect-option" data-value="08">
-                                    <input type="checkbox" id="mes_08">
-                                    <label for="mes_08">Agosto</label>
-                                </div>
-                                <div class="multiselect-option" data-value="09">
-                                    <input type="checkbox" id="mes_09">
-                                    <label for="mes_09">Septiembre</label>
-                                </div>
-                                <div class="multiselect-option" data-value="10">
-                                    <input type="checkbox" id="mes_10">
-                                    <label for="mes_10">Octubre</label>
-                                </div>
-                                <div class="multiselect-option" data-value="11">
-                                    <input type="checkbox" id="mes_11">
-                                    <label for="mes_11">Noviembre</label>
-                                </div>
-                                <div class="multiselect-option" data-value="12">
-                                    <input type="checkbox" id="mes_12">
-                                    <label for="mes_12">Diciembre</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="filter-actions">
-                    <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
-                    <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
-                    <button class="filter-btn primary" onclick="generarReporteCSV()">Generar Reporte</button>
-                    <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
-                </div>
-            </div>
-            {% endif %}
         </div>
+
+        <!-- Datos de clientes y empleados para JavaScript -->
+        <script>
+            var clientesData = [
+                {% regroup items by cliente.nombre_empresa as cliente_list %}
+                {% for cliente in cliente_list %}
+                {% if cliente.grouper %}
+                { value: "{{ cliente.grouper|escapejs }}", text: "{{ cliente.grouper|escapejs }}" },
+                {% endif %}
+                {% endfor %}
+            ];
+            var empleadosData = [
+                {% for user in empleados %}
+                { value: "{{ user.id }}", text: "{{ user.get_full_name|default:user.username|escapejs }}" },
+                {% endfor %}
+            ];
+        </script>
 
         <!-- Content Views Container -->
         <div id="views-container" class="view-mode-grid">
@@ -3845,152 +4062,7 @@
 {% endfor %}
 
 <script>
-    // Cliente ahora usa select nativo con funcionalidad de búsqueda
-    let clienteSelect = null;
-    console.log('🔍 Cliente now uses native select with search functionality');
-
-    // Agregar funcionalidad de búsqueda al select de cliente
-    function initClienteSearch() {
-        const selectElement = document.getElementById('filterCliente');
-        if (!selectElement) return;
-
-        // Guardar todas las opciones originales y eliminar duplicados
-        const allOptions = Array.from(selectElement.options);
-        const uniqueOptions = [];
-        const seenValues = new Set();
-
-        allOptions.forEach(option => {
-            const value = option.value;
-            const text = option.textContent;
-
-            if (!seenValues.has(value)) {
-                seenValues.add(value);
-                uniqueOptions.push({ value, text });
-            }
-        });
-
-        // Limpiar el select y agregar solo opciones únicas
-        selectElement.innerHTML = '';
-        uniqueOptions.forEach(optionData => {
-            const option = document.createElement('option');
-            option.value = optionData.value;
-            option.textContent = optionData.text;
-            selectElement.appendChild(option);
-        });
-
-        const originalOptions = uniqueOptions;
-
-        // Crear input de búsqueda
-        const searchInput = document.createElement('input');
-        searchInput.type = 'text';
-        searchInput.placeholder = 'Buscar cliente...';
-        searchInput.style.cssText = `
-        background: #484848 !important;
-        color: #FFFFFF !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        border-radius: 12px !important;
-        padding: 12px 16px !important;
-        font-size: 14px !important;
-        min-height: 42px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        margin-bottom: 4px !important;
-    `;
-
-        // Insertar el input antes del select
-        selectElement.parentNode.insertBefore(searchInput, selectElement);
-
-        // Ocultar el select original inicialmente
-        selectElement.style.display = 'none';
-
-        // Función para filtrar opciones
-        function filterOptions(searchTerm) {
-            if (searchTerm.length === 0) {
-                // Si no hay búsqueda, ocultar select
-                selectElement.style.display = 'none';
-                selectElement.value = '';
-                return;
-            }
-
-            // Mostrar select si hay búsqueda
-            selectElement.style.display = 'block';
-
-            // Limpiar select
-            selectElement.innerHTML = '';
-
-            // Filtrar opciones
-            const filteredOptions = originalOptions.filter(option =>
-                option.text.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            // Agregar opciones filtradas
-            filteredOptions.forEach(optionData => {
-                const option = document.createElement('option');
-                option.value = optionData.value;
-                option.textContent = optionData.text;
-                selectElement.appendChild(option);
-            });
-
-            // Auto-redimensionar el select si hay opciones
-            if (filteredOptions.length > 0) {
-                selectElement.size = Math.min(filteredOptions.length, 8);
-                selectElement.selectedIndex = -1; // No seleccionar nada automáticamente
-            }
-        }
-
-        // Event listener para el input de búsqueda
-        searchInput.addEventListener('input', function (e) {
-            filterOptions(e.target.value);
-        });
-
-        // Cuando se selecciona una opción, actualizar el input de búsqueda
-        selectElement.addEventListener('change', function (e) {
-            if (e.target.value) {
-                searchInput.value = e.target.options[e.target.selectedIndex].text;
-                selectElement.style.display = 'none';
-                selectElement.size = 1;
-            } else {
-                searchInput.value = '';
-                selectElement.style.display = 'none';
-            }
-        });
-
-        // Manejar clicks fuera del elemento para cerrar el dropdown
-        document.addEventListener('click', function (e) {
-            if (!selectElement.contains(e.target) && !searchInput.contains(e.target)) {
-                selectElement.style.display = 'none';
-                selectElement.size = 1;
-            }
-        });
-
-        // Permitir navegación con teclas
-        searchInput.addEventListener('keydown', function (e) {
-            if (e.key === 'ArrowDown' && selectElement.style.display === 'block') {
-                e.preventDefault();
-                selectElement.focus();
-                if (selectElement.options.length > 0) {
-                    selectElement.selectedIndex = 0;
-                }
-            } else if (e.key === 'Escape') {
-                selectElement.style.display = 'none';
-                selectElement.size = 1;
-                searchInput.blur();
-            }
-        });
-
-        // Manejar selección con teclas en el select
-        selectElement.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                selectElement.dispatchEvent(new Event('change'));
-            } else if (e.key === 'Escape') {
-                selectElement.style.display = 'none';
-                selectElement.size = 1;
-                searchInput.focus();
-            }
-        });
-    }
-
-    // Custom multiselect functionality
+    // Custom multiselect functionality (legacy - kept for compatibility)
     function initCustomMultiselects() {
         const multiselects = document.querySelectorAll('.custom-multiselect');
 
@@ -4115,18 +4187,41 @@
 {% endfor %}
 
 <script>
-    // El empleado es un select normal, no necesita TomSelect
-    console.log('🔍 Empleado filter is a normal select, no TomSelect needed');
+    // ========== SUPER SEARCH BAR - GLOBAL STATE ==========
+    let superFilters = {
+        search: '',
+        tipo: '',
+        etapa: [],
+        cliente: '',
+        empleado: [],
+        mes: []
+    };
+
+    let originalRows = [];
+    let originalCards = [];
+
+    // Mapeo de meses
+    const monthNames = {
+        '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+        '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+    };
+    const monthValues = {
+        'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+        'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+        'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+    };
 
     function generarReporteCSV() {
-        const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
-        const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
-        const etapas = getMultiselectValues('filterEtapa');
-        const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value : '';
-        const empleados = getMultiselectValues('filterEmpleado');
-        const mesesCierre = getMultiselectValues('filterMesCierre');
+        // Usar los filtros activos de la super barra
+        const oportunidad = superFilters.search;
+        const tipo = superFilters.tipo;
+        const etapas = superFilters.etapa;
+        const cliente = superFilters.cliente;
+        const empleados = superFilters.empleado;
+        const mesesCierre = superFilters.mes;
 
-        // URL para exportar CSV
+        // URL para exportar CSV - MISMA ESTRUCTURA QUE ANTES
         var csvPath = '{% url "exportar_oportunidades_csv" %}';
         const url = new URL(window.location.origin + csvPath);
         if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
@@ -4139,8 +4234,6 @@
         window.location.href = url.toString();
     }
 
-    let originalRows = [];
-
     document.addEventListener('DOMContentLoaded', function () {
         console.log('🚀 DOMContentLoaded fired - todos.html script starting');
 
@@ -4148,9 +4241,6 @@
         if (tableBody) {
             originalRows = Array.from(tableBody.getElementsByTagName('tr'));
         }
-
-        // Inicializar búsqueda de cliente
-        initClienteSearch();
 
         // ========== VIEW SWITCHER FUNCTIONALITY ==========
         const viewsContainer = document.getElementById('views-container');
@@ -4251,236 +4341,377 @@
         // Calculate on page load
         calculatePipelineTotal();
 
-        // Handle filter icon click - PREVENT DOUBLE RELOAD
-        const filterIcon = document.getElementById('filter-icon');
-        let isNavigating = false;
+        // ========== SUPER SEARCH BAR INITIALIZATION ==========
+        initSuperSearchBar();
+    });
 
-        if (filterIcon) {
-            filterIcon.addEventListener('click', function (e) {
-                e.preventDefault();
+    // ========== SUPER SEARCH BAR FUNCTIONS ==========
+    function initSuperSearchBar() {
+        const container = document.getElementById('superSearchContainer');
+        const input = document.getElementById('superSearchInput');
+        const dropdown = document.getElementById('superSearchDropdown');
+        const chipsContainer = document.getElementById('superSearchChips');
+        const clearBtn = document.getElementById('superSearchClear');
+        const exportBtn = document.getElementById('superSearchExport');
+        const mainMenu = document.getElementById('dropdownMainMenu');
+        const submenu = document.getElementById('dropdownSubmenu');
+
+        if (!container || !input) return;
+
+        // Store original cards
+        originalCards = Array.from(document.querySelectorAll('.opportunity-card[data-opp-id]'));
+
+        // Show dropdown on focus/click
+        input.addEventListener('focus', () => openDropdown());
+        container.addEventListener('click', (e) => {
+            if (e.target === container || e.target.closest('.super-search-chips') || e.target === input) {
+                input.focus();
+                openDropdown();
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+
+        // Handle input
+        let debounceTimer;
+        input.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                superFilters.search = input.value.trim();
+                applyAllFilters();
+                updateClearButton();
+            }, 200);
+        });
+
+        // Handle backspace to remove chips
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && input.value === '') {
+                const lastChip = chipsContainer.lastElementChild;
+                if (lastChip) {
+                    removeChip(lastChip.dataset.filterType, lastChip.dataset.filterValue);
+                }
+            }
+            if (e.key === 'Escape') {
+                closeDropdown();
+                input.blur();
+            }
+        });
+
+        // Handle filter menu items
+        mainMenu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
                 e.stopPropagation();
-
-                // Prevent multiple clicks during navigation
-                if (isNavigating) {
-                    console.log('🔧 Navigation already in progress, ignoring click');
-                    return;
-                }
-
-                isNavigating = true;
-                filterIcon.style.pointerEvents = 'none'; // Disable button temporarily
-
-                console.log('🔧 Filter icon clicked, preventing double reload');
-                const isActive = filterIcon.classList.contains('active');
-                const url = isActive ? '{% url "todos" %}' : '?reporte=true';
-
-                // Add a small delay to show visual feedback
-                setTimeout(() => {
-                    window.location.href = url;
-                }, 150);
+                const filterType = item.dataset.filter;
+                showSubmenu(filterType);
             });
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearAllFilters();
+        });
+
+        // Export button
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            generarReporteCSV();
+        });
+
+        function openDropdown() {
+            dropdown.classList.add('open');
+            showMainMenu();
         }
 
-        // Los filtros básicos ya funcionan con la función applyFilters() existente
-
-        // ========== SMART NOTION-STYLE SEARCH ==========
-        const smartInput = document.getElementById('smartSearchInput');
-        const activeChipsContainer = document.getElementById('activeChips');
-        const smartDropdown = document.getElementById('smartDropdown');
-        const container = document.getElementById('smartFilterContainer');
-
-        let activeFilters = {
-            etapa: [],
-            tipo: '',
-            mes: [],
-            search: ''
-        };
-
-        if (smartInput) {
-            // Show dropdown on focus
-            smartInput.addEventListener('focus', () => {
-                smartDropdown.classList.add('open');
-                container.style.borderColor = 'var(--apple-blue)';
-            });
-
-            // Hide dropdown on blur (delayed to allow clicks)
-            // Handle clicking outside
-            document.addEventListener('click', (e) => {
-                if (!container.contains(e.target)) {
-                    smartDropdown.classList.remove('open');
-                    container.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                }
-            });
-
-            // Handle typing / ENTER
-            smartInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const val = smartInput.value.trim();
-                    if (val) {
-                        // Treat as text search
-                        activeFilters.search = val;
-                        // Add visual chip for search term? Or just keep in input?
-                        // For now, let's just trigger unified filter
-                        applySmartFilters();
-                    }
-                }
-                if (e.key === 'Backspace' && smartInput.value === '' && activeChipsContainer.lastElementChild) {
-                    // Remove last chip
-                    removeLastChip();
-                }
-            });
-
-            // Live filter on typing (debounced)
-            let debounceTimer;
-            smartInput.addEventListener('input', () => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    activeFilters.search = smartInput.value.trim();
-                    applySmartFilters();
-                }, 300);
-            });
+        function closeDropdown() {
+            dropdown.classList.remove('open');
         }
 
-        // Global function to add chips from Dropdown
-        window.triggerFilterSelect = function (type) {
-            // In a real app, this would change the dropdown content to show options
-            // For now, we'll simulate adding a filter or showing a prompt
+        function showMainMenu() {
+            mainMenu.style.display = 'block';
+            submenu.style.display = 'none';
+        }
 
-            // Example simplified logic: Prompt user (Upgrade this to sub-menu later)
-            // Or swap dropdown content
+        function showSubmenu(filterType) {
+            mainMenu.style.display = 'none';
+            submenu.style.display = 'block';
 
-            if (type === 'Etapa') {
-                showSubMenu('etapa', ['Vigentes', 'Ganadas', 'Perdidas']);
-            } else if (type === 'Tipo') {
-                showSubMenu('tipo', ['Proyecto', 'RunRate']);
-            } else if (type === 'Mes') {
-                showSubMenu('mes', ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']);
+            let options = [];
+            let title = '';
+            let hasSearch = false;
+
+            switch (filterType) {
+                case 'tipo':
+                    title = 'Tipo de Venta';
+                    options = [
+                        { value: 'proyecto', label: 'Proyecto' },
+                        { value: 'runrate', label: 'RunRate' }
+                    ];
+                    break;
+                case 'etapa':
+                    title = 'Etapa';
+                    options = [
+                        { value: 'vigentes', label: 'Solo Vigentes' },
+                        { value: 'ganadas', label: 'Cerradas Ganadas' },
+                        { value: 'perdidas', label: 'Cerradas Perdidas' }
+                    ];
+                    break;
+                case 'cliente':
+                    title = 'Cliente';
+                    hasSearch = true;
+                    options = (typeof clientesData !== 'undefined' ? clientesData : []).map(c => ({
+                        value: c.value,
+                        label: c.text
+                    }));
+                    break;
+                case 'empleado':
+                    title = 'Empleado';
+                    hasSearch = true;
+                    options = (typeof empleadosData !== 'undefined' ? empleadosData : []).map(e => ({
+                        value: e.value,
+                        label: e.text
+                    }));
+                    break;
+                case 'mes':
+                    title = 'Mes de Cierre';
+                    options = Object.entries(monthNames).map(([value, label]) => ({ value, label }));
+                    break;
             }
-        };
 
-        function showSubMenu(filterType, options) {
-            const dropdown = document.getElementById('smartDropdown');
-            let html = `<div class="dropdown-section"><div class="dropdown-header">Selecciona ${filterType}</div>`;
-            options.forEach(opt => {
-                html += `<div class="dropdown-item" onclick="addSmartChip('${filterType}', '${opt}')">
-                            <span>${opt}</span>
-                         </div>`;
-            });
-            html += `</div>`;
-
-            // Add back button or keep simple
-            dropdown.innerHTML = html;
-        }
-
-        window.addSmartChip = function (type, value) {
-            // Create visible chip
-            const chip = document.createElement('div');
-            chip.className = 'filter-chip apple-fade-in';
-            chip.dataset.type = type.toLowerCase();
-            chip.dataset.value = value.toLowerCase();
-            chip.innerHTML = `
-                <span class="chip-label">${type}:</span>
-                <span>${value}</span>
-                <span class="chip-remove" onclick="removeSmartChip(this)">×</span>
-            `;
-            activeChipsContainer.appendChild(chip);
-
-            // Update state
-            if (type.toLowerCase() === 'etapa') activeFilters.etapa.push(value.toLowerCase());
-            if (type.toLowerCase() === 'tipo') activeFilters.tipo = value.toLowerCase(); // single select for simplicity?
-            if (type.toLowerCase() === 'mes') activeFilters.mes.push(value.toLowerCase());
-
-            // Reset dropdown
-            resetDropdown();
-            smartInput.value = '';
-            smartInput.focus();
-
-            applySmartFilters();
-        };
-
-        window.removeSmartChip = function (element) {
-            const chip = element.parentElement;
-            const type = chip.dataset.type;
-            const value = chip.dataset.value;
-
-            chip.remove();
-
-            // Update state
-            if (type === 'etapa') activeFilters.etapa = activeFilters.etapa.filter(v => v !== value);
-            if (type === 'tipo') activeFilters.tipo = '';
-            if (type === 'mes') activeFilters.mes = activeFilters.mes.filter(v => v !== value);
-
-            applySmartFilters();
-        };
-
-        function removeLastChip() {
-            const last = activeChipsContainer.lastElementChild;
-            if (last) {
-                removeSmartChip(last.querySelector('.chip-remove'));
-            }
-        }
-
-        function resetDropdown() {
-            document.getElementById('smartDropdown').innerHTML = `
-                <div class="dropdown-section">
-                    <div class="dropdown-header">Filtros Rápidos</div>
-                    <div class="dropdown-item" onclick="triggerFilterSelect('Etapa')">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                        <span>Etapa</span>
-                    </div>
-                    <div class="dropdown-item" onclick="triggerFilterSelect('Tipo')">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                        <span>Tipo (Proyecto/RunRate)</span>
-                    </div>
-                    <div class="dropdown-item" onclick="triggerFilterSelect('Mes')">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        <span>Mes de Cierre</span>
-                    </div>
+            let html = `
+                <div class="dropdown-back" onclick="document.getElementById('dropdownMainMenu').style.display='block'; document.getElementById('dropdownSubmenu').style.display='none';">
+                    ‹ ${title}
                 </div>
             `;
+
+            if (hasSearch) {
+                html += `
+                    <div class="dropdown-search">
+                        <input type="text" placeholder="Buscar..." id="submenuSearch" oninput="filterSubmenuOptions(this.value)">
+                    </div>
+                `;
+            }
+
+            html += '<div class="dropdown-options" id="submenuOptions">';
+            options.forEach(opt => {
+                const isSelected = isFilterSelected(filterType, opt.value);
+                html += `
+                    <div class="dropdown-option ${isSelected ? 'selected' : ''}"
+                         data-filter-type="${filterType}"
+                         data-value="${opt.value}"
+                         onclick="toggleFilter('${filterType}', '${opt.value}', '${opt.label.replace(/'/g, "\\'")}')">
+                        <span class="check"></span>
+                        <span>${opt.label}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            submenu.innerHTML = html;
+
+            // Focus search if present
+            setTimeout(() => {
+                const searchInput = document.getElementById('submenuSearch');
+                if (searchInput) searchInput.focus();
+            }, 100);
         }
 
-        // UNIFIED FILTERING LOGIC (Replacing old applyFilters logic mostly)
-        function applySmartFilters() {
-            console.log('🧠 Applying Smart Filters:', activeFilters);
-            const term = activeFilters.search.toLowerCase();
-            const rows = originalRows; // From global scope
-            const tableBody = document.getElementById('tablaOportunidades');
+        window.filterSubmenuOptions = function(term) {
+            const options = document.querySelectorAll('#submenuOptions .dropdown-option');
+            const lowerTerm = term.toLowerCase();
+            options.forEach(opt => {
+                const text = opt.textContent.toLowerCase();
+                opt.style.display = text.includes(lowerTerm) ? 'flex' : 'none';
+            });
+        };
 
-            let visibleCount = 0;
-            const updatedRows = [];
+        window.toggleFilter = function(type, value, label) {
+            const isMulti = ['etapa', 'empleado', 'mes'].includes(type);
 
-            // Helper map for months
-            const monthMap = {
-                'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-                'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-                'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+            if (isMulti) {
+                const arr = superFilters[type];
+                const index = arr.indexOf(value);
+                if (index > -1) {
+                    arr.splice(index, 1);
+                    removeChipElement(type, value);
+                } else {
+                    arr.push(value);
+                    addChip(type, value, label);
+                }
+            } else {
+                // Single select (tipo, cliente)
+                if (superFilters[type] === value) {
+                    superFilters[type] = '';
+                    removeChipElement(type, value);
+                } else {
+                    // Remove old chip if exists
+                    const oldChip = chipsContainer.querySelector(`[data-filter-type="${type}"]`);
+                    if (oldChip) oldChip.remove();
+                    superFilters[type] = value;
+                    addChip(type, value, label);
+                }
+            }
+
+            // Update option visual
+            const opt = document.querySelector(`#submenuOptions .dropdown-option[data-value="${value}"]`);
+            if (opt) opt.classList.toggle('selected');
+
+            applyAllFilters();
+            updateClearButton();
+        };
+
+        function isFilterSelected(type, value) {
+            if (['etapa', 'empleado', 'mes'].includes(type)) {
+                return superFilters[type].includes(value);
+            }
+            return superFilters[type] === value;
+        }
+
+        function addChip(type, value, label) {
+            const typeLabels = {
+                tipo: 'Tipo',
+                etapa: 'Etapa',
+                cliente: 'Cliente',
+                empleado: 'Empleado',
+                mes: 'Mes'
             };
 
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
+            const chip = document.createElement('div');
+            chip.className = 'super-search-chip';
+            chip.dataset.filterType = type;
+            chip.dataset.filterValue = value;
+            chip.innerHTML = `
+                <span class="chip-type">${typeLabels[type]}:</span>
+                <span>${label}</span>
+                <span class="chip-remove" onclick="event.stopPropagation(); removeChip('${type}', '${value}')">×</span>
+            `;
+            chipsContainer.appendChild(chip);
+        }
+
+        function removeChipElement(type, value) {
+            const chip = chipsContainer.querySelector(`[data-filter-type="${type}"][data-filter-value="${value}"]`);
+            if (chip) chip.remove();
+        }
+
+        window.removeChip = function(type, value) {
+            if (['etapa', 'empleado', 'mes'].includes(type)) {
+                const arr = superFilters[type];
+                const index = arr.indexOf(value);
+                if (index > -1) arr.splice(index, 1);
+            } else {
+                superFilters[type] = '';
+            }
+            removeChipElement(type, value);
+            applyAllFilters();
+            updateClearButton();
+        };
+
+        function clearAllFilters() {
+            superFilters = { search: '', tipo: '', etapa: [], cliente: '', empleado: [], mes: [] };
+            chipsContainer.innerHTML = '';
+            input.value = '';
+            applyAllFilters();
+            updateClearButton();
+        }
+
+        function updateClearButton() {
+            const hasFilters = superFilters.search || superFilters.tipo || superFilters.cliente ||
+                superFilters.etapa.length > 0 || superFilters.empleado.length > 0 || superFilters.mes.length > 0;
+            clearBtn.style.display = hasFilters ? 'flex' : 'none';
+        }
+    }
+
+    // ========== APPLY ALL FILTERS (Cards + Table) ==========
+    function applyAllFilters() {
+        const term = superFilters.search.toLowerCase();
+
+        // Filter Cards
+        const cards = originalCards.length > 0 ? originalCards : Array.from(document.querySelectorAll('.opportunity-card[data-opp-id]'));
+        const cardsContainer = document.querySelector('.cards-grid-container');
+
+        let visibleCardCount = 0;
+
+        cards.forEach(card => {
+            let show = true;
+
+            // Text search
+            if (term) {
+                const title = card.querySelector('.card-title')?.textContent?.toLowerCase() || '';
+                const client = card.querySelector('.card-client')?.textContent?.toLowerCase() || '';
+                if (!title.includes(term) && !client.includes(term)) show = false;
+            }
+
+            // Tipo filter
+            if (show && superFilters.tipo) {
+                const area = (card.dataset.area || '').toLowerCase();
+                if (!area.includes(superFilters.tipo)) show = false;
+            }
+
+            // Etapa filter
+            if (show && superFilters.etapa.length > 0) {
+                const etapa = (card.dataset.etapa || '').toLowerCase();
+                const etapaCompleta = (card.dataset.etapaCompleta || '').toLowerCase();
+                let matchAny = false;
+                for (const f of superFilters.etapa) {
+                    if (f === 'ganadas' && (etapa.includes('ganada') || etapaCompleta.includes('ganada') || etapa.includes('pagado'))) matchAny = true;
+                    else if (f === 'perdidas' && (etapa.includes('perdida') || etapaCompleta.includes('perdida'))) matchAny = true;
+                    else if (f === 'vigentes' && !etapa.includes('ganada') && !etapa.includes('perdida') && !etapa.includes('pagado') && !etapaCompleta.includes('ganada') && !etapaCompleta.includes('perdida')) matchAny = true;
+                }
+                if (!matchAny) show = false;
+            }
+
+            // Cliente filter
+            if (show && superFilters.cliente) {
+                const client = card.querySelector('.card-client')?.textContent?.toLowerCase() || '';
+                if (!client.includes(superFilters.cliente.toLowerCase())) show = false;
+            }
+
+            // Empleado filter
+            if (show && superFilters.empleado.length > 0) {
+                const usuarioId = card.dataset.usuarioId || '';
+                if (!superFilters.empleado.includes(usuarioId)) show = false;
+            }
+
+            // Mes filter
+            if (show && superFilters.mes.length > 0) {
+                const fechaActualizacion = card.dataset.fechaActualizacion || '';
+                const cardMonth = fechaActualizacion.split('-')[1] || '';
+                if (!superFilters.mes.includes(cardMonth)) show = false;
+            }
+
+            card.style.display = show ? '' : 'none';
+            if (show) visibleCardCount++;
+        });
+
+        // Filter Table rows
+        const tableBody = document.getElementById('tablaOportunidades');
+        if (tableBody && originalRows.length > 0) {
+            let visibleRowCount = 0;
+            const updatedRows = [];
+
+            for (let i = 0; i < originalRows.length; i++) {
+                const row = originalRows[i];
                 const cells = row.getElementsByTagName('td');
                 if (cells.length < 5) continue;
 
                 let show = true;
 
-                // 1. Text Search (Oportunidad or Cliente)
+                // Text Search
                 if (term) {
                     const text = (cells[0].textContent + ' ' + cells[1].textContent).toLowerCase();
                     if (!text.includes(term)) show = false;
                 }
 
-                // 2. Etapa Filter (Multiple)
-                if (show && activeFilters.etapa.length > 0) {
+                // Etapa Filter
+                if (show && superFilters.etapa.length > 0) {
                     const etapaText = cells[3].textContent.toLowerCase();
-                    // Simple check: does row match ANY of selector chips?
-                    // normalize logic: 
-                    // 'ganadas' -> matches 'ganada' or 'cerrada ganada' or 'pagado'
-                    // 'perdidas' -> matches 'perdida' or 'cerrada perdida'
-                    // 'vigentes' -> matches anything NOT won/lost
-
                     let matchAny = false;
-                    for (const f of activeFilters.etapa) {
+                    for (const f of superFilters.etapa) {
                         if (f === 'ganadas' && (etapaText.includes('ganada') || etapaText.includes('pagado'))) matchAny = true;
                         else if (f === 'perdidas' && etapaText.includes('perdida')) matchAny = true;
                         else if (f === 'vigentes' && !etapaText.includes('ganada') && !etapaText.includes('perdida') && !etapaText.includes('pagado')) matchAny = true;
@@ -4488,162 +4719,44 @@
                     if (!matchAny) show = false;
                 }
 
-                // 3. Tipo Filter
-                if (show && activeFilters.tipo) {
+                // Tipo Filter
+                if (show && superFilters.tipo) {
                     const tipoText = cells[2].textContent.toLowerCase();
-                    if (!tipoText.includes(activeFilters.tipo)) show = false;
+                    if (!tipoText.includes(superFilters.tipo)) show = false;
                 }
 
-                // 4. Mes Filter
-                if (show && activeFilters.mes.length > 0) {
+                // Cliente Filter
+                if (show && superFilters.cliente) {
+                    const clienteText = cells[1].textContent.toLowerCase();
+                    if (!clienteText.includes(superFilters.cliente.toLowerCase())) show = false;
+                }
+
+                // Empleado Filter
+                if (show && superFilters.empleado.length > 0) {
+                    const usuarioId = row.dataset?.usuarioId || '';
+                    if (!superFilters.empleado.includes(usuarioId)) show = false;
+                }
+
+                // Mes Filter
+                if (show && superFilters.mes.length > 0) {
                     const mesText = cells[6]?.textContent?.toLowerCase().trim() || '';
-                    // Match against month name OR number
-                    // activeFilters.mes contains ['enero', 'febrero']
-                    if (!activeFilters.mes.includes(mesText)) show = false;
+                    const mesValue = monthValues[mesText] || '';
+                    if (!superFilters.mes.includes(mesValue) && !superFilters.mes.some(m => monthNames[m]?.toLowerCase() === mesText)) show = false;
                 }
 
                 if (show) {
                     updatedRows.push(row);
-                    visibleCount++;
+                    visibleRowCount++;
                 }
             }
 
-            // Update DOM
             tableBody.innerHTML = '';
             updatedRows.forEach(r => tableBody.appendChild(r));
-
-            // Check empty state
-            updateNoResultsMessage(visibleCount, tableBody);
+            updateNoResultsMessage(visibleRowCount, tableBody);
         }
-    });
-
-
-
-    function clearFilters() {
-        // Limpiar campos básicos
-        const inputs = ['filterOportunidad', 'filterTipo'];
-        inputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) input.value = '';
-        });
-
-        // Limpiar select nativo y custom multiselects
-        const clienteSelect = document.getElementById('filterCliente');
-        if (clienteSelect) clienteSelect.value = '';
-
-        // Limpiar input de búsqueda de cliente
-        const clienteSearchInput = clienteSelect ? clienteSelect.parentNode.querySelector('input[placeholder="Buscar cliente..."]') : null;
-        if (clienteSearchInput) {
-            clienteSearchInput.value = '';
-            // Restaurar todas las opciones
-            if (typeof initClienteSearch === 'function') {
-                const originalOptions = Array.from(clienteSelect.options);
-                clienteSelect.innerHTML = '';
-                originalOptions.forEach(option => clienteSelect.appendChild(option.cloneNode(true)));
-            }
-        }
-
-        clearMultiselect('filterEtapa');
-        clearMultiselect('filterEmpleado');
-        clearMultiselect('filterMesCierre');
-
-        // Mostrar todas las filas
-        const tableBody = document.getElementById('tablaOportunidades');
-        tableBody.innerHTML = '';
-        originalRows.forEach(row => tableBody.appendChild(row));
-
-        updateNoResultsMessage(originalRows.length, tableBody);
     }
 
-    function applyFilters() {
-        const monthMap = {
-            'enero': '01',
-            'febrero': '02',
-            'marzo': '03',
-            'abril': '04',
-            'mayo': '05',
-            'junio': '06',
-            'julio': '07',
-            'agosto': '08',
-            'septiembre': '09',
-            'octubre': '10',
-            'noviembre': '11',
-            'diciembre': '12'
-        };
 
-        const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
-        const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
-        const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
-        const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
-        const ordenMonto = document.getElementById('filterOrdenMonto').value;
-        const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
-
-        const tableBody = document.getElementById('tablaOportunidades');
-        const rows = originalRows;
-
-        let filteredRows = [];
-
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            const cells = row.getElementsByTagName('td');
-
-            if (cells.length < 6) continue; // Skip rows that don't have enough cells
-
-            let showRow = true;
-
-            if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
-                showRow = false;
-            }
-
-            if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
-                showRow = false;
-            }
-
-            if (empleado && row.dataset.usuarioId !== empleado) {
-                showRow = false;
-            }
-
-            const mesCierreCell = cells[4].textContent.toLowerCase().trim();
-            if (mesCierre && monthMap[mesCierreCell] !== mesCierre) {
-                showRow = false;
-            }
-
-            if (showRow) {
-                filteredRows.push(row);
-            }
-        }
-
-        // Now, sort the filtered rows
-        if (ordenMonto) {
-            filteredRows.sort((a, b) => {
-                const montoA = parseFloat(a.cells[2].textContent.replace('$', '').replace(/,/g, '')) || 0;
-                const montoB = parseFloat(b.cells[2].textContent.replace('$', '').replace(/,/g, '')) || 0;
-
-                if (ordenMonto === 'monto_asc') {
-                    return montoA - montoB;
-                } else {
-                    return montoB - montoA;
-                }
-            });
-        } else if (ordenProbabilidad) {
-            filteredRows.sort((a, b) => {
-                const probA = parseFloat(a.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
-                const probB = parseFloat(b.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
-
-                if (ordenProbabilidad === 'prob_asc') {
-                    return probA - probB;
-                } else {
-                    return probB - probA;
-                }
-            });
-        }
-
-        // Re-append sorted rows to the table body
-        tableBody.innerHTML = '';
-        filteredRows.forEach(row => tableBody.appendChild(row));
-
-        updateNoResultsMessage(filteredRows.length, tableBody);
-    }
 
     function updateNoResultsMessage(visibleCount, tableBody) {
         // Remove existing no-results message
@@ -4659,147 +4772,6 @@
             noResultsRow.innerHTML = '<td colspan="8" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
             tableBody.appendChild(noResultsRow);
         }
-    }
-
-    // ========== FILTROS SIMPLIFICADOS ==========
-
-    // Actualizar función applyFilters para incluir nuevos campos
-    function applyFilters() {
-        console.log('🔧 Iniciando applyFilters...');
-
-        const monthMap = {
-            'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-            'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-            'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
-        };
-
-        const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
-        const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
-        const etapas = getMultiselectValues('filterEtapa'); // Array de estados seleccionados
-        const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
-        const empleados = getMultiselectValues('filterEmpleado'); // Array de empleados seleccionados
-        const mesesCierre = getMultiselectValues('filterMesCierre'); // Array de meses seleccionados
-
-        console.log('🔧 Valores de filtros:', {
-            oportunidad,
-            tipo,
-            etapas,
-            cliente,
-            empleados,
-            mesesCierre
-        });
-
-        const tableBody = document.getElementById('tablaOportunidades');
-        const rows = originalRows;
-        let filteredRows = [];
-
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            const cells = row.getElementsByTagName('td');
-
-            if (cells.length < 8) continue;
-
-            let showRow = true;
-
-            // Filtro de oportunidad
-            if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
-                showRow = false;
-            }
-
-            // Filtro de cliente
-            if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
-                showRow = false;
-            }
-
-            // Filtro de empleado (múltiple)
-            if (empleados.length > 0 && row.dataset.usuarioId) {
-                console.log('🔧 Filtro empleados:', empleados, 'vs dataset:', row.dataset.usuarioId);
-                if (!empleados.includes(row.dataset.usuarioId)) {
-                    showRow = false;
-                }
-            }
-
-            // Filtro de tipo (columna 2)
-            if (tipo && cells.length > 2) {
-                const tipoCell = cells[2];
-                const tipoBadge = tipoCell.querySelector('.tipo-negociacion-badge');
-                if (tipoBadge) {
-                    const tipoText = tipoBadge.textContent.toLowerCase().trim();
-                    console.log('🔧 Comparando tipo:', tipo, 'con texto:', tipoText);
-                    let tipoMatch = false;
-                    if (tipo === 'runrate' && tipoText.includes('runrate')) tipoMatch = true;
-                    if (tipo === 'proyecto' && tipoText.includes('proyecto')) tipoMatch = true;
-                    if (!tipoMatch) showRow = false;
-                }
-            }
-
-            // Filtro de estado/etapa múltiple (columna 3)
-            if (etapas.length > 0 && cells.length > 3) {
-                const etapaCell = cells[3];
-                const etapaBadge = etapaCell.querySelector('.etapa-badge');
-                if (etapaBadge) {
-                    const etapaText = etapaBadge.textContent.toLowerCase().trim();
-                    console.log('🔧 Comparando etapas:', etapas, 'con texto:', etapaText);
-                    let etapaMatch = false;
-
-                    // Verificar si coincide con alguna de las etapas seleccionadas
-                    for (const etapaSeleccionada of etapas) {
-                        switch (etapaSeleccionada) {
-                            case 'vigentes':
-                                // Excluir cerradas (ganadas y perdidas)
-                                if (!etapaText.includes('ganado') && !etapaText.includes('perdido') && !etapaText.includes('pagado')) {
-                                    etapaMatch = true;
-                                }
-                                break;
-                            case 'ganadas':
-                                // Solo cerradas ganadas, incluir pagado
-                                if (etapaText.includes('ganado') || etapaText.includes('pagado')) {
-                                    etapaMatch = true;
-                                }
-                                break;
-                            case 'perdidas':
-                                // Solo cerradas perdidas
-                                if (etapaText.includes('perdido')) {
-                                    etapaMatch = true;
-                                }
-                                break;
-                        }
-                        if (etapaMatch) break; // Si ya encontró una coincidencia, salir del loop
-                    }
-
-                    if (!etapaMatch) showRow = false;
-                }
-            }
-
-            // Filtro de mes de cierre múltiple (columna 6)
-            if (mesesCierre.length > 0 && cells.length > 6) {
-                const mesCierreCell = cells[6].textContent.toLowerCase().trim();
-                console.log('🔧 Debug meses cierre - Cell text:', mesCierreCell, 'Filter values:', mesesCierre);
-
-                // Comparar tanto por nombre del mes como por número
-                const cellAsNumber = monthMap[mesCierreCell]; // nombre -> número
-                console.log('🔧 Month map lookup:', cellAsNumber);
-
-                // Verificar si el mes de la celda coincide con alguno de los seleccionados
-                const mesMatch = mesesCierre.includes(cellAsNumber) || mesesCierre.includes(mesCierreCell);
-                console.log('🔧 Month match:', mesMatch);
-
-                if (!mesMatch) {
-                    showRow = false;
-                }
-            }
-
-            if (showRow) {
-                filteredRows.push(row);
-            }
-        }
-
-        // Re-append filtered rows to the table body
-        tableBody.innerHTML = '';
-        filteredRows.forEach(row => tableBody.appendChild(row));
-
-        console.log('🔧 Filtros aplicados:', filteredRows.length, 'de', rows.length, 'filas');
-        updateNoResultsMessage(filteredRows.length, tableBody);
     }
 
     // Función para expandir/contraer etapas con lógica inteligente
