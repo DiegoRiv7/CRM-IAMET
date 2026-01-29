@@ -3194,7 +3194,47 @@
         opacity: 0.5;
     }
 
-    /* ========== SUMMARY WIDGET CARD ========== */
+    /* ========== FLIP CARD CONTAINER ========== */
+    .flip-card-container {
+        perspective: 1000px;
+        min-height: 320px;
+        z-index: 1;
+    }
+
+    .flip-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 320px;
+        transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+        transform-style: preserve-3d;
+    }
+
+    .flip-card-container.flipped .flip-card-inner {
+        transform: rotateY(180deg);
+    }
+
+    .flip-card-front,
+    .flip-card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        min-height: 320px;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        border-radius: 24px;
+    }
+
+    .flip-card-front {
+        z-index: 2;
+    }
+
+    .flip-card-back {
+        transform: rotateY(180deg);
+        z-index: 1;
+    }
+
+    /* ========== SUMMARY WIDGET CARD (FRONT) ========== */
     .summary-widget-card {
         position: relative;
         background: linear-gradient(135deg, var(--apple-blue) 0%, #0066CC 50%, #4B0082 100%);
@@ -3208,6 +3248,218 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 8px 32px rgba(10, 132, 255, 0.2);
         z-index: 1;
+    }
+
+    /* Flip Button */
+    .flip-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 10;
+    }
+
+    .flip-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.05);
+    }
+
+    .flip-btn:active {
+        transform: scale(0.95);
+    }
+
+    .flip-btn svg {
+        width: 18px;
+        height: 18px;
+        transition: transform 0.3s ease;
+    }
+
+    .flip-card-container.flipped .flip-btn svg {
+        transform: rotate(180deg);
+    }
+
+    /* ========== FILTERS CARD (BACK) ========== */
+    .filters-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 24px;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        min-height: 320px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .filters-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .filters-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filters-card-title svg {
+        width: 16px;
+        height: 16px;
+        color: #0A84FF;
+    }
+
+    /* Filters Grid */
+    .filters-grid-compact {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        flex: 1;
+    }
+
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .filter-item label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-select {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        padding: 10px 12px;
+        color: white;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 32px;
+    }
+
+    .filter-select:hover {
+        background-color: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+    }
+
+    .filter-select option {
+        background: #1a1a2e;
+        color: white;
+        padding: 8px;
+    }
+
+    /* Filter Actions */
+    .filter-actions-compact {
+        display: flex;
+        gap: 8px;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .filter-action-btn {
+        flex: 1;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .filter-action-btn.primary {
+        background: linear-gradient(135deg, #0A84FF 0%, #0066CC 100%);
+        color: white;
+    }
+
+    .filter-action-btn.primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
+    }
+
+    .filter-action-btn.secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .filter-action-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .filter-action-btn.export {
+        background: linear-gradient(135deg, #34C759 0%, #30B350 100%);
+        color: white;
+    }
+
+    .filter-action-btn.export:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
+    }
+
+    /* Active filters indicator */
+    .active-filters-count {
+        position: absolute;
+        top: 8px;
+        right: 52px;
+        background: #FF375F;
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 18px;
+        text-align: center;
+        display: none;
+    }
+
+    .active-filters-count.visible {
+        display: block;
     }
 
     .summary-widget-card::before {
@@ -3609,6 +3861,38 @@
         background: linear-gradient(135deg, #FF6B9D 0%, #E55A87 50%, #D63384 100%) !important;
     }
 
+    .light-theme .filters-card,
+    body[data-theme="pink"] .filters-card {
+        background: linear-gradient(135deg, #FFE4EC 0%, #FFD4E0 50%, #FFC4D4 100%) !important;
+    }
+
+    .light-theme .filters-card-title,
+    .light-theme .filter-item label,
+    body[data-theme="pink"] .filters-card-title,
+    body[data-theme="pink"] .filter-item label {
+        color: #6B4C6D !important;
+    }
+
+    .light-theme .filter-select,
+    body[data-theme="pink"] .filter-select {
+        background: rgba(107, 76, 109, 0.1) !important;
+        border-color: rgba(107, 76, 109, 0.2) !important;
+        color: #4A3A4C !important;
+    }
+
+    .light-theme .filter-select option,
+    body[data-theme="pink"] .filter-select option {
+        background: #FFE4EC !important;
+        color: #4A3A4C !important;
+    }
+
+    .light-theme .filter-action-btn.secondary,
+    body[data-theme="pink"] .filter-action-btn.secondary {
+        background: rgba(107, 76, 109, 0.15) !important;
+        color: #6B4C6D !important;
+        border-color: rgba(107, 76, 109, 0.2) !important;
+    }
+
     .light-theme .enhanced-table-container,
     body[data-theme="pink"] .enhanced-table-container {
         background: rgba(255, 240, 245, 0.9) !important;
@@ -3799,26 +4083,139 @@
             <!-- ========== GRID VIEW (CARDS) ========== -->
             <div class="cards-grid-container view-grid">
 
-                <!-- Summary Widget Card -->
-                <div class="summary-widget-card">
-                    <div class="summary-badge">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z" />
-                        </svg>
-                        <span>Total Cobrado del Mes</span>
-                    </div>
-                    <div class="summary-amount">
-                        <h2 id="totalPipelineAmount">$0</h2>
-                        <p>Cobrado este mes</p>
-                    </div>
-                    <div class="summary-progress">
-                        <div class="progress-header">
-                            <span>Meta: $300k</span>
-                            <span id="progressPercent">0%</span>
+                <!-- Summary Widget Card with Flip Effect -->
+                <div class="flip-card-container" id="summaryFlipCard">
+                    <div class="flip-card-inner">
+                        <!-- FRONT: Summary -->
+                        <div class="flip-card-front">
+                            <div class="summary-widget-card">
+                                <button class="flip-btn" onclick="toggleFlipCard()" title="Mostrar filtros">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46"></polygon>
+                                    </svg>
+                                </button>
+                                <span class="active-filters-count" id="activeFiltersCount">0</span>
+                                <div class="summary-badge">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z" />
+                                    </svg>
+                                    <span>Total Cobrado del Mes</span>
+                                </div>
+                                <div class="summary-amount">
+                                    <h2 id="totalPipelineAmount">$0</h2>
+                                    <p>Cobrado este mes</p>
+                                </div>
+                                <div class="summary-progress">
+                                    <div class="progress-header">
+                                        <span>Meta: $300k</span>
+                                        <span id="progressPercent">0%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+
+                        <!-- BACK: Filters -->
+                        <div class="flip-card-back">
+                            <div class="filters-card">
+                                <button class="flip-btn" onclick="toggleFlipCard()" title="Volver">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                                        <polyline points="12 19 5 12 12 5"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="filters-card-header">
+                                    <div class="filters-card-title">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46"></polygon>
+                                        </svg>
+                                        Filtros Avanzados
+                                    </div>
+                                </div>
+
+                                <div class="filters-grid-compact">
+                                    <div class="filter-item">
+                                        <label>Tipo</label>
+                                        <select class="filter-select" id="flipFilterTipo" onchange="applyFlipFilters()">
+                                            <option value="">Todos</option>
+                                            <option value="proyecto">Proyecto</option>
+                                            <option value="runrate">RunRate</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="filter-item">
+                                        <label>Etapa</label>
+                                        <select class="filter-select" id="flipFilterEtapa" onchange="applyFlipFilters()">
+                                            <option value="">Todas</option>
+                                            <option value="vigentes">Vigentes</option>
+                                            <option value="ganadas">Cerradas Ganadas</option>
+                                            <option value="perdidas">Cerradas Perdidas</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="filter-item">
+                                        <label>Cliente</label>
+                                        <select class="filter-select" id="flipFilterCliente" onchange="applyFlipFilters()">
+                                            <option value="">Todos</option>
+                                            {% regroup items by cliente.nombre_empresa as cliente_list %}
+                                            {% for cliente in cliente_list %}
+                                            {% if cliente.grouper %}
+                                            <option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="filter-item">
+                                        <label>Empleado</label>
+                                        <select class="filter-select" id="flipFilterEmpleado" onchange="applyFlipFilters()">
+                                            <option value="">Todos</option>
+                                            {% for user in empleados %}
+                                            <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="filter-item full-width">
+                                        <label>Mes de Cierre</label>
+                                        <select class="filter-select" id="flipFilterMes" onchange="applyFlipFilters()">
+                                            <option value="">Todos</option>
+                                            <option value="01">Enero</option>
+                                            <option value="02">Febrero</option>
+                                            <option value="03">Marzo</option>
+                                            <option value="04">Abril</option>
+                                            <option value="05">Mayo</option>
+                                            <option value="06">Junio</option>
+                                            <option value="07">Julio</option>
+                                            <option value="08">Agosto</option>
+                                            <option value="09">Septiembre</option>
+                                            <option value="10">Octubre</option>
+                                            <option value="11">Noviembre</option>
+                                            <option value="12">Diciembre</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="filter-actions-compact">
+                                    <button class="filter-action-btn secondary" onclick="clearFlipFilters()">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                        Limpiar
+                                    </button>
+                                    <button class="filter-action-btn export" onclick="generarReporteCSV()">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        Excel
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4652,8 +5049,17 @@
             superFilters = { search: '', tipo: '', etapa: [], cliente: '', empleado: [], mes: [] };
             chipsContainer.innerHTML = '';
             input.value = '';
+
+            // Also clear flip card selects
+            const flipSelects = ['flipFilterTipo', 'flipFilterEtapa', 'flipFilterCliente', 'flipFilterEmpleado', 'flipFilterMes'];
+            flipSelects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) select.value = '';
+            });
+
             applyAllFilters();
             updateClearButton();
+            updateActiveFiltersCount();
         }
 
         function updateClearButton() {
@@ -4809,6 +5215,165 @@
             noResultsRow.innerHTML = '<td colspan="8" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
             tableBody.appendChild(noResultsRow);
         }
+    }
+
+    // ========== FLIP CARD FUNCTIONS ==========
+    function toggleFlipCard() {
+        const flipCard = document.getElementById('summaryFlipCard');
+        if (flipCard) {
+            flipCard.classList.toggle('flipped');
+        }
+    }
+
+    function applyFlipFilters() {
+        // Get values from flip card selects
+        const tipo = document.getElementById('flipFilterTipo')?.value || '';
+        const etapa = document.getElementById('flipFilterEtapa')?.value || '';
+        const cliente = document.getElementById('flipFilterCliente')?.value || '';
+        const empleado = document.getElementById('flipFilterEmpleado')?.value || '';
+        const mes = document.getElementById('flipFilterMes')?.value || '';
+
+        // Update superFilters state
+        superFilters.tipo = tipo;
+        superFilters.etapa = etapa ? [etapa] : [];
+        superFilters.cliente = cliente;
+        superFilters.empleado = empleado ? [empleado] : [];
+        superFilters.mes = mes ? [mes] : [];
+
+        // Apply filters
+        applyAllFilters();
+
+        // Update active filters count
+        updateActiveFiltersCount();
+
+        // Update chips in super search bar
+        updateSuperSearchChips();
+    }
+
+    function clearFlipFilters() {
+        // Reset all selects
+        const selects = ['flipFilterTipo', 'flipFilterEtapa', 'flipFilterCliente', 'flipFilterEmpleado', 'flipFilterMes'];
+        selects.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) select.value = '';
+        });
+
+        // Clear superFilters
+        superFilters = { search: '', tipo: '', etapa: [], cliente: '', empleado: [], mes: [] };
+
+        // Apply filters (show all)
+        applyAllFilters();
+
+        // Update count and chips
+        updateActiveFiltersCount();
+        updateSuperSearchChips();
+
+        // Flip back to summary
+        const flipCard = document.getElementById('summaryFlipCard');
+        if (flipCard) {
+            flipCard.classList.remove('flipped');
+        }
+    }
+
+    function updateActiveFiltersCount() {
+        const count = (superFilters.tipo ? 1 : 0) +
+                      (superFilters.etapa.length > 0 ? 1 : 0) +
+                      (superFilters.cliente ? 1 : 0) +
+                      (superFilters.empleado.length > 0 ? 1 : 0) +
+                      (superFilters.mes.length > 0 ? 1 : 0);
+
+        const countElement = document.getElementById('activeFiltersCount');
+        if (countElement) {
+            countElement.textContent = count;
+            countElement.classList.toggle('visible', count > 0);
+        }
+    }
+
+    function updateSuperSearchChips() {
+        const chipsContainer = document.getElementById('superSearchChips');
+        if (!chipsContainer) return;
+
+        chipsContainer.innerHTML = '';
+
+        const typeLabels = {
+            tipo: 'Tipo',
+            etapa: 'Etapa',
+            cliente: 'Cliente',
+            empleado: 'Empleado',
+            mes: 'Mes'
+        };
+
+        const etapaLabels = { vigentes: 'Vigentes', ganadas: 'Ganadas', perdidas: 'Perdidas' };
+        const mesLabels = { '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre' };
+
+        // Add chips for each active filter
+        if (superFilters.tipo) {
+            addChipToContainer(chipsContainer, 'tipo', superFilters.tipo, superFilters.tipo === 'proyecto' ? 'Proyecto' : 'RunRate');
+        }
+        superFilters.etapa.forEach(e => {
+            addChipToContainer(chipsContainer, 'etapa', e, etapaLabels[e] || e);
+        });
+        if (superFilters.cliente) {
+            addChipToContainer(chipsContainer, 'cliente', superFilters.cliente, superFilters.cliente);
+        }
+        superFilters.empleado.forEach(emp => {
+            const select = document.getElementById('flipFilterEmpleado');
+            const label = select ? Array.from(select.options).find(o => o.value === emp)?.text || emp : emp;
+            addChipToContainer(chipsContainer, 'empleado', emp, label);
+        });
+        superFilters.mes.forEach(m => {
+            addChipToContainer(chipsContainer, 'mes', m, mesLabels[m] || m);
+        });
+
+        // Show/hide clear button
+        const clearBtn = document.getElementById('superSearchClear');
+        if (clearBtn) {
+            const hasFilters = superFilters.tipo || superFilters.cliente ||
+                superFilters.etapa.length > 0 || superFilters.empleado.length > 0 || superFilters.mes.length > 0;
+            clearBtn.style.display = hasFilters ? 'flex' : 'none';
+        }
+    }
+
+    function addChipToContainer(container, type, value, label) {
+        const chip = document.createElement('div');
+        chip.className = 'super-search-chip';
+        chip.dataset.filterType = type;
+        chip.dataset.filterValue = value;
+        chip.innerHTML = `
+            <span class="chip-type">${type}:</span>
+            <span>${label}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removeFlipFilter('${type}', '${value}')">×</span>
+        `;
+        container.appendChild(chip);
+    }
+
+    function removeFlipFilter(type, value) {
+        // Update the corresponding select in flip card
+        const selectMap = {
+            tipo: 'flipFilterTipo',
+            etapa: 'flipFilterEtapa',
+            cliente: 'flipFilterCliente',
+            empleado: 'flipFilterEmpleado',
+            mes: 'flipFilterMes'
+        };
+
+        const selectId = selectMap[type];
+        if (selectId) {
+            const select = document.getElementById(selectId);
+            if (select) select.value = '';
+        }
+
+        // Update superFilters
+        if (type === 'tipo') superFilters.tipo = '';
+        else if (type === 'etapa') superFilters.etapa = superFilters.etapa.filter(e => e !== value);
+        else if (type === 'cliente') superFilters.cliente = '';
+        else if (type === 'empleado') superFilters.empleado = superFilters.empleado.filter(e => e !== value);
+        else if (type === 'mes') superFilters.mes = superFilters.mes.filter(m => m !== value);
+
+        // Re-apply filters
+        applyAllFilters();
+        updateActiveFiltersCount();
+        updateSuperSearchChips();
     }
 
     // Función para expandir/contraer etapas con lógica inteligente
