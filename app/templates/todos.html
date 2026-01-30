@@ -4148,62 +4148,59 @@
                                 <div class="filters-grid-compact">
                                     <div class="filter-item">
                                         <label>Tipo</label>
-                                        <select class="filter-select" id="flipFilterTipo" onchange="applyFlipFilters()">
-                                            <option value="">Todos</option>
-                                            <option value="proyecto">Proyecto</option>
-                                            <option value="runrate">RunRate</option>
+                                        <select class="filter-select" id="flipFilterTipo">
+                                            <option value="" {% if not request.GET.tipo_negociacion %}selected{% endif %}>Todos</option>
+                                            <option value="proyecto" {% if request.GET.tipo_negociacion == 'proyecto' %}selected{% endif %}>Proyecto</option>
+                                            <option value="runrate" {% if request.GET.tipo_negociacion == 'runrate' %}selected{% endif %}>RunRate</option>
                                         </select>
                                     </div>
 
                                     <div class="filter-item">
                                         <label>Etapa</label>
-                                        <select class="filter-select" id="flipFilterEtapa" onchange="applyFlipFilters()">
-                                            <option value="">Todas</option>
-                                            <option value="vigentes">Vigentes</option>
-                                            <option value="ganadas">Cerradas Ganadas</option>
-                                            <option value="perdidas">Cerradas Perdidas</option>
+                                        <select class="filter-select" id="flipFilterEtapa">
+                                            <option value="" {% if not request.GET.etapa %}selected{% endif %}>Todas</option>
+                                            <option value="vigentes" {% if request.GET.etapa == 'vigentes' %}selected{% endif %}>Vigentes</option>
+                                            <option value="ganadas" {% if request.GET.etapa == 'ganadas' %}selected{% endif %}>Cerradas Ganadas</option>
+                                            <option value="perdidas" {% if request.GET.etapa == 'perdidas' %}selected{% endif %}>Cerradas Perdidas</option>
                                         </select>
                                     </div>
 
                                     <div class="filter-item">
                                         <label>Cliente</label>
-                                        <select class="filter-select" id="flipFilterCliente" onchange="applyFlipFilters()">
+                                        <select class="filter-select" id="flipFilterCliente">
                                             <option value="">Todos</option>
-                                            {% regroup items by cliente.nombre_empresa as cliente_list %}
-                                            {% for cliente in cliente_list %}
-                                            {% if cliente.grouper %}
-                                            <option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>
-                                            {% endif %}
+                                            {% for c in clientes %}
+                                            <option value="{{ c.id }}" {% if request.GET.cliente == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre_empresa }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
 
                                     <div class="filter-item">
                                         <label>Empleado</label>
-                                        <select class="filter-select" id="flipFilterEmpleado" onchange="applyFlipFilters()">
+                                        <select class="filter-select" id="flipFilterEmpleado">
                                             <option value="">Todos</option>
                                             {% for user in empleados %}
-                                            <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                                            <option value="{{ user.id }}" {% if request.GET.empleado == user.id|stringformat:"s" %}selected{% endif %}>{{ user.get_full_name|default:user.username }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
 
                                     <div class="filter-item full-width">
                                         <label>Mes de Cierre</label>
-                                        <select class="filter-select" id="flipFilterMes" onchange="applyFlipFilters()">
-                                            <option value="">Todos</option>
-                                            <option value="01">Enero</option>
-                                            <option value="02">Febrero</option>
-                                            <option value="03">Marzo</option>
-                                            <option value="04">Abril</option>
-                                            <option value="05">Mayo</option>
-                                            <option value="06">Junio</option>
-                                            <option value="07">Julio</option>
-                                            <option value="08">Agosto</option>
-                                            <option value="09">Septiembre</option>
-                                            <option value="10">Octubre</option>
-                                            <option value="11">Noviembre</option>
-                                            <option value="12">Diciembre</option>
+                                        <select class="filter-select" id="flipFilterMes">
+                                            <option value="" {% if not request.GET.mes_cierre %}selected{% endif %}>Todos</option>
+                                            <option value="01" {% if request.GET.mes_cierre == '01' %}selected{% endif %}>Enero</option>
+                                            <option value="02" {% if request.GET.mes_cierre == '02' %}selected{% endif %}>Febrero</option>
+                                            <option value="03" {% if request.GET.mes_cierre == '03' %}selected{% endif %}>Marzo</option>
+                                            <option value="04" {% if request.GET.mes_cierre == '04' %}selected{% endif %}>Abril</option>
+                                            <option value="05" {% if request.GET.mes_cierre == '05' %}selected{% endif %}>Mayo</option>
+                                            <option value="06" {% if request.GET.mes_cierre == '06' %}selected{% endif %}>Junio</option>
+                                            <option value="07" {% if request.GET.mes_cierre == '07' %}selected{% endif %}>Julio</option>
+                                            <option value="08" {% if request.GET.mes_cierre == '08' %}selected{% endif %}>Agosto</option>
+                                            <option value="09" {% if request.GET.mes_cierre == '09' %}selected{% endif %}>Septiembre</option>
+                                            <option value="10" {% if request.GET.mes_cierre == '10' %}selected{% endif %}>Octubre</option>
+                                            <option value="11" {% if request.GET.mes_cierre == '11' %}selected{% endif %}>Noviembre</option>
+                                            <option value="12" {% if request.GET.mes_cierre == '12' %}selected{% endif %}>Diciembre</option>
                                         </select>
                                     </div>
                                 </div>
@@ -4215,6 +4212,12 @@
                                             <line x1="6" y1="6" x2="18" y2="18"></line>
                                         </svg>
                                         Limpiar
+                                    </button>
+                                    <button class="filter-action-btn primary" onclick="applyServerFilters()">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46"></polygon>
+                                        </svg>
+                                        Filtrar
                                     </button>
                                     <button class="filter-action-btn export" onclick="generarReporteCSV()">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4657,23 +4660,26 @@
     };
 
     function generarReporteCSV() {
-        // Usar los filtros activos de la super barra
-        const oportunidad = superFilters.search;
-        const tipo = superFilters.tipo;
-        const etapas = superFilters.etapa;
-        const cliente = superFilters.cliente;
-        const empleados = superFilters.empleado;
-        const mesesCierre = superFilters.mes;
+        // Usar los filtros activos de la URL actual
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const search = urlParams.get('search') || '';
+        const tipo = urlParams.get('tipo_negociacion') || '';
+        const etapa = urlParams.get('etapa') || '';
+        const cliente = urlParams.get('cliente') || '';
+        const empleado = urlParams.get('empleado') || '';
+        const mesCierre = urlParams.get('mes_cierre') || '';
 
         // URL para exportar CSV - MISMA ESTRUCTURA QUE ANTES
         var csvPath = '{% url "exportar_oportunidades_csv" %}';
         const url = new URL(window.location.origin + csvPath);
-        if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
+
+        if (search) url.searchParams.set('filterOportunidad', search);
         if (tipo) url.searchParams.set('filterTipo', tipo);
-        if (etapas.length > 0) url.searchParams.set('filterEtapa', etapas.join(','));
+        if (etapa) url.searchParams.set('filterEtapa', etapa);
         if (cliente) url.searchParams.set('filterCliente', cliente);
-        if (empleados.length > 0) url.searchParams.set('empleado', empleados.join(','));
-        if (mesesCierre.length > 0) url.searchParams.set('filterMesCierre', mesesCierre.join(','));
+        if (empleado) url.searchParams.set('empleado', empleado);
+        if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
 
         window.location.href = url.toString();
     }
@@ -4787,6 +4793,9 @@
 
         // ========== SUPER SEARCH BAR INITIALIZATION ==========
         initSuperSearchBar();
+
+        // ========== UPDATE ACTIVE FILTERS COUNT FROM URL ==========
+        updateActiveFiltersCount();
     });
 
     // ========== SUPER SEARCH BAR FUNCTIONS ==========
@@ -5235,7 +5244,7 @@
         }
     }
 
-    function applyFlipFilters() {
+    function applyServerFilters() {
         // Get values from flip card selects
         const tipo = document.getElementById('flipFilterTipo')?.value || '';
         const etapa = document.getElementById('flipFilterEtapa')?.value || '';
@@ -5243,54 +5252,45 @@
         const empleado = document.getElementById('flipFilterEmpleado')?.value || '';
         const mes = document.getElementById('flipFilterMes')?.value || '';
 
-        // Update superFilters state
-        superFilters.tipo = tipo;
-        superFilters.etapa = etapa ? [etapa] : [];
-        superFilters.cliente = cliente;
-        superFilters.empleado = empleado ? [empleado] : [];
-        superFilters.mes = mes ? [mes] : [];
+        // Build URL with query parameters
+        const params = new URLSearchParams();
 
-        // Apply filters
-        applyAllFilters();
+        if (tipo) params.set('tipo_negociacion', tipo);
+        if (etapa) params.set('etapa', etapa);
+        if (cliente) params.set('cliente', cliente);
+        if (empleado) params.set('empleado', empleado);
+        if (mes) params.set('mes_cierre', mes);
 
-        // Update active filters count
-        updateActiveFiltersCount();
+        // Keep existing search query if any
+        const currentSearch = new URLSearchParams(window.location.search).get('search');
+        if (currentSearch) params.set('search', currentSearch);
 
-        // Update chips in super search bar
-        updateSuperSearchChips();
+        // Redirect with filters
+        const queryString = params.toString();
+        window.location.href = window.location.pathname + (queryString ? '?' + queryString : '');
     }
 
     function clearFlipFilters() {
-        // Reset all selects
-        const selects = ['flipFilterTipo', 'flipFilterEtapa', 'flipFilterCliente', 'flipFilterEmpleado', 'flipFilterMes'];
-        selects.forEach(id => {
-            const select = document.getElementById(id);
-            if (select) select.value = '';
-        });
+        // Keep only the search parameter if exists
+        const currentSearch = new URLSearchParams(window.location.search).get('search');
 
-        // Clear superFilters
-        superFilters = { search: '', tipo: '', etapa: [], cliente: '', empleado: [], mes: [] };
-
-        // Apply filters (show all)
-        applyAllFilters();
-
-        // Update count and chips
-        updateActiveFiltersCount();
-        updateSuperSearchChips();
-
-        // Flip back to summary
-        const flipCard = document.getElementById('summaryFlipCard');
-        if (flipCard) {
-            flipCard.classList.remove('flipped');
+        if (currentSearch) {
+            window.location.href = window.location.pathname + '?search=' + encodeURIComponent(currentSearch);
+        } else {
+            window.location.href = window.location.pathname;
         }
     }
 
     function updateActiveFiltersCount() {
-        const count = (superFilters.tipo ? 1 : 0) +
-                      (superFilters.etapa.length > 0 ? 1 : 0) +
-                      (superFilters.cliente ? 1 : 0) +
-                      (superFilters.empleado.length > 0 ? 1 : 0) +
-                      (superFilters.mes.length > 0 ? 1 : 0);
+        // Count active filters from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        let count = 0;
+
+        if (urlParams.get('tipo_negociacion')) count++;
+        if (urlParams.get('etapa')) count++;
+        if (urlParams.get('cliente')) count++;
+        if (urlParams.get('empleado')) count++;
+        if (urlParams.get('mes_cierre')) count++;
 
         const countElement = document.getElementById('activeFiltersCount');
         if (countElement) {

@@ -192,12 +192,20 @@ class VentaFilterForm(forms.Form):
     PRODUCTO_CHOICES = [('', 'Todos los Productos')] + list(TodoItem.PRODUCTO_CHOICES)
     MES_CHOICES = [('', 'Todos los Meses')] + list(TodoItem.MES_CHOICES)
     TIPO_NEGOCIACION_CHOICES = [('', 'Todos los Tipos')] + list(TodoItem.TIPO_NEGOCIACION_CHOICES)
+    ETAPA_CHOICES = [
+        ('', 'Todas las Etapas'),
+        ('vigentes', 'Vigentes'),
+        ('ganadas', 'Cerradas Ganadas'),
+        ('perdidas', 'Cerradas Perdidas'),
+    ]
 
     area = forms.ChoiceField(choices=AREA_CHOICES, required=False, label="Filtrar por Área")
     producto = forms.ChoiceField(choices=PRODUCTO_CHOICES, required=False, label="Filtrar por Producto")
     empleado = forms.ModelChoiceField(queryset=User.objects.all(), required=False, label="Filtrar por Empleado")
     mes_cierre = forms.ChoiceField(choices=MES_CHOICES, required=False, label="Filtrar por Mes de Cierre")
     tipo_negociacion = forms.ChoiceField(choices=TIPO_NEGOCIACION_CHOICES, required=False, label="Filtrar por Tipo")
+    etapa = forms.ChoiceField(choices=ETAPA_CHOICES, required=False, label="Filtrar por Etapa")
+    cliente = forms.ModelChoiceField(queryset=Cliente.objects.all().order_by('nombre_empresa'), required=False, label="Filtrar por Cliente")
     orden_monto = forms.ChoiceField(
         choices=[
             ('', 'Sin Orden'),

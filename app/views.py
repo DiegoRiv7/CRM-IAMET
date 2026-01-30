@@ -2105,11 +2105,8 @@ def view_cotizacion_pdf(request, cotizacion_id):
 
 @login_required
 def todos (request):
-    # Determinar si el usuario es un supervisor - Optimizar consultas con select_related
-    if is_supervisor(request.user):
-        items = TodoItem.objects.select_related('usuario', 'cliente').all()
-    else:
-        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
+    # Mostrar todas las oportunidades a todos los usuarios
+    items = TodoItem.objects.select_related('usuario', 'cliente').all()
 
     filter_form = VentaFilterForm(request.GET)
 
@@ -2119,6 +2116,9 @@ def todos (request):
         orden_monto = filter_form.cleaned_data.get('orden_monto')
         empleado = filter_form.cleaned_data.get('empleado')
         mes_cierre = filter_form.cleaned_data.get('mes_cierre')
+        tipo_negociacion = filter_form.cleaned_data.get('tipo_negociacion')
+        etapa = filter_form.cleaned_data.get('etapa')
+        cliente = filter_form.cleaned_data.get('cliente')
 
         if area:
             items = items.filter(area=area)
@@ -2129,6 +2129,13 @@ def todos (request):
             items = items.filter(usuario=empleado)
         if mes_cierre:
             items = items.filter(mes_cierre=mes_cierre)
+        if tipo_negociacion:
+            items = items.filter(tipo_negociacion=tipo_negociacion)
+        if etapa:
+            # Filtrar por etapa_corta (vigentes, ganadas, perdidas)
+            items = items.filter(etapa_corta__iexact=etapa)
+        if cliente:
+            items = items.filter(cliente=cliente)
 
         if orden_monto:
             if orden_monto == 'monto_asc':
@@ -2168,7 +2175,10 @@ def todos (request):
     # Obtener lista de empleados para el filtro
     from django.contrib.auth.models import User
     empleados = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
-    
+
+    # Obtener lista de clientes para el filtro
+    clientes = Cliente.objects.all().order_by('nombre_empresa')
+
     context = {
         "items": context_items,
         "page_obj": page_obj,
@@ -2177,6 +2187,7 @@ def todos (request):
         "search_query": search_query,
         "reporte_activo": reporte_activo,
         "empleados": empleados,
+        "clientes": clientes,
     }
     return render (request, "todos.html", context)
 
@@ -3047,7 +3058,11 @@ def exportar_oportunidades_csv(request):
         
     cliente_filter = request.GET.get('filterCliente', '').strip()
     if cliente_filter:
-        items = items.filter(cliente__nombre_empresa__icontains=cliente_filter)
+        # Si es un número, buscar por ID; si no, buscar por nombre
+        if cliente_filter.isdigit():
+            items = items.filter(cliente__id=int(cliente_filter))
+        else:
+            items = items.filter(cliente__nombre_empresa__icontains=cliente_filter)
         
     # Filtro de tipo
     tipo_filter = request.GET.get('filterTipo', '').strip()
