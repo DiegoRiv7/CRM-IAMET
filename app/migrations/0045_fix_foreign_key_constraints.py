@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0044_remove_actividad_participantes_actividad_and_more'),
+        ('app', '0044_intercambio_navidad'),
     ]
 
     operations = [

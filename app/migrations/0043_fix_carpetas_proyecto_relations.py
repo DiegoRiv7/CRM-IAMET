@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0042_merge_20251107_1331'),
+        ('app', '0036_sistema_carpetas_archivos'),
     ]
 
     operations = [
