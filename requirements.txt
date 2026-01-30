@@ -26,4 +26,5 @@ tinyhtml5==2.0.0
 urllib3==2.5.0
 weasyprint==65.1
 webencodings==0.5.1
+whitenoise==6.7.0
 zopfli==0.2.3.post1
