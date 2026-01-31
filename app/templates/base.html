@@ -1,86 +1,91 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
         {% block title %}
-            Administración de Ventas
+        Administración de Ventas
         {% endblock %}
     </title>
-    
+
     <!-- Favicon y iconos con fallbacks -->
     <!-- SVG Favicon para navegadores modernos -->
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
-    
+
     <!-- Favicon ICO como fallback -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-    
+
     <!-- PNG Favicons para diferentes tamaños -->
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
-    
+
     <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
-    
+
     <!-- Android Chrome Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}">
     <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
-    
+
     <!-- Inline SVG favicon como último recurso -->
-    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwN0FGRiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzU4NTZENiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgcng9IjYiIGZpbGw9InVybCgjYmcpIi8+PHJlY3QgeD0iNyIgeT0iMjAiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIGZpbGw9IiNGRkYiIHJ4PSIxIi8+PHJlY3QgeD0iMTIiIHk9IjE2IiB3aWR0aD0iMyIgaGVpZ2h0PSIxMCIgZmlsbD0iI0ZGRiIgcng9IjEiLz48cmVjdCB4PSIxNyIgeT0iMTIiIHdpZHRoPSIzIiBoZWlnaHQ9IjE0IiBmaWxsPSIjRkZGIiByeD0iMSIvPjxyZWN0IHg9IjIyIiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSIxOCIgZmlsbD0iI0ZGRiIgcng9IjEiLz48L3N2Zz4=">
-    
+    <link rel="icon"
+        href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwN0FGRiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzU4NTZENiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgcng9IjYiIGZpbGw9InVybCgjYmcpIi8+PHJlY3QgeD0iNyIgeT0iMjAiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIGZpbGw9IiNGRkYiIHJ4PSIxIi8+PHJlY3QgeD0iMTIiIHk9IjE2IiB3aWR0aD0iMyIgaGVpZ2h0PSIxMCIgZmlsbD0iI0ZGRiIgcng9IjEiLz48cmVjdCB4PSIxNyIgeT0iMTIiIHdpZHRoPSIzIiBoZWlnaHQ9IjE0IiBmaWxsPSIjRkZGIiByeD0iMSIvPjxyZWN0IHg9IjIyIiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSIxOCIgZmlsbD0iI0ZGRiIgcng9IjEiLz48L3N2Zz4=">
+
     <!-- Meta tags para mejor presentación -->
-    <meta name="description" content="Sistema de Gestión de Ventas - Administra oportunidades, clientes y cotizaciones de manera eficiente">
+    <meta name="description"
+        content="Sistema de Gestión de Ventas - Administra oportunidades, clientes y cotizaciones de manera eficiente">
     <meta name="keywords" content="ventas, CRM, cotizaciones, oportunidades, clientes, Bitrix24">
     <meta name="author" content="Sistema de Gestión de Ventas">
     <meta name="robots" content="noindex, nofollow">
-    
+
     <!-- Open Graph para redes sociales -->
     <meta property="og:title" content="{% block og_title %}Sistema de Gestión de Ventas{% endblock %}">
-    <meta property="og:description" content="Administra tus ventas, clientes y oportunidades de negocio de manera eficiente">
+    <meta property="og:description"
+        content="Administra tus ventas, clientes y oportunidades de negocio de manera eficiente">
     <meta property="og:type" content="website">
     <meta property="og:image" content="{% static 'images/android-chrome-512x512.png' %}">
-    
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{% block twitter_title %}Sistema de Gestión de Ventas{% endblock %}">
     <meta name="twitter:description" content="Administra tus ventas, clientes y oportunidades de negocio">
-        
-        <!-- PWA Support -->
-        <link rel="manifest" href="{% static 'manifest.json' %}">
-    
-        <meta name="theme-color" content="#007AFF">
+
+    <!-- PWA Support -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+
+    <meta name="theme-color" content="#007AFF">
     <script>
-    (function() {
-        try {
-            const theme = localStorage.getItem('theme') || 'dark';
-            const html = document.documentElement;
+        (function () {
+            try {
+                const theme = localStorage.getItem('theme') || 'dark';
+                const html = document.documentElement;
 
-            html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
-            html.removeAttribute('data-theme');
+                html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
+                html.removeAttribute('data-theme');
 
-            if (theme === 'pink' || theme === 'white' || theme === 'coffee' || theme === 'perla') {
-                html.classList.add('light-theme');
-            } else {
-                html.classList.add('dark-theme');
+                if (theme === 'pink' || theme === 'white' || theme === 'coffee' || theme === 'perla') {
+                    html.classList.add('light-theme');
+                } else {
+                    html.classList.add('dark-theme');
+                }
+
+                if (theme !== 'dark') {
+                    html.setAttribute('data-theme', theme);
+                }
+            } catch (e) {
+                console.error('Error applying theme from localStorage', e);
+                document.documentElement.classList.add('dark-theme');
             }
-
-            if (theme !== 'dark') {
-                html.setAttribute('data-theme', theme);
-            }
-        } catch (e) {
-            console.error('Error applying theme from localStorage', e);
-            document.documentElement.classList.add('dark-theme');
-        }
-    })();
-</script>    <meta name="mobile-web-app-capable" content="yes">
+        })();
+    </script>
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gestión Ventas">
-    
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -88,9 +93,10 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <!-- jQuery for global use -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="{% static 'css/personalizacion.css' %}">
     <link rel="stylesheet" href="{% static 'css/oportunidad_detail.css' %}">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
-    
+
     <!-- Intro.js for Tutorial -->
     <script src="https://unpkg.com/intro.js/intro.js"></script>
     <link href="https://unpkg.com/intro.js/introjs.css" rel="stylesheet">
@@ -102,142 +108,162 @@
             padding-bottom: 80px;
             position: relative;
         }
-        
+
         :root {
-    --apple-background: #000000;
-    --apple-background-secondary: #1D1D1F;
-    --apple-background-tertiary: #2C2C2E;
-    --apple-background-quaternary: #3A3A3C;
-    --apple-label: #FFFFFF;
-    --apple-label-secondary: #EBEBF5;
-    --apple-label-tertiary: #EBEBF599;
-    --apple-label-quaternary: #EBEBF54D;
-    --apple-blue: #007AFF;
-    --apple-blue-light: #4DA8FF;
-    --apple-blue-dark: #0056CC;
-    --apple-separator: #38383A;
-}
+            --apple-background: #000000;
+            --apple-background-secondary: #1D1D1F;
+            --apple-background-tertiary: #2C2C2E;
+            --apple-background-quaternary: #3A3A3C;
+            --apple-label: #FFFFFF;
+            --apple-label-secondary: #EBEBF5;
+            --apple-label-tertiary: #EBEBF599;
+            --apple-label-quaternary: #EBEBF54D;
+            --apple-blue: #007AFF;
+            --apple-blue-light: #4DA8FF;
+            --apple-blue-dark: #0056CC;
+            --apple-separator: #38383A;
+        }
 
-html.light-theme {
-    --apple-background: #ffffff;
-    --apple-background-secondary: #f8f9fa;
-    --apple-background-tertiary: #f1f3f5;
-    --apple-background-quaternary: #e9ecef;
-    --apple-label: #212529;
-    --apple-label-secondary: #343a40;
-    --apple-label-tertiary: #495057;
-    --apple-blue: #007bff;
-    --apple-blue-light: #4da8ff;
-    --apple-blue-dark: #0056b3;
-    --apple-separator: rgba(0, 0, 0, 0.1);
-}
+        html.light-theme {
+            --apple-background: #ffffff;
+            --apple-background-secondary: #f8f9fa;
+            --apple-background-tertiary: #f1f3f5;
+            --apple-background-quaternary: #e9ecef;
+            --apple-label: #212529;
+            --apple-label-secondary: #343a40;
+            --apple-label-tertiary: #495057;
+            --apple-blue: #007bff;
+            --apple-blue-light: #4da8ff;
+            --apple-blue-dark: #0056b3;
+            --apple-separator: rgba(0, 0, 0, 0.1);
+        }
 
-html[data-theme="pink"] {
-  --apple-background: #FFF5F8;
-  --apple-background-secondary: #FFE8EF;
-  --apple-background-tertiary: #FFD1DC;
-  --apple-background-quaternary: #FFC0CB;
-  --apple-label: #2D1B2E;
-  --apple-label-secondary: #4A2B4D;
-  --apple-blue: #FF6B9D;
-  --apple-blue-light: #FF8FB3;
-  --apple-blue-dark: #E55A87;
-  --apple-separator: rgba(255, 107, 157, 0.2);
-}
+        html[data-theme="pink"] {
+            --apple-background: #FFF5F8;
+            --apple-background-secondary: #FFE8EF;
+            --apple-background-tertiary: #FFD1DC;
+            --apple-background-quaternary: #FFC0CB;
+            --apple-label: #2D1B2E;
+            --apple-label-secondary: #4A2B4D;
+            --apple-blue: #FF6B9D;
+            --apple-blue-light: #FF8FB3;
+            --apple-blue-dark: #E55A87;
+            --apple-separator: rgba(255, 107, 157, 0.2);
+        }
 
-html[data-theme="coffee"] {
-    --apple-background: #f5e6d3;
-    --apple-background-secondary: #f0dcc7;
-    --apple-background-tertiary: #ebd4bb;
-    --apple-background-quaternary: #e6cca8;
-    --apple-label: #4a3020;
-    --apple-label-secondary: #5d3d2a;
-    --apple-label-tertiary: #7a5038;
-    --apple-blue: #8b6239;
-    --apple-blue-light: #a0724a;
-    --apple-blue-dark: #6b4a30;
-    --apple-separator: rgba(139, 69, 19, 0.1);
-}
+        html[data-theme="coffee"] {
+            --apple-background: #f5e6d3;
+            --apple-background-secondary: #f0dcc7;
+            --apple-background-tertiary: #ebd4bb;
+            --apple-background-quaternary: #e6cca8;
+            --apple-label: #4a3020;
+            --apple-label-secondary: #5d3d2a;
+            --apple-label-tertiary: #7a5038;
+            --apple-blue: #8b6239;
+            --apple-blue-light: #a0724a;
+            --apple-blue-dark: #6b4a30;
+            --apple-separator: rgba(139, 69, 19, 0.1);
+        }
 
-html[data-theme="perla"] {
-    --apple-background: #FFFFFF;
-    --apple-background-secondary: #FAFAFA;
-    --apple-background-tertiary: #F5F5F5;
-    --apple-background-quaternary: #F0F0F0;
-    --apple-label: #000000;
-    --apple-label-secondary: #333333;
-    --apple-label-tertiary: #666666;
-    --apple-label-quaternary: #999999;
-    --apple-blue: #0052D4;
-    --apple-blue-light: #1E7BFF;
-    --apple-blue-dark: #003AA3;
-    --apple-perla-electric: #00D4FF;
-    --apple-gray: #999999;
-    --apple-gray-2: #CCCCCC;
-    --apple-gray-3: #E0E0E0;
-    --apple-gray-4: #EEEEEE;
-    --apple-gray-5: #F5F5F5;
-    --apple-gray-6: #FAFAFA;
-    --apple-separator: rgba(0, 0, 0, 0.1);
-}
-        
+        html[data-theme="perla"] {
+            --apple-background: #FFFFFF;
+            --apple-background-secondary: #FAFAFA;
+            --apple-background-tertiary: #F5F5F5;
+            --apple-background-quaternary: #F0F0F0;
+            --apple-label: #000000;
+            --apple-label-secondary: #333333;
+            --apple-label-tertiary: #666666;
+            --apple-label-quaternary: #999999;
+            --apple-blue: #0052D4;
+            --apple-blue-light: #1E7BFF;
+            --apple-blue-dark: #003AA3;
+            --apple-perla-electric: #00D4FF;
+            --apple-gray: #999999;
+            --apple-gray-2: #CCCCCC;
+            --apple-gray-3: #E0E0E0;
+            --apple-gray-4: #EEEEEE;
+            --apple-gray-5: #F5F5F5;
+            --apple-gray-6: #FAFAFA;
+            --apple-separator: rgba(0, 0, 0, 0.1);
+        }
+
         /* Estilos generales para el contenido principal */
         .main-content {
-            padding-top: 2rem; /* Menos espacio arriba, ya no hay barra fija */
+            padding-top: 2rem;
+            /* Menos espacio arriba, ya no hay barra fija */
             padding-bottom: 2rem;
         }
-        
+
         /* Glass effect utility for all cards/tables */
         .glass-card {
             background: rgba(30, 41, 59, 0.55);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
             border-radius: 1.5rem;
-            border: 1.5px solid rgba(255,255,255,0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
+
         .glass-table {
             background: rgba(30, 41, 59, 0.35);
             border-radius: 1.5rem;
             box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.10);
             overflow: hidden;
         }
+
         .drop-shadow-glow {
             text-shadow: 0 0 12px #6366f1, 0 0 24px #6366f1, 0 0 2px #fff;
         }
+
         @media (max-width: 640px) {
-            .glass-card, .glass-table {
+
+            .glass-card,
+            .glass-table {
                 padding: 1rem !important;
                 border-radius: 1rem !important;
             }
-            table th, table td {
+
+            table th,
+            table td {
                 padding-left: 0.5rem !important;
                 padding-right: 0.5rem !important;
             }
         }
+
         @keyframes fade-in {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: none; }
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
         }
+
         .animate-fade-in {
-            animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1);
+            animation: fade-in 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+
         /* Custom Intro.js styling */
         .introjs-overlay {
             background-color: rgba(0, 0, 0, 0.8) !important;
         }
+
         .introjs-tooltip {
             background: rgba(30, 41, 59, 0.95) !important;
-            border: 1px solid rgba(255,255,255,0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 12px !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
             backdrop-filter: blur(12px) !important;
         }
+
         .introjs-tooltiptext {
             color: #e2e8f0 !important;
             font-family: 'Inter', sans-serif !important;
         }
+
         .introjs-button {
             background: #6366f1 !important;
             border: none !important;
@@ -247,43 +273,84 @@ html[data-theme="perla"] {
             font-weight: 500 !important;
             transition: all 0.2s !important;
         }
+
         .introjs-button:hover {
             background: #4f46e5 !important;
             transform: translateY(-1px) !important;
         }
+
         .introjs-skipbutton {
             background: rgba(107, 114, 128, 0.8) !important;
         }
+
         .introjs-skipbutton:hover {
             background: rgba(75, 85, 99, 0.9) !important;
         }
+
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-            100% { transform: translateY(0px); }
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
         }
+
         .animate-float {
             animation: float 3s ease-in-out infinite;
         }
+
         @keyframes pulse-light {
-            0% { box-shadow: 0 0 8px rgba(255,255,255,0.7); }
-            50% { box-shadow: 0 0 15px rgba(255,255,255,1); }
-            100% { box-shadow: 0 0 8px rgba(255,255,255,0.7); }
+            0% {
+                box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 15px rgba(255, 255, 255, 1);
+            }
+
+            100% {
+                box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+            }
         }
+
         .animate-pulse-light {
             animation: pulse-light 2s infinite;
         }
+
         @keyframes pulse-slow {
-            0%, 100% { opacity: 0.1; }
-            50% { opacity: 0.3; }
+
+            0%,
+            100% {
+                opacity: 0.1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
         }
+
         .animate-pulse-slow {
             animation: pulse-slow 4s infinite ease-in-out;
         }
+
         @keyframes slide-in {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
+
         .animate-slide-in {
             animation: slide-in 0.5s ease-out;
         }
@@ -299,7 +366,7 @@ html[data-theme="perla"] {
                 0 8px 32px rgba(0, 0, 0, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
-        
+
         .pink-theme .glass-card {
             background: rgba(255, 245, 248, 0.7);
             backdrop-filter: blur(20px);
@@ -309,7 +376,7 @@ html[data-theme="perla"] {
                 0 8px 32px rgba(255, 107, 157, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
-        
+
         .coffee-theme .glass-card {
             background: rgba(245, 235, 225, 0.7);
             backdrop-filter: blur(20px);
@@ -395,27 +462,28 @@ html[data-theme="perla"] {
             background-image: none !important;
             border-color: #0052D4 !important;
         }
-        
+
         @media (max-width: 768px) {
+
             .light-theme .glass-card,
             .white-theme .glass-card {
                 background: rgba(255, 255, 255, 0.8);
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
             }
-            
+
             .pink-theme .glass-card {
                 background: rgba(255, 245, 248, 0.8);
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
             }
-            
+
             .coffee-theme .glass-card {
                 background: rgba(245, 235, 225, 0.8);
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
             }
-            
+
             /* Perla theme responsive */
             html[data-theme="perla"] .glass-card {
                 background: #FFFFFF !important;
@@ -436,7 +504,7 @@ html[data-theme="perla"] {
                 0 8px 32px rgba(0, 0, 0, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
-        
+
         .pink-theme .glass-table {
             background: rgba(255, 245, 248, 0.4);
             backdrop-filter: blur(25px);
@@ -446,7 +514,7 @@ html[data-theme="perla"] {
                 0 8px 32px rgba(255, 107, 157, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
-        
+
         .coffee-theme .glass-table {
             background: rgba(245, 235, 225, 0.4);
             backdrop-filter: blur(25px);
@@ -456,61 +524,65 @@ html[data-theme="perla"] {
                 0 8px 32px rgba(139, 69, 19, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
+
         /* Form responsiveness */
         @media (max-width: 768px) {
             .form-container {
                 padding: 1rem;
             }
-            
+
             .form-group {
                 margin-bottom: 1rem;
             }
-            
-            input, select, textarea {
+
+            input,
+            select,
+            textarea {
                 width: 100%;
                 padding: 0.75rem;
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
+                /* Prevents zoom on iOS */
             }
-            
+
             button {
                 width: 100%;
                 padding: 0.875rem;
                 font-size: 1rem;
             }
         }
-        
+
         /* Button responsiveness */
         @media (max-width: 768px) {
             .btn-group {
                 flex-direction: column;
                 gap: 0.5rem;
             }
-            
+
             .btn {
                 width: 100%;
                 justify-content: center;
             }
         }
-        
+
         /* Modal responsiveness */
         @media (max-width: 768px) {
             .modal-dialog {
                 margin: 1rem;
                 max-width: calc(100% - 2rem);
             }
-            
+
             .modal-content {
                 border-radius: 1rem;
             }
         }
-        
+
         /* Navigation responsiveness */
         @media (max-width: 768px) {
             .nav-tabs {
                 flex-wrap: wrap;
                 border: none;
             }
-            
+
             .nav-tabs .nav-link {
                 flex: 1;
                 text-align: center;
@@ -521,7 +593,9 @@ html[data-theme="perla"] {
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen flex flex-col" {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}>
+
+<body class="min-h-screen flex flex-col" {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true" {%
+    endif %}>
     <!-- Contenido Principal -->
     <div class="flex-grow container mx-auto px-4 py-8 main-content">
         {% block content %}
@@ -531,24 +605,24 @@ html[data-theme="perla"] {
 
     <!-- DOCK GLOBAL FIX: Asegurar que dock funcione en todas las páginas -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            // Ocultar todos los docks primero
-            const allDocks = document.querySelectorAll('.macos-dock');
-            allDocks.forEach(dock => {
-                dock.style.display = 'none';
-            });
-            
-            // Mostrar solo dock-bottom (el dock principal)
-            const bottomDock = document.getElementById('dock-bottom');
-            if (bottomDock) {
-                bottomDock.style.display = 'flex';
-                bottomDock.style.opacity = '1';
-                bottomDock.style.visibility = 'visible';
-                bottomDock.classList.add('dock-ready');
-            }
-        }, 50);
-    });
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                // Ocultar todos los docks primero
+                const allDocks = document.querySelectorAll('.macos-dock');
+                allDocks.forEach(dock => {
+                    dock.style.display = 'none';
+                });
+
+                // Mostrar solo dock-bottom (el dock principal)
+                const bottomDock = document.getElementById('dock-bottom');
+                if (bottomDock) {
+                    bottomDock.style.display = 'flex';
+                    bottomDock.style.opacity = '1';
+                    bottomDock.style.visibility = 'visible';
+                    bottomDock.classList.add('dock-ready');
+                }
+            }, 50);
+        });
     </script>
 
     <!-- Responsive utilities (solo las que necesitamos) -->
@@ -558,21 +632,21 @@ html[data-theme="perla"] {
             isMobile: () => window.innerWidth <= 768,
             isTablet: () => window.innerWidth > 768 && window.innerWidth <= 1024,
             isDesktop: () => window.innerWidth > 1024,
-            
+
             // Add responsive classes to body
             updateBodyClasses: () => {
                 const body = document.body;
                 body.classList.remove('is-mobile', 'is-tablet', 'is-desktop');
-                
+
                 if (window.ResponsiveUtils.isMobile()) body.classList.add('is-mobile');
                 else if (window.ResponsiveUtils.isTablet()) body.classList.add('is-tablet');
                 else if (window.ResponsiveUtils.isDesktop()) body.classList.add('is-desktop');
             }
         };
-        
+
         // Update classes on load and resize
         window.ResponsiveUtils.updateBodyClasses();
-        
+
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
@@ -581,7 +655,7 @@ html[data-theme="perla"] {
             }, 150);
         });
     </script>
-    
+
     <!-- Spotlight Search Modal -->
     <div id="spotlight-modal" class="spotlight-modal">
         <div class="spotlight-backdrop" onclick="closeSpotlight()"></div>
@@ -589,19 +663,15 @@ html[data-theme="perla"] {
             <div class="spotlight-search-box">
                 <div class="spotlight-icon">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
-                <input 
-                    type="text" 
-                    id="spotlight-input" 
-                    placeholder="Buscar por nombre, cliente, #número..." 
-                    autocomplete="off"
-                    spellcheck="false"
-                />
+                <input type="text" id="spotlight-input" placeholder="Buscar por nombre, cliente, #número..."
+                    autocomplete="off" spellcheck="false" />
                 <div class="spotlight-shortcut">⌘K</div>
             </div>
-            
+
             <div class="spotlight-results" id="spotlight-results">
                 <div class="spotlight-empty">
                     <div class="spotlight-empty-icon">🔍</div>
@@ -610,7 +680,7 @@ html[data-theme="perla"] {
             </div>
         </div>
     </div>
-    
+
     <style>
         .spotlight-modal {
             position: fixed;
@@ -627,12 +697,12 @@ html[data-theme="perla"] {
             visibility: hidden;
             transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-        
+
         .spotlight-modal.active {
             opacity: 1;
             visibility: visible;
         }
-        
+
         .spotlight-backdrop {
             position: absolute;
             top: 0;
@@ -643,7 +713,7 @@ html[data-theme="perla"] {
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
         }
-        
+
         .spotlight-container {
             position: relative;
             width: 100%;
@@ -661,17 +731,17 @@ html[data-theme="perla"] {
             transform: translateY(-20px);
             transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-        
+
         /* Pink theme for spotlight search */
         .light-theme .spotlight-container,
         body[data-theme="pink"] .spotlight-container,
         html[data-theme="pink"] body .spotlight-container {
             background: linear-gradient(135deg,
-                rgba(255, 245, 248, 0.95) 0%,
-                rgba(255, 232, 239, 0.9) 25%,
-                rgba(255, 218, 230, 0.85) 50%,
-                rgba(255, 200, 213, 0.8) 75%,
-                rgba(255, 182, 193, 0.75) 100%) !important;
+                    rgba(255, 245, 248, 0.95) 0%,
+                    rgba(255, 232, 239, 0.9) 25%,
+                    rgba(255, 218, 230, 0.85) 50%,
+                    rgba(255, 200, 213, 0.8) 75%,
+                    rgba(255, 182, 193, 0.75) 100%) !important;
             border: 1px solid rgba(255, 107, 157, 0.3) !important;
             color: var(--apple-label, #2D1B2E) !important;
             box-shadow:
@@ -679,19 +749,19 @@ html[data-theme="perla"] {
                 0 8px 16px rgba(255, 107, 157, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
         }
-        
+
         .light-theme .spotlight-search-box,
         body[data-theme="pink"] .spotlight-search-box,
         html[data-theme="pink"] body .spotlight-search-box {
             border-bottom: 1px solid rgba(255, 107, 157, 0.2) !important;
         }
-        
+
         .light-theme .spotlight-icon,
         body[data-theme="pink"] .spotlight-icon,
         html[data-theme="pink"] body .spotlight-icon {
             color: var(--apple-label-secondary, #4A2B4D) !important;
         }
-        
+
         .light-theme .spotlight-shortcut,
         body[data-theme="pink"] .spotlight-shortcut,
         html[data-theme="pink"] body .spotlight-shortcut {
@@ -699,31 +769,31 @@ html[data-theme="perla"] {
             color: var(--apple-label-secondary, #4A2B4D) !important;
             border: 1px solid rgba(255, 107, 157, 0.2);
         }
-        
+
         .light-theme #spotlight-input,
         body[data-theme="pink"] #spotlight-input,
         html[data-theme="pink"] body #spotlight-input {
             color: var(--apple-label, #2D1B2E) !important;
         }
-        
+
         .light-theme #spotlight-input::placeholder,
         body[data-theme="pink"] #spotlight-input::placeholder,
         html[data-theme="pink"] body #spotlight-input::placeholder {
             color: var(--apple-label-tertiary, #6B4C6D) !important;
         }
-        
+
         .light-theme .spotlight-empty,
         body[data-theme="pink"] .spotlight-empty,
         html[data-theme="pink"] body .spotlight-empty {
             color: var(--apple-label-secondary, #4A2B4D) !important;
         }
-        
+
         .light-theme .spotlight-item,
         body[data-theme="pink"] .spotlight-item,
         html[data-theme="pink"] body .spotlight-item {
             border-bottom: 1px solid rgba(255, 107, 157, 0.15) !important;
         }
-        
+
         .light-theme .spotlight-item:hover,
         .light-theme .spotlight-item.selected,
         body[data-theme="pink"] .spotlight-item:hover,
@@ -732,54 +802,54 @@ html[data-theme="perla"] {
         html[data-theme="pink"] body .spotlight-item.selected {
             background: rgba(255, 107, 157, 0.1) !important;
         }
-        
+
         .light-theme .spotlight-item-title,
         body[data-theme="pink"] .spotlight-item-title,
         html[data-theme="pink"] body .spotlight-item-title {
             color: var(--apple-label, #2D1B2E) !important;
         }
-        
+
         .light-theme .spotlight-item-subtitle,
         body[data-theme="pink"] .spotlight-item-subtitle,
         html[data-theme="pink"] body .spotlight-item-subtitle {
             color: var(--apple-label-secondary, #4A2B4D) !important;
         }
-        
+
         .light-theme .spotlight-loading,
         body[data-theme="pink"] .spotlight-loading,
         html[data-theme="pink"] body .spotlight-loading {
             color: var(--apple-label-secondary, #4A2B4D) !important;
         }
-        
+
         .light-theme .spotlight-item-icon,
         body[data-theme="pink"] .spotlight-item-icon,
         html[data-theme="pink"] body .spotlight-item-icon {
             background: var(--apple-pink-dark, #E55A87) !important;
         }
-        
+
         .light-theme .spotlight-item-icon.oportunidad,
         body[data-theme="pink"] .spotlight-item-icon.oportunidad,
         html[data-theme="pink"] body .spotlight-item-icon.oportunidad {
             background: var(--apple-pink-medium, #FF91A4) !important;
         }
-        
+
         .light-theme .spotlight-backdrop,
         body[data-theme="pink"] .spotlight-backdrop,
         html[data-theme="pink"] body .spotlight-backdrop {
             background: rgba(255, 107, 157, 0.15) !important;
             backdrop-filter: blur(12px) saturate(120%);
         }
-        
+
         /* Coffee theme for spotlight search */
         .light-theme .spotlight-container,
         body[data-theme="coffee"] .spotlight-container,
         html[data-theme="coffee"] body .spotlight-container {
             background: linear-gradient(135deg,
-                rgba(245, 235, 225, 0.95) 0%,
-                rgba(240, 220, 199, 0.9) 25%,
-                rgba(235, 210, 187, 0.85) 50%,
-                rgba(230, 200, 175, 0.8) 75%,
-                rgba(225, 190, 163, 0.75) 100%) !important;
+                    rgba(245, 235, 225, 0.95) 0%,
+                    rgba(240, 220, 199, 0.9) 25%,
+                    rgba(235, 210, 187, 0.85) 50%,
+                    rgba(230, 200, 175, 0.8) 75%,
+                    rgba(225, 190, 163, 0.75) 100%) !important;
             border: 1px solid rgba(139, 69, 19, 0.2) !important;
             color: var(--apple-label, #4a3020) !important;
             box-shadow:
@@ -787,19 +857,19 @@ html[data-theme="perla"] {
                 0 8px 16px rgba(139, 69, 19, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
         }
-        
+
         .light-theme .spotlight-search-box,
         body[data-theme="coffee"] .spotlight-search-box,
         html[data-theme="coffee"] body .spotlight-search-box {
             border-bottom: 1px solid rgba(139, 69, 19, 0.15) !important;
         }
-        
+
         .light-theme .spotlight-icon,
         body[data-theme="coffee"] .spotlight-icon,
         html[data-theme="coffee"] body .spotlight-icon {
             color: var(--apple-label-secondary, #5d3d2a) !important;
         }
-        
+
         .light-theme .spotlight-shortcut,
         body[data-theme="coffee"] .spotlight-shortcut,
         html[data-theme="coffee"] body .spotlight-shortcut {
@@ -807,31 +877,31 @@ html[data-theme="perla"] {
             color: var(--apple-label-secondary, #5d3d2a) !important;
             border: 1px solid rgba(139, 69, 19, 0.15);
         }
-        
+
         .light-theme #spotlight-input,
         body[data-theme="coffee"] #spotlight-input,
         html[data-theme="coffee"] body #spotlight-input {
             color: var(--apple-label, #4a3020) !important;
         }
-        
+
         .light-theme #spotlight-input::placeholder,
         body[data-theme="coffee"] #spotlight-input::placeholder,
         html[data-theme="coffee"] body #spotlight-input::placeholder {
             color: var(--apple-label-tertiary, #7a5038) !important;
         }
-        
+
         .light-theme .spotlight-empty,
         body[data-theme="coffee"] .spotlight-empty,
         html[data-theme="coffee"] body .spotlight-empty {
             color: var(--apple-label-secondary, #5d3d2a) !important;
         }
-        
+
         .light-theme .spotlight-item,
         body[data-theme="coffee"] .spotlight-item,
         html[data-theme="coffee"] body .spotlight-item {
             border-bottom: 1px solid rgba(139, 69, 19, 0.1) !important;
         }
-        
+
         .light-theme .spotlight-item:hover,
         .light-theme .spotlight-item.selected,
         body[data-theme="coffee"] .spotlight-item:hover,
@@ -840,50 +910,50 @@ html[data-theme="perla"] {
         html[data-theme="coffee"] body .spotlight-item.selected {
             background: rgba(139, 69, 19, 0.1) !important;
         }
-        
+
         .light-theme .spotlight-item-title,
         body[data-theme="coffee"] .spotlight-item-title,
         html[data-theme="coffee"] body .spotlight-item-title {
             color: var(--apple-label, #4a3020) !important;
         }
-        
+
         .light-theme .spotlight-item-subtitle,
         body[data-theme="coffee"] .spotlight-item-subtitle,
         html[data-theme="coffee"] body .spotlight-item-subtitle {
             color: var(--apple-label-secondary, #5d3d2a) !important;
         }
-        
+
         .light-theme .spotlight-loading,
         body[data-theme="coffee"] .spotlight-loading,
         html[data-theme="coffee"] body .spotlight-loading {
             color: var(--apple-label-secondary, #5d3d2a) !important;
         }
-        
+
         .light-theme .spotlight-item-icon,
         body[data-theme="coffee"] .spotlight-item-icon,
         html[data-theme="coffee"] body .spotlight-item-icon {
             background: var(--apple-blue, #8b6239) !important;
         }
-        
+
         .light-theme .spotlight-item-icon.oportunidad,
         body[data-theme="coffee"] .spotlight-item-icon.oportunidad,
         html[data-theme="coffee"] body .spotlight-item-icon.oportunidad {
             background: var(--apple-blue-light, #a0724a) !important;
         }
-        
+
         .light-theme .spotlight-backdrop,
         body[data-theme="coffee"] .spotlight-backdrop,
         html[data-theme="coffee"] body .spotlight-backdrop {
             background: rgba(139, 69, 19, 0.1) !important;
             backdrop-filter: blur(12px) saturate(120%);
         }
-        
+
         .spotlight-modal.active .spotlight-container {
             transform: translateY(0);
         }
-        
+
         /* MODO OSCURO FORZADO - Ya no necesario media query */
-        
+
         .spotlight-search-box {
             display: flex;
             align-items: center;
@@ -891,14 +961,14 @@ html[data-theme="perla"] {
             /* FORZAR MODO OSCURO SIEMPRE */
             border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
-        
+
         .spotlight-icon {
             /* FORZAR MODO OSCURO SIEMPRE */
             color: #98989D !important;
             margin-right: 12px;
             flex-shrink: 0;
         }
-        
+
         .spotlight-shortcut {
             /* FORZAR MODO OSCURO SIEMPRE */
             background: rgba(255, 255, 255, 0.1) !important;
@@ -910,7 +980,7 @@ html[data-theme="perla"] {
             margin-left: 12px;
             flex-shrink: 0;
         }
-        
+
         #spotlight-input {
             flex: 1;
             border: none;
@@ -921,34 +991,34 @@ html[data-theme="perla"] {
             /* FORZAR MODO OSCURO SIEMPRE */
             color: #ffffff !important;
         }
-        
+
         #spotlight-input::placeholder {
             /* FORZAR MODO OSCURO SIEMPRE */
             color: #98989D !important;
         }
-        
+
         .spotlight-results {
             max-height: 400px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
-        
+
         .spotlight-empty {
             padding: 40px 20px;
             text-align: center;
             /* FORZAR MODO OSCURO SIEMPRE */
             color: #98989D !important;
         }
-        
+
         .spotlight-empty-icon {
             font-size: 24px;
             margin-bottom: 8px;
         }
-        
+
         .spotlight-empty-text {
             font-size: 15px;
         }
-        
+
         .spotlight-item {
             display: flex;
             align-items: center;
@@ -958,16 +1028,16 @@ html[data-theme="perla"] {
             cursor: pointer;
             transition: background-color 0.15s ease;
         }
-        
+
         .spotlight-item:last-child {
             border-bottom: none;
         }
-        
+
         .spotlight-item:hover,
         .spotlight-item.selected {
             background: rgba(0, 122, 255, 0.2) !important;
         }
-        
+
         .spotlight-item-icon {
             width: 32px;
             height: 32px;
@@ -981,16 +1051,16 @@ html[data-theme="perla"] {
             font-size: 16px;
             flex-shrink: 0;
         }
-        
+
         .spotlight-item-icon.oportunidad {
             background: #FF9500;
         }
-        
+
         .spotlight-item-content {
             flex: 1;
             min-width: 0;
         }
-        
+
         .spotlight-item-title {
             font-size: 15px;
             font-weight: 600;
@@ -1001,7 +1071,7 @@ html[data-theme="perla"] {
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .spotlight-item-subtitle {
             font-size: 13px;
             /* FORZAR MODO OSCURO SIEMPRE */
@@ -1010,14 +1080,14 @@ html[data-theme="perla"] {
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .spotlight-loading {
             padding: 20px;
             text-align: center;
             /* FORZAR MODO OSCURO SIEMPRE */
             color: #98989D !important;
         }
-        
+
         .spotlight-spinner {
             width: 20px;
             height: 20px;
@@ -1027,43 +1097,45 @@ html[data-theme="perla"] {
             animation: spotlight-spin 1s linear infinite;
             margin: 0 auto 8px;
         }
-        
+
         @keyframes spotlight-spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
-    
+
     <script>
         // Spotlight Search Functionality
         let spotlightTimeout = null;
         let selectedIndex = -1;
         let currentResults = [];
-        
+
         // Double spacebar detection
         let lastSpaceTime = 0;
         let spaceDoubleTapTimeout = null;
-        
+
         // Function to check if user is currently typing in an input
         function isUserTyping() {
             const activeElement = document.activeElement;
             if (!activeElement) return false;
-            
+
             const typingElements = ['input', 'textarea', 'select'];
             const isTypingElement = typingElements.includes(activeElement.tagName.toLowerCase());
             const isContentEditable = activeElement.contentEditable === 'true';
-            
+
             return isTypingElement || isContentEditable;
         }
-        
+
         // Open spotlight with keyboard shortcut or double spacebar
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             // Cmd+K on Mac, Ctrl+K on Windows/Linux
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
                 openSpotlight();
                 return;
             }
-            
+
             // Double spacebar detection (only when not typing)
             if (e.key === ' ' && e.code === 'Space') {
                 if (isUserTyping()) {
@@ -1071,22 +1143,22 @@ html[data-theme="perla"] {
                     lastSpaceTime = 0;
                     return;
                 }
-                
+
                 // Siempre prevenir el scroll cuando no estamos escribiendo
                 e.preventDefault();
-                
+
                 const currentTime = Date.now();
                 const timeDiff = currentTime - lastSpaceTime;
-                
+
                 // Double tap detected (within 400ms)
                 if (timeDiff < 400 && timeDiff > 50) {
                     openSpotlight();
                     lastSpaceTime = 0; // Reset
                     return;
                 }
-                
+
                 lastSpaceTime = currentTime;
-                
+
                 // Clear double tap after timeout
                 if (spaceDoubleTapTimeout) {
                     clearTimeout(spaceDoubleTapTimeout);
@@ -1095,12 +1167,12 @@ html[data-theme="perla"] {
                     lastSpaceTime = 0;
                 }, 400);
             }
-            
+
             // Escape to close
             if (e.key === 'Escape') {
                 closeSpotlight();
             }
-            
+
             // Arrow navigation in spotlight
             const modal = document.getElementById('spotlight-modal');
             if (modal.classList.contains('active')) {
@@ -1116,36 +1188,36 @@ html[data-theme="perla"] {
                 }
             }
         });
-        
+
         function openSpotlight() {
             const modal = document.getElementById('spotlight-modal');
             const input = document.getElementById('spotlight-input');
-            
+
             modal.classList.add('active');
             setTimeout(() => {
                 input.focus();
             }, 100);
-            
+
             // Reset state
             selectedIndex = -1;
             currentResults = [];
             showEmptyState();
         }
-        
+
         function closeSpotlight() {
             const modal = document.getElementById('spotlight-modal');
             const input = document.getElementById('spotlight-input');
-            
+
             modal.classList.remove('active');
             input.value = '';
-            
+
             // Clear timeout
             if (spotlightTimeout) {
                 clearTimeout(spotlightTimeout);
                 spotlightTimeout = null;
             }
         }
-        
+
         function showEmptyState() {
             const resultsContainer = document.getElementById('spotlight-results');
             resultsContainer.innerHTML = `
@@ -1155,7 +1227,7 @@ html[data-theme="perla"] {
                 </div>
             `;
         }
-        
+
         function showLoadingState() {
             const resultsContainer = document.getElementById('spotlight-results');
             resultsContainer.innerHTML = `
@@ -1165,19 +1237,19 @@ html[data-theme="perla"] {
                 </div>
             `;
         }
-        
+
         function performSearch(query) {
             if (!query || query.length < 2) {
                 showEmptyState();
                 return;
             }
-            
+
             showLoadingState();
-            
+
             // Get CSRF token
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
-                            document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
-            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+
             fetch(`/app/api/spotlight-search/?q=${encodeURIComponent(query)}`, {
                 method: 'GET',
                 headers: {
@@ -1185,21 +1257,21 @@ html[data-theme="perla"] {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                displayResults(data.results || []);
-                currentResults = data.results || [];
-                selectedIndex = -1;
-            })
-            .catch(error => {
-                console.error('Spotlight search error:', error);
-                showEmptyState();
-            });
+                .then(response => response.json())
+                .then(data => {
+                    displayResults(data.results || []);
+                    currentResults = data.results || [];
+                    selectedIndex = -1;
+                })
+                .catch(error => {
+                    console.error('Spotlight search error:', error);
+                    showEmptyState();
+                });
         }
-        
+
         function displayResults(results) {
             const resultsContainer = document.getElementById('spotlight-results');
-            
+
             if (results.length === 0) {
                 resultsContainer.innerHTML = `
                     <div class="spotlight-empty">
@@ -1209,7 +1281,7 @@ html[data-theme="perla"] {
                 `;
                 return;
             }
-            
+
             resultsContainer.innerHTML = results.map((result, index) => `
                 <div class="spotlight-item" data-index="${index}" onclick="selectResult(${index})">
                     <div class="spotlight-item-icon ${result.type}">
@@ -1222,38 +1294,38 @@ html[data-theme="perla"] {
                 </div>
             `).join('');
         }
-        
+
         function navigateSpotlight(direction) {
             if (currentResults.length === 0) return;
-            
+
             // Remove previous selection
             const items = document.querySelectorAll('.spotlight-item');
             items.forEach(item => item.classList.remove('selected'));
-            
+
             // Update selection
             selectedIndex += direction;
             if (selectedIndex < 0) selectedIndex = currentResults.length - 1;
             if (selectedIndex >= currentResults.length) selectedIndex = 0;
-            
+
             // Add new selection
             if (items[selectedIndex]) {
                 items[selectedIndex].classList.add('selected');
                 items[selectedIndex].scrollIntoView({ block: 'nearest' });
             }
         }
-        
+
         function selectSpotlightItem() {
             if (selectedIndex >= 0 && selectedIndex < currentResults.length) {
                 selectResult(selectedIndex);
             }
         }
-        
+
         function selectResult(index) {
             const result = currentResults[index];
             if (!result) return;
-            
+
             closeSpotlight();
-            
+
             // Navigate based on type
             if (result.type === 'cotizacion') {
                 // For quotations, go to quotations page
@@ -1263,19 +1335,19 @@ html[data-theme="perla"] {
                 window.location.href = result.url;
             }
         }
-        
+
         // Search input handler
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const input = document.getElementById('spotlight-input');
             if (input) {
-                input.addEventListener('input', function(e) {
+                input.addEventListener('input', function (e) {
                     const query = e.target.value.trim();
-                    
+
                     // Clear existing timeout
                     if (spotlightTimeout) {
                         clearTimeout(spotlightTimeout);
                     }
-                    
+
                     // Debounce search
                     spotlightTimeout = setTimeout(() => {
                         performSearch(query);
@@ -1284,7 +1356,8 @@ html[data-theme="perla"] {
             }
         });
     </script>
-        
-{% block extra_js %}{% endblock %}
+
+    {% block extra_js %}{% endblock %}
 </body>
+
 </html>
