@@ -33,7 +33,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%bvhvsoqj7(y%n
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las variables de entorno
 
 # En producción, esto debe contener los dominios de tu sitio (ej. ['tudominio.com', 'www.tudominio.com'])
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,nethive.mx,www.nethive.mx,v488452.neubox.net,ns1.rctecnologia.com.mx,api.ip.pn').split(',') # Lee ALLOWED_HOSTS de las variables de entorno
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,nethive.mx,www.nethive.mx,v488452.neubox.net,ns1.rctecnologia.com.mx,api.ip.pn,82.223.44.29').split(',') # Lee ALLOWED_HOSTS de las variables de entorno
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost,http://127.0.0.1,https://bajanet.bitrix24.mx').split(',')
 
 
