@@ -594,8 +594,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="min-h-screen flex flex-col" {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true" {%
-    endif %}>
+<body class="min-h-screen flex flex-col" {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}>
     <!-- Contenido Principal -->
     <div class="flex-grow container mx-auto px-4 py-8 main-content">
         {% block content %}
