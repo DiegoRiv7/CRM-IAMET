@@ -2151,8 +2151,11 @@ def todos (request):
     # Manejar búsqueda global ANTES de la paginación
     search_query = request.GET.get('search', '').strip()
     if search_query:
-        # Búsqueda global en todas las oportunidades
-        items = items.filter(oportunidad__icontains=search_query)
+        # Búsqueda global en todas las oportunidades (por nombre de oportunidad o cliente)
+        items = items.filter(
+            Q(oportunidad__icontains=search_query) |
+            Q(cliente__nombre_empresa__icontains=search_query)
+        )
 
     reporte_activo = request.GET.get('reporte', 'false').lower() == 'true'
 
@@ -4308,6 +4311,123 @@ def perfil_usuario(request, usuario_id):
         'oportunidades_creadas_mes_count': oportunidades_creadas_mes_count,
     }
     return render(request, 'perfil_usuario.html', context)
+
+
+@login_required
+def estadisticas_usuarios(request):
+    """
+    Vista para mostrar estadísticas de usuarios:
+    - Número de oportunidades/cotizaciones por usuario
+    - Total vendido por usuario
+    - Cliente al que más venden
+    Filtros: día, mes, todas
+    """
+    from datetime import date, timedelta
+    from django.db.models import Sum, Count
+    from django.db.models.functions import TruncMonth, TruncDay
+
+    # Obtener parámetro de filtro
+    filtro = request.GET.get('filtro', 'todas')  # 'dia', 'mes', 'todas'
+    fecha_especifica = request.GET.get('fecha', None)
+    mes_especifico = request.GET.get('mes', None)
+
+    today = date.today()
+
+    # Base queryset de oportunidades
+    oportunidades = TodoItem.objects.all()
+
+    # Aplicar filtros
+    titulo_filtro = "Todas las oportunidades"
+    if filtro == 'dia':
+        if fecha_especifica:
+            try:
+                fecha = date.fromisoformat(fecha_especifica)
+            except ValueError:
+                fecha = today
+        else:
+            fecha = today
+        oportunidades = oportunidades.filter(fecha_creacion__date=fecha)
+        titulo_filtro = f"Día: {fecha.strftime('%d/%m/%Y')}"
+    elif filtro == 'mes':
+        if mes_especifico:
+            try:
+                año, mes = mes_especifico.split('-')
+                año = int(año)
+                mes = int(mes)
+            except (ValueError, AttributeError):
+                año = today.year
+                mes = today.month
+        else:
+            año = today.year
+            mes = today.month
+        oportunidades = oportunidades.filter(fecha_creacion__year=año, fecha_creacion__month=mes)
+        from calendar import month_name
+        import locale
+        try:
+            locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        except:
+            pass
+        titulo_filtro = f"Mes: {today.replace(year=año, month=mes, day=1).strftime('%B %Y').capitalize()}"
+
+    # Obtener todos los usuarios que tienen oportunidades
+    usuarios_con_datos = []
+    usuarios = User.objects.filter(oportunidades__isnull=False).distinct()
+
+    for usuario in usuarios:
+        oportunidades_usuario = oportunidades.filter(usuario=usuario)
+
+        # Número de oportunidades
+        num_oportunidades = oportunidades_usuario.count()
+
+        if num_oportunidades == 0:
+            continue
+
+        # Total vendido (oportunidades con probabilidad 100%)
+        total_vendido = oportunidades_usuario.filter(probabilidad_cierre=100).aggregate(
+            total=Sum('monto')
+        )['total'] or Decimal('0.00')
+
+        # Total en pipeline (todas las oportunidades)
+        total_pipeline = oportunidades_usuario.aggregate(
+            total=Sum('monto')
+        )['total'] or Decimal('0.00')
+
+        # Cliente al que más vende (por monto total)
+        cliente_top = oportunidades_usuario.values(
+            'cliente__id', 'cliente__nombre_empresa'
+        ).annotate(
+            total_cliente=Sum('monto'),
+            num_ops=Count('id')
+        ).order_by('-total_cliente').first()
+
+        usuarios_con_datos.append({
+            'usuario': usuario,
+            'num_oportunidades': num_oportunidades,
+            'total_vendido': total_vendido,
+            'total_pipeline': total_pipeline,
+            'cliente_top': cliente_top,
+        })
+
+    # Ordenar por total vendido descendente
+    usuarios_con_datos.sort(key=lambda x: x['total_vendido'], reverse=True)
+
+    # Totales generales
+    total_general_vendido = sum(u['total_vendido'] for u in usuarios_con_datos)
+    total_general_pipeline = sum(u['total_pipeline'] for u in usuarios_con_datos)
+    total_oportunidades = sum(u['num_oportunidades'] for u in usuarios_con_datos)
+
+    context = {
+        'usuarios_datos': usuarios_con_datos,
+        'filtro_actual': filtro,
+        'titulo_filtro': titulo_filtro,
+        'fecha_actual': today.isoformat(),
+        'mes_actual': today.strftime('%Y-%m'),
+        'total_general_vendido': total_general_vendido,
+        'total_general_pipeline': total_general_pipeline,
+        'total_oportunidades': total_oportunidades,
+    }
+
+    return render(request, 'estadisticas_usuarios.html', context)
 
 
 from django.views.decorators.csrf import csrf_exempt

@@ -154,6 +154,7 @@ urlpatterns = [
     # Reporte de usuarios (solo para supervisores)
     path('reporte-usuarios/', views.reporte_usuarios, name='reporte_usuarios'),
     path('perfil-usuario/<int:usuario_id>/', views.perfil_usuario, name='perfil_usuario'),
+    path('estadisticas-usuarios/', views.estadisticas_usuarios, name='estadisticas_usuarios'),
 
     # Ruta para la sección de cotizaciones (listado de clientes y cotizaciones)
     path('cotizaciones/', views.cotizaciones_view, name='cotizaciones'),

@@ -2958,6 +2958,8 @@
         padding: 1rem 0;
         position: relative;
         z-index: 1;
+        /* Optimize rendering */
+        contain: layout style;
     }
 
     @media (max-width: 768px) {
@@ -2969,25 +2971,26 @@
     /* ========== OPPORTUNITY CARD ========== */
     .opportunity-card {
         position: relative;
-        background: rgba(40, 40, 45, 0.6);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        background: rgba(40, 40, 45, 0.85);
         border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 1.5rem;
         border-radius: 24px;
-        transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
         cursor: pointer;
         display: flex;
         flex-direction: column;
         min-height: 320px;
         z-index: 1;
+        /* GPU optimization to prevent flickering */
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
 
     .opportunity-card:hover {
-        background: rgba(50, 50, 55, 0.7);
-        transform: translateY(-2px);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(50, 50, 55, 0.9);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        border-color: rgba(255, 255, 255, 0.18);
     }
 
     /* Card Header */
@@ -3006,7 +3009,6 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        transition: color 0.3s ease;
         min-height: 3em;
     }
 
@@ -3823,14 +3825,17 @@
     /* Pink theme adjustments for cards */
     .light-theme .opportunity-card,
     body[data-theme="pink"] .opportunity-card {
-        background: rgba(255, 240, 245, 0.9) !important;
+        background: rgba(255, 240, 245, 0.95) !important;
         border-color: rgba(255, 107, 157, 0.3) !important;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
 
     .light-theme .opportunity-card:hover,
     body[data-theme="pink"] .opportunity-card:hover {
-        background: rgba(255, 248, 250, 0.95) !important;
-        box-shadow: 0 12px 24px rgba(255, 107, 157, 0.15) !important;
+        background: rgba(255, 248, 250, 0.98) !important;
+        box-shadow: 0 8px 20px rgba(255, 107, 157, 0.12) !important;
     }
 
     .light-theme .card-title,
@@ -4015,11 +4020,11 @@
 
                 <!-- Super Search Bar -->
                 <div class="super-search-container" id="superSearchContainer">
-                    <svg class="super-search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <svg class="super-search-icon" id="superSearchIconBtn" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="cursor: pointer;" title="Buscar en todas las oportunidades">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <div class="super-search-chips" id="superSearchChips"></div>
-                    <input type="text" id="superSearchInput" placeholder="Buscar o filtrar..." class="super-search-input" autocomplete="off">
+                    <input type="text" id="superSearchInput" placeholder="Buscar en todas las oportunidades (Enter para buscar)..." class="super-search-input" autocomplete="off">
                     <button class="super-search-clear" id="superSearchClear" title="Limpiar filtros" style="display: none;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -4282,9 +4287,9 @@
                                         <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3"
                                             fill="none" />
                                         <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}"
-                                            stroke-width="3" fill="none" stroke-dasharray="113.1"
+                                            stroke-width="3.5" fill="none" stroke-dasharray="113.1"
                                             stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
-                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});" />
+                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100));" />
                                     </svg>
                                     {% endwith %}
                                     {% elif prob > 50 %}
@@ -4293,9 +4298,9 @@
                                         <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3"
                                             fill="none" />
                                         <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}"
-                                            stroke-width="3" fill="none" stroke-dasharray="113.1"
+                                            stroke-width="3.5" fill="none" stroke-dasharray="113.1"
                                             stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
-                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});" />
+                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100));" />
                                     </svg>
                                     {% endwith %}
                                     {% else %}
@@ -4304,9 +4309,9 @@
                                         <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3"
                                             fill="none" />
                                         <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}"
-                                            stroke-width="3" fill="none" stroke-dasharray="113.1"
+                                            stroke-width="3.5" fill="none" stroke-dasharray="113.1"
                                             stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
-                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});" />
+                                            style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100));" />
                                     </svg>
                                     {% endwith %}
                                     {% endif %}
@@ -4841,7 +4846,7 @@
             }, 200);
         });
 
-        // Handle backspace to remove chips
+        // Handle backspace to remove chips and Enter to search server
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' && input.value === '') {
                 const lastChip = chipsContainer.lastElementChild;
@@ -4852,6 +4857,18 @@
             if (e.key === 'Escape') {
                 closeDropdown();
                 input.blur();
+            }
+            // Enter key - search on server (all pages)
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const searchTerm = input.value.trim();
+                if (searchTerm) {
+                    // Redirect to server with search parameter
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('search', searchTerm);
+                    url.searchParams.delete('page'); // Reset to first page
+                    window.location.href = url.toString();
+                }
             }
         });
 
@@ -4875,6 +4892,42 @@
             e.stopPropagation();
             generarReporteCSV();
         });
+
+        // Search icon click - search on server
+        const searchIconBtn = document.getElementById('superSearchIconBtn');
+        if (searchIconBtn) {
+            searchIconBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const searchTerm = input.value.trim();
+                if (searchTerm) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('search', searchTerm);
+                    url.searchParams.delete('page');
+                    window.location.href = url.toString();
+                } else {
+                    input.focus();
+                }
+            });
+        }
+
+        // Initialize with search from URL if present
+        const urlSearchParam = new URLSearchParams(window.location.search).get('search');
+        if (urlSearchParam) {
+            input.value = urlSearchParam;
+            // Add search chip
+            const chip = document.createElement('div');
+            chip.className = 'super-search-chip';
+            chip.dataset.filterType = 'search';
+            chip.dataset.filterValue = urlSearchParam;
+            chip.innerHTML = `
+                <span class="chip-type">Búsqueda:</span>
+                <span>${urlSearchParam}</span>
+                <span class="chip-remove" onclick="clearServerSearch()">×</span>
+            `;
+            chipsContainer.appendChild(chip);
+            input.value = '';
+            clearBtn.style.display = 'flex';
+        }
 
         function openDropdown() {
             dropdown.classList.add('open');
@@ -5268,6 +5321,14 @@
         // Redirect with filters
         const queryString = params.toString();
         window.location.href = window.location.pathname + (queryString ? '?' + queryString : '');
+    }
+
+    // Clear server search and reload
+    function clearServerSearch() {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('search');
+        url.searchParams.delete('page');
+        window.location.href = url.toString();
     }
 
     function clearFlipFilters() {
