@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load app_filters humanize %}
+{% load app_filters %}
 {% block title %}Estadísticas de Usuarios{% endblock %}
 {% block content %}
 <div class="mt-8 bg-white/10 backdrop-blur-lg text-gray-100 p-8 rounded-2xl shadow-2xl border border-gray-700 glass-card animate-fade-in dashboard-container">
@@ -130,11 +130,11 @@
     <!-- Resumen General -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div class="stat-card">
-            <div class="stat-value">${{ total_general_vendido|floatformat:0|intcomma }}</div>
+            <div class="stat-value">${{ total_general_vendido|floatformat:0 }}</div>
             <div class="stat-label">Total Vendido (100%)</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">${{ total_general_pipeline|floatformat:0|intcomma }}</div>
+            <div class="stat-value">${{ total_general_pipeline|floatformat:0 }}</div>
             <div class="stat-label">Total Pipeline</div>
         </div>
         <div class="stat-card">
@@ -174,10 +174,10 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right">
-                        <span class="text-lg font-semibold money-positive">${{ dato.total_vendido|floatformat:0|intcomma }}</span>
+                        <span class="text-lg font-semibold money-positive">${{ dato.total_vendido|floatformat:0 }}</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right">
-                        <span class="text-sm money-pipeline">${{ dato.total_pipeline|floatformat:0|intcomma }}</span>
+                        <span class="text-sm money-pipeline">${{ dato.total_pipeline|floatformat:0 }}</span>
                     </td>
                     <td class="px-6 py-4">
                         {% if dato.cliente_top %}
@@ -188,7 +188,7 @@
                             {{ dato.cliente_top.cliente__nombre_empresa }}
                         </div>
                         <div class="text-xs text-gray-500 mt-1">
-                            {{ dato.cliente_top.num_ops }} ops · ${{ dato.cliente_top.total_cliente|floatformat:0|intcomma }}
+                            {{ dato.cliente_top.num_ops }} ops · ${{ dato.cliente_top.total_cliente|floatformat:0 }}
                         </div>
                         {% else %}
                         <span class="text-gray-500 text-sm">-</span>
