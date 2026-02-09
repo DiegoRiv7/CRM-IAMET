@@ -4273,7 +4273,7 @@ def reporte_usuarios(request):
     usuarios = User.objects.all().order_by('username')
     return render(request, 'reporte_usuarios.html', {'usuarios': usuarios})
 
-@supervisor_required
+@login_required
 def perfil_usuario(request, usuario_id):
     from datetime import date
     from django.db.models import Sum, Count
