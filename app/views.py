@@ -4336,6 +4336,9 @@ def estadisticas_usuarios(request):
     # Base queryset de oportunidades
     oportunidades = TodoItem.objects.all()
 
+    # Base queryset de cotizaciones (PDFs generados)
+    cotizaciones = Cotizacion.objects.all()
+
     # Aplicar filtros
     titulo_filtro = "Todas las oportunidades"
     if filtro == 'dia':
@@ -4347,6 +4350,7 @@ def estadisticas_usuarios(request):
         else:
             fecha = today
         oportunidades = oportunidades.filter(fecha_creacion__date=fecha)
+        cotizaciones = cotizaciones.filter(fecha_creacion__date=fecha)
         titulo_filtro = f"Día: {fecha.strftime('%d/%m/%Y')}"
     elif filtro == 'mes':
         if mes_especifico:
@@ -4361,6 +4365,7 @@ def estadisticas_usuarios(request):
             año = today.year
             mes = today.month
         oportunidades = oportunidades.filter(fecha_creacion__year=año, fecha_creacion__month=mes)
+        cotizaciones = cotizaciones.filter(fecha_creacion__year=año, fecha_creacion__month=mes)
         from calendar import month_name
         import locale
         try:
@@ -4400,9 +4405,13 @@ def estadisticas_usuarios(request):
             num_ops=Count('id')
         ).order_by('-total_cliente').first()
 
+        # Número de cotizaciones PDF generadas por este usuario
+        num_cotizaciones = cotizaciones.filter(created_by=usuario).count()
+
         usuarios_con_datos.append({
             'usuario': usuario,
             'num_oportunidades': num_oportunidades,
+            'num_cotizaciones': num_cotizaciones,
             'total_vendido': total_vendido,
             'total_pipeline': total_pipeline,
             'cliente_top': cliente_top,
@@ -4415,6 +4424,7 @@ def estadisticas_usuarios(request):
     total_general_vendido = sum(u['total_vendido'] for u in usuarios_con_datos)
     total_general_pipeline = sum(u['total_pipeline'] for u in usuarios_con_datos)
     total_oportunidades = sum(u['num_oportunidades'] for u in usuarios_con_datos)
+    total_cotizaciones = sum(u['num_cotizaciones'] for u in usuarios_con_datos)
 
     context = {
         'usuarios_datos': usuarios_con_datos,
@@ -4425,6 +4435,7 @@ def estadisticas_usuarios(request):
         'total_general_vendido': total_general_vendido,
         'total_general_pipeline': total_general_pipeline,
         'total_oportunidades': total_oportunidades,
+        'total_cotizaciones': total_cotizaciones,
     }
 
     return render(request, 'estadisticas_usuarios.html', context)

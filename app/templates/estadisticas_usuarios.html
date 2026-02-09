@@ -294,6 +294,10 @@
                 <div class="stat-value purple">{{ total_oportunidades }}</div>
                 <div class="stat-label">Total Oportunidades</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #FF9F0A;">{{ total_cotizaciones }}</div>
+                <div class="stat-label">Cotizaciones PDF Generadas</div>
+            </div>
         </div>
 
         <!-- Tabla de usuarios -->
@@ -302,6 +306,7 @@
                 <tr>
                     <th>Usuario</th>
                     <th style="text-align: center;">Oportunidades</th>
+                    <th style="text-align: center;">Cotizaciones PDF</th>
                     <th style="text-align: right;">Total Vendido</th>
                     <th style="text-align: right;">Pipeline</th>
                     <th>Cliente Top</th>
@@ -322,6 +327,9 @@
                     </td>
                     <td style="text-align: center;">
                         <span class="badge-count">{{ dato.num_oportunidades }}</span>
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="badge-count" style="background: rgba(255, 159, 10, 0.2); color: #FF9F0A;">{{ dato.num_cotizaciones }}</span>
                     </td>
                     <td style="text-align: right;">
                         <span class="money-green">${{ dato.total_vendido|floatformat:0 }}</span>
@@ -354,7 +362,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6">
+                    <td colspan="7">
                         <div class="empty-state">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
