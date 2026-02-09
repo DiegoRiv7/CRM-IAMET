@@ -2655,8 +2655,758 @@ try {
 }
 </script>
 
-<!-- Incluir el JavaScript corregido para personalización avanzada -->
-<script src="{% static 'js/personalizacion_avanzada.js' %}"></script>
+<!-- JavaScript de personalización avanzada (inline para evitar problemas de carga) -->
+<script>
+// Variables globales para el estado del avatar
+let selectedImageFile = null;
+let currentImageFile = null;
+let cropData = { x: 0, y: 0, scale: 1 };
+
+// Variables para el dock
+let defaultDockOrder = [
+    { id: 'dashboard', name: 'Dashboard', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
+    { id: 'ventas', name: 'Ventas', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
+    { id: 'clientes', name: 'Clientes', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
+    { id: 'productos', name: 'Productos', icon: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z' },
+    { id: 'separator', name: 'Separator', icon: '' },
+    { id: 'settings', name: 'Settings', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' }
+];
+
+// Función para abrir configuración de avatar
+function openAvatarSettings() {
+    console.log('Abriendo configuración de avatar...');
+    var modal = document.getElementById('avatarModal');
+    if (!modal) {
+        console.error('No se encontró el modal de avatar');
+        return;
+    }
+    showModal('avatarModal');
+    setTimeout(function() {
+        try {
+            console.log('Inicializando sistema de avatar...');
+            initializeAvatarSystem();
+            var uploadButton = document.querySelector('.avatar-section .btn-primary');
+            if (uploadButton) {
+                uploadButton.style.display = 'flex';
+                uploadButton.style.visibility = 'visible';
+                uploadButton.style.opacity = '1';
+                uploadButton.style.position = 'relative';
+                uploadButton.style.zIndex = '100';
+            }
+            console.log('Sistema de avatar inicializado correctamente');
+        } catch (error) {
+            console.error('Error al inicializar el sistema de avatar:', error);
+            showNotification('Error al cargar la configuración de avatar', 'error');
+        }
+    }, 100);
+}
+
+// Función para abrir configuración de diseño
+function openDesignSettings() {
+    console.log('Abriendo configuración de diseño...');
+    var modal = document.getElementById('designModal');
+    if (!modal) {
+        console.error('No se encontró el modal de diseño');
+        return;
+    }
+    showModal('designModal');
+    setTimeout(function() {
+        try {
+            initializeDockPreview();
+            var currentTheme = localStorage.getItem('theme') || 'dark';
+            updateThemePreview(currentTheme);
+            var currentDockType = localStorage.getItem('dockType') || 'normal';
+            setDockTypeWithAnimation(currentDockType, false);
+            initializeDockEditor();
+            console.log('Configuración de diseño inicializada correctamente');
+        } catch (error) {
+            console.error('Error al inicializar la configuración de diseño:', error);
+            showNotification('Error al cargar la configuración de diseño', 'error');
+        }
+    }, 100);
+}
+
+// Función para abrir configuración de idioma
+function openLanguageSettings() {
+    console.log('Abriendo configuración de idioma...');
+    showModal('languageModal');
+}
+
+// Función para abrir configuración de información de usuario
+function openUserInfoSettings() {
+    console.log('Abriendo configuración de información de usuario...');
+    showModal('userInfoModal');
+}
+
+// Funciones para mostrar/ocultar modales
+function showModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (!modal) { console.error('Modal no encontrado:', modalId); return; }
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    document.body.style.overflow = 'hidden';
+    void modal.offsetWidth;
+    console.log('Mostrando modal: ' + modalId);
+}
+
+function hideModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function applyTheme(theme) {
+    console.log('applyTheme called with:', theme);
+    var validThemes = ['dark', 'pink', 'light', 'white', 'coffee', 'perla'];
+    if (validThemes.indexOf(theme) === -1) {
+        console.error('Invalid theme provided:', theme);
+        theme = 'dark';
+    }
+    var html = document.documentElement;
+    html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
+    html.removeAttribute('data-theme');
+    if (theme === 'pink' || theme === 'white' || theme === 'coffee' || theme === 'perla') {
+        html.classList.add('light-theme');
+    } else {
+        html.classList.add('dark-theme');
+    }
+    if (theme !== 'dark') {
+        html.setAttribute('data-theme', theme);
+    }
+    updateThemePreview(theme);
+    document.querySelectorAll('.theme-dot-container').forEach(function(container) {
+        var dot = container.querySelector('.theme-dot');
+        if (dot) dot.style.boxShadow = '';
+    });
+    var selectedDot = document.getElementById(theme + '-theme-dot');
+    if (selectedDot) {
+        var dot = selectedDot.querySelector('.theme-dot');
+        if (dot) dot.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
+    }
+    localStorage.setItem('theme', theme);
+    var themeNames = { 'dark': 'Oscuro', 'pink': 'Rosa', 'white': 'Blanco', 'coffee': 'Café', 'perla': 'Perla' };
+    showNotification('Tema cambiado a ' + (themeNames[theme] || theme) + '.', 'success');
+}
+
+// Sistema de avatar completo
+function initializeAvatarSystem() {
+    console.log('Inicializando sistema de avatar...');
+    var avatarChoices = document.querySelectorAll('.avatar-choice');
+    var animGalleryPreview = document.getElementById('animGalleryPreview');
+    var uploadedAvatar = document.getElementById('uploadedAvatar');
+    var avatarUpload = document.getElementById('avatarUpload');
+
+    if (avatarUpload) {
+        avatarUpload.onchange = function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                selectedImageFile = file;
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    if (uploadedAvatar) {
+                        uploadedAvatar.src = event.target.result;
+                        uploadedAvatar.style.display = 'block';
+                        var applyButton = document.querySelector('button[onclick="applyCrop()"]');
+                        if (applyButton) applyButton.style.display = 'inline-block';
+                    }
+                    showNotification('Imagen cargada. Haz clic en Aplicar para guardar los cambios.', 'info');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+
+    var selectedAvatar = 'dinosaur';
+
+    function setAnimPreview(idx) {
+        var btn = document.querySelector('.avatar-choice[data-avatar="' + idx + '"]');
+        if (!btn) return;
+        var previewContent = btn.cloneNode(true);
+        animGalleryPreview.innerHTML = '';
+        animGalleryPreview.className = 'avatar-preview-content';
+        animGalleryPreview.style = '';
+        var previewImg = previewContent.querySelector('img');
+        if (previewImg) {
+            previewImg.style.width = '100%';
+            previewImg.style.height = '100%';
+            previewImg.style.objectFit = 'cover';
+            previewImg.style.borderRadius = '50%';
+        }
+        animGalleryPreview.style.display = 'flex';
+        animGalleryPreview.style.alignItems = 'center';
+        animGalleryPreview.style.justifyContent = 'center';
+        animGalleryPreview.style.width = '100%';
+        animGalleryPreview.style.height = '100%';
+        previewContent.style.width = '100%';
+        previewContent.style.height = '100%';
+        previewContent.style.padding = '0';
+        previewContent.style.border = 'none';
+        previewContent.style.background = 'transparent';
+        previewContent.style.boxShadow = 'none';
+        animGalleryPreview.appendChild(previewContent);
+        if (uploadedAvatar) uploadedAvatar.style.display = 'none';
+    }
+
+    avatarChoices.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            avatarChoices.forEach(function(b) { b.classList.remove('selected'); });
+            btn.classList.add('selected');
+            btn.style.borderColor = 'var(--apple-blue)';
+            btn.style.boxShadow = '0 0 10px rgba(0, 122, 255, 0.5)';
+            avatarChoices.forEach(function(b) {
+                if (b !== btn) {
+                    b.style.borderColor = 'transparent';
+                    b.style.boxShadow = 'none';
+                }
+            });
+            selectedAvatar = btn.getAttribute('data-avatar');
+            setAnimPreview(selectedAvatar);
+            document.getElementById('avatarChoice').value = selectedAvatar;
+        });
+    });
+
+    var defaultAvatar = window.avatarConfig ? window.avatarConfig.avatarTipo : 'dinosaur';
+    var initialAvatar = document.querySelector('.avatar-choice[data-avatar="' + defaultAvatar + '"]');
+
+    if (window.avatarConfig && window.avatarConfig.hasCustomAvatar && window.avatarConfig.customAvatarUrl) {
+        if (uploadedAvatar) {
+            uploadedAvatar.src = window.avatarConfig.customAvatarUrl;
+            uploadedAvatar.style.display = 'block';
+        }
+        if (animGalleryPreview) animGalleryPreview.style.display = 'none';
+        avatarChoices.forEach(function(b) {
+            b.classList.remove('selected');
+            b.style.borderColor = 'transparent';
+            b.style.boxShadow = 'none';
+        });
+        var avatarChoiceInput = document.getElementById('avatarChoice');
+        if (avatarChoiceInput) avatarChoiceInput.value = '';
+    } else {
+        if (initialAvatar) {
+            initialAvatar.click();
+        } else {
+            var defaultBtn = document.querySelector('.avatar-choice[data-avatar="dinosaur"]');
+            if (defaultBtn) defaultBtn.click();
+        }
+    }
+
+    var editBtn = document.getElementById('editAvatarBtn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('avatarUpload').click();
+        });
+    }
+}
+
+function applyCrop() {
+    if (!selectedImageFile) {
+        showNotification('No hay ninguna imagen seleccionada', 'error');
+        return;
+    }
+    var formData = new FormData();
+    formData.append('avatar', selectedImageFile);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    var applyButton = document.querySelector('button[onclick="applyCrop()"]');
+    var originalText = applyButton ? applyButton.innerHTML : '';
+    if (applyButton) {
+        applyButton.disabled = true;
+        applyButton.innerHTML = '<span>⏳</span> Guardando...';
+    }
+    fetch('/actualizar_avatar/', { method: 'POST', body: formData })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showNotification('Foto de perfil actualizada correctamente', 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            } else {
+                throw new Error(data.error || 'Error al guardar la imagen');
+            }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            showNotification('Error al guardar la foto: ' + error.message, 'error');
+        })
+        .finally(function() {
+            if (applyButton) {
+                applyButton.disabled = false;
+                applyButton.innerHTML = originalText;
+            }
+        });
+}
+
+function cancelCrop() {
+    var cropModal = document.getElementById('cropModal');
+    if (cropModal) cropModal.style.display = 'none';
+    var avatarUpload = document.getElementById('avatarUpload');
+    if (avatarUpload) avatarUpload.value = '';
+    cropData = { x: 0, y: 0, scale: 1 };
+    var zoomSlider = document.getElementById('zoomSlider');
+    if (zoomSlider) zoomSlider.value = 1;
+    var cropImage = document.getElementById('cropImage');
+    if (cropImage) cropImage.style.transform = 'translate(-50%, -50%) scale(1)';
+}
+
+function updateThemePreview(theme) {
+    var welcomePreview = document.getElementById('welcomePreview');
+    if (!welcomePreview) return;
+    var appleBg = welcomePreview.querySelector('.apple-bg');
+    var userAvatar = welcomePreview.querySelector('.user-avatar-preview');
+    var welcomeTitle = welcomePreview.querySelector('h1');
+    var welcomeText = welcomePreview.querySelector('p');
+    var searchBar = welcomePreview.querySelector('.central-search-bar');
+    var searchIcon = searchBar ? searchBar.querySelector('svg') : null;
+    var searchText = searchBar ? searchBar.querySelector('span') : null;
+    welcomePreview.classList.remove('dark-preview', 'pink-preview', 'white-preview', 'coffee-preview');
+    welcomePreview.classList.add(theme + '-preview');
+    welcomePreview.style.transform = 'scale(0.95)';
+    welcomePreview.style.opacity = '0.7';
+    welcomePreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    setTimeout(function() {
+        if (theme === 'dark') {
+            welcomePreview.style.background = '#000000';
+            if (appleBg) appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%), linear-gradient(180deg, #000000 0%, #1D1D1F 100%)';
+            if (userAvatar) userAvatar.style.borderColor = '#007AFF';
+            if (welcomeTitle) welcomeTitle.style.color = '#FFFFFF';
+            if (welcomeText) welcomeText.style.color = '#EBEBF5';
+            if (searchBar) searchBar.style.background = 'rgba(28, 28, 30, 0.8)';
+            if (searchIcon) searchIcon.style.color = '#8E8E93';
+            if (searchText) searchText.style.color = '#8E8E93';
+        } else if (theme === 'pink') {
+            welcomePreview.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+            if (appleBg) appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(255, 107, 157, 0.1) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255, 182, 193, 0.08) 0%, transparent 60%), linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+            if (userAvatar) userAvatar.style.borderColor = '#FF6B9D';
+            if (welcomeTitle) welcomeTitle.style.color = '#2D1B2E';
+            if (welcomeText) welcomeText.style.color = '#4A2B4D';
+            if (searchBar) searchBar.style.background = 'linear-gradient(135deg, rgba(255, 245, 248, 0.9) 0%, rgba(255, 232, 239, 0.85) 50%, rgba(255, 218, 230, 0.8) 100%)';
+            if (searchIcon) searchIcon.style.color = '#E55A87';
+            if (searchText) searchText.style.color = '#6B4C6D';
+        } else if (theme === 'white') {
+            welcomePreview.style.background = '#ffffff';
+            if (appleBg) appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(0, 123, 255, 0.05) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(0, 123, 255, 0.03) 0%, transparent 50%), linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)';
+            if (userAvatar) userAvatar.style.borderColor = '#007bff';
+            if (welcomeTitle) welcomeTitle.style.color = '#212529';
+            if (welcomeText) welcomeText.style.color = '#343a40';
+            if (searchBar) searchBar.style.background = 'rgba(248, 249, 250, 0.8)';
+            if (searchIcon) searchIcon.style.color = '#6c757d';
+            if (searchText) searchText.style.color = '#6c757d';
+        } else if (theme === 'coffee') {
+            welcomePreview.style.background = 'linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%)';
+            if (appleBg) appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(139, 69, 19, 0.05) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(139, 98, 57, 0.03) 0%, transparent 50%), linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%)';
+            if (userAvatar) userAvatar.style.borderColor = '#8b6239';
+            if (welcomeTitle) welcomeTitle.style.color = '#4a3020';
+            if (welcomeText) welcomeText.style.color = '#5d3d2a';
+            if (searchBar) searchBar.style.background = 'rgba(139, 69, 19, 0.1)';
+            if (searchIcon) searchIcon.style.color = '#8b6239';
+            if (searchText) searchText.style.color = '#8b6239';
+        } else if (theme === 'perla') {
+            welcomePreview.style.background = '#FFFFFF';
+            if (appleBg) appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(0, 82, 212, 0.05) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(0, 82, 212, 0.03) 0%, transparent 50%), linear-gradient(180deg, #FFFFFF 0%, #F0F2F5 100%)';
+            if (userAvatar) userAvatar.style.borderColor = '#0052D4';
+            if (welcomeTitle) welcomeTitle.style.color = '#111827';
+            if (welcomeText) welcomeText.style.color = '#374151';
+            if (searchBar) searchBar.style.background = 'rgba(240, 242, 245, 0.8)';
+            if (searchIcon) searchIcon.style.color = '#6B7280';
+            if (searchText) searchText.style.color = '#6B7280';
+        }
+        welcomePreview.style.transform = 'scale(1.05)';
+        welcomePreview.style.opacity = '1';
+        setTimeout(function() { welcomePreview.style.transform = 'scale(1)'; }, 200);
+    }, 300);
+}
+
+// Sistema de dock
+var previousDockType = 'normal';
+
+function setDockTypeWithAnimation(type, animate) {
+    if (animate === undefined) animate = true;
+    var dockPreview = document.getElementById('dockPreview');
+    if (!dockPreview) return;
+
+    document.querySelectorAll('.dock-type-option').forEach(function(option) {
+        option.classList.remove('active');
+        var previewCircle = option.querySelector('.dock-type-preview');
+        if (previewCircle) {
+            if (option.id === 'normal-dock-option') {
+                previewCircle.style.background = 'var(--apple-blue)';
+                previewCircle.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.2)';
+            } else if (option.id === 'transparent-dock-option') {
+                previewCircle.style.background = 'rgba(255, 255, 255, 0.8)';
+                previewCircle.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.2)';
+            } else if (option.id === 'compact-dock-option') {
+                previewCircle.style.background = 'var(--apple-label-secondary)';
+                previewCircle.style.boxShadow = '0 0 0 3px rgba(235, 235, 245, 0.2)';
+            }
+        }
+    });
+
+    var selectedOption = document.getElementById(type + '-dock-option');
+    if (selectedOption) {
+        selectedOption.classList.add('active');
+        var selectedPreviewCircle = selectedOption.querySelector('.dock-type-preview');
+        if (selectedPreviewCircle) {
+            selectedPreviewCircle.style.background = 'var(--apple-blue)';
+            selectedPreviewCircle.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
+        }
+    }
+    previousDockType = type;
+
+    dockPreview.style.transform = 'scale(0.95)';
+    dockPreview.style.opacity = '0.7';
+    dockPreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+    function generateDock(isTransparent, isCompact) {
+        var dock = document.createElement('div');
+        dock.className = 'macos-dock';
+        dock.style.display = 'flex';
+        dock.style.gap = '8px';
+        dock.style.padding = '10px';
+        dock.style.borderRadius = '16px';
+        dock.style.transition = 'all 0.3s ease';
+        if (isCompact) {
+            dock.style.borderRadius = '50%';
+            dock.style.width = '60px';
+            dock.style.height = '60px';
+            dock.style.justifyContent = 'center';
+            dock.style.alignItems = 'center';
+            var compactIcon = document.createElement('div');
+            compactIcon.className = 'dock-item';
+            compactIcon.style.cssText = 'width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,122,255,0.8)';
+            compactIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>';
+            dock.appendChild(compactIcon);
+        } else {
+            dock.style.padding = '10px 20px';
+            defaultDockOrder.slice(0, 5).forEach(function(item) {
+                if (item.id === 'separator') return;
+                var iconElement = document.createElement('div');
+                iconElement.className = 'dock-item';
+                iconElement.style.cssText = 'width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center';
+                iconElement.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="' + item.icon + '"></path></svg>';
+                iconElement.style.background = isTransparent ? 'rgba(255,255,255,0.2)' : 'rgba(0,122,255,0.8)';
+                dock.appendChild(iconElement);
+            });
+        }
+        if (isTransparent) {
+            dock.style.background = 'rgba(255,255,255,0.01)';
+            dock.style.backdropFilter = 'blur(40px) saturate(500%) contrast(180%) brightness(140%)';
+            dock.style.webkitBackdropFilter = 'blur(40px) saturate(500%) contrast(180%) brightness(140%)';
+            dock.style.border = '1px solid rgba(255,255,255,0.05)';
+        } else {
+            dock.style.background = 'rgba(29,29,31,0.85)';
+            dock.style.border = '1px solid rgba(255,255,255,0.15)';
+        }
+        return dock;
+    }
+
+    if (animate) {
+        dockPreview.style.transform = 'scale(0.9)';
+        dockPreview.style.opacity = '0';
+        setTimeout(function() {
+            dockPreview.innerHTML = '';
+            var newDock;
+            if (type === 'normal') newDock = generateDock(false, false);
+            else if (type === 'transparent') newDock = generateDock(true, false);
+            else if (type === 'compact') newDock = generateDock(false, true);
+            dockPreview.appendChild(newDock);
+            dockPreview.style.transform = 'scale(1)';
+            dockPreview.style.opacity = '1';
+        }, 200);
+    } else {
+        dockPreview.innerHTML = '';
+        var newDock;
+        if (type === 'normal') newDock = generateDock(false, false);
+        else if (type === 'transparent') newDock = generateDock(true, false);
+        else if (type === 'compact') newDock = generateDock(false, true);
+        dockPreview.appendChild(newDock);
+    }
+    setDockType(type);
+}
+
+function initializeDockPreview() {
+    var dockPreview = document.getElementById('dockPreview');
+    if (!dockPreview) return;
+    var currentDockType = localStorage.getItem('dockType') || 'normal';
+    setDockTypeWithAnimation(currentDockType, false);
+}
+
+function setDockType(type) { localStorage.setItem('dockType', type); }
+
+function setDockPosition(position) {
+    localStorage.setItem('dockPosition', position);
+    document.querySelectorAll('.dock-option').forEach(function(option) {
+        option.classList.remove('active');
+        if (option.getAttribute('data-position') === position) option.classList.add('active');
+    });
+    var positionNames = { 'bottom': 'Inferior', 'top': 'Superior', 'left': 'Izquierda', 'right': 'Derecha' };
+    showNotification('Posición del dock cambiada a ' + positionNames[position], 'success');
+}
+
+// Dock editor
+function resetDockOrder() {
+    var editableDock = document.getElementById('editable-dock');
+    if (!editableDock) return;
+    editableDock.innerHTML = '';
+    defaultDockOrder.forEach(function(item) {
+        if (item.id === 'separator') {
+            var separator = document.createElement('div');
+            separator.className = 'dock-editor-separator';
+            editableDock.appendChild(separator);
+        } else {
+            editableDock.appendChild(createDockEditorItem(item));
+        }
+    });
+    showNotification('Orden del dock restablecido', 'success');
+}
+
+function createDockEditorItem(item) {
+    var dockItem = document.createElement('div');
+    dockItem.className = 'dock-editor-item';
+    dockItem.draggable = true;
+    dockItem.dataset.itemId = item.id;
+    var iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    iconSvg.setAttribute('width', '28');
+    iconSvg.setAttribute('height', '28');
+    iconSvg.setAttribute('viewBox', '0 0 24 24');
+    iconSvg.setAttribute('fill', 'none');
+    iconSvg.setAttribute('stroke', 'white');
+    iconSvg.setAttribute('stroke-width', '2');
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', item.icon);
+    iconSvg.appendChild(path);
+    dockItem.appendChild(iconSvg);
+    dockItem.addEventListener('dragstart', handleDragStart);
+    dockItem.addEventListener('dragend', handleDragEnd);
+    dockItem.addEventListener('dragover', handleDragOver);
+    dockItem.addEventListener('drop', handleDrop);
+    dockItem.addEventListener('dragenter', handleDragEnter);
+    dockItem.addEventListener('dragleave', handleDragLeave);
+    return dockItem;
+}
+
+function saveDockOrder() {
+    var editableDock = document.getElementById('editable-dock');
+    if (!editableDock) return;
+    var dockItems = editableDock.querySelectorAll('.dock-editor-item');
+    var newOrder = [];
+    dockItems.forEach(function(item) {
+        var itemId = item.dataset.itemId;
+        var originalItem = defaultDockOrder.find(function(i) { return i.id === itemId; });
+        if (originalItem) newOrder.push(originalItem);
+    });
+    localStorage.setItem('dockOrder', JSON.stringify(newOrder));
+    showNotification('Orden del dock guardado correctamente', 'success');
+    setTimeout(function() {
+        var currentDockType = localStorage.getItem('dockType') || 'normal';
+        setDockTypeWithAnimation(currentDockType, false);
+    }, 300);
+}
+
+var draggedElement = null;
+function handleDragStart(e) { draggedElement = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/html', this.innerHTML); }
+function handleDragEnd(e) { this.classList.remove('dragging'); document.querySelectorAll('.dock-editor-item').forEach(function(item) { item.classList.remove('drop-target'); }); }
+function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
+function handleDragEnter(e) { if (this !== draggedElement) this.classList.add('drop-target'); }
+function handleDragLeave(e) { this.classList.remove('drop-target'); }
+function handleDrop(e) {
+    e.stopPropagation();
+    if (draggedElement !== this) {
+        var editableDock = document.getElementById('editable-dock');
+        var allItems = Array.from(editableDock.querySelectorAll('.dock-editor-item'));
+        var draggedIndex = allItems.indexOf(draggedElement);
+        var targetIndex = allItems.indexOf(this);
+        if (draggedIndex < targetIndex) this.parentNode.insertBefore(draggedElement, this.nextSibling);
+        else this.parentNode.insertBefore(draggedElement, this);
+    }
+    return false;
+}
+
+function initializeDockEditor() {
+    var editableDock = document.getElementById('editable-dock');
+    if (!editableDock) return;
+    editableDock.innerHTML = '';
+    var dockOrder = defaultDockOrder;
+    var savedOrder = localStorage.getItem('dockOrder');
+    if (savedOrder) { try { dockOrder = JSON.parse(savedOrder); } catch(e) { dockOrder = defaultDockOrder; } }
+    dockOrder.forEach(function(item) {
+        if (item.id === 'separator') {
+            var separator = document.createElement('div');
+            separator.className = 'dock-editor-separator';
+            editableDock.appendChild(separator);
+        } else {
+            editableDock.appendChild(createDockEditorItem(item));
+        }
+    });
+}
+
+// Guardar configuración de diseño
+function saveDesignSettings() {
+    var savedTheme = localStorage.getItem('theme') || 'dark';
+    var savedDockType = localStorage.getItem('dockType') || 'normal';
+    var savedDockPosition = localStorage.getItem('dockPosition') || 'bottom';
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) { showNotification('Error de seguridad al guardar', 'error'); return; }
+    var formData = new FormData();
+    formData.append('theme', savedTheme);
+    formData.append('dock_type', savedDockType);
+    formData.append('dock_position', savedDockPosition);
+    formData.append('csrfmiddlewaretoken', csrfToken.value);
+    var themeNames = { 'dark': 'Oscuro', 'pink': 'Rosa', 'white': 'Blanco', 'coffee': 'Café', 'perla': 'Perla' };
+    var typeNames = { 'normal': 'Normal', 'transparent': 'Transparente', 'compact': 'Compacto' };
+    var saveBtn = document.querySelector('#designModal .btn-primary');
+    var originalBtnText = saveBtn ? saveBtn.textContent : '';
+    if (saveBtn) { saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...'; saveBtn.disabled = true; }
+    fetch('/configuracion_avanzada/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(response) { if (!response.ok) throw new Error('Error en la respuesta del servidor'); return response.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showNotification('Configuración guardada: Tema: ' + (themeNames[savedTheme] || savedTheme) + ', Tipo de dock: ' + (typeNames[savedDockType] || savedDockType), 'success');
+                hideModal('designModal');
+                setTimeout(function() { location.reload(); }, 1000);
+            } else { throw new Error(data.error || 'Error desconocido al guardar'); }
+        })
+        .catch(function(error) { console.error('Error al guardar diseño:', error); showNotification('Error al guardar la configuración: ' + error.message, 'error'); })
+        .finally(function() { if (saveBtn) { saveBtn.innerHTML = originalBtnText; saveBtn.disabled = false; } });
+}
+
+// Sistema de idioma
+function changeLanguage(langCode, langName) {
+    var languageButtons = document.querySelectorAll('.language-option');
+    languageButtons.forEach(function(btn) { btn.disabled = true; });
+    var formData = new FormData();
+    formData.append('language', langCode);
+    formData.append('next', window.location.pathname);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    fetch('/i18n/setlang/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }, credentials: 'same-origin' })
+        .then(function(response) { if (!response.ok) throw new Error('Network response was not ok'); return response.json(); })
+        .then(function(data) {
+            if (data.status === 'success') {
+                document.documentElement.lang = langCode;
+                showNotification('Idioma cambiado a ' + langName, 'success');
+                setTimeout(function() { window.location.reload(true); }, 500);
+            } else { throw new Error(data.message || 'Error al cambiar el idioma'); }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            showNotification(error.message || 'Error al cambiar el idioma', 'error');
+            languageButtons.forEach(function(btn) { btn.disabled = false; });
+        });
+}
+
+// Sistema de información de usuario
+function saveUserInfo() {
+    var formData = new FormData();
+    formData.append('username', document.getElementById('username').value);
+    formData.append('first_name', document.getElementById('firstName').value);
+    formData.append('last_name', document.getElementById('lastName').value);
+    formData.append('email', document.getElementById('email').value);
+    formData.append('birthday', document.getElementById('birthday').value);
+    formData.append('gender', document.getElementById('gender').value);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    fetch('/configuracion_avanzada/', { method: 'POST', body: formData })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showNotification('Información actualizada correctamente', 'success');
+                hideModal('userInfoModal');
+                setTimeout(function() { location.reload(); }, 500);
+            } else { showNotification('Error: ' + (data.error || 'Error desconocido'), 'error'); }
+        })
+        .catch(function(error) { console.error('Error:', error); showNotification('Error al guardar la información', 'error'); });
+}
+
+function logout() {
+    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) window.location.href = '/logout/';
+}
+
+// Sistema de notificaciones
+function showNotification(message, type) {
+    if (!type) type = 'info';
+    var container = document.querySelector('.notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+    }
+    var notification = document.createElement('div');
+    notification.className = 'notification ' + type + ' show';
+    var icon = type === 'success' ? '✓' : (type === 'error' ? '✕' : 'ℹ');
+    notification.innerHTML = '<span class="icon">' + icon + '</span><span>' + message + '</span>';
+    container.appendChild(notification);
+    setTimeout(function() {
+        notification.classList.remove('show');
+        setTimeout(function() {
+            notification.remove();
+            if (container && container.children.length === 0) container.remove();
+        }, 300);
+    }, 5000);
+}
+
+// Inicialización al cargar el documento
+document.addEventListener('DOMContentLoaded', function() {
+    var currentTheme = localStorage.getItem('theme');
+    if (currentTheme === 'auto') { currentTheme = 'dark'; localStorage.setItem('theme', 'dark'); }
+    if (currentTheme) {
+        setTimeout(function() {
+            initializeActiveTheme(currentTheme);
+            initializeThemeDots(currentTheme);
+        }, 100);
+    }
+    setTimeout(function() {
+        var currentDockPosition = localStorage.getItem('dockPosition') || 'bottom';
+        initializeActiveDockOption(currentDockPosition);
+        var currentDockType = localStorage.getItem('dockType') || 'normal';
+        initializeActiveDockType(currentDockType);
+    }, 200);
+});
+
+function initializeActiveTheme(theme) {
+    if (!theme) return;
+    document.querySelectorAll('.theme-dot-container').forEach(function(option) {
+        option.classList.remove('active');
+        option.style.boxShadow = 'none';
+        option.style.transform = 'translateY(0)';
+    });
+    var activeOption = document.getElementById(theme + '-theme-dot');
+    if (activeOption) {
+        activeOption.classList.add('active');
+        activeOption.style.transform = 'translateY(-5px)';
+        var dot = activeOption.querySelector('.theme-dot');
+        if (dot) {
+            var shadows = { 'dark': 'rgba(0,122,255,', 'pink': 'rgba(255,107,157,', 'white': 'rgba(0,169,255,', 'coffee': 'rgba(139,98,57,', 'perla': 'rgba(0,82,212,' };
+            var c = shadows[theme] || 'rgba(0,122,255,';
+            dot.style.boxShadow = '0 0 0 3px ' + c + '0.5), 0 0 15px ' + c + '0.7)';
+        }
+    }
+}
+
+function initializeThemeDots(theme) {
+    document.querySelectorAll('.theme-dot').forEach(function(dot) { dot.style.boxShadow = ''; });
+    var selectedDot = document.getElementById(theme + '-theme-dot');
+    if (selectedDot) {
+        var dot = selectedDot.querySelector('.theme-dot');
+        if (dot) {
+            var shadows = { 'dark': 'rgba(0,122,255,', 'pink': 'rgba(255,107,157,', 'white': 'rgba(0,123,255,', 'coffee': 'rgba(139,98,57,', 'perla': 'rgba(0,82,212,' };
+            var c = shadows[theme] || 'rgba(0,122,255,';
+            dot.style.boxShadow = '0 0 0 3px ' + c + '0.5), 0 0 15px ' + c + '0.7)';
+        }
+    }
+}
+
+function initializeActiveDockOption(position) {
+    document.querySelectorAll('.dock-option').forEach(function(option) {
+        option.classList.remove('active');
+        if (option.getAttribute('data-position') === position) option.classList.add('active');
+    });
+}
+
+function initializeActiveDockType(type) {
+    document.querySelectorAll('.dock-type-option').forEach(function(option) {
+        option.classList.remove('active');
+        if (option.getAttribute('data-type') === type) option.classList.add('active');
+    });
+}
+</script>
 
 
 </body>
