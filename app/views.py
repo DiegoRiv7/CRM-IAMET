@@ -4276,39 +4276,104 @@ def reporte_usuarios(request):
 @supervisor_required
 def perfil_usuario(request, usuario_id):
     from datetime import date
+    from django.db.models import Sum, Count
     usuario = get_object_or_404(User, id=usuario_id)
-    oportunidades = TodoItem.objects.filter(usuario=usuario).select_related('cliente')
 
     today = date.today()
-    mes_actual = str(today.month).zfill(2)
-    # Oportunidades del mes actual
-    oportunidades_mes = oportunidades.filter(mes_cierre=mes_actual)
 
-    # Oportunidad más grande (1-99% probabilidad, cualquier mes)
-    oportunidad_mayor = oportunidades.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).order_by('-monto').first()
+    # --- Filtros de fecha (igual que estadisticas_usuarios) ---
+    filtro = request.GET.get('filtro', 'todas')
+    fecha_especifica = request.GET.get('fecha', None)
+    mes_especifico = request.GET.get('mes', None)
+    anio_especifico = request.GET.get('anio', None)
 
-    # Total cobrado del mes actual (probabilidad 100%)
-    oportunidades_cobradas_mes = oportunidades_mes.filter(probabilidad_cierre=100)
-    monto_total_cobrado_mes = oportunidades_cobradas_mes.aggregate(suma=Sum('monto'))['suma'] or 0
+    oportunidades = TodoItem.objects.filter(usuario=usuario).select_related('cliente')
+    cotizaciones = Cotizacion.objects.filter(created_by=usuario)
 
-    # Oportunidades por cobrar del mes actual (probabilidad > 70% and < 100%)
-    oportunidades_por_cobrar_mes = oportunidades_mes.filter(probabilidad_cierre__gt=70, probabilidad_cierre__lt=100)
-    monto_total_por_cobrar_mes = oportunidades_por_cobrar_mes.aggregate(suma=Sum('monto'))['suma'] or 0
+    titulo_filtro = "Todas las oportunidades"
+    if filtro == 'dia':
+        if fecha_especifica:
+            try:
+                fecha = date.fromisoformat(fecha_especifica)
+            except ValueError:
+                fecha = today
+        else:
+            fecha = today
+        oportunidades = oportunidades.filter(fecha_creacion__date=fecha)
+        cotizaciones = cotizaciones.filter(fecha_creacion__date=fecha)
+        titulo_filtro = f"Día: {fecha.strftime('%d/%m/%Y')}"
+    elif filtro == 'mes':
+        if mes_especifico:
+            try:
+                año, mes = mes_especifico.split('-')
+                año = int(año)
+                mes = int(mes)
+            except (ValueError, AttributeError):
+                año = today.year
+                mes = today.month
+        else:
+            año = today.year
+            mes = today.month
+        oportunidades = oportunidades.filter(fecha_creacion__year=año, fecha_creacion__month=mes)
+        cotizaciones = cotizaciones.filter(fecha_creacion__year=año, fecha_creacion__month=mes)
+        from calendar import month_name
+        import locale
+        try:
+            locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        except:
+            pass
+        titulo_filtro = f"Mes: {today.replace(year=año, month=mes, day=1).strftime('%B %Y').capitalize()}"
+    elif filtro == 'anio':
+        if anio_especifico:
+            try:
+                año = int(anio_especifico)
+            except ValueError:
+                año = today.year
+        else:
+            año = today.year
+        oportunidades = oportunidades.filter(fecha_creacion__year=año)
+        cotizaciones = cotizaciones.filter(fecha_creacion__year=año)
+        titulo_filtro = f"Año: {año}"
 
-    # Oportunidades creadas en el mes actual (año y mes actual)
-    oportunidades_creadas_mes = oportunidades.filter(fecha_creacion__year=today.year, fecha_creacion__month=today.month)
-    oportunidades_creadas_mes_count = oportunidades_creadas_mes.count()
+    # --- Estadísticas principales (mismas que la vista general) ---
+    total_vendido = oportunidades.filter(probabilidad_cierre=100).aggregate(
+        total=Sum('monto')
+    )['total'] or Decimal('0.00')
+
+    total_pipeline = oportunidades.aggregate(
+        total=Sum('monto')
+    )['total'] or Decimal('0.00')
+
+    num_oportunidades = oportunidades.count()
+    num_cotizaciones = cotizaciones.count()
+
+    # Cliente top por monto
+    cliente_top = oportunidades.values(
+        'cliente__id', 'cliente__nombre_empresa'
+    ).annotate(
+        total_cliente=Sum('monto'),
+        num_ops=Count('id')
+    ).order_by('-total_cliente').first()
+
+    # Oportunidad más grande (1-99% probabilidad)
+    oportunidad_mayor = oportunidades.filter(
+        probabilidad_cierre__gte=1, probabilidad_cierre__lte=99
+    ).order_by('-monto').first()
 
     context = {
         'usuario': usuario,
         'oportunidades': oportunidades.order_by('-monto'),
         'oportunidad_mayor': oportunidad_mayor,
-        'oportunidades_cobradas_mes': oportunidades_cobradas_mes,
-        'monto_total_cobrado_mes': monto_total_cobrado_mes,
-        'oportunidades_por_cobrar_mes': oportunidades_por_cobrar_mes,
-        'monto_total_por_cobrar_mes': monto_total_por_cobrar_mes,
-        'mes_actual': today.strftime('%B').capitalize(),
-        'oportunidades_creadas_mes_count': oportunidades_creadas_mes_count,
+        'total_vendido': total_vendido,
+        'total_pipeline': total_pipeline,
+        'num_oportunidades': num_oportunidades,
+        'num_cotizaciones': num_cotizaciones,
+        'cliente_top': cliente_top,
+        'filtro_actual': filtro,
+        'titulo_filtro': titulo_filtro,
+        'fecha_actual': today.isoformat(),
+        'mes_actual': today.strftime('%Y-%m'),
+        'anio_actual': str(today.year),
     }
     return render(request, 'perfil_usuario.html', context)
 

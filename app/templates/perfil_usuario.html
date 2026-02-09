@@ -1,127 +1,378 @@
 {% extends "base.html" %}
 {% load app_filters %}
-{% block title %}Perfil de {{ usuario.username }}{% endblock %}
+{% block title %}Estadísticas de {{ usuario.get_full_name|default:usuario.username }}{% endblock %}
 {% block content %}
 <style>
-    .bg-animated {
-        position: fixed; inset: 0; z-index: 0;
-        pointer-events: none;
-        background: radial-gradient(circle at 20% 20%, #00cfff33 0%, transparent 60%),
-                    radial-gradient(circle at 80% 80%, #ff00c833 0%, transparent 60%),
-                    linear-gradient(120deg, #181c24 0%, #232946 100%);
-        animation: bgMove 16s linear infinite alternate;
+    .main-content.container {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
-    @keyframes bgMove {
-        0% { background-position: 0% 0%, 100% 100%, 0 0; }
-        100% { background-position: 20% 10%, 80% 90%, 0 0; }
+    body {
+        background: #000 !important;
+    }
+    .stats-container {
+        padding: 2rem;
+        background: #000;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    }
+    .content-wrapper {
+        width: 95%;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    .page-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #F2F2F7;
+        letter-spacing: -0.5px;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    .page-subtitle {
+        font-size: 1rem;
+        color: #8E8E93;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #0A84FF;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        transition: opacity 0.2s;
+    }
+    .back-link:hover {
+        opacity: 0.8;
+        color: #0A84FF;
+        text-decoration: none;
+    }
+    .filter-section {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .filter-btn {
+        padding: 0.6rem 1.25rem;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.08);
+        color: #EBEBF5;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .filter-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        text-decoration: none;
+    }
+    .filter-btn.active {
+        background: #0A84FF;
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4);
+    }
+    .stat-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+    }
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #0A84FF;
+        margin-bottom: 0.25rem;
+    }
+    .stat-value.green { color: #32D74B; }
+    .stat-value.purple { color: #BF5AF2; }
+    .stat-value.orange { color: #FF9F0A; }
+    .stat-label {
+        font-size: 0.75rem;
+        color: #8E8E93;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .info-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .info-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .info-card-title {
+        font-size: 0.75rem;
+        color: #8E8E93;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+    }
+    .info-card-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #F2F2F7;
+    }
+    .info-card-sub {
+        font-size: 0.8rem;
+        color: #8E8E93;
+        margin-top: 0.25rem;
+    }
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .data-table thead {
+        background: rgba(255, 255, 255, 0.08);
+    }
+    .data-table th {
+        padding: 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #8E8E93;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .data-table td {
+        padding: 1rem;
+        color: #F2F2F7;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.875rem;
+    }
+    .data-table tbody tr {
+        transition: background 0.2s ease;
+    }
+    .data-table tbody tr:hover {
+        background: rgba(10, 132, 255, 0.1);
+    }
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #F2F2F7;
+        margin-bottom: 1rem;
+        margin-top: 1rem;
+    }
+    .prob-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .prob-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    .money-green { color: #32D74B; font-weight: 600; }
+    .money-blue { color: #0A84FF; }
+    .date-input {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        color: #F2F2F7;
+        font-size: 0.875rem;
+    }
+    .date-input:focus {
+        outline: none;
+        border-color: #0A84FF;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25);
+    }
+    .filter-info {
+        text-align: center;
+        color: #8E8E93;
+        font-size: 0.875rem;
+        margin-top: 1rem;
+    }
+    .user-avatar-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .stats-container { padding: 1rem; }
+        .page-title { font-size: 1.5rem; }
+        .data-table { display: block; overflow-x: auto; }
     }
 </style>
-<div class="bg-animated"></div>
-<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative dashboard-container" style="z-index:1;">
 
-<style>
-    .dashboard-container {
-        --padding-x: clamp(1rem, 5vw, 4rem);
-        padding-left: var(--padding-x);
-        padding-right: var(--padding-x);
-    }
-</style>
-    <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-8 text-center tracking-wide drop-shadow-lg" style="font-size: clamp(2.5rem, 5vw, 3.5rem);">Perfil de {{ usuario.username }}</h1>
-    <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl mx-auto">
-        <!-- Oportunidad más grande -->
-        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-blue-600 flex flex-col justify-between">
-            <h2 class="text-lg font-bold text-blue-300 mb-2" style="font-size: clamp(1.1rem, 2vw, 1.3rem);">Oportunidad más grande</h2>
+<div class="stats-container">
+    <div class="content-wrapper">
+        <!-- Botón volver -->
+        <a href="{% url 'estadisticas_usuarios' %}" class="back-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver a Estadísticas
+        </a>
+
+        <!-- Header con avatar -->
+        <div class="user-avatar-header">
+            {{ usuario|user_avatar:"56" }}
+            <div>
+                <h1 class="page-title" style="text-align: left; margin-bottom: 0;">{{ usuario.get_full_name|default:usuario.username }}</h1>
+                <p class="page-subtitle" style="text-align: left; margin-bottom: 0;">@{{ usuario.username }}</p>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filter-section">
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <a href="?filtro=todas" class="filter-btn {% if filtro_actual == 'todas' %}active{% endif %}">
+                    Todas
+                </a>
+                <a href="?filtro=anio&anio={{ anio_actual }}" class="filter-btn {% if filtro_actual == 'anio' %}active{% endif %}">
+                    Este Año
+                </a>
+                <a href="?filtro=mes&mes={{ mes_actual }}" class="filter-btn {% if filtro_actual == 'mes' %}active{% endif %}">
+                    Este Mes
+                </a>
+                <a href="?filtro=dia&fecha={{ fecha_actual }}" class="filter-btn {% if filtro_actual == 'dia' %}active{% endif %}">
+                    Hoy
+                </a>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 1rem;">
+                <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="hidden" name="filtro" value="dia">
+                    <label style="font-size: 0.8rem; color: #8E8E93;">Día:</label>
+                    <input type="date" name="fecha" value="{{ fecha_actual }}" class="date-input">
+                    <button type="submit" class="filter-btn">Filtrar</button>
+                </form>
+
+                <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="hidden" name="filtro" value="mes">
+                    <label style="font-size: 0.8rem; color: #8E8E93;">Mes:</label>
+                    <input type="month" name="mes" value="{{ mes_actual }}" class="date-input">
+                    <button type="submit" class="filter-btn">Filtrar</button>
+                </form>
+
+                <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="hidden" name="filtro" value="anio">
+                    <label style="font-size: 0.8rem; color: #8E8E93;">Año:</label>
+                    <input type="number" name="anio" value="{{ anio_actual }}" min="2020" max="2030" class="date-input" style="width: 90px;">
+                    <button type="submit" class="filter-btn">Filtrar</button>
+                </form>
+            </div>
+
+            <p class="filter-info">{{ titulo_filtro }}</p>
+        </div>
+
+        <!-- Tarjetas de estadísticas principales -->
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-value green">${{ total_vendido|floatformat:0 }}</div>
+                <div class="stat-label">Total Vendido (100%)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${{ total_pipeline|floatformat:0 }}</div>
+                <div class="stat-label">Total Pipeline</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value purple">{{ num_oportunidades }}</div>
+                <div class="stat-label">Oportunidades</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value orange">{{ num_cotizaciones }}</div>
+                <div class="stat-label">Cotizaciones PDF Generadas</div>
+            </div>
+        </div>
+
+        <!-- Tarjetas de info adicional -->
+        <div class="info-cards">
             {% if oportunidad_mayor %}
-                <p class="text-xl font-extrabold text-white mb-1">{{ oportunidad_mayor.oportunidad }}</p>
-                <p class="text-gray-300">Monto: <span class="font-bold text-blue-400">${{ oportunidad_mayor.monto|format_currency_es }}</span></p>
-                <span class="text-xs text-blue-200">Probabilidad: {{ oportunidad_mayor.probabilidad_cierre }}%</span>
-                <a href="#oportunidades" class="text-blue-400 hover:underline text-sm mt-2">Ver todas ordenadas por monto</a>
-            {% else %}
-                <p class="text-gray-400">No hay oportunidades vigentes.</p>
+            <div class="info-card">
+                <div class="info-card-title">Oportunidad más grande</div>
+                <div class="info-card-value">{{ oportunidad_mayor.oportunidad }}</div>
+                <div class="info-card-sub">
+                    <span class="money-green">${{ oportunidad_mayor.monto|floatformat:0 }}</span>
+                    &middot; {{ oportunidad_mayor.probabilidad_cierre }}% probabilidad
+                </div>
+            </div>
+            {% endif %}
+
+            {% if cliente_top %}
+            <div class="info-card">
+                <div class="info-card-title">Cliente Top</div>
+                <div class="info-card-value">{{ cliente_top.cliente__nombre_empresa }}</div>
+                <div class="info-card-sub">
+                    {{ cliente_top.num_ops }} oportunidades &middot;
+                    <span class="money-blue">${{ cliente_top.total_cliente|floatformat:0 }}</span>
+                </div>
+            </div>
             {% endif %}
         </div>
-        <!-- Total cobrado del mes actual -->
-        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-indigo-600 flex flex-col justify-between">
-            <h2 class="text-lg font-bold text-indigo-300 mb-2" style="font-size: clamp(1.1rem, 2vw, 1.3rem);">Total cobrado ({{ mes_actual }})</h2>
-            <p class="text-indigo-200 mb-2">Monto total cobrado: <span class="font-bold text-indigo-400">${{ monto_total_cobrado_mes|format_currency_es }}</span></p>
-            {% if oportunidades_cobradas_mes %}
-                <a href="#cobradas" class="text-indigo-400 hover:underline text-sm mt-2">Ver oportunidades cobradas</a>
-            {% else %}
-                <p class="text-gray-400">No hay oportunidades cobradas este mes.</p>
-            {% endif %}
-        </div>
-        <!-- Oportunidades por cobrar -->
-        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-green-600 flex flex-col justify-between">
-            <h2 class="text-lg font-bold text-green-300 mb-2" style="font-size: clamp(1.1rem, 2vw, 1.3rem);">Oportunidades por cobrar ({{ mes_actual }})</h2>
-            <p class="text-green-200 mb-2">Monto total por cobrar: <span class="font-bold text-green-400">${{ monto_total_por_cobrar_mes|format_currency_es }}</span></p>
-            {% if oportunidades_por_cobrar_mes %}
-                <ul class="text-sm text-green-200 space-y-1">
-                    {% for op in oportunidades_por_cobrar_mes %}
-                        <li>
-                            <span class="font-bold">{{ op.oportunidad }}</span> — ${{ op.monto|format_currency_es }}
-                            <span class="ml-2 text-xs text-green-400">({{ op.probabilidad_cierre }}% prob.)</span>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="text-gray-400">No hay oportunidades por cobrar este mes.</p>
-            {% endif %}
-        </div>
-        <!-- Oportunidades creadas en el mes actual -->
-        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-yellow-600 flex flex-col justify-between">
-            <h2 class="text-lg font-bold text-yellow-300 mb-2" style="font-size: clamp(1.1rem, 2vw, 1.3rem);">Oportunidades creadas ({{ mes_actual }})</h2>
-            <p class="text-2xl font-extrabold text-white mb-1">{{ oportunidades_creadas_mes_count }}</p>
-            {% if oportunidades_creadas_mes_count > 0 %}
-                <ul class="mb-2 text-yellow-200">
-                    {% for op in oportunidades_creadas_mes %}
-                        <li>
-                            <span class="font-bold">{{ op.oportunidad }}</span> — ${{ op.monto|format_currency_es }}
-                            <span class="ml-2 text-xs text-yellow-400">({{ op.probabilidad_cierre }}% prob.)</span>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="text-gray-400">No hay oportunidades creadas este mes.</p>
-            {% endif %}
-        </div>
-    </div>
-    <!-- Tabla de oportunidades registradas -->
-    <h2 id="oportunidades" class="text-2xl font-bold text-blue-300 mb-4 mt-10" style="font-size: clamp(1.5rem, 3vw, 2rem);">Oportunidades Registradas</h2>
-    <div class="overflow-x-auto w-full max-w-7xl mx-auto">
-        <table class="min-w-full divide-y divide-gray-700 rounded-lg overflow-hidden">
-            <thead class="bg-gray-800">
+
+        <!-- Tabla de oportunidades -->
+        <h2 class="section-title">Oportunidades</h2>
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Oportunidad</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Área</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Contacto</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Producto</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Monto</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Cliente</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Mes Cierre</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Probabilidad</th>
+                    <th>Oportunidad</th>
+                    <th>Cliente</th>
+                    <th>Producto</th>
+                    <th style="text-align: right;">Monto</th>
+                    <th>Mes Cierre</th>
+                    <th style="text-align: center;">Probabilidad</th>
                 </tr>
             </thead>
-            <tbody class="bg-gray-800 divide-y divide-gray-700">
-                {% for oportunidad in oportunidades %}
+            <tbody>
+                {% for op in oportunidades %}
                 <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ oportunidad.oportunidad }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.get_area_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.contacto }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.get_producto_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${{ oportunidad.monto|format_currency_es }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{% if oportunidad.cliente %}{{ oportunidad.cliente.nombre_empresa }}{% else %}N/A{% endif %}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.get_mes_cierre_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        <div class="w-full bg-gray-700 rounded-full h-2.5">
-                            <div class="h-2.5 rounded-full" 
-                                 style="width: {{ oportunidad.probabilidad_cierre }}%; background-color: hsl({{ oportunidad.probabilidad_cierre|div:100|mul:120 }}, 70%, 50%);">
-                            </div>
+                    <td style="font-weight: 500;">{{ op.oportunidad }}</td>
+                    <td>{% if op.cliente %}{{ op.cliente.nombre_empresa }}{% else %}-{% endif %}</td>
+                    <td>{{ op.get_producto_display }}</td>
+                    <td style="text-align: right;">
+                        <span class="money-green">${{ op.monto|floatformat:0 }}</span>
+                    </td>
+                    <td>{{ op.get_mes_cierre_display }}</td>
+                    <td style="text-align: center;">
+                        <div class="prob-bar">
+                            <div class="prob-fill" style="width: {{ op.probabilidad_cierre }}%; background: {% if op.probabilidad_cierre == 100 %}#32D74B{% elif op.probabilidad_cierre >= 70 %}#0A84FF{% elif op.probabilidad_cierre >= 40 %}#FF9F0A{% else %}#FF453A{% endif %};"></div>
                         </div>
-                        <span class="mt-1 text-xs text-gray-400">{{ oportunidad.probabilidad_cierre }}%</span>
+                        <span style="font-size: 0.75rem; color: #8E8E93;">{{ op.probabilidad_cierre }}%</span>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="8" class="text-center py-4 text-gray-400">No hay oportunidades registradas.</td></tr>
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 3rem; color: #8E8E93;">
+                        No hay oportunidades para el período seleccionado
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
