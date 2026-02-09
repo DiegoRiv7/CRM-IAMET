@@ -4385,16 +4385,18 @@ def estadisticas_usuarios(request):
     - Número de oportunidades/cotizaciones por usuario
     - Total vendido por usuario
     - Cliente al que más venden
-    Filtros: día, mes, todas
+    Filtros: día, mes, período, todas
     """
     from datetime import date, timedelta
     from django.db.models import Sum, Count
     from django.db.models.functions import TruncMonth, TruncDay
 
     # Obtener parámetro de filtro
-    filtro = request.GET.get('filtro', 'todas')  # 'dia', 'mes', 'todas'
+    filtro = request.GET.get('filtro', 'todas')
     fecha_especifica = request.GET.get('fecha', None)
     mes_especifico = request.GET.get('mes', None)
+    fecha_desde = request.GET.get('fecha_desde', None)
+    fecha_hasta = request.GET.get('fecha_hasta', None)
 
     today = date.today()
 
@@ -4438,6 +4440,23 @@ def estadisticas_usuarios(request):
         except:
             pass
         titulo_filtro = f"Mes: {today.replace(year=año, month=mes, day=1).strftime('%B %Y').capitalize()}"
+    elif filtro == 'periodo':
+        if fecha_desde and fecha_hasta:
+            try:
+                f_desde = date.fromisoformat(fecha_desde)
+                f_hasta = date.fromisoformat(fecha_hasta)
+            except ValueError:
+                f_desde = today.replace(day=1)
+                f_hasta = today
+            oportunidades = oportunidades.filter(fecha_creacion__date__gte=f_desde, fecha_creacion__date__lte=f_hasta)
+            cotizaciones = cotizaciones.filter(fecha_creacion__date__gte=f_desde, fecha_creacion__date__lte=f_hasta)
+            titulo_filtro = f"Período: {f_desde.strftime('%d/%m/%Y')} — {f_hasta.strftime('%d/%m/%Y')}"
+        else:
+            titulo_filtro = "Todas las oportunidades"
+
+    # Exportar a Excel
+    if request.GET.get('exportar') == 'excel':
+        return _exportar_estadisticas_excel(request, oportunidades, cotizaciones, titulo_filtro)
 
     # Obtener todos los usuarios que tienen oportunidades
     usuarios_con_datos = []
@@ -4497,6 +4516,8 @@ def estadisticas_usuarios(request):
         'titulo_filtro': titulo_filtro,
         'fecha_actual': today.isoformat(),
         'mes_actual': today.strftime('%Y-%m'),
+        'fecha_desde': fecha_desde or '',
+        'fecha_hasta': fecha_hasta or '',
         'total_general_vendido': total_general_vendido,
         'total_general_pipeline': total_general_pipeline,
         'total_oportunidades': total_oportunidades,
@@ -4504,6 +4525,87 @@ def estadisticas_usuarios(request):
     }
 
     return render(request, 'estadisticas_usuarios.html', context)
+
+
+def _exportar_estadisticas_excel(request, oportunidades, cotizaciones, titulo_filtro):
+    """Genera un archivo Excel con las estadísticas de usuarios."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.db.models import Sum, Count
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Estadísticas Usuarios"
+
+    # Estilos
+    header_font = Font(name='Calibri', bold=True, color='FFFFFF', size=12)
+    header_fill = PatternFill(start_color='0A84FF', end_color='0A84FF', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    thin_border = Border(
+        left=Side(style='thin', color='D1D1D6'),
+        right=Side(style='thin', color='D1D1D6'),
+        top=Side(style='thin', color='D1D1D6'),
+        bottom=Side(style='thin', color='D1D1D6'),
+    )
+    money_format = '#,##0.00'
+
+    # Título
+    ws.merge_cells('A1:F1')
+    ws['A1'] = f'Reporte de Estadísticas de Usuarios — {titulo_filtro}'
+    ws['A1'].font = Font(name='Calibri', bold=True, size=14, color='0A84FF')
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+
+    # Headers
+    headers = ['Usuario', 'Oportunidades', 'Cotizaciones PDF', 'Total Vendido (100%)', 'Pipeline', 'Cliente Top']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = thin_border
+
+    # Datos
+    usuarios = User.objects.filter(oportunidades__isnull=False).distinct()
+    row = 4
+    for usuario in usuarios:
+        oportunidades_usuario = oportunidades.filter(usuario=usuario)
+        num_oportunidades = oportunidades_usuario.count()
+        if num_oportunidades == 0:
+            continue
+        total_vendido = oportunidades_usuario.filter(probabilidad_cierre=100).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        total_pipeline = oportunidades_usuario.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        num_cotizaciones = cotizaciones.filter(created_by=usuario).count()
+        cliente_top = oportunidades_usuario.values('cliente__nombre_empresa').annotate(
+            total_cliente=Sum('monto'), num_ops=Count('id')
+        ).order_by('-total_cliente').first()
+        cliente_nombre = cliente_top['cliente__nombre_empresa'] if cliente_top else '-'
+
+        nombre = usuario.get_full_name() or usuario.username
+
+        ws.cell(row=row, column=1, value=nombre).border = thin_border
+        ws.cell(row=row, column=2, value=num_oportunidades).border = thin_border
+        ws.cell(row=row, column=2).alignment = Alignment(horizontal='center')
+        ws.cell(row=row, column=3, value=num_cotizaciones).border = thin_border
+        ws.cell(row=row, column=3).alignment = Alignment(horizontal='center')
+        cell_vendido = ws.cell(row=row, column=4, value=float(total_vendido))
+        cell_vendido.number_format = money_format
+        cell_vendido.border = thin_border
+        cell_pipeline = ws.cell(row=row, column=5, value=float(total_pipeline))
+        cell_pipeline.number_format = money_format
+        cell_pipeline.border = thin_border
+        ws.cell(row=row, column=6, value=cliente_nombre).border = thin_border
+        row += 1
+
+    # Ajustar anchos
+    col_widths = [25, 18, 18, 22, 22, 30]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="estadisticas_usuarios.xlsx"'
+    wb.save(response)
+    return response
 
 
 from django.views.decorators.csrf import csrf_exempt

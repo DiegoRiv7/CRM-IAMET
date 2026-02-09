@@ -22,47 +22,149 @@
         max-width: 1400px;
         margin: 0 auto;
     }
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+    }
     .page-title {
         font-size: 2.25rem;
         font-weight: 700;
         color: #F2F2F7;
         letter-spacing: -0.5px;
-        margin-bottom: 2rem;
-        text-align: center;
     }
-    .filter-section {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .filter-btn {
-        padding: 0.6rem 1.25rem;
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.25rem;
+        background: linear-gradient(135deg, #32D74B, #28a745);
+        color: white;
+        border: none;
         border-radius: 10px;
         font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.08);
-        color: #EBEBF5;
+        font-weight: 600;
         text-decoration: none;
-        display: inline-block;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(50, 215, 75, 0.3);
     }
-    .filter-btn:hover {
-        background: rgba(255, 255, 255, 0.15);
+    .btn-export:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(50, 215, 75, 0.4);
         color: white;
         text-decoration: none;
     }
-    .filter-btn.active {
+    /* Filtros rediseñados */
+    .filter-section {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .filter-row + .filter-row {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .filter-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #8E8E93;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        min-width: 50px;
+    }
+    .filter-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+    .filter-pill {
+        padding: 0.45rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.06);
+        color: #EBEBF5;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .filter-pill:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        text-decoration: none;
+    }
+    .filter-pill.active {
         background: #0A84FF;
         color: white;
         border-color: transparent;
-        box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4);
+        box-shadow: 0 2px 10px rgba(10, 132, 255, 0.35);
+    }
+    .filter-input-group {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .filter-input {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        padding: 0.4rem 0.6rem;
+        color: #F2F2F7;
+        font-size: 0.8rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .filter-input:focus {
+        border-color: #0A84FF;
+        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+    }
+    .filter-go {
+        padding: 0.4rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: none;
+        background: rgba(10, 132, 255, 0.2);
+        color: #0A84FF;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .filter-go:hover {
+        background: rgba(10, 132, 255, 0.35);
+    }
+    .filter-separator {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 0.25rem;
+    }
+    .filter-info {
+        text-align: center;
+        color: #8E8E93;
+        font-size: 0.8rem;
+        margin-top: 0.75rem;
+    }
+    .periodo-label {
+        font-size: 0.75rem;
+        color: #8E8E93;
     }
     .stat-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 1rem;
         margin-bottom: 2rem;
     }
@@ -84,6 +186,9 @@
     }
     .stat-value.purple {
         color: #BF5AF2;
+    }
+    .stat-value.orange {
+        color: #FF9F0A;
     }
     .stat-label {
         font-size: 0.75rem;
@@ -199,25 +304,6 @@
         text-decoration: none;
         transform: translateY(-1px);
     }
-    .date-input {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
-        padding: 0.5rem 0.75rem;
-        color: #F2F2F7;
-        font-size: 0.875rem;
-    }
-    .date-input:focus {
-        outline: none;
-        border-color: #0A84FF;
-        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25);
-    }
-    .filter-info {
-        text-align: center;
-        color: #8E8E93;
-        font-size: 0.875rem;
-        margin-top: 1rem;
-    }
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
@@ -233,6 +319,11 @@
         .stats-container {
             padding: 1rem;
         }
+        .page-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
         .page-title {
             font-size: 1.5rem;
         }
@@ -240,40 +331,78 @@
             display: block;
             overflow-x: auto;
         }
+        .filter-row {
+            justify-content: center;
+        }
     }
 </style>
 
 <div class="stats-container">
     <div class="content-wrapper">
-        <h1 class="page-title">Estadísticas de Usuarios</h1>
+        <!-- Header con título y botón exportar -->
+        <div class="page-header">
+            <h1 class="page-title">Estadísticas de Usuarios</h1>
+            <a href="?{{ request.GET.urlencode }}&exportar=excel" class="btn-export" id="exportBtn">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Exportar Excel
+            </a>
+        </div>
 
-        <!-- Filtros -->
+        <!-- Filtros rediseñados -->
         <div class="filter-section">
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 1rem;">
-                <a href="?filtro=todas" class="filter-btn {% if filtro_actual == 'todas' %}active{% endif %}">
-                    Todas
-                </a>
-                <a href="?filtro=mes&mes={{ mes_actual }}" class="filter-btn {% if filtro_actual == 'mes' %}active{% endif %}">
-                    Este Mes
-                </a>
-                <a href="?filtro=dia&fecha={{ fecha_actual }}" class="filter-btn {% if filtro_actual == 'dia' %}active{% endif %}">
-                    Hoy
-                </a>
-            </div>
+            <!-- Fila 1: Filtros rápidos -->
+            <div class="filter-row">
+                <span class="filter-label">Rápido</span>
+                <div class="filter-pills">
+                    <a href="?filtro=todas" class="filter-pill {% if filtro_actual == 'todas' %}active{% endif %}">
+                        Todas
+                    </a>
+                    <a href="?filtro=mes&mes={{ mes_actual }}" class="filter-pill {% if filtro_actual == 'mes' %}active{% endif %}">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-width="2" stroke-linecap="round"/></svg>
+                        Este Mes
+                    </a>
+                    <a href="?filtro=dia&fecha={{ fecha_actual }}" class="filter-pill {% if filtro_actual == 'dia' %}active{% endif %}">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 6v6l4 2" stroke-width="2" stroke-linecap="round"/></svg>
+                        Hoy
+                    </a>
+                </div>
 
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 1rem;">
-                <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
+                <div class="filter-separator"></div>
+
+                <!-- Filtro por día específico -->
+                <form method="get" class="filter-input-group">
                     <input type="hidden" name="filtro" value="dia">
-                    <label style="font-size: 0.8rem; color: #8E8E93;">Día:</label>
-                    <input type="date" name="fecha" value="{{ fecha_actual }}" class="date-input">
-                    <button type="submit" class="filter-btn">Filtrar</button>
+                    <span class="periodo-label">Día:</span>
+                    <input type="date" name="fecha" value="{{ fecha_actual }}" class="filter-input">
+                    <button type="submit" class="filter-go">Ir</button>
                 </form>
 
-                <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
+                <div class="filter-separator"></div>
+
+                <!-- Filtro por mes específico -->
+                <form method="get" class="filter-input-group">
                     <input type="hidden" name="filtro" value="mes">
-                    <label style="font-size: 0.8rem; color: #8E8E93;">Mes:</label>
-                    <input type="month" name="mes" value="{{ mes_actual }}" class="date-input">
-                    <button type="submit" class="filter-btn">Filtrar</button>
+                    <span class="periodo-label">Mes:</span>
+                    <input type="month" name="mes" value="{{ mes_actual }}" class="filter-input">
+                    <button type="submit" class="filter-go">Ir</button>
+                </form>
+            </div>
+
+            <!-- Fila 2: Filtro por período -->
+            <div class="filter-row">
+                <span class="filter-label">Período</span>
+                <form method="get" class="filter-input-group">
+                    <input type="hidden" name="filtro" value="periodo">
+                    <span class="periodo-label">Desde:</span>
+                    <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="filter-input">
+                    <span class="periodo-label">Hasta:</span>
+                    <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="filter-input">
+                    <button type="submit" class="filter-pill active" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.8rem;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2" stroke-linecap="round"/></svg>
+                        Filtrar Período
+                    </button>
                 </form>
             </div>
 
@@ -295,7 +424,7 @@
                 <div class="stat-label">Total Oportunidades</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" style="color: #FF9F0A;">{{ total_cotizaciones }}</div>
+                <div class="stat-value orange">{{ total_cotizaciones }}</div>
                 <div class="stat-label">Cotizaciones PDF Generadas</div>
             </div>
         </div>
@@ -376,4 +505,19 @@
         </table>
     </div>
 </div>
+
+<script>
+// Arreglar URL de exportar para que conserve los filtros actuales
+document.addEventListener('DOMContentLoaded', function() {
+    var exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var params = new URLSearchParams(window.location.search);
+            params.set('exportar', 'excel');
+            window.location.href = window.location.pathname + '?' + params.toString();
+        });
+    }
+});
+</script>
 {% endblock %}
