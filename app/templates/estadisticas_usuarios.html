@@ -25,63 +25,83 @@
         background: #000;
         min-height: 100vh;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
-        padding-top: 1.5rem;
     }
 
-    /* ═══ DYNAMIC ISLAND ═══ */
+    /* ═══════════════════════════════════
+       DYNAMIC ISLAND - iPadOS Style
+       ═══════════════════════════════════ */
     .dynamic-island {
         position: fixed;
-        top: 14px;
+        top: 12px;
         left: 50%;
-        transform: translateX(-50%);
+        transform: translateX(-50%) scale(1);
         z-index: 9999;
         background: #1C1C1E;
-        border-radius: 22px;
-        padding: 6px 8px;
+        border-radius: 28px;
+        padding: 8px 10px;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         box-shadow:
-            0 0 0 1px rgba(255, 255, 255, 0.06),
-            0 4px 24px rgba(0, 0, 0, 0.6),
-            0 1px 4px rgba(0, 0, 0, 0.4);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        max-width: 90vw;
-    }
-    .dynamic-island:hover {
-        box-shadow:
-            0 0 0 1px rgba(255, 255, 255, 0.1),
-            0 8px 32px rgba(0, 0, 0, 0.7),
-            0 2px 8px rgba(0, 0, 0, 0.5);
+            0 0 0 0.5px rgba(255, 255, 255, 0.08),
+            0 2px 8px rgba(0, 0, 0, 0.3),
+            0 8px 32px rgba(0, 0, 0, 0.5),
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.06);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.1, 1);
+        max-width: 92vw;
+        will-change: transform, border-radius, padding;
     }
 
-    /* Island expanded state */
+    /* Glow on hover */
+    .dynamic-island::after {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: -1;
+    }
+    .dynamic-island:hover::after {
+        opacity: 1;
+    }
+
+    /* Expanded state */
     .dynamic-island.expanded {
-        border-radius: 26px;
-        padding: 8px 10px;
+        border-radius: 32px;
+        padding: 10px 14px;
+        transform: translateX(-50%) scale(1.02);
+        box-shadow:
+            0 0 0 0.5px rgba(255, 255, 255, 0.1),
+            0 4px 16px rgba(0, 0, 0, 0.4),
+            0 16px 48px rgba(0, 0, 0, 0.6),
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
     }
 
-    /* Segmented control inside island */
+    /* Segmented control */
     .island-segment {
         display: flex;
         background: rgba(255, 255, 255, 0.06);
-        border-radius: 16px;
-        padding: 3px;
+        border-radius: 20px;
+        padding: 4px;
         gap: 2px;
     }
     .island-btn {
-        padding: 6px 14px;
-        border-radius: 14px;
-        font-size: 0.78rem;
+        padding: 8px 20px;
+        border-radius: 16px;
+        font-size: 0.875rem;
         font-weight: 500;
         color: #8E8E93;
         text-decoration: none;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.1, 1);
         border: none;
         background: transparent;
         cursor: pointer;
         white-space: nowrap;
-        line-height: 1;
+        line-height: 1.1;
+        position: relative;
     }
     .island-btn:hover {
         color: #D1D1D6;
@@ -89,53 +109,54 @@
     }
     .island-btn.active {
         background: #F2F2F7;
-        color: #1C1C1E;
+        color: #000;
         font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     /* Separator */
     .island-sep {
         width: 1px;
-        height: 20px;
-        background: rgba(255, 255, 255, 0.1);
+        height: 24px;
+        background: rgba(255, 255, 255, 0.08);
         flex-shrink: 0;
     }
 
-    /* Date chip in island */
+    /* Date chip */
     .island-date {
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
         background: rgba(255, 255, 255, 0.06);
-        border-radius: 14px;
-        padding: 6px 12px;
+        border-radius: 16px;
+        padding: 8px 16px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.1, 1);
         border: none;
         color: #A1A1A6;
-        font-size: 0.78rem;
+        font-size: 0.875rem;
         font-weight: 500;
         white-space: nowrap;
-        line-height: 1;
+        line-height: 1.1;
     }
     .island-date:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #D1D1D6;
     }
     .island-date.active-period {
-        background: rgba(10, 132, 255, 0.15);
-        color: #0A84FF;
+        background: rgba(10, 132, 255, 0.18);
+        color: #3A9BFF;
     }
     .island-date svg {
-        width: 13px;
-        height: 13px;
+        width: 16px;
+        height: 16px;
         flex-shrink: 0;
     }
 
-    /* Export button in island */
+    /* Export button */
     .island-export {
-        width: 32px;
-        height: 32px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -144,222 +165,245 @@
         border: none;
         color: white;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.1, 1);
         flex-shrink: 0;
     }
     .island-export:hover {
-        background: #0071E3;
-        transform: scale(1.05);
+        background: #409CFF;
+        transform: scale(1.08);
+        box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
+    }
+    .island-export:active {
+        transform: scale(0.95);
     }
     .island-export svg {
-        width: 15px;
-        height: 15px;
+        width: 17px;
+        height: 17px;
     }
 
-    /* Date picker panel - expands from island */
+    /* ═══ Date picker panel ═══ */
     .island-datepicker {
-        display: none;
         position: fixed;
-        top: 60px;
+        top: 70px;
         left: 50%;
-        transform: translateX(-50%) scale(0.95);
+        transform: translateX(-50%) scale(0.9) translateY(-8px);
         z-index: 10000;
         background: #2C2C2E;
-        border-radius: 18px;
-        padding: 14px 16px;
+        border-radius: 20px;
+        padding: 16px 20px;
         box-shadow:
-            0 0 0 1px rgba(255, 255, 255, 0.08),
-            0 12px 40px rgba(0, 0, 0, 0.6);
+            0 0 0 0.5px rgba(255, 255, 255, 0.08),
+            0 16px 48px rgba(0, 0, 0, 0.6),
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.06);
         opacity: 0;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        visibility: hidden;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.1, 1);
     }
     .island-datepicker.open {
-        display: flex;
-        align-items: center;
-        gap: 8px;
         opacity: 1;
-        transform: translateX(-50%) scale(1);
+        visibility: visible;
+        transform: translateX(-50%) scale(1) translateY(0);
     }
     .island-datepicker label {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         color: #8E8E93;
         font-weight: 500;
     }
     .island-datepicker input[type="date"] {
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        padding: 7px 10px;
+        border-radius: 12px;
+        padding: 8px 12px;
         color: #F2F2F7;
-        font-size: 0.8rem;
+        font-size: 0.875rem;
         outline: none;
-        transition: border-color 0.2s;
+        transition: all 0.2s ease;
     }
     .island-datepicker input[type="date"]:focus {
         border-color: #0A84FF;
-        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
     }
     .island-datepicker .dp-apply {
-        padding: 7px 16px;
-        border-radius: 10px;
-        font-size: 0.8rem;
+        padding: 8px 20px;
+        border-radius: 12px;
+        font-size: 0.875rem;
         font-weight: 600;
         border: none;
         background: #0A84FF;
         color: white;
         cursor: pointer;
-        transition: background 0.15s;
+        transition: all 0.2s ease;
     }
     .island-datepicker .dp-apply:hover {
-        background: #0071E3;
+        background: #409CFF;
     }
 
-    /* Overlay for datepicker */
+    /* Overlay */
     .island-overlay {
-        display: none;
         position: fixed;
         inset: 0;
         z-index: 9998;
+        opacity: 0;
+        visibility: hidden;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        transition: all 0.3s ease;
     }
     .island-overlay.open {
-        display: block;
+        opacity: 1;
+        visibility: visible;
     }
 
-    /* ═══ CONTENT ═══ */
+    /* ═══════════════════════════════════
+       CONTENT - iPadOS Style
+       ═══════════════════════════════════ */
     .page-content {
-        padding: 4rem 2rem 3rem;
-        width: 95%;
-        max-width: 1500px;
+        padding: 5rem 2.5rem 3rem;
+        width: 100%;
+        max-width: 1600px;
         margin: 0 auto;
     }
-    .page-header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-    }
-    .page-title {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #F2F2F7;
-        letter-spacing: -0.025em;
-    }
-    .filter-info-label {
-        font-size: 0.75rem;
-        color: #48484A;
-    }
 
-    /* Stat cards */
+    /* Stat cards - bigger iPadOS */
     .stat-cards {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
+        gap: 1rem;
+        margin-bottom: 2rem;
     }
     .stat-card {
         background: rgba(255, 255, 255, 0.04);
-        border-radius: 14px;
-        padding: 1.25rem;
+        border-radius: 18px;
+        padding: 1.5rem 1.25rem;
         border: 1px solid rgba(255, 255, 255, 0.06);
         text-align: center;
+        transition: all 0.25s ease;
+    }
+    .stat-card:hover {
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     }
     .stat-value {
-        font-size: 1.6rem;
+        font-size: 2rem;
         font-weight: 700;
         color: #0A84FF;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
     }
     .stat-value.green { color: #32D74B; }
     .stat-value.purple { color: #BF5AF2; }
     .stat-value.orange { color: #FF9F0A; }
     .stat-label {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         color: #636366;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-top: 0.2rem;
+        letter-spacing: 0.06em;
+        margin-top: 0.4rem;
+        font-weight: 500;
     }
 
-    /* ═══ TABLE ═══ */
+    /* ═══ TABLE - iPadOS style ═══ */
+    .table-container {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
     .data-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 14px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.06);
     }
     .data-table thead {
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(255, 255, 255, 0.05);
     }
     .data-table th {
-        padding: 0.75rem 1rem;
+        padding: 1rem 1.25rem;
         text-align: left;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         font-weight: 600;
         color: #636366;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.05em;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     .data-table td {
-        padding: 0.75rem 1rem;
+        padding: 1rem 1.25rem;
         color: #F2F2F7;
         border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        font-size: 0.875rem;
+        font-size: 0.95rem;
     }
     .data-table tbody tr {
-        transition: background 0.15s ease;
+        transition: all 0.2s ease;
     }
     .data-table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.04);
     }
     .data-table tbody tr:last-child td {
         border-bottom: none;
     }
+
+    /* User cell - bigger */
     .user-info {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.85rem;
     }
     .user-name {
-        font-weight: 500;
+        font-weight: 600;
         color: #F2F2F7;
-        font-size: 0.875rem;
+        font-size: 0.95rem;
     }
     .user-handle {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         color: #636366;
+        margin-top: 1px;
     }
+
+    /* Badges */
     .badge-count {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 32px;
-        height: 26px;
-        padding: 0 8px;
-        border-radius: 7px;
+        min-width: 38px;
+        height: 30px;
+        padding: 0 10px;
+        border-radius: 10px;
         background: rgba(10, 132, 255, 0.12);
         color: #0A84FF;
-        font-weight: 600;
-        font-size: 0.85rem;
+        font-weight: 700;
+        font-size: 0.95rem;
     }
     .badge-orange {
         background: rgba(255, 159, 10, 0.12);
         color: #FF9F0A;
     }
-    .money-green { color: #32D74B; font-weight: 600; }
-    .money-blue { color: #0A84FF; font-weight: 500; }
+
+    /* Money */
+    .money-green {
+        color: #32D74B;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+    .money-blue {
+        color: #0A84FF;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    /* Client tag */
     .cliente-tag {
         display: inline-flex;
         align-items: center;
-        background: rgba(175, 82, 222, 0.1);
+        background: rgba(175, 82, 222, 0.12);
         color: #BF5AF2;
-        padding: 0.25rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        max-width: 160px;
+        padding: 0.3rem 0.7rem;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        max-width: 180px;
     }
     .cliente-tag span {
         overflow: hidden;
@@ -367,49 +411,88 @@
         white-space: nowrap;
     }
     .cliente-stats {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         color: #48484A;
-        margin-top: 0.15rem;
+        margin-top: 0.2rem;
     }
+
+    /* Detail button */
     .btn-detail {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        padding: 0.35rem 0.75rem;
+        gap: 0.35rem;
+        padding: 0.45rem 1rem;
         background: rgba(10, 132, 255, 0.12);
         color: #0A84FF;
-        border-radius: 7px;
-        font-size: 0.75rem;
+        border-radius: 10px;
+        font-size: 0.8rem;
         font-weight: 600;
         text-decoration: none;
-        transition: all 0.15s ease;
+        transition: all 0.2s ease;
     }
     .btn-detail:hover {
-        background: rgba(10, 132, 255, 0.2);
-        color: #0A84FF;
+        background: rgba(10, 132, 255, 0.22);
+        color: #3A9BFF;
         text-decoration: none;
+        transform: translateY(-1px);
     }
+
+    /* Empty */
     .empty-state {
         text-align: center;
-        padding: 4rem 2rem;
+        padding: 5rem 2rem;
         color: #48484A;
     }
     .empty-state svg {
-        width: 48px;
-        height: 48px;
+        width: 56px;
+        height: 56px;
         margin-bottom: 1rem;
-        opacity: 0.3;
+        opacity: 0.25;
+    }
+    .empty-state p {
+        font-size: 1rem;
     }
 
-    @media (max-width: 768px) {
-        .page-content { padding: 4rem 1rem 2rem; width: 100%; }
-        .page-title { font-size: 1.5rem; }
+    /* ═══ Responsive ═══ */
+    @media (max-width: 1024px) {
         .stat-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .page-content { padding: 5rem 1rem 2rem; }
+        .stat-cards { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .table-container { border-radius: 14px; }
         .data-table { display: block; overflow-x: auto; }
-        .dynamic-island { top: 8px; padding: 4px 6px; border-radius: 18px; }
-        .island-btn { padding: 5px 10px; font-size: 0.72rem; }
+        .dynamic-island { top: 8px; padding: 6px 8px; border-radius: 22px; }
+        .island-btn { padding: 6px 12px; font-size: 0.8rem; }
+        .island-date { padding: 6px 10px; }
         .island-date span { display: none; }
-        .island-datepicker { flex-wrap: wrap; width: 90vw; justify-content: center; }
+        .island-datepicker { flex-wrap: wrap; width: 92vw; justify-content: center; border-radius: 16px; }
+        .stat-value { font-size: 1.5rem; }
+    }
+
+    /* ═══ Animations ═══ */
+    @keyframes islandEntry {
+        0% { transform: translateX(-50%) scale(0.3); opacity: 0; border-radius: 50px; }
+        50% { transform: translateX(-50%) scale(1.04); opacity: 1; }
+        100% { transform: translateX(-50%) scale(1); }
+    }
+    .dynamic-island {
+        animation: islandEntry 0.6s cubic-bezier(0.4, 0, 0.1, 1) forwards;
+    }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .stat-card {
+        animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.1, 1) backwards;
+    }
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.15s; }
+    .stat-card:nth-child(3) { animation-delay: 0.2s; }
+    .stat-card:nth-child(4) { animation-delay: 0.25s; }
+    .table-container {
+        animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.1, 1) 0.3s backwards;
     }
 </style>
 
@@ -444,7 +527,7 @@
     <!-- Date picker panel -->
     <div class="island-overlay" id="islandOverlay"></div>
     <div class="island-datepicker" id="islandDatepicker">
-        <form method="get" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <form method="get" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="hidden" name="filtro" value="periodo">
             <label>Desde</label>
             <input type="date" name="fecha_desde" value="{{ fecha_desde }}">
@@ -456,10 +539,6 @@
 
     <!-- ═══ CONTENT ═══ -->
     <div class="page-content">
-        <div class="page-header">
-            <h1 class="page-title">Reportes</h1>
-            <span class="filter-info-label">{{ titulo_filtro }}</span>
-        </div>
 
         <!-- Stat cards -->
         <div class="stat-cards">
@@ -482,72 +561,74 @@
         </div>
 
         <!-- Table -->
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Usuario</th>
-                    <th style="text-align:center;">Oportunidades</th>
-                    <th style="text-align:center;">Cotizaciones PDF</th>
-                    <th style="text-align:right;">Total Vendido</th>
-                    <th style="text-align:right;">Pipeline</th>
-                    <th>Cliente Top</th>
-                    <th style="text-align:center;">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for dato in usuarios_datos %}
-                <tr>
-                    <td>
-                        <div class="user-info">
-                            {{ dato.usuario|user_avatar:"36" }}
-                            <div>
-                                <div class="user-name">{{ dato.usuario.get_full_name|default:dato.usuario.username }}</div>
-                                <div class="user-handle">@{{ dato.usuario.username }}</div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th style="text-align:center;">Oportunidades</th>
+                        <th style="text-align:center;">Cotizaciones PDF</th>
+                        <th style="text-align:right;">Total Vendido</th>
+                        <th style="text-align:right;">Pipeline</th>
+                        <th>Cliente Top</th>
+                        <th style="text-align:center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dato in usuarios_datos %}
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                {{ dato.usuario|user_avatar:"42" }}
+                                <div>
+                                    <div class="user-name">{{ dato.usuario.get_full_name|default:dato.usuario.username }}</div>
+                                    <div class="user-handle">@{{ dato.usuario.username }}</div>
+                                </div>
                             </div>
-                        </div>
-                    </td>
-                    <td style="text-align:center;">
-                        <span class="badge-count">{{ dato.num_oportunidades }}</span>
-                    </td>
-                    <td style="text-align:center;">
-                        <span class="badge-count badge-orange">{{ dato.num_cotizaciones }}</span>
-                    </td>
-                    <td style="text-align:right;">
-                        <span class="money-green">${{ dato.total_vendido|floatformat:0 }}</span>
-                    </td>
-                    <td style="text-align:right;">
-                        <span class="money-blue">${{ dato.total_pipeline|floatformat:0 }}</span>
-                    </td>
-                    <td>
-                        {% if dato.cliente_top %}
-                        <div class="cliente-tag" title="{{ dato.cliente_top.cliente__nombre_empresa }}">
-                            <span>{{ dato.cliente_top.cliente__nombre_empresa }}</span>
-                        </div>
-                        <div class="cliente-stats">{{ dato.cliente_top.num_ops }} ops · ${{ dato.cliente_top.total_cliente|floatformat:0 }}</div>
-                        {% else %}
-                        <span style="color:#48484A;">—</span>
-                        {% endif %}
-                    </td>
-                    <td style="text-align:center;">
-                        <a href="{% url 'perfil_usuario' dato.usuario.id %}" class="btn-detail">
-                            Ver Detalle
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                            </svg>
-                            <p>No hay datos para el período seleccionado</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td style="text-align:center;">
+                            <span class="badge-count">{{ dato.num_oportunidades }}</span>
+                        </td>
+                        <td style="text-align:center;">
+                            <span class="badge-count badge-orange">{{ dato.num_cotizaciones }}</span>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="money-green">${{ dato.total_vendido|floatformat:0 }}</span>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="money-blue">${{ dato.total_pipeline|floatformat:0 }}</span>
+                        </td>
+                        <td>
+                            {% if dato.cliente_top %}
+                            <div class="cliente-tag" title="{{ dato.cliente_top.cliente__nombre_empresa }}">
+                                <span>{{ dato.cliente_top.cliente__nombre_empresa }}</span>
+                            </div>
+                            <div class="cliente-stats">{{ dato.cliente_top.num_ops }} ops · ${{ dato.cliente_top.total_cliente|floatformat:0 }}</div>
+                            {% else %}
+                            <span style="color:#48484A;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            <a href="{% url 'perfil_usuario' dato.usuario.id %}" class="btn-detail">
+                                Ver Detalle
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                                </svg>
+                                <p>No hay datos para el período seleccionado</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -599,11 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     dateBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (datePicker.classList.contains('open')) {
-            closePicker();
-        } else {
-            openPicker();
-        }
+        datePicker.classList.contains('open') ? closePicker() : openPicker();
     });
     overlay.addEventListener('click', closePicker);
     document.addEventListener('keydown', function(e) {
