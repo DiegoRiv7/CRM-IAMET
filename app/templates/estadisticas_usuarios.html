@@ -10,21 +10,11 @@
     }
     body { background: #000 !important; }
 
-    /* Ocultar el dock en esta sección */
-    .macos-dock,
-    #dock-bottom,
-    #dock-left,
-    #dock-right,
-    #dock-top,
-    .dock-activation-zone,
-    .dock-zone-left,
-    .dock-zone-right,
-    .dock-zone-bottom,
-    .dock-zone-top,
-    .design-panel,
-    #design-panel,
-    .edit-mode-exit,
-    #night-shift-filter {
+    /* Ocultar el dock */
+    .macos-dock, #dock-bottom, #dock-left, #dock-right, #dock-top,
+    .dock-activation-zone, .dock-zone-left, .dock-zone-right,
+    .dock-zone-bottom, .dock-zone-top, .design-panel, #design-panel,
+    .edit-mode-exit, #night-shift-filter {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
@@ -35,183 +25,228 @@
         background: #000;
         min-height: 100vh;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+        padding-top: 1.5rem;
     }
 
-    /* ═══ TOP BAR ═══ */
-    .top-bar {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: rgba(28, 28, 30, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 0 2rem;
-        height: 52px;
+    /* ═══ DYNAMIC ISLAND ═══ */
+    .dynamic-island {
+        position: fixed;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        background: #1C1C1E;
+        border-radius: 22px;
+        padding: 6px 8px;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 6px;
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.06),
+            0 4px 24px rgba(0, 0, 0, 0.6),
+            0 1px 4px rgba(0, 0, 0, 0.4);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 90vw;
     }
-    .top-bar-left {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-    }
-    .top-bar-title {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: #F2F2F7;
-        letter-spacing: -0.01em;
-    }
-    .top-bar-right {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+    .dynamic-island:hover {
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.1),
+            0 8px 32px rgba(0, 0, 0, 0.7),
+            0 2px 8px rgba(0, 0, 0, 0.5);
     }
 
-    /* Segmented control */
-    .segmented-control {
-        display: flex;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        padding: 2px;
-        gap: 1px;
+    /* Island expanded state */
+    .dynamic-island.expanded {
+        border-radius: 26px;
+        padding: 8px 10px;
     }
-    .seg-btn {
-        padding: 0.35rem 0.85rem;
-        border-radius: 6px;
-        font-size: 0.8rem;
+
+    /* Segmented control inside island */
+    .island-segment {
+        display: flex;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        padding: 3px;
+        gap: 2px;
+    }
+    .island-btn {
+        padding: 6px 14px;
+        border-radius: 14px;
+        font-size: 0.78rem;
         font-weight: 500;
         color: #8E8E93;
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         border: none;
         background: transparent;
         cursor: pointer;
         white-space: nowrap;
+        line-height: 1;
     }
-    .seg-btn:hover {
+    .island-btn:hover {
         color: #D1D1D6;
         text-decoration: none;
     }
-    .seg-btn.active {
-        background: rgba(255, 255, 255, 0.18);
-        color: #F2F2F7;
+    .island-btn.active {
+        background: #F2F2F7;
+        color: #1C1C1E;
         font-weight: 600;
     }
 
-    /* Date range chip */
-    .date-chip {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        padding: 0.35rem 0.75rem;
-        cursor: pointer;
-        transition: background 0.15s;
-        border: none;
-        color: #D1D1D6;
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-    .date-chip:hover {
-        background: rgba(255, 255, 255, 0.12);
-    }
-    .date-chip svg {
-        width: 14px;
-        height: 14px;
-        color: #8E8E93;
+    /* Separator */
+    .island-sep {
+        width: 1px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        flex-shrink: 0;
     }
 
-    /* Icon buttons */
-    .icon-btn {
-        width: 34px;
-        height: 34px;
-        border-radius: 8px;
+    /* Date chip in island */
+    .island-date {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        color: #A1A1A6;
+        font-size: 0.78rem;
+        font-weight: 500;
+        white-space: nowrap;
+        line-height: 1;
+    }
+    .island-date:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #D1D1D6;
+    }
+    .island-date.active-period {
+        background: rgba(10, 132, 255, 0.15);
+        color: #0A84FF;
+    }
+    .island-date svg {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+    }
+
+    /* Export button in island */
+    .island-export {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: transparent;
-        border: none;
-        color: #8E8E93;
-        cursor: pointer;
-        transition: all 0.15s;
-    }
-    .icon-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: #D1D1D6;
-    }
-    .icon-btn svg {
-        width: 18px;
-        height: 18px;
-    }
-    .icon-btn.export-btn {
         background: #0A84FF;
+        border: none;
         color: white;
-        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
     }
-    .icon-btn.export-btn:hover {
+    .island-export:hover {
         background: #0071E3;
+        transform: scale(1.05);
+    }
+    .island-export svg {
+        width: 15px;
+        height: 15px;
     }
 
-    /* Date range dropdown */
-    .date-dropdown {
+    /* Date picker panel - expands from island */
+    .island-datepicker {
         display: none;
-        position: absolute;
-        top: 52px;
-        right: 2rem;
-        background: rgba(44, 44, 46, 0.98);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 1rem;
-        z-index: 200;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        position: fixed;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%) scale(0.95);
+        z-index: 10000;
+        background: #2C2C2E;
+        border-radius: 18px;
+        padding: 14px 16px;
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.08),
+            0 12px 40px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .date-dropdown.open {
+    .island-datepicker.open {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 8px;
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
     }
-    .date-dropdown label {
+    .island-datepicker label {
         font-size: 0.75rem;
         color: #8E8E93;
         font-weight: 500;
     }
-    .date-dropdown input[type="date"] {
+    .island-datepicker input[type="date"] {
         background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        padding: 0.4rem 0.6rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 7px 10px;
         color: #F2F2F7;
         font-size: 0.8rem;
         outline: none;
+        transition: border-color 0.2s;
     }
-    .date-dropdown input[type="date"]:focus {
+    .island-datepicker input[type="date"]:focus {
         border-color: #0A84FF;
+        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
     }
-    .date-dropdown .apply-btn {
-        padding: 0.4rem 0.85rem;
-        border-radius: 8px;
+    .island-datepicker .dp-apply {
+        padding: 7px 16px;
+        border-radius: 10px;
         font-size: 0.8rem;
         font-weight: 600;
         border: none;
         background: #0A84FF;
         color: white;
         cursor: pointer;
+        transition: background 0.15s;
     }
-    .date-dropdown .apply-btn:hover {
+    .island-datepicker .dp-apply:hover {
         background: #0071E3;
+    }
+
+    /* Overlay for datepicker */
+    .island-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+    }
+    .island-overlay.open {
+        display: block;
     }
 
     /* ═══ CONTENT ═══ */
     .page-content {
-        padding: 1.5rem 2rem 3rem;
+        padding: 4rem 2rem 3rem;
         width: 95%;
         max-width: 1500px;
         margin: 0 auto;
+    }
+    .page-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #F2F2F7;
+        letter-spacing: -0.025em;
+    }
+    .filter-info-label {
+        font-size: 0.75rem;
+        color: #48484A;
     }
 
     /* Stat cards */
@@ -314,14 +349,8 @@
         background: rgba(255, 159, 10, 0.12);
         color: #FF9F0A;
     }
-    .money-green {
-        color: #32D74B;
-        font-weight: 600;
-    }
-    .money-blue {
-        color: #0A84FF;
-        font-weight: 500;
-    }
+    .money-green { color: #32D74B; font-weight: 600; }
+    .money-blue { color: #0A84FF; font-weight: 500; }
     .cliente-tag {
         display: inline-flex;
         align-items: center;
@@ -371,70 +400,66 @@
         margin-bottom: 1rem;
         opacity: 0.3;
     }
-    .filter-info-label {
-        font-size: 0.7rem;
-        color: #48484A;
-        text-align: right;
-        margin-bottom: 0.75rem;
-    }
 
     @media (max-width: 768px) {
-        .top-bar { padding: 0 1rem; }
-        .page-content { padding: 1rem; width: 100%; }
+        .page-content { padding: 4rem 1rem 2rem; width: 100%; }
+        .page-title { font-size: 1.5rem; }
         .stat-cards { grid-template-columns: repeat(2, 1fr); }
         .data-table { display: block; overflow-x: auto; }
-        .top-bar-title { display: none; }
+        .dynamic-island { top: 8px; padding: 4px 6px; border-radius: 18px; }
+        .island-btn { padding: 5px 10px; font-size: 0.72rem; }
+        .island-date span { display: none; }
+        .island-datepicker { flex-wrap: wrap; width: 90vw; justify-content: center; }
     }
 </style>
 
 <div class="stats-page">
-    <!-- ═══ TOP BAR ═══ -->
-    <div class="top-bar">
-        <div class="top-bar-left">
-            <span class="top-bar-title">Reportes</span>
-            <div class="segmented-control">
-                <a href="?filtro=todas" class="seg-btn {% if filtro_actual == 'todas' %}active{% endif %}">Todos</a>
-                <a href="?filtro=mes&mes={{ mes_actual }}" class="seg-btn {% if filtro_actual == 'mes' %}active{% endif %}">Este Mes</a>
-                <a href="?filtro=dia&fecha={{ fecha_actual }}" class="seg-btn {% if filtro_actual == 'dia' %}active{% endif %}">Hoy</a>
-            </div>
-        </div>
-        <div class="top-bar-right">
-            <button class="date-chip" id="dateChipBtn" type="button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span id="dateChipLabel">
-                    {% if filtro_actual == 'periodo' and fecha_desde and fecha_hasta %}
-                        {{ fecha_desde }} - {{ fecha_hasta }}
-                    {% else %}
-                        Período
-                    {% endif %}
-                </span>
-            </button>
 
-            <button class="icon-btn export-btn" id="exportBtn" title="Exportar Excel">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-            </button>
+    <!-- ═══ DYNAMIC ISLAND ═══ -->
+    <div class="dynamic-island" id="dynamicIsland">
+        <div class="island-segment">
+            <a href="?filtro=todas" class="island-btn {% if filtro_actual == 'todas' %}active{% endif %}">Todos</a>
+            <a href="?filtro=mes&mes={{ mes_actual }}" class="island-btn {% if filtro_actual == 'mes' %}active{% endif %}">Este Mes</a>
+            <a href="?filtro=dia&fecha={{ fecha_actual }}" class="island-btn {% if filtro_actual == 'dia' %}active{% endif %}">Hoy</a>
         </div>
 
-        <!-- Date range dropdown -->
-        <div class="date-dropdown" id="dateDropdown">
-            <form method="get" style="display:flex;align-items:center;gap:0.5rem;">
-                <input type="hidden" name="filtro" value="periodo">
-                <label>Desde</label>
-                <input type="date" name="fecha_desde" value="{{ fecha_desde }}">
-                <label>Hasta</label>
-                <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}">
-                <button type="submit" class="apply-btn">Aplicar</button>
-            </form>
-        </div>
+        <div class="island-sep"></div>
+
+        <button class="island-date {% if filtro_actual == 'periodo' %}active-period{% endif %}" id="islandDateBtn" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>{% if filtro_actual == 'periodo' and fecha_desde and fecha_hasta %}{{ fecha_desde }} — {{ fecha_hasta }}{% else %}Período{% endif %}</span>
+        </button>
+
+        <div class="island-sep"></div>
+
+        <button class="island-export" id="exportBtn" title="Exportar Excel">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Date picker panel -->
+    <div class="island-overlay" id="islandOverlay"></div>
+    <div class="island-datepicker" id="islandDatepicker">
+        <form method="get" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="hidden" name="filtro" value="periodo">
+            <label>Desde</label>
+            <input type="date" name="fecha_desde" value="{{ fecha_desde }}">
+            <label>Hasta</label>
+            <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}">
+            <button type="submit" class="dp-apply">Aplicar</button>
+        </form>
     </div>
 
     <!-- ═══ CONTENT ═══ -->
     <div class="page-content">
-        <div class="filter-info-label">{{ titulo_filtro }}</div>
+        <div class="page-header">
+            <h1 class="page-title">Reportes</h1>
+            <span class="filter-info-label">{{ titulo_filtro }}</span>
+        </div>
 
         <!-- Stat cards -->
         <div class="stat-cards">
@@ -528,54 +553,62 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ── Ocultar dock completamente ──
+    // ── Ocultar dock ──
     function hideDock() {
-        var selectors = [
-            '.macos-dock', '#dock-bottom', '#dock-left', '#dock-right', '#dock-top',
-            '.dock-activation-zone', '.dock-zone-left', '.dock-zone-right',
-            '.dock-zone-bottom', '.dock-zone-top', '.design-panel', '#design-panel',
-            '.edit-mode-exit', '#night-shift-filter'
-        ];
-        selectors.forEach(function(sel) {
+        ['.macos-dock','#dock-bottom','#dock-left','#dock-right','#dock-top',
+         '.dock-activation-zone','.dock-zone-left','.dock-zone-right',
+         '.dock-zone-bottom','.dock-zone-top','.design-panel','#design-panel',
+         '.edit-mode-exit','#night-shift-filter'].forEach(function(sel) {
             document.querySelectorAll(sel).forEach(function(el) {
-                el.style.setProperty('display', 'none', 'important');
-                el.style.setProperty('opacity', '0', 'important');
-                el.style.setProperty('visibility', 'hidden', 'important');
-                el.style.setProperty('pointer-events', 'none', 'important');
+                el.style.setProperty('display','none','important');
+                el.style.setProperty('opacity','0','important');
+                el.style.setProperty('visibility','hidden','important');
+                el.style.setProperty('pointer-events','none','important');
             });
         });
     }
-    // Ejecutar varias veces para sobreescribir el script de base.html
     hideDock();
     setTimeout(hideDock, 60);
     setTimeout(hideDock, 200);
     setTimeout(hideDock, 500);
 
-    // ── Export Excel ──
-    var exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            var params = new URLSearchParams(window.location.search);
-            params.set('exportar', 'excel');
-            window.location.href = window.location.pathname + '?' + params.toString();
-        });
+    // ── Export ──
+    document.getElementById('exportBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        var p = new URLSearchParams(window.location.search);
+        p.set('exportar', 'excel');
+        window.location.href = window.location.pathname + '?' + p.toString();
+    });
+
+    // ── Date picker toggle ──
+    var dateBtn = document.getElementById('islandDateBtn');
+    var datePicker = document.getElementById('islandDatepicker');
+    var overlay = document.getElementById('islandOverlay');
+    var island = document.getElementById('dynamicIsland');
+
+    function openPicker() {
+        datePicker.classList.add('open');
+        overlay.classList.add('open');
+        island.classList.add('expanded');
+    }
+    function closePicker() {
+        datePicker.classList.remove('open');
+        overlay.classList.remove('open');
+        island.classList.remove('expanded');
     }
 
-    // ── Date range dropdown toggle ──
-    var dateChipBtn = document.getElementById('dateChipBtn');
-    var dateDropdown = document.getElementById('dateDropdown');
-    if (dateChipBtn && dateDropdown) {
-        dateChipBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            dateDropdown.classList.toggle('open');
-        });
-        document.addEventListener('click', function(e) {
-            if (!dateDropdown.contains(e.target) && e.target !== dateChipBtn) {
-                dateDropdown.classList.remove('open');
-            }
-        });
-    }
+    dateBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (datePicker.classList.contains('open')) {
+            closePicker();
+        } else {
+            openPicker();
+        }
+    });
+    overlay.addEventListener('click', closePicker);
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closePicker();
+    });
 });
 </script>
 {% endblock %}
