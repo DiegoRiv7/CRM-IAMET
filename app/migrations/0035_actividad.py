@@ -5,6 +5,39 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
+def add_tipo_actividad_if_missing(apps, schema_editor):
+    """
+    Adds tipo_actividad column to app_actividad only if it doesn't exist.
+    Migration 0034 creates app_actividad without tipo_actividad, so on fresh
+    databases we only need to add the missing column (not recreate the table).
+    Uses information_schema to check — works on MySQL 8.0 and MariaDB.
+    """
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'app_actividad'
+              AND COLUMN_NAME = 'tipo_actividad'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute(
+                "ALTER TABLE `app_actividad` ADD COLUMN `tipo_actividad` "
+                "varchar(20) NOT NULL DEFAULT 'otro'"
+            )
+
+
+def remove_tipo_actividad(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'app_actividad'
+              AND COLUMN_NAME = 'tipo_actividad'
+        """)
+        if cursor.fetchone()[0] > 0:
+            cursor.execute("ALTER TABLE `app_actividad` DROP COLUMN `tipo_actividad`")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -20,13 +53,9 @@ class Migration(migrations.Migration):
         # The state_operations bring Django's internal model state up to date.
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    "ALTER TABLE `app_actividad` ADD COLUMN IF NOT EXISTS "
-                    "`tipo_actividad` varchar(20) NOT NULL DEFAULT 'otro';",
-                    reverse_sql=(
-                        "ALTER TABLE `app_actividad` "
-                        "DROP COLUMN IF EXISTS `tipo_actividad`;"
-                    ),
+                migrations.RunPython(
+                    add_tipo_actividad_if_missing,
+                    reverse_code=remove_tipo_actividad,
                 ),
                 # app_actividad_participantes already exists (auto-through from 0034).
                 # app_actividad already exists (created in 0034).
