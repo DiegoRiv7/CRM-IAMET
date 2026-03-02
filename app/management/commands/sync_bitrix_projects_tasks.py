@@ -2,9 +2,8 @@
 Comando para importar proyectos, tareas y archivos desde Bitrix24.
 
 Estrategia de vinculación proyecto → oportunidad:
-  1. Primaria:   campo UF_CRM del grupo ("D_1234" → deal ID)
-  2. Secundaria: número al inicio del nombre ("1443107 Control acceso...")
-  3. Terciaria:  fuzzy match nombre proyecto vs nombre_empresa del cliente
+  1. Número PO: extrae número después de "PO " → busca en nombre de oportunidad
+  2. Nombre: busca el nombre limpio del proyecto dentro del nombre de oportunidad
 
 Con oportunidad vinculada:
   - Tareas   → TareaOportunidad  (aparecen en widget de oportunidad)
@@ -86,42 +85,38 @@ def _get_all_pages(endpoint, payload):
 
 # ── Helpers de mapeo ─────────────────────────────────────────────────────────────
 
-def _parse_uf_crm_deal_ids(uf_crm):
-    """Extrae IDs de deal del campo UF_CRM. Formatos: ['D_1234'], 'D_1234', [{'TYPE':'DEAL','ID':'1234'}]"""
-    if not uf_crm:
-        return []
-    deal_ids = []
-    if isinstance(uf_crm, str):
-        uf_crm = [uf_crm]
-    for item in uf_crm:
-        if isinstance(item, dict):
-            if item.get("TYPE", "").upper() == "DEAL":
-                try:
-                    deal_ids.append(int(item["ID"]))
-                except (KeyError, ValueError):
-                    pass
-        elif isinstance(item, str):
-            m = re.match(r"^D_(\d+)$", item, re.IGNORECASE)
-            if m:
-                deal_ids.append(int(m.group(1)))
-    return deal_ids
-
-
-def _fuzzy_find_oportunidad(project_name):
-    """Busca oportunidad por coincidencia parcial nombre proyecto vs nombre_empresa."""
+def _find_oportunidad_por_nombre(project_name):
+    """
+    Intenta vincular el proyecto a una oportunidad usando dos métodos:
+    1. Número PO: extrae el número después de "PO " y busca en el nombre de la oportunidad.
+    2. Nombre limpio: busca el nombre del proyecto dentro del nombre de la oportunidad.
+    """
     if not project_name:
         return None
-    name_upper = project_name.upper()
-    # Quitar prefijos: "RFQ-...", "PO ...", números iniciales
-    clean = re.sub(r"^(RFQ[-\s]\S+|PO\s+\S+|\d+)\s*", "", name_upper).strip()
-    segment = re.split(r"\s*(?://|–|-)\s*", clean)[0].strip()
-    if len(segment) < 4:
+
+    # Intento 1: número después de "PO XXXXXXX"
+    m_po = re.search(r'\bPO\s+(\d{4,})', project_name, re.IGNORECASE)
+    if m_po:
+        po_num = m_po.group(1)
+        opp = TodoItem.objects.filter(oportunidad__icontains=po_num).first()
+        if opp:
+            return opp
+
+    # Intento 2: nombre limpio del proyecto dentro del nombre de la oportunidad
+    clean = re.sub(r'^(\d+\s+|RFQ[-\s]\S+\s+|PO\s+\S+\s+)', '', project_name, flags=re.IGNORECASE).strip()
+    segment = re.split(r'\s*(?://|–|-)\s*', clean)[0].strip()
+    if len(segment) < 5:
         segment = clean
-    if not segment:
-        return None
-    clientes = Cliente.objects.filter(nombre_empresa__icontains=segment[:20])
-    if clientes.count() == 1:
-        return TodoItem.objects.filter(cliente=clientes.first()).order_by("-id").first()
+    if len(segment) >= 5:
+        opps = TodoItem.objects.filter(oportunidad__icontains=segment[:40])
+        if opps.count() == 1:
+            return opps.first()
+        # Si hay múltiples, afinar con más contexto
+        if opps.count() > 1 and len(segment) >= 15:
+            opps2 = TodoItem.objects.filter(oportunidad__icontains=segment[:60])
+            if opps2.count() == 1:
+                return opps2.first()
+
     return None
 
 
@@ -197,6 +192,7 @@ class Command(BaseCommand):
         self.stats = {
             "proyectos_creados": 0, "proyectos_actualizados": 0,
             "oportunidades_vinculadas": 0,
+            "saltados_ya_vinculados": 0,
             "tareas_opp_creadas": 0, "tareas_opp_actualizadas": 0,
             "tareas_gral_creadas": 0,
             "carpetas_opp": 0, "carpetas_gral": 0,
@@ -249,23 +245,34 @@ class Command(BaseCommand):
         bitrix_group_id = int(group["ID"])
         nombre = (group.get("NAME") or f"Proyecto {bitrix_group_id}").strip()
         descripcion = (group.get("DESCRIPTION") or "").strip()
-        uf_crm = group.get("UF_CRM") or []
+        bitrix_date = parse_datetime(group.get("DATE_CREATE") or "")
 
         self.stdout.write(f"\n  [{bitrix_group_id}] {nombre[:70]}")
 
-        # 1. Buscar oportunidad vinculada
-        oportunidad = self._find_oportunidad(bitrix_group_id, nombre, uf_crm)
+        # Saltar proyectos que ya tienen oportunidad vinculada
+        existing = Proyecto.objects.filter(bitrix_group_id=bitrix_group_id).first()
+        if existing and existing.oportunidades_ligadas.exists():
+            self.stdout.write("    → Ya vinculado, saltando")
+            self.stats["saltados_ya_vinculados"] += 1
+            return
+
+        # Buscar oportunidad usando nuevos métodos (PO number + nombre)
+        oportunidad = _find_oportunidad_por_nombre(nombre)
         if oportunidad:
             self.stdout.write(self.style.SUCCESS(f"    → Oportunidad: {oportunidad.oportunidad[:55]}"))
         else:
             self.stdout.write("    → Sin oportunidad vinculada")
 
-        # 2. Crear/actualizar Proyecto local
+        # Crear/actualizar Proyecto local
         if not dry_run:
             proyecto, created = Proyecto.objects.update_or_create(
                 bitrix_group_id=bitrix_group_id,
                 defaults={"nombre": nombre, "descripcion": descripcion, "creado_por": default_user},
             )
+            # Corregir fecha_creacion con la fecha real de Bitrix
+            if bitrix_date:
+                Proyecto.objects.filter(pk=proyecto.pk).update(fecha_creacion=bitrix_date)
+
             if oportunidad:
                 proyecto.oportunidades_ligadas.add(oportunidad)
             if created:
@@ -277,7 +284,7 @@ class Command(BaseCommand):
             exists = Proyecto.objects.filter(bitrix_group_id=bitrix_group_id).exists()
             self.stdout.write(f"    [DRY] {'ACTUALIZAR' if exists else 'CREAR'} Proyecto")
 
-        # 3. Registrar OportunidadProyecto (para Volumetrías)
+        # Registrar OportunidadProyecto
         if oportunidad and not dry_run:
             OportunidadProyecto.objects.get_or_create(
                 oportunidad=oportunidad,
@@ -290,32 +297,13 @@ class Command(BaseCommand):
             )
             self.stats["oportunidades_vinculadas"] += 1
 
-        # 4. Tareas
+        # Tareas
         if not skip_tasks:
             self._sync_tasks(bitrix_group_id, proyecto, oportunidad, default_user, dry_run)
 
-        # 5. Archivos / Carpetas
+        # Archivos / Carpetas
         if not skip_files:
             self._sync_drive(bitrix_group_id, proyecto, oportunidad, default_user, dry_run)
-
-    # ── Vincular oportunidad ──────────────────────────────────────────────────────
-
-    def _find_oportunidad(self, bitrix_group_id, nombre, uf_crm):
-        # Intento 1: UF_CRM → deal IDs directos
-        for deal_id in _parse_uf_crm_deal_ids(uf_crm):
-            opp = TodoItem.objects.filter(bitrix_deal_id=deal_id).first()
-            if opp:
-                return opp
-
-        # Intento 2: número inicial del nombre (ej: "1443107 Control de acceso...")
-        m = re.match(r"^(\d{4,})\s+", nombre)
-        if m:
-            opp = TodoItem.objects.filter(bitrix_deal_id=int(m.group(1))).first()
-            if opp:
-                return opp
-
-        # Intento 3: fuzzy match por nombre de cliente
-        return _fuzzy_find_oportunidad(nombre)
 
     # ── Tareas ────────────────────────────────────────────────────────────────────
 
@@ -353,6 +341,11 @@ class Command(BaseCommand):
         if t.get("deadline"):
             fecha_limite = parse_datetime(t["deadline"])
 
+        bitrix_created = None
+        created_str = t.get("createdDate") or t.get("CREATED_DATE")
+        if created_str:
+            bitrix_created = parse_datetime(created_str)
+
         # Responsable → usuario local
         responsable = default_user
         bitrix_resp = t.get("responsibleId") or t.get("RESPONSIBLE_ID")
@@ -362,7 +355,6 @@ class Command(BaseCommand):
                 responsable = up.user
 
         if oportunidad:
-            # ─── TareaOportunidad (aparece en widget) ───
             prioridad = _map_prioridad_opp(t.get("priority", "1"))
             estado = _map_estado_opp(t.get("status", "1"))
 
@@ -380,6 +372,10 @@ class Command(BaseCommand):
                         "responsable": responsable,
                     },
                 )
+                # Corregir fecha_creacion con la fecha real de Bitrix
+                if bitrix_created and created:
+                    TareaOportunidad.objects.filter(pk=tarea.pk).update(fecha_creacion=bitrix_created)
+
                 if created:
                     self.stats["tareas_opp_creadas"] += 1
                 else:
@@ -387,7 +383,6 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f"      [DRY] TAREA-OPP '{titulo[:50]}'")
         else:
-            # ─── Tarea general (sección proyectos) ───
             if not dry_run and proyecto:
                 _, created = Tarea.objects.update_or_create(
                     bitrix_task_id=bitrix_task_id,
@@ -470,6 +465,7 @@ class Command(BaseCommand):
                     proyecto=proyecto,
                     nombre=nombre,
                     carpeta_padre=carpeta_proj_padre,
+                    defaults={"creado_por": default_user},  # fix: creado_por_id cannot be null
                 )
                 self.stats["carpetas_gral"] += 1
             else:
@@ -489,7 +485,7 @@ class Command(BaseCommand):
 
     def _process_file(self, item, nombre, oportunidad, default_user, carpeta_opp_padre, dry_run):
         if not oportunidad:
-            return  # Solo guardamos archivos cuando hay oportunidad vinculada
+            return
 
         bitrix_file_id = int(item.get("ID") or item.get("id") or 0)
         tamaño = int(item.get("SIZE") or item.get("size") or 0)
