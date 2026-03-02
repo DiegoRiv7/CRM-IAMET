@@ -1,0 +1,468 @@
+<!-- ═══ WIDGET: NOTIFICACIONES ORIGINAL ═══ -->
+<div class="widget-overlay" id="widgetNotificaciones" style="z-index:10210;">
+    <div
+        style="width:95vw;max-width:1600px;height:95vh;display:flex;flex-direction:column;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,30,0.22);">
+        <!-- Header -->
+        <div
+            style="display:flex;align-items:center;justify-content:space-between;padding:18px 25px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div
+                    style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#007AFF,#0052D4);display:flex;align-items:center;justify-content:center;">
+                    <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                </div>
+                <span style="font-size:1.3rem;font-weight:700;color:#1A1A2E;">Notificaciones</span>
+            </div>
+
+            <div style="display:flex;gap:12px;align-items:center;">
+                <button onclick="notifMarcarTodoLeido()"
+                    style="background:#F0F4F8;color:#007AFF;border:none;border-radius:10px;padding:8px 16px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.2s;"
+                    onmouseenter="this.style.background='#E1E9F4'" onmouseleave="this.style.background='#F0F4F8'">
+                    Marcar todo como leído
+                </button>
+                <button
+                    onclick="document.getElementById('widgetNotificaciones').classList.remove('active'); document.body.style.overflow='auto';"
+                    style="border:none;background:#F9FAFB;cursor:pointer;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#6B7280;transition:background 0.2s;"
+                    onmouseenter="this.style.background='#F0F2F5'"
+                    onmouseleave="this.style.background='#F9FAFB'">&times;</button>
+            </div>
+        </div>
+
+        <!-- Two column layout original -->
+        <div style="display:flex;flex:1;overflow:hidden;background:#F9FAFB;">
+            <!-- Categorías -->
+            <div
+                style="width:230px;background:#fff;display:flex;flex-direction:column;padding:20px 15px;gap:8px;border-right:1px solid #F0F2F5;">
+                <div
+                    style="font-size:0.75rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;padding-left:12px;margin-bottom:6px;">
+                    Secciones</div>
+
+                <button class="notif-cat original active" data-cat="tareas" onclick="notifSetFiltro('tareas', this)">
+                    <span style="font-size:1.2rem;width:24px;text-align:center;">✅</span> Tareas
+                    <span class="notif-red-badge" id="cBadgeTareas" style="display:none;">0</span>
+                </button>
+                <button class="notif-cat original" data-cat="oportunidades"
+                    onclick="notifSetFiltro('oportunidades', this)">
+                    <span style="font-size:1.2rem;width:24px;text-align:center;">💼</span> Oportunidades
+                    <span class="notif-red-badge" id="cBadgeOportunidades" style="display:none;">0</span>
+                </button>
+                <button class="notif-cat original" data-cat="muro" onclick="notifSetFiltro('muro', this)">
+                    <span style="font-size:1.2rem;width:24px;text-align:center;">📢</span> Muro / Feed
+                    <span class="notif-red-badge" id="cBadgeMuro" style="display:none;">0</span>
+                </button>
+                {% if request.user.is_superuser %}
+                <button class="notif-cat original" data-cat="usuarios" onclick="notifSetFiltro('usuarios', this)">
+                    <span style="font-size:1.2rem;width:24px;text-align:center;">👥</span> Usuarios
+                    <span class="notif-red-badge" id="cBadgeUsuarios" style="display:none;">0</span>
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Lista -->
+            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#F9FAFB;">
+                <div style="flex:1;overflow-y:auto;padding:12px 20px;" id="notifListContainer">
+                    <div style="text-align:center;padding:50px;color:#9CA3AF;">Cargando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .notif-cat.original {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: none;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #4B5563;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .notif-cat.original:hover {
+        background: #F3F4F6;
+        color: #1F2937;
+    }
+
+    .notif-cat.original.active {
+        background: rgba(0, 122, 255, 0.08);
+        color: #007AFF;
+    }
+
+    .notif-red-badge {
+        position: absolute;
+        right: 14px;
+        background: #EF4444;
+        color: #fff;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        min-width: 22px;
+        text-align: center;
+    }
+
+    .notif-row {
+        background: #fff;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        border: 1px solid #F0F2F5;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        position: relative;
+    }
+
+    .notif-row:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+        border-color: #E5E7EB;
+    }
+
+    .notif-row.unread {
+        border-left: 4px solid #007AFF;
+        padding-left: 16px;
+    }
+
+    .notif-row.unread .nr-title {
+        font-weight: 700;
+        color: #1A1A2E;
+    }
+
+    .nr-icon {
+        font-size: 1.6rem;
+        background: #F3F4F6;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .nr-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .nr-meta {
+        font-size: 0.75rem;
+        color: #9CA3AF;
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .nr-title {
+        font-size: 0.95rem;
+        color: #374151;
+        margin-bottom: 6px;
+        line-height: 1.3;
+    }
+
+    .nr-desc {
+        font-size: 0.85rem;
+        color: #6B7280;
+        line-height: 1.5;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        transition: all 0.3s ease;
+    }
+
+    .notif-row.expanded .nr-desc {
+        -webkit-line-clamp: unset;
+        display: block;
+    }
+
+    .notif-row.rendimiento .nr-desc {
+        background: #F9FAFB;
+        border-radius: 10px;
+        padding: 0;
+        margin-top: 5px;
+    }
+
+    .notif-row.rendimiento.expanded .nr-desc {
+        padding: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+</style>
+
+<script>
+    let nOData = [];
+    let nOFiltro = 'tareas';
+
+    function notifLoad() {
+        fetch('/app/api/obtener-notificaciones/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    nOData = data.notifications;
+                    notifOUpdateCounts();
+                    notifORender();
+                }
+            })
+            .catch(err => console.error("Error", err));
+    }
+
+    function notifOUpdateCounts() {
+        let counts = { tareas: 0, oportunidades: 0, muro: 0, all: 0 };
+        nOData.forEach(n => {
+            if (!n.leida) {
+                counts.all++;
+                const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(n.tipo);
+                const isOpp = ['tarea_opp_asignada', 'tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje', 'actividad_por_vencer', 'actividad_vencida'].includes(n.tipo);
+                const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(n.tipo);
+                const isUsuario = ['rendimiento_bajo', 'solicitud_cambio_perfil'].includes(n.tipo);
+
+                if (isTarea) counts.tareas++;
+                else if (isOpp) counts.oportunidades++;
+                else if (isMuro) counts.muro++;
+                else if (isUsuario) counts.usuarios = (counts.usuarios || 0) + 1;
+            }
+        });
+
+
+        ['tareas', 'oportunidades', 'muro', 'usuarios'].forEach(cat => {
+            const el = document.getElementById('cBadge' + cat.charAt(0).toUpperCase() + cat.slice(1));
+            if (el) {
+                el.innerText = counts[cat] || 0;
+                el.style.display = (counts[cat] || 0) > 0 ? '' : 'none';
+            }
+        });
+
+
+        const btnNav = document.getElementById('btnNotificaciones');
+        if (btnNav) {
+            let existingBadge = btnNav.querySelector('.nav-red-badge');
+            if (counts.all > 0) {
+                if (!existingBadge) {
+                    existingBadge = document.createElement('span');
+                    existingBadge.className = 'nav-red-badge';
+                    existingBadge.style.cssText = 'position:absolute;top:-4px;right:-8px;background:#EF4444;color:#fff;font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:10px;line-height:1;pointer-events:none;z-index:10;border:2px solid #fff;';
+                    btnNav.style.position = 'relative';
+                    btnNav.appendChild(existingBadge);
+                }
+                existingBadge.innerText = counts.all > 99 ? '99+' : counts.all;
+            } else if (existingBadge) {
+                existingBadge.remove();
+            }
+        }
+
+        // GLOBAL UPDATE for Muro and Tareas based on notifs
+        if (typeof window.updateGlobalNavBadges === 'function') {
+            window.updateGlobalNavBadges(counts);
+        }
+
+
+    }
+
+    function notifSetFiltro(cat, btn) {
+        document.querySelectorAll('.notif-cat.original').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        nOFiltro = cat;
+        notifORender();
+    }
+
+    function notifORender() {
+        const container = document.getElementById('notifListContainer');
+        if (!container) return;
+
+        let filtered = nOData.filter(n => {
+            const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(n.tipo);
+            const isOpp = ['tarea_opp_asignada', 'tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje', 'actividad_por_vencer', 'actividad_vencida'].includes(n.tipo);
+            const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(n.tipo);
+            const isUsuario = ['rendimiento_bajo', 'solicitud_cambio_perfil'].includes(n.tipo);
+
+            if (nOFiltro === 'tareas') return isTarea;
+            if (nOFiltro === 'oportunidades') return isOpp;
+            if (nOFiltro === 'muro') return isMuro;
+            if (nOFiltro === 'usuarios') return isUsuario;
+            return false;
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#8E8E93;padding:50px;font-size:0.9rem;">No hay notificaciones en la sección ' + nOFiltro + '.</div>';
+            return;
+        }
+
+        const icons = {
+            'tarea_participante': '✅', 'tarea_observador': '👁️', 'tarea_asignada': '📌', 'tarea_por_vencer': '⏳', 'tarea_vencida': '⚠️',
+            'tarea_opp_asignada': '✅', 'tarea_opp_comentario': '💬', 'comentario_oportunidad': '💼', 'oportunidad_mensaje': '💬', 'actividad_por_vencer': '⏳', 'actividad_vencida': '⚠️',
+            'muro_post': '📢', 'muro_mencion': '@', 'mencion': '@', 'respuesta': '↩️', 'rendimiento_bajo': '👤', 'solicitud_cambio_perfil': '✍️'
+        };
+
+        container.innerHTML = filtered.map(n => {
+            const ic = icons[n.tipo] || '🔔';
+            const isRendimiento = n.tipo === 'rendimiento_bajo';
+            const isSolicitud = n.tipo === 'solicitud_cambio_perfil';
+            return '<div class="notif-row ' + (n.leida ? '' : 'unread') + ' ' + (isRendimiento || isSolicitud ? 'rendimiento' : '') + '" id="notif-' + n.id + '" onclick="notifHandleClick(' + n.id + ', ' + n.tarea_id + ', ' + n.oportunidad_id + ', ' + n.tarea_opp_id + ', \'' + n.tipo + '\')">' +
+                '<div class="nr-icon">' + ic + '</div>' +
+                '<div class="nr-content">' +
+                '<div class="nr-meta">' +
+                '<span>' + (n.remitente || 'Sistema') + '</span>' +
+                '<span>' + n.fecha + '</span>' +
+                '</div>' +
+                '<div class="nr-title">' + n.titulo + '</div>' +
+                '<div class="nr-desc">' + n.mensaje + '</div>' +
+                '</div>' +
+                '</div>';
+        }).join('');
+    }
+
+    window.notifHandleClick = async function (id, tareaId, oppId, actId, tipo) {
+        const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(tipo);
+        const isOpp = ['tarea_opp_asignada', 'tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje', 'actividad_por_vencer', 'actividad_vencida'].includes(tipo);
+        const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(tipo);
+        const isUsuario = ['rendimiento_bajo'].includes(tipo);
+
+        // Obtener URL de la notificación si existe
+        const nRel = nOData.find(x => x.id === id);
+        let targetUrl = nRel?.url;
+
+        // Si es rendimiento bajo o solicitud de cambio, expandir en lugar de redirigir inmediatamente
+        if (tipo === 'rendimiento_bajo' || tipo === 'solicitud_cambio_perfil') {
+            const row = document.getElementById('notif-' + id);
+            if (row) {
+                const alreadyExpanded = row.classList.contains('expanded');
+                // Colapsar otros expandidos
+                document.querySelectorAll('.notif-row.expanded').forEach(r => r.classList.remove('expanded'));
+
+                if (!alreadyExpanded) {
+                    row.classList.add('expanded');
+
+                    // Renderizar detalles de solicitud si es necesario
+                    if (tipo === 'solicitud_cambio_perfil' && !row.querySelector('.profile-change-details')) {
+                        const sData = nRel.solicitud_perfil_data;
+                        if (sData) {
+                            const details = document.createElement('div');
+                            details.className = 'profile-change-details';
+                            details.style.cssText = 'background:#F3F4F6; border-radius:14px; padding:18px; margin-top:12px; border:1px solid rgba(0,0,0,0.05); font-size:0.85rem; animation: fadeIn 0.3s ease;';
+
+                            let html = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px; border-bottom:1px solid rgba(0,0,0,0.05); padding-bottom:10px;">`;
+                            html += `<div style="font-weight:800; color:#86868b; font-size:0.65rem; text-transform:uppercase;">Dato</div><div style="font-weight:800; color:#86868b; font-size:0.65rem; text-transform:uppercase;">Cambio</div>`;
+
+                            if (sData.first_name != sData.old_first_name) html += `<div style="color:#6B7280;">Nombre</div><div style="color:#007AFF; font-weight:700;">${sData.old_first_name} ➔ ${sData.first_name}</div>`;
+                            if (sData.last_name != sData.old_last_name) html += `<div style="color:#6B7280;">Apellido</div><div style="color:#007AFF; font-weight:700;">${sData.old_last_name} ➔ ${sData.last_name}</div>`;
+                            if (sData.email != sData.old_email) html += `<div style="color:#6B7280;">Email</div><div style="color:#007AFF; font-weight:700;">${sData.old_email} ➔ ${sData.email}</div>`;
+                            if (sData.language != sData.old_language) html += `<div style="color:#6B7280;">Idioma</div><div style="color:#007AFF; font-weight:700;">${sData.old_language} ➔ ${sData.language}</div>`;
+                            html += `</div>`;
+
+                            if (sData.avatar_url) {
+                                html += `<div style="margin-bottom:15px; display:flex; align-items:center; gap:12px;">
+                                    <span style="color:#6B7280;">Nuevo Avatar:</span>
+                                    <img src="${sData.avatar_url}" style="width:48px; height:48px; border-radius:50%; border:2px solid #fff; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                                </div>`;
+                            }
+
+                            html += `<div style="display:flex; gap:10px;">
+                                <button onclick="event.stopPropagation(); procesarSolicitudPerfil(${sData.id}, true, ${id})" style="flex:1; padding:10px; border-radius:10px; border:none; background:#34C759; color:#fff; font-weight:700; cursor:pointer; font-size:0.8rem;">Aprobar</button>
+                                <button onclick="event.stopPropagation(); procesarSolicitudPerfil(${sData.id}, false, ${id})" style="flex:1; padding:10px; border-radius:10px; border:none; background:#FF3B30; color:#fff; font-weight:700; cursor:pointer; font-size:0.8rem;">Rechazar</button>
+                            </div>`;
+
+                            details.innerHTML = html;
+                            row.querySelector('.nr-content').appendChild(details);
+                        }
+                    }
+
+                    // Marcar como leída al expandir
+                    try {
+                        let crsfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+                        fetch('/app/api/marcar-notificacion-leida/' + id + '/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': crsfToken }
+                        });
+                        if (nRel) nRel.leida = true;
+                        notifOUpdateCounts();
+                    } catch (e) { }
+                }
+                return; // SIEMPRE retornamos: no cerrar widget ni redirigir
+            }
+        }
+
+        // Cerrar WIDGET de notificaciones
+        document.getElementById('widgetNotificaciones').classList.remove('active');
+
+        // APERTURA DE WIDGETS O REDIRECCIÓN
+        if (isTarea && tareaId && typeof window.crmTaskVerDetalle === 'function') {
+            window.crmTaskVerDetalle(tareaId);
+        } else if (isOpp && typeof window.openDetalle === 'function') {
+            // Oportunidad_id fallback to actId if needed
+            if (oppId) {
+                window.openDetalle(oppId);
+                if (['tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje'].includes(tipo)) {
+                    setTimeout(function () {
+                        if (typeof window.woAbrirGestorConversacion === 'function') {
+                            window.woAbrirGestorConversacion();
+                        }
+                    }, 500);
+                }
+            }
+        } else if (isMuro && typeof window.muroAbrir === 'function') {
+            window.muroAbrir();
+        }
+    }
+
+    window.procesarSolicitudPerfil = async function (solicitudId, aprobado, notifId) {
+        const comentario = aprobado ? '' : prompt('Motivo del rechazo:');
+        if (!aprobado && comentario === null) return;
+
+        try {
+            const crsfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+            const resp = await fetch('/app/api/perfil/procesar-solicitud/' + solicitudId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': crsfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ aprobado, comentario })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                alert(aprobado ? 'Cambios aplicados correctamente.' : 'Solicitud rechazada.');
+                // Recargar notificaciones
+                notifLoad();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de conexión');
+        }
+    }
+
+    window.notifMarcarTodoLeido = async function () {
+        try {
+            let crsfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+            await fetch('/app/api/marcar-todas-notificaciones-leidas/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': crsfToken }
+            });
+            nOData.forEach(n => n.leida = true);
+            notifOUpdateCounts();
+            notifORender();
+        } catch (e) { }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(notifLoad, 1800);
+        setInterval(notifLoad, 15000);
+    });
+</script>

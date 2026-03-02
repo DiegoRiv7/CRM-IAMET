@@ -58,7 +58,8 @@ class VentaForm(forms.ModelForm):
         fields = [
             'oportunidad', 'usuario', 'contacto', 'monto',
             'probabilidad_cierre', 'mes_cierre', 'area', 'producto', 'tipo_negociacion',
-            'comentarios', 'bitrix_deal_id', 'bitrix_company_id', 'bitrix_stage_id'
+            'comentarios', 'bitrix_deal_id', 'bitrix_company_id', 'bitrix_stage_id',
+            'monto_facturacion', 'meta_oportunidad'
         ]
         widgets = {
             'comentarios': forms.Textarea(attrs={'rows': 3}),
@@ -266,9 +267,9 @@ class CotizacionForm(forms.ModelForm):
 
         cliente_id = self.initial.get('cliente') or (self.data.get('cliente') if self.data else None)
         if cliente_id:
-            self.fields['oportunidad'].queryset = TodoItem.objects.filter(cliente_id=cliente_id, bitrix_deal_id__isnull=False).order_by('-fecha_creacion')
+            self.fields['oportunidad'].queryset = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')
         else:
-            self.fields['oportunidad'].queryset = TodoItem.objects.none()
+            self.fields['oportunidad'].queryset = TodoItem.objects.all().order_by('-fecha_creacion')
 
         for field_name, field in self.fields.items():
             if isinstance(field.widget, (forms.TextInput, forms.NumberInput, forms.Textarea, forms.Select, forms.DateInput)):

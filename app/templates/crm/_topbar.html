@@ -1,0 +1,111 @@
+<!-- ═══ CRM TOPBAR — DYNAMIC ISLAND ═══ -->
+<div class="crm-unified-header">
+    <div class="crm-island" id="mainIsland">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
+
+            <!-- Avatar + usuario + meta -->
+            <div style="display:flex;align-items:center;gap:6px;cursor:pointer;"
+                onclick="var wp=document.getElementById('widgetPerfil'); if(wp) wp.classList.add('active');">
+                <div class="crm-avatar">
+                    {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+                </div>
+                <div style="font-size:0.65rem;color:#4A6FA5;font-weight:600;white-space:nowrap;line-height:1.3;">
+                    {{ usuario.get_full_name|default:usuario.username }}<br>
+                    <span style="font-size:0.6rem;opacity:0.7;">
+                        {% if request.user.userprofile.language == 'en' %}GOAL{% else %}META{% endif %}: ${{ meta|floatformat:0 }} MXN
+                    </span>
+                </div>
+            </div>
+
+            <div class="island-sep"></div>
+
+            <!-- Navegación principal -->
+            <nav class="island-nav">
+                {% if tab_activo == 'facturado' and es_supervisor %}
+                <button type="button" class="island-nav-btn" id="btnUploadXls"
+                    style="background:#1D6F42;color:#fff;border-color:#1D6F42;">
+                    &#8593; Excel
+                </button>
+                <input type="file" id="xlsFileInput" accept=".xls,.xlsx" style="display:none">
+                {% else %}
+                <button type="button" class="island-nav-btn" id="btnNegociacion">
+                    {% if request.user.userprofile.language == 'en' %}OPPORTUNITY{% else %}OPORTUNIDAD{% endif %}
+                </button>
+                {% endif %}
+                <button type="button" class="island-nav-btn active" id="btnCRM">CRM</button>
+                <button type="button" class="island-nav-btn" id="btnTareas">
+                    {% if request.user.userprofile.language == 'en' %}TASKS{% else %}TAREAS{% endif %}
+                </button>
+                <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">
+                    {% if request.user.userprofile.language == 'en' %}WALL{% else %}MURO{% endif %}
+                </button>
+                <button type="button" class="island-nav-btn" id="btnCalendario" onclick="calendarioAbrir()">
+                    {% if request.user.userprofile.language == 'en' %}CALENDAR{% else %}CALENDARIO{% endif %}
+                </button>
+                <button type="button" class="island-nav-btn" id="btnNotificaciones"
+                    onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';">
+                    NOTIF.
+                </button>
+                <button type="button" class="island-nav-btn" id="btnMail" onclick="mailAbrir()">
+                    &#9993; {% if request.user.userprofile.language == 'en' %}MAIL{% else %}CORREO{% endif %}
+                </button>
+                {% if es_supervisor %}
+                <button type="button" class="island-nav-btn" id="btnAdminPanel" style="opacity:0.7;"
+                    onclick="var ao=document.getElementById('adminOverlay');if(ao){ao.classList.add('active');ao.classList.remove('closing');}">
+                    &#9881;
+                </button>
+                {% endif %}
+            </nav>
+
+            <div class="island-sep" id="islandSepFilters"></div>
+
+            <!-- Filtros: Mes, Año, Vendedores -->
+            <div style="display:flex;align-items:center;gap:6px;" id="islandFiltersSection">
+                <select class="island-select" id="mesFilter">
+                    {% for code, name in mes_choices %}
+                    <option value="{{ code }}" {% if code == mes_filter %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <select class="island-select" id="anioFilter">
+                    {% for y in years_range %}
+                    <option value="{{ y|stringformat:'i' }}" {% if y == anio_int %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                {% if es_supervisor %}
+                <div class="vendor-filter-wrap" style="position:relative;">
+                    <button type="button" class="island-select vendor-filter-btn" id="vendorFilterBtn">
+                        {% if request.user.userprofile.language == 'en' %}Vendors{% else %}Vendedores{% endif %}
+                        &#9660;</button>
+                    <div class="vendor-filter-dropdown" id="vendorFilterDropdown">
+                        <label class="vf-option">
+                            <input type="checkbox" value="all" id="vfAll" checked>
+                            <span>{% if request.user.userprofile.language == 'en' %}All{% else %}Todos{% endif %}</span>
+                        </label>
+                        {% for v in vendedores_list %}
+                        <label class="vf-option">
+                            <input type="checkbox" class="vf-user" value="{{ v.id }}">
+                            <span>{{ v.get_full_name|default:v.username }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="island-sep"></div>
+
+            <!-- Stats: Total + % progreso -->
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <span
+                    style="font-size:0.6rem;color:#8E8E93;font-weight:600;text-transform:uppercase;white-space:nowrap;">
+                    {% if request.user.userprofile.language == 'en' %}Total{% else %}Total{% endif %}
+                </span>
+                <span id="facturadoAmount" style="font-size:0.65rem;color:#1D1D1F;font-weight:700;">${{ total_facturado|floatformat:0 }}</span>
+                <span class="crm-stats-pct {% if progreso >= 100 %}green{% endif %}" id="progressPct">{{ progreso|floatformat:0 }}%</span>
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- islandExpandedContent kept for JS compat -->
+<div id="islandExpandedContent" style="display:none;"></div>

@@ -29,6 +29,9 @@ load_dotenv(dotenv_path=dotenv_path)
 # Obtén la SECRET_KEY de las variables de entorno
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%bvhvsoqj7(y%nvdm!*_u26-x3kc$3!f&d#8*j#km!j=g%@iye') # Valor por defecto para desarrollo si no está en .env
 
+# Encryption key for storing email passwords (generate with Fernet.generate_key())
+MAIL_ENCRYPTION_KEY = os.environ.get('MAIL_ENCRYPTION_KEY', '')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las variables de entorno
 
@@ -98,6 +101,7 @@ else:
     CSRF_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SECURE = False
     CSRF_COOKIE_HTTPONLY = False
+    X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 ROOT_URLCONF = 'cartera_clientes.urls'
 

@@ -1,0 +1,616 @@
+<!-- ═══ WIDGET: CALENDARIO OVERLAY MASTER (DISEÑO PREMIUM APPLE) ═══ -->
+<div class="widget-overlay" id="widgetCalendarioMaster" style="z-index: 10005; display: none;">
+    <div class="widget-card widget-card-xxl"
+        style="width: 95vw; height: 95vh; max-width: 1600px; background: #ffffff; border-radius: 20px; display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,0.2); border: 1px solid rgba(0,0,0,0.05); overflow: hidden;">
+
+        <!-- Header minimalista -->
+        <div
+            style="padding: 1.5rem 2rem; background: #ffffff; border-bottom: 1px solid #F2F2F7; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 1.75rem; font-weight: 700; color: #1D1D1F; letter-spacing: -0.03em;">Calendario
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1.25rem; align-items: center;">
+                <button type="button" onclick="calGlobalAbrirCrearActividad()"
+                    style="background: #0052D4; border: none; padding: 0.65rem 1.25rem; border-radius: 10px; color: #ffffff; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; transition: background-color 0.2s;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nuevo
+                </button>
+                <div style="width: 1px; height: 24px; background: #E5E5EA;"></div>
+                <button type="button" class="widget-close" onclick="calendarioCerrar()"
+                    style="color: #86868B; background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; padding: 0; display: flex; align-items: center; transition: color 0.2s;"
+                    onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'">&times;</button>
+            </div>
+        </div>
+
+        <!-- Body con estilos súper limpios inyectados para FullCalendar -->
+        <div
+            style="flex: 1; padding: 1.5rem 2rem; background: #ffffff; overflow: hidden; display: flex; flex-direction: column;">
+            <style>
+                /* FullCalendar Apple-like Customization */
+                #fullCalendarRoot {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    --fc-border-color: #F2F2F7;
+                    --fc-page-bg-color: #ffffff;
+                    --fc-neutral-bg-color: #F9FAFB;
+                    --fc-today-bg-color: rgba(0, 82, 212, 0.04);
+                }
+
+                /* Eliminar todo borde exterior del calendario */
+                #fullCalendarRoot .fc-theme-standard .fc-scrollgrid {
+                    border-right: none !important;
+                    border-left: none !important;
+                    border-bottom: none !important;
+                    border-top: none !important;
+                }
+
+                /* Toolbar del calendario */
+                #fullCalendarRoot .fc-header-toolbar {
+                    margin-bottom: 2rem !important;
+                    padding: 0 0.5rem;
+                }
+
+                /* Título (Mes y Año) */
+                #fullCalendarRoot .fc-toolbar-title {
+                    font-size: 1.5rem !important;
+                    font-weight: 700 !important;
+                    color: #1D1D1F !important;
+                    text-transform: capitalize;
+                    letter-spacing: -0.01em;
+                }
+
+                /* Botones de control (Hoy, flechas) y Vistas */
+                #fullCalendarRoot .fc-button {
+                    background-color: #F2F2F7 !important;
+                    border: none !important;
+                    color: #1D1D1F !important;
+                    font-weight: 600 !important;
+                    font-size: 0.9rem !important;
+                    text-transform: capitalize !important;
+                    border-radius: 8px !important;
+                    box-shadow: none !important;
+                    padding: 0.5rem 1rem !important;
+                    transition: background-color 0.2s, color 0.2s;
+                    margin: 0 2px;
+                }
+
+                /* Iconos de las flechas más sutiles */
+                #fullCalendarRoot .fc-button .fc-icon {
+                    font-size: 1.1em;
+                }
+
+                /* Segmented Control look for View buttons (Mes, Semana, Día) */
+                #fullCalendarRoot .fc-toolbar-chunk:last-child .fc-button-group {
+                    background: #F2F2F7;
+                    border-radius: 10px;
+                    padding: 3px;
+                }
+
+                #fullCalendarRoot .fc-toolbar-chunk:last-child .fc-button {
+                    background: transparent !important;
+                    border-radius: 8px !important;
+                    color: #86868B !important;
+                    margin: 0 !important;
+                    padding: 0.4rem 1rem !important;
+                }
+
+                #fullCalendarRoot .fc-toolbar-chunk:last-child .fc-button.fc-button-active {
+                    background: #ffffff !important;
+                    color: #1D1D1F !important;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+                }
+
+                #fullCalendarRoot .fc-button:hover {
+                    background-color: #E5E5EA !important;
+                }
+
+                /* Días de la semana (Cabeceras) */
+                #fullCalendarRoot .fc-col-header-cell {
+                    border: none !important;
+                    padding: 10px 0 16px 0 !important;
+                }
+
+                #fullCalendarRoot .fc-col-header-cell-cushion {
+                    color: #86868B !important;
+                    font-size: 0.8rem !important;
+                    text-transform: uppercase !important;
+                    font-weight: 700 !important;
+                    letter-spacing: 0.05em;
+                    text-decoration: none !important;
+                }
+
+                /* Celdas de los días */
+                #fullCalendarRoot .fc-daygrid-day-frame {
+                    padding: 4px;
+                }
+
+                #fullCalendarRoot .fc-daygrid-day-number {
+                    color: #1D1D1F !important;
+                    font-weight: 600 !important;
+                    font-size: 0.95rem !important;
+                    text-decoration: none !important;
+                    padding: 6px 10px !important;
+                    border-radius: 50%;
+                    display: inline-block;
+                }
+
+                #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
+                    background-color: #0052D4;
+                    color: #ffffff !important;
+                }
+
+                /* Eventos hermosos */
+                #fullCalendarRoot .fc-event {
+                    border-radius: 6px !important;
+                    border: none !important;
+                    padding: 4px 8px !important;
+                    font-size: 0.8rem !important;
+                    font-weight: 600 !important;
+                    cursor: pointer !important;
+                    margin: 2px 0 !important;
+                    box-shadow: none !important;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    background: transparent;
+                }
+
+                /* Bolita de color (Dot) para eventos */
+                #fullCalendarRoot .fc-daygrid-event-dot {
+                    border-width: 5px !important;
+                    margin-right: 6px !important;
+                }
+
+                /* Texto del evento — oscuro en vista mes/lista (fondo claro) */
+                #fullCalendarRoot .fc-event-title,
+                #fullCalendarRoot .fc-event-time {
+                    color: #1D1D1F !important;
+                    font-weight: 500 !important;
+                }
+
+                /* Texto blanco en eventos de timeGrid (semana/día — fondo con color) */
+                #fullCalendarRoot .fc-timegrid-event .fc-event-title,
+                #fullCalendarRoot .fc-timegrid-event .fc-event-time {
+                    color: #ffffff !important;
+                    font-weight: 600 !important;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+                }
+
+                /* Hover general: brillo */
+                #fullCalendarRoot .fc-event:hover {
+                    transform: scale(1.01);
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+                    filter: brightness(1.1);
+                }
+
+                /* Hover en vista mes/lista (fondo claro): gris suave */
+                #fullCalendarRoot .fc-daygrid-event:hover,
+                #fullCalendarRoot .fc-list-event:hover td {
+                    background: #F3F4F6 !important;
+                    filter: none;
+                }
+
+                /* Ocultar bordes de la celda de la cabecera */
+                #fullCalendarRoot th {
+                    border: none !important;
+                }
+
+                /* Reducir cuadros de las horas para evitar scroll */
+                #fullCalendarRoot .fc-timegrid-slot {
+                    height: 1.5em !important;
+                }
+
+                #fullCalendarRoot .fc-timegrid-slot-label {
+                    font-size: 0.8rem !important;
+                    padding: 2px !important;
+                }
+            </style>
+            <div id="fullCalendarRoot" style="flex: 1; min-height: 0;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: CREAR ACTIVIDAD GLOBAL (SIN OPORTUNIDAD) ═══ -->
+<div class="widget-overlay" id="widgetGlobalCrearActividad" style="z-index: 10020; display: none;">
+    <div class="widget-card widget-card-md"
+        style="width: 550px; max-width: 95vw; background: #fff; border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+        <div
+            style="padding: 1.5rem; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: 600; font-size: 1.1rem; color: #1D1D1F;">Nueva Actividad</div>
+            <button type="button" class="widget-close"
+                onclick="document.getElementById('widgetGlobalCrearActividad').style.display='none'">&times;</button>
+        </div>
+        <div
+            style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.2rem; overflow-y: auto; max-height: 70vh;">
+            <div>
+                <label
+                    style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">NOMBRE
+                    DE LA ACTIVIDAD</label>
+                <input type="text" id="calFormActNombre"
+                    style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none; transition: border 0.2s;"
+                    placeholder="Ej. Presentación de avance">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <div style="flex: 1;">
+                    <label
+                        style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">FECHA</label>
+                    <input type="date" id="calFormActFecha"
+                        style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+                <div style="width: 140px;">
+                    <label
+                        style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">INICIO</label>
+                    <input type="time" id="calFormActInicio" min="08:00" max="18:00"
+                        style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+                <div style="width: 140px;">
+                    <label
+                        style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">FIN</label>
+                    <input type="time" id="calFormActFin" min="08:00" max="18:00"
+                        style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+            </div>
+            <div>
+                <label
+                    style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">DESCRIPCIÓN</label>
+                <textarea id="calFormActDesc" rows="3"
+                    style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none; resize: none;"
+                    placeholder="Cualquier apunte adicional..."></textarea>
+            </div>
+            <div style="position: relative;">
+                <label
+                    style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">PARTICIPANTES</label>
+                <div id="calActParticipantesContainer"
+                    style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.5rem; min-height: 38px; padding: 6px; border: 1px solid #D1D1D6; border-radius: 10px; background: #F9FAFB;">
+                </div>
+                <input type="text" id="calActParticipantesSearch"
+                    style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none;"
+                    placeholder="Buscar usuario por nombre..." oninput="calSearchParticipantes(this.value)">
+                <div id="calActParticipantesDropdown"
+                    style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #E5E5EA; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 10030; max-height: 220px; overflow-y: auto; margin-top: 6px; overflow: hidden;">
+                </div>
+            </div>
+        </div>
+        <div
+            style="padding: 1.25rem 1.5rem; border-top: 1px solid #E5E5EA; background: #FFFFFF; display: flex; justify-content: flex-end; gap: 0.8rem; border-radius: 0 0 16px 16px;">
+            <button onclick="document.getElementById('widgetGlobalCrearActividad').style.display='none'"
+                style="padding: 0.75rem 1.2rem; background: #F2F2F7; border: none; color: #1D1D1F; border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Cancelar</button>
+            <button onclick="calGlobalCrearActividadSubmit()"
+                style="padding: 0.75rem 1.5rem; background: #0052D4; border: none; color: #fff; border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0, 82, 212, 0.2);">Crear
+                Actividad</button>
+        </div>
+    </div>
+</div>
+
+<script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.11/index.global.min.js'></script>
+<script>
+    function woEscape(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    var _globalCalendar = null;
+    var _globalEvents = [];
+    var _calParticipantesSel = [];
+
+    window.calendarioAbrir = function () {
+        var ov = document.getElementById('widgetCalendarioMaster');
+        ov.style.display = 'flex';
+        var _scrollY = window.scrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = '-' + _scrollY + 'px';
+        document.body.style.width = '100%';
+        document.body.dataset.calScrollY = _scrollY;
+
+        // Guardar estado abierto
+        try { sessionStorage.setItem('_crm_cal_open', '1'); } catch (e) { }
+
+        if (!_globalCalendar) {
+            var calEl = document.getElementById('fullCalendarRoot');
+            // Restaurar última vista guardada (default: lista)
+            var savedView = 'listWeek';
+            try { savedView = sessionStorage.getItem('_crm_cal_view') || 'listWeek'; } catch (e) { }
+
+            if (typeof FullCalendar !== 'undefined') {
+                _globalCalendar = new FullCalendar.Calendar(calEl, {
+                    initialView: savedView,
+                    locale: 'es',
+                    height: '100%',
+                    slotMinTime: '08:00:00',
+                    slotMaxTime: '18:30:00',
+                    allDaySlot: false,
+                    expandRows: true,
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                    },
+                    buttonText: {
+                        today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Lista'
+                    },
+                    // Vista lista: "jueves 27 de febrero" en la cabecera izquierda; sin fecha a la derecha
+                    listDayFormat: { weekday: 'long', day: 'numeric', month: 'long' },
+                    listDaySideFormat: false,
+                    eventInteractive: true,
+                    // Vista mes usa puntitos; semana/día usa bloque con color
+                    views: {
+                        dayGridMonth: { eventDisplay: 'list-item' },
+                        timeGridWeek: { eventDisplay: 'block' },
+                        timeGridDay: { eventDisplay: 'block' }
+                    },
+                    viewDidMount: function (viewInfo) {
+                        // Guardar vista cada vez que cambie
+                        try { sessionStorage.setItem('_crm_cal_view', viewInfo.view.type); } catch (e) { }
+                    },
+                    eventClick: function (info) {
+                        var e = info.event;
+                        woVerActividadGenerica(e.id);
+                    }
+                });
+                _globalCalendar.render();
+            }
+        }
+
+        setTimeout(function () {
+            if (_globalCalendar) _globalCalendar.render();
+        }, 100);
+
+        calGlobalRefetch();
+    };
+
+    window.calendarioCerrar = function () {
+        document.getElementById('widgetCalendarioMaster').style.display = 'none';
+        var _sy = parseInt(document.body.dataset.calScrollY || '0');
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, _sy);
+        var btn = document.getElementById('btnCalendario');
+        if (btn) btn.classList.remove('active');
+        try { sessionStorage.removeItem('_crm_cal_open'); } catch (e) { }
+    };
+
+    window.calGlobalRefetch = function () {
+        var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+        var pActividades = fetch('/app/api/actividades/', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }
+        }).then(function (r) { return r.json(); });
+        var pTareas = fetch('/app/api/tareas/').then(function (r) { return r.json(); });
+        Promise.all([pActividades, pTareas]).then(function (results) {
+            var actividades = results[0];
+            var tareasData = results[1];
+            var tareas = tareasData.tareas || tareasData.results || [];
+            _globalEvents = actividades.map(function (e) {
+                return {
+                    id: e.id,
+                    title: e.title,
+                    start: e.start,
+                    end: e.end,
+                    description: e.description,
+                    color: '#0052D4',
+                    extendedProps: {
+                        participants: e.participants,
+                        opportunity: e.opportunity,
+                        creado_por: e.creado_por,
+                        tipo_actividad: e.tipo
+                    }
+                };
+            });
+            // Añadir tareas con fecha_limite como eventos naranjas
+            tareas.forEach(function (t) {
+                if (!t.fecha_limite) return;
+                _globalEvents.push({
+                    id: 'tarea-' + t.id,
+                    title: t.titulo,
+                    start: t.fecha_limite,
+                    color: '#FF9500',
+                    extendedProps: { tipo_actividad: 'tarea', tarea_id: t.id }
+                });
+            });
+            if (_globalCalendar) {
+                _globalCalendar.removeAllEventSources();
+                _globalCalendar.addEventSource(_globalEvents);
+            }
+        });
+    };
+
+    window.calGlobalAbrirCrearActividad = function () {
+        document.getElementById('calFormActNombre').value = '';
+        var d = new Date();
+        document.getElementById('calFormActFecha').value = d.toISOString().split('T')[0];
+        var inicioTime = d.toTimeString().substring(0, 5);
+        if (inicioTime > '18:00') inicioTime = '18:00';
+        document.getElementById('calFormActInicio').value = inicioTime;
+        d.setHours(d.getHours() + 1);
+        var finTime = d.toTimeString().substring(0, 5);
+        if (finTime > '18:00') finTime = '18:00';
+        document.getElementById('calFormActFin').value = finTime;
+        document.getElementById('calFormActDesc').value = '';
+        _calParticipantesSel = [];
+        calRenderParticipantes();
+        document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
+    };
+
+    window.woVerActividadGenerica = function (id) {
+        var evt = _globalEvents.find(function (ev) { return String(ev.id) === String(id); });
+        if (!evt) return;
+        var e = evt.extendedProps;
+
+        var verPop = document.getElementById('woVerActNombre');
+        if (!verPop) {
+            console.error('El widget de detalle no está disponible.');
+            return;
+        }
+
+        verPop.textContent = evt.title || 'Actividad';
+
+        var d1 = new Date(evt.start);
+        var d2 = new Date(evt.end);
+        var fEl = document.getElementById('woVerActFecha');
+        if (fEl) fEl.textContent = d1.toLocaleDateString() + ' ' + d1.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + d2.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        var creadorNombre = '';
+        if (e.creado_por && typeof e.creado_por === 'object') {
+            creadorNombre = e.creado_por.text || e.creado_por.nombre || '';
+        } else {
+            creadorNombre = e.creado_por || '';
+        }
+        var creadorEl = document.getElementById('woVerActCreador');
+        if (creadorEl) creadorEl.textContent = creadorNombre;
+
+        var descText = evt.description || '';
+        var descHtml = descText ? descText.replace(/\n/g, '<br>') : '<span style="color:#AEAEB2;font-style:italic;">No hay descripción.</span>';
+        var descEl = document.getElementById('woVerActDesc');
+        if (descEl) descEl.innerHTML = descHtml;
+
+        var pc = document.getElementById('woVerActParticipantes');
+        if (pc) {
+            if (e.participants && e.participants.length > 0) {
+                pc.innerHTML = e.participants.map(function (p) { return woEscape(p.text || p.nombre || p.id) }).join(', ');
+            } else {
+                var curr_user = "{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}".trim() || "{{ request.user.username|escapejs }}";
+                pc.innerHTML = '<span style="color:#86868B;font-size:0.85rem;">' + woEscape(curr_user) + '</span>';
+            }
+        }
+
+        var relBtn = document.getElementById('woVerActRelacionado');
+        if (relBtn) {
+            if (e.opportunity && e.opportunity.text) {
+                relBtn.style.display = 'inline-flex';
+                var span = relBtn.querySelector('span');
+                if (span) span.textContent = 'Oportunidad: ' + e.opportunity.text;
+                else relBtn.innerHTML = '<span>Oportunidad: ' + e.opportunity.text + '</span>';
+            } else {
+                relBtn.style.display = 'none';
+            }
+        }
+
+        document.getElementById('widgetOppVerActividad').style.display = 'flex';
+    };
+
+    function calGlobalCrearActividadSubmit() {
+        var titulo = document.getElementById('calFormActNombre').value.trim();
+        var desc = document.getElementById('calFormActDesc').value.trim();
+        var fecha = document.getElementById('calFormActFecha').value;
+        var inicio = document.getElementById('calFormActInicio').value;
+        var fin = document.getElementById('calFormActFin').value;
+
+        if (!titulo || !fecha || !inicio || !fin) {
+            alert('El nombre, fecha, hora de inicio y fin son obligatorios.');
+            return;
+        }
+
+        var start_dt = fecha + 'T' + inicio + ':00';
+        var end_dt = fecha + 'T' + fin + ':00';
+
+        if (new Date(start_dt) >= new Date(end_dt)) {
+            alert('La hora de fin debe ser posterior a la de inicio.');
+            return;
+        }
+
+        var data = {
+            title: titulo,
+            description: desc,
+            tipo: 'tarea',
+            start: start_dt + 'Z',
+            end: end_dt + 'Z',
+            color: '#1D1D1F',
+            opportunity: null,
+            participants: _calParticipantesSel.map(function (u) { return u.id; })
+        };
+
+        var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+        fetch('/app/api/actividades/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify(data)
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (out) {
+                if (out.error) {
+                    alert('Error: ' + out.error);
+                } else {
+                    document.getElementById('widgetGlobalCrearActividad').style.display = 'none';
+                    calGlobalRefetch();
+                }
+            });
+    }
+
+    function calSearchParticipantes(query) {
+        var dropdown = document.getElementById('calActParticipantesDropdown');
+        query = query.trim();
+        if (query.length < 2) {
+            dropdown.style.display = 'none';
+            return;
+        }
+        fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(query))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var users = data.usuarios || [];
+                dropdown.innerHTML = '';
+                if (users.length === 0) {
+                    dropdown.innerHTML = '<div style="padding:1rem;color:#86868B;font-size:0.85rem;text-align:center;">No hay resultados</div>';
+                } else {
+                    users.forEach(function (u) {
+                        var btn = document.createElement('div');
+                        btn.style.cssText = "width:100%;text-align:left;padding:0.7rem 1rem;background:none;border-bottom:1px solid #F2F2F7;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;gap:0.75rem;transition:background 0.2s;";
+                        btn.onmouseover = function () { this.style.background = '#F9FAFB'; };
+                        btn.onmouseout = function () { this.style.background = 'none'; };
+                        var avatarHTML = '<div style="width:30px;height:30px;border-radius:50%;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">' + woEscape(u.iniciales) + '</div>';
+                        btn.innerHTML = avatarHTML + '<div style="display:flex;flex-direction:column;"><strong style="color:#1D1D1F;font-size:0.9rem;">' + woEscape(u.nombre) + '</strong><span style="color:#86868B;font-size:0.75rem;font-weight:500;">' + woEscape(u.rol) + '</span></div>';
+                        btn.onclick = function () {
+                            if (!_calParticipantesSel.some(function (sel) { return sel.id === u.id; })) {
+                                _calParticipantesSel.push({ id: u.id, text: u.nombre });
+                            }
+                            document.getElementById('calActParticipantesSearch').value = '';
+                            dropdown.style.display = 'none';
+                            calRenderParticipantes();
+                        };
+                        dropdown.appendChild(btn);
+                    });
+                }
+                dropdown.style.display = 'block';
+            });
+    }
+
+    function calRenderParticipantes() {
+        var c = document.getElementById('calActParticipantesContainer');
+        c.innerHTML = '';
+        _calParticipantesSel.forEach(function (u) {
+            c.innerHTML += '<div style="background:#E5E5EA;padding:6px 12px;border-radius:12px;font-size:0.85rem;display:flex;align-items:center;gap:6px;font-weight:500;color:#1D1D1F;">' +
+                woEscape(u.text) +
+                '<button onclick="calRemoveParticipante(' + u.id + ')" style="background:none;border:none;cursor:pointer;color:#86868B;padding:0;display:flex;align-items:center;">&times;</button></div>';
+        });
+        if (_calParticipantesSel.length === 0) {
+            var currentUserName = "{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}".trim() || "{{ request.user.username|escapejs }}";
+            c.innerHTML = '<span style="color:#86868B;font-size:0.85rem;padding:6px;font-weight:500;">' + woEscape(currentUserName) + '</span>';
+        }
+    }
+
+    window.calRemoveParticipante = function (id) {
+        _calParticipantesSel = _calParticipantesSel.filter(function (u) { return u.id !== id; });
+        calRenderParticipantes();
+    };
+
+    document.addEventListener('click', function (e) {
+        var sc = document.getElementById('calActParticipantesSearch');
+        if (sc && e.target !== sc) {
+            var dd = document.getElementById('calActParticipantesDropdown');
+            if (dd) dd.style.display = 'none';
+        }
+    });
+
+    // Restaurar calendario si estaba abierto antes de recargar
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            if (sessionStorage.getItem('_crm_cal_open') === '1') {
+                setTimeout(function () { calendarioAbrir(); }, 500);
+            }
+        } catch (e) { }
+    });
+
+</script>

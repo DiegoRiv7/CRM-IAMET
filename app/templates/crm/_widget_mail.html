@@ -1,0 +1,446 @@
+    <!-- ═══ WIDGET: CORREO ═══ -->
+    <div class="widget-overlay" id="widgetMail" style="z-index:10210;">
+        <div
+            style="width:94vw;max-width:94vw;height:92vh;max-height:92vh;display:flex;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,30,0.18);">
+            <!-- Header -->
+            <div
+                style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1.5px solid #F0F2F5;flex-shrink:0;background:#fff;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <span style="font-size:1rem;font-weight:700;color:#1A1A2E;flex:1;">Correo</span>
+                <span id="mailWidgetEmail" style="font-size:0.78rem;color:#9CA3AF;font-weight:500;"></span>
+                <button id="mailWidgetSyncBtn" onclick="mailSincronizar()"
+                    style="display:none;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:6px 13px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                    </svg>
+                    Sincronizar
+                </button>
+                <button onclick="mailConfigurar()"
+                    style="display:flex;align-items:center;gap:6px;background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:6px 12px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+                    </svg>
+                    Configurar
+                </button>
+                <button onclick="mailCerrar()"
+                    style="border:none;background:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#9CA3AF;"
+                    onmouseenter="this.style.background='#F3F4F8'"
+                    onmouseleave="this.style.background='none'">&times;</button>
+            </div>
+            <!-- 3-column body -->
+            <div style="display:grid;grid-template-columns:200px 310px 1fr;flex:1;overflow:hidden;">
+                <!-- Sidebar -->
+                <div
+                    style="background:#F9FAFB;border-right:1.5px solid #F0F2F5;display:flex;flex-direction:column;padding:14px 10px;gap:3px;overflow-y:auto;">
+                    <button id="mailComposeBtn" onclick="mailRedactar()"
+                        style="display:none;align-items:center;gap:7px;background:#007AFF;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:0.87rem;font-weight:600;cursor:pointer;width:100%;margin-bottom:8px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Redactar
+                    </button>
+                    <button class="mail-folder-wb" id="mwFolderInbox" onclick="mailCambiarCarpeta('INBOX',this)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                            <path
+                                d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                        </svg>
+                        Bandeja
+                        <span id="mailUnreadBadge"
+                            style="display:none;margin-left:auto;background:#007AFF;color:#fff;border-radius:20px;font-size:0.68rem;font-weight:700;padding:1px 7px;min-width:18px;text-align:center;"></span>
+                    </button>
+                    <button class="mail-folder-wb" id="mwFolderSent" onclick="mailCambiarCarpeta('SENT',this)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                        Enviados
+                    </button>
+                    <div id="mailSidebarNote"
+                        style="display:none;font-size:0.78rem;color:#9CA3AF;text-align:center;padding:14px 6px;line-height:1.5;">
+                        Configura tu cuenta de correo para comenzar.</div>
+                </div>
+                <!-- List column -->
+                <div style="border-right:1.5px solid #F0F2F5;display:flex;flex-direction:column;overflow:hidden;">
+                    <div style="padding:10px 14px 8px;font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid #F0F2F5;flex-shrink:0;"
+                        id="mailListTitle">Bandeja de entrada</div>
+                    <input type="text" id="mailListSearch" placeholder="Buscar..." oninput="mailFiltrar(this.value)"
+                        style="padding:8px 14px;background:#F9FAFB;border:none;border-bottom:1px solid #F0F2F5;font-size:0.83rem;color:#374151;outline:none;width:100%;font-family:inherit;">
+                    <div style="flex:1;overflow-y:auto;" id="mailList"></div>
+                    <div id="mailLoadMore"
+                        style="display:none;padding:10px;text-align:center;font-size:0.8rem;color:#007AFF;cursor:pointer;border-top:1px solid #F0F2F5;"
+                        onclick="mailCargarMas()">Cargar más</div>
+                </div>
+                <!-- Detail column -->
+                <div style="display:flex;flex-direction:column;overflow:hidden;background:#fff;">
+                    <div id="mailDetailEmpty"
+                        style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#D1D5DB;gap:10px;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                        </svg>
+                        <span style="font-size:0.87rem;">Selecciona un correo</span>
+                    </div>
+                    <div id="mailDetailContent" style="display:none;flex-direction:column;height:100%;">
+                        <!-- Linked opp bar -->
+                        <div id="mailDetailOppBar"
+                            style="display:none;align-items:center;gap:8px;padding:7px 18px;background:#EEF3FF;border-bottom:1px solid #D0E1FF;font-size:0.79rem;color:#0052D4;font-weight:600;flex-shrink:0;">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path
+                                    d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                                <line x1="7" y1="7" x2="7.01" y2="7" />
+                            </svg>
+                            <span id="mailDetailOppName"></span>
+                        </div>
+                        <!-- Header -->
+                        <div style="padding:16px 20px 12px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+                            <div id="mailDetailSubject"
+                                style="font-size:1.02rem;font-weight:700;color:#1A1A2E;margin-bottom:7px;line-height:1.3;">
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:3px;font-size:0.78rem;color:#9CA3AF;">
+                                <span style="color:#374151;font-weight:500;">De: <span
+                                        id="mailDetailFrom"></span></span>
+                                <span>Para: <span id="mailDetailTo"></span></span>
+                                <span id="mailDetailDate" style="font-size:0.73rem;margin-top:2px;"></span>
+                            </div>
+                        </div>
+                        <!-- Attachments chips -->
+                        <div id="mailDetailAdj"
+                            style="display:none;flex-wrap:wrap;gap:6px;padding:8px 16px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+                        </div>
+                        <!-- Inline preview strip (images + PDF embeds) -->
+                        <div id="mailDetailPreviews"
+                            style="display:none;flex-wrap:wrap;gap:10px;padding:10px 16px;border-bottom:1px solid #F0F2F5;flex-shrink:0;background:#FAFBFF;overflow-y:auto;max-height:220px;">
+                        </div>
+                        <!-- Body -->
+                        <div id="mailBodyWrapper"
+                            style="flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column;">
+                            <div id="mailBodyBackBtn" onclick="mailRestoreEmailBody()"
+                                style="display:none;align-items:center;gap:7px;padding:6px 16px;background:#F3F4F8;border-bottom:1px solid #E5E7EB;font-size:0.79rem;font-weight:600;color:#374151;cursor:pointer;flex-shrink:0;">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6" />
+                                </svg>
+                                Volver al correo
+                            </div>
+                            <iframe id="mailDetailIframe"
+                                style="display:none;flex:1;width:100%;border:none;background:#fff;"
+                                sandbox="allow-same-origin"></iframe>
+                            <pre id="mailDetailPlain"
+                                style="display:none;padding:18px 20px;font-size:0.85rem;line-height:1.65;color:#374151;white-space:pre-wrap;overflow-y:auto;flex:1;font-family:inherit;margin:0;"></pre>
+                        </div>
+                        <!-- Actions -->
+                        <div
+                            style="border-top:1.5px solid #F0F2F5;padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;flex-shrink:0;background:#F9FAFB;">
+                            <button onclick="mailResponder()"
+                                style="display:flex;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:0.81rem;font-weight:600;cursor:pointer;">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 14 4 9 9 4" />
+                                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                                </svg>
+                                Responder
+                            </button>
+                            <button onclick="mailAbrirFormNuevaOpp()"
+                                style="display:flex;align-items:center;gap:6px;background:#F3F4F8;color:#374151;border:1px solid #E5E7EB;border-radius:8px;padding:7px 13px;font-size:0.81rem;font-weight:600;cursor:pointer;">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="16" />
+                                    <line x1="8" y1="12" x2="16" y2="12" />
+                                </svg>
+                                Crear Oportunidad
+                            </button>
+                            <button onclick="mailTogglePanel('mailPanelVincular')"
+                                style="display:flex;align-items:center;gap:6px;background:#F3F4F8;color:#374151;border:1px solid #E5E7EB;border-radius:8px;padding:7px 13px;font-size:0.81rem;font-weight:600;cursor:pointer;">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                </svg>
+                                Vincular a Oportunidad
+                            </button>
+                        </div>
+                        <!-- mailPanelCrearOpp removed — button now opens widgetNegociacion directly -->
+                        <!-- Panel: Vincular -->
+                        <div id="mailPanelVincular"
+                            style="display:none;flex-direction:column;gap:9px;padding:14px 18px;background:#F9FAFB;border-top:1.5px solid #F0F2F5;flex-shrink:0;">
+                            <div style="font-size:0.82rem;font-weight:700;color:#1A1A2E;">Vincular a oportunidad
+                                existente</div>
+                            <input type="text" id="mailVincularSearch" class="wf-input"
+                                placeholder="Buscar oportunidad..." oninput="mailBuscarOpps(this.value)">
+                            <div id="mailOppResults"
+                                style="display:none;background:#fff;border:1px solid #E5E7EB;border-radius:8px;max-height:160px;overflow-y:auto;">
+                            </div>
+                            <div style="display:flex;gap:7px;justify-content:flex-end;">
+                                <button onclick="mailTogglePanel('mailPanelVincular')"
+                                    style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:7px 13px;font-size:0.81rem;font-weight:600;cursor:pointer;">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Image lightbox (fixed, inside widget z-stack) -->
+        <div id="mailLightbox"
+            style="display:none;position:fixed;inset:0;z-index:10330;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;"
+            onclick="document.getElementById('mailLightbox').style.display='none';">
+            <img id="mailLightboxImg"
+                style="max-width:92vw;max-height:92vh;border-radius:8px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,0.5);"
+                onclick="event.stopPropagation()">
+            <button onclick="document.getElementById('mailLightbox').style.display='none';"
+                style="position:absolute;top:20px;right:24px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+        <!-- Modals inside widget -->
+        <!-- Modal Redactar -->
+        <div id="mailModalRedactar"
+            style="display:none;position:fixed;inset:0;z-index:10310;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+            <div
+                style="background:#fff;border-radius:16px;width:580px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,30,0.25);">
+                <div
+                    style="padding:16px 20px 12px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Redactar correo</span>
+                    <button onclick="mailCerrarModal('mailModalRedactar')"
+                        style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+                </div>
+                <div style="padding:14px 20px;display:flex;flex-direction:column;gap:9px;flex:1;overflow-y:auto;">
+                    <div>
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Para</div><input type="email" class="wf-input" id="mailCompPara"
+                            placeholder="destinatario@dominio.com">
+                    </div>
+                    <div>
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            CC</div><input type="email" class="wf-input" id="mailCompCc"
+                            placeholder="copia@dominio.com (opcional)">
+                    </div>
+                    <div>
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Asunto</div><input type="text" class="wf-input" id="mailCompAsunto"
+                            placeholder="Asunto del correo">
+                    </div>
+                    <div style="flex:1;">
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Mensaje</div><textarea class="wf-input" id="mailCompCuerpo"
+                            placeholder="Escribe tu mensaje..." style="min-height:140px;resize:vertical;"></textarea>
+                    </div>
+                    <div id="mailErrComp"
+                        style="display:none;font-size:0.76rem;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:7px 11px;">
+                    </div>
+                </div>
+                <div
+                    style="padding:11px 20px;border-top:1.5px solid #F0F2F5;display:flex;justify-content:flex-end;gap:8px;">
+                    <button onclick="mailCerrarModal('mailModalRedactar')"
+                        style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Cancelar</button>
+                    <button id="mailBtnEnviar" onclick="mailEnviarCorreo()"
+                        style="display:flex;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                        Enviar
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Modal Responder -->
+        <div id="mailModalResponder"
+            style="display:none;position:fixed;inset:0;z-index:10310;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+            <div
+                style="background:#fff;border-radius:16px;width:560px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,30,0.25);">
+                <div
+                    style="padding:16px 20px 12px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Responder correo</span>
+                    <button onclick="mailCerrarModal('mailModalResponder')"
+                        style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+                </div>
+                <div style="padding:14px 20px;display:flex;flex-direction:column;gap:9px;flex:1;overflow-y:auto;">
+                    <div>
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Para</div><input type="text" class="wf-input" id="mailRespPara" readonly
+                            style="opacity:0.65;">
+                    </div>
+                    <div>
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Asunto</div><input type="text" class="wf-input" id="mailRespAsunto" readonly
+                            style="opacity:0.65;">
+                    </div>
+                    <div style="flex:1;">
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Respuesta</div><textarea class="wf-input" id="mailRespCuerpo"
+                            placeholder="Escribe tu respuesta..." style="min-height:140px;resize:vertical;"></textarea>
+                    </div>
+                    <div id="mailErrResp"
+                        style="display:none;font-size:0.76rem;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:7px 11px;">
+                    </div>
+                </div>
+                <div
+                    style="padding:11px 20px;border-top:1.5px solid #F0F2F5;display:flex;justify-content:flex-end;gap:8px;">
+                    <button onclick="mailCerrarModal('mailModalResponder')"
+                        style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Cancelar</button>
+                    <button id="mailBtnRespEnviar" onclick="mailEnviarRespuesta()"
+                        style="display:flex;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 14 4 9 9 4" />
+                            <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                        </svg>
+                        Enviar respuesta
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Modal Config -->
+        <div id="mailModalConfig"
+            style="display:none;position:fixed;inset:0;z-index:10310;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+            <div
+                style="background:#fff;border-radius:16px;width:480px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,30,0.25);">
+                <div
+                    style="padding:16px 20px 12px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Configurar cuenta de
+                        correo</span>
+                    <button onclick="mailCerrarModal('mailModalConfig')"
+                        style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+                </div>
+                <div style="padding:14px 20px;display:flex;flex-direction:column;gap:9px;flex:1;overflow-y:auto;">
+                    <p style="font-size:0.79rem;color:#9CA3AF;line-height:1.5;">Para <strong>iamet.mx</strong> usa <code
+                            style="background:#F3F4F8;padding:1px 5px;border-radius:4px;">mail.iamet.mx</code> como
+                        servidor IMAP y SMTP.</p>
+                    <div>
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Correo electrónico</div><input type="email" class="wf-input" id="mailCfgEmail"
+                            placeholder="tu@iamet.mx">
+                    </div>
+                    <div>
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Contraseña</div><input type="password" class="wf-input" id="mailCfgPass"
+                            placeholder="••••••••">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 90px;gap:8px;">
+                        <div>
+                            <div
+                                style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                                Servidor IMAP</div><input type="text" class="wf-input" id="mailCfgImapSrv"
+                                value="mail.iamet.mx">
+                        </div>
+                        <div>
+                            <div
+                                style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                                Puerto</div><input type="number" class="wf-input" id="mailCfgImapPort" value="993">
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 90px;gap:8px;">
+                        <div>
+                            <div
+                                style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                                Servidor SMTP</div><input type="text" class="wf-input" id="mailCfgSmtpSrv"
+                                value="mail.iamet.mx">
+                        </div>
+                        <div>
+                            <div
+                                style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                                Puerto</div><input type="number" class="wf-input" id="mailCfgSmtpPort" value="465">
+                        </div>
+                    </div>
+                    <div id="mailCfgErr"
+                        style="display:none;font-size:0.76rem;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:7px 11px;">
+                    </div>
+                    <div id="mailCfgOk"
+                        style="display:none;font-size:0.76rem;color:#059669;background:#F0FDF4;border-radius:8px;padding:7px 11px;">
+                    </div>
+                </div>
+                <div
+                    style="padding:11px 20px;border-top:1.5px solid #F0F2F5;display:flex;justify-content:flex-end;gap:8px;">
+                    <button onclick="mailCerrarModal('mailModalConfig')"
+                        style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Cancelar</button>
+                    <button id="mailBtnCfgGuardar" onclick="mailGuardarConexion()"
+                        style="background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">Guardar
+                        y Conectar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSS for mail widget folder buttons -->
+    <style>
+        .mail-folder-wb {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 0.86rem;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            transition: background 0.12s;
+            font-family: inherit;
+        }
+
+        .mail-folder-wb:hover {
+            background: #F0F2F5;
+        }
+
+        .mail-folder-wb.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: #007AFF;
+            font-weight: 600;
+        }
+
+        .mail-card-wb {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #F0F2F5;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .mail-card-wb:hover {
+            background: #F9FAFB;
+        }
+
+        .mail-card-wb.selected {
+            background: rgba(0, 122, 255, 0.07);
+        }
+
+        .mail-card-wb.unread .mw-from {
+            font-weight: 700;
+        }
+
+        .mail-card-wb.unread .mw-subject {
+            font-weight: 600;
+        }
+    </style>
+
+

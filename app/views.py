@@ -17,7 +17,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -107,7 +107,7 @@ logger = logging.getLogger(__name__)
 
 # Función auxiliar para comprobar si el usuario es supervisor
 def is_supervisor(user):
-    return user.groups.filter(name='Supervisores').exists()
+    return user.is_superuser or user.groups.filter(name='Supervisores').exists()
 
 def is_engineer(user):
     return user.groups.filter(name='Ingenieros').exists()
@@ -234,6 +234,1219 @@ def oportunidades_mes_actual(request):
         'meta_mensual': meta_mensual,
         'monto_por_cobrar': monto_por_cobrar,
     })
+
+@login_required
+def crm_home(request):
+    """
+    Vista principal del CRM - tabla pivotada por cliente/producto.
+    """
+    from datetime import datetime
+    user = request.user
+
+    # Asegurar perfil
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    # Filtros mes/año — por defecto mes actual y año actual
+    now = datetime.now()
+    mes_filter = request.GET.get('mes', str(now.month).zfill(2))
+    anio_filter = request.GET.get('anio', str(now.year))
+    tab_activo = request.GET.get('tab', 'crm')
+
+    # Mapeo de código mes a nombre en español (Bitrix guarda el nombre)
+    MES_CODE_TO_NAME = {
+        '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+        '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre',
+    }
+    MES_NAME_TO_CODE = {v: k for k, v in MES_CODE_TO_NAME.items()}
+
+    try:
+        anio_int = int(anio_filter)
+    except ValueError:
+        anio_int = now.year
+
+    # MES_CHOICES para template (con opción "Todos" al inicio)
+    mes_choices = [('todos', 'Todos')] + list(TodoItem.MES_CHOICES)
+    mes_nombre = dict(mes_choices).get(mes_filter, '')
+    mes_nombre_db = MES_CODE_TO_NAME.get(mes_filter, mes_filter)
+
+    # ── Supervisor / Vendedor logic ──
+    es_supervisor = is_supervisor(user)
+    vendedores_filter = request.GET.get('vendedores', '')  # "1,2,3" or ""
+    vendedores_ids = []
+    if vendedores_filter:
+        vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()]
+
+    # Base queryset - oportunidades filtradas por fecha_creacion (mes/año)
+    base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
+        fecha_creacion__year=anio_int
+    )
+    if mes_filter != 'todos':
+        try:
+            mes_int = int(mes_filter)
+            base_qs = base_qs.filter(fecha_creacion__month=mes_int)
+        except (ValueError, TypeError):
+            pass
+
+    # Si NO es supervisor, filtrar solo sus oportunidades
+    if not es_supervisor:
+        base_qs = base_qs.filter(usuario=user)
+    elif vendedores_ids:
+        # Supervisor con filtro de vendedores específicos
+        base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
+
+    # Lista de vendedores para el filtro (solo para supervisores)
+    vendedores_list = []
+    if es_supervisor:
+        vendedores_list = User.objects.filter(
+            is_active=True
+        ).exclude(
+            groups__name='Supervisores'
+        ).order_by('first_name', 'last_name')
+
+    # ── Meta (calculada antes para usar en running meta) ──
+    # Determinar qué campo de meta usar según el tab activo
+    meta_field = 'meta_mensual'  # Default (Facturado)
+    if tab_activo == 'crm':
+        meta_field = 'meta_oportunidades'
+    elif tab_activo == 'cotizado':
+        meta_field = 'meta_cotizado'
+    elif tab_activo == 'cobrado':
+        meta_field = 'meta_cobrado'
+
+    if es_supervisor:
+        if vendedores_ids:
+            meta = UserProfile.objects.filter(user_id__in=vendedores_ids).aggregate(
+                t=Coalesce(Sum(meta_field), Value(Decimal('0')))
+            )['t'] or Decimal('0')
+        else:
+            # Suma de todos los vendedores activos para el supervisor
+            all_sellers_profiles = UserProfile.objects.filter(user__is_active=True).exclude(user__groups__name='Supervisores')
+            meta = all_sellers_profiles.aggregate(t=Coalesce(Sum(meta_field), Value(Decimal('0'))))['t'] or Decimal('0')
+    else:
+        meta = getattr(profile, meta_field, Decimal('0')) or Decimal('0')
+
+    # Si se seleccionó "Todos" los meses, la meta es anual (mensual × 12)
+    if mes_filter == 'todos':
+        meta = meta * 12
+
+    # ── Tab CRM: Lista de oportunidades individuales ──
+    if tab_activo == 'crm':
+        tabla_data = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
+
+    # ── Tab Facturado: Datos del XLS por cliente + desglose por producto ──
+    elif tab_activo == 'facturado':
+        # Obtener datos de facturación del XLS subido
+        facturado_por_cliente = {}  # {cliente_name: monto}
+        if mes_filter == 'todos':
+            # Sumar todos los meses del año
+            for af in ArchivoFacturacion.objects.filter(anio=anio_int):
+                for cname, monto_str in (af.datos_json or {}).items():
+                    facturado_por_cliente[cname] = str(
+                        Decimal(facturado_por_cliente.get(cname, '0')) + Decimal(str(monto_str))
+                    )
+        else:
+            try:
+                archivo_fact = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
+                facturado_por_cliente = archivo_fact.datos_json or {}
+            except ArchivoFacturacion.DoesNotExist:
+                pass
+
+        # Mapear nombres del XLS a objetos Cliente
+        facturado_por_cliente_obj = {}  # {cliente_id: monto}
+        for cliente_name, monto_str in facturado_por_cliente.items():
+            monto_val = Decimal(str(monto_str))
+            cliente_match = Cliente.objects.filter(nombre_empresa__iexact=cliente_name).first()
+            if not cliente_match:
+                cliente_match = Cliente.objects.filter(nombre_empresa__icontains=cliente_name).first()
+            if not cliente_match:
+                for cliente_obj in Cliente.objects.all():
+                    if cliente_obj.nombre_empresa and cliente_obj.nombre_empresa.upper() in cliente_name.upper():
+                        cliente_match = cliente_obj
+                        break
+            if cliente_match:
+                facturado_por_cliente_obj[cliente_match.id] = (
+                    facturado_por_cliente_obj.get(cliente_match.id, Decimal('0')) + monto_val
+                )
+
+        # Desglose por producto (de monto_facturacion en oportunidades)
+        prod_data = base_qs.filter(monto_facturacion__gt=0).values('cliente').annotate(
+            zebra=Coalesce(Sum('monto_facturacion', filter=Q(producto='ZEBRA')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            panduit=Coalesce(Sum('monto_facturacion', filter=Q(producto='PANDUIT')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            apc=Coalesce(Sum('monto_facturacion', filter=Q(producto='APC')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            avigilon=Coalesce(Sum('monto_facturacion', filter=Q(producto='AVIGILON') | Q(producto='AVIGILION')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            genetec=Coalesce(Sum('monto_facturacion', filter=Q(producto='GENETEC')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            axis=Coalesce(Sum('monto_facturacion', filter=Q(producto='AXIS')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            software=Coalesce(Sum('monto_facturacion', filter=Q(producto='SOFTWARE') | Q(producto='Desarrollo')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            runrate=Coalesce(Sum('monto_facturacion', filter=Q(producto='RUNRATE')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            poliza=Coalesce(Sum('monto_facturacion', filter=Q(producto='PÓLIZA') | Q(producto='POLIZA')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            total_prod=Coalesce(Sum('monto_facturacion'), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+        )
+        prod_dict = {item['cliente']: item for item in prod_data}
+
+        # Filtrar clientes según permisos
+        if es_supervisor:
+            if vendedores_ids:
+                clientes_qs = Cliente.objects.filter(asignado_a_id__in=vendedores_ids).order_by('nombre_empresa')
+            else:
+                clientes_qs = Cliente.objects.all().order_by('nombre_empresa')
+        else:
+            clientes_qs = Cliente.objects.filter(asignado_a=user).order_by('nombre_empresa')
+
+        raw_data = []
+        for c in clientes_qs:
+            pdat = prod_dict.get(c.id, {})
+            fact_monto = facturado_por_cliente_obj.get(c.id, Decimal('0'))
+            zb = pdat.get('zebra', Decimal('0'))
+            pa = pdat.get('panduit', Decimal('0'))
+            ap = pdat.get('apc', Decimal('0'))
+            av = pdat.get('avigilon', Decimal('0'))
+            ge = pdat.get('genetec', Decimal('0'))
+            ax = pdat.get('axis', Decimal('0'))
+            so = pdat.get('software', Decimal('0'))
+            rr = pdat.get('runrate', Decimal('0'))
+            po = pdat.get('poliza', Decimal('0'))
+            tp = pdat.get('total_prod', Decimal('0'))
+            otros = tp - (zb + pa + ap + av + ge + ax + so + rr + po)
+            raw_data.append({
+                'cliente': c,
+                'zebra': zb, 'panduit': pa, 'apc': ap, 'avigilon': av,
+                'genetec': ge, 'axis': ax, 'software': so, 'runrate': rr,
+                'poliza': po, 'otros': otros,
+                'facturado': fact_monto,
+            })
+
+        # Ordenar por facturado descendente
+        raw_data.sort(key=lambda x: x['facturado'], reverse=True)
+
+        # Meta por cliente: meta individual del cliente - su facturado
+        for item in raw_data:
+            cliente_meta = item['cliente'].meta_mensual or Decimal('0')
+            item['meta_cliente'] = cliente_meta
+            item['meta_restante'] = cliente_meta - item['facturado']
+            item['total'] = item['facturado'] # Para que el template use item.total
+        tabla_data = raw_data
+
+    # ── Tab Cotizado: Cotizaciones PDF generadas ──
+    elif tab_activo == 'cotizado':
+        opp_ids = base_qs.values_list('id', flat=True)
+        cotizaciones_qs = (
+            Cotizacion.objects
+            .select_related('oportunidad', 'created_by', 'cliente')
+            .filter(
+                Q(oportunidad_id__in=opp_ids) |
+                Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+            )
+            .order_by('-fecha_creacion')
+        )
+        tabla_data = cotizaciones_qs
+
+    # ── Tab Cobrado: Oportunidades con 100% probabilidad ──
+    elif tab_activo == 'cobrado':
+        tabla_data = base_qs.filter(probabilidad_cierre=100).order_by('-monto')
+
+    else:
+        tabla_data = []
+
+    # Stats generales
+    total_general = base_qs.aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
+    num_clientes = Cliente.objects.count() if es_supervisor else base_qs.values('cliente').distinct().count()
+    num_deals = base_qs.count()
+    num_cobradas = base_qs.filter(probabilidad_cierre=100).count()
+
+    # ── Total facturado desde XLS ──
+    total_facturado = Decimal('0')
+    try:
+        if mes_filter == 'todos':
+            archivos_fact = ArchivoFacturacion.objects.filter(anio=anio_int)
+            for af in archivos_fact:
+                if es_supervisor and not vendedores_ids:
+                    total_facturado += af.total_facturado
+                elif es_supervisor and vendedores_ids:
+                    fm = calcular_facturado_por_vendedor(af.datos_json)
+                    total_facturado += sum(Decimal(str(v)) for uid, v in fm.items() if uid in vendedores_ids)
+                else:
+                    fm = calcular_facturado_por_vendedor(af.datos_json)
+                    total_facturado += Decimal(str(fm.get(user.id, 0)))
+        else:
+            archivo_fact = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
+            if es_supervisor and not vendedores_ids:
+                total_facturado = archivo_fact.total_facturado
+            elif es_supervisor and vendedores_ids:
+                facturado_map = calcular_facturado_por_vendedor(archivo_fact.datos_json)
+                total_facturado = sum(Decimal(str(v)) for uid, v in facturado_map.items() if uid in vendedores_ids)
+            else:
+                facturado_map = calcular_facturado_por_vendedor(archivo_fact.datos_json)
+                total_facturado = Decimal(str(facturado_map.get(user.id, 0)))
+    except ArchivoFacturacion.DoesNotExist:
+        total_facturado = Decimal('0')
+
+    progreso = min(int((total_facturado / meta * 100)) if meta > 0 else 0, 100)
+
+    # Stats para tab Cobrado
+    total_cobrado = Decimal('0')
+    if tab_activo == 'cobrado':
+        total_cobrado = base_qs.filter(probabilidad_cierre=100).aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
+
+    # Stats para tab Cotizado
+    num_cotizaciones = 0
+    num_oportunidades_cotizadas = 0
+    total_cotizado = Decimal('0')
+    if tab_activo == 'cotizado':
+        num_cotizaciones = cotizaciones_qs.count()
+        num_oportunidades_cotizadas = cotizaciones_qs.exclude(oportunidad__isnull=True).values('oportunidad').distinct().count()
+        total_cotizado = cotizaciones_qs.aggregate(t=Coalesce(Sum('total'), Value(Decimal('0'))))['t']
+
+    # ── Widget Logic ──
+    widget_label = 'Total Facturado'
+    widget_metric = total_facturado 
+
+    if tab_activo == 'crm':
+        widget_label = 'Total Oportunidades'
+        widget_metric = total_general
+    elif tab_activo == 'cotizado':
+        widget_label = 'Total Cotizado'
+        widget_metric = total_cotizado
+    elif tab_activo == 'cobrado':
+        widget_label = 'Total Cobrado'
+        widget_metric = total_cobrado
+
+    # Recalculate progress based on the correct metric vs correct meta (sin cap para mostrar > 100%)
+    progreso = int((widget_metric / meta * 100)) if meta > 0 else 0
+
+    context = {
+        'widget_label': widget_label,
+        'widget_metric': widget_metric,
+        'tab_activo': tab_activo,
+        'tabla_data': tabla_data,
+        'mes_filter': mes_filter,
+        'anio_filter': anio_filter,
+        'anio_int': anio_int,
+        'mes_nombre': mes_nombre,
+        'mes_choices': mes_choices,
+        'total_general': total_general,
+        'total_facturado': total_facturado,
+        'num_clientes': num_clientes,
+        'num_deals': num_deals,
+        'num_cobradas': num_cobradas,
+        'meta': meta,
+        'progreso': progreso,
+        'progreso_visual': min(progreso, 100),
+        'usuario': user,
+        'years_range': range(2024, now.year + 2),
+        'num_cotizaciones': num_cotizaciones,
+        'num_oportunidades_cotizadas': num_oportunidades_cotizadas,
+        'total_cotizado': total_cotizado,
+        'total_cobrado': total_cobrado,
+        'es_supervisor': es_supervisor,
+        'vendedores_list': vendedores_list,
+        'vendedores_filter': vendedores_filter,
+    }
+    return render(request, 'crm_home.html', context)
+
+
+@login_required
+def api_crm_table_data(request):
+    """
+    API endpoint que devuelve los datos de la tabla CRM en JSON
+    para actualizar sin recargar la página.
+    """
+    from datetime import datetime
+    user = request.user
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    now = datetime.now()
+    mes_filter = request.GET.get('mes', str(now.month).zfill(2))
+    anio_filter = request.GET.get('anio', str(now.year))
+    tab_activo = request.GET.get('tab', 'crm')
+    desde_filter = request.GET.get('desde', '').strip()
+    hasta_filter = request.GET.get('hasta', '').strip()
+    usando_periodo = bool(desde_filter and hasta_filter)
+
+    MES_CODE_TO_NAME = {
+        '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+        '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre',
+    }
+
+    try:
+        anio_int = int(anio_filter)
+    except ValueError:
+        anio_int = now.year
+
+    mes_nombre_db = MES_CODE_TO_NAME.get(mes_filter, mes_filter)
+
+    # Supervisor / Vendedor logic
+    es_supervisor = is_supervisor(user)
+    vendedores_filter = request.GET.get('vendedores', '')
+    vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()] if vendedores_filter else []
+
+    if usando_periodo:
+        base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
+            fecha_creacion__date__gte=desde_filter,
+            fecha_creacion__date__lte=hasta_filter,
+        )
+    else:
+        base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
+            fecha_creacion__year=anio_int
+        )
+        if mes_filter != 'todos':
+            try:
+                mes_int = int(mes_filter)
+                base_qs = base_qs.filter(fecha_creacion__month=mes_int)
+            except (ValueError, TypeError):
+                pass
+
+    if not es_supervisor:
+        base_qs = base_qs.filter(usuario=user)
+    elif vendedores_ids:
+        base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
+
+    def format_money(val):
+        if val is None:
+            return '0'
+        try:
+            return '{:,.0f}'.format(val)
+        except (ValueError, TypeError):
+            return '0'
+
+    # ── Calcular meta según tab (aplica a todos los tabs) ──
+    meta_field_api = 'meta_mensual'
+    if tab_activo == 'crm':
+        meta_field_api = 'meta_oportunidades'
+    elif tab_activo == 'cotizado':
+        meta_field_api = 'meta_cotizado'
+    elif tab_activo == 'cobrado':
+        meta_field_api = 'meta_cobrado'
+
+    if es_supervisor:
+        if vendedores_ids:
+            api_meta = UserProfile.objects.filter(user_id__in=vendedores_ids).aggregate(
+                t=Coalesce(Sum(meta_field_api), Value(Decimal('0')))
+            )['t'] or Decimal('0')
+        else:
+            all_sellers_profiles = UserProfile.objects.filter(user__is_active=True).exclude(user__groups__name='Supervisores')
+            api_meta = all_sellers_profiles.aggregate(t=Coalesce(Sum(meta_field_api), Value(Decimal('0'))))['t'] or Decimal('0')
+    else:
+        api_meta = getattr(profile, meta_field_api, Decimal('0')) or Decimal('0')
+
+    if mes_filter == 'todos' and not usando_periodo:
+        api_meta = api_meta * 12
+
+    if tab_activo == 'crm':
+        from django.utils import timezone as _tz
+        _now = _tz.now()
+        items = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
+        rows = []
+        for item in items:
+            # Revisar si tiene actividades vencidas (fecha_limite pasada y no completada)
+            tareas = item.tareas_oportunidad.all()
+            tiene_vencida = False
+            tiene_pendiente = False
+            for t in tareas:
+                if t.estado != 'completada':
+                    tiene_pendiente = True
+                    if t.fecha_limite and t.fecha_limite < _now:
+                        tiene_vencida = True
+            rows.append({
+                'id': item.id,
+                'oportunidad': (item.oportunidad or '')[:35],
+                'cliente': (item.cliente.nombre_empresa if item.cliente else '- Sin Cliente -')[:35],
+                'cliente_id': item.cliente.id if item.cliente else None,
+                'contacto': (item.contacto.nombre[:18] if item.contacto else '-'),
+                'area': item.area or '-',
+                'producto': item.producto or '',
+                'monto': format_money(item.monto),
+                'fecha_iso': item.fecha_creacion.strftime('%Y-%m-%d'),
+                'tiene_actividad_vencida': tiene_vencida,
+                'sin_actividad_pendiente': not tiene_pendiente,
+            })
+        # Ordenar: primero las que tienen actividad vencida
+        rows.sort(key=lambda x: (not x['tiene_actividad_vencida'], x.get('fecha_iso', '')), reverse=False)
+        # Stats
+        total_general = base_qs.aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
+        num_clientes = base_qs.values('cliente').distinct().count()
+        num_deals = base_qs.count()
+
+        api_progreso = int((total_general / api_meta * 100)) if api_meta > 0 else 0
+
+        return JsonResponse({
+            'tab': 'crm',
+            'rows': rows,
+            'footer': {
+                'left': f'{num_clientes} clientes / {num_deals} Deals',
+                'right': f'Total: ${format_money(total_general)}',
+            },
+            'total_facturado': format_money(total_general),
+            'widget_label': 'Total Oportunidades',
+            'meta': format_money(api_meta),
+            'progreso': api_progreso,
+            'widget_left_stat': f'{num_deals} Oportunidades Creadas',
+        })
+
+    elif tab_activo == 'cotizado':
+        opp_ids = base_qs.values_list('id', flat=True)
+        if usando_periodo:
+            cotizaciones_qs = (
+                Cotizacion.objects
+                .select_related('oportunidad', 'created_by', 'cliente')
+                .filter(
+                    Q(oportunidad_id__in=opp_ids) |
+                    Q(oportunidad__isnull=True,
+                      fecha_creacion__date__gte=desde_filter,
+                      fecha_creacion__date__lte=hasta_filter)
+                )
+                .order_by('-fecha_creacion')
+            )
+        else:
+            cotizaciones_qs = (
+                Cotizacion.objects
+                .select_related('oportunidad', 'created_by', 'cliente')
+                .filter(
+                    Q(oportunidad_id__in=opp_ids) |
+                    Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+                )
+                .order_by('-fecha_creacion')
+            )
+        rows = []
+        for cot in cotizaciones_qs:
+            rows.append({
+                'id': cot.id,
+                'oportunidad': (cot.oportunidad.oportunidad if cot.oportunidad else '—')[:35],
+                'oportunidad_id': cot.oportunidad.id if cot.oportunidad else None,
+                'cliente': (cot.cliente.nombre_empresa if cot.cliente else '- Sin Cliente -')[:35],
+                'cliente_id': cot.cliente.id if cot.cliente else None,
+                'usuario': (cot.created_by.get_full_name() or cot.created_by.username) if cot.created_by else '—',
+                'subtotal': format_money(cot.subtotal),
+                'total': format_money(cot.total),
+                'pdf_url': f'/app/cotizacion/view/{cot.id}/',
+                'fecha_iso': cot.fecha_creacion.strftime('%Y-%m-%d'),
+            })
+        num_cotizaciones = cotizaciones_qs.count()
+        num_oportunidades_cotizadas = cotizaciones_qs.exclude(oportunidad__isnull=True).values('oportunidad').distinct().count()
+        total_cotizado = cotizaciones_qs.aggregate(t=Coalesce(Sum('total'), Value(Decimal('0'))))['t']
+        api_progreso_cot = int((total_cotizado / api_meta * 100)) if api_meta > 0 else 0
+        return JsonResponse({
+            'tab': 'cotizado',
+            'rows': rows,
+            'footer': {
+                'left': f'{num_oportunidades_cotizadas} oportunidades / {num_cotizaciones} cotizaciones',
+                'right': f'Total cotizado: ${format_money(total_cotizado)}',
+            },
+            'total_facturado': format_money(total_cotizado),
+            'widget_label': 'Total Cotizado',
+            'meta': format_money(api_meta),
+            'progreso': api_progreso_cot,
+            'widget_left_stat': f'{num_cotizaciones} Cotizaciones Creadas',
+        })
+
+    elif tab_activo == 'cobrado':
+        items = base_qs.filter(probabilidad_cierre=100).order_by('-monto')
+        rows = []
+        for op in items:
+            rows.append({
+                'id': op.id,
+                'oportunidad': (op.oportunidad or '')[:35],
+                'cliente': (op.cliente.nombre_empresa if op.cliente else '- Sin Cliente -')[:35],
+                'cliente_id': op.cliente.id if op.cliente else None,
+                'producto_display': op.get_producto_display(),
+                'usuario': (op.usuario.get_full_name() or op.usuario.username) if op.usuario else '—',
+                'fecha': op.fecha_creacion.strftime('%d %b %Y'),
+                'fecha_iso': op.fecha_creacion.strftime('%Y-%m-%d'),
+                'monto': format_money(op.monto),
+            })
+        total_cobrado = items.aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
+        num_deals = items.count()
+        api_progreso_cob = int((total_cobrado / api_meta * 100)) if api_meta > 0 else 0
+        return JsonResponse({
+            'tab': 'cobrado',
+            'rows': rows,
+            'footer': {
+                'left': f'{num_deals} Deals Cobrados',
+                'right': f'Total cobrado: ${format_money(total_cobrado)}',
+            },
+            'total_facturado': format_money(total_cobrado),
+            'widget_label': 'Total Cobrado',
+            'meta': format_money(api_meta),
+            'progreso': api_progreso_cob,
+            'widget_left_stat': f'{num_deals} Oportunidades Cobradas',
+        })
+
+    elif tab_activo == 'facturado':
+        # Reutilizamos la lógica del view principal para facturación
+        facturado_por_cliente_obj = {}
+        try:
+            if usando_periodo:
+                from datetime import date as _date
+                cur = _date.fromisoformat(desde_filter).replace(day=1)
+                end = _date.fromisoformat(hasta_filter).replace(day=1)
+                while cur <= end:
+                    mes_code = cur.strftime('%m')
+                    try:
+                        af = ArchivoFacturacion.objects.get(mes=mes_code, anio=cur.year)
+                        data_af = af.datos_json.get('datos', {})
+                        for c_name, val in data_af.items():
+                            facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+                    except ArchivoFacturacion.DoesNotExist:
+                        pass
+                    cur = (cur.replace(month=cur.month % 12 + 1, day=1) if cur.month < 12
+                           else cur.replace(year=cur.year + 1, month=1, day=1))
+            elif mes_filter == 'todos':
+                for af in ArchivoFacturacion.objects.filter(anio=anio_int):
+                    data_af = af.datos_json.get('datos', {})
+                    for c_name, val in data_af.items():
+                        facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+            else:
+                af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
+                data_af = af.datos_json.get('datos', {})
+                for c_name, val in data_af.items():
+                    facturado_por_cliente_obj[c_name] = Decimal(str(val))
+        except ArchivoFacturacion.DoesNotExist:
+            pass
+
+        # Mapear nombres a IDs de clientes
+        fact_by_id = {}
+        for name, monto in facturado_por_cliente_obj.items():
+            cliente = Cliente.objects.filter(nombre_empresa__icontains=name).first()
+            if cliente:
+                fact_by_id[cliente.id] = fact_by_id.get(cliente.id, Decimal('0')) + monto
+
+        # Desglose prod
+        prod_data = base_qs.filter(monto_facturacion__gt=0).values('cliente').annotate(
+            zebra=Coalesce(Sum('monto_facturacion', filter=Q(producto='ZEBRA')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            panduit=Coalesce(Sum('monto_facturacion', filter=Q(producto='PANDUIT')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            apc=Coalesce(Sum('monto_facturacion', filter=Q(producto='APC')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            avigilon=Coalesce(Sum('monto_facturacion', filter=Q(producto='AVIGILON') | Q(producto='AVIGILION')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            genetec=Coalesce(Sum('monto_facturacion', filter=Q(producto='GENETEC')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            axis=Coalesce(Sum('monto_facturacion', filter=Q(producto='AXIS')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            software=Coalesce(Sum('monto_facturacion', filter=Q(producto='SOFTWARE') | Q(producto='Desarrollo')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            runrate=Coalesce(Sum('monto_facturacion', filter=Q(producto='RUNRATE')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            poliza=Coalesce(Sum('monto_facturacion', filter=Q(producto='PÓLIZA') | Q(producto='POLIZA')), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+            total_prod=Coalesce(Sum('monto_facturacion'), Value(0, output_field=models.DecimalField(max_digits=12, decimal_places=2))),
+        )
+        prod_dict = {item['cliente']: item for item in prod_data}
+
+        if es_supervisor:
+            clientes_qs = Cliente.objects.filter(asignado_a_id__in=vendedores_ids) if vendedores_ids else Cliente.objects.all()
+        else:
+            clientes_qs = Cliente.objects.filter(asignado_a=user)
+
+        rows = []
+        total_facturado_acum = Decimal('0')
+        for c in clientes_qs.order_by('nombre_empresa'):
+            p = prod_dict.get(c.id, {})
+            fact = fact_by_id.get(c.id, Decimal('0'))
+            meta_c = c.meta_mensual or Decimal('0')
+            rows.append({
+                'cliente_id': c.id,
+                'cliente': c.nombre_empresa[:35],
+                'zebra': format_money(p.get('zebra')),
+                'panduit': format_money(p.get('panduit')),
+                'apc': format_money(p.get('apc')),
+                'avigilon': format_money(p.get('avigilon')),
+                'genetec': format_money(p.get('genetec')),
+                'axis': format_money(p.get('axis')),
+                'software': format_money(p.get('software')),
+                'runrate': format_money(p.get('runrate')),
+                'poliza': format_money(p.get('poliza')),
+                'otros': format_money(p.get('total_prod', Decimal('0')) - sum(p.get(k, 0) for k in ['zebra','panduit','apc','avigilon','genetec','axis','software','runrate','poliza'] if k in p)),
+                'total': format_money(fact),
+                'meta_cliente': format_money(meta_c),
+                'meta_restante': format_money(meta_c - fact),
+            })
+            total_facturado_acum += fact
+
+        api_progreso_fact = int((total_facturado_acum / api_meta * 100)) if api_meta > 0 else 0
+        num_clientes_fact = clientes_qs.count()
+        return JsonResponse({
+            'tab': 'facturado',
+            'rows': rows,
+            'footer': {
+                'left': f'{num_clientes_fact} clientes',
+                'right': f'Total facturado: ${format_money(total_facturado_acum)}',
+            },
+            'total_facturado': format_money(total_facturado_acum),
+            'widget_label': 'Total Facturado',
+            'meta': format_money(api_meta),
+            'progreso': api_progreso_fact,
+            'widget_left_stat': f'{num_clientes_fact} Clientes',
+        })
+
+    return JsonResponse({'tab': tab_activo, 'rows': [], 'footer': {'left': '', 'right': ''}})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_subir_facturacion(request):
+    """
+    API para subir archivo XLS de facturación.
+    Solo supervisores pueden subir.
+    Parsea el XLS y extrae total de pagos por cliente.
+    """
+    if not is_supervisor(request.user):
+        return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+
+    from datetime import datetime as dt_now
+    archivo = request.FILES.get('archivo')
+    mes = request.POST.get('mes', '')
+    anio = request.POST.get('anio', '')
+
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Falta el archivo'})
+
+    # Defaults si no vienen mes/anio
+    now = dt_now.now()
+    if not mes:
+        mes = str(now.month).zfill(2)
+
+    try:
+        anio_int = int(anio) if anio else now.year
+    except (ValueError, TypeError):
+        anio_int = now.year
+
+    try:
+        import xlrd
+        from xlrd import xldate_as_datetime
+        content = archivo.read()
+        wb = xlrd.open_workbook(file_contents=content)
+        sheet = wb.sheet_by_index(0)
+
+        # Agrupar por mes de emisión: {(mes, anio): {cliente: monto}}
+        datos_por_mes = {}  # { 'MM': { 'YYYY': { cliente_name: monto_str } } }
+        totales_por_mes = {}  # { (mes, anio): Decimal }
+
+        for row_idx in range(1, sheet.nrows):
+            try:
+                estatus = str(sheet.cell_value(row_idx, 40)).strip().lower()
+                if estatus == 'cancelada':
+                    continue
+
+                cliente_name = str(sheet.cell_value(row_idx, 5)).strip()
+                nombre_comercial = str(sheet.cell_value(row_idx, 6)).strip()
+                if not cliente_name:
+                    continue
+
+                # Extraer mes/año de la fecha de emisión (col D, idx 3)
+                try:
+                    date_val = sheet.cell_value(row_idx, 3)
+                    fecha = xldate_as_datetime(date_val, wb.datemode)
+                    row_mes = str(fecha.month).zfill(2)
+                    row_anio = fecha.year
+                except Exception:
+                    continue  # Sin fecha válida, saltar
+
+                # Facturado = (Col L Subtotal idx 11 - Col O Descuento idx 14) * Col AQ T.C. idx 42
+                subtotal_str = str(sheet.cell_value(row_idx, 11)).replace(',', '').strip()
+                descuento_str = str(sheet.cell_value(row_idx, 14)).replace(',', '').strip()
+                tc_str = str(sheet.cell_value(row_idx, 42)).replace(',', '').strip()
+                try:
+                    subtotal = Decimal(subtotal_str) if subtotal_str else Decimal('0')
+                except Exception:
+                    subtotal = Decimal('0')
+                try:
+                    descuento = Decimal(descuento_str) if descuento_str else Decimal('0')
+                except Exception:
+                    descuento = Decimal('0')
+                try:
+                    tc = Decimal(tc_str) if tc_str else Decimal('1')
+                except Exception:
+                    tc = Decimal('1')
+                monto = (subtotal - descuento) * tc
+
+                if monto > 0:
+                    key = (row_mes, row_anio)
+                    if key not in datos_por_mes:
+                        datos_por_mes[key] = {}
+                        totales_por_mes[key] = Decimal('0')
+
+                    clientes_mes = datos_por_mes[key]
+                    clientes_mes[cliente_name] = str(
+                        Decimal(clientes_mes.get(cliente_name, '0')) + monto
+                    )
+                    if nombre_comercial and nombre_comercial != cliente_name:
+                        clientes_mes[nombre_comercial] = str(
+                            Decimal(clientes_mes.get(nombre_comercial, '0')) + monto
+                        )
+                    totales_por_mes[key] += monto
+            except (IndexError, ValueError):
+                continue
+
+        # Guardar un ArchivoFacturacion por cada mes encontrado
+        archivo.seek(0)
+        meses_guardados = []
+        for (m, a), clientes_data in datos_por_mes.items():
+            obj, created = ArchivoFacturacion.objects.update_or_create(
+                mes=m, anio=a,
+                defaults={
+                    'archivo': archivo,
+                    'total_facturado': totales_por_mes[(m, a)],
+                    'datos_json': clientes_data,
+                    'subido_por': request.user,
+                }
+            )
+            meses_guardados.append(f"{m}/{a}")
+
+        total_general = sum(totales_por_mes.values())
+        return JsonResponse({
+            'success': True,
+            'total_facturado': str(total_general),
+            'num_clientes': sum(len(v) for v in datos_por_mes.values()),
+            'meses': meses_guardados,
+            'created': True,
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error procesando archivo: {str(e)}'})
+
+
+def calcular_facturado_por_vendedor(datos_json):
+    """
+    Dado el datos_json de ArchivoFacturacion {cliente_name: monto},
+    retorna {user_id: monto_facturado} mapeando clientes a sus vendedores.
+    """
+    from collections import defaultdict
+    facturado_por_vendedor = defaultdict(Decimal)
+
+    for cliente_name, monto_str in datos_json.items():
+        monto = Decimal(str(monto_str))
+        # Buscar cliente en BD por nombre
+        cliente_match = Cliente.objects.filter(nombre_empresa__iexact=cliente_name).first()
+        if not cliente_match:
+            cliente_match = Cliente.objects.filter(nombre_empresa__icontains=cliente_name).first()
+        if not cliente_match:
+            # Intentar match parcial inverso
+            for cliente_obj in Cliente.objects.all():
+                if cliente_obj.nombre_empresa and cliente_obj.nombre_empresa.upper() in cliente_name.upper():
+                    cliente_match = cliente_obj
+                    break
+
+        if cliente_match:
+            # El dueño es el usuario con más oportunidades de ese cliente
+            owner = (
+                TodoItem.objects
+                .filter(cliente=cliente_match)
+                .values('usuario_id')
+                .annotate(count=Count('id'))
+                .order_by('-count')
+                .first()
+            )
+            if owner and owner['usuario_id']:
+                facturado_por_vendedor[owner['usuario_id']] += monto
+
+    return dict(facturado_por_vendedor)
+
+
+@login_required
+def api_cliente_oportunidades(request, cliente_id):
+    """
+    API que devuelve las oportunidades de un cliente específico en JSON.
+    Formato compatible con buildCrmRow() del frontend.
+    """
+    from datetime import datetime
+    user = request.user
+    es_supervisor = is_supervisor(user)
+
+    # Por defecto mostrar todo el historial del cliente, no solo el mes actual
+    mes_filter = request.GET.get('mes', 'todos')
+    anio_filter = request.GET.get('anio', 'todos')
+
+    MES_CODE_TO_NAME = {
+        '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+        '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre',
+    }
+
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    qs = TodoItem.objects.select_related('cliente', 'contacto', 'usuario').filter(cliente=cliente)
+    
+    # Aplicar filtros solo si no son 'todos'
+    if anio_filter != 'todos':
+        try:
+            anio_int = int(anio_filter)
+            qs = qs.filter(fecha_creacion__year=anio_int)
+        except (ValueError, TypeError):
+            pass
+
+    if mes_filter != 'todos':
+        try:
+            mes_int = int(mes_filter)
+            qs = qs.filter(fecha_creacion__month=mes_int)
+        except (ValueError, TypeError):
+            pass
+
+    if not es_supervisor:
+        qs = qs.filter(usuario=user)
+
+    # Filtrar por tipo si se especifica
+    tipo = request.GET.get('tipo', '')
+    if tipo == 'cobrado':
+        qs = qs.filter(probabilidad_cierre=100)
+
+    qs = qs.order_by('-fecha_actualizacion')
+
+    def format_money(val):
+        if val is None:
+            return '0'
+        try:
+            return '{:,.0f}'.format(val)
+        except (ValueError, TypeError):
+            return '0'
+
+    rows = []
+    for item in qs:
+        rows.append({
+            'id': item.id,
+            'oportunidad': (item.oportunidad or '')[:35],
+            'cliente': (item.cliente.nombre_empresa if item.cliente else '- Sin Cliente -')[:35],
+            'cliente_id': item.cliente_id,
+            'contacto': {'nombre': (item.contacto.nombre[:18] if item.contacto else '-')},
+            'area': item.area or '-',
+            'producto': item.producto or '',
+            'producto_display': item.get_producto_display() if hasattr(item, 'get_producto_display') else (item.producto or ''),
+            'usuario': item.usuario.get_full_name() or item.usuario.username if item.usuario else '—',
+            'fecha': item.fecha_actualizacion.strftime('%d/%m/%y') if item.fecha_actualizacion else '—',
+            'fecha_iso': item.fecha_actualizacion.isoformat() if item.fecha_actualizacion else '',
+            'monto': format_money(item.monto),
+            'monto_raw': float(item.monto or 0),
+            'probabilidad_cierre': item.probabilidad_cierre,
+        })
+
+    # All contacts for this client (for filter dropdown)
+    contactos_cliente = list(
+        Contacto.objects.filter(cliente=cliente)
+        .values_list('nombre', flat=True)
+        .order_by('nombre')
+    )
+
+    return JsonResponse({
+        'success': True,
+        'cliente_nombre': cliente.nombre_empresa,
+        'rows': rows,
+        'contactos': contactos_cliente,
+    })
+
+
+@login_required
+def api_cliente_cotizaciones(request, cliente_id):
+    """API que devuelve las cotizaciones de un cliente específico."""
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    qs = Cotizacion.objects.select_related('oportunidad', 'created_by').filter(cliente=cliente).order_by('-fecha_creacion')
+
+    def fmt(val):
+        try:
+            return '{:,.0f}'.format(val or 0)
+        except (ValueError, TypeError):
+            return '0'
+
+    rows = []
+    for c in qs:
+        rows.append({
+            'id': c.id,
+            'titulo': c.titulo or 'Cotización',
+            'oportunidad': c.oportunidad.oportunidad[:35] if c.oportunidad else '—',
+            'oportunidad_id': c.oportunidad_id,
+            'usuario': c.created_by.get_full_name() or c.created_by.username if c.created_by else '—',
+            'fecha': c.fecha_creacion.strftime('%d/%m/%y') if c.fecha_creacion else '—',
+            'subtotal': fmt(c.subtotal),
+            'total': fmt(c.total),
+            'total_raw': float(c.total or 0),
+            'moneda': c.moneda or 'MXN',
+            'pdf_url': f'/app/cotizacion/view/{c.id}/',
+        })
+
+    return JsonResponse({
+        'success': True,
+        'cliente_nombre': cliente.nombre_empresa,
+        'rows': rows,
+    })
+
+
+# ═══════════════════════════════════════════════════
+# ══  ADMIN PANEL APIs (solo supervisores)  ═══════
+# ═══════════════════════════════════════════════════
+
+@login_required
+def api_admin_usuarios(request):
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'GET':
+        usuarios = User.objects.select_related('userprofile').all().order_by('first_name', 'last_name')
+        data = []
+        for u in usuarios:
+            grupos = [g.name for g in u.groups.all()]
+            profile = getattr(u, 'userprofile', None)
+            data.append({
+                'id': u.id,
+                'username': u.username,
+                'first_name': u.first_name,
+                'last_name': u.last_name,
+                'email': u.email,
+                'is_active': u.is_active,
+                'is_supervisor': 'Supervisores' in grupos,
+                'meta_mensual': str(profile.meta_mensual) if profile else '0',
+                'meta_oportunidades': str(getattr(profile, 'meta_oportunidades', 0)) if profile else '0',
+                'meta_cotizado': str(getattr(profile, 'meta_cotizado', 0)) if profile else '0',
+                'meta_cobrado': str(getattr(profile, 'meta_cobrado', 0)) if profile else '0',
+            })
+        return JsonResponse({'usuarios': data})
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        first_name = data.get('first_name', '').strip()
+        last_name = data.get('last_name', '').strip()
+        email = data.get('email', '').strip()
+
+        if not username or not password:
+            return JsonResponse({'error': 'Username y password son requeridos'}, status=400)
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'error': 'El username ya existe'}, status=400)
+
+        from django.contrib.auth.models import Group
+        user = User.objects.create_user(
+            username=username, password=password,
+            first_name=first_name, last_name=last_name, email=email
+        )
+        UserProfile.objects.get_or_create(user=user)
+
+        if data.get('is_supervisor'):
+            grupo, _ = Group.objects.get_or_create(name='Supervisores')
+            user.groups.add(grupo)
+
+        return JsonResponse({'success': True, 'id': user.id})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_usuario_detalle(request, user_id):
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        usuario = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        if 'first_name' in data:
+            usuario.first_name = data['first_name']
+        if 'last_name' in data:
+            usuario.last_name = data['last_name']
+        if 'email' in data:
+            usuario.email = data['email']
+        if 'is_active' in data:
+            usuario.is_active = data['is_active']
+        usuario.save()
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_clientes(request):
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'GET':
+        clientes = Cliente.objects.select_related('asignado_a').all().order_by('nombre_empresa')
+        data = []
+        for c in clientes:
+            data.append({
+                'id': c.id,
+                'nombre_empresa': c.nombre_empresa,
+                'categoria': c.categoria,
+                'asignado_a_id': c.asignado_a_id,
+                'asignado_a_name': c.asignado_a.get_full_name() or c.asignado_a.username if c.asignado_a else '',
+                'telefono': c.telefono or '',
+                'email': c.email or '',
+                'meta_mensual': str(c.meta_mensual or 0),
+            })
+        return JsonResponse({'clientes': data})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_cliente_detalle(request, cliente_id):
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        if 'asignado_a_id' in data:
+            uid = data['asignado_a_id']
+            if uid:
+                try:
+                    cliente.asignado_a = User.objects.get(id=uid)
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+            else:
+                cliente.asignado_a = None
+        if 'categoria' in data:
+            cliente.categoria = data['categoria']
+        if 'meta_mensual' in data:
+            try:
+                cliente.meta_mensual = Decimal(str(data['meta_mensual']))
+            except Exception:
+                pass
+        cliente.save()
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_contactos(request):
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'GET':
+        cliente_id = request.GET.get('cliente_id')
+        qs = Contacto.objects.select_related('empresa').all().order_by('nombre')
+        if cliente_id:
+            qs = qs.filter(empresa_id=cliente_id)
+        data = []
+        for c in qs:
+            data.append({
+                'id': c.id,
+                'nombre': c.nombre,
+                'apellido': c.apellido or '',
+                'email': c.email or '',
+                'telefono': c.telefono or '',
+                'empresa_id': c.empresa_id,
+                'empresa_name': c.empresa.nombre_empresa if c.empresa else '',
+            })
+        return JsonResponse({'contactos': data})
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            return JsonResponse({'error': 'Nombre es requerido'}, status=400)
+
+        empresa_id = data.get('empresa_id')
+        if not empresa_id:
+            return JsonResponse({'error': 'Cliente es requerido'}, status=400)
+
+        try:
+            empresa = Cliente.objects.get(id=empresa_id)
+        except Cliente.DoesNotExist:
+            return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
+
+        contacto = Contacto.objects.create(
+            nombre=nombre,
+            apellido=data.get('apellido', ''),
+            email=data.get('email', ''),
+            telefono=data.get('telefono', ''),
+            empresa=empresa,
+        )
+        return JsonResponse({'success': True, 'id': contacto.id})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_metas(request):
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        metas = data.get('metas', {})  # {uid: {mensual: x, oportunidades: y...}} or {uid: val}
+        updated = 0
+        for uid_str, meta_data in metas.items():
+            try:
+                uid = int(uid_str)
+                profile, _ = UserProfile.objects.get_or_create(user_id=uid)
+                
+                # Check if meta_data is dict or value (legacy)
+                if isinstance(meta_data, dict):
+                    if 'mensual' in meta_data: profile.meta_mensual = Decimal(str(meta_data['mensual']))
+                    if 'oportunidades' in meta_data: profile.meta_oportunidades = Decimal(str(meta_data['oportunidades']))
+                    if 'cotizado' in meta_data: profile.meta_cotizado = Decimal(str(meta_data['cotizado']))
+                    if 'cobrado' in meta_data: profile.meta_cobrado = Decimal(str(meta_data['cobrado']))
+                else:
+                    # Legacy flat value = mensual
+                    profile.meta_mensual = Decimal(str(meta_data))
+                
+                profile.save()
+                updated += 1
+            except (ValueError, User.DoesNotExist, decimal.InvalidOperation):
+                continue
+
+        return JsonResponse({'success': True, 'updated': updated})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_permisos(request, user_id):
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        try:
+            usuario = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+
+        from django.contrib.auth.models import Group
+        grupo, _ = Group.objects.get_or_create(name='Supervisores')
+
+        if data.get('is_supervisor'):
+            usuario.groups.add(grupo)
+        else:
+            usuario.groups.remove(grupo)
+
+        return JsonResponse({'success': True, 'is_supervisor': data.get('is_supervisor', False)})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
 
 @login_required
 def bienvenida(request):
@@ -693,8 +1906,6 @@ def api_tareas(request):
     """
     API para obtener y crear tareas
     """
-    if not request.user.is_superuser:
-        return JsonResponse({'error': 'Sin permisos'}, status=403)
     
     if request.method == 'GET':
         # Obtener tareas por proyecto si se especifica, sino mostrar TODAS las tareas
@@ -1181,6 +2392,9 @@ def api_crear_tarea(request):
         estimacion_horas = data.get('estimacion_horas')
         asignado_a_id = data.get('asignado_a')
         proyecto_id = data.get('proyecto_id')
+        oportunidad_id = data.get('oportunidad_id')
+        participantes_ids = data.get('participantes', [])
+        observadores_ids = data.get('observadores', [])
         
         # Convertir fecha límite si está presente
         fecha_limite_obj = None
@@ -1214,7 +2428,15 @@ def api_crear_tarea(request):
                 proyecto = Proyecto.objects.get(id=proyecto_id)
             except Proyecto.DoesNotExist:
                 return JsonResponse({'error': 'Proyecto no encontrado'}, status=400)
-        
+
+        # Obtener oportunidad si se especificó
+        oportunidad = None
+        if oportunidad_id:
+            try:
+                oportunidad = TodoItem.objects.get(id=oportunidad_id)
+            except TodoItem.DoesNotExist:
+                return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
+
         # Crear la tarea en la base de datos
         tarea = Tarea.objects.create(
             titulo=nombre,
@@ -1224,9 +2446,23 @@ def api_crear_tarea(request):
             creado_por=request.user,
             asignado_a=asignado_a,
             fecha_limite=fecha_limite_obj,
-            proyecto=proyecto  # Puede ser None (tarea independiente) o un proyecto específico
+            proyecto=proyecto,
+            oportunidad=oportunidad,
         )
         
+        # Agregar participantes y observadores
+        from django.contrib.auth.models import User as AuthUser
+        for pid in participantes_ids:
+            try:
+                tarea.participantes.add(AuthUser.objects.get(id=pid))
+            except Exception:
+                pass
+        for oid in observadores_ids:
+            try:
+                tarea.observadores.add(AuthUser.objects.get(id=oid))
+            except Exception:
+                pass
+
         # Crear comentario inicial si hay descripción
         if descripcion.strip():
             TareaComentario.objects.create(
@@ -2436,34 +3672,59 @@ def calendario_view(request):
 def actividad_list_create(request):
     """
     API para listar y crear actividades del calendario.
+    Soporta ?vendedores=id1,id2 y ?mes=YYYY-MM para filtrar.
     """
     if request.method == 'GET':
-        # Filtrar actividades por el usuario actual o todas si es supervisor
         if is_supervisor(request.user):
             actividades = Actividad.objects.all()
         else:
             actividades = Actividad.objects.filter(Q(creado_por=request.user) | Q(participantes=request.user)).distinct()
-        
+
+        # Filtro por vendedores (IDs separados por coma)
+        vendedores_param = request.GET.get('vendedores', '').strip()
+        if vendedores_param and is_supervisor(request.user):
+            try:
+                ids = [int(x) for x in vendedores_param.split(',') if x.strip().isdigit()]
+                if ids:
+                    actividades = actividades.filter(creado_por_id__in=ids)
+            except Exception:
+                pass
+
+        # Filtro por mes (YYYY-MM)
+        mes_param = request.GET.get('mes', '').strip()
+        if mes_param:
+            try:
+                from datetime import datetime as _dt
+                year, month = int(mes_param[:4]), int(mes_param[5:7])
+                from django.utils import timezone as _tz
+                import calendar as _cal
+                last_day = _cal.monthrange(year, month)[1]
+                desde = _tz.make_aware(_dt(year, month, 1, 0, 0, 0))
+                hasta = _tz.make_aware(_dt(year, month, last_day, 23, 59, 59))
+                actividades = actividades.filter(fecha_inicio__lte=hasta, fecha_fin__gte=desde)
+            except Exception:
+                pass
+
+        actividades = actividades.select_related('creado_por', 'oportunidad').prefetch_related('participantes')
+
         events = []
         for actividad in actividades:
-            participants_data = []
-            for p in actividad.participantes.all():
-                participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
-            
+            participants_data = [{'id': p.id, 'text': p.get_full_name() or p.username} for p in actividad.participantes.all()]
             opportunity_data = None
             if actividad.oportunidad:
                 opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
-
             events.append({
                 'id': actividad.id,
                 'title': actividad.titulo,
+                'tipo': actividad.tipo_actividad,
                 'start': actividad.fecha_inicio.isoformat(),
                 'end': actividad.fecha_fin.isoformat(),
-                'description': actividad.descripcion,
+                'description': actividad.descripcion or '',
                 'color': actividad.color,
                 'participants': participants_data,
                 'opportunity': opportunity_data,
-                'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
+                'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
+                'es_mio': actividad.creado_por_id == request.user.pk,
             })
         return JsonResponse(events, safe=False)
 
@@ -2479,11 +3740,12 @@ def actividad_list_create(request):
 
         actividad = Actividad.objects.create(
             titulo=data['title'],
+            tipo_actividad=data.get('tipo', 'otro'),
             descripcion=data.get('description', ''),
             fecha_inicio=start_date,
             fecha_fin=end_date,
             creado_por=request.user,
-            color=data.get('color', '#007AFF'),
+            color=data.get('color', '#1D1D1F'),
             oportunidad_id=data.get('opportunity')
         )
         
@@ -2501,13 +3763,15 @@ def actividad_list_create(request):
         return JsonResponse({
             'id': actividad.id,
             'title': actividad.titulo,
+            'tipo': actividad.tipo_actividad,
             'start': actividad.fecha_inicio.isoformat(),
             'end': actividad.fecha_fin.isoformat(),
             'description': actividad.descripcion,
             'color': actividad.color,
             'participants': participants_data,
             'opportunity': opportunity_data,
-            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
+            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
+            'es_mio': True,
         }, status=201)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -2536,18 +3800,20 @@ def actividad_detail(request, pk):
         return JsonResponse({
             'id': actividad.id,
             'title': actividad.titulo,
+            'tipo': actividad.tipo_actividad,
             'start': actividad.fecha_inicio.isoformat(),
             'end': actividad.fecha_fin.isoformat(),
             'description': actividad.descripcion,
             'color': actividad.color,
             'participants': participants_data,
             'opportunity': opportunity_data,
-            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
+            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
+            'es_mio': actividad.creado_por_id == request.user.pk,
         })
 
     elif request.method == 'PUT':
         data = json.loads(request.body)
-        
+
         # Verificar permisos: solo el creador o un supervisor puede editar
         if actividad.creado_por != request.user and not is_supervisor(request.user):
             return JsonResponse({'error': 'No tienes permiso para editar esta actividad.'}, status=403)
@@ -2560,6 +3826,7 @@ def actividad_detail(request, pk):
             return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
 
         actividad.titulo = data['title']
+        actividad.tipo_actividad = data.get('tipo', 'otro')
         actividad.descripcion = data.get('description', '')
         actividad.fecha_inicio = start_date
         actividad.fecha_fin = end_date
@@ -2575,7 +3842,7 @@ def actividad_detail(request, pk):
         participants_data = []
         for p in actividad.participantes.all():
             participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
-        
+
         opportunity_data = None
         if actividad.oportunidad:
             opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
@@ -2583,13 +3850,15 @@ def actividad_detail(request, pk):
         return JsonResponse({
             'id': actividad.id,
             'title': actividad.titulo,
+            'tipo': actividad.tipo_actividad,
             'start': actividad.fecha_inicio.isoformat(),
             'end': actividad.fecha_fin.isoformat(),
             'description': actividad.descripcion,
             'color': actividad.color,
             'participants': participants_data,
             'opportunity': opportunity_data,
-            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
+            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
+            'es_mio': actividad.creado_por_id == request.user.pk,
         })
 
     elif request.method == 'DELETE':
@@ -3466,7 +4735,7 @@ def oportunidades_por_cliente_view(request, cliente_id):
     return render(request, 'oportunidades_por_cliente.html', context)
 
 
-from django.views.decorators.clickjacking import xframe_options_exempt
+from django.views.decorators.clickjacking import xframe_options_exempt, xframe_options_sameorigin
 
 @xframe_options_exempt
 @login_required
@@ -3489,6 +4758,7 @@ def bitrix_cotizador_redirect(request):
 
 @login_required
 @csrf_exempt
+@xframe_options_sameorigin
 def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
     cliente_seleccionado = None
     oportunidad_seleccionada = None
@@ -3569,13 +4839,10 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             cotizacion = form.save(commit=False)
             cotizacion.created_by = request.user  # Asignar el usuario creador
             cotizacion.save()
+            # Actualizar fecha_actualizacion de la oportunidad vinculada para que suba en la tabla CRM
+            if cotizacion.oportunidad:
+                cotizacion.oportunidad.save(update_fields=['fecha_actualizacion'])
             print(f"DEBUG: Quote saved with ID: {cotizacion.id}")
-
-            # Obtener la oportunidad seleccionada del formulario
-            oportunidad_seleccionada_form = form.cleaned_data.get('oportunidad')
-            bitrix_deal_id_to_upload = None
-            if oportunidad_seleccionada_form and oportunidad_seleccionada_form.bitrix_deal_id:
-                bitrix_deal_id_to_upload = oportunidad_seleccionada_form.bitrix_deal_id
 
             # Collect product data sent from JavaScript
             productos_data = {}
@@ -3802,106 +5069,26 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # Los títulos ya se procesaron en orden combinado arriba
             print(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
             
-            from django.urls import reverse
-            pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
-            print(f"DEBUG: PDF URL generated: {pdf_url}")
+            # Check if this is a widget_mode request (AJAX from iframe)
+            is_widget_mode = request.POST.get('widget_mode') == '1' or request.GET.get('widget_mode') == '1'
 
-            try:
-                # Organizar productos en secciones para el PDF (excluir títulos de Bitrix24)
-                detalles_todos = cotizacion.detalles.all().order_by('id')
-                secciones_pdf = []
-                seccion_actual_pdf = {'titulo': None, 'productos': []}
-                
-                for detalle in detalles_todos:
-                    tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
-                    
-                    if tipo_detalle == 'titulo':
-                        # Si hay productos en la sección actual, guardarla ANTES de crear nueva sección
-                        if seccion_actual_pdf['productos']:
-                            secciones_pdf.append(seccion_actual_pdf)
-                        # Si hay una sección actual con título pero sin productos, también la guardamos
-                        elif seccion_actual_pdf['titulo']:
-                            secciones_pdf.append(seccion_actual_pdf)
-                        # Iniciar nueva sección
-                        seccion_actual_pdf = {'titulo': detalle.nombre_producto, 'productos': []}
-                    else:
-                        # Agregar producto a la sección actual
-                        seccion_actual_pdf['productos'].append(detalle)
-                
-                # Agregar la última sección (con o sin productos)
-                if seccion_actual_pdf['titulo'] or seccion_actual_pdf['productos']:
-                    secciones_pdf.append(seccion_actual_pdf)
-                
-                # Si no hay títulos, crear una sección por defecto con productos solamente
-                if not secciones_pdf:
-                    productos_sin_seccion = [d for d in detalles_todos if getattr(d, 'tipo', 'producto') == 'producto']
-                    if productos_sin_seccion:
-                        secciones_pdf.append({'titulo': None, 'productos': productos_sin_seccion})
-                
-                # DEBUG: Mostrar las secciones generadas
-                print(f"DEBUG CREATE PDF: Secciones para Bitrix24: {len(secciones_pdf)} secciones encontradas")
-                for i, seccion in enumerate(secciones_pdf):
-                    print(f"DEBUG CREATE PDF: Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
-                    for j, producto in enumerate(seccion['productos']):
-                        print(f"  Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
-
-                # Determinar el template y configuración según el tipo de cotización
-                tipo_cotizacion = cotizacion.tipo_cotizacion
-                template_name = 'cotizacion_pdf_template.html'  # Default (Bajanet)
-                company_name = 'BAJANET S.A. de C.V.'
-                company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
-                company_phone = '+52 55 1234 5678'
-                company_email = 'ventas@bajanet.com'
-                
-                if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
-                    template_name = 'iamet_cotizacion_pdf_template.html'
-                    company_name = 'IAMET S.A. de C.V.'
-                    company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
-                    company_phone = '+52 33 9876 5432'
-                    company_email = 'contacto@iamet.com'
-
-                html_string = render_to_string(template_name, {
-                    'cotizacion': cotizacion,
-                    'detalles_cotizacion': cotizacion.detalles.all(),  # Para compatibilidad con fallback
-                    'secciones': secciones_pdf,  # Para mostrar por secciones sin títulos como productos
-                    'request_user': request.user,
-                    'current_date': date.today(),
-                    'company_name': company_name,
-                    'company_address': company_address,
-                    'company_phone': company_phone,
-                    'company_email': company_email,
-                    'logo_base64': '',
-                    'iva_rate_percentage': (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1')),
+            if is_widget_mode:
+                # Return JSON response for the widget iframe
+                from django.urls import reverse
+                pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
+                return JsonResponse({
+                    'success': True,
+                    'cotizacion_id': cotizacion.id,
+                    'pdf_url': pdf_url,
                 })
-                pdf_file_content = HTML(string=html_string).write_pdf()
-                pdf_base64 = base64.b64encode(pdf_file_content).decode('utf-8')
 
-                if bitrix_deal_id_to_upload:
-                    file_name_for_bitrix = f"{cotizacion.nombre_cotizacion or cotizacion.titulo}.pdf"
-                    comment_text = f"Se ha creado una nueva cotización: {file_name_for_bitrix}"
-                    from .bitrix_integration import add_comment_with_attachment_to_deal
-                    upload_success = add_comment_with_attachment_to_deal(
-                        bitrix_deal_id_to_upload, file_name_for_bitrix, pdf_base64, comment_text, request=request
-                    )
-                    if upload_success:
-                        messages.success(request, "Cotización generada y PDF adjuntado como comentario en Bitrix24.")
-                    else:
-                        messages.warning(request, "Cotización generada, pero hubo un error al adjuntar el PDF en Bitrix24.")
-                else:
-                    messages.info("Cotización generada, pero no se pudo adjuntar a Bitrix24 (no hay ID de negociación).")
-
-            except Exception as e:
-                print(f"ERROR al generar o subir PDF a Bitrix24: {e}")
-                messages.error(request, f"Error al generar o subir PDF a Bitrix24: {e}")
-                return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error al generar o subir PDF a Bitrix24: {str(e)}'}]}}, status=500)
-            
             # Si hay una oportunidad seleccionada, redirigir a página de descarga y luego a cotizaciones por oportunidad
             # sino, al PDF directo como antes
             oportunidad_para_redirect = form.cleaned_data.get('oportunidad')
             if oportunidad_para_redirect:
                 # Crear URL que descarga PDF y luego redirige a cotizaciones por oportunidad
                 from django.urls import reverse
-                redirect_url = reverse('download_and_redirect_cotizacion', 
+                redirect_url = reverse('download_and_redirect_cotizacion',
                                      args=[cotizacion.id, oportunidad_para_redirect.id])
                 return redirect(redirect_url)
             else:
@@ -3969,11 +5156,13 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             'is_auto_filled': is_auto_filled,
             'auto_fill_data': auto_fill_data,
             'oportunidad_seleccionada': oportunidad_seleccionada,
+            'widget_mode': request.GET.get('widget_mode') == '1',
         }
         return render(request, 'crear_cotizacion.html', context)
 
 
 @login_required
+@xframe_options_sameorigin
 def editar_cotizacion_view(request, cotizacion_id):
     cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
     detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original).order_by('id')
@@ -4026,6 +5215,7 @@ def editar_cotizacion_view(request, cotizacion_id):
     initial_data = {
         'titulo': cotizacion_original.titulo,
         'cliente': cotizacion_original.cliente.id,
+        'usuario_final': cotizacion_original.usuario_final,
         'oportunidad': cotizacion_original.oportunidad.id if cotizacion_original.oportunidad else None,
         'descripcion': cotizacion_original.descripcion,
         'comentarios': cotizacion_original.comentarios,
@@ -4036,6 +5226,7 @@ def editar_cotizacion_view(request, cotizacion_id):
         'descuento_visible': cotizacion_original.descuento_visible,
     }
 
+    is_widget = request.GET.get('widget_mode') == '1'
     context = {
         'form': CotizacionForm(initial=initial_data, user=request.user),
         'cliente_seleccionado': cotizacion_original.cliente,
@@ -4048,6 +5239,7 @@ def editar_cotizacion_view(request, cotizacion_id):
         'editing_mode': True,  # Indicador para el template
         'cotizacion_original': cotizacion_original,  # Datos de la cotización original
         'probabilidad_choices_list': [i for i in range(0, 101, 10)],
+        'widget_mode': is_widget,
     }
 
     return render(request, 'crear_cotizacion.html', context)
@@ -5294,6 +6486,11 @@ def editar_oportunidad_api(request, oportunidad_id):
         
         updated_values = {}
         
+        # Actualizar nombre (titulo) de la oportunidad
+        if 'oportunidad' in request.POST and request.POST['oportunidad']:
+            oportunidad.oportunidad = request.POST['oportunidad']
+            updated_values['oportunidad'] = oportunidad.oportunidad
+
         # Actualizar cliente
         if 'cliente' in request.POST and request.POST['cliente']:
             try:
@@ -5303,10 +6500,14 @@ def editar_oportunidad_api(request, oportunidad_id):
             except Cliente.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Cliente no encontrado'})
         
-        # Actualizar contacto
-        if 'contacto' in request.POST:
-            oportunidad.contacto = request.POST['contacto'].strip()
-            updated_values['contacto'] = oportunidad.contacto or "Sin contacto"
+        # Actualizar contacto (acepta ID de contacto)
+        if 'contacto' in request.POST and request.POST['contacto']:
+            try:
+                contacto_obj = Contacto.objects.get(id=int(request.POST['contacto']))
+                oportunidad.contacto = contacto_obj
+                updated_values['contacto'] = f"{contacto_obj.nombre} {contacto_obj.apellido or ''}".strip()
+            except (Contacto.DoesNotExist, ValueError):
+                pass
         
         # Actualizar área
         if 'area' in request.POST and request.POST['area']:
@@ -5351,7 +6552,24 @@ def editar_oportunidad_api(request, oportunidad_id):
         if 'mes_cierre' in request.POST and request.POST['mes_cierre']:
             oportunidad.mes_cierre = request.POST['mes_cierre']
             updated_values['mes_cierre'] = oportunidad.get_mes_cierre_display()
-        
+
+        # Actualizar etapa (desde widget CRM)
+        if 'etapa_corta' in request.POST and request.POST['etapa_corta']:
+            from .bitrix_integration import get_etapa_from_bitrix_stage
+            nueva_etapa = request.POST['etapa_corta']
+            oportunidad.etapa_corta = nueva_etapa
+            oportunidad.etapa_completa = nueva_etapa
+            updated_values['etapa_corta'] = nueva_etapa
+
+        # Actualizar usuario/vendedor
+        if 'usuario' in request.POST and request.POST['usuario']:
+            try:
+                nuevo_usuario = User.objects.get(id=request.POST['usuario'])
+                oportunidad.usuario = nuevo_usuario
+                updated_values['usuario'] = nuevo_usuario.get_full_name() or nuevo_usuario.username
+            except User.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Usuario no encontrado'})
+
         oportunidad.save()
         
         return JsonResponse({
@@ -9331,6 +10549,198 @@ def nueva_oportunidad(request):
 
 
 @login_required
+def api_crear_oportunidad(request):
+    """
+    API AJAX para crear oportunidad desde el widget CRM.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+
+    try:
+        import json
+        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+
+        cliente_nombre = data.get('cliente_nombre', '').strip()
+        if not cliente_nombre or len(cliente_nombre) < 2:
+            return JsonResponse({'ok': False, 'error': 'El nombre del cliente es requerido (mín. 2 caracteres).'})
+
+        oportunidad_nombre = data.get('oportunidad', '').strip()
+        if not oportunidad_nombre:
+            return JsonResponse({'ok': False, 'error': 'El nombre de la oportunidad es requerido.'})
+
+        monto = data.get('monto', 0)
+        try:
+            monto = Decimal(str(monto))
+        except Exception:
+            monto = Decimal('0')
+
+        # Buscar o crear cliente
+        cliente, _ = Cliente.objects.get_or_create(
+            nombre_empresa__iexact=cliente_nombre,
+            defaults={'nombre_empresa': cliente_nombre, 'asignado_a': request.user}
+        )
+
+        # Buscar o crear contacto
+        contacto = None
+        contacto_nombre = data.get('contacto_nombre', '').strip()
+        if contacto_nombre:
+            nombre_parts = contacto_nombre.split(' ', 1)
+            contacto, _ = Contacto.objects.get_or_create(
+                nombre__iexact=nombre_parts[0],
+                cliente=cliente,
+                defaults={
+                    'nombre': nombre_parts[0],
+                    'apellido': nombre_parts[1] if len(nombre_parts) > 1 else '',
+                    'cliente': cliente
+                }
+            )
+
+        tipo_neg = data.get('tipo_negociacion', 'runrate')
+        # Asignar etapa inicial según tipo de negociación
+        if tipo_neg == 'proyecto':
+            etapa_corta_init = 'Oportunidad'
+            etapa_completa_init = 'Oportunidad'
+            etapa_color_init = '#FFFFFF'
+        else:
+            etapa_corta_init = 'En Solicitud'
+            etapa_completa_init = 'Solicitud de Cotizacion'
+            etapa_color_init = '#FFFFFF'
+
+        from datetime import datetime as dt_create
+        mes_actual = str(dt_create.now().month).zfill(2)
+
+        todo = TodoItem(
+            usuario=request.user,
+            oportunidad=oportunidad_nombre,
+            cliente=cliente,
+            contacto=contacto,
+            monto=monto,
+            probabilidad_cierre=int(data.get('probabilidad_cierre', 25)),
+            mes_cierre=data.get('mes_cierre', mes_actual),
+            area=data.get('area', 'SISTEMAS'),
+            producto=data.get('producto', 'SOFTWARE'),
+            tipo_negociacion=tipo_neg,
+            comentarios=data.get('comentarios', ''),
+            etapa_corta=etapa_corta_init,
+            etapa_completa=etapa_completa_init,
+            etapa_color=etapa_color_init,
+        )
+        todo.save()
+
+        # If there are comments, add them as a chat message
+        if todo.comentarios:
+            from .models import MensajeOportunidad
+            MensajeOportunidad.objects.create(
+                oportunidad=todo,
+                usuario=request.user,
+                texto=todo.comentarios
+            )
+
+        return JsonResponse({
+            'ok': True,
+            'message': f'Oportunidad "{oportunidad_nombre}" creada exitosamente.',
+            'id': todo.id
+        })
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
+
+
+@login_required
+def api_oportunidad_detalle_crm(request, oportunidad_id):
+    """
+    API para obtener detalle completo de una oportunidad para el widget CRM.
+    """
+    try:
+        todo = get_object_or_404(TodoItem, pk=oportunidad_id)
+
+        # Obtener cotizaciones de esta oportunidad
+        cotizaciones = Cotizacion.objects.filter(oportunidad=todo).order_by('-fecha_creacion')
+        cots_list = []
+        for cot in cotizaciones:
+            cots_list.append({
+                'id': cot.id,
+                'titulo': cot.titulo or f'COT-{cot.id}',
+                'fecha': cot.fecha_creacion.strftime('%d %b %Y') if cot.fecha_creacion else '',
+                'total': float(cot.total) if cot.total else 0,
+                'moneda': cot.moneda or 'MXN',
+            })
+
+        data = {
+            'id': todo.id,
+            'oportunidad': todo.oportunidad or '',
+            'monto': float(todo.monto) if todo.monto else 0,
+            'cliente': {
+                'id': todo.cliente_id,
+                'nombre': todo.cliente.nombre_empresa if todo.cliente else '',
+            } if todo.cliente else None,
+            'contacto': '',
+            'contacto_id': todo.contacto_id,
+            'producto': todo.producto or '',
+            'area': todo.area or '',
+            'probabilidad_cierre': todo.probabilidad_cierre or 0,
+            'mes_cierre': todo.mes_cierre or '',
+            'tipo_negociacion': todo.tipo_negociacion or 'runrate',
+            'etapa_corta': todo.etapa_corta or '',
+            'etapa_completa': todo.etapa_completa or '',
+            'etapa_color': todo.etapa_color or '#FFFFFF',
+            'usuario': todo.usuario.get_full_name() or todo.usuario.username if todo.usuario else '',
+            'usuario_id': todo.usuario_id,
+            'comentarios': todo.comentarios or '',
+            'fecha_creacion': todo.fecha_creacion.strftime('%d/%m/%Y') if todo.fecha_creacion else '',
+            'cotizaciones': cots_list,
+            'productos_adicionales': [
+                {'id': p.id, 'producto': p.producto, 'notas': p.notas}
+                for p in todo.productos_adicionales.all()
+            ],
+        }
+
+        # Contacto
+        if todo.contacto:
+            if hasattr(todo.contacto, 'nombre'):
+                data['contacto'] = f"{todo.contacto.nombre} {todo.contacto.apellido or ''}".strip()
+            else:
+                data['contacto'] = str(todo.contacto)
+
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def api_oportunidad_productos(request, oportunidad_id):
+    """Lista y agrega productos adicionales a una oportunidad."""
+    todo = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if request.method == 'GET':
+        prods = [{'id': p.id, 'producto': p.producto, 'notas': p.notas}
+                 for p in todo.productos_adicionales.all()]
+        return JsonResponse({'productos': prods})
+    elif request.method == 'POST':
+        data = json.loads(request.body)
+        producto = data.get('producto', '').strip()
+        if not producto:
+            return JsonResponse({'error': 'Producto requerido.'}, status=400)
+        p = ProductoOportunidad.objects.create(
+            oportunidad=todo,
+            producto=producto,
+            notas=data.get('notas', ''),
+        )
+        return JsonResponse({'id': p.id, 'producto': p.producto, 'notas': p.notas}, status=201)
+    return JsonResponse({'error': 'Método no permitido.'}, status=405)
+
+
+@login_required
+@csrf_exempt
+def api_oportunidad_producto_delete(request, oportunidad_id, producto_id):
+    """Elimina un producto adicional de una oportunidad."""
+    p = get_object_or_404(ProductoOportunidad, pk=producto_id, oportunidad_id=oportunidad_id)
+    if request.method == 'DELETE':
+        p.delete()
+        return JsonResponse({'ok': True})
+    return JsonResponse({'error': 'Método no permitido.'}, status=405)
+
+
+@login_required
 def api_buscar_clientes(request):
     """
     API para autocompletado de clientes en el formulario de nueva oportunidad.
@@ -10084,11 +11494,54 @@ def obtener_notificaciones_api(request):
         from .models import Notificacion
         user = request.user
         
+        # --- Lógica para verificar tareas a punto de vencer y vencidas ---
+        try:
+            from django.utils import timezone
+            from django.db.models import Q
+            from datetime import timedelta
+            from .models import Tarea, TareaOportunidad
+            now = timezone.now()
+            umbral_por_vencer = now + timedelta(days=1)
+            
+            # Buscar tareas generales del usuario
+            mis_tareas = Tarea.objects.filter(
+                Q(asignado_a=user) | Q(participantes=user),
+                estado__in=['pendiente', 'iniciada', 'en_progreso'],
+                fecha_limite__isnull=False
+            ).distinct()
+            
+            for t in mis_tareas:
+                if t.fecha_limite < now:
+                    # Vencida
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='tarea_vencida', tarea_id=t.id).exists():
+                        crear_notificacion(user, 'tarea_vencida', 'Tarea Vencida', f'La tarea "{t.titulo}" ha vencido.', tarea_id=t.id)
+                elif t.fecha_limite <= umbral_por_vencer:
+                    # Por vencer
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='tarea_por_vencer', tarea_id=t.id).exists():
+                        crear_notificacion(user, 'tarea_por_vencer', 'Tarea por Vencer', f'La tarea "{t.titulo}" vencerá pronto.', tarea_id=t.id)
+
+            # Idem para tareas de oportunidad
+            mis_tareas_opp = TareaOportunidad.objects.filter(
+                asignado_a=user,
+                estado__in=['pendiente', 'en_progreso'],
+                fecha_limite__isnull=False
+            )
+            for t in mis_tareas_opp:
+                if t.fecha_limite < now:
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='actividad_vencida', tarea_opp=t).exists():
+                        crear_notificacion(user, 'actividad_vencida', 'Actividad Vencida', f'La actividad "{t.titulo}" ha vencido.', tarea_opp=t, oportunidad=t.oportunidad)
+                elif t.fecha_limite <= umbral_por_vencer:
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='actividad_por_vencer', tarea_opp=t).exists():
+                        crear_notificacion(user, 'actividad_por_vencer', 'Actividad por Vencer', f'La actividad "{t.titulo}" vencerá pronto.', tarea_opp=t, oportunidad=t.oportunidad)
+                        
+        except Exception as ex_exp:
+            print(f"Error verificando vencimientos: {ex_exp}")
+        
         # Obtener notificaciones del usuario (últimas 50)
         notificaciones = Notificacion.objects.filter(
             usuario_destinatario=user
         ).select_related(
-            'usuario_remitente', 'oportunidad', 'comentario'
+            'usuario_remitente', 'oportunidad', 'comentario', 'tarea_opp'
         ).order_by('-fecha_creacion')[:50]
         
         # Contar notificaciones no leídas
@@ -10104,11 +11557,19 @@ def obtener_notificaciones_api(request):
             url = ''
             if notif.tarea_id:
                 url = f'/app/tareas-proyectos/?task_id={notif.tarea_id}'
+            elif notif.tarea_opp_id:
+                if notif.oportunidad_id:
+                    url = f'/app/cotizaciones/oportunidad/{notif.oportunidad_id}/?tab=actividades'
+                else:
+                    url = '/app/todos/'
             elif notif.oportunidad:
-                url = f'/app/todos/?oportunidad_id={notif.oportunidad.id}'
+                url = f'/app/cotizaciones/oportunidad/{notif.oportunidad.id}/'
             elif notif.proyecto_id:
                 url = f'/app/proyecto/{notif.proyecto_id}/'
-                
+            elif notif.tipo in ['muro_post', 'muro_mencion', 'mencion', 'respuesta']:
+                url = '/app/home/?open_muro=1'
+            elif notif.tipo == 'rendimiento_bajo' and notif.usuario_remitente:
+                url = f'/app/perfil-usuario/{notif.usuario_remitente.id}/'
             notifications_data.append({
                 'id': notif.id,
                 'titulo': notif.titulo,
@@ -10118,8 +11579,23 @@ def obtener_notificaciones_api(request):
                 'fecha': notif.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
                 'remitente': notif.usuario_remitente.get_full_name() if notif.usuario_remitente else 'Sistema',
                 'url': url,
+                'remitente_id': notif.usuario_remitente.id if notif.usuario_remitente else None,
                 'tarea_id': notif.tarea_id,
-                'proyecto_id': notif.proyecto_id
+                'proyecto_id': notif.proyecto_id,
+                'tarea_opp_id': notif.tarea_opp_id,
+                'oportunidad_id': notif.oportunidad_id,
+                'solicitud_perfil_data': {
+                    'id': notif.solicitud_perfil.id,
+                    'first_name': notif.solicitud_perfil.first_name,
+                    'last_name': notif.solicitud_perfil.last_name,
+                    'email': notif.solicitud_perfil.email,
+                    'language': notif.solicitud_perfil.language,
+                    'avatar_url': notif.solicitud_perfil.avatar.url if notif.solicitud_perfil.avatar else None,
+                    'old_first_name': notif.solicitud_perfil.old_first_name,
+                    'old_last_name': notif.solicitud_perfil.old_last_name,
+                    'old_email': notif.solicitud_perfil.old_email,
+                    'old_language': notif.solicitud_perfil.old_language,
+                } if notif.solicitud_perfil else None,
             })
         
         return JsonResponse({
@@ -10176,12 +11652,24 @@ def marcar_todas_notificaciones_leidas_api(request):
     try:
         from .models import Notificacion
         from django.utils import timezone
+        import json
         
-        # Marcar todas las notificaciones no leídas del usuario
-        notificaciones_no_leidas = Notificacion.objects.filter(
-            usuario_destinatario=request.user,
-            leida=False
-        )
+        filters = {'usuario_destinatario': request.user, 'leida': False}
+        
+        # Intentar leer filtros del body
+        try:
+            data = json.loads(request.body)
+            if 'tarea_id' in data and data['tarea_id']:
+                filters['tarea_id'] = data['tarea_id']
+            if 'oportunidad_id' in data and data['oportunidad_id']:
+                filters['oportunidad_id'] = data['oportunidad_id']
+            if 'tarea_opp_id' in data and data['tarea_opp_id']:
+                filters['tarea_opp_id'] = data['tarea_opp_id']
+        except:
+            pass
+
+        # Marcar notificaciones filtradas
+        notificaciones_no_leidas = Notificacion.objects.filter(**filters)
         
         count = notificaciones_no_leidas.update(
             leida=True,
@@ -10190,7 +11678,8 @@ def marcar_todas_notificaciones_leidas_api(request):
         
         return JsonResponse({
             'success': True,
-            'message': f'{count} notificaciones marcadas como leídas'
+            'message': f'{count} notificaciones marcadas como leídas',
+            'count_marked': count
         })
         
     except Exception as e:
@@ -10201,7 +11690,7 @@ def marcar_todas_notificaciones_leidas_api(request):
         }, status=500)
 
 
-def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None):
+def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None, tarea_opp=None, solicitud_perfil=None):
     """
     Función auxiliar para crear notificaciones
     """
@@ -10209,7 +11698,7 @@ def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=
         # No crear notificación si el remitente y destinatario son el mismo
         if usuario_remitente and usuario_destinatario == usuario_remitente:
             return None
-            
+
         notificacion = Notificacion.objects.create(
             usuario_destinatario=usuario_destinatario,
             usuario_remitente=usuario_remitente,
@@ -10219,7 +11708,9 @@ def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=
             oportunidad=oportunidad,
             comentario=comentario,
             proyecto_id=proyecto_id,
-            proyecto_nombre=proyecto_nombre
+            proyecto_nombre=proyecto_nombre,
+            tarea_opp=tarea_opp,
+            solicitud_perfil=solicitud_perfil,
         )
         
         print(f"✅ Notificación creada: {titulo} para {usuario_destinatario.username}")
@@ -10568,6 +12059,7 @@ def api_tarea_detalle(request, tarea_id):
                     return None
                 
                 user_data = {
+                    'id': user.id,
                     'nombre': user.get_full_name() or user.username,
                     'username': user.username,
                     'avatar_url': None
@@ -10614,8 +12106,14 @@ def api_tarea_detalle(request, tarea_id):
                 'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                 'pausado': getattr(tarea, 'pausado', False),
                 'tiempo_trabajado': tiempo_total_str,
-                'tiempo_total_trabajado': tiempo_total_segundos,  # En segundos para el frontend
+                'tiempo_total_trabajado': tiempo_total_segundos,
                 'fecha_inicio_sesion': tarea.fecha_inicio_sesion.isoformat() if hasattr(tarea, 'fecha_inicio_sesion') and tarea.fecha_inicio_sesion else None,
+                # Oportunidad y cliente
+                'oportunidad_id': tarea.oportunidad.id if tarea.oportunidad else None,
+                'oportunidad_nombre': tarea.oportunidad.oportunidad if tarea.oportunidad else None,
+                # Cliente: primero el directo, luego el de la oportunidad
+                'cliente_id': (tarea.cliente.id if tarea.cliente else (tarea.oportunidad.cliente.id if tarea.oportunidad and tarea.oportunidad.cliente else None)),
+                'cliente_nombre': (tarea.cliente.nombre_empresa if tarea.cliente else (tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None)),
             }
             
             return JsonResponse(tarea_data)
@@ -11399,6 +12897,316 @@ def api_archivo_detalle(request, proyecto_id, archivo_id):
 
 
 # =============================================
+# DRIVE DE OPORTUNIDADES
+# =============================================
+
+@csrf_exempt
+@login_required
+def api_drive_oportunidad(request, opp_id):
+    """Lista carpetas + archivos en raíz (o en subcarpeta) de una oportunidad. POST crea carpeta."""
+    opp = get_object_or_404(TodoItem, id=opp_id)
+
+    if request.method == 'GET':
+        parent_id = request.GET.get('parent')
+        carpetas = CarpetaOportunidad.objects.filter(
+            oportunidad=opp,
+            carpeta_padre_id=parent_id  # None = raíz
+        ).order_by('nombre')
+
+        archivos = ArchivoOportunidad.objects.filter(
+            oportunidad=opp,
+            carpeta_id=parent_id
+        ).order_by('nombre_original')
+
+        carpeta_actual = None
+        if parent_id:
+            try:
+                c = CarpetaOportunidad.objects.get(id=parent_id, oportunidad=opp)
+                carpeta_actual = {'id': c.id, 'nombre': c.nombre, 'padre_id': c.carpeta_padre_id}
+            except CarpetaOportunidad.DoesNotExist:
+                pass
+
+        return JsonResponse({
+            'success': True,
+            'carpeta_actual': carpeta_actual,
+            'carpetas': [{'id': c.id, 'nombre': c.nombre,
+                          'carpeta_padre_id': c.carpeta_padre_id,
+                          'fecha_creacion': c.fecha_creacion.isoformat(),
+                          'tipo': 'carpeta'} for c in carpetas],
+            'archivos': [{'id': a.id, 'nombre': a.nombre_original,
+                          'tipo_archivo': a.tipo_archivo,
+                          'extension': a.extension,
+                          'tamaño': a.tamaño,
+                          'url': a.archivo.url if a.archivo else '',
+                          'fecha_subida': a.fecha_subida.isoformat(),
+                          'tipo': 'archivo'} for a in archivos],
+        })
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        nombre = (data.get('nombre') or '').strip()
+        parent_id = data.get('parent_id')
+        if not nombre:
+            return JsonResponse({'error': 'Nombre requerido'}, status=400)
+        carpeta_padre = None
+        if parent_id:
+            carpeta_padre = get_object_or_404(CarpetaOportunidad, id=parent_id, oportunidad=opp)
+        if CarpetaOportunidad.objects.filter(oportunidad=opp, carpeta_padre=carpeta_padre, nombre=nombre).exists():
+            return JsonResponse({'error': 'Ya existe una carpeta con ese nombre'}, status=400)
+        c = CarpetaOportunidad.objects.create(
+            nombre=nombre, oportunidad=opp, carpeta_padre=carpeta_padre, creado_por=request.user
+        )
+        return JsonResponse({'success': True, 'carpeta': {
+            'id': c.id, 'nombre': c.nombre,
+            'carpeta_padre_id': c.carpeta_padre_id,
+            'fecha_creacion': c.fecha_creacion.isoformat(), 'tipo': 'carpeta'
+        }})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+@login_required
+def api_drive_oportunidad_carpeta(request, opp_id, carpeta_id):
+    """Renombra o elimina una carpeta del drive de una oportunidad."""
+    opp = get_object_or_404(TodoItem, id=opp_id)
+    carpeta = get_object_or_404(CarpetaOportunidad, id=carpeta_id, oportunidad=opp)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        nuevo = (data.get('nombre') or '').strip()
+        if not nuevo:
+            return JsonResponse({'error': 'Nombre requerido'}, status=400)
+        if CarpetaOportunidad.objects.filter(
+            oportunidad=opp, carpeta_padre=carpeta.carpeta_padre, nombre=nuevo
+        ).exclude(id=carpeta_id).exists():
+            return JsonResponse({'error': 'Ya existe una carpeta con ese nombre'}, status=400)
+        carpeta.nombre = nuevo
+        carpeta.save()
+        return JsonResponse({'success': True, 'carpeta': {'id': carpeta.id, 'nombre': carpeta.nombre}})
+
+    elif request.method == 'DELETE':
+        force = request.GET.get('force', 'false').lower() == 'true'
+        if not force and not carpeta.puede_eliminar():
+            return JsonResponse({'error': 'La carpeta no está vacía'}, status=400)
+
+        def borrar_recursivo(c):
+            for sub in c.subcarpetas.all():
+                borrar_recursivo(sub)
+            for a in c.archivos.all():
+                if a.archivo:
+                    try:
+                        a.archivo.delete(save=False)
+                    except Exception:
+                        pass
+                a.delete()
+            c.delete()
+
+        borrar_recursivo(carpeta)
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+@login_required
+def api_drive_oportunidad_archivo(request, opp_id):
+    """Sube un archivo al drive de una oportunidad."""
+    opp = get_object_or_404(TodoItem, id=opp_id)
+
+    if request.method == 'POST':
+        archivo_file = request.FILES.get('archivo')
+        if not archivo_file:
+            return JsonResponse({'error': 'Archivo requerido'}, status=400)
+        carpeta_id = request.POST.get('carpeta_id')
+        carpeta = None
+        if carpeta_id:
+            carpeta = get_object_or_404(CarpetaOportunidad, id=carpeta_id, oportunidad=opp)
+
+        ext = archivo_file.name.rsplit('.', 1)[-1].lower() if '.' in archivo_file.name else ''
+        tipo_map = {
+            'pdf': 'pdf',
+            **{e: 'imagen' for e in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']},
+            **{e: 'documento' for e in ['doc', 'docx', 'txt', 'rtf', 'odt']},
+            **{e: 'hoja_calculo' for e in ['xls', 'xlsx', 'csv', 'ods']},
+            **{e: 'presentacion' for e in ['ppt', 'pptx', 'odp']},
+            **{e: 'video' for e in ['mp4', 'avi', 'mov', 'wmv', 'mkv']},
+            **{e: 'audio' for e in ['mp3', 'wav', 'aac', 'flac']},
+            **{e: 'archivo_comprimido' for e in ['zip', 'rar', '7z', 'tar', 'gz']},
+        }
+        tipo = tipo_map.get(ext, 'otro')
+
+        a = ArchivoOportunidad.objects.create(
+            nombre_original=archivo_file.name,
+            archivo=archivo_file,
+            tipo_archivo=tipo,
+            tamaño=archivo_file.size,
+            oportunidad=opp,
+            carpeta=carpeta,
+            subido_por=request.user,
+            extension=ext,
+            mime_type=archivo_file.content_type or '',
+        )
+        return JsonResponse({'success': True, 'archivo': {
+            'id': a.id, 'nombre': a.nombre_original,
+            'tipo_archivo': a.tipo_archivo, 'extension': a.extension,
+            'tamaño': a.tamaño, 'url': a.archivo.url,
+            'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo'
+        }})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+@login_required
+def api_drive_oportunidad_archivo_detalle(request, opp_id, archivo_id):
+    """Renombra o elimina un archivo del drive de una oportunidad."""
+    opp = get_object_or_404(TodoItem, id=opp_id)
+    archivo = get_object_or_404(ArchivoOportunidad, id=archivo_id, oportunidad=opp)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        nuevo = (data.get('nombre') or '').strip()
+        if nuevo:
+            archivo.nombre_original = nuevo
+            archivo.save()
+        return JsonResponse({'success': True, 'archivo': {'id': archivo.id, 'nombre': archivo.nombre_original}})
+
+    elif request.method == 'DELETE':
+        if archivo.archivo:
+            try:
+                archivo.archivo.delete(save=False)
+            except Exception:
+                pass
+        archivo.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# =============================================
+# CHAT / BITÁCORA DE OPORTUNIDAD
+# =============================================
+
+@csrf_exempt
+@login_required
+def api_chat_oportunidad(request, opp_id):
+    from .models import MensajeOportunidad
+    opp = get_object_or_404(TodoItem, id=opp_id)
+
+    def serializar(m):
+        u = m.usuario
+        nombre = u.get_full_name() or u.username if u else 'Usuario'
+        iniciales = ''.join([p[0].upper() for p in nombre.split()[:2]]) if nombre else '?'
+        reply = None
+        if m.reply_to:
+            ru = m.reply_to.usuario
+            rnombre = ru.get_full_name() or ru.username if ru else 'Usuario'
+            reply = {
+                'id': m.reply_to.id,
+                'texto': m.reply_to.texto[:80],
+                'nombre': rnombre,
+                'tiene_imagen': bool(m.reply_to.imagen),
+            }
+        return {
+            'id': m.id,
+            'texto': m.texto,
+            'imagen_url': m.imagen.url if m.imagen else None,
+            'editado': m.editado,
+            'reply_to': reply,
+            'fecha': m.fecha.strftime('%d/%m/%Y %H:%M'),
+            'usuario_id': u.id if u else None,
+            'nombre': nombre,
+            'iniciales': iniciales,
+            'es_mio': (u.id == request.user.id) if u else False,
+        }
+
+    if request.method == 'GET':
+        msgs = MensajeOportunidad.objects.filter(oportunidad=opp).select_related('usuario', 'reply_to', 'reply_to__usuario')
+        return JsonResponse({'mensajes': [serializar(m) for m in msgs]})
+
+    if request.method == 'POST':
+        texto = (request.POST.get('texto') or '').strip()
+        imagen = request.FILES.get('imagen')
+        reply_to_id = request.POST.get('reply_to_id')
+        if not texto and not imagen:
+            return JsonResponse({'error': 'El mensaje no puede estar vacío'}, status=400)
+        reply_obj = None
+        if reply_to_id:
+            try:
+                reply_obj = MensajeOportunidad.objects.get(id=int(reply_to_id), oportunidad=opp)
+            except MensajeOportunidad.DoesNotExist:
+                pass
+        m = MensajeOportunidad.objects.create(
+            oportunidad=opp,
+            usuario=request.user,
+            texto=texto,
+            imagen=imagen,
+            reply_to=reply_obj,
+        )
+
+        # Notificar al dueño de la oportunidad si es distinto al que envió
+        if opp.usuario and opp.usuario != request.user:
+            remitente_nombre = request.user.get_full_name() or request.user.username
+            preview = texto[:100] + ('…' if len(texto) > 100 else '') if texto else '📷 Imagen'
+            crear_notificacion(
+                usuario_destinatario=opp.usuario,
+                tipo='oportunidad_mensaje',
+                titulo=f'Mensaje en: {opp.oportunidad}',
+                mensaje=f'{remitente_nombre}: {preview}',
+                oportunidad=opp,
+                usuario_remitente=request.user,
+            )
+
+        return JsonResponse({'success': True, 'mensaje': serializar(m)})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+@login_required
+def api_chat_mensaje(request, opp_id, msg_id):
+    from .models import MensajeOportunidad
+    opp = get_object_or_404(TodoItem, id=opp_id)
+    msg = get_object_or_404(MensajeOportunidad, id=msg_id, oportunidad=opp)
+    es_supervisor = request.user.groups.filter(name='Supervisores').exists() or request.user.is_superuser
+
+    if request.method == 'PUT':
+        if msg.usuario != request.user:
+            return JsonResponse({'error': 'Sin permiso'}, status=403)
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        nuevo = (data.get('texto') or '').strip()
+        if not nuevo:
+            return JsonResponse({'error': 'El texto no puede estar vacío'}, status=400)
+        msg.texto = nuevo
+        msg.editado = True
+        msg.save()
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        if msg.usuario != request.user and not es_supervisor:
+            return JsonResponse({'error': 'Sin permiso'}, status=403)
+        if msg.imagen:
+            msg.imagen.delete(save=False)
+        msg.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# =============================================
 # VIEWS PARA INTERCAMBIO NAVIDEÑO 🎄
 # =============================================
 
@@ -12160,8 +13968,8 @@ def api_actualizar_tarea_real(request, tarea_id):
         # Obtener la tarea de la base de datos
         tarea = get_object_or_404(Tarea, id=tarea_id)
         
-        # Verificar permisos - solo el creador o asignado puede editar
-        if tarea.creado_por != request.user and tarea.asignado_a != request.user and not request.user.is_superuser:
+        # Verificar permisos - solo el creador o superusuario puede editar campos principales
+        if tarea.creado_por != request.user and not request.user.is_superuser:
             return JsonResponse({'error': 'Sin permisos para editar esta tarea'}, status=403)
         
         # Obtener datos del request
@@ -12194,7 +14002,28 @@ def api_actualizar_tarea_real(request, tarea_id):
                     pass  # Ignorar fechas inválidas
             else:
                 tarea.fecha_limite = None
-        
+
+        if 'asignado_a' in data:
+            asignado_id = data.get('asignado_a')
+            if asignado_id:
+                try:
+                    from django.contrib.auth.models import User
+                    tarea.asignado_a = User.objects.get(id=asignado_id)
+                except User.DoesNotExist:
+                    pass
+            else:
+                tarea.asignado_a = None
+
+        if 'cliente_id' in data:
+            cliente_id_val = data.get('cliente_id')
+            if cliente_id_val:
+                try:
+                    tarea.cliente = Cliente.objects.get(id=cliente_id_val)
+                except Cliente.DoesNotExist:
+                    pass
+            else:
+                tarea.cliente = None
+
         # Guardar cambios
         tarea.save()
         
@@ -12220,4 +14049,1206 @@ def api_actualizar_tarea_real(request, tarea_id):
     except Exception as e:
         print(f"❌ Error actualizando tarea {tarea_id}: {e}")
         return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
+
+
+# ═══════════════════════════════════════════════════════════
+# API: EXPORTAR A EXCEL
+# ═══════════════════════════════════════════════════════════
+
+@login_required
+def api_export_excel(request):
+    """
+    Exporta la tabla activa a Excel con metadata
+    """
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from django.http import HttpResponse
+        from datetime import datetime
+        
+        # Obtener parámetros
+        tab = request.GET.get('tab', 'crm')
+        mes = request.GET.get('mes', '')
+        anio = request.GET.get('anio', '')
+        usuario = request.GET.get('usuario', request.user.get_full_name() or request.user.username)
+        filtros = request.GET.get('filtros', 'Sin filtros')
+        
+        # Crear workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Reporte {tab.upper()}"
+        
+        # Metadata
+        ws['A1'] = 'Reporte CRM'
+        ws['A1'].font = Font(size=16, bold=True)
+        ws['A2'] = f'Descargado por: {usuario}'
+        ws['A3'] = f'Fecha: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        ws['A4'] = f'Periodo: {mes}/{anio}'
+        ws['A5'] = f'Filtros aplicados: {filtros}'
+        
+        # Espacio
+        row_start = 7
+        
+        # Obtener datos según el tab
+        if tab == 'crm':
+            headers = ['Oportunidad', 'Cliente', 'Contacto', 'Área', 'Zebra', 'Panduit', 'APC', 'Avigilon', 'Genetec', 'Axis', 'Software', 'Runrate', 'Póliza', 'Otros', 'Total']
+            data = get_oportunidades_data(request, mes, anio)
+        elif tab == 'facturado':
+            headers = ['Cliente', 'Zebra', 'Panduit', 'APC', 'Avigilon', 'Genetec', 'Axis', 'Software', 'Runrate', 'Póliza', 'Otros', 'Total', 'Meta', 'Fact.']
+            data = get_facturado_data(request, mes, anio)
+        else:
+            headers = ['Datos']
+            data = []
+        
+        # Escribir headers
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=row_start, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="0052D4", end_color="0052D4", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+        
+        # Escribir datos
+        for row_num, row_data in enumerate(data, row_start + 1):
+            for col_num, value in enumerate(row_data, 1):
+                ws.cell(row=row_num, column=col_num, value=value)
+        
+        # Ajustar ancho de columnas
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Crear respuesta HTTP
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename=reporte_crm_{tab}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        
+        wb.save(response)
+        return response
+        
+    except ImportError:
+        return JsonResponse({'error': 'openpyxl no está instalado. Ejecute: pip install openpyxl'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def get_oportunidades_data(request, mes, anio):
+    """Helper para obtener datos de oportunidades"""
+    # Implementar lógica similar a crm_home
+    return []
+
+
+def get_facturado_data(request, mes, anio):
+    """Helper para obtener datos de facturado"""
+    # Implementar lógica similar a crm_home
+    return []
+
+
+@login_required
+def api_clientes(request):
+    """
+    Retorna lista de clientes para filtros
+    """
+    try:
+        clientes = Cliente.objects.all().values('id', 'nombre_empresa')
+        return JsonResponse({'clientes': list(clientes)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ── Tareas de Oportunidad ──────────────────────────────────────────────────
+
+def _serialize_tarea_opp(t):
+    return {
+        'id': t.id,
+        'titulo': t.titulo,
+        'descripcion': t.descripcion,
+        'prioridad': t.prioridad,
+        'estado': t.estado,
+        'fecha_limite': t.fecha_limite.isoformat() if t.fecha_limite else None,
+        'fecha_creacion': t.fecha_creacion.isoformat(),
+        'creado_por': (t.creado_por.get_full_name() or t.creado_por.username) if t.creado_por else '',
+        'creado_por_id': t.creado_por_id,
+        'responsable': (t.responsable.get_full_name() or t.responsable.username) if t.responsable else None,
+        'responsable_id': t.responsable_id,
+        'oportunidad_id': t.oportunidad_id,
+        'oportunidad_nombre': t.oportunidad.oportunidad if t.oportunidad else '',
+    }
+
+
+@login_required
+def api_tareas_oportunidad(request, opp_id):
+    """GET lista / POST crear — tareas de una oportunidad específica."""
+    opp = get_object_or_404(TodoItem, pk=opp_id)
+
+    if request.method == 'GET':
+        from django.db.models import IntegerField
+        tareas = opp.tareas_oportunidad.select_related('creado_por', 'responsable').annotate(
+            prio_order=Case(When(prioridad='alta', then=Value(0)), default=Value(1), output_field=IntegerField())
+        ).order_by('prio_order', F('fecha_limite').asc(nulls_last=True), 'fecha_creacion')
+        return JsonResponse({'success': True, 'tareas': [_serialize_tarea_opp(t) for t in tareas]})
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        titulo = data.get('titulo', '').strip()
+        if not titulo:
+            return JsonResponse({'success': False, 'error': 'Título requerido'}, status=400)
+
+        fecha_limite = None
+        raw_fecha = data.get('fecha_limite')
+        if raw_fecha:
+            from django.utils.dateparse import parse_datetime
+            fecha_limite = parse_datetime(raw_fecha)
+
+        tarea = TareaOportunidad.objects.create(
+            oportunidad=opp,
+            titulo=titulo,
+            descripcion=data.get('descripcion', ''),
+            prioridad='alta' if data.get('alta_prioridad') else 'normal',
+            fecha_limite=fecha_limite,
+            creado_por=request.user,
+            responsable_id=data.get('responsable_id') or None,
+        )
+        if data.get('participantes'):
+            tarea.participantes.set(data['participantes'])
+        if data.get('observadores'):
+            tarea.observadores.set(data['observadores'])
+
+        # Crear actividad en el calendario (roja por defecto)
+        from django.utils.dateparse import parse_datetime as _pdt
+        cal_inicio_raw = data.get('cal_inicio')
+        cal_fin_raw = data.get('cal_fin')
+        if cal_inicio_raw and cal_fin_raw:
+            cal_ini = _pdt(cal_inicio_raw)
+            cal_fin = _pdt(cal_fin_raw)
+            if cal_ini and cal_fin:
+                actividad = Actividad.objects.create(
+                    titulo=tarea.titulo,
+                    tipo_actividad='tarea',
+                    descripcion=tarea.descripcion or '',
+                    fecha_inicio=cal_ini,
+                    fecha_fin=cal_fin,
+                    creado_por=request.user,
+                    color='#0052D4',  # azul
+                    oportunidad=opp,
+                )
+                tarea.actividad_calendario = actividad
+                tarea.save(update_fields=['actividad_calendario'])
+
+        # Notificar al responsable si es distinto al creador
+        if tarea.responsable and tarea.responsable != request.user:
+            remitente_nombre = request.user.get_full_name() or request.user.username
+            crear_notificacion(
+                usuario_destinatario=tarea.responsable,
+                tipo='tarea_opp_asignada',
+                titulo=f'Tarea asignada: {tarea.titulo}',
+                mensaje=f'{remitente_nombre} te asignó una tarea en la oportunidad "{opp.oportunidad}".',
+                oportunidad=opp,
+                usuario_remitente=request.user,
+                tarea_opp=tarea,
+            )
+
+        return JsonResponse({'success': True, 'tarea': _serialize_tarea_opp(tarea)})
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+def api_tarea_oportunidad_detail(request, tarea_id):
+    """PUT actualizar / DELETE eliminar — una tarea de oportunidad."""
+    tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
+    user = request.user
+
+    if tarea.creado_por != user and tarea.responsable != user and not is_supervisor(user):
+        return JsonResponse({'error': 'Sin permiso'}, status=403)
+
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        if 'titulo' in data:
+            tarea.titulo = data['titulo']
+        if 'descripcion' in data:
+            tarea.descripcion = data['descripcion']
+        if 'estado' in data:
+            tarea.estado = data['estado']
+        if 'prioridad' in data:
+            tarea.prioridad = data['prioridad']
+        if 'fecha_limite' in data:
+            from django.utils.dateparse import parse_datetime
+            tarea.fecha_limite = parse_datetime(data['fecha_limite']) if data['fecha_limite'] else None
+        if 'responsable_id' in data:
+            new_resp_id = data['responsable_id'] or None
+            old_resp_id = tarea.responsable_id
+            tarea.responsable_id = new_resp_id
+            tarea.save()
+            # Notificar al nuevo responsable si cambió y es distinto al editor
+            if new_resp_id and new_resp_id != old_resp_id:
+                try:
+                    nuevo_resp = User.objects.get(pk=new_resp_id)
+                    if nuevo_resp != request.user:
+                        remitente_nombre = request.user.get_full_name() or request.user.username
+                        crear_notificacion(
+                            usuario_destinatario=nuevo_resp,
+                            tipo='tarea_opp_asignada',
+                            titulo=f'Tarea asignada: {tarea.titulo}',
+                            mensaje=f'{remitente_nombre} te asignó como responsable de una tarea en "{tarea.oportunidad.oportunidad if tarea.oportunidad else ""}".',
+                            oportunidad=tarea.oportunidad,
+                            usuario_remitente=request.user,
+                            tarea_opp=tarea,
+                        )
+                except User.DoesNotExist:
+                    pass
+            return JsonResponse({'success': True})
+        # M2M: añadir/quitar participantes y observadores
+        remitente_nombre = request.user.get_full_name() or request.user.username
+        opp_nombre = tarea.oportunidad.oportunidad if tarea.oportunidad else ''
+        if 'participante_add' in data:
+            try:
+                u = User.objects.get(pk=data['participante_add'])
+                tarea.participantes.add(u)
+                if u != request.user:
+                    crear_notificacion(
+                        usuario_destinatario=u,
+                        tipo='tarea_opp_asignada',
+                        titulo=f'Te agregaron como participante: {tarea.titulo}',
+                        mensaje=f'{remitente_nombre} te agregó como participante en la tarea "{tarea.titulo}" de "{opp_nombre}".',
+                        oportunidad=tarea.oportunidad,
+                        usuario_remitente=request.user,
+                        tarea_opp=tarea,
+                    )
+                return JsonResponse({'success': True})
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+        if 'participante_remove' in data:
+            try:
+                u = User.objects.get(pk=data['participante_remove'])
+                tarea.participantes.remove(u)
+                return JsonResponse({'success': True})
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+        if 'observador_add' in data:
+            try:
+                u = User.objects.get(pk=data['observador_add'])
+                tarea.observadores.add(u)
+                if u != request.user:
+                    crear_notificacion(
+                        usuario_destinatario=u,
+                        tipo='tarea_opp_asignada',
+                        titulo=f'Te agregaron como observador: {tarea.titulo}',
+                        mensaje=f'{remitente_nombre} te agregó como observador en la tarea "{tarea.titulo}" de "{opp_nombre}".',
+                        oportunidad=tarea.oportunidad,
+                        usuario_remitente=request.user,
+                        tarea_opp=tarea,
+                    )
+                return JsonResponse({'success': True})
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+        if 'observador_remove' in data:
+            try:
+                u = User.objects.get(pk=data['observador_remove'])
+                tarea.observadores.remove(u)
+                return JsonResponse({'success': True})
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+        tarea.save()
+        # Si se marcó como completada, actualizar color de la actividad a verde
+        if data.get('estado') == 'completada' and tarea.actividad_calendario_id:
+            Actividad.objects.filter(pk=tarea.actividad_calendario_id).update(color='#34C759')
+        # Si se cambió la fecha_limite, actualizar la actividad del calendario
+        if 'fecha_limite' in data and tarea.actividad_calendario_id and tarea.fecha_limite:
+            from datetime import timedelta
+            new_start = tarea.fecha_limite
+            new_end = tarea.fecha_limite + timedelta(hours=1)
+            Actividad.objects.filter(pk=tarea.actividad_calendario_id).update(
+                fecha_inicio=new_start, fecha_fin=new_end
+            )
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        tarea.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+def api_todas_tareas_opp(request):
+    """GET todas las tareas de oportunidad accesibles para el usuario."""
+    from django.db.models import IntegerField
+    import calendar
+    user = request.user
+
+    if is_supervisor(user):
+        qs = TareaOportunidad.objects.select_related('oportunidad', 'creado_por', 'responsable').all()
+    else:
+        qs = TareaOportunidad.objects.select_related('oportunidad', 'creado_por', 'responsable').filter(
+            Q(creado_por=user) | Q(responsable=user) |
+            Q(participantes=user) | Q(observadores=user)
+        ).distinct()
+
+    # Filter by month/year (based on fecha_creacion)
+    mes = request.GET.get('mes', '')
+    anio = request.GET.get('anio', '')
+    if mes and anio:
+        try:
+            mes_int = int(mes)
+            anio_int = int(anio)
+            last_day = calendar.monthrange(anio_int, mes_int)[1]
+            from datetime import date
+            qs = qs.filter(
+                fecha_creacion__date__gte=date(anio_int, mes_int, 1),
+                fecha_creacion__date__lte=date(anio_int, mes_int, last_day),
+            )
+        except (ValueError, TypeError):
+            pass
+
+    # Filter by vendedor (user IDs)
+    vendedores_param = request.GET.get('vendedores', '')
+    if vendedores_param:
+        try:
+            vids = [int(v) for v in vendedores_param.split(',') if v.strip()]
+            if vids:
+                qs = qs.filter(
+                    Q(creado_por_id__in=vids) | Q(responsable_id__in=vids)
+                ).distinct()
+        except (ValueError, TypeError):
+            pass
+
+    qs = qs.annotate(
+        prio_order=Case(When(prioridad='alta', then=Value(0)), default=Value(1), output_field=IntegerField())
+    ).order_by('prio_order', F('fecha_limite').asc(nulls_last=True), 'fecha_creacion')
+
+    return JsonResponse({'success': True, 'tareas': [_serialize_tarea_opp(t) for t in qs]})
+
+
+@login_required
+def api_tarea_opp_detalle(request, tarea_id):
+    """GET detalle completo de una TareaOportunidad (incluye M2M)."""
+    tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
+
+    def user_data(u):
+        if not u:
+            return None
+        return {'id': u.id, 'nombre': u.get_full_name() or u.username}
+
+    data = {
+        'id': tarea.id,
+        'titulo': tarea.titulo,
+        'descripcion': tarea.descripcion,
+        'prioridad': tarea.prioridad,
+        'estado': tarea.estado,
+        'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
+        'fecha_creacion': tarea.fecha_creacion.isoformat(),
+        'oportunidad_id': tarea.oportunidad_id,
+        'oportunidad_nombre': tarea.oportunidad.oportunidad if tarea.oportunidad else '',
+        'creado_por_data': user_data(tarea.creado_por),
+        'responsable_data': user_data(tarea.responsable),
+        'participantes': [user_data(u) for u in tarea.participantes.all()],
+        'observadores': [user_data(u) for u in tarea.observadores.all()],
+    }
+    return JsonResponse(data)
+
+
+@login_required
+def api_tarea_opp_comentarios(request, tarea_id):
+    """GET lista de comentarios / POST agregar comentario a una TareaOportunidad."""
+    tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
+
+    if request.method == 'GET':
+        comentarios = tarea.comentarios.select_related('autor').all()
+        return JsonResponse({
+            'success': True,
+            'comentarios': [
+                {
+                    'id': c.id,
+                    'usuario': c.autor.get_full_name() or c.autor.username if c.autor else 'Desconocido',
+                    'usuario_id': c.autor_id,
+                    'contenido': c.contenido,
+                    'fecha': c.fecha_creacion.isoformat(),
+                }
+                for c in comentarios
+            ]
+        })
+
+    if request.method == 'POST':
+        contenido = request.POST.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'success': False, 'error': 'Comentario vacío'}, status=400)
+        ComentarioTareaOpp.objects.create(tarea=tarea, autor=request.user, contenido=contenido)
+
+        # Notificar a creador y responsable (si son distintos al comentarista)
+        remitente_nombre = request.user.get_full_name() or request.user.username
+        msg_corto = contenido[:100] + ('…' if len(contenido) > 100 else '')
+        notif_titulo = f'Comentario en: {tarea.titulo}'
+        notif_msg = f'{remitente_nombre}: {msg_corto}'
+        destinatarios = set()
+        if tarea.creado_por and tarea.creado_por != request.user:
+            destinatarios.add(tarea.creado_por)
+        if tarea.responsable and tarea.responsable != request.user:
+            destinatarios.add(tarea.responsable)
+        for dest in destinatarios:
+            crear_notificacion(
+                usuario_destinatario=dest,
+                tipo='tarea_opp_comentario',
+                titulo=notif_titulo,
+                mensaje=notif_msg,
+                oportunidad=tarea.oportunidad,
+                usuario_remitente=request.user,
+                tarea_opp=tarea,
+            )
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_tarea_opp_comentario_detail(request, tarea_id, comentario_id):
+    """PUT editar / DELETE eliminar un comentario de TareaOportunidad."""
+    tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
+    comentario = get_object_or_404(ComentarioTareaOpp, pk=comentario_id, tarea=tarea)
+
+    if comentario.autor != request.user and not is_supervisor(request.user):
+        return JsonResponse({'error': 'Sin permiso'}, status=403)
+
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        contenido = data.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'success': False, 'error': 'Contenido vacío'}, status=400)
+        comentario.contenido = contenido
+        comentario.save()
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        comentario.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# ═══════════════════════════════════════════════════════
+#  MURO EMPRESARIAL
+# ═══════════════════════════════════════════════════════
+
+def _muro_post_dict(post, request_user):
+    """Serializa un PostMuro a dict para la API."""
+    autor = post.autor
+    profile = getattr(autor, 'userprofile', None)
+    avatar_url = profile.get_avatar_url() if profile else None
+    iniciales = profile.iniciales() if profile else (autor.first_name[:1] + autor.last_name[:1]).upper() if autor.first_name else autor.username[:2].upper()
+
+    etiquetados = [
+        {'id': u.id, 'nombre': u.get_full_name() or u.username}
+        for u in post.etiquetados.all()
+    ]
+    num_likes = post.likes.count()
+    yo_like = post.likes.filter(pk=request_user.pk).exists()
+    num_comentarios = post.comentarios.count()
+
+    imagen_url = post.imagen.url if post.imagen else None
+    programado_str = post.programado_para.strftime('%Y-%m-%dT%H:%M') if post.programado_para else None
+
+    res = {
+        'id': post.id,
+        'autor_id': autor.id,
+        'autor_nombre': autor.get_full_name() or autor.username,
+        'autor_avatar': avatar_url,
+        'autor_iniciales': iniciales,
+        'contenido': post.contenido,
+        'imagen': imagen_url,
+        'etiquetados': etiquetados,
+        'es_anuncio': post.es_anuncio,
+        'programado_para': programado_str,
+        'fecha': post.fecha_creacion.strftime('%d %b %Y %H:%M'),
+        'editado': post.editado,
+        'num_likes': num_likes,
+        'yo_like': yo_like,
+        'num_comentarios': num_comentarios,
+        'es_autor': post.autor_id == request_user.pk,
+    }
+
+    # Sobrescribir autor si es un anuncio del sistema (como Empleado del Mes)
+    if post.es_anuncio and ("EMPLEADO DEL MES" in post.contenido or "IAMET" in post.contenido):
+        res['autor_nombre'] = "IAMET"
+        res['autor_avatar'] = "/static/images/apple-touch-icon.png"  # Logo corporativo
+        res['autor_iniciales'] = "IA"
+
+    return res
+
+
+@login_required
+def api_muro_posts(request):
+    """GET lista de posts / POST crear post."""
+    if request.method == 'GET':
+        filtro = request.GET.get('filtro', 'todos')
+        ahora = timezone.now()
+        qs = PostMuro.objects.prefetch_related('likes', 'etiquetados', 'comentarios').select_related('autor').filter(
+            Q(programado_para__isnull=True) | Q(programado_para__lte=ahora)
+        )
+        if filtro == 'anuncios':
+            qs = qs.filter(es_anuncio=True)
+        elif filtro == 'mios':
+            qs = qs.filter(autor=request.user)
+        posts = [_muro_post_dict(p, request.user) for p in qs]
+        return JsonResponse({'success': True, 'posts': posts})
+
+    if request.method == 'POST':
+        contenido = ''
+        imagen = None
+        etiquetados_ids = []
+        es_anuncio = False
+        programado_para = None
+
+        if request.content_type and 'multipart' in request.content_type:
+            contenido = request.POST.get('contenido', '').strip()
+            etiquetados_raw = request.POST.get('etiquetados', '[]')
+            try:
+                etiquetados_ids = json.loads(etiquetados_raw)
+            except Exception:
+                etiquetados_ids = []
+            es_anuncio = request.POST.get('es_anuncio', 'false') == 'true'
+            programado_str = request.POST.get('programado_para', '').strip()
+            if programado_str:
+                try:
+                    from dateutil.parser import parse as parse_dt
+                    programado_para = timezone.make_aware(parse_dt(programado_str).replace(tzinfo=None))
+                except Exception:
+                    programado_para = None
+            imagen = request.FILES.get('imagen')
+        else:
+            data = json.loads(request.body)
+            contenido = data.get('contenido', '').strip()
+            etiquetados_ids = data.get('etiquetados', [])
+            es_anuncio = data.get('es_anuncio', False)
+            programado_str = data.get('programado_para', '').strip() if data.get('programado_para') else ''
+            if programado_str:
+                try:
+                    from dateutil.parser import parse as parse_dt
+                    programado_para = timezone.make_aware(parse_dt(programado_str).replace(tzinfo=None))
+                except Exception:
+                    programado_para = None
+
+        if not contenido:
+            return JsonResponse({'success': False, 'error': 'El contenido no puede estar vacío'}, status=400)
+
+        # Solo supervisores pueden publicar anuncios o programar posts
+        if es_anuncio and not is_supervisor(request.user):
+            es_anuncio = False
+        if programado_para and not is_supervisor(request.user):
+            programado_para = None
+
+        post = PostMuro.objects.create(
+            autor=request.user,
+            contenido=contenido,
+            imagen=imagen,
+            es_anuncio=es_anuncio,
+            programado_para=programado_para,
+        )
+        if etiquetados_ids:
+            usuarios_etiq = User.objects.filter(pk__in=etiquetados_ids)
+            post.etiquetados.set(usuarios_etiq)
+            # Notificar a etiquetados
+            remitente_nombre = request.user.get_full_name() or request.user.username
+            for u in usuarios_etiq:
+                crear_notificacion(
+                    usuario_destinatario=u,
+                    tipo='muro_mencion',
+                    titulo=f'{remitente_nombre} te etiquetó en el muro',
+                    mensaje=contenido[:120],
+                    usuario_remitente=request.user,
+                )
+
+        if es_anuncio:
+            # Notificar a todos los usuarios del sistema
+            todos = User.objects.filter(is_active=True).exclude(pk=request.user.pk)
+            remitente_nombre = request.user.get_full_name() or request.user.username
+            for u in todos:
+                crear_notificacion(
+                    usuario_destinatario=u,
+                    tipo='muro_post',
+                    titulo=f'Anuncio de {remitente_nombre}',
+                    mensaje=contenido[:120],
+                    usuario_remitente=request.user,
+                )
+
+        return JsonResponse({'success': True, 'post': _muro_post_dict(post, request.user)})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_muro_post_detail(request, post_id):
+    """PUT editar / DELETE eliminar un post del muro."""
+    post = get_object_or_404(PostMuro, pk=post_id)
+
+    if post.autor != request.user and not is_supervisor(request.user):
+        return JsonResponse({'error': 'Sin permiso'}, status=403)
+
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        contenido = data.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'success': False, 'error': 'Contenido vacío'}, status=400)
+        post.contenido = contenido
+        post.editado = True
+        post.save()
+        return JsonResponse({'success': True, 'post': _muro_post_dict(post, request.user)})
+
+    if request.method == 'DELETE':
+        post.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_muro_like(request, post_id):
+    """POST toggle like en un post."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    post = get_object_or_404(PostMuro, pk=post_id)
+    if post.likes.filter(pk=request.user.pk).exists():
+        post.likes.remove(request.user)
+        yo_like = False
+    else:
+        post.likes.add(request.user)
+        yo_like = True
+    return JsonResponse({'success': True, 'num_likes': post.likes.count(), 'yo_like': yo_like})
+
+
+@login_required
+def api_muro_comentarios(request, post_id):
+    """GET lista de comentarios / POST crear comentario."""
+    post = get_object_or_404(PostMuro, pk=post_id)
+
+    if request.method == 'GET':
+        comentarios = []
+        for c in post.comentarios.select_related('autor').all():
+            autor = c.autor
+            profile = getattr(autor, 'userprofile', None)
+            avatar_url = profile.get_avatar_url() if profile else None
+            iniciales = profile.iniciales() if profile else (autor.first_name[:1] + autor.last_name[:1]).upper() if autor.first_name else autor.username[:2].upper()
+            comentarios.append({
+                'id': c.id,
+                'autor_id': autor.id,
+                'autor_nombre': autor.get_full_name() or autor.username,
+                'autor_avatar': avatar_url,
+                'autor_iniciales': iniciales,
+                'contenido': c.contenido,
+                'fecha': c.fecha_creacion.strftime('%d %b %Y %H:%M'),
+                'editado': c.editado,
+                'es_autor': c.autor_id == request.user.pk,
+            })
+        return JsonResponse({'success': True, 'comentarios': comentarios})
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        contenido = data.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'success': False, 'error': 'Contenido vacío'}, status=400)
+        comentario = ComentarioMuro.objects.create(
+            post=post,
+            autor=request.user,
+            contenido=contenido,
+        )
+        # Notificar al autor del post si es distinto
+        if post.autor != request.user:
+            remitente_nombre = request.user.get_full_name() or request.user.username
+            crear_notificacion(
+                usuario_destinatario=post.autor,
+                tipo='muro_mencion',
+                titulo=f'{remitente_nombre} comentó tu post',
+                mensaje=contenido[:120],
+                usuario_remitente=request.user,
+            )
+        autor = comentario.autor
+        profile = getattr(autor, 'userprofile', None)
+        avatar_url = profile.get_avatar_url() if profile else None
+        iniciales = profile.iniciales() if profile else (autor.first_name[:1] + autor.last_name[:1]).upper() if autor.first_name else autor.username[:2].upper()
+        return JsonResponse({
+            'success': True,
+            'comentario': {
+                'id': comentario.id,
+                'autor_id': autor.id,
+                'autor_nombre': autor.get_full_name() or autor.username,
+                'autor_avatar': avatar_url,
+                'autor_iniciales': iniciales,
+                'contenido': comentario.contenido,
+                'fecha': comentario.fecha_creacion.strftime('%d %b %Y %H:%M'),
+                'editado': False,
+                'es_autor': True,
+            }
+        })
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_muro_comentario_detail(request, comentario_id):
+    """PUT editar / DELETE eliminar un comentario del muro."""
+    comentario = get_object_or_404(ComentarioMuro, pk=comentario_id)
+
+    if comentario.autor != request.user and not is_supervisor(request.user):
+        return JsonResponse({'error': 'Sin permiso'}, status=403)
+
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        contenido = data.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'success': False, 'error': 'Contenido vacío'}, status=400)
+        comentario.contenido = contenido
+        comentario.editado = True
+        comentario.save()
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        comentario.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# ═══ APIS PARA CONTROL DE ASISTENCIA Y EFICIENCIA ═══
+
+
+@login_required
+@csrf_exempt
+def api_jornada_estado(request):
+    """Retorna el estado actual de la jornada del usuario."""
+    hoy = timezone.localdate()
+    # Buscar jornada de hoy que no haya terminado o la más reciente terminada hoy
+    jornada = AsistenciaJornada.objects.filter(usuario=request.user, fecha=hoy).first()
+    
+    if not jornada:
+        return JsonResponse({'activo': False})
+    
+    # Calcular segundos laborados acumulados
+    segundos = jornada.segundos_laborados
+    if not jornada.pausado and not jornada.hora_fin:
+        # Si está activo, sumar el tramo actual
+        delta = timezone.now() - jornada.hora_inicio
+        segundos += int(delta.total_seconds())
+
+    return JsonResponse({
+        'activo': True,
+        'inicio': jornada.hora_inicio.isoformat() if jornada.hora_inicio else None,
+        'fin': jornada.hora_fin.isoformat() if jornada.hora_fin else None,
+        'pausado': jornada.pausado,
+        'segundos': segundos,
+        'eficiencia': float(jornada.eficiencia_dia)
+    })
+
+@login_required
+@csrf_exempt
+def api_jornada_iniciar(request):
+    """Inicia la jornada laboral si no existe una hoy."""
+    hoy = timezone.localdate()
+    jornada, created = AsistenciaJornada.objects.get_or_create(
+        usuario=request.user, 
+        fecha=hoy,
+        defaults={'hora_inicio': timezone.now()}
+    )
+    # Si ya existía y estaba terminada, podemos decidir si reabrirla o no.
+    # Por ahora permitimos re-iniciar si estaba terminada hoy.
+    if not created and jornada.hora_fin:
+        jornada.hora_fin = None
+        jornada.hora_inicio = timezone.now()
+        jornada.save()
+
+    return JsonResponse({'success': True, 'jornada_id': jornada.id})
+
+@login_required
+@csrf_exempt
+def api_jornada_pausar(request):
+    """Alterna el estado de pausa de la jornada laboral."""
+    hoy = timezone.localdate()
+    jornada = AsistenciaJornada.objects.filter(usuario=request.user, fecha=hoy, hora_fin__isnull=True).first()
+    if not jornada:
+        return JsonResponse({'error': 'No hay jornada activa'}, status=400)
+    
+    ahora = timezone.now()
+    if not jornada.pausado:
+        # Pausar: guardar segundos del tramo que termina ahora
+        delta = ahora - jornada.hora_inicio
+        jornada.segundos_laborados += int(delta.total_seconds())
+        jornada.pausado = True
+        jornada.ultima_pausa = ahora
+    else:
+        # Reanudar: actualizar hora_inicio para el nuevo tramo activo
+        jornada.pausado = False
+        jornada.hora_inicio = ahora
+        if jornada.ultima_pausa:
+            delta_p = ahora - jornada.ultima_pausa
+            jornada.segundos_pausa += int(delta_p.total_seconds())
+    
+    jornada.save()
+    return JsonResponse({'success': True, 'pausado': jornada.pausado})
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_exempt
+def api_jornada_terminar(request):
+    """Termina la jornada laboral y calcula la eficiencia del día."""
+    hoy = timezone.localdate()
+    jornada = AsistenciaJornada.objects.filter(usuario=request.user, fecha=hoy, hora_fin__isnull=True).first()
+    if not jornada:
+        return JsonResponse({'error': 'No hay jornada activa que terminar'}, status=400)
+    
+    ahora = timezone.now()
+    if not jornada.pausado:
+        delta = ahora - jornada.hora_inicio
+        jornada.segundos_laborados += int(delta.total_seconds())
+    
+    jornada.hora_fin = ahora
+    
+    # --- CÁLCULO DE EFICIENCIA (Algoritmo solicitado) ---
+    # Prioridades: 1. Tareas, 2. Actividades, 3. Ventas cobradas
+    
+    # Tareas (Highest Priority)
+    tareas = Tarea.objects.filter(asignado_a=request.user).exclude(estado='cancelada')
+    # Tareas que vencen hoy o fueron completadas hoy
+    tareas_totales = tareas.filter(Q(fecha_limite__date=hoy) | Q(estado='completada', fecha_completada__date=hoy)).count()
+    tareas_completadas_hoy = tareas.filter(estado='completada', fecha_completada__date=hoy).count()
+    tareas_vencidas = tareas.filter(fecha_limite__lt=ahora).exclude(estado='completada').count()
+    
+    # Actividades / Tareas de Oportunidad (Medium Priority)
+    acts = TareaOportunidad.objects.filter(responsable=request.user)
+    # Como TareaOportunidad no tiene fecha_completada, usamos la lógica de estado y fecha_limite
+    act_totales = acts.filter(Q(fecha_limite__date=hoy) | Q(estado='completada', fecha_limite__date=hoy)).count()
+    act_completadas_hoy = acts.filter(estado='completada', fecha_limite__date=hoy).count()
+    act_vencidas = acts.filter(fecha_limite__lt=ahora, estado='pendiente').count()
+    
+    # Oportunidades Cobradas (High Impact / Bonus)
+    # Nota: TodoItem SI tiene fecha_actualizacion
+    opps_cobradas_hoy = TodoItem.objects.filter(usuario=request.user, estado_crm='pagada', fecha_actualizacion__date=hoy).count()
+
+    # Cálculo por puntos:
+    puntos_obtenidos = 0
+    puntos_posibles = 0
+    
+    if tareas_totales > 0:
+        puntos_posibles += (tareas_totales * 10)
+        puntos_obtenidos += (tareas_completadas_hoy * 10)
+        puntos_obtenidos -= (tareas_vencidas * 5) # Penalización
+        
+    if act_totales > 0:
+        puntos_posibles += (act_totales * 6)
+        puntos_obtenidos += (act_completadas_hoy * 6)
+        puntos_obtenidos -= (act_vencidas * 3) # Penalización
+    
+    # Bonus por cada venta cerrada hoy
+    puntos_obtenidos += (opps_cobradas_hoy * 20)
+    
+    eficiencia = 0
+    if puntos_posibles > 0:
+        eficiencia = (puntos_obtenidos / puntos_posibles) * 100
+    elif opps_cobradas_hoy > 0:
+        eficiencia = 100
+    
+    # Limitar entre 0 y 100
+    eficiencia = max(0, min(100, eficiencia))
+    
+    jornada.eficiencia_dia = Decimal(str(round(eficiencia, 2)))
+    jornada.save()
+    
+    # Actualizar registro mensual
+    em, created = EficienciaMensual.objects.get_or_create(
+        usuario=request.user, 
+        mes=hoy.month, 
+        anio=hoy.year,
+        defaults={'promedio_eficiencia': eficiencia}
+    )
+    
+    # Recalcular promedio mensual basado en todas las jornadas del mes
+    jornadas_mes = AsistenciaJornada.objects.filter(
+        usuario=request.user, 
+        fecha__month=hoy.month, 
+        fecha__year=hoy.year, 
+        hora_fin__isnull=False
+    )
+    stats_mes = jornadas_mes.aggregate(avg_ef=models.Avg('eficiencia_dia'))
+    em.promedio_eficiencia = stats_mes['avg_ef'] or eficiencia
+    
+    # Acumular hitos
+    em.tareas_completadas += tareas_completadas_hoy
+    em.actividades_completadas += act_completadas_hoy
+    em.oportunidades_cobradas += opps_cobradas_hoy
+    em.save()
+
+    # --- NOTIFICACIÓN PARA ADMINISTRADORES (Nivel de Alerta) ---
+    horas_totales = jornada.segundos_laborados / 3600
+    if eficiencia < 80 or horas_totales < 9:
+        admins = User.objects.filter(is_superuser=True)
+        nombre_usuario = request.user.get_full_name() or request.user.username
+        
+        razones = []
+        if eficiencia < 80:
+            razones.append(f"Eficiencia baja ({round(eficiencia, 1)}%)")
+        if horas_totales < 9:
+            razones.append(f"Jornada incompleta ({round(horas_totales, 1)} horas)")
+        
+        # Detalle estructurado para el administrador
+        mensaje_html = f"<div class='notif-alerta-rendimiento'>"
+        mensaje_html += f"<p style='margin:0 0 8px;'><b>Alertas:</b> {', '.join(razones)}</p>"
+        
+        tareas_pendientes = tareas.exclude(estado='completada').order_by('fecha_limite')[:4]
+        if tareas_pendientes:
+            mensaje_html += "<div style='background:rgba(0,0,0,0.03); border-radius:8px; padding:8px; margin-bottom:8px;'>"
+            mensaje_html += "<b style='font-size:0.75rem; color:#4B5563; text-transform:uppercase;'>Tareas no completadas:</b>"
+            mensaje_html += "<ul style='margin:5px 0 0; padding-left:15px; font-size:0.8rem;'>"
+            for t in tareas_pendientes:
+                fecha_venc = t.fecha_limite.strftime('%d/%m/%Y') if t.fecha_limite else "Sin fecha"
+                mensaje_html += f"<li style='margin-bottom:4px;'><a href='#' onclick='event.stopPropagation(); window.crmTaskVerDetalle({t.id})' style='color:#007AFF; text-decoration:none; font-weight:600;'>{t.titulo}</a> <span style='color:#EF4444; font-size:0.7rem;'>(Venció: {fecha_venc})</span></li>"
+            mensaje_html += "</ul></div>"
+            
+        acts_pendientes = acts.exclude(estado='completada').order_by('fecha_limite')[:4]
+        if acts_pendientes:
+            mensaje_html += "<div style='background:rgba(0,122,255,0.03); border-radius:8px; padding:8px;'>"
+            mensaje_html += "<b style='font-size:0.75rem; color:#4B5563; text-transform:uppercase;'>Actividades en Oportunidades:</b>"
+            mensaje_html += "<ul style='margin:5px 0 0; padding-left:15px; font-size:0.8rem;'>"
+            for a in acts_pendientes:
+                fecha_venc = a.fecha_limite.strftime('%d/%m/%Y') if a.fecha_limite else "Sin fecha"
+                opp_id = a.oportunidad.id
+                mensaje_html += f"<li style='margin-bottom:4px;'><a href='#' onclick='event.stopPropagation(); window.openDetalle({opp_id})' style='color:#007AFF; text-decoration:none; font-weight:600;'>{a.titulo}</a> <span style='color:#EF4444; font-size:0.7rem;'>(Venció: {fecha_venc})</span></li>"
+            mensaje_html += "</ul></div>"
+        
+        mensaje_html += "</div>"
+
+        for admin in admins:
+            Notificacion.objects.create(
+                usuario_destinatario=admin,
+                usuario_remitente=request.user,
+                tipo='rendimiento_bajo',
+                titulo=f"Alerta Rendimiento: {nombre_usuario}",
+                mensaje=mensaje_html
+            )
+
+    return JsonResponse({
+        'success': True, 
+        'eficiencia': float(jornada.eficiencia_dia),
+        'segundos': jornada.segundos_laborados
+    })
+
+@login_required
+def api_verificar_empleado_mes(request):
+    """
+    Verifica si ha concluido el mes previo y publica al ganador en el muro.
+    Configurado para iniciar el 1 de Abril de 2026 a las 8:00 AM (Tijuana).
+    """
+    ahora = timezone.now()
+    ahora_tj = convert_to_tijuana_time(ahora)
+    
+    # 1. Bloqueo hasta el inicio oficial: 1 de Abril 2026, 8 AM Tijuana
+    inicio_oficial = datetime(2026, 4, 1, 8, 0, 0, tzinfo=ZoneInfo("America/Tijuana"))
+    if ahora_tj < inicio_oficial:
+        return JsonResponse({
+            'status': 'scheduled', 
+            'message': 'El primer anuncio oficial está programado para el 1 de Abril a las 8:00 AM (Tijuana).'
+        })
+
+    # 2. Regla de publicación mensual: Solo el día 1, a partir de las 8:00 AM
+    if ahora_tj.day != 1:
+        return JsonResponse({'status': 'not_ready', 'message': 'Las publicaciones automáticas ocurren el día 1 de cada mes.'})
+        
+    if ahora_tj.hour < 8:
+        return JsonResponse({'status': 'too_morning', 'message': 'El anuncio se publicará hoy a las 8:00 AM.'})
+
+    # Revisar mes anterior (ej: si es 1 de Abril, revisa Marzo)
+    mes_target_date = ahora - relativedelta(months=1)
+    m = mes_target_date.month
+    y = mes_target_date.year
+    
+    # Si ya se publicó este mes, salir
+    if EficienciaMensual.objects.filter(mes=m, anio=y, anuncio_publicado=True).exists():
+        return JsonResponse({'status': 'period_already_announced'})
+    
+    # Obtener el mejor del mes pasado
+    ganador_em = EficienciaMensual.objects.filter(mes=m, anio=y).order_by('-promedio_eficiencia').first()
+    
+    if ganador_em and ganador_em.promedio_eficiencia > 0:
+        ganador_em.empleado_del_mes = True
+        ganador_em.anuncio_publicado = True
+        ganador_em.save()
+        
+        # Muro Post (Anuncio automático)
+        nombre_ganador = ganador_em.usuario.get_full_name() or ganador_em.usuario.username
+        mes_nombre = mes_target_date.strftime('%B %Y')
+        
+        mensaje = f"¡Es un honor anunciar que <b>@{ganador_em.usuario.username} ({nombre_ganador})</b> ha sido seleccionado como el empleado del mes de <b>{mes_nombre}</b>! 🎉\n\n"
+        mensaje += f"Su compromiso ha sido pieza clave en nuestro éxito:\n\n"
+        mensaje += f"✨ <b>Eficiencia General:</b> {ganador_em.promedio_eficiencia}%\n"
+        mensaje += f"✅ <b>Tareas resueltas:</b> {ganador_em.tareas_completadas}\n"
+        mensaje += f"🛠 <b>Actividades finalizadas:</b> {ganador_em.actividades_completadas}\n"
+        mensaje += f"💰 <b>Ventas cobradas:</b> {ganador_em.oportunidades_cobradas}\n\n"
+        mensaje += f"¡Gracias por dar siempre el 100%! 🚀🔥"
+        
+        # Intentar que el autor sea un Admin, pero se mostrará como IAMET en el muro
+        admin_user = User.objects.filter(is_superuser=True).first() or request.user
+        
+        # Obtener la foto del ganador para ponerla como imagen principal del post
+        ganador_profile = getattr(ganador_em.usuario, 'userprofile', None)
+        foto_ganador = ganador_profile.avatar if ganador_profile and ganador_profile.avatar else None
+
+        PostMuro.objects.create(
+            autor=admin_user,
+            contenido=mensaje,
+            es_anuncio=True,
+            imagen=foto_ganador
+        )
+        return JsonResponse({'status': 'announced', 'winner': ganador_em.usuario.username})
+    
+    return JsonResponse({'status': 'no_eligible_data'})
+
+@login_required
+@require_http_methods(["POST"])
+def api_solicitar_cambio_perfil(request):
+    """
+    Recibe los datos propuestos por el usuario. 
+    Idioma y Tema se aplican de inmediato. 
+    Si es Admin, todo se aplica de inmediato.
+    Si es usuario normal y cambia Nombre/Email/Foto, se crea una solicitud de aprobación.
+    """
+    try:
+        user = request.user
+        first_name = request.POST.get('first_name', user.first_name)
+        last_name = request.POST.get('last_name', user.last_name)
+        email = request.POST.get('email', user.email)
+        language = request.POST.get('language', user.userprofile.language)
+        theme = request.POST.get('theme', user.userprofile.theme)
+        avatar_file = request.FILES.get('avatar')
+
+        # 1. Aplicar cambios inmediatos (Idioma y Tema)
+        profile = user.userprofile
+        profile.language = language
+        profile.theme = theme
+        profile.save()
+
+        # 2. Si es superusuario, aplicar todo de inmediato
+        if user.is_superuser:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.email = email
+            user.save()
+            if avatar_file:
+                profile.avatar = avatar_file
+                profile.save()
+            return JsonResponse({'success': True, 'message': 'Información actualizada correctamente.', 'immediate': True})
+
+        # 3. Si es usuario normal, verificar cambios sensibles
+        cambio_sensible = (
+            first_name != user.first_name or 
+            last_name != user.last_name or 
+            email != user.email or 
+            avatar_file
+        )
+
+        if cambio_sensible:
+            # Crear solicitud
+            solicitud = SolicitudCambioPerfil.objects.create(
+                solicitante=user,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                language=language or 'es',
+                avatar=avatar_file,
+                old_first_name=user.first_name,
+                old_last_name=user.last_name,
+                old_email=user.email,
+                old_language=getattr(user.userprofile, 'language', 'es')
+            )
+
+            # Notificar a administradores (supervisores)
+            admins = User.objects.filter(is_superuser=True)
+            if not admins.exists():
+                 admins = User.objects.all()[:1] 
+
+            for admin in admins:
+                crear_notificacion(
+                    usuario_destinatario=admin,
+                    tipo='solicitud_cambio_perfil',
+                    titulo='Solicitud de Cambio de Perfil',
+                    mensaje=f'El usuario {user.username} ha solicitado cambiar su información sensible. Requiere autorización.',
+                    usuario_remitente=user,
+                    solicitud_perfil=solicitud
+                )
+
+            return JsonResponse({
+                'success': True, 
+                'message': 'Preferencias guardadas. Los cambios en nombre, email o foto han sido enviados para aprobación administrativa.',
+                'immediate': True # Recargar para aplicar idioma/tema si cambiaron
+            })
+
+        return JsonResponse({'success': True, 'message': 'Preferencias actualizadas correctamente.', 'immediate': True})
+
+    except Exception as e:
+        logger.error(f"Error en api_solicitar_cambio_perfil: {e}")
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@login_required
+@user_passes_test(is_supervisor)
+@require_http_methods(["POST"])
+def api_procesar_solicitud_perfil(request, solicitud_id):
+    """
+    Permite que un administrador apruebe o rechace una solicitud de cambio de perfil.
+    """
+    try:
+        solicitud = get_object_or_404(SolicitudCambioPerfil, id=solicitud_id)
+        if solicitud.procesada:
+            return JsonResponse({'success': False, 'message': 'Esta solicitud ya ha sido procesada.'}, status=400)
+
+        data = json.loads(request.body)
+        aprobado = data.get('aprobado', False)
+        comentario = data.get('comentario', '')
+
+        solicitud.procesada = True
+        solicitud.aprobada = aprobado
+        solicitud.procesado_por = request.user
+        solicitud.fecha_procesamiento = timezone.now()
+        solicitud.comentario_admin = comentario
+        solicitud.save()
+
+        user = solicitud.solicitante
+        if aprobado:
+            # Aplicar cambios al usuario
+            user.first_name = solicitud.first_name
+            user.last_name = solicitud.last_name
+            user.email = solicitud.email
+            user.save()
+
+            # Aplicar cambios al perfil
+            profile = user.userprofile
+            profile.language = solicitud.language
+            if solicitud.avatar:
+                profile.avatar = solicitud.avatar
+            profile.save()
+
+            # Notificar al usuario que su solicitud fue aprobada
+            crear_notificacion(
+                usuario_destinatario=user,
+                tipo='sistema',
+                titulo='Perfil Actualizado',
+                mensaje=f'Tu solicitud de cambio de perfil ha sido aprobada por {request.user.username}.'
+            )
+        else:
+            # Notificar al usuario que su solicitud fue rechazada
+            crear_notificacion(
+                usuario_destinatario=user,
+                tipo='sistema',
+                titulo='Solicitud de Perfil Rechazada',
+                mensaje=f'Tu solicitud de cambio de perfil ha sido rechazada. Motivo: {comentario}'
+            )
+
+        return JsonResponse({'success': True, 'message': 'Solicitud procesada correctamente.'})
+    except Exception as e:
+        logger.error(f"Error en api_procesar_solicitud_perfil: {e}")
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
 

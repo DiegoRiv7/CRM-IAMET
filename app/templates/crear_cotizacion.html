@@ -11,6 +11,253 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- SortableJS para drag and drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    {% if widget_mode %}
+    <style>
+        /* Widget mode: hide dock, nav, and extra UI when embedded as iframe */
+        .macos-dock, #dock-bottom, #dock-left, #dock-right, #dock-top,
+        .dock-activation-zone, .dock-zone-left, .dock-zone-right,
+        .dock-zone-bottom, .dock-zone-top, .design-panel, #design-panel,
+        .edit-mode-exit, #night-shift-filter, nav, .navbar,
+        .breadcrumb, .header-bar, .top-bar {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        body {
+            background: white !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            color: #1D1D1F !important;
+        }
+        .main-content.container { margin-top: 0 !important; padding-top: 0.5rem !important; }
+
+        /* ═══ WHITE WIDGET MODE - Override all dark theme variables ═══ */
+        :root {
+            --apple-blue: #0052D4 !important;
+            --apple-blue-light: #4364F7 !important;
+            --apple-blue-dark: #003DA0 !important;
+            --apple-background: #FFFFFF !important;
+            --apple-background-secondary: #F8F8FA !important;
+            --apple-background-tertiary: #F2F2F7 !important;
+            --apple-background-quaternary: #E5E5EA !important;
+            --apple-label: #1D1D1F !important;
+            --apple-label-secondary: #636366 !important;
+            --apple-label-tertiary: #86868B !important;
+            --apple-label-quaternary: #AEAEB2 !important;
+            --apple-separator: #E2E8F0 !important;
+        }
+
+        .apple-bg { display: none !important; }
+
+        h1.text-white, .text-white {
+            color: #1D1D1F !important;
+        }
+
+        .card {
+            background: #F8F8FA !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 18px !important;
+            box-shadow: none !important;
+        }
+
+        .input-field {
+            background-color: #FFFFFF !important;
+            border: 1.5px solid #E2E8F0 !important;
+            color: #1D1D1F !important;
+            border-radius: 10px !important;
+        }
+        .input-field:focus {
+            border-color: #0052D4 !important;
+            box-shadow: 0 0 0 3px rgba(0, 82, 212, 0.1) !important;
+        }
+
+        .textarea-field {
+            background-color: #FFFFFF !important;
+            border: 1.5px solid #E2E8F0 !important;
+            color: #1D1D1F !important;
+            border-radius: 10px !important;
+        }
+        .textarea-field:focus {
+            border-color: #0052D4 !important;
+            box-shadow: 0 0 0 3px rgba(0, 82, 212, 0.1) !important;
+        }
+
+        select.input-field {
+            background-color: #FFFFFF !important;
+            color: #1D1D1F !important;
+        }
+        select.input-field option {
+            background: #FFFFFF;
+            color: #1D1D1F;
+        }
+
+        .btn-primary {
+            background: #0052D4 !important;
+            color: white !important;
+            border-radius: 9999px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 2px 8px rgba(0, 82, 212, 0.25) !important;
+        }
+        .btn-primary:hover {
+            background: #003DA0 !important;
+        }
+
+        .btn-secondary {
+            background: #F2F2F7 !important;
+            color: #1D1D1F !important;
+            border: 1.5px solid #E2E8F0 !important;
+            border-radius: 9999px !important;
+            font-weight: 600 !important;
+        }
+        .btn-secondary:hover {
+            background: #E5E5EA !important;
+        }
+
+        .product-table th {
+            background-color: #F8F8FA !important;
+            color: #636366 !important;
+            border-bottom: 1.5px solid #E2E8F0 !important;
+            font-size: 0.7rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+
+        .product-table tbody tr {
+            background-color: #FFFFFF !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+        }
+        .product-table tbody tr:hover {
+            background-color: #EBF5FF !important;
+        }
+        .product-table td {
+            border-bottom: 1px solid #F2F2F7 !important;
+            color: #1D1D1F !important;
+        }
+
+        .title-row {
+            background-color: #F2F2F7 !important;
+        }
+        .title-row:hover {
+            background-color: #E5E5EA !important;
+        }
+        .title-row td {
+            color: #1D1D1F !important;
+        }
+
+        label, span, p, div {
+            color: inherit;
+        }
+        label.block {
+            color: #636366 !important;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #F2F2F7 !important;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #D2D2D7 !important;
+        }
+
+        .sortable-ghost {
+            background: #0052D4 !important;
+        }
+
+        .drag-handle {
+            background: #0052D4 !important;
+        }
+
+        /* Summary section */
+        #subtotal, #iva-amount, #total {
+            color: #1D1D1F !important;
+        }
+        #total {
+            color: #0052D4 !important;
+        }
+
+        /* Hide the h1 title since parent widget has its own header */
+        body > .min-h-screen > .max-w-full > h1:first-child,
+        .max-w-full > h1.text-3xl {
+            display: none !important;
+        }
+
+        /* Auto-fill notification */
+        .bg-gradient-to-r.from-green-600 {
+            background: #EBF4FF !important;
+            border-color: #0052D4 !important;
+        }
+        .bg-gradient-to-r.from-green-600 h3,
+        .bg-gradient-to-r.from-green-600 p,
+        .bg-gradient-to-r.from-green-600 span {
+            color: #0052D4 !important;
+        }
+
+        /* Error and validation messages */
+        .errorlist { color: #EF4444 !important; }
+        .nethive-help-text { color: #F59E0B !important; }
+
+        /* Neutralize light-theme (pink) overrides in widget mode */
+        .light-theme .btn-primary {
+            background: #0052D4 !important;
+            box-shadow: 0 2px 8px rgba(0, 82, 212, 0.25) !important;
+            border: none !important;
+        }
+        .light-theme .btn-primary:hover {
+            background: #003DA0 !important;
+        }
+        .light-theme .form-control,
+        .light-theme .form-select,
+        .light-theme .input-field {
+            background: #FFFFFF !important;
+            border: 1.5px solid #E2E8F0 !important;
+            color: #1D1D1F !important;
+        }
+        .light-theme .form-control:focus,
+        .light-theme .form-select:focus,
+        .light-theme .input-field:focus {
+            border-color: #0052D4 !important;
+            box-shadow: 0 0 0 3px rgba(0, 82, 212, 0.1) !important;
+        }
+
+        /* Loading modal adjustments */
+        #loading-modal .bg-gradient-to-br {
+            background: white !important;
+            border: 1px solid #E2E8F0 !important;
+        }
+        #loading-modal h3 { color: #1D1D1F !important; }
+        #loading-modal p { color: #636366 !important; }
+
+        /* Modals (add client, add opportunity) */
+        #add-client-modal > div,
+        #add-opportunity-modal > div {
+            background: white !important;
+            border: 1px solid #E2E8F0 !important;
+        }
+        #add-client-modal h2,
+        #add-opportunity-modal h2 {
+            color: #1D1D1F !important;
+        }
+        #add-client-modal label,
+        #add-opportunity-modal label {
+            color: #636366 !important;
+        }
+
+        /* Fix text colors */
+        .text-gray-300, .text-gray-400, .text-gray-500 {
+            color: #86868B !important;
+        }
+        .text-red-400 { color: #EF4444 !important; }
+        .text-red-300 { color: #EF4444 !important; }
+
+        /* Paste area */
+        .paste-area-container {
+            background-color: #F8F8FA !important;
+            border-color: #E2E8F0 !important;
+        }
+        .paste-area-container p { color: #636366 !important; }
+    </style>
+    {% endif %}
     <script type="text/javascript">
     // Apply theme immediately to prevent flash
     (function() {
@@ -19,7 +266,7 @@
             if (saved) {
                 const preferences = JSON.parse(saved);
                 const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
-                
+
                 if (!isDarkMode) {
                     document.documentElement.classList.add('light-theme');
                 }
@@ -556,12 +803,12 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label for="id_oportunidad" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Oportunidad Bitrix24</label>
+                        <label for="id_oportunidad" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Oportunidad</label>
                         <div class="flex items-center space-x-2">
-                            <select id="id_oportunidad" name="oportunidad" class="input-field flex-grow" data-intro="🎯 Opcionalmente, vincula esta cotización con una oportunidad de Bitrix24 para mejor seguimiento." data-step="5">
+                            <select id="id_oportunidad" name="oportunidad" class="input-field flex-grow" data-intro="🎯 Opcionalmente, vincula esta cotización con una oportunidad para mejor seguimiento." data-step="5">
                                 <option value="">-- Seleccione una oportunidad --</option>
                             </select>
-                            <button type="button" id="add-opportunity-btn" class="btn-secondary py-2 px-4" data-intro="🆕 Crea una nueva oportunidad directamente en Bitrix24 desde aquí." data-step="6">
+                            <button type="button" id="add-opportunity-btn" class="btn-secondary py-2 px-4" data-intro="🆕 Crea una nueva oportunidad desde aquí." data-step="6">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             </button>
                         </div>
@@ -700,7 +947,9 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             </div>
 
             <div class="flex justify-end space-x-4 mt-8">
+                {% if not widget_mode %}
                 <button type="button" class="btn-secondary" onclick="window.history.back()">Regresar</button>
+                {% endif %}
                 <button type="submit" class="btn-primary" data-intro="✅ Una vez completado todo, haz clic aquí para generar la cotización y su PDF automáticamente." data-step="11">{% if editing_mode %}Crear Nueva Cotización{% else %}Crear Cotización{% endif %}</button>
             </div>
             
@@ -1751,7 +2000,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
 
             {% if editing_mode and cotizacion_original %}
             // Inicializar campos del formulario con valores de la cotización original
-            document.getElementById('iva-rate').value = '{{ cotizacion_original.iva_rate }}';
+            document.getElementById('iva-rate').value = '{{ cotizacion_original.iva_rate|stringformat:"s" }}';
             document.getElementById('currency-select').value = '{{ cotizacion_original.moneda }}';
             document.getElementById('tipo-cotizacion-select').value = '{{ cotizacion_original.tipo_cotizacion }}';
             document.getElementById('descuento_visible').value = '{{ cotizacion_original.descuento_visible|yesno:"true,false" }}';
@@ -1764,6 +2013,8 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 cell.style.display = isDiscountVisible ? '' : 'none';
             });
             document.getElementById('show-discount-btn').style.display = isDiscountVisible ? 'none' : 'inline-block';
+            // Recalcular totales con el IVA y moneda correctos
+            calculateTotals();
             {% endif %}
 
             document.getElementById('add-row-btn').addEventListener('click', () => {
@@ -1844,7 +2095,9 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     message: 'Por favor, selecciona una institución (BAJANET o IAMET) para la cotización.'
                 }
             };
-            window.initFormAssistance(fieldsToValidate);
+            if (typeof window.initFormAssistance === 'function') {
+                window.initFormAssistance(fieldsToValidate);
+            }
 
             const cotizacionForm = document.getElementById('cotizacion-form');
             const loadingModal = document.getElementById('loading-modal');
@@ -1880,34 +2133,106 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             cotizacionForm.addEventListener('submit', (event) => {
                 // Validar campos antes de enviar
                 const emptyFields = validateProductFields();
-                
+
                 if (emptyFields.length > 0) {
                     event.preventDefault(); // Prevenir el envío del formulario
-                    
+
                     // Mostrar mensaje de error
                     validationErrorText.textContent = 'Por favor, completa los siguientes campos obligatorios: ' + emptyFields.join(', ');
                     validationErrorMessage.classList.remove('hidden');
-                    
+
                     // Scroll hacia el mensaje de error
                     validationErrorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
+
                     // Ocultar el mensaje después de 5 segundos
                     setTimeout(() => {
                         validationErrorMessage.classList.add('hidden');
                     }, 5000);
-                    
+
                     return;
                 }
-                
+
                 // Ocultar mensaje de error si existe
                 validationErrorMessage.classList.add('hidden');
-                
+
                 // Asegurar que las posiciones de títulos estén actualizadas antes de enviar
                 updateRowNumbers();
                 console.log('🔄 Title positions updated before form submission');
-                
+
+                {% if widget_mode %}
+                // ── Widget mode: AJAX submit + stay on form ──
+                event.preventDefault();
+                loadingModal.classList.remove('hidden');
+
+                const formData = new FormData(cotizacionForm);
+                formData.append('widget_mode', '1');
+
+                fetch(cotizacionForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    loadingModal.classList.add('hidden');
+                    if (data.success) {
+                        // Show subtle success toast (stay on form)
+                        const toast = document.getElementById('cot-success-toast');
+                        toast.classList.remove('hidden');
+                        requestAnimationFrame(() => toast.classList.add('show'));
+                        setTimeout(() => {
+                            toast.classList.remove('show');
+                            setTimeout(() => toast.classList.add('hidden'), 300);
+                        }, 3000);
+
+                        // Auto-download the PDF
+                        if (data.pdf_url) {
+                            const link = document.createElement('a');
+                            link.href = data.pdf_url;
+                            link.download = '';
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+
+                        // Notify parent so it can refresh data in the background
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage({
+                                type: 'cotizacion-created',
+                                cotizacionId: data.cotizacion_id,
+                                stayOpen: true
+                            }, '*');
+                        }
+                    } else {
+                        // Show errors
+                        let errorMsg = 'Error al crear la cotización.';
+                        if (data.errors) {
+                            const msgs = [];
+                            for (const [field, errs] of Object.entries(data.errors)) {
+                                errs.forEach(e => msgs.push(e.message || e));
+                            }
+                            if (msgs.length) errorMsg = msgs.join(', ');
+                        }
+                        validationErrorText.textContent = errorMsg;
+                        validationErrorMessage.classList.remove('hidden');
+                        setTimeout(() => validationErrorMessage.classList.add('hidden'), 5000);
+                    }
+                })
+                .catch(err => {
+                    loadingModal.classList.add('hidden');
+                    console.error('Error submitting cotización:', err);
+                    validationErrorText.textContent = 'Error de conexión al crear la cotización.';
+                    validationErrorMessage.classList.remove('hidden');
+                    setTimeout(() => validationErrorMessage.classList.add('hidden'), 5000);
+                });
+                return;
+                {% endif %}
+
                 loadingModal.classList.remove('hidden'); // Show loading modal
-                
+
                 // Auto-hide modal after 8 seconds as fallback
                 setTimeout(() => {
                     loadingModal.classList.add('hidden');
@@ -1973,77 +2298,73 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         });
     </script>
     <!-- Loading Modal -->
-    <div id="loading-modal" class="fixed inset-0 bg-gray-900 bg-opacity-85 flex items-center justify-center z-50 hidden backdrop-blur-sm">
-        <div class="bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 rounded-2xl shadow-2xl p-10 flex flex-col items-center border border-gray-600/30 max-w-md mx-4 loading-modal-content">
-            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-16 w-16 mb-6"></div>
-            <h3 class="text-white text-xl font-semibold mb-2">Generando Cotización</h3>
-            <p class="text-gray-300 text-center leading-relaxed">
-                Estamos creando tu cotización y generando el PDF profesional...
-            </p>
-            <div class="mt-4 flex items-center space-x-2">
-                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse animation-delay-200"></div>
-                <div class="w-2 h-2 bg-blue-300 rounded-full animate-pulse animation-delay-400"></div>
-            </div>
-        </div>
+    <!-- Loading indicator (subtle top bar) -->
+    <div id="loading-modal" class="hidden">
+        <div class="cot-loading-bar"></div>
+    </div>
+
+    <!-- Success toast (inline, stays on form) -->
+    <div id="cot-success-toast" class="cot-success-toast hidden">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Cotización creada exitosamente</span>
     </div>
 
     <style>
-        .loader {
-            border-top-color: #3b82f6; /* Blue-500 */
-            border-right-color: #60a5fa; /* Blue-400 */
-            -webkit-animation: spinner 1.2s linear infinite;
-            animation: spinner 1.2s linear infinite;
+        /* Subtle loading bar at top */
+        .cot-loading-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #0052D4, transparent);
+            background-size: 200% 100%;
+            animation: cotLoadingSlide 1s ease-in-out infinite;
+            z-index: 9999;
         }
 
-        @-webkit-keyframes spinner {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
+        @keyframes cotLoadingSlide {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
 
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Loading modal animations */
-        .loading-modal-content {
-            animation: modalFadeIn 0.3s ease-out;
-        }
-
-        @keyframes modalFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        /* Staggered pulse animation */
-        .animation-delay-200 {
-            animation-delay: 0.2s;
-        }
-
-        .animation-delay-400 {
-            animation-delay: 0.4s;
-        }
-
-        /* Add smooth transitions for modal show/hide */
         #loading-modal {
-            transition: opacity 0.3s ease-in-out;
+            transition: opacity 0.2s;
         }
-
         #loading-modal.hidden {
             opacity: 0;
             pointer-events: none;
         }
-
         #loading-modal:not(.hidden) {
             opacity: 1;
-            pointer-events: auto;
+        }
+
+        /* Success toast */
+        .cot-success-toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: #0052D4;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(0, 82, 212, 0.35);
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.1, 1);
+        }
+        .cot-success-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .cot-success-toast.hidden {
+            display: none;
         }
 
         /* Animaciones para la sección de comentarios */

@@ -1,0 +1,1592 @@
+<!-- ═══ WIDGET: DETALLE DE OPORTUNIDAD ═══ -->
+<div class="widget-overlay" id="widgetDetalle">
+    <div class="widget-card widget-card-lg">
+        <!-- Loading -->
+        <div id="detalleLoading" style="text-align:center;padding:4rem;color:#86868B;">
+            <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;"
+                viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="2">
+                <path
+                    d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+            </svg>
+            Cargando oportunidad...
+        </div>
+        <!-- Content (hidden until loaded) -->
+        <div id="detalleContent" style="display:none;flex-direction:column;height:100%;">
+            <!-- Header -->
+            <div class="wo-header">
+                <div class="wo-header-top">
+                    <div>
+                        <div class="wo-type-badge runrate" id="woTypeBadge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            </svg>
+                            <span id="woTypeBadgeText">VENTA RUNRATE</span>
+                        </div>
+                        <h1 class="wo-title" id="woTitle"></h1>
+                    </div>
+                    <button type="button" class="widget-close" id="detalleClose">&times;</button>
+                </div>
+            </div>
+
+            <!-- ═══ DETALLE TABS REMOVED ═══ -->
+            <div class="wo-tab-panel active" id="woTabDetalle" style="padding-top:1rem;">
+                <!-- Pipeline -->
+                <div class="wo-pipeline">
+                    <div class="wo-pipeline-container">
+                        <!-- Left Arrow -->
+                        <div class="wo-scroll-btn"
+                            onclick="document.getElementById('woPipelineScroll').scrollBy({left:-150, behavior:'smooth'})">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M15 18l-6-6 6-6" />
+                            </svg>
+                        </div>
+
+                        <div class="wo-pipeline-scroll" id="woPipelineScroll">
+                            <div class="wo-pipeline-stages" id="woPipelineStages"></div>
+                        </div>
+
+                        <!-- Right Arrow -->
+                        <div class="wo-scroll-btn"
+                            onclick="document.getElementById('woPipelineScroll').scrollBy({left:150, behavior:'smooth'})">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M9 18l6-6-6-6" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="wo-content">
+                    <div class="wo-grid">
+                        <!-- DOM ITEM 1: Info card (Row 1, Col 1) -->
+                        <div class="wo-card" style="display:flex;flex-direction:column;">
+                            <div class="wo-info-grid"
+                                style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;flex:1;">
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Monto de Oportunidad</span>
+                                    <span class="wo-info-value" id="woMonto">$0</span>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Fecha de Cierre</span>
+                                    <span class="wo-info-value medium" id="woFechaCierre">-</span>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Probabilidad de Cierre</span>
+                                    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;">
+                                        <span class="wo-prob-value" id="woProbValue"
+                                            style="font-size:1.1rem;margin:0;">0%</span>
+                                        <div class="wo-prob-bar" style="flex:1;margin:0;">
+                                            <div class="wo-prob-fill" id="woProbFill" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Producto</span>
+                                    <span class="wo-info-value medium" id="woProducto">-</span>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Area</span>
+                                    <span class="wo-info-value medium" id="woArea">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DOM ITEM 2: Tareas card (Row 1, Col 2) -->
+                        <div class="wo-card" style="display:flex;flex-direction:column;">
+                            <div class="wo-section-header">
+                                <h3 class="wo-section-title">Tareas</h3>
+                                <button class="wo-btn-new" onclick="woCrearTareaOpp()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                    Nueva
+                                </button>
+                            </div>
+                            <div class="wo-tareas-inline-list" id="woTareasInlineList" style="flex:1;max-height:none;">
+                                <div class="wo-empty"
+                                    style="padding:1rem;font-size:0.8rem;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                                    <svg width="20" height="20" fill="none" stroke="#C7C7CC" stroke-width="1.5"
+                                        viewBox="0 0 24 24" style="display:block;margin:0 auto 0.4rem;">
+                                        <path d="M9 11l3 3L22 4" />
+                                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                                    </svg>
+                                    Sin tareas aún
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DOM ITEM 3: Cotizaciones card (Row 2, Col 1) -->
+                        <div class="wo-card">
+                            <div class="wo-section-header">
+                                <h3 class="wo-section-title">Cotizaciones</h3>
+                                <button class="wo-btn-new" id="detNuevaCot">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                    Nueva
+                                </button>
+                            </div>
+                            <div class="wo-quote-list" id="woQuoteList">
+                                <div class="wo-empty">Sin cotizaciones aun</div>
+                            </div>
+                        </div>
+
+                        <!-- DOM ITEM 4: Stakeholders & Drive block (Row 2, Col 2) -->
+                        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+                            <!-- Stakeholders card -->
+                            <div class="wo-card">
+                                <div class="wo-stakeholder">
+                                    <div class="wo-stakeholder-label">Vendedor</div>
+                                    <div class="wo-stakeholder-info">
+                                        <div class="wo-avatar blue" id="woVendedorAvatar"></div>
+                                        <div>
+                                            <div class="wo-stakeholder-name" id="woVendedorName"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="wo-divider"></div>
+                                <div class="wo-stakeholder">
+                                    <div class="wo-stakeholder-label">Cliente</div>
+                                    <div class="wo-stakeholder-info">
+                                        <div class="wo-avatar purple" id="woClienteAvatar"></div>
+                                        <div>
+                                            <div class="wo-stakeholder-name" id="woClienteName"></div>
+                                            <div class="wo-stakeholder-company" id="woContactoName"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Drive + Conversación side-by-side -->
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                                <!-- Drive mini-card -->
+                                <div class="wo-card wo-quick-card" onclick="woAbrirGestorDrive()"
+                                    style="cursor:pointer;">
+                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"
+                                            viewBox="0 0 24 24">
+                                            <path
+                                                d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                                        </svg>
+                                    </div>
+                                    <span class="wo-quick-label">Drive</span>
+                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2"
+                                        viewBox="0 0 24 24" style="margin-left:auto;">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </div>
+                                <!-- Conversación mini-card -->
+                                <div class="wo-card wo-quick-card" onclick="woAbrirGestorConversacion()"
+                                    style="cursor:pointer;">
+                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"
+                                            viewBox="0 0 24 24">
+                                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                                        </svg>
+                                    </div>
+                                    <span class="wo-quick-label">Conversación</span>
+                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2"
+                                        viewBox="0 0 24 24" style="margin-left:auto;">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save bar for inline editing -->
+            <div class="wo-save-bar" id="woSaveBar" style="display:none;">
+                <button class="wo-save-cancel" id="woSaveCancel">Cancelar</button>
+                <button class="wo-save-confirm" id="woSaveConfirm">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: DRIVE GESTOR DE ARCHIVOS ═══ -->
+<div class="widget-overlay" id="widgetOppDrive" style="z-index:10010;display:none;">
+    <div class="widget-card widget-card-md"
+        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;">
+        <div class="wo-header" style="border-bottom:1px solid #E5E5EA;background:#fff;">
+            <div class="wo-header-top">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div
+                        style="background:rgba(0,82,212,0.1);color:#0052D4;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"
+                            viewBox="0 0 24 24">
+                            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 style="margin:0;font-size:1.1rem;font-weight:600;color:#1D1D1F;">Archivos de Oportunidad
+                        </h2>
+                        <div id="woDriveBreadcrumb"
+                            style="font-size:0.8rem;color:#86868B;display:flex;align-items:center;gap:0.25rem;">
+                            <!-- Breadcrumbs will go here -->
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="widget-close" onclick="woCerrarGestorDrive()">&times;</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:1rem;">
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="wo-btn-new" onclick="woDriveCrearCarpeta()"
+                        style="background:#fff;border:1px solid #E5E5EA;color:#1D1D1F;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M12 5v14m-7-7h14" />
+                        </svg> Nueva Carpeta
+                    </button>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                    <input type="file" id="woDriveFileInput" multiple style="display:none;"
+                        onchange="woDriveHandleFiles(this.files)">
+                    <button class="wo-btn-new" onclick="document.getElementById('woDriveFileInput').click()"
+                        style="background:#0052D4;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5-5 5m5-5v12" />
+                        </svg> Subir Archivo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dropzone & File List -->
+        <div id="woDriveDropzone" style="flex:1;overflow-y:auto;padding:1.5rem;position:relative;"
+            ondragover="woDriveDragOver(event)" ondragleave="woDriveDragLeave(event)" ondrop="woDriveDrop(event)">
+            <div id="woDriveDragOverlay"
+                style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,82,212,0.05);border:2px dashed #0052D4;border-radius:12px;z-index:10;align-items:center;justify-content:center;flex-direction:column;color:#0052D4;">
+                <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"
+                    style="margin-bottom:1rem;">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5-5 5m5-5v12" />
+                </svg>
+                <h3 style="margin:0;font-size:1.2rem;font-weight:600;">Suelta los archivos aquí</h3>
+            </div>
+
+            <!-- Loading State -->
+            <div id="woDriveLoading" style="display:none;text-align:center;padding:3rem;color:#86868B;">
+                <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+                </svg>
+                Cargando archivos...
+            </div>
+
+            <!-- Empty State -->
+            <div id="woDriveEmpty" style="display:none;text-align:center;padding:4rem 2rem;color:#86868B;">
+                <svg width="64" height="64" fill="none" stroke="#D1D1D6" stroke-width="1" viewBox="0 0 24 24"
+                    style="margin:0 auto 1rem;">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                </svg>
+                <div style="font-size:1.1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.5rem;">Carpeta vacía</div>
+                <div style="font-size:0.9rem;">Sube archivos o crea carpetas aquí. Puedes arrastrar y soltar desde tu
+                    computadora.</div>
+            </div>
+
+            <!-- Grid Items -->
+            <div id="woDriveGrid"
+                style="display:grid;grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));gap:1rem;">
+                <!-- Items (Folders & Files) injected here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: CONVERSACION ═══ -->
+<div class="widget-overlay" id="widgetOppConversacion" style="z-index:10010;display:none;">
+    <div class="widget-card widget-card-md"
+        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;">
+        <div class="wo-header"
+            style="border-bottom:1px solid #E5E5EA;background:#fff;padding:1.1rem 1.5rem;flex-shrink:0;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div style="display:flex;align-items:flex-start;gap:0.85rem;min-width:0;max-width:calc(100% - 40px);">
+                    <div
+                        style="background:rgba(0,82,212,0.1);color:#0052D4;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"
+                            viewBox="0 0 24 24">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                        </svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <h2 id="woConvOppNameTitle"
+                            style="margin:0;font-size:1.15rem;font-weight:700;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            Conversación</h2>
+                        <div id="woConvActividadesBanner"
+                            style="display:flex;gap:0.6rem;overflow-x:auto;margin-top:0.6rem;padding-bottom:0.2rem;scrollbar-width:thin;max-width:600px;">
+                            <!-- Actividades agendadas en banner -->
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="widget-close" onclick="woCerrarGestorConversacion()"
+                    style="flex-shrink:0;">&times;</button>
+            </div>
+        </div>
+
+        <div id="woConvMensajesGrid"
+            style="flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;">
+            <!-- messages here -->
+        </div>
+
+        <!-- Reply block -->
+        <div id="woConvReplyBar"
+            style="display:none;padding:0.5rem 1.5rem;background:#F2F2F7;border-top:1px solid #E5E5EA;font-size:0.8rem;color:#86868B;align-items:center;justify-content:space-between;">
+            <div>Respondiendo a: <strong id="woConvReplyTo" style="color:#1D1D1F;"></strong></div>
+            <button onclick="woConvCancelReply()"
+                style="background:none;border:none;cursor:pointer;color:#FF3B30;">&times;</button>
+        </div>
+
+        <!-- Input area -->
+        <div
+            style="background:#fff;border-top:1px solid #E5E5EA;padding:1rem 1.5rem;display:flex;align-items:flex-end;gap:0.5rem;">
+            <button onclick="woAbrirWidgetCrearActividad()"
+                style="width:36px;height:36px;border-radius:50%;background:#F2F2F7;border:1px solid #E5E5EA;display:flex;align-items:center;justify-content:center;color:#86868B;cursor:pointer;flex-shrink:0;"
+                title="Agendar Actividad">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            </button>
+
+            <input type="file" id="woConvFotoInput" accept="image/*" style="display:none;"
+                onchange="woConvSendMedia(this.files)">
+            <button onclick="document.getElementById('woConvFotoInput').click()"
+                style="width:36px;height:36px;border-radius:50%;background:#F2F2F7;border:1px solid #E5E5EA;display:flex;align-items:center;justify-content:center;color:#86868B;cursor:pointer;flex-shrink:0;"
+                title="Subir Foto">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            </button>
+            <div
+                style="flex:1;background:#F2F2F7;border-radius:18px;padding:0;display:flex;align-items:center;border:1px solid #E5E5EA;">
+                <textarea id="woConvInputText" rows="1"
+                    style="flex:1;background:none;border:none;padding:0.6rem 1rem;font-size:0.9rem;resize:none;outline:none;font-family:inherit;max-height:100px;line-height:1.4;"
+                    placeholder="Escribe un mensaje..."
+                    onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); woConvSendMessage(); }"></textarea>
+            </div>
+            <button onclick="woConvSendMessage()"
+                style="width:36px;height:36px;border-radius:50%;background:#0052D4;border:none;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;flex-shrink:0;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: CREAR ACTIVIDAD (TAREA) ═══ -->
+<div class="widget-overlay" id="widgetOppCrearActividad" style="z-index:10015;display:none;">
+    <div class="widget-card widget-card-md"
+        style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+        <div
+            style="padding:1.5rem;border-bottom:1px solid #E5E5EA;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:600;font-size:1.1rem;color:#1D1D1F;">Agendar Actividad</div>
+            <button type="button" class="widget-close"
+                onclick="document.getElementById('widgetOppCrearActividad').style.display='none'">&times;</button>
+        </div>
+        <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:70vh;">
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">NOMBRE
+                    DE LA ACTIVIDAD</label>
+                <input type="text" id="woFormActNombre"
+                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;"
+                    placeholder="Ej. Llamada de seguimiento">
+            </div>
+            <div style="display:flex;gap:1rem;">
+                <div style="flex:1;">
+                    <label
+                        style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FECHA</label>
+                    <input type="date" id="woFormActFecha"
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;">
+                </div>
+                <div style="width:140px;">
+                    <label
+                        style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">INICIO</label>
+                    <input type="time" id="woFormActInicio"
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;">
+                </div>
+                <div style="width:140px;">
+                    <label
+                        style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FIN</label>
+                    <input type="time" id="woFormActFin"
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;">
+                </div>
+            </div>
+            <div>
+                <label
+                    style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">DESCRIPCIÓN</label>
+                <textarea id="woFormActDesc" rows="3"
+                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;resize:none;"
+                    placeholder="Detalles de la actividad..."></textarea>
+            </div>
+            <div style="position:relative;">
+                <label
+                    style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">PARTICIPANTES</label>
+                <div id="woFormActParticipantesContainer"
+                    style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0.5rem;min-height:30px;padding:4px;border:1px solid #D1D1D6;border-radius:8px;background:#F9FAFB;">
+                </div>
+                <input type="text" id="woFormActParticipantesSearch"
+                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;"
+                    placeholder="Buscar usuario por nombre..." oninput="woSearchParticipantes(this.value)">
+                <div id="woFormActParticipantesDropdown"
+                    style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.15);z-index:10030;max-height:220px;overflow-y:auto;margin-top:4px;">
+                </div>
+            </div>
+        </div>
+        <div
+            style="padding:1rem 1.5rem;border-top:1px solid #E5E5EA;background:#F9FAFB;display:flex;justify-content:flex-end;gap:0.8rem;border-radius:0 0 12px 12px;">
+            <button onclick="document.getElementById('widgetOppCrearActividad').style.display='none'"
+                style="padding:0.7rem 1.2rem;background:none;border:none;color:#86868B;font-weight:500;cursor:pointer;">Cancelar</button>
+            <button onclick="woCrearActividad()"
+                style="padding:0.7rem 1.5rem;background:#0052D4;border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;">Agendar
+                y Notificar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: VER DETALLES DE ACTIVIDAD ═══ -->
+<div class="widget-overlay" id="widgetOppVerActividad" style="z-index:10025;display:none;">
+    <div class="widget-card widget-card-md"
+        style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+        <div style="height:60px;background:#0052D4;border-radius:12px 12px 0 0;position:relative;">
+            <button type="button" onclick="document.getElementById('widgetOppVerActividad').style.display='none'"
+                style="position:absolute;top:15px;right:15px;color:#fff;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;line-height:1;transition:background 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.2)'">&times;</button>
+            <div
+                style="position:absolute;bottom:-20px;left:20px;width:40px;height:40px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);color:#0052D4;">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            </div>
+        </div>
+        <div
+            style="padding:2rem 1.5rem 1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:70vh;">
+            <div>
+                <h3 id="woVerActNombre" style="margin:0;font-size:1.3rem;font-weight:700;color:#1D1D1F;">Cargando...
+                </h3>
+                <div id="woVerActFecha"
+                    style="margin-top:0.3rem;color:#86868B;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:color 0.15s;"
+                    onclick="woToggleFechaEdit()" onmouseenter="this.style.color='#0052D4'"
+                    onmouseleave="this.style.color='#86868B'">
+                </div>
+                <!-- Inline date editor -->
+                <div id="woVerActFechaEdit"
+                    style="display:none;margin-top:0.5rem;background:#F2F2F7;border-radius:10px;padding:0.75rem;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                        <label style="font-size:0.75rem;font-weight:600;color:#86868B;">Nueva fecha:</label>
+                        <input type="datetime-local" id="woEditFechaLimite"
+                            style="padding:6px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.85rem;color:#1D1D1F;background:#fff;">
+                        <button onclick="woGuardarNuevaFecha()"
+                            style="background:#0052D4;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Reprogramar</button>
+                        <button onclick="document.getElementById('woVerActFechaEdit').style.display='none'"
+                            style="background:#E5E5EA;color:#1D1D1F;border:none;padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#F2F2F7;border-radius:8px;padding:1rem;">
+                <div
+                    style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.4rem;text-transform:uppercase;">
+                    Descripción</div>
+                <div id="woVerActDesc" style="font-size:0.95rem;color:#1D1D1F;line-height:1.5;">Sin descripción</div>
+            </div>
+
+            <div style="display:flex;gap:1.5rem;">
+                <div>
+                    <div
+                        style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">
+                        Creador</div>
+                    <div id="woVerActCreador" style="font-size:0.9rem;color:#1D1D1F;font-weight:500;"></div>
+                </div>
+                <div>
+                    <div
+                        style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">
+                        Participantes</div>
+                    <div id="woVerActParticipantes" style="font-size:0.9rem;color:#1D1D1F;"></div>
+                </div>
+            </div>
+
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px dashed #E5E5EA;">
+                <div
+                    style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.4rem;text-transform:uppercase;">
+                    Relacionado A</div>
+                <button id="woVerActRelacionado"
+                    style="background:rgba(0,82,212,0.1);color:#0052D4;border:none;padding:0.6rem 1rem;border-radius:8px;font-weight:600;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;"
+                    onclick="document.getElementById('widgetOppVerActividad').style.display='none'">
+                    <span>Oportunidad</span>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Estado + Botón completar -->
+            <div id="woVerActAcciones"
+                style="margin-top:0.5rem;padding-top:1rem;border-top:1px dashed #E5E5EA;display:flex;align-items:center;justify-content:space-between;">
+                <div id="woVerActEstadoBadge"
+                    style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;">
+                </div>
+                <button id="woVerActBtnCompletar" onclick="woCompletarActividad()"
+                    style="background:#34C759;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s,background 0.2s;"
+                    onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='none'">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Completar Actividad
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: MODAL DIALOGS (Custom prompts/confirms) ═══ -->
+<div class="widget-overlay" id="widgetOppDialog"
+    style="z-index:10020;display:none;align-items:center;justify-content:center;">
+    <div
+        style="background:#fff;border-radius:12px;width:340px;box-shadow:0 10px 40px rgba(0,0,0,0.2);overflow:hidden;animation: scaleIn 0.2s ease forwards;">
+        <div style="padding:1.5rem;text-align:center;">
+            <h3 id="woDialogTitle" style="margin:0 0 0.5rem;font-size:1.1rem;font-weight:600;color:#1D1D1F;">Título</h3>
+            <p id="woDialogText" style="margin:0;font-size:0.9rem;color:#86868B;display:none;">Texto</p>
+            <div id="woDialogInputWrap" style="margin-top:1rem;display:none;">
+                <input type="text" id="woDialogInput"
+                    style="width:100%;padding:0.7rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.9rem;outline:none;" />
+            </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #E5E5EA;">
+            <button id="woDialogBtnCancel"
+                style="flex:1;padding:0.9rem;background:none;border:none;border-right:1px solid #E5E5EA;color:#0052D4;font-size:0.95rem;font-weight:400;cursor:pointer;">Cancelar</button>
+            <button id="woDialogBtnConfirm"
+                style="flex:1;padding:0.9rem;background:none;border:none;color:#0052D4;font-size:0.95rem;font-weight:600;cursor:pointer;">Aceptar</button>
+        </div>
+    </div>
+</div>
+<style>
+    @keyframes spin {
+        from {
+            transform: rotate(0deg)
+        }
+
+        to {
+            transform: rotate(360deg)
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        'use strict';
+        var _woCurrentOppId = null;
+
+        // Drive Gestor logic
+        var _woDriveCurrentFolder = null;
+        var _woDriveBreadcrumbs = [];
+
+        window.woAbrirGestorDrive = function () {
+            if (!_woCurrentOppId) {
+                alert('No hay oportunidad seleccionada');
+                return;
+            }
+            var w = document.getElementById('widgetOppDrive');
+            if (w) {
+                w.style.display = 'flex';
+                _woDriveCurrentFolder = null;
+                _woDriveBreadcrumbs = [];
+                woDriveCargarDirectorio();
+            }
+        };
+
+        window.woCerrarGestorDrive = function () {
+            var w = document.getElementById('widgetOppDrive');
+            if (w) w.style.display = 'none';
+        };
+
+        window.woAbrirGestorConversacion = function () {
+            alert('Conversación en ventana próximamente...');
+        };
+
+        window.woDriveIrACarpeta = function (id, bcIndex) {
+            _woDriveCurrentFolder = id;
+            if (id === null) _woDriveBreadcrumbs = [];
+            else if (bcIndex !== undefined) _woDriveBreadcrumbs = _woDriveBreadcrumbs.slice(0, bcIndex + 1);
+            woDriveCargarDirectorio();
+        };
+
+        window.woDriveEntrarCarpeta = function (id, nombre) {
+            _woDriveCurrentFolder = id;
+            _woDriveBreadcrumbs.push({ id: id, nombre: nombre });
+            woDriveCargarDirectorio();
+        };
+
+        // ── Tareas inline (dentro del tab detalle) ──
+        function woCargarTareasInline(oppId) {
+            var container = document.getElementById('woTareasInlineList');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.8rem;">Cargando...</div>';
+
+            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var tareas = data.tareas || data.results || [];
+                    if (!tareas.length) {
+                        container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">' +
+                            '<svg width="20" height="20" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 0.4rem;">' +
+                            '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' +
+                            '</svg>Sin tareas aún</div>';
+                        return;
+                    }
+                    var nowI = new Date();
+                    tareas.sort(function (a, b) {
+                        var aDone = a.estado === 'completada', bDone = b.estado === 'completada';
+                        var aV = !aDone && a.fecha_limite && new Date(a.fecha_limite) < nowI;
+                        var bV = !bDone && b.fecha_limite && new Date(b.fecha_limite) < nowI;
+                        if (aV && !bV) return -1; if (!aV && bV) return 1;
+                        if (aDone && !bDone) return 1; if (!aDone && bDone) return -1;
+                        var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                        var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                        return aT - bT;
+                    });
+                    container.innerHTML = tareas.slice(0, 5).map(function (t) {
+                        var done = t.estado === 'completada';
+                        var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < nowI;
+                        var dot = done ? '#34C759' : (venc ? '#FF3B30' : '#FF9500');
+                        var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
+                        var rowBg = done ? 'background:rgba(52,199,89,0.06);' : (venc ? 'background:rgba(255,59,48,0.07);' : '');
+                        return '<div class="wo-tarea-inline-item" style="' + rowBg + '" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')">' +
+                            '<span style="width:6px;height:6px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
+                            '<span style="flex:1;font-size:0.78rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (t.titulo || 'Sin título') + '</span>' +
+                            '<span style="font-size:0.7rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' +
+                            (t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '') +
+                            '</span></div>';
+                    }).join('');
+                    if (tareas.length > 5) {
+                        container.innerHTML += '<div style="text-align:center;padding:0.4rem;"><button onclick="if(window.islandApp && window.islandApp.switchTab) window.islandApp.switchTab(\'tareas\');" style="background:none;border:none;color:#0052D4;font-size:0.75rem;font-weight:600;cursor:pointer;">Ver todas (' + tareas.length + ')</button></div>';
+                    }
+                })
+                .catch(function () {
+                    container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Error al cargar</div>';
+                });
+        }
+
+        // ── Tareas de oportunidad (tab completo) ──
+        function woCargarTareasOpp(oppId) {
+            var container = document.getElementById('woTareasContainer');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;">Cargando tareas...</div>';
+
+            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var tareas = data.tareas || data.results || [];
+                    if (!tareas.length) {
+                        container.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">' +
+                            '<div style="font-size:2rem;margin-bottom:0.5rem;">&#9744;</div>' +
+                            'No hay tareas para esta oportunidad.</div>';
+                        return;
+                    }
+                    var nowO = new Date();
+                    tareas.sort(function (a, b) {
+                        var aDone = a.estado === 'completada', bDone = b.estado === 'completada';
+                        var aV = !aDone && a.fecha_limite && new Date(a.fecha_limite) < nowO;
+                        var bV = !bDone && b.fecha_limite && new Date(b.fecha_limite) < nowO;
+                        if (aV && !bV) return -1; if (!aV && bV) return 1;
+                        if (aDone && !bDone) return 1; if (!aDone && bDone) return -1;
+                        var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                        var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                        return aT - bT;
+                    });
+                    container.innerHTML = tareas.map(function (t) {
+                        var done = t.estado === 'completada';
+                        var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < nowO;
+                        var rowBg = done ? 'background:rgba(52,199,89,0.07);' : (venc ? 'background:rgba(255,59,48,0.07);' : '');
+                        var tituloStyle = done ? 'text-decoration:line-through;color:#9CA3AF;' : (venc ? 'color:#FF3B30;' : '');
+                        return '<div class="wo-tarea-item" style="' + rowBg + '" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')">' +
+                            '<div class="wo-tarea-check ' + (done ? 'done' : '') + '" style="' + (venc ? 'border-color:#FF3B30;' : '') + '"></div>' +
+                            '<div class="wo-tarea-info">' +
+                            '<div class="wo-tarea-titulo" style="' + tituloStyle + '">' + (t.titulo || 'Sin título') + '</div>' +
+                            '<div class="wo-tarea-meta">' +
+                            (t.responsable || 'Sin asignar') + ' &bull; ' +
+                            (t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : 'Sin fecha') +
+                            '</div></div></div>';
+                    }).join('');
+                })
+                .catch(function () {
+                    container.innerHTML = '<div style="text-align:center;padding:2rem;color:#DC2626;font-size:0.85rem;">Error al cargar tareas.</div>';
+                });
+        }
+
+        window.woCrearTareaOpp = function () {
+            if (typeof crmTaskAbrirCrear === 'function') {
+                crmTaskAbrirCrear(_woCurrentOppId);
+            } else {
+                alert('Funcionalidad de crear tarea próximamente.');
+            }
+        };
+
+        function woDriveCargarDirectorio() {
+            document.getElementById('woDriveLoading').style.display = 'block';
+            document.getElementById('woDriveEmpty').style.display = 'none';
+            document.getElementById('woDriveGrid').style.display = 'none';
+            document.getElementById('woDriveGrid').innerHTML = '';
+
+            var url = '/app/api/oportunidad/' + _woCurrentOppId + '/drive/';
+            if (_woDriveCurrentFolder) url += '?parent=' + _woDriveCurrentFolder;
+
+            fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    document.getElementById('woDriveLoading').style.display = 'none';
+                    if (!data.carpetas.length && !data.archivos.length) {
+                        document.getElementById('woDriveEmpty').style.display = 'block';
+                        document.getElementById('woDriveEmpty').innerHTML = '<svg width="64" height="64" fill="none" stroke="#D1D1D6" stroke-width="1" viewBox="0 0 24 24" style="margin:0 auto 1rem;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><div style="font-size:1.1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.5rem;">Carpeta vacía</div><div style="font-size:0.9rem;">Sube archivos o crea carpetas aquí. Puedes arrastrar y soltar desde tu computadora.</div>';
+                    } else {
+                        document.getElementById('woDriveGrid').style.display = 'grid';
+                        var html = '';
+                        data.carpetas.forEach(function (c) {
+                            html += '<div style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+                                '<div style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;" onclick="event.stopPropagation(); woDriveMenu(\'carpeta\', ' + c.id + ', \'' + woEscape(c.nombre) + '\')">' +
+                                '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>' +
+                                '<div onclick="woDriveEntrarCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\')" style="text-align:center;">' +
+                                '<svg width="42" height="42" fill="#FFCF3A" stroke="none" viewBox="0 0 24 24" style="margin:0.5rem auto;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
+                                '<div style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(c.nombre) + '</div></div></div>';
+                        });
+                        data.archivos.forEach(function (a) {
+                            html += '<div style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+                                '<div style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;z-index:2;" onclick="event.stopPropagation(); woDriveMenu(\'archivo\', ' + a.id + ', \'' + woEscape(a.nombre) + '\')">' +
+                                '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>' +
+                                '<a href="' + woEscape(a.url) + '" target="_blank" style="text-decoration:none;display:block;text-align:center;">' +
+                                '<svg width="42" height="42" fill="none" stroke="#0052D4" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+                                '<div title="' + woEscape(a.nombre) + '" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:0.2rem;">' + woEscape(a.nombre) + '</div>' +
+                                '<div style="font-size:0.7rem;color:#9CA3AF;">' + ((a.tamaño / 1024).toFixed(1)) + ' KB</div></a></div>';
+                        });
+                        document.getElementById('woDriveGrid').innerHTML = html;
+                    }
+
+                    // Breadcrumbs
+                    var bc = '<span onclick="woDriveIrACarpeta(null)" style="cursor:pointer;color:#0052D4;">Raíz</span>';
+                    _woDriveBreadcrumbs.forEach(function (b, i) {
+                        var last = i === _woDriveBreadcrumbs.length - 1;
+                        bc += ' <span style="margin:0 4px;color:#C7C7CC;">/</span> ';
+                        if (last) bc += '<span style="color:#1D1D1F;">' + woEscape(b.nombre) + '</span>';
+                        else bc += '<span onclick="woDriveIrACarpeta(' + b.id + ', ' + i + ')" style="cursor:pointer;color:#0052D4;">' + woEscape(b.nombre) + '</span>';
+                    });
+                    document.getElementById('woDriveBreadcrumb').innerHTML = bc;
+                })
+                .catch(function (e) { console.error('Error Drive:', e); });
+        }
+
+        window.woDriveCrearCarpeta = function () {
+            woDialogPrompt('Nueva Carpeta', '', function (n) {
+                if (!n || !n.trim()) return;
+                var payload = { nombre: n.trim() };
+                if (_woDriveCurrentFolder) payload.parent_id = _woDriveCurrentFolder;
+
+                fetch('/app/api/oportunidad/' + _woCurrentOppId + '/drive/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(function (r) { return r.json(); }).then(function () {
+                    woDriveCargarDirectorio();
+                }).catch(console.error);
+            });
+        };
+
+        window.woDriveHandleFiles = function (files) {
+            if (!files || !files.length) return;
+            document.getElementById('woDriveLoading').style.display = 'block';
+            var formData = new FormData();
+            formData.append('archivo', files[0]); // For now, single upload correctly handled by API
+            if (_woDriveCurrentFolder) formData.append('carpeta_id', _woDriveCurrentFolder);
+
+            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivos/', {
+                method: 'POST',
+                body: formData
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                if (res.error) woDialogConfirm('Error', res.error, null, null, true);
+                document.getElementById('woDriveFileInput').value = '';
+                woDriveCargarDirectorio();
+            }).catch(function (e) {
+                woDialogConfirm('Error', e.message, null, null, true);
+                document.getElementById('woDriveFileInput').value = '';
+                woDriveCargarDirectorio();
+            });
+        };
+
+        window.woDriveDragOver = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('woDriveDragOverlay').style.display = 'flex';
+        };
+
+        window.woDriveDragLeave = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('woDriveDragOverlay').style.display = 'none';
+        };
+
+        window.woDriveDrop = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('woDriveDragOverlay').style.display = 'none';
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                woDriveHandleFiles(e.dataTransfer.files);
+            }
+        };
+
+        window.woDriveMenu = function (tipo, id, actual) {
+            woDialogShowOptions('Opciones', [
+                {
+                    label: 'Renombrar', onClick: function () {
+                        woDialogPrompt('Nuevo nombre:', actual, function (n) {
+                            if (n && n.trim() && n.trim() !== actual) {
+                                var endpoint = tipo === 'carpeta' ? '/app/api/oportunidad/' + _woCurrentOppId + '/drive/carpeta/' + id + '/' : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivo/' + id + '/';
+                                fetch(endpoint, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ nombre: n.trim() })
+                                }).then(function () { woDriveCargarDirectorio(); }).catch(console.error);
+                            }
+                        });
+                    }
+                },
+                {
+                    label: 'Eliminar', color: '#FF3B30', onClick: function () {
+                        woDialogConfirm('Eliminar', '¿Estás seguro de que quieres eliminar este elemento?', '#FF3B30', function () {
+                            var endpoint = tipo === 'carpeta' ? '/app/api/oportunidad/' + _woCurrentOppId + '/drive/carpeta/' + id + '/?force=true' : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivo/' + id + '/';
+                            fetch(endpoint, { method: 'DELETE' }).then(function () { woDriveCargarDirectorio(); }).catch(console.error);
+                        });
+                    }
+                }
+            ]);
+        };
+
+        window.woAbrirGestorConversacion = function () {
+            if (!_woCurrentOppId) {
+                woDialogConfirm('Error', 'No hay oportunidad seleccionada', null, null, true);
+                return;
+            }
+            var w = document.getElementById('widgetOppConversacion');
+            if (w) {
+                var oppNameEl = document.getElementById('woConvOppNameTitle');
+                if (oppNameEl) {
+                    var defaultTitle = document.getElementById('woTitle') ? document.getElementById('woTitle').textContent : 'Conversación';
+                    oppNameEl.textContent = defaultTitle || 'Conversación';
+                }
+                w.style.display = 'flex';
+                woCargarNotas(_woCurrentOppId);
+
+                var banner = document.getElementById('woConvActividadesBanner');
+                if (banner) {
+                    banner.innerHTML = '<span style="font-size:0.75rem;color:#86868B;">Cargando...</span>';
+                    fetch('/app/api/oportunidad/' + _woCurrentOppId + '/tareas/')
+                        .then(function (r) { return r.json(); })
+                        .then(function (res) {
+                            if (res.success && res.tareas && res.tareas.length > 0) {
+                                var pendientes = res.tareas.filter(function (t) { return t.estado !== 'completada'; });
+                                if (pendientes.length > 0) {
+                                    var html = '';
+                                    pendientes.forEach(function (t) {
+                                        html += '<span onclick="woVerActividad(' + t.id + ')" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:600;color:#1D1D1F;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:background 0.15s;" onmouseenter="this.style.background=\'#E5E5EA\'" onmouseleave="this.style.background=\'#F2F2F7\'" title="' + woEscape(t.titulo) + '">' +
+                                            '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0052D4;margin-right:5px;vertical-align:middle;"></span>' +
+                                            woEscape(t.titulo) +
+                                            '</span>';
+                                    });
+                                    banner.innerHTML = html;
+                                } else {
+                                    banner.innerHTML = '<span style="font-size:0.75rem;color:#D1D1D6;font-style:italic;">Sin actividades pendientes.</span>';
+                                }
+                            } else {
+                                banner.innerHTML = '<span style="font-size:0.75rem;color:#D1D1D6;font-style:italic;">Sin actividades pendientes.</span>';
+                            }
+                        }).catch(function () { banner.innerHTML = ''; });
+                }
+            }
+        };
+
+        window.woCerrarGestorConversacion = function () {
+            var w = document.getElementById('widgetOppConversacion');
+            if (w) w.style.display = 'none';
+        };
+
+        var _woConvReplyToId = null;
+
+        function woCargarNotas(oppId) {
+            var feed = document.getElementById('woConvMensajesGrid');
+            if (!feed) return;
+            feed.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;">Cargando conversación...</div>';
+
+            fetch('/app/api/oportunidad/' + oppId + '/chat/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var msgs = data.mensajes || [];
+                    if (!msgs.length) {
+                        feed.innerHTML = '<div style="text-align:center;padding:4rem 2rem;color:#86868B;">' +
+                            '<svg width="48" height="48" fill="none" stroke="#D1D1D6" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 1rem;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
+                            '<div style="font-size:1.1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.5rem;">Chat Vacío</div>' +
+                            '<div style="font-size:0.9rem;">Empieza la conversación enviando un mensaje.</div></div>';
+                        return;
+                    }
+
+                    var html = '';
+                    msgs.forEach(function (m) {
+                        var isMine = m.es_mio;
+                        var align = isMine ? 'flex-end' : 'flex-start';
+                        var bg = isMine ? '#0052D4' : '#E5E5EA';
+                        var color = isMine ? '#fff' : '#1D1D1F';
+                        var radius = isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px';
+
+                        var replyHtml = '';
+                        if (m.reply_to) {
+                            replyHtml = '<div style="background:rgba(0,0,0,0.1);padding:0.4rem 0.6rem;border-radius:8px;font-size:0.75rem;margin-bottom:0.4rem;border-left:3px solid ' + (isMine ? 'rgba(255,255,255,0.5)' : '#86868B') + ';">' +
+                                '<div style="font-weight:600;margin-bottom:0.2rem;">' + woEscape(m.reply_to.nombre) + '</div>' +
+                                '<div style="opacity:0.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (m.reply_to.texto ? woEscape(m.reply_to.texto) : '📷 Imagen') + '</div></div>';
+                        }
+
+                        var imgHtml = '';
+                        if (m.imagen_url) {
+                            imgHtml = '<img src="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" />';
+                        }
+
+                        html += '<div style="display:flex;flex-direction:column;align-items:' + align + ';margin-bottom:0.2rem;">';
+                        if (!isMine) {
+                            html += '<span style="font-size:0.75rem;color:#86868B;margin-bottom:0.2rem;margin-left:0.5rem;">' + woEscape(m.nombre) + ' &bull; ' + m.fecha + '</span>';
+                        } else {
+                            html += '<span style="font-size:0.75rem;color:#86868B;margin-bottom:0.2rem;margin-right:0.5rem;">' + m.fecha + '</span>';
+                        }
+
+                        html += '<div style="display:flex;align-items:center;gap:0.5rem;max-width:80%;flex-direction:' + (isMine ? 'row-reverse' : 'row') + ';">';
+
+                        var textoPlano = m.texto || '';
+
+                        // Las actividades agendadas se muestran SOLO en el banner superior,
+                        // no se duplican como burbuja en el chat.
+                        if (textoPlano.startsWith('[ACT_AGENDADA:') || textoPlano.indexOf('woVerActividad(') !== -1) {
+                            return; // saltar este mensaje del feed
+                        }
+
+                        var innerBubbleStyle = 'background:' + bg + ';color:' + color + ';padding:0.75rem 1rem;border-radius:' + radius + ';font-size:0.95rem;line-height:1.4;position:relative;box-shadow:0 1px 2px rgba(0,0,0,0.05);';
+                        var parsedContent = woEscape(textoPlano);
+
+                        // Actividades completadas se muestran como tarjeta de historial
+                        if (textoPlano.startsWith('[ACT_COMPLETADA:')) {
+                            var cParts = textoPlano.split(']');
+                            if (cParts.length >= 2) {
+                                var cId = cParts[0].substring(16);
+                                var cTit = cParts.slice(1).join(']');
+                                parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + cId + ')">' +
+                                    '<div style="width:28px;height:28px;border-radius:50%;background:rgba(52,199,89,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' +
+                                    '</div>' +
+                                    '<div style="display:flex;flex-direction:column;min-width:0;">' +
+                                    '<span style="font-weight:600;font-size:0.85rem;text-decoration:underline;text-decoration-color:rgba(0,0,0,0.15);cursor:pointer;">' + woEscape(cTit) + '</span>' +
+                                    '<span style="font-size:0.7rem;opacity:0.7;">✓ Completada</span>' +
+                                    '</div>' +
+                                    '</div>';
+                                innerBubbleStyle = 'background:' + (isMine ? 'rgba(0,82,212,0.08)' : '#fff') + ';color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid #E5E5EA;box-shadow:0 2px 8px rgba(0,0,0,0.04);';
+                            }
+                        }
+
+                        // Actividades reprogramadas se muestran como notificación del sistema
+                        var isSystemMsg = false;
+                        if (textoPlano.startsWith('[ACT_REPROGRAMADA:')) {
+                            isSystemMsg = true;
+                            var rParts = textoPlano.split(']');
+                            if (rParts.length >= 2) {
+                                var rId = rParts[0].substring(18);
+                                var rRest = rParts.slice(1).join(']');
+                                var rFields = rRest.split('|');
+                                var rTit = rFields[0] || '';
+                                var rOld = rFields[1] || '';
+                                var rNew = rFields[2] || '';
+                                parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + rId + ')">' +
+                                    '<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,149,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<svg width="14" height="14" fill="none" stroke="#FF9500" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
+                                    '</div>' +
+                                    '<div style="display:flex;flex-direction:column;min-width:0;">' +
+                                    '<span style="font-weight:600;font-size:0.85rem;">' + woEscape(rTit) + '</span>' +
+                                    '<span style="font-size:0.7rem;color:#FF9500;">Reprogramada: <s style="opacity:0.6;">' + woEscape(rOld) + '</s> → ' + woEscape(rNew) + '</span>' +
+                                    '</div>' +
+                                    '</div>';
+                                innerBubbleStyle = 'background:rgba(255,149,0,0.06);color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid rgba(255,149,0,0.2);box-shadow:0 2px 8px rgba(0,0,0,0.04);';
+                            }
+                        }
+                        if (textoPlano.startsWith('[ACT_COMPLETADA:')) isSystemMsg = true;
+
+                        html += '<div style="' + innerBubbleStyle + '">' +
+                            replyHtml + imgHtml + parsedContent +
+                            '</div>';
+
+                        // Options button (no mostrar para mensajes de sistema)
+                        if (!isSystemMsg) {
+                            html += '<button onclick="woConvMsgOptions(' + m.id + ', \'' + woEscape(m.texto) + '\', ' + isMine + ', \'' + woEscape(m.nombre) + '\')" style="background:none;border:none;color:#C7C7CC;cursor:pointer;padding:0.2rem;display:flex;align-items:center;justify-content:center;border-radius:50%;" onmouseenter="this.style.background=\'#F2F2F7\'" onmouseleave="this.style.background=\'none\'">' +
+                                '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></button>';
+                        }
+
+                        html += '</div></div>';
+                    });
+
+                    feed.innerHTML = html;
+                    setTimeout(function () { feed.scrollTop = feed.scrollHeight; }, 100);
+                })
+                .catch(function (e) { console.error(e); });
+        }
+
+        window.woConvMsgOptions = function (msgId, texto, isMine, nombre) {
+            var opts = [
+                {
+                    label: 'Responder', onClick: function () {
+                        _woConvReplyToId = msgId;
+                        document.getElementById('woConvReplyBar').style.display = 'flex';
+                        document.getElementById('woConvReplyTo').textContent = nombre + (texto ? ': ' + texto.substring(0, 30) + '...' : '');
+                        document.getElementById('woConvInputText').focus();
+                    }
+                }
+            ];
+
+            if (isMine) {
+                opts.push({
+                    label: 'Editar', color: '#0052D4', onClick: function () {
+                        woDialogPrompt('Editar Mensaje', texto, function (n) {
+                            if (n && n.trim() && n.trim() !== texto) {
+                                fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/mensaje/' + msgId + '/', {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ texto: n.trim() })
+                                }).then(function () { woCargarNotas(_woCurrentOppId); }).catch(console.error);
+                            }
+                        });
+                    }
+                });
+                opts.push({
+                    label: 'Eliminar', color: '#FF3B30', onClick: function () {
+                        woDialogConfirm('Eliminar Mensaje', '¿Estás seguro de que quieres eliminar este mensaje?', '#FF3B30', function () {
+                            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/mensaje/' + msgId + '/', {
+                                method: 'DELETE'
+                            }).then(function () { woCargarNotas(_woCurrentOppId); }).catch(console.error);
+                        });
+                    }
+                });
+            }
+
+            woDialogShowOptions('Opciones de mensaje', opts);
+        };
+
+        window.woConvCancelReply = function () {
+            _woConvReplyToId = null;
+            document.getElementById('woConvReplyBar').style.display = 'none';
+        };
+
+        window.woConvSendMessage = function (filesObj) {
+            var input = document.getElementById('woConvInputText');
+            var txt = input.value.trim();
+            var hasFiles = filesObj && filesObj.length > 0;
+
+            if (!txt && !hasFiles) return;
+
+            var fd = new FormData();
+            if (txt) fd.append('texto', txt);
+            if (hasFiles) fd.append('imagen', filesObj[0]);
+            if (_woConvReplyToId) fd.append('reply_to_id', _woConvReplyToId);
+
+            input.value = '';
+            woConvCancelReply();
+
+            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
+                method: 'POST',
+                body: fd
+            }).then(function () {
+                // Marcar notificaciones de esta oportunidad como leidas (al contestar)
+                try {
+                    fetch('/app/api/marcar-todas-notificaciones-leidas/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCookieCRM('csrftoken'), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 'oportunidad_id': _woCurrentOppId })
+                    }).then(function () { if (typeof notifLoad === 'function') notifLoad(); });
+                } catch (ex) { }
+
+                woCargarNotas(_woCurrentOppId);
+            }).catch(console.error);
+        };
+
+        window.woConvSendMedia = function (files) {
+            if (files && files.length > 0) {
+                woConvSendMessage(files);
+                document.getElementById('woConvFotoInput').value = '';
+            }
+        };
+
+        // Hook: when detalle loads an opp, store its id and load inline tasks
+        var origWoSetCurrentOppId = window.woSetCurrentOppId;
+        window.woSetCurrentOppId = function (id) {
+            _woCurrentOppId = id;
+            woCargarTareasInline(id);
+        };
+
+        function woEscape(str) {
+            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ── DIALOG LOGIC ──
+        window._woTempCallbacks = {};
+
+        window.woDialogPrompt = function (title, defaultValue, callback) {
+            var m = document.getElementById('widgetOppDialog');
+            document.getElementById('woDialogTitle').textContent = title;
+            document.getElementById('woDialogText').style.display = 'none';
+            document.getElementById('woDialogInputWrap').style.display = 'block';
+
+            var inp = document.getElementById('woDialogInput');
+            inp.value = defaultValue || '';
+
+            var btnOk = document.getElementById('woDialogBtnConfirm');
+            var btnCancel = document.getElementById('woDialogBtnCancel');
+            btnOk.style.display = 'block';
+
+            var cleanup = function () {
+                m.style.display = 'none';
+                btnOk.onclick = null;
+                btnCancel.onclick = null;
+            };
+
+            btnOk.onclick = function () {
+                var val = inp.value;
+                cleanup();
+                if (callback) callback(val);
+            };
+            btnCancel.onclick = cleanup;
+
+            m.style.display = 'flex';
+            setTimeout(function () { inp.focus(); inp.select(); }, 100);
+        };
+
+        window.woDialogConfirm = function (title, text, confirmColor, callback, hideCancel) {
+            var m = document.getElementById('widgetOppDialog');
+            document.getElementById('woDialogTitle').textContent = title;
+
+            var txtEl = document.getElementById('woDialogText');
+            txtEl.textContent = text || '';
+            txtEl.style.display = 'block';
+            document.getElementById('woDialogInputWrap').style.display = 'none';
+
+            var btnOk = document.getElementById('woDialogBtnConfirm');
+            var btnCancel = document.getElementById('woDialogBtnCancel');
+            btnOk.style.display = 'block';
+            btnOk.style.color = confirmColor || '#0052D4';
+            btnCancel.style.display = hideCancel ? 'none' : 'block';
+
+            var cleanup = function () {
+                m.style.display = 'none';
+                btnOk.style.color = '#0052D4';
+                btnCancel.style.display = 'block';
+                btnOk.onclick = null;
+                btnCancel.onclick = null;
+            };
+
+            btnOk.onclick = function () {
+                cleanup();
+                if (callback) callback(true);
+            };
+            btnCancel.onclick = cleanup;
+
+            m.style.display = 'flex';
+        };
+
+        window.woDialogShowOptions = function (title, options) {
+            var m = document.getElementById('widgetOppDialog');
+            document.getElementById('woDialogTitle').textContent = title;
+            var txt = document.getElementById('woDialogText');
+            txt.style.display = 'block';
+            document.getElementById('woDialogInputWrap').style.display = 'none';
+
+            var html = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:1rem;">';
+            options.forEach(function (opt, idx) {
+                window._woTempCallbacks['opt_' + idx] = function () {
+                    m.style.display = 'none';
+                    document.getElementById('woDialogBtnConfirm').style.display = 'block';
+                    if (opt.onClick) opt.onClick();
+                };
+                html += '<button style="padding:0.8rem;border-radius:8px;border:none;background:#F2F2F7;color:' + (opt.color || '#1D1D1F') + ';font-size:0.95rem;font-weight:500;cursor:pointer;width:100%;transition:background 0.2s;" onmouseenter="this.style.background=\'#E5E5EA\'" onmouseleave="this.style.background=\'#F2F2F7\'" onclick="window._woTempCallbacks.opt_' + idx + '()">' + opt.label + '</button>';
+            });
+            html += '</div>';
+            txt.innerHTML = html;
+
+            var btnOk = document.getElementById('woDialogBtnConfirm');
+            var btnCancel = document.getElementById('woDialogBtnCancel');
+            btnOk.style.display = 'none';
+            btnCancel.style.display = 'block';
+
+            btnCancel.onclick = function () {
+                m.style.display = 'none';
+                btnOk.style.display = 'block';
+            };
+            m.style.display = 'flex';
+        };
+
+        // ── TASK / ACTIVIDAD / PARTICIPANTES LOGIC ──
+        var _woParticipantesSel = [];
+
+        function woRenderParticipantes() {
+            var c = document.getElementById('woFormActParticipantesContainer');
+            c.innerHTML = '';
+            _woParticipantesSel.forEach(function (u) {
+                c.innerHTML += '<div style="background:#E5E5EA;padding:4px 8px;border-radius:12px;font-size:0.8rem;display:flex;align-items:center;gap:4px;">' +
+                    woEscape(u.nombre) +
+                    '<button onclick="woRemoveParticipante(' + u.id + ')" style="background:none;border:none;cursor:pointer;color:#86868B;padding:0;">&times;</button></div>';
+            });
+            if (_woParticipantesSel.length === 0) {
+                var currentUserName = "{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}".trim() || "{{ request.user.username|escapejs }}";
+                c.innerHTML = '<span style="color:#86868B;font-size:0.85rem;padding:4px;">' + woEscape(currentUserName) + '</span>';
+            }
+        }
+
+        window.woRemoveParticipante = function (id) {
+            _woParticipantesSel = _woParticipantesSel.filter(function (u) { return u.id !== id; });
+            woRenderParticipantes();
+        };
+
+        window.woSearchParticipantes = function (query) {
+            var dropdown = document.getElementById('woFormActParticipantesDropdown');
+            query = query.trim();
+            if (query.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(query))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var users = data.usuarios || [];
+                    dropdown.innerHTML = '';
+                    if (users.length === 0) {
+                        dropdown.innerHTML = '<div style="padding:0.8rem;color:#86868B;font-size:0.85rem;text-align:center;">No hay resultados</div>';
+                    } else {
+                        users.forEach(function (u) {
+                            var btn = document.createElement('div');
+                            btn.style.cssText = "width:100%;text-align:left;padding:0.8rem 1rem;background:none;border-bottom:1px solid #F2F2F7;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;gap:0.75rem;";
+                            btn.onmouseover = function () { this.style.background = '#F9FAFB'; };
+                            btn.onmouseout = function () { this.style.background = 'none'; };
+
+                            var avatarHTML = '<div style="width:28px;height:28px;border-radius:50%;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:bold;">' + woEscape(u.iniciales) + '</div>';
+
+                            btn.innerHTML = avatarHTML + '<div style="display:flex;flex-direction:column;"><strong style="color:#1D1D1F;font-size:0.9rem;">' + woEscape(u.nombre) + '</strong><span style="color:#86868B;font-size:0.75rem;">' + woEscape(u.rol) + '</span></div>';
+
+                            btn.onclick = function () {
+                                if (!_woParticipantesSel.some(function (sel) { return sel.id === u.id; })) {
+                                    _woParticipantesSel.push(u);
+                                }
+                                document.getElementById('woFormActParticipantesSearch').value = '';
+                                dropdown.style.display = 'none';
+                                woRenderParticipantes();
+                            };
+                            dropdown.appendChild(btn);
+                        });
+                    }
+                    dropdown.style.display = 'block';
+                }).catch(function (e) { console.error(e); dropdown.style.display = 'none'; });
+        };
+
+        window.woAbrirWidgetCrearActividad = function () {
+            document.getElementById('woFormActNombre').value = '';
+            var now = new Date();
+            var dStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
+            document.getElementById('woFormActFecha').value = dStr;
+
+            var startHours = now.getHours();
+            var endHours = startHours + 1;
+            document.getElementById('woFormActInicio').value = String(startHours).padStart(2, '0') + ":00";
+            document.getElementById('woFormActFin').value = String(endHours % 24).padStart(2, '0') + ":00";
+
+            document.getElementById('woFormActDesc').value = '';
+            document.getElementById('woFormActParticipantesSearch').value = '';
+            document.getElementById('woFormActParticipantesDropdown').style.display = 'none';
+            _woParticipantesSel = [];
+            woRenderParticipantes();
+
+            document.getElementById('widgetOppCrearActividad').style.display = 'flex';
+        };
+
+        window.woCrearActividad = function () {
+            if (!_woCurrentOppId) return;
+            var titulo = document.getElementById('woFormActNombre').value.trim();
+            if (!titulo) {
+                woDialogConfirm('Error', 'El nombre es obligatorio', null, null, true);
+                return;
+            }
+
+            var f_date = document.getElementById('woFormActFecha').value;
+            var t_ini = document.getElementById('woFormActInicio').value;
+            var t_fin = document.getElementById('woFormActFin').value;
+
+            var cal_inicio = null;
+            var cal_fin = null;
+
+            if (f_date && t_ini && t_fin) {
+                if (t_ini >= t_fin) {
+                    woDialogConfirm('Error', 'La hora de fin debe ser posterior a la de inicio', null, null, true);
+                    return;
+                }
+                cal_inicio = f_date + 'T' + t_ini + ':00';
+                cal_fin = f_date + 'T' + t_fin + ':00';
+            } else if (!f_date) {
+                woDialogConfirm('Error', 'La fecha es obligatoria', null, null, true);
+                return;
+            } else {
+                woDialogConfirm('Error', 'Debe especificar hora de inicio y fin', null, null, true);
+                return;
+            }
+
+            var desc = document.getElementById('woFormActDesc').value.trim();
+            var participantes = _woParticipantesSel.map(function (u) { return u.id; });
+
+            var payload = {
+                titulo: titulo,
+                descripcion: desc,
+                cal_inicio: cal_inicio,
+                cal_fin: cal_fin,
+                participantes: participantes
+            };
+
+            var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/tareas/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(payload)
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                if (res.success) {
+                    document.getElementById('widgetOppCrearActividad').style.display = 'none';
+                    // Actividad agendada ahora se procesa globalmente o solo impacta el top banner.
+                    // Ya NO agregamos esto al feed de conversación como un mensaje extra.
+                    // var fd = new FormData();
+                    // var taskRefHTML = '[ACT_AGENDADA:' + res.tarea.id + ':' + (cal_inicio || '') + ']' + titulo;
+                    // fd.append('texto', taskRefHTML);
+                    // fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
+                    //     method: 'POST',
+                    //     headers: { 'X-CSRFToken': csrf },
+                    //     body: fd
+                    // }).then(function () {
+                    //    woCargarNotas(_woCurrentOppId);
+                    // });
+
+                    // Solo recargamos todo para actualizar el cartel superior (banner)
+                    woCargarNotas(_woCurrentOppId);
+
+                    // Si el calendario general está allí, forzarlo a refrescar también
+                    if (typeof calGlobalRefetch === 'function') {
+                        calGlobalRefetch();
+                    }
+                } else {
+                    woDialogConfirm('Error', res.error, null, null, true);
+                }
+            }).catch(console.error);
+        };
+
+        var _woCurrentViewingTaskId = null;
+        var _woCurrentViewingTaskFechaLimite = null;
+
+        window.woToggleFechaEdit = function () {
+            var editDiv = document.getElementById('woVerActFechaEdit');
+            if (editDiv.style.display === 'none' || editDiv.style.display === '') {
+                editDiv.style.display = 'flex';
+                // Pre-fill with current fecha_limite
+                if (_woCurrentViewingTaskFechaLimite) {
+                    var dt = new Date(_woCurrentViewingTaskFechaLimite);
+                    var iso = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0') + 'T' + String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+                    document.getElementById('woEditFechaLimite').value = iso;
+                }
+            } else {
+                editDiv.style.display = 'none';
+            }
+        };
+
+        window.woGuardarNuevaFecha = function () {
+            if (!_woCurrentViewingTaskId) return;
+            var newVal = document.getElementById('woEditFechaLimite').value;
+            if (!newVal) return;
+
+            var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+            var oldFecha = _woCurrentViewingTaskFechaLimite ? new Date(_woCurrentViewingTaskFechaLimite).toLocaleString() : 'Sin fecha';
+            var newFecha = new Date(newVal).toLocaleString();
+            var newIso = new Date(newVal).toISOString();
+
+            fetch('/app/api/tarea-oportunidad/' + _woCurrentViewingTaskId + '/', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ fecha_limite: newIso })
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                if (res.success || !res.error) {
+                    // Actualizar display
+                    _woCurrentViewingTaskFechaLimite = newIso;
+                    var fechaCreacion = document.getElementById('woVerActFecha').getAttribute('data-creacion') || '';
+                    document.getElementById('woVerActFecha').innerHTML = 'Creación: ' + fechaCreacion + ' | Cierra: ' + newFecha +
+                        ' <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;opacity:0.5;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+                    document.getElementById('woVerActFechaEdit').style.display = 'none';
+
+                    // Poner mensaje de reprogramación en la conversación
+                    if (_woCurrentOppId) {
+                        var tituloAct = document.getElementById('woVerActNombre').textContent;
+                        var fd = new FormData();
+                        fd.append('texto', '[ACT_REPROGRAMADA:' + _woCurrentViewingTaskId + ']' + tituloAct + '|' + oldFecha + '|' + newFecha);
+                        fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrf },
+                            body: fd
+                        }).then(function () {
+                            woCargarNotas(_woCurrentOppId);
+                        });
+                    }
+
+                    // Refrescar calendario si existe
+                    if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+                } else {
+                    alert(res.error || 'Error al reprogramar');
+                }
+            }).catch(console.error);
+        };
+
+        window.woVerActividad = function (idActividad) {
+            document.getElementById('widgetOppVerActividad').style.display = 'flex';
+            document.getElementById('woVerActNombre').textContent = 'Cargando...';
+            document.getElementById('woVerActFecha').textContent = '';
+            document.getElementById('woVerActFechaEdit').style.display = 'none';
+            document.getElementById('woVerActDesc').textContent = '...';
+            document.getElementById('woVerActCreador').textContent = '...';
+            document.getElementById('woVerActParticipantes').textContent = '...';
+
+            _woCurrentViewingTaskId = idActividad;
+            _woCurrentViewingTaskFechaLimite = null;
+
+            fetch('/app/api/tarea-opp/' + idActividad + '/detalle/')
+                .then(function (r) { return r.json(); })
+                .then(function (t) {
+                    if (t.error) {
+                        document.getElementById('woVerActNombre').textContent = 'Error: ' + t.error;
+                        return;
+                    }
+                    document.getElementById('woVerActNombre').textContent = t.titulo || 'Sin título';
+
+                    var fechaCreacion = t.fecha_creacion ? new Date(t.fecha_creacion).toLocaleString() : '';
+                    var fechaLimite = t.fecha_limite ? new Date(t.fecha_limite).toLocaleString() : 'Sin límite';
+                    _woCurrentViewingTaskFechaLimite = t.fecha_limite;
+                    var fechaEl = document.getElementById('woVerActFecha');
+                    fechaEl.setAttribute('data-creacion', fechaCreacion);
+                    fechaEl.innerHTML = 'Creación: ' + fechaCreacion + ' | Cierra: ' + fechaLimite +
+                        ' <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;opacity:0.5;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+                    document.getElementById('woVerActDesc').textContent = t.descripcion || 'Sin descripción.';
+
+                    var creadorNombre = t.creado_por_data ? t.creado_por_data.nombre : '';
+                    document.getElementById('woVerActCreador').textContent = creadorNombre || 'Desconocido';
+
+                    if (t.participantes && t.participantes.length > 0) {
+                        document.getElementById('woVerActParticipantes').innerHTML = t.participantes.map(function (p) { return p.nombre || p.id; }).join(', ');
+                    } else {
+                        document.getElementById('woVerActParticipantes').textContent = 'Sin participantes extra';
+                    }
+
+                    var relBtn = document.getElementById('woVerActRelacionado');
+                    if (t.oportunidad_id) {
+                        relBtn.style.display = '';
+                        relBtn.textContent = t.oportunidad_nombre || 'Ver oportunidad';
+                        relBtn.onclick = function () {
+                            document.getElementById('widgetOppVerActividad').style.display = 'none';
+                            document.getElementById('widgetOppConversacion').style.display = 'none';
+                        };
+                    } else {
+                        relBtn.style.display = 'none';
+                    }
+
+                    // Estado badge y botón completar
+                    var badge = document.getElementById('woVerActEstadoBadge');
+                    var btnCompletar = document.getElementById('woVerActBtnCompletar');
+                    if (t.estado === 'completada') {
+                        badge.innerHTML = '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completada';
+                        badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(52,199,89,0.1);color:#34C759;';
+                        btnCompletar.style.display = 'none';
+                    } else {
+                        badge.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF9500;"></span> Pendiente';
+                        badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(255,149,0,0.1);color:#FF9500;';
+                        btnCompletar.style.display = 'inline-flex';
+                    }
+                }).catch(function (e) {
+                    document.getElementById('woVerActNombre').textContent = 'Error de conexión';
+                    console.error(e);
+                });
+        };
+
+        window.woCompletarActividad = function () {
+            if (!_woCurrentViewingTaskId) return;
+            var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+            fetch('/app/api/tarea-oportunidad/' + _woCurrentViewingTaskId + '/', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ estado: 'completada' })
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                if (res.success || !res.error) {
+                    // Actualizar UI del widget
+                    var badge = document.getElementById('woVerActEstadoBadge');
+                    badge.innerHTML = '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completada';
+                    badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(52,199,89,0.1);color:#34C759;';
+                    document.getElementById('woVerActBtnCompletar').style.display = 'none';
+
+                    // Poner mensaje de completado en la conversación
+                    if (_woCurrentOppId) {
+                        var tituloAct = document.getElementById('woVerActNombre').textContent;
+                        var fd = new FormData();
+                        fd.append('texto', '[ACT_COMPLETADA:' + _woCurrentViewingTaskId + ']' + tituloAct);
+                        fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrf },
+                            body: fd
+                        }).then(function () {
+                            woCargarNotas(_woCurrentOppId);
+                            // Marcar notificaciones de esta actividad como leidas
+                            try {
+                                fetch('/app/api/marcar-todas-notificaciones-leidas/', {
+                                    method: 'POST',
+                                    headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 'tarea_opp_id': _woCurrentViewingTaskId })
+                                }).then(function () { if (typeof notifLoad === 'function') notifLoad(); });
+                            } catch (ex) { }
+                            // Refresh banner
+                            if (typeof woAbrirGestorConversacion === 'function') {
+                                var banner = document.getElementById('woConvActividadesBanner');
+                                if (banner) {
+                                    fetch('/app/api/oportunidad/' + _woCurrentOppId + '/tareas/')
+                                        .then(function (r) { return r.json(); })
+                                        .then(function (res2) {
+                                            if (res2.success && res2.tareas) {
+                                                var pendientes = res2.tareas.filter(function (t) { return t.estado !== 'completada'; });
+                                                if (pendientes.length > 0) {
+                                                    var html = '';
+                                                    pendientes.forEach(function (t) {
+                                                        html += '<span onclick="woVerActividad(' + t.id + ')" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:600;color:#1D1D1F;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:background 0.15s;" onmouseenter="this.style.background=\'#E5E5EA\'" onmouseleave="this.style.background=\'#F2F2F7\'" title="' + woEscape(t.titulo) + '">' +
+                                                            '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0052D4;margin-right:5px;vertical-align:middle;"></span>' +
+                                                            woEscape(t.titulo) + '</span>';
+                                                    });
+                                                    banner.innerHTML = html;
+                                                } else {
+                                                    banner.innerHTML = '<span style="font-size:0.75rem;color:#D1D1D6;font-style:italic;">Sin actividades pendientes.</span>';
+                                                }
+                                            }
+                                        });
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    woDialogConfirm('Error', res.error || 'No se pudo completar', null, null, true);
+                }
+            }).catch(console.error);
+        };
+
+    })();
+</script>

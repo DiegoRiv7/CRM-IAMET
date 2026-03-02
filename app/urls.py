@@ -7,14 +7,16 @@ from .bitrix_integration import get_bitrix_companies_api
 
 # Importa las vistas desde el mismo directorio de la aplicación
 from . import views_exportar
+from . import views_mail
 
 urlpatterns = [
     path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
     path('bitrix/sync/', views.bitrix_sync_admin, name='bitrix-sync-admin'),
     path('bitrix/lost-opportunities/', views.bitrix_lost_opportunities, name='bitrix-lost-opportunities'),
-    # Página de bienvenida (será la nueva Home)
-    path("home/", views.bienvenida, name="home"),
-    path("", views.bienvenida, name="root_home"),
+    # CRM Home (página principal)
+    path("home/", views.crm_home, name="home"),
+    path("", views.crm_home, name="root_home"),
+    path("bienvenida/", views.bienvenida, name="bienvenida"),
 
     # Dashboard principal
     path("dashboard/", views.dashboard, name="dashboard"),
@@ -44,6 +46,22 @@ urlpatterns = [
     path("api/proyecto/<int:proyecto_id>/carpeta/<int:carpeta_id>/", views.api_carpeta_detalle, name="api_carpeta_detalle"),
     path("api/proyecto/<int:proyecto_id>/archivos/", views.api_archivos_proyecto, name="api_archivos_proyecto"),
     path("api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/", views.api_archivo_detalle, name="api_archivo_detalle"),
+
+    # Drive de Oportunidades
+    path("api/oportunidad/<int:opp_id>/drive/", views.api_drive_oportunidad, name="api_drive_oportunidad"),
+    path("api/oportunidad/<int:opp_id>/drive/carpeta/<int:carpeta_id>/", views.api_drive_oportunidad_carpeta, name="api_drive_oportunidad_carpeta"),
+    path("api/oportunidad/<int:opp_id>/drive/archivos/", views.api_drive_oportunidad_archivo, name="api_drive_oportunidad_archivo"),
+    path("api/oportunidad/<int:opp_id>/drive/archivo/<int:archivo_id>/", views.api_drive_oportunidad_archivo_detalle, name="api_drive_oportunidad_archivo_detalle"),
+    path("api/oportunidad/<int:opp_id>/chat/", views.api_chat_oportunidad, name="api_chat_oportunidad"),
+    path("api/oportunidad/<int:opp_id>/chat/<int:msg_id>/", views.api_chat_mensaje, name="api_chat_mensaje"),
+    path("api/oportunidad/<int:opp_id>/tareas/", views.api_tareas_oportunidad, name="api_tareas_oportunidad"),
+    path("api/oportunidad/<int:oportunidad_id>/productos/", views.api_oportunidad_productos, name="api_oportunidad_productos"),
+    path("api/oportunidad/<int:oportunidad_id>/productos/<int:producto_id>/", views.api_oportunidad_producto_delete, name="api_oportunidad_producto_delete"),
+    path("api/tarea-oportunidad/<int:tarea_id>/", views.api_tarea_oportunidad_detail, name="api_tarea_oportunidad_detail"),
+    path("api/todas-tareas-oportunidad/", views.api_todas_tareas_opp, name="api_todas_tareas_opp"),
+    path("api/tarea-opp/<int:tarea_id>/detalle/", views.api_tarea_opp_detalle, name="api_tarea_opp_detalle"),
+    path("api/tarea-opp/<int:tarea_id>/comentarios/", views.api_tarea_opp_comentarios, name="api_tarea_opp_comentarios"),
+    path("api/tarea-opp/<int:tarea_id>/comentarios/<int:comentario_id>/", views.api_tarea_opp_comentario_detail, name="api_tarea_opp_comentario_detail"),
     
     # API para configuración de proyecto
     path("api/proyecto/<int:proyecto_id>/configuracion/", views.api_configuracion_proyecto, name="api_configuracion_proyecto"),
@@ -89,7 +107,23 @@ urlpatterns = [
     
     # Nueva funcionalidad de oportunidades optimizada
     path("nueva-oportunidad/", views.nueva_oportunidad, name="nueva_oportunidad"),
+    path("api/crear-oportunidad/", views.api_crear_oportunidad, name="api_crear_oportunidad"),
     path("api/buscar-clientes/", views.api_buscar_clientes, name="api_buscar_clientes"),
+    path("api/crm-table-data/", views.api_crm_table_data, name="api_crm_table_data"),
+    path("api/subir-facturacion/", views.api_subir_facturacion, name="api_subir_facturacion"),
+    path("api/cliente-oportunidades/<int:cliente_id>/", views.api_cliente_oportunidades, name="api_cliente_oportunidades"),
+    path("api/cliente-cotizaciones/<int:cliente_id>/", views.api_cliente_cotizaciones, name="api_cliente_cotizaciones"),
+    path("api/export-excel/", views.api_export_excel, name="api_export_excel"),
+    path("api/clientes/", views.api_clientes, name="api_clientes"),
+    # Admin panel APIs
+    path("api/admin/usuarios/", views.api_admin_usuarios, name="api_admin_usuarios"),
+    path("api/admin/usuarios/<int:user_id>/", views.api_admin_usuario_detalle, name="api_admin_usuario_detalle"),
+    path("api/admin/clientes/", views.api_admin_clientes, name="api_admin_clientes"),
+    path("api/admin/clientes/<int:cliente_id>/", views.api_admin_cliente_detalle, name="api_admin_cliente_detalle"),
+    path("api/admin/contactos/", views.api_admin_contactos, name="api_admin_contactos"),
+    path("api/admin/metas/", views.api_admin_metas, name="api_admin_metas"),
+    path("api/admin/permisos/<int:user_id>/", views.api_admin_permisos, name="api_admin_permisos"),
+    path("api/oportunidad-detalle-crm/<int:oportunidad_id>/", views.api_oportunidad_detalle_crm, name="api_oportunidad_detalle_crm"),
     path("api/buscar-contactos/", views.api_buscar_contactos, name="api_buscar_contactos"),
     
     # APIs para CRM avanzado (solo superusuarios)
@@ -300,4 +334,35 @@ urlpatterns = [
     path('api/solicitar-acceso-proyecto/<int:proyecto_id>/', views.solicitar_acceso_proyecto, name='solicitar_acceso_proyecto'),
     path('api/responder-solicitud-proyecto/<int:solicitud_id>/', views.responder_solicitud_proyecto, name='responder_solicitud_proyecto'),
     path('api/solicitudes-proyecto/', views.obtener_solicitudes_proyecto, name='obtener_solicitudes_proyecto'),
+
+    # Muro Empresarial
+    path('api/muro/posts/', views.api_muro_posts, name='api_muro_posts'),
+    path('api/muro/posts/<int:post_id>/', views.api_muro_post_detail, name='api_muro_post_detail'),
+    path('api/muro/posts/<int:post_id>/like/', views.api_muro_like, name='api_muro_like'),
+    path('api/muro/posts/<int:post_id>/comentarios/', views.api_muro_comentarios, name='api_muro_comentarios'),
+    path('api/muro/comentarios/<int:comentario_id>/', views.api_muro_comentario_detail, name='api_muro_comentario_detail'),
+
+    # ── Mail Module ──────────────────────────────────────────────────────────
+    path('mail/', views_mail.mail_home, name='mail_home'),
+    path('api/mail/conexion/', views_mail.api_mail_conexion, name='api_mail_conexion'),
+    path('api/mail/sincronizar/', views_mail.api_mail_sincronizar, name='api_mail_sincronizar'),
+    path('api/mail/lista/', views_mail.api_mail_lista, name='api_mail_lista'),
+    path('api/mail/detalle/<int:correo_id>/', views_mail.api_mail_detalle, name='api_mail_detalle'),
+    path('api/mail/enviar/', views_mail.api_mail_enviar, name='api_mail_enviar'),
+    path('api/mail/responder/<int:correo_id>/', views_mail.api_mail_responder, name='api_mail_responder'),
+    path('api/mail/vincular/<int:correo_id>/', views_mail.api_mail_vincular_oportunidad, name='api_mail_vincular'),
+    path('api/mail/crear-oportunidad/<int:correo_id>/', views_mail.api_mail_crear_oportunidad_desde_correo, name='api_mail_crear_oportunidad'),
+    path('api/mail/adjunto/<int:adjunto_id>/', views_mail.api_mail_descargar_adjunto, name='api_mail_descargar_adjunto'),
+    path('api/mail/check/', views_mail.api_mail_check_nuevos, name='api_mail_check_nuevos'),
+
+    # APIs de Asistencia y Eficiencia
+    path('api/jornada/estado/', views.api_jornada_estado, name='api_jornada_estado'),
+    path('api/jornada/iniciar/', views.api_jornada_iniciar, name='api_jornada_iniciar'),
+    path('api/jornada/pausar/', views.api_jornada_pausar, name='api_jornada_pausar'),
+    path('api/jornada/terminar/', views.api_jornada_terminar, name='api_jornada_terminar'),
+    path('api/verificar-empleado-mes/', views.api_verificar_empleado_mes, name='api_verificar_empleado_mes'),
+    
+    # APIs de Perfil y Cambios
+    path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
+    path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
 ]

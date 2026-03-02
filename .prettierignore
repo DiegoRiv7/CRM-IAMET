@@ -1,0 +1,2 @@
+# Ignore Django templates - autoformat breaks template tags
+app/templates/crm/_content.html

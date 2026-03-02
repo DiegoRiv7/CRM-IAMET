@@ -1,0 +1,696 @@
+{% load app_filters %}
+<div class="widget-toast" id="widgetToast"></div> <!-- ═══ CONTENT ═══ -->
+<div class="crm-content" id="crmContentSection">
+    <!-- Table -->
+    <div class="crm-table-wrap" id="crmTableWrap">
+        <!-- ═══ BARRA TABS + STATS + BÚSQUEDA + FILTROS ═══ -->
+        <div class="crm-bar">
+            <div class="crm-tabs">
+                <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
+                    {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
+                </a>
+                <a href="?tab=cotizado&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    class="crm-tab {% if tab_activo == 'cotizado' %}active{% endif %}">
+                    {% if request.user.userprofile.language == 'en' %}Quoted{% else %}Cotizado{% endif %}
+                </a>
+                <a href="?tab=cobrado&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    class="crm-tab {% if tab_activo == 'cobrado' %}active{% endif %}">
+                    {% if request.user.userprofile.language == 'en' %}Collected{% else %}Cobrado{% endif %}
+                </a>
+                <a href="?tab=facturado&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    class="crm-tab {% if tab_activo == 'facturado' %}active{% endif %}">
+                    {% if request.user.userprofile.language == 'en' %}Invoiced{% else %}Facturado{% endif %}
+                </a>
+            </div>
+            <div class="crm-bar-right">
+                <div class="crm-bar-stats">
+                    <strong>{{ num_clientes }}</strong>
+                    {% if request.user.userprofile.language == 'en' %}
+                    {% if es_supervisor %}Total Clients{% else %}Assigned Clients{% endif %}
+                    {% else %}
+                    {% if es_supervisor %}Clientes Totales{% else %}Clientes Asignados{% endif %}
+                    {% endif %}
+                    &nbsp;|&nbsp; <strong>{{ num_deals }}</strong> Deals
+                </div>
+                <!-- Panel de filtros inline: se expande entre los stats y el botón -->
+                <div class="crm-filter-dropdown" id="crmFilterPanel">
+                    <div class="crm-filter-item">
+                        <label>Cliente</label>
+                        <select id="filterCliente">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Área</label>
+                        <select id="filterArea">
+                            <option value="">Todas</option>
+                            <option value="SISTEMAS">Sistemas</option>
+                            <option value="Recursos Humanos">RR.HH.</option>
+                            <option value="Compras">Compras</option>
+                            <option value="Seguridad">Seguridad</option>
+                            <option value="Mantenimiento">Mantenim.</option>
+                            <option value="Almacén">Almacén</option>
+                        </select>
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Contacto</label>
+                        <input type="text" id="filterContacto" placeholder="Buscar...">
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Producto</label>
+                        <select id="filterProducto">
+                            <option value="">Todos</option>
+                            <option value="ZEBRA">Zebra</option>
+                            <option value="PANDUIT">Panduit</option>
+                            <option value="APC">APC</option>
+                            <option value="AVIGILON">Avigilon</option>
+                            <option value="GENETEC">Genetec</option>
+                            <option value="AXIS">Axis</option>
+                            <option value="SOFTWARE">Software</option>
+                            <option value="RUNRATE">Runrate</option>
+                            <option value="PÓLIZA">Póliza</option>
+                        </select>
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Monto</label>
+                        <select id="filterMonto">
+                            <option value="">Sin orden</option>
+                            <option value="desc">Mayor → Menor</option>
+                            <option value="asc">Menor → Mayor</option>
+                        </select>
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Tipo</label>
+                        <select id="filterTipo">
+                            <option value="">Todos</option>
+                            <option value="runrate">Runrate</option>
+                            <option value="proyecto">Proyecto</option>
+                        </select>
+                    </div>
+                    <div class="crm-filter-actions">
+                        <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 001 1h4M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                            Excel
+                        </button>
+                        <button type="button" class="crm-filter-clear" id="btnClearFilters">Limpiar</button>
+                    </div>
+                </div>
+                <button type="button" class="crm-filter-toggle" id="btnToggleFilterPanel" title="Filtros">
+                    <svg width="16" height="16" fill="none" stroke="#3C3C43" stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="4" y1="6" x2="20" y2="6" />
+                        <line x1="8" y1="12" x2="20" y2="12" />
+                        <line x1="12" y1="18" x2="20" y2="18" />
+                    </svg>
+                </button>
+                <div class="crm-search-wrap">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.5">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" class="crm-search-input" id="crmSearch"
+                        placeholder="{% if request.user.userprofile.language == 'en' %}Search opportunity...{% else %}Buscar oportunidad...{% endif %}">
+                </div>
+            </div>
+        </div>
+        {% if tab_activo == 'crm' %}
+        <table class="w-full crm-table">
+            <colgroup>
+                <col style="width:20%"><!-- Oportunidad -->
+                <col style="width:8%"> <!-- Contacto -->
+                <col style="width:6%"> <!-- Área -->
+                <col style="width:6%"> <!-- Zebra -->
+                <col style="width:6%"> <!-- Panduit -->
+                <col style="width:6%"> <!-- APC -->
+                <col style="width:6%"> <!-- Avig -->
+                <col style="width:6%"> <!-- Genet -->
+                <col style="width:6%"> <!-- Axis -->
+                <col style="width:6%"> <!-- Soft -->
+                <col style="width:6%"> <!-- RR -->
+                <col style="width:6%"> <!-- Pól -->
+                <col style="width:6%"> <!-- Otros -->
+                <col style="width:6%"> <!-- Total -->
+            </colgroup>
+            <thead class="bg-gray-50/80">
+                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Opportunity{% else %}Oportunidad{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Contact{% else %}Contacto{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Area{% else %}Área{% endif %}</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Avig.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Genet.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Pól.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>
+                    <th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>
+                </tr>
+            </thead>
+            <!-- prettier-ignore -->
+            <tbody id="crmTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                {% for item in tabla_data %}
+                <tr class="crm-data-row" data-opp-id="{{ item.id }}"
+                    data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
+                    data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}"
+                    data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}"
+                    data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}">
+                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
+                        <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span>
+                    </td>
+                    <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18 }}{% else %}-{% endif %}</td>
+                    <td class="px-2 py-4 text-gray-400 text-xs italic">{{ item.area|default:'-' }}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'PANDUIT' %}<span
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'APC' %}<span
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'GENETEC' %}<span
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'AXIS' %}<span
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'RUNRATE' %}<span
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'PÓLIZA' or item.producto == 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else                         %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
+                        ${{ item.monto|format_currency_es }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="14" class="text-center py-20 text-gray-400 italic">No hay datos disponibles para
+                        este periodo.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif tab_activo == 'cotizado' %}
+        <table class="w-full crm-table">
+            <thead class="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
+                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <th class="px-2 py-4 text-left font-black">Oportunidad</th>
+                    <th class="px-2 py-4 text-left font-black"># Cotización</th>
+                    <th class="px-2 py-4 text-left font-black">Usuario</th>
+                    <th class="px-2 py-4 text-right font-black">Monto sin IVA</th>
+                    <th class="px-2 py-4 text-right font-black text-blue-500">Monto con IVA</th>
+                </tr>
+            </thead>
+            <!-- prettier-ignore -->
+            <tbody id="cotizadoTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                {% for cot in tabla_data %}
+                <tr class="crm-data-row" data-opp-id="{% if cot.oportunidad %}{{ cot.oportunidad.id }}{% endif %}"
+                    data-cliente="{{ cot.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
+                    data-contacto="{% if cot.created_by %}{{ cot.created_by.get_full_name|default:cot.created_by.username }}{% else %}—{% endif %}"
+                    data-monto="{{ cot.total|stringformat:'f' }}">
+                    <td class="px-2 py-4">{% if cot.oportunidad %}<span class="opp-name-link"
+                            data-oportunidad-id="{{ cot.oportunidad.id }}">{{ cot.oportunidad.oportunidad|truncatechars:35 }}</span>{% else %}—{% endif %}
+                        <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ cot.cliente.id|default:'' }}" data-tab="cotizado">{{ cot.cliente.nombre_empresa|default:'- Sin Cliente -'|truncatechars:35 }}</span>
+                    </td>
+                    <td class="px-2 py-4"><a href="{% url 'view_cotizacion_pdf' cot.id %}" target="_blank"
+                            class="px-2 py-1 bg-blue-50 rounded text-xs font-mono font-bold text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors cursor-pointer"
+                            style="text-decoration:none;">COT-{{ cot.id }}</a></td>
+                    <td class="px-2 py-4 text-gray-500 text-xs">{% if cot.created_by %}{{ cot.created_by.get_full_name|default:cot.created_by.username }}{% else %}—{% endif %}</td>
+                    <td class="px-2 py-4 text-right text-gray-400 font-medium">${{ cot.subtotal|floatformat:0 }}
+                    </td>
+                    <td class="px-2 py-4 text-right font-black text-blue-600">${{ cot.total|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-20 text-gray-400 italic">No hay cotizaciones para este
+                        periodo.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif tab_activo == 'cobrado' %}
+        <table class="w-full crm-table">
+            <thead class="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
+                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <th class="px-2 py-4 text-left font-black">Oportunidad</th>
+                    <th class="px-2 py-4 text-left font-black">Producto</th>
+                    <th class="px-2 py-4 text-left font-black">Vendedor</th>
+                    <th class="px-2 py-4 text-center font-black">Fecha</th>
+                    <th class="px-2 py-4 text-right font-black text-emerald-500">Monto Cobrado</th>
+                </tr>
+            </thead>
+            <!-- prettier-ignore -->
+            <tbody id="cobradoTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                {% for op in tabla_data %}
+                <tr class="crm-data-row" data-opp-id="{{ op.id }}"
+                    data-cliente="{% if op.cliente %}{{ op.cliente.nombre_empresa }}{% else %}- Sin Cliente -{% endif %}"
+                    data-contacto="{% if op.contacto %}{{ op.contacto.nombre }}{% else %}-{% endif %}"
+                    data-producto="{{ op.producto }}" data-monto="{{ op.monto|stringformat:'f' }}">
+                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ op.id }}">{{ op.oportunidad|truncatechars:35 }}</span>
+                        <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{% if op.cliente %}{{ op.cliente.id }}{% endif %}" data-tab="cobrado">{% if op.cliente %}{{ op.cliente.nombre_empresa|truncatechars:35 }}{% else %}—{% endif %}</span>
+                    </td>
+                    <td class="px-2 py-4"><span class="text-xs font-medium text-gray-600">{{ op.get_producto_display }}</span></td>
+                    <td class="px-2 py-4 text-gray-500 text-xs">{{ op.usuario.get_full_name|default:op.usuario.username }}</td>
+                    <td class="px-2 py-4 text-center text-gray-400 text-xs">{{ op.fecha_creacion|date:"d M Y" }}
+                    </td>
+                    <td class="px-2 py-4 text-right font-black text-emerald-600">${{ op.monto|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-20 text-gray-400 italic">No hay cobros registrados en este
+                        periodo.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif tab_activo == 'facturado' %}
+        <table class="w-full crm-table">
+            <thead class="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
+                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <th class="px-2 py-4 text-left font-black" style="max-width: 140px;">Cliente</th>
+                    <th class="px-2 py-4 text-left font-black">Contacto</th>
+                    <th class="px-2 py-4 text-left font-black">Área</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Zebra</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Panduit</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">APC</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Avig.</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Genet.</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Axis</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Soft.</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">RR</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Pol.</th>
+                    <th class="px-2 py-4 text-left font-black text-blue-500">Otros</th>
+                    <th class="px-2 py-4 text-left font-black text-gray-800 border-l border-gray-100">Total</th>
+                    <th class="px-2 py-4 text-right font-black border-l border-gray-100">Meta</th>
+                    <th class="px-2 py-4 text-right font-black">Fact.</th>
+                    <th class="px-2 py-4 text-center font-black">Acciones</th>
+                </tr>
+            </thead>
+            <!-- prettier-ignore -->
+            <tbody id="facturadoTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                {% for item in tabla_data %}
+                <tr class="crm-data-row" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
+                    data-monto="{{ item.facturado|stringformat:'f' }}">
+                    <td class="px-2 py-4"><span
+                            class="client-name-link font-bold text-gray-900 leading-tight cursor-pointer hover:text-blue-600 transition-colors"
+                            data-cliente-id="{{ item.cliente.id }}">{{ item.cliente.nombre_empresa|truncatechars:35 }}</span>
+                        <div class="text-[9px] text-gray-400 font-medium uppercase mt-1">{{ item.cliente.sector|default:'- Sin Segmento -'|truncatechars:35 }}</div>
+                    </td>
+                    <td class="px-2 py-4 text-gray-600">-</td>
+                    <td class="px-2 py-4 text-gray-400 text-xs italic">-</td>
+                    <td class="px-2 py-4 text-right">{% if item.zebra > 0 %}<span class="text-blue-600 font-bold">${{ item.zebra|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.panduit > 0 %}<span class="text-blue-600 font-bold">${{ item.panduit|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.apc > 0 %}<span class="text-blue-600 font-bold">${{ item.apc|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif                         %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.avigilon > 0 %}<span class="text-blue-600 font-bold">${{ item.avigilon|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.genetec > 0 %}<span class="text-blue-600 font-bold">${{ item.genetec|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.axis > 0 %}<span class="text-blue-600 font-bold">${{ item.axis|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.software > 0 %}<span class="text-blue-600 font-bold">${{ item.software|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.runrate > 0 %}<span class="text-blue-600 font-bold">${{ item.runrate|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.poliza > 0 %}<span class="text-blue-600 font-bold">${{ item.poliza|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.otros > 0 %}<span class="text-blue-600 font-bold">${{ item.otros|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
+                        ${{ item.total|format_currency_es }}</td>
+                    <td class="px-2 py-4 text-right font-bold border-l border-gray-100 bg-gray-50/20">${{ item.meta_cliente|default:0|floatformat:0 }}</td>
+                    <td class="px-2 py-4 text-right font-bold bg-gray-50/20">${{ item.meta_restante|default:0|floatformat:0 }}</td>
+                    <td class="px-2 py-3 text-center"><a href="{% url 'crear_cotizacion_with_id' item.cliente.id %}"
+                            class="inline-block px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all">Nuevo
+                            Deal</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="17" class="text-center py-20 text-gray-400 italic">No hay clientes con datos para
+                        este periodo.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+        <div class="flex flex-col items-center justify-center py-32 text-gray-300">
+            <div class="w-16 h-16 mb-4 opacity-20">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-400">{% if request.user.userprofile.language == 'en' %}Coming Soon{% else %}Próximamente{% endif %}</h3>
+            <p class="text-[11px] font-medium">{% if request.user.userprofile.language == 'en' %}This section will be
+                available in the next update.{% else %}Esta sección estará disponible en la siguiente actualización.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+    <!-- Footer -->
+    <div class="crm-footer">
+        <div class="footer-left" id="footerLeft">
+            {% if tab_activo == 'cotizado' %}
+            {{ num_oportunidades_cotizadas }} oportunidades / {{ num_cotizaciones }} cotizaciones
+            {% else %}
+            {{ num_clientes }} clientes / {{ num_deals }} Deals
+            {% endif %}
+        </div>
+        <div class="footer-right" id="footerRight">
+            {% if tab_activo == 'cotizado' %}
+            Total cotizado: ${{ total_cotizado|floatformat:0 }}
+            {% elif tab_activo == 'cobrado' %}
+            Total cobrado: ${{ total_cobrado|floatformat:0 }}
+            {% elif tab_activo == 'facturado' %}
+            Total facturado: ${{ total_facturado|floatformat:0 }}
+            {% else %}
+            Total: ${{ total_general|floatformat:0 }}
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══ TAREAS SECTION ═══ -->
+<div class="tareas-section" id="tareasSection">
+    <div class="tareas-tabs" id="tareasTabs">
+        <button class="tareas-tab active" data-filter="todas">Todas</button>
+        <button class="tareas-tab" data-filter="pendientes">Pendientes</button>
+        <button class="tareas-tab" data-filter="completadas">Completadas</button>
+    </div>
+    <div class="tareas-table-wrap">
+        <!-- Bar: count + filter + search -->
+        <div class="tareas-bar">
+            <span class="tareas-bar-stats" id="tareasCount"><strong>0</strong> tareas</span>
+            <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+                <button class="tareas-filter-btn" id="tareasFilterBtn" type="button">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        stroke-width="2.5">
+                        <line x1="4" y1="6" x2="20" y2="6" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                        <line x1="11" y1="18" x2="13" y2="18" />
+                    </svg>
+                    Filtros
+                </button>
+                <div class="tareas-search-wrap">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" style="color:#8E8E93;flex-shrink:0;">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" class="tareas-search-input" id="tareasSearchInput" placeholder="Buscar tarea...">
+                </div>
+            </div>
+        </div>
+        <!-- Filter panel (hidden by default) -->
+        <div class="tareas-filter-panel" id="tareasFilterPanel">
+            <div class="tareas-filter-row">
+                <label class="tareas-filter-label">Prioridad</label>
+                <div class="tareas-filter-chips" id="tareasFilterPrioridad">
+                    <button class="tareas-chip active" data-prio="todas">Todas</button>
+                    <button class="tareas-chip" data-prio="alta">Alta</button>
+                    <button class="tareas-chip" data-prio="media">Media</button>
+                    <button class="tareas-chip" data-prio="baja">Baja</button>
+                </div>
+            </div>
+        </div>
+        <table class="tareas-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th>Fecha Límite</th>
+                    <th>Creado por</th>
+                    <th>Responsable</th>
+                </tr>
+            </thead>
+            <tbody id="tareasTableBody"></tbody>
+        </table>
+        <div class="tareas-footer" id="tareasFooter"></div>
+    </div>
+</div>
+
+<!-- ═══ MODAL DETALLE TAREA ═══ -->
+<div class="crm-task-modal-overlay" id="crmTaskDetailModal">
+    <div class="crm-task-modal">
+        <!-- ── MAIN ── -->
+        <div class="crm-task-main">
+            <!-- Header -->
+            <div class="crm-task-detail-header">
+                <div style="flex:1;min-width:0;">
+                    <span id="crm-task-prioridad-badge" class="crm-task-badge priority"
+                        style="margin-bottom:6px;display:inline-flex;">
+                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                        </svg>
+                        <span>Prioridad <span id="crm-task-prioridad-text">--</span></span>
+                    </span>
+                    <h1 id="crm-task-titulo" class="crm-task-title"></h1>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <button class="crm-task-btn-terminar" id="crmTaskBtnTerminar" onclick="crmTaskCompletar()">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Terminar tarea
+                    </button>
+                    <button class="crm-task-close-btn" onclick="crmTaskCerrarModal()">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Save bar for inline editing -->
+            <div id="crmTaskSaveBar"
+                style="display:none;align-items:center;justify-content:flex-end;gap:0.5rem;padding:8px 16px;background:#F0F7FF;border-bottom:1px solid #BFDBFE;">
+                <span style="font-size:0.8rem;color:#3B82F6;flex:1;">Cambios sin guardar</span>
+                <button onclick="crmTaskCancelarEdicion()"
+                    style="background:none;border:1px solid #D1D5DB;color:#6B7280;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem;">Cancelar</button>
+                <button onclick="crmTaskGuardar()"
+                    style="background:#0052D4;color:white;border:none;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem;font-weight:600;">Guardar</button>
+            </div>
+
+            <!-- Descripción -->
+            <div class="crm-task-detail-card">
+                <div class="crm-task-desc-label">Descripción</div>
+                <div id="crm-task-descripcion" class="crm-task-desc-content"></div>
+            </div>
+
+
+            <!-- Comentarios -->
+            <div class="crm-task-comments-section">
+                <div class="crm-task-desc-label">Comentarios</div>
+                <div class="crm-task-comment-form">
+                    <form id="crm-task-comment-form" style="display:flex;flex-direction:column;gap:0.75rem;">
+                        <textarea id="crm-task-comment-input" class="crm-task-comment-textarea" rows="3"
+                            placeholder="Escribe un comentario o actualización de estatus..."></textarea>
+                        <div style="display:flex;justify-content:flex-end;">
+                            <button type="submit" class="crm-task-comment-submit" id="crm-task-btn-enviar">
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg> Enviar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div id="crm-task-activity-feed" style="display:flex;flex-direction:column;gap:1rem;"></div>
+            </div>
+        </div>
+
+        <!-- ── SIDEBAR ── -->
+        <div class="crm-task-sidebar">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                <div class="crm-task-sidebar-section">
+                    <h3>Estado</h3>
+                    <div id="crm-task-estado"></div>
+                </div>
+                <div class="crm-task-sidebar-section" id="crmTaskPrioridadSidebarWrap">
+                    <h3>Alta Prioridad</h3>
+                    <div id="crm-task-prioridad" style="color:#EF4444;font-weight:600;font-size:0.85rem;">Alta</div>
+                </div>
+            </div>
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider">
+                <h3>Responsable</h3>
+                <div id="crm-task-responsable-container"
+                    style="display:flex;align-items:center;gap:0.6rem;padding:4px 0;"></div>
+            </div>
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider">
+                <h3>Información</h3>
+                <div class="crm-task-info-row">
+                    <span class="crm-task-info-label">Fecha Límite</span>
+                    <span class="crm-task-info-value" id="crm-task-fecha-limite"></span>
+                </div>
+                <div class="crm-task-info-row" id="crmTaskClienteRow" style="display:none;">
+                    <span class="crm-task-info-label">Cliente</span>
+                    <span class="crm-task-info-value" id="crm-task-cliente-nombre"
+                        style="color:#0052D4;font-weight:600;"></span>
+                </div>
+                <div class="crm-task-info-row">
+                    <span class="crm-task-info-label">Creador</span>
+                    <span class="crm-task-info-value" id="crm-task-creado-por"></span>
+                </div>
+                <div class="crm-task-info-row">
+                    <span class="crm-task-info-label">Creación</span>
+                    <span class="crm-task-info-value" id="crm-task-fecha-creacion"></span>
+                </div>
+            </div>
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider">
+                <h3>Involucrados</h3>
+                <div style="margin-bottom:8px;">
+                    <div
+                        style="font-size:0.68rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:5px;">
+                        Participantes</div>
+                    <div id="crm-task-participantes-container"
+                        style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
+                </div>
+                <div>
+                    <div
+                        style="font-size:0.68rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:5px;">
+                        Observadores</div>
+                    <div id="crm-task-observadores-container"
+                        style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
+                </div>
+            </div>
+            <!-- Oportunidad + Drive en sidebar -->
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider" id="crmTaskSidebarLinks"
+                style="display:none;">
+                <div class="crm-task-link-card crm-task-opp-card" id="crmTaskOppCard"
+                    onclick="crmTaskAbrirOportunidad()" style="display:none;margin-bottom:6px;">
+                    <div class="crm-task-link-card-icon" style="background:rgba(0,82,212,0.08);color:#0052D4;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        </svg>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="crm-task-link-card-label">Oportunidad</div>
+                        <div class="crm-task-link-card-value" id="crmTaskOppNombre">--</div>
+                        <div class="crm-task-link-card-sub" id="crmTaskOppCliente"></div>
+                    </div>
+                    <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2"
+                        style="flex-shrink:0;">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </div>
+                <div class="crm-task-link-card crm-task-drive-card" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()"
+                    style="display:none;">
+                    <div class="crm-task-link-card-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="crm-task-link-card-label">Drive</div>
+                        <div class="crm-task-link-card-value">Documentos</div>
+                    </div>
+                    <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2"
+                        style="flex-shrink:0;">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Confirm eliminar comentario ── -->
+    <div id="crmCommentConfirmOverlay"
+        style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:500;align-items:center;justify-content:center;border-radius:inherit;">
+        <div
+            style="background:#fff;border-radius:14px;padding:28px 28px 22px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18);text-align:center;">
+            <div
+                style="width:44px;height:44px;border-radius:50%;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#EF4444" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+            </div>
+            <p style="font-weight:600;font-size:0.95rem;color:#1D1D1F;margin:0 0 6px;">¿Eliminar comentario?</p>
+            <p style="font-size:0.82rem;color:#6B7280;margin:0 0 20px;">Esta acción no se puede deshacer.</p>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button onclick="crmCommentConfirmCancel()"
+                    style="flex:1;padding:9px 0;border:1px solid #E5E5EA;border-radius:8px;background:none;color:#6B7280;font-size:0.85rem;cursor:pointer;font-weight:500;">Cancelar</button>
+                <button id="crmCommentConfirmBtn"
+                    style="flex:1;padding:9px 0;border:none;border-radius:8px;background:#EF4444;color:white;font-size:0.85rem;cursor:pointer;font-weight:600;">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL CREAR TAREA ═══ -->
+<div class="crm-create-task-overlay" id="crmCreateTaskModal">
+    <div class="crm-create-task-container">
+        <div class="crm-create-task-header">
+            <input type="text" id="crmTaskTitleInput" class="crm-create-task-title-input"
+                placeholder="Nombre de la tarea">
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+                <label class="crm-create-task-priority-toggle"><input type="checkbox" id="crmTaskHighPriority">
+                    <div class="crm-create-task-priority-icon"><svg width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg></div><span class="crm-create-task-priority-label">Alta prioridad</span>
+                </label>
+                <button class="crm-task-close-btn" onclick="crmTaskCerrarCrear()" type="button"><svg width="18"
+                        height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m18 6-12 12M6 6l12 12" />
+                    </svg></button>
+            </div>
+        </div>
+        <div class="crm-create-task-body">
+            <div class="crm-create-task-editor" contenteditable="true" id="crmTaskDescEditor"
+                data-placeholder="Describe los detalles de la tarea..."></div>
+            <div class="crm-create-task-assignments">
+                <div class="crm-create-task-assign-tabs">
+                    <button class="crm-create-task-assign-tab active" data-panel="crm-assign-responsible"
+                        type="button">Responsable</button>
+                    <button class="crm-create-task-assign-tab" data-panel="crm-assign-participants"
+                        type="button">Participantes</button>
+                    <button class="crm-create-task-assign-tab" data-panel="crm-assign-observers"
+                        type="button">Observadores</button>
+                </div>
+                <div class="crm-create-task-assign-panel active" id="crm-assign-responsible"><input type="text"
+                        placeholder="Buscar responsable..." id="crmTaskResponsibleSearch">
+                    <div class="crm-create-task-selected-users" id="crmTaskSelectedResponsible"></div>
+                </div>
+                <div class="crm-create-task-assign-panel" id="crm-assign-participants"><input type="text"
+                        placeholder="Buscar participantes..." id="crmTaskParticipantsSearch">
+                    <div class="crm-create-task-selected-users" id="crmTaskSelectedParticipants"></div>
+                </div>
+                <div class="crm-create-task-assign-panel" id="crm-assign-observers"><input type="text"
+                        placeholder="Buscar observadores..." id="crmTaskObserversSearch">
+                    <div class="crm-create-task-selected-users" id="crmTaskSelectedObservers"></div>
+                </div>
+            </div>
+            <div class="crm-create-task-timing">
+                <div><label>Fecha límite</label><input type="datetime-local" id="crmTaskDueDate"></div>
+                <div><label>Creado por</label>
+                    <div style="padding:8px 0;font-weight:500;color:#1D1D1F;">{{ user.get_full_name|default:user.username }}</div>
+                </div>
+            </div>
+            <input type="hidden" id="crmTaskOppId" value="">
+        </div>
+        <div class="crm-create-task-footer">
+            <button type="button" class="crm-create-task-btn-cancel" onclick="crmTaskCerrarCrear()">Cancelar</button>
+            <button type="button" class="crm-create-task-btn-submit" id="crmTaskSubmitBtn"
+                onclick="crmTaskCrear()">Crear tarea</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var searchInput = document.getElementById('crmSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                var q = this.value.toLowerCase();
+                var tbody = document.getElementById('crmTbody') ||
+                    document.getElementById('cotizadoTbody') ||
+                    document.getElementById('cobradoTbody') ||
+                    document.getElementById('facturadoTbody');
+                if (!tbody) return;
+                Array.from(tbody.querySelectorAll('tr')).forEach(function (row) {
+                    var text = row.textContent.toLowerCase();
+                    row.style.display = text.indexOf(q) !== -1 ? '' : 'none';
+                });
+            });
+        }
+    })();
+</script>

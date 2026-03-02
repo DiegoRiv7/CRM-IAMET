@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% load app_filters %}
+{% block title %}Sistema CRM{% endblock %}
+{% block content %}
+{% include "crm/_styles.html" %}
+
+<div class="crm-page">
+
+    {% include "crm/_topbar.html" %}
+
+    {% include "crm/_widget_mail.html" %}
+    {% include "crm/_widget_negociacion.html" %}
+    {% include "crm/_widget_oportunidad.html" %}
+    {% include "crm/_widget_extras.html" %}
+    {% include "crm/_widget_admin.html" %}
+    {% include "crm/_widget_notificaciones.html" %}
+    {% include "crm/_widget_perfil.html" %}
+
+    {% include "crm/_content.html" %}
+
+    {% include "crm/_widget_muro.html" %}
+    {% include "crm/_widget_calendario.html" %}
+
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+{% include "crm/_scripts_main.html" %}
+{% include "crm/_scripts_muro.html" %}
+{% include "crm/_scripts_mail.html" %}
+
+{% endblock %}

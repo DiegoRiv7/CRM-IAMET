@@ -3,47 +3,47 @@
 {% block title %}Bienvenida{% endblock %}
 {% block content %}
 <script type="text/javascript">
-// Apply theme immediately to prevent flash - Enhanced for Perla theme
-(function() {
-    try {
-        // Check for new theme system first (perla, etc.)
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            console.log('Loading saved theme:', savedTheme);
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            
-            // Apply theme-specific classes
-            if (savedTheme === 'perla') {
-                document.documentElement.classList.add('light-theme');
-                document.body.classList.add('perla-theme');
-                console.log('Perla theme applied successfully');
-            } else if (savedTheme === 'pink' || savedTheme === 'white' || savedTheme === 'coffee') {
-                document.documentElement.classList.add('light-theme');
-            } else {
-                document.documentElement.classList.add('dark-theme');
+    // Apply theme immediately to prevent flash - Enhanced for Perla theme
+    (function () {
+        try {
+            // Check for new theme system first (perla, etc.)
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                console.log('Loading saved theme:', savedTheme);
+                document.documentElement.setAttribute('data-theme', savedTheme);
+
+                // Apply theme-specific classes
+                if (savedTheme === 'perla') {
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.add('perla-theme');
+                    console.log('Perla theme applied successfully');
+                } else if (savedTheme === 'pink' || savedTheme === 'white' || savedTheme === 'coffee') {
+                    document.documentElement.classList.add('light-theme');
+                } else {
+                    document.documentElement.classList.add('dark-theme');
+                }
+                return;
             }
-            return;
-        }
-        
-        // Fallback to old preference system
-        const saved = localStorage.getItem('designPreferences');
-        if (saved) {
-            const preferences = JSON.parse(saved);
-            const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
-            
-            if (!isDarkMode) {
-                document.documentElement.classList.add('light-theme');
+
+            // Fallback to old preference system
+            const saved = localStorage.getItem('designPreferences');
+            if (saved) {
+                const preferences = JSON.parse(saved);
+                const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+
+                if (!isDarkMode) {
+                    document.documentElement.classList.add('light-theme');
+                }
             }
+        } catch (error) {
+            console.log('Using default theme settings');
         }
-    } catch (error) {
-        console.log('Using default theme settings');
-    }
-})();
+    })();
 </script>
 <style>
     /* Apple macOS Design System */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-    
+
     :root {
         /* Apple Color System - macOS inspired */
         --apple-blue: #007AFF;
@@ -64,12 +64,12 @@
         --apple-label-tertiary: #EBEBF599;
         --apple-label-quaternary: #EBEBF54D;
         --apple-separator: #38383A;
-        
+
         /* Apple Typography - SF Pro inspired (using Inter as fallback) */
         --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
         --apple-font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
     }
-    
+
     body {
         font-family: var(--apple-font-family);
         background: var(--apple-background);
@@ -78,30 +78,46 @@
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
     }
-    
+
     /* Apple Gentle Animations */
     .apple-float {
         animation: appleFloat 6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
     }
+
     @keyframes appleFloat {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-6px); }
+
+        0%,
+        100% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-6px);
+        }
     }
-    
+
     .apple-fade-in {
         animation: appleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
+
     @keyframes appleFadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
-    
+
     .apple-bg {
-        position: fixed; 
-        inset: 0; 
+        position: fixed;
+        inset: 0;
         z-index: 0;
         pointer-events: none;
-        background: 
+        background:
             radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
             radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
             linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);
@@ -120,13 +136,13 @@
         position: relative;
         z-index: 1;
     }
-    
+
     section {
         width: 100%;
         max-width: 1200px;
         margin: 0 auto;
     }
-    
+
     /* Apple Typography Scale */
     .apple-display {
         font-family: var(--apple-font-family);
@@ -136,7 +152,7 @@
         letter-spacing: -0.025em;
         color: var(--apple-label);
     }
-    
+
     .apple-title-1 {
         font-family: var(--apple-font-family);
         font-size: clamp(2rem, 5vw, 3rem);
@@ -145,7 +161,7 @@
         letter-spacing: -0.015em;
         color: var(--apple-label);
     }
-    
+
     .apple-title-2 {
         font-family: var(--apple-font-family);
         font-size: clamp(1.5rem, 4vw, 2rem);
@@ -154,7 +170,7 @@
         letter-spacing: -0.01em;
         color: var(--apple-label);
     }
-    
+
     .apple-title-3 {
         font-family: var(--apple-font-family);
         font-size: clamp(1.25rem, 3vw, 1.5rem);
@@ -163,7 +179,7 @@
         letter-spacing: -0.005em;
         color: var(--apple-blue);
     }
-    
+
     .apple-headline {
         font-family: var(--apple-font-family);
         font-size: clamp(1rem, 3vw, 1.25rem);
@@ -172,7 +188,7 @@
         letter-spacing: -0.003em;
         color: var(--apple-label);
     }
-    
+
     .apple-body {
         font-family: var(--apple-font-family);
         font-size: 17px;
@@ -181,7 +197,7 @@
         letter-spacing: -0.022em;
         color: var(--apple-label-secondary);
     }
-    
+
     .apple-subheadline {
         font-family: var(--apple-font-family);
         font-size: 15px;
@@ -201,19 +217,19 @@
         border: 0.5px solid rgba(255, 255, 255, 0.1);
         border-radius: 16px;
         padding: 24px;
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.3),
             0 1px 1px rgba(255, 255, 255, 0.05) inset;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
-    
+
     .apple-card:hover {
         transform: translateY(-2px);
-        box-shadow: 
+        box-shadow:
             0 12px 40px rgba(0, 0, 0, 0.4),
             0 1px 1px rgba(255, 255, 255, 0.1) inset;
     }
-    
+
     /* Apple Avatar */
     .apple-avatar {
         width: 80px;
@@ -221,20 +237,20 @@
         border-radius: 50%;
         border: 2px solid var(--apple-blue-light);
         background: var(--apple-background-secondary);
-        box-shadow: 
+        box-shadow:
             0 4px 16px rgba(0, 122, 255, 0.3),
             0 0 0 1px rgba(255, 255, 255, 0.05);
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
-    
+
     .apple-avatar:hover {
         transform: scale(1.05);
         border-color: var(--apple-blue);
-        box-shadow: 
+        box-shadow:
             0 6px 20px rgba(0, 122, 255, 0.4),
             0 0 0 1px rgba(255, 255, 255, 0.1);
     }
-    
+
     /* Apple Table System */
     .apple-table {
         background: rgba(255, 255, 255, 0.03);
@@ -245,17 +261,17 @@
         overflow: hidden;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     }
-    
+
     .apple-table table {
         width: 100%;
         border-collapse: collapse;
     }
-    
+
     .apple-table thead {
         background: var(--apple-background-secondary);
         backdrop-filter: blur(10px);
     }
-    
+
     .apple-table th {
         padding: 16px 20px;
         font-family: var(--apple-font-family);
@@ -267,7 +283,7 @@
         letter-spacing: 0.05em;
         border-bottom: 0.5px solid var(--apple-separator);
     }
-    
+
     .apple-table td {
         padding: 16px 20px;
         font-family: var(--apple-font-family);
@@ -275,19 +291,19 @@
         color: var(--apple-label);
         border-bottom: 0.5px solid var(--apple-separator);
     }
-    
+
     .apple-table tr:last-child td {
         border-bottom: none;
     }
-    
+
     .apple-table tbody tr {
         transition: background-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
-    
+
     .apple-table tbody tr:hover {
         background: rgba(0, 122, 255, 0.08);
     }
-    
+
     /* Apple Progress Bar */
     .apple-progress {
         background: var(--apple-background-quaternary);
@@ -295,20 +311,20 @@
         height: 6px;
         overflow: hidden;
     }
-    
+
     .apple-progress-fill {
         background: linear-gradient(90deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%);
         border-radius: 4px;
         height: 100%;
         transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
-    
+
     /* Apple Responsive Table */
     @media (max-width: 768px) {
         .apple-table thead {
             display: none;
         }
-        
+
         .apple-table tr {
             display: block;
             margin-bottom: 16px;
@@ -319,7 +335,7 @@
             padding: 16px;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
-        
+
         .apple-table td {
             display: flex;
             justify-content: space-between;
@@ -327,11 +343,11 @@
             padding: 8px 0;
             border-bottom: 0.5px solid var(--apple-separator);
         }
-        
+
         .apple-table td:last-child {
             border-bottom: none;
         }
-        
+
         .apple-table td::before {
             content: attr(data-label);
             font-size: 13px;
@@ -347,19 +363,19 @@
         background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
         background-attachment: fixed;
     }
-    
+
     .light-theme {
         /* Backgrounds: Soft summer pastels */
         --apple-background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
         --apple-background-secondary: rgba(255, 240, 245, 0.8);
         --apple-background-tertiary: rgba(255, 232, 239, 0.9);
         --apple-background-quaternary: #FFEBF0;
-        
+
         /* Labels: Dark text for readability */
         --apple-label: #2D1B2E;
         --apple-label-secondary: #4A2B4D;
         --apple-label-tertiary: #6B4C6D;
-        
+
         /* Summer Pink Colors - Beautiful gradients */
         --apple-blue: #FF6B9D;
         --apple-blue-light: #FF8FB3;
@@ -368,7 +384,7 @@
         --apple-pink-light: #FFB6C1;
         --apple-pink-medium: #FF91A4;
         --apple-pink-dark: #E55A87;
-        
+
         /* Grays with warm tones */
         --apple-gray: #8B7D8B;
         --apple-gray-2: #A695A6;
@@ -376,37 +392,37 @@
         --apple-gray-4: #DCD6DC;
         --apple-gray-5: #F0ECF0;
         --apple-gray-6: #F8F5F8;
-        
+
         --apple-separator: rgba(229, 90, 135, 0.2);
     }
 
     .light-theme .apple-bg {
-        background: 
+        background:
             radial-gradient(ellipse at top left, rgba(255, 107, 157, 0.1) 0%, transparent 60%),
             radial-gradient(ellipse at bottom right, rgba(255, 182, 193, 0.08) 0%, transparent 60%),
             linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
     }
 
     .light-theme .apple-card {
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.9) 0%, 
-            rgba(255, 248, 250, 0.85) 50%, 
-            rgba(255, 240, 245, 0.8) 100%);
+        background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(255, 248, 250, 0.85) 50%,
+                rgba(255, 240, 245, 0.8) 100%);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 107, 157, 0.2);
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(255, 107, 157, 0.15),
             inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
     .light-theme .apple-card:hover {
         transform: translateY(-2px);
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.95) 0%, 
-            rgba(255, 245, 248, 0.9) 50%, 
-            rgba(255, 232, 239, 0.85) 100%);
-        box-shadow: 
+        background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 245, 248, 0.9) 50%,
+                rgba(255, 232, 239, 0.85) 100%);
+        box-shadow:
             0 12px 40px rgba(255, 107, 157, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.95);
     }
@@ -421,10 +437,10 @@
     }
 
     .light-theme .apple-table {
-        background: linear-gradient(135deg, 
-            rgba(255, 208, 220, 0.9) 0%, 
-            rgba(255, 192, 203, 0.85) 50%, 
-            rgba(255, 182, 193, 0.8) 100%);
+        background: linear-gradient(135deg,
+                rgba(255, 208, 220, 0.9) 0%,
+                rgba(255, 192, 203, 0.85) 50%,
+                rgba(255, 182, 193, 0.8) 100%);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 107, 157, 0.3);
@@ -432,10 +448,10 @@
     }
 
     .light-theme .apple-table thead {
-        background: linear-gradient(135deg, 
-            rgba(255, 200, 213, 0.95) 0%, 
-            rgba(255, 182, 193, 0.9) 50%, 
-            rgba(255, 174, 185, 0.85) 100%);
+        background: linear-gradient(135deg,
+                rgba(255, 200, 213, 0.95) 0%,
+                rgba(255, 182, 193, 0.9) 50%,
+                rgba(255, 174, 185, 0.85) 100%);
         backdrop-filter: blur(10px);
     }
 
@@ -454,20 +470,20 @@
 
     .light-theme .apple-avatar {
         border: 2px solid #FF91A4;
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.95) 0%, 
-            rgba(255, 248, 250, 0.9) 100%);
-        box-shadow: 
+        background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 248, 250, 0.9) 100%);
+        box-shadow:
             0 4px 16px rgba(255, 107, 157, 0.25),
             0 0 0 1px rgba(255, 255, 255, 0.8);
     }
 
     .light-theme .apple-avatar:hover {
         border-color: #FF6B9D;
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.98) 0%, 
-            rgba(255, 245, 248, 0.95) 100%);
-        box-shadow: 
+        background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.98) 0%,
+                rgba(255, 245, 248, 0.95) 100%);
+        box-shadow:
             0 6px 20px rgba(255, 107, 157, 0.3),
             0 0 0 1px rgba(255, 255, 255, 0.9);
     }
@@ -475,18 +491,18 @@
     /* Responsive table improvements for mobile */
     @media (max-width: 768px) {
         .light-theme .apple-table tr {
-            background: linear-gradient(135deg, 
-                rgba(255, 255, 255, 0.95) 0%, 
-                rgba(255, 248, 250, 0.9) 100%) !important;
+            background: linear-gradient(135deg,
+                    rgba(255, 255, 255, 0.95) 0%,
+                    rgba(255, 248, 250, 0.9) 100%) !important;
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 107, 157, 0.2);
             box-shadow: 0 4px 16px rgba(255, 107, 157, 0.1);
         }
-        
+
         .light-theme .apple-table td {
             color: #2D1B2E !important;
         }
-        
+
         .light-theme .apple-table td::before {
             color: #6B4C6D !important;
         }
@@ -520,40 +536,40 @@
     /* Special styling for employee cards with more pink gradient */
     .light-theme .apple-card:nth-of-type(1),
     .light-theme .apple-card:nth-of-type(2) {
-        background: linear-gradient(135deg, 
-            rgba(255, 228, 239, 0.9) 0%, 
-            rgba(255, 209, 220, 0.85) 30%,
-            rgba(255, 192, 203, 0.8) 70%,
-            rgba(255, 182, 193, 0.75) 100%) !important;
+        background: linear-gradient(135deg,
+                rgba(255, 228, 239, 0.9) 0%,
+                rgba(255, 209, 220, 0.85) 30%,
+                rgba(255, 192, 203, 0.8) 70%,
+                rgba(255, 182, 193, 0.75) 100%) !important;
     }
 
     .light-theme .apple-card:nth-of-type(1):hover,
     .light-theme .apple-card:nth-of-type(2):hover {
-        background: linear-gradient(135deg, 
-            rgba(255, 218, 230, 0.95) 0%, 
-            rgba(255, 200, 213, 0.9) 30%,
-            rgba(255, 182, 193, 0.85) 70%,
-            rgba(255, 174, 185, 0.8) 100%) !important;
+        background: linear-gradient(135deg,
+                rgba(255, 218, 230, 0.95) 0%,
+                rgba(255, 200, 213, 0.9) 30%,
+                rgba(255, 182, 193, 0.85) 70%,
+                rgba(255, 174, 185, 0.8) 100%) !important;
     }
 
     /* Vision card with enhanced pink gradient */
     .light-theme section:last-of-type .apple-card {
-        background: linear-gradient(135deg, 
-            rgba(255, 240, 245, 0.9) 0%, 
-            rgba(255, 228, 239, 0.85) 25%,
-            rgba(255, 209, 220, 0.8) 50%,
-            rgba(255, 192, 203, 0.75) 75%,
-            rgba(255, 182, 193, 0.7) 100%) !important;
+        background: linear-gradient(135deg,
+                rgba(255, 240, 245, 0.9) 0%,
+                rgba(255, 228, 239, 0.85) 25%,
+                rgba(255, 209, 220, 0.8) 50%,
+                rgba(255, 192, 203, 0.75) 75%,
+                rgba(255, 182, 193, 0.7) 100%) !important;
         border: 1px solid rgba(255, 107, 157, 0.3);
     }
 
     .light-theme section:last-of-type .apple-card:hover {
-        background: linear-gradient(135deg, 
-            rgba(255, 232, 239, 0.95) 0%, 
-            rgba(255, 218, 230, 0.9) 25%,
-            rgba(255, 200, 213, 0.85) 50%,
-            rgba(255, 182, 193, 0.8) 75%,
-            rgba(255, 174, 185, 0.75) 100%) !important;
+        background: linear-gradient(135deg,
+                rgba(255, 232, 239, 0.95) 0%,
+                rgba(255, 218, 230, 0.9) 25%,
+                rgba(255, 200, 213, 0.85) 50%,
+                rgba(255, 182, 193, 0.8) 75%,
+                rgba(255, 174, 185, 0.75) 100%) !important;
     }
 
     /* White icons for employee cards */
@@ -574,10 +590,10 @@
     html[data-theme="pink"] body .floating-top-btn,
     html.light-theme[data-theme="pink"] body .floating-top-btn {
         background: linear-gradient(135deg,
-            rgba(255, 182, 193, 0.9) 0%,
-            rgba(255, 160, 176, 0.85) 100%) !important;
+                rgba(255, 182, 193, 0.9) 0%,
+                rgba(255, 160, 176, 0.85) 100%) !important;
         border: 1px solid rgba(255, 107, 157, 0.3) !important;
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(255, 107, 157, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
         backdrop-filter: none !important;
@@ -588,7 +604,8 @@
     body[data-theme="pink"] .floating-top-btn svg,
     html[data-theme="pink"] body .floating-top-btn svg,
     html.light-theme[data-theme="pink"] body .floating-top-btn svg {
-        color: #FFFFFF !important; /* Iconos blancos para contraste */
+        color: #FFFFFF !important;
+        /* Iconos blancos para contraste */
     }
 
     .light-theme .floating-top-btn:hover,
@@ -596,10 +613,10 @@
     html[data-theme="pink"] body .floating-top-btn:hover,
     html.light-theme[data-theme="pink"] body .floating-top-btn:hover {
         background: linear-gradient(135deg,
-            rgba(255, 160, 176, 0.95) 0%,
-            rgba(255, 140, 160, 0.9) 100%) !important;
+                rgba(255, 160, 176, 0.95) 0%,
+                rgba(255, 140, 160, 0.9) 100%) !important;
         transform: translateY(-3px) scale(1.05) !important;
-        box-shadow: 
+        box-shadow:
             0 12px 40px rgba(255, 107, 157, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
     }
@@ -650,9 +667,9 @@
     /* Pink theme for search bar */
     .light-theme .central-search-bar {
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 50%,
-            rgba(255, 218, 230, 0.8) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 50%,
+                rgba(255, 218, 230, 0.8) 100%);
         border: 1px solid rgba(255, 107, 157, 0.3);
         box-shadow:
             0 8px 32px rgba(255, 107, 157, 0.15),
@@ -662,9 +679,9 @@
     .light-theme .central-search-bar:hover {
         /* Sin efectos de hover - mantiene apariencia normal */
         background: linear-gradient(135deg,
-            rgba(255, 245, 248, 0.9) 0%,
-            rgba(255, 232, 239, 0.85) 50%,
-            rgba(255, 218, 230, 0.8) 100%);
+                rgba(255, 245, 248, 0.9) 0%,
+                rgba(255, 232, 239, 0.85) 50%,
+                rgba(255, 218, 230, 0.8) 100%);
         border-color: rgba(255, 107, 157, 0.3);
         box-shadow:
             0 8px 32px rgba(255, 107, 157, 0.15),
@@ -677,7 +694,8 @@
     }
 
     .light-theme .central-search-bar:hover .central-search-icon {
-        color: #E55A87 !important; /* Mantiene el mismo color */
+        color: #E55A87 !important;
+        /* Mantiene el mismo color */
     }
 
     .light-theme .central-search-text {
@@ -685,7 +703,8 @@
     }
 
     .light-theme .central-search-bar:hover .central-search-text {
-        color: #6B4C6D !important; /* Mantiene el mismo color */
+        color: #6B4C6D !important;
+        /* Mantiene el mismo color */
     }
 
     .central-search-icon {
@@ -811,7 +830,7 @@
         justify-content: center;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.3),
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
@@ -820,7 +839,7 @@
         background: rgba(28, 28, 30, 0.95);
         border-color: rgba(0, 122, 255, 0.5);
         transform: translateY(-3px) scale(1.05);
-        box-shadow: 
+        box-shadow:
             0 16px 50px rgba(0, 0, 0, 0.4),
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
             0 0 20px rgba(0, 122, 255, 0.3);
@@ -845,62 +864,107 @@
 
     /* Animaciones para avatares de animales */
     @keyframes bounceAnim {
-        0%, 100% { transform: translateY(0px) scale(1); }
-        50% { transform: translateY(-8px) scale(1.05); }
+
+        0%,
+        100% {
+            transform: translateY(0px) scale(1);
+        }
+
+        50% {
+            transform: translateY(-8px) scale(1.05);
+        }
     }
-    
+
     @keyframes pulseAnim {
-        0%, 100% { transform: scale(1) rotate(0deg); }
-        50% { transform: scale(1.1) rotate(2deg); }
+
+        0%,
+        100% {
+            transform: scale(1) rotate(0deg);
+        }
+
+        50% {
+            transform: scale(1.1) rotate(2deg);
+        }
     }
-    
+
     @keyframes flyAnim {
-        0%, 100% { transform: translateY(0px) rotate(0deg); }
-        25% { transform: translateY(-3px) rotate(1deg); }
-        75% { transform: translateY(-6px) rotate(-1deg); }
+
+        0%,
+        100% {
+            transform: translateY(0px) rotate(0deg);
+        }
+
+        25% {
+            transform: translateY(-3px) rotate(1deg);
+        }
+
+        75% {
+            transform: translateY(-6px) rotate(-1deg);
+        }
     }
-    
+
     @keyframes swimAnim {
-        0%, 100% { transform: translateX(0px) rotate(0deg); }
-        33% { transform: translateX(2px) rotate(1deg); }
-        66% { transform: translateX(-2px) rotate(-1deg); }
+
+        0%,
+        100% {
+            transform: translateX(0px) rotate(0deg);
+        }
+
+        33% {
+            transform: translateX(2px) rotate(1deg);
+        }
+
+        66% {
+            transform: translateX(-2px) rotate(-1deg);
+        }
     }
-    
+
     @keyframes rotateAnim {
-        0% { transform: rotate(0deg) scale(1); }
-        50% { transform: rotate(180deg) scale(1.05); }
-        100% { transform: rotate(360deg) scale(1); }
+        0% {
+            transform: rotate(0deg) scale(1);
+        }
+
+        50% {
+            transform: rotate(180deg) scale(1.05);
+        }
+
+        100% {
+            transform: rotate(360deg) scale(1);
+        }
     }
 
     /* Enhanced 3D Birthday Card - Masculine Theme */
     .birthday-card {
         position: relative;
         overflow: visible !important;
-        background: linear-gradient(135deg, 
-            rgba(30, 144, 255, 0.2) 0%, 
-            rgba(65, 105, 225, 0.25) 25%,
-            rgba(25, 25, 112, 0.2) 50%,
-            rgba(72, 61, 139, 0.15) 75%,
-            rgba(47, 79, 79, 0.1) 100%) !important;
+        background: linear-gradient(135deg,
+                rgba(30, 144, 255, 0.2) 0%,
+                rgba(65, 105, 225, 0.25) 25%,
+                rgba(25, 25, 112, 0.2) 50%,
+                rgba(72, 61, 139, 0.15) 75%,
+                rgba(47, 79, 79, 0.1) 100%) !important;
         border: 3px solid rgba(30, 144, 255, 0.6) !important;
         animation: birthdayCardPulse 4s ease-in-out infinite;
-        box-shadow: 
+        box-shadow:
             0 15px 35px rgba(30, 144, 255, 0.3),
             0 5px 15px rgba(65, 105, 225, 0.4),
             inset 0 2px 5px rgba(255, 255, 255, 0.2);
     }
 
     @keyframes birthdayCardPulse {
-        0%, 100% { 
+
+        0%,
+        100% {
             transform: scale(1);
-            box-shadow: 
+            box-shadow:
                 0 15px 35px rgba(30, 144, 255, 0.3),
                 0 5px 15px rgba(65, 105, 225, 0.4),
                 inset 0 2px 5px rgba(255, 255, 255, 0.2);
         }
-        50% { 
+
+        50% {
             transform: scale(1.02);
-            box-shadow: 
+            box-shadow:
                 0 20px 45px rgba(30, 144, 255, 0.4),
                 0 8px 25px rgba(65, 105, 225, 0.5),
                 inset 0 3px 8px rgba(255, 255, 255, 0.3);
@@ -935,19 +999,29 @@
         transform: translateX(-50%);
         width: 2px;
         height: 45px;
-        background: linear-gradient(to bottom, 
-            rgba(68, 68, 68, 0.9) 0%, 
-            rgba(102, 102, 102, 0.8) 50%, 
-            rgba(51, 51, 51, 0.7) 100%);
+        background: linear-gradient(to bottom,
+                rgba(68, 68, 68, 0.9) 0%,
+                rgba(102, 102, 102, 0.8) 50%,
+                rgba(51, 51, 51, 0.7) 100%);
         border-radius: 1px;
         box-shadow: 1px 0 3px rgba(0, 0, 0, 0.4);
         animation: stringSwing 4s ease-in-out infinite;
     }
 
     @keyframes stringSwing {
-        0%, 100% { transform: translateX(-50%) rotate(0deg); }
-        25% { transform: translateX(-50%) rotate(2deg); }
-        75% { transform: translateX(-50%) rotate(-2deg); }
+
+        0%,
+        100% {
+            transform: translateX(-50%) rotate(0deg);
+        }
+
+        25% {
+            transform: translateX(-50%) rotate(2deg);
+        }
+
+        75% {
+            transform: translateX(-50%) rotate(-2deg);
+        }
     }
 
     .balloon-3d {
@@ -957,7 +1031,7 @@
         position: relative;
         margin-bottom: 15px;
         animation: balloonFloat3D 6s ease-in-out infinite;
-        box-shadow: 
+        box-shadow:
             inset -12px -15px 8px rgba(0, 0, 0, 0.15),
             inset 8px 8px 12px rgba(255, 255, 255, 0.3),
             0 8px 20px rgba(0, 0, 0, 0.4);
@@ -987,7 +1061,7 @@
         height: 8px;
         background: inherit;
         border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-        box-shadow: 
+        box-shadow:
             0 2px 4px rgba(0, 0, 0, 0.3),
             inset -2px -2px 2px rgba(0, 0, 0, 0.2);
     }
@@ -1026,17 +1100,22 @@
     }
 
     @keyframes balloonFloat3D {
-        0%, 100% { 
-            transform: translateY(0px) rotate(0deg); 
+
+        0%,
+        100% {
+            transform: translateY(0px) rotate(0deg);
         }
-        25% { 
-            transform: translateY(-15px) rotate(2deg); 
+
+        25% {
+            transform: translateY(-15px) rotate(2deg);
         }
-        50% { 
-            transform: translateY(-25px) rotate(0deg); 
+
+        50% {
+            transform: translateY(-25px) rotate(0deg);
         }
-        75% { 
-            transform: translateY(-15px) rotate(-2deg); 
+
+        75% {
+            transform: translateY(-15px) rotate(-2deg);
         }
     }
 
@@ -1057,19 +1136,51 @@
         animation: sparkleGlow 3s ease-in-out infinite;
     }
 
-    .sparkle-1 { top: 10%; left: 15%; animation-delay: 0s; }
-    .sparkle-2 { top: 20%; right: 20%; animation-delay: 0.5s; }
-    .sparkle-3 { top: 60%; left: 10%; animation-delay: 1s; }
-    .sparkle-4 { top: 70%; right: 15%; animation-delay: 1.5s; }
-    .sparkle-5 { top: 35%; left: 25%; animation-delay: 2s; }
-    .sparkle-6 { top: 45%; right: 25%; animation-delay: 2.5s; }
+    .sparkle-1 {
+        top: 10%;
+        left: 15%;
+        animation-delay: 0s;
+    }
+
+    .sparkle-2 {
+        top: 20%;
+        right: 20%;
+        animation-delay: 0.5s;
+    }
+
+    .sparkle-3 {
+        top: 60%;
+        left: 10%;
+        animation-delay: 1s;
+    }
+
+    .sparkle-4 {
+        top: 70%;
+        right: 15%;
+        animation-delay: 1.5s;
+    }
+
+    .sparkle-5 {
+        top: 35%;
+        left: 25%;
+        animation-delay: 2s;
+    }
+
+    .sparkle-6 {
+        top: 45%;
+        right: 25%;
+        animation-delay: 2.5s;
+    }
 
     @keyframes sparkleGlow {
-        0%, 100% { 
+
+        0%,
+        100% {
             opacity: 0.3;
             transform: scale(0.8) rotate(0deg);
         }
-        50% { 
+
+        50% {
             opacity: 1;
             transform: scale(1.2) rotate(180deg);
         }
@@ -1128,9 +1239,17 @@
         top: 8px;
     }
 
-    .candle-1 { left: 22px; }
-    .candle-2 { left: 29px; }
-    .candle-3 { left: 36px; }
+    .candle-1 {
+        left: 22px;
+    }
+
+    .candle-2 {
+        left: 29px;
+    }
+
+    .candle-3 {
+        left: 36px;
+    }
 
     .cake-flame {
         position: absolute;
@@ -1142,13 +1261,26 @@
         animation: flameFlicker 0.5s ease-in-out infinite alternate;
     }
 
-    .flame-1 { left: 21px; }
-    .flame-2 { left: 28px; }
-    .flame-3 { left: 35px; }
+    .flame-1 {
+        left: 21px;
+    }
+
+    .flame-2 {
+        left: 28px;
+    }
+
+    .flame-3 {
+        left: 35px;
+    }
 
     @keyframes flameFlicker {
-        0% { transform: scale(1) rotate(-2deg); }
-        100% { transform: scale(1.1) rotate(2deg); }
+        0% {
+            transform: scale(1) rotate(-2deg);
+        }
+
+        100% {
+            transform: scale(1.1) rotate(2deg);
+        }
     }
 
     /* Enhanced Avatar Container */
@@ -1161,7 +1293,7 @@
     .birthday-avatar {
         animation: birthdayAvatarFloat 3s ease-in-out infinite;
         border: 4px solid #1E90FF !important;
-        box-shadow: 
+        box-shadow:
             0 0 25px rgba(30, 144, 255, 0.8),
             0 0 50px rgba(65, 105, 225, 0.5),
             inset 0 2px 5px rgba(255, 255, 255, 0.3) !important;
@@ -1170,14 +1302,18 @@
     }
 
     @keyframes birthdayAvatarFloat {
-        0%, 100% { 
-            transform: translateY(0px) rotate(0deg) scale(1); 
+
+        0%,
+        100% {
+            transform: translateY(0px) rotate(0deg) scale(1);
         }
-        33% { 
-            transform: translateY(-8px) rotate(1deg) scale(1.02); 
+
+        33% {
+            transform: translateY(-8px) rotate(1deg) scale(1.02);
         }
-        66% { 
-            transform: translateY(-12px) rotate(-1deg) scale(1.05); 
+
+        66% {
+            transform: translateY(-12px) rotate(-1deg) scale(1.05);
         }
     }
 
@@ -1215,10 +1351,12 @@
             opacity: 1;
             transform: translateY(-30px) rotate(0deg) scale(0.5);
         }
+
         50% {
             opacity: 1;
             transform: translateY(50px) rotate(180deg) scale(1);
         }
+
         100% {
             opacity: 0;
             transform: translateY(130px) rotate(360deg) scale(0.5);
@@ -1238,8 +1376,15 @@
     }
 
     @keyframes birthdayTitleGlow {
-        0%, 100% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
+
+        0%,
+        100% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
     }
 
     .birthday-name {
@@ -1248,7 +1393,7 @@
         font-weight: 700 !important;
         text-transform: uppercase;
         letter-spacing: 1px;
-        text-shadow: 
+        text-shadow:
             0 2px 4px rgba(30, 144, 255, 0.4),
             0 0 8px rgba(65, 105, 225, 0.3);
         animation: nameGentleGlow 4s ease-in-out infinite;
@@ -1279,26 +1424,32 @@
     }
 
     @keyframes nameGentleGlow {
-        0%, 100% { 
+
+        0%,
+        100% {
             transform: scale(1) translateY(0px);
-            text-shadow: 
+            text-shadow:
                 0 2px 4px rgba(30, 144, 255, 0.4),
                 0 0 8px rgba(65, 105, 225, 0.3);
         }
-        50% { 
+
+        50% {
             transform: scale(1.05) translateY(-2px);
-            text-shadow: 
+            text-shadow:
                 0 3px 6px rgba(30, 144, 255, 0.6),
                 0 0 12px rgba(65, 105, 225, 0.5);
         }
     }
 
     @keyframes sparkleGentle {
-        0%, 100% { 
+
+        0%,
+        100% {
             transform: translateY(-50%) rotate(0deg) scale(1);
             opacity: 0.6;
         }
-        50% { 
+
+        50% {
             transform: translateY(-50%) rotate(180deg) scale(1.1);
             opacity: 1;
         }
@@ -1367,22 +1518,25 @@
     }
 
     @keyframes giftBobble {
-        0%, 100% { 
-            transform: translateY(0px) rotate(0deg); 
+
+        0%,
+        100% {
+            transform: translateY(0px) rotate(0deg);
         }
-        50% { 
-            transform: translateY(-5px) rotate(5deg); 
+
+        50% {
+            transform: translateY(-5px) rotate(5deg);
         }
     }
 
     /* Light theme birthday adjustments - Masculine */
     .light-theme .birthday-card {
-        background: linear-gradient(135deg, 
-            rgba(230, 245, 255, 0.95) 0%, 
-            rgba(210, 235, 255, 0.9) 25%,
-            rgba(190, 225, 255, 0.85) 50%,
-            rgba(173, 216, 230, 0.8) 75%,
-            rgba(176, 196, 222, 0.75) 100%) !important;
+        background: linear-gradient(135deg,
+                rgba(230, 245, 255, 0.95) 0%,
+                rgba(210, 235, 255, 0.9) 25%,
+                rgba(190, 225, 255, 0.85) 50%,
+                rgba(173, 216, 230, 0.8) 75%,
+                rgba(176, 196, 222, 0.75) 100%) !important;
         border: 2px solid rgba(30, 144, 255, 0.4) !important;
     }
 
@@ -1395,7 +1549,7 @@
     }
 
     /* Tema perla específicos para bienvenida.html - Solo estilos que no están en base.html */
-    
+
     /* Cards específicas de empleados - forzar blanco en tema perla */
     html[data-theme="perla"] .apple-card:nth-of-type(1),
     html[data-theme="perla"] .apple-card:nth-of-type(2),
@@ -1535,21 +1689,23 @@
                 </linearGradient>
             </defs>
             <!-- Capa de Relleno Transparente con Gradiente (base tridimensional) -->
-            <path d="M24 6L12 13V27L24 34L36 27V13L24 6Z" fill="url(#blueGradient)" opacity="0.4"/>
-            
+            <path d="M24 6L12 13V27L24 34L36 27V13L24 6Z" fill="url(#blueGradient)" opacity="0.4" />
+
             <!-- Hexágono Central (Define la estructura de la colmena) -->
-            <path d="M24 8L10 16V32L24 40L38 32V16L24 8Z" stroke="url(#blueGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            
+            <path d="M24 8L10 16V32L24 40L38 32V16L24 8Z" stroke="url(#blueGradient)" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round" />
+
             <!-- Patrón de Red / Conexión de Datos (Color cian brillante) -->
-            <path d="M24 8V40M10 16L38 32M38 16L10 32" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+            <path d="M24 8V40M10 16L38 32M38 16L10 32" stroke="#00D4FF" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" opacity="0.8" />
 
             <!-- Puntos de Conexión (Nodos) -->
-            <circle cx="24" cy="24" r="3" fill="white"/>
-            <circle cx="10" cy="16" r="2" fill="white"/>
-            <circle cx="38" cy="32" r="2" fill="white"/>
+            <circle cx="24" cy="24" r="3" fill="white" />
+            <circle cx="10" cy="16" r="2" fill="white" />
+            <circle cx="38" cy="32" r="2" fill="white" />
         </svg>
     </div>
-    
+
     <!-- Logo Text -->
     <div class="logo-text">
         <div class="brand-name">NETHIVE</div>
@@ -1560,7 +1716,8 @@
 <!-- Floating Action Buttons Top Right -->
 <div class="floating-actions-top">
     <a href="{% url 'feed' %}" class="floating-top-btn" id="feed-btn" title="Feed de Actividad">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <path d="M4 22h16a2 2 0 0 0 2-2V7.5L17.5 2H6a2 2 0 0 0-2 2v4"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
             <path d="M12 18h.01"></path>
@@ -1568,258 +1725,325 @@
             <path d="M9 14h6"></path>
         </svg>
     </a>
-    
+
     <a href="{% url 'calendario' %}" class="floating-top-btn" id="calendar-btn" title="Calendario y Eventos">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <path d="M16 2v4"/>
-            <path d="M8 2v4"/>
-            <path d="M3 10h18"/>
-            <path d="M8 14h.01"/>
-            <path d="M12 14h.01"/>
-            <path d="M16 14h.01"/>
-            <path d="M8 18h.01"/>
-            <path d="M12 18h.01"/>
-            <path d="M16 18h.01"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M16 2v4" />
+            <path d="M8 2v4" />
+            <path d="M3 10h18" />
+            <path d="M8 14h.01" />
+            <path d="M12 14h.01" />
+            <path d="M16 14h.01" />
+            <path d="M8 18h.01" />
+            <path d="M12 18h.01" />
+            <path d="M16 18h.01" />
         </svg>
     </a>
 </div>
 
 <main>
     <!-- Apple Welcome Section -->
-    <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 120px; padding-bottom: 40px;">
-        <div class="user-avatar-container" style="width: 160px; height: 160px; border-radius: 50%; overflow: hidden; margin-bottom: 16px; border: 4px solid var(--apple-blue); box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);">
+    <section class="w-full flex flex-col items-center justify-start apple-fade-in"
+        style="padding-top: 120px; padding-bottom: 40px;">
+        <div class="user-avatar-container"
+            style="width: 160px; height: 160px; border-radius: 50%; overflow: hidden; margin-bottom: 16px; border: 4px solid var(--apple-blue); box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);">
             {% if user_profile and user_profile.avatar %}
-                <img src="{{ user_profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}" style="width: 100%; height: 100%; object-fit: cover;">
+            <img src="{{ user_profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}"
+                style="width: 100%; height: 100%; object-fit: cover;">
             {% elif user_profile and user_profile.usar_animado %}
-                {% if user_profile.avatar_tipo == 'dinosaur' %}
-                                <img src="/static/images/dinosaurio.jpeg" alt="Dinosaurio" style="width: 100%; height: 100%; object-fit: cover;">                {% elif user_profile.avatar_tipo == 'panda' %}
-                    <img src="/static/images/panda.jpeg" alt="Panda" style="width: 100%; height: 100%; object-fit: cover;">
-                {% elif user_profile.avatar_tipo == 'eagle' %}
-                    <img src="/static/images/aguila.jpeg" alt="Águila" style="width: 100%; height: 100%; object-fit: cover;">
-                {% elif user_profile.avatar_tipo == 'fox-hero' %}
-                    <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" style="width: 100%; height: 100%; object-fit: cover;">
-                {% elif user_profile.avatar_tipo == 'shark' %}
-                    <!-- Tiburón 3D -->
-                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#0ea5e9 0%,#0284c7 50%,#0369a1 100%); animation: swimAnim 2.5s infinite;">
-                        <svg viewBox="0 0 48 48" fill="none" style="width: 80%; height: 80%;">
-                            <ellipse cx="24" cy="24" rx="16" ry="8" fill="#0284c7"/>
-                            <ellipse cx="24" cy="24" rx="14" ry="6" fill="#0ea5e9"/>
-                            <polygon points="8,24 20,18 20,30" fill="#0369a1"/>
-                            <polygon points="10,24 18,20 18,28" fill="#0284c7"/>
-                            <polygon points="20,12 28,8 32,18 24,16" fill="#0369a1"/>
-                            <polygon points="22,14 26,10 30,16 26,16" fill="#0284c7"/>
-                            <ellipse cx="18" cy="28" rx="6" ry="3" fill="#0369a1" transform="rotate(30 18 28)"/>
-                            <ellipse cx="18" cy="20" rx="6" ry="3" fill="#0369a1" transform="rotate(-30 18 20)"/>
-                            <polygon points="36,20 44,12 44,24 40,24" fill="#0369a1"/>
-                            <polygon points="36,28 44,36 44,24 40,24" fill="#0369a1"/>
-                            <polygon points="38,22 42,16 42,26 40,24" fill="#0284c7"/>
-                            <polygon points="38,26 42,32 42,26 40,24" fill="#0284c7"/>
-                            <circle cx="16" cy="22" r="3" fill="#000"/>
-                            <circle cx="16" cy="22" r="2" fill="#fff"/>
-                            <circle cx="17" cy="21" r="1" fill="#000"/>
-                            <polygon points="8,24 12,26 10,28" fill="#fff"/>
-                            <polygon points="10,24 14,26 12,28" fill="#fff"/>
-                            <polygon points="12,24 16,26 14,28" fill="#fff"/>
-                            <path d="M18 20 Q20 22 18 24" stroke="#0369a1" stroke-width="1"/>
-                            <path d="M20 20 Q22 22 20 24" stroke="#0369a1" stroke-width="1"/>
-                            <path d="M22 20 Q24 22 22 24" stroke="#0369a1" stroke-width="1"/>
-                            <ellipse cx="24" cy="22" rx="14" ry="5" fill="none" stroke="#0ea5e9" stroke-width="1" opacity="0.5"/>
-                            <circle cx="15" cy="20" r="0.5" fill="#fff"/>
-                        </svg>
-                    </div>
-                {% elif user_profile.avatar_tipo == 'lobo' %}
-                    <img src="/static/images/lobo.jpeg" alt="Lobo" style="width: 100%; height: 100%; object-fit: cover;">
-                {% elif user_profile.avatar_tipo == 'buho' %}
-                    <img src="/static/images/buho.jpeg" alt="Buho" style="width: 100%; height: 100%; object-fit: cover;">
-                {% elif user_profile.avatar_tipo == 'axolote' %}
-                    <img src="/static/images/axolote.jpeg" alt="Axolote" style="width: 100%; height: 100%; object-fit: cover;">
-                {% elif user_profile.avatar_tipo == 'cocodrilo' %}
-                    <img src="/static/images/cocodrilo.jpeg" alt="Cocodrilo" style="width: 100%; height: 100%; object-fit: cover;">
-                {% else %}
-                    <!-- Avatar humano por defecto -->
-                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #00cfff 0%, #ff00c8 100%); animation: rotateAnim 2.5s linear infinite;">
-                        <svg viewBox="0 0 48 48" fill="none" style="width: 70%; height: 70%;">
-                            <circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/>
-                            <path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#fff"/>
-                            <circle cx="24" cy="22" r="4" fill="#fff"/>
-                            <ellipse cx="24" cy="34" rx="10" ry="4" fill="#fff" opacity="0.7"/>
-                        </svg>
-                    </div>
-                {% endif %}
+            {% if user_profile.avatar_tipo == 'dinosaur' %}
+            <img src="/static/images/dinosaurio.jpeg" alt="Dinosaurio"
+                style="width: 100%; height: 100%; object-fit: cover;"> {% elif user_profile.avatar_tipo == 'panda' %}
+            <img src="/static/images/panda.jpeg" alt="Panda" style="width: 100%; height: 100%; object-fit: cover;">
+            {% elif user_profile.avatar_tipo == 'eagle' %}
+            <img src="/static/images/aguila.jpeg" alt="Águila" style="width: 100%; height: 100%; object-fit: cover;">
+            {% elif user_profile.avatar_tipo == 'fox-hero' %}
+            <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe"
+                style="width: 100%; height: 100%; object-fit: cover;">
+            {% elif user_profile.avatar_tipo == 'shark' %}
+            <!-- Tiburón 3D -->
+            <div
+                style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#0ea5e9 0%,#0284c7 50%,#0369a1 100%); animation: swimAnim 2.5s infinite;">
+                <svg viewBox="0 0 48 48" fill="none" style="width: 80%; height: 80%;">
+                    <ellipse cx="24" cy="24" rx="16" ry="8" fill="#0284c7" />
+                    <ellipse cx="24" cy="24" rx="14" ry="6" fill="#0ea5e9" />
+                    <polygon points="8,24 20,18 20,30" fill="#0369a1" />
+                    <polygon points="10,24 18,20 18,28" fill="#0284c7" />
+                    <polygon points="20,12 28,8 32,18 24,16" fill="#0369a1" />
+                    <polygon points="22,14 26,10 30,16 26,16" fill="#0284c7" />
+                    <ellipse cx="18" cy="28" rx="6" ry="3" fill="#0369a1" transform="rotate(30 18 28)" />
+                    <ellipse cx="18" cy="20" rx="6" ry="3" fill="#0369a1" transform="rotate(-30 18 20)" />
+                    <polygon points="36,20 44,12 44,24 40,24" fill="#0369a1" />
+                    <polygon points="36,28 44,36 44,24 40,24" fill="#0369a1" />
+                    <polygon points="38,22 42,16 42,26 40,24" fill="#0284c7" />
+                    <polygon points="38,26 42,32 42,26 40,24" fill="#0284c7" />
+                    <circle cx="16" cy="22" r="3" fill="#000" />
+                    <circle cx="16" cy="22" r="2" fill="#fff" />
+                    <circle cx="17" cy="21" r="1" fill="#000" />
+                    <polygon points="8,24 12,26 10,28" fill="#fff" />
+                    <polygon points="10,24 14,26 12,28" fill="#fff" />
+                    <polygon points="12,24 16,26 14,28" fill="#fff" />
+                    <path d="M18 20 Q20 22 18 24" stroke="#0369a1" stroke-width="1" />
+                    <path d="M20 20 Q22 22 20 24" stroke="#0369a1" stroke-width="1" />
+                    <path d="M22 20 Q24 22 22 24" stroke="#0369a1" stroke-width="1" />
+                    <ellipse cx="24" cy="22" rx="14" ry="5" fill="none" stroke="#0ea5e9" stroke-width="1"
+                        opacity="0.5" />
+                    <circle cx="15" cy="20" r="0.5" fill="#fff" />
+                </svg>
+            </div>
+            {% elif user_profile.avatar_tipo == 'lobo' %}
+            <img src="/static/images/lobo.jpeg" alt="Lobo" style="width: 100%; height: 100%; object-fit: cover;">
+            {% elif user_profile.avatar_tipo == 'buho' %}
+            <img src="/static/images/buho.jpeg" alt="Buho" style="width: 100%; height: 100%; object-fit: cover;">
+            {% elif user_profile.avatar_tipo == 'axolote' %}
+            <img src="/static/images/axolote.jpeg" alt="Axolote" style="width: 100%; height: 100%; object-fit: cover;">
+            {% elif user_profile.avatar_tipo == 'cocodrilo' %}
+            <img src="/static/images/cocodrilo.jpeg" alt="Cocodrilo"
+                style="width: 100%; height: 100%; object-fit: cover;">
             {% else %}
-                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--apple-blue); color: white; font-size: 64px; font-weight: bold;">
-                    {{ user.get_full_name|default:user.username|slice:':2'|upper }}
-                </div>
+            <!-- Avatar humano por defecto -->
+            <div
+                style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #00cfff 0%, #ff00c8 100%); animation: rotateAnim 2.5s linear infinite;">
+                <svg viewBox="0 0 48 48" fill="none" style="width: 70%; height: 70%;">
+                    <circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2" />
+                    <path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#fff" />
+                    <circle cx="24" cy="22" r="4" fill="#fff" />
+                    <ellipse cx="24" cy="34" rx="10" ry="4" fill="#fff" opacity="0.7" />
+                </svg>
+            </div>
+            {% endif %}
+            {% else %}
+            <div
+                style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--apple-blue); color: white; font-size: 64px; font-weight: bold;">
+                {{ user.get_full_name|default:user.username|slice:':2'|upper }}
+            </div>
             {% endif %}
         </div>
         <h1 class="apple-title-1 text-center mb-1" style="color: var(--apple-label);">¡Bienvenido, {{ user.first_name|default:user.username }}!</h1>
-        <p class="apple-body text-center mb-4" style="color: var(--apple-label-secondary); max-width: 500px;">¿En qué vamos a trabajar hoy?</p>
-        
+        <p class="apple-body text-center mb-4" style="color: var(--apple-label-secondary); max-width: 500px;">¿En qué
+            vamos a trabajar hoy?</p>
+
         <!-- Centered Search Bar -->
         <div class="central-search-container mb-4" id="main-search-container">
             <div class="central-search-bar" id="main-search-bar">
-                <svg class="central-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="M21 21l-4.35-4.35"/>
+                <svg class="central-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
                 </svg>
                 <span class="central-search-text">Buscar cotizaciones, clientes o productos...</span>
             </div>
         </div>
     </section>
     <!-- Apple Employee Cards Section -->
-    <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-4 max-w-4xl apple-fade-in" style="animation-delay:0.2s;">
+    <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-4 max-w-4xl apple-fade-in"
+        style="animation-delay:0.2s;">
         <div class="apple-card text-center apple-float" style="animation-delay: 0.1s;">
             <h4 class="apple-title-3 mb-4">Empleado del Mes</h4>
             {% if usuario_mes %}
-                {% if usuario_mes.avatar_url %}
-                    <img src="{{ usuario_mes.avatar_url }}" 
-                         alt="Avatar mes" 
-                         class="apple-avatar mx-auto mb-4"/>
-                {% else %}
-                    <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
-                        {{ usuario_mes.user|user_avatar:"80" }}
-                    </div>
-                {% endif %}
-                <h5 class="apple-headline mb-2">{{ usuario_mes.nombre }}</h5>
-                <p class="apple-body">
-                    Oportunidades creadas: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_mes.oportunidades_creadas }}</span><br>
-                    Monto total: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_mes.monto_total_mes|format_currency_es }}</span>
-                </p>
+            {% if usuario_mes.avatar_url %}
+            <img src="{{ usuario_mes.avatar_url }}" alt="Avatar mes" class="apple-avatar mx-auto mb-4" />
             {% else %}
-                <div class="apple-avatar mx-auto mb-4 flex items-center justify-center" style="background: var(--apple-background-tertiary);">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </div>
-                <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado este mes.</p>
+            <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
+                {{ usuario_mes.user|user_avatar:"80" }}
+            </div>
+            {% endif %}
+            <h5 class="apple-headline mb-2">{{ usuario_mes.nombre }}</h5>
+            <p class="apple-body">
+                Oportunidades creadas: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_mes.oportunidades_creadas }}</span><br>
+                Monto total: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_mes.monto_total_mes|format_currency_es }}</span>
+            </p>
+            {% else %}
+            <div class="apple-avatar mx-auto mb-4 flex items-center justify-center"
+                style="background: var(--apple-background-tertiary);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    style="color: var(--apple-gray);">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </div>
+            <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado este mes.</p>
             {% endif %}
         </div>
-        
+
         <div class="apple-card text-center apple-float" style="animation-delay: 0.2s;">
             <h4 class="apple-title-3 mb-4">Empleado del Día</h4>
             {% if usuario_dia %}
-                {% if usuario_dia.avatar_url %}
-                    <img src="{{ usuario_dia.avatar_url }}" 
-                         alt="Avatar dia" 
-                         class="apple-avatar mx-auto mb-4"/>
-                {% else %}
-                    <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
-                        {{ usuario_dia.user|user_avatar:"80" }}
-                    </div>
-                {% endif %}
-                <h5 class="apple-headline mb-2">{{ usuario_dia.nombre }}</h5>
-                <p class="apple-body">
-                    Oportunidades creadas: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_dia.oportunidades_creadas }}</span><br>
-                    Monto total: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_dia.monto_total_dia|format_currency_es }}</span>
-                </p>
+            {% if usuario_dia.avatar_url %}
+            <img src="{{ usuario_dia.avatar_url }}" alt="Avatar dia" class="apple-avatar mx-auto mb-4" />
             {% else %}
-                <div class="apple-avatar mx-auto mb-4 flex items-center justify-center" style="background: var(--apple-background-tertiary);">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </div>
-                <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado hoy.</p>
+            <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
+                {{ usuario_dia.user|user_avatar:"80" }}
+            </div>
+            {% endif %}
+            <h5 class="apple-headline mb-2">{{ usuario_dia.nombre }}</h5>
+            <p class="apple-body">
+                Oportunidades creadas: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_dia.oportunidades_creadas }}</span><br>
+                Monto total: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_dia.monto_total_dia|format_currency_es }}</span>
+            </p>
+            {% else %}
+            <div class="apple-avatar mx-auto mb-4 flex items-center justify-center"
+                style="background: var(--apple-background-tertiary);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    style="color: var(--apple-gray);">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </div>
+            <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado hoy.</p>
             {% endif %}
         </div>
     </section>
     <!-- Apple Table Section -->
-    <section class="w-full flex flex-col items-center py-8 max-w-6xl apple-fade-in" style="animation-delay:0.4s;">
-        <h2 class="apple-title-1 text-center mb-8" style="color: var(--apple-blue);">Últimas Oportunidades</h2>
-        <div class="w-full apple-table">
-            <table>
+    <section class="w-full flex flex-col items-center py-8 max-w-[95%] apple-fade-in" style="animation-delay:0.4s;">
+
+        <!-- Tabs Section (Apple Segmented Control) -->
+        <div class="w-full flex justify-start mb-6 overflow-x-auto pl-1">
+            <div
+                class="inline-flex p-1 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200/50 shadow-inner">
+                <button
+                    class="px-6 py-1.5 rounded-md bg-white text-blue-600 shadow-sm font-semibold text-sm transition-all transform scale-100">Facturado</button>
+                <button
+                    class="px-6 py-1.5 rounded-md text-gray-500 font-medium text-sm hover:text-gray-800 hover:bg-gray-50/50 transition-all">Cotizado</button>
+                <button
+                    class="px-6 py-1.5 rounded-md text-gray-500 font-medium text-sm hover:text-gray-800 hover:bg-gray-50/50 transition-all">Cobrado</button>
+                <button
+                    class="px-6 py-1.5 rounded-md text-gray-500 font-medium text-sm hover:text-gray-800 hover:bg-gray-50/50 transition-all">Campañas</button>
+            </div>
+        </div>
+
+        <div
+            class="w-full apple-table overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white/50 backdrop-blur-md">
+            <table class="w-full min-w-max">
                 <thead>
-                    <tr>
-                        <th>
-                            <div class="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                                </svg>
-                                Oportunidad
-                            </div>
-                        </th>
-                        <th>
-                            <div class="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                    <polyline points="9,22 9,12 15,12 15,22"></polyline>
-                                </svg>
-                                Cliente
-                            </div>
-                        </th>
-                        <th>
-                            <div class="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                                </svg>
-                                Monto
-                            </div>
-                        </th>
-                        <th>
-                            <div class="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                                </svg>
-                                Probabilidad
-                            </div>
-                        </th>
-                        <th>
-                            <div class="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                                Empleado
-                            </div>
-                        </th>
+                    <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-gray-50/50">
+                        <th class="px-4 py-3 text-left font-bold" style="min-width: 180px;">Oportunidad</th>
+                        <th class="px-4 py-3 text-left font-bold">Contacto</th>
+                        <th class="px-4 py-3 text-left font-bold">Area</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Zebra</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Panduit</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">APC</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Avigilon</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Genetec</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Axis</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Desarrollo</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Runrate</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Poliza</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Otros</th>
+                        <th class="px-4 py-3 text-right font-black text-gray-900 border-l border-gray-200">Total</th>
+                        <th class="px-4 py-3 text-right font-bold text-gray-600">Meta Mensual</th>
+                        <th class="px-4 py-3 text-right font-bold text-blue-600">Facturado</th>
+                        <th class="px-4 py-3 text-center font-bold">Accion</th>
+                        <th class="px-4 py-3 text-center font-bold">Accion</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="text-sm divide-y divide-gray-100">
                     {% for o in ultimas_oportunidades %}
-                    <tr style="cursor: pointer;" onclick="window.location.href='{% url 'cotizaciones_por_oportunidad' o.id %}'">
-                        <td data-label="Oportunidad">
-                            <a href="{% url 'cotizaciones_por_oportunidad' o.id %}" style="font-weight: 500; color: var(--apple-blue); text-decoration: none;">
-                                {{ o.nombre|truncatechars:30 }}
+                    <tr class="hover:bg-blue-50/50 transition-colors group">
+                        <!-- Oportunidad -->
+                        <td class="px-4 py-3">
+                            <a href="{% url 'cotizaciones_por_oportunidad' o.id %}" class="block hover:no-underline">
+                                <span class="font-bold text-gray-800 group-hover:text-blue-700 transition-colors cursor-pointer hover:underline">
+                                    {{ o.oportunidad|default:'Sin nombre'|truncatechars:30 }}
+                                </span>
+                                <span class="block text-[11px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">
+                                    {{ o.cliente|default:'Prospecto'|truncatechars:25 }}
+                                </span>
                             </a>
                         </td>
-                        <td data-label="Cliente">
-                            {{ o.cliente|default:'Sin cliente asignado'|truncatechars:20 }}
+
+                        <!-- Contacto -->
+                        <td class="px-4 py-3 text-gray-600">
+                            {{ o.contacto|truncatechars:15 }}
                         </td>
-                        <td data-label="Monto">
-                            <span style="font-weight: 500; color: var(--apple-blue);">
-                                ${{ o.monto|format_currency_es }}
-                            </span>
+
+                        <!-- Area -->
+                        <td class="px-4 py-3 text-gray-600">
+                            {{ o.area|default:'-' }}
                         </td>
-                        <td data-label="Probabilidad">
-                            <div class="flex items-center gap-3">
-                                <div class="apple-progress" style="width: 60px;">
-                                    <div class="apple-progress-fill" style="width: {{ o.probabilidad }}%;"></div>
-                                </div>
-                                <span style="font-size: 13px; color: var(--apple-blue); font-weight: 500;">
-                                    {{ o.probabilidad }}%
-                                </span>
-                            </div>
+
+                        <!-- Productos Columns -->
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'ZEBRA' %}<span class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
                         </td>
-                        <td data-label="Empleado">
-                            {{ o.usuario|truncatechars:15 }}
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'PANDUIT' %}<span class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'APC' %}<span class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'AVIGILON' or o.producto == 'AVIGILION' %}<span
+                                class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'GENETEC' %}<span class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'AXIS' %}<span class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'SOFTWARE' or o.producto == 'Desarrollo' %}<span
+                                class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'RUNRATE' %}<span class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto == 'PÓLIZA' or o.producto == 'POLIZA' %}<span
+                                class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>{% else %}$0{% endif %}
+                        </td>
+                        <!-- Otros -->
+                        <td class="px-4 py-3 text-right font-medium text-gray-400">
+                            {% if o.producto != 'ZEBRA' and o.producto != 'PANDUIT' and o.producto != 'APC' and o.producto != 'AVIGILON' and o.producto != 'AVIGILON' and o.producto != 'GENETEC' and o.producto != 'AXIS' and o.producto != 'SOFTWARE' and o.producto != 'Desarrollo' and o.producto != 'RUNRATE' and o.producto != 'PÓLIZA' and o.producto != 'POLIZA' %}
+                            <span class="text-blue-600 font-bold">${{ o.monto|format_currency_es }}</span>
+                            {% else %}
+                            $0
+                            {% endif %}
+                        </td>
+
+                        <!-- Total Row -->
+                        <td class="px-4 py-3 text-right font-black text-gray-900 border-l border-gray-200">
+                            ${{ o.monto|format_currency_es }}
+                        </td>
+
+                        <!-- Meta Mensual -->
+                        <td class="px-4 py-3 text-right font-bold text-gray-600">
+                            ${{ o.meta_mensual|format_currency_es }}
+                        </td>
+
+                        <!-- Facturado -->
+                        <td class="px-4 py-3 text-right font-bold text-blue-600">
+                            ${{ o.monto|format_currency_es }}
+                        </td>
+
+                        <!-- Acciones -->
+                        <td class="px-4 py-3 text-center">
+                            <span
+                                class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[10px] font-bold uppercase tracking-wide border border-gray-200">Campaña</span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <a href="{% url 'crear_cotizacion' %}?oportunidad_id={{ o.id }}"
+                                class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-[10px] font-bold uppercase tracking-wide transition shadow-sm hover:shadow-md hover:-translate-y-0.5 transform">
+                                Cotizar
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" style="text-align: center; color: var(--apple-gray); padding: 32px;">
+                        <td colspan="18" class="text-center py-12 text-gray-500">
                             <div class="flex flex-col items-center gap-3">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
-                                    <path d="M3 3h18v18H3z"></path>
-                                    <path d="M8 12h8"></path>
-                                </svg>
-                                No hay oportunidades recientes.
+                                <div class="p-3 bg-gray-50 rounded-full">
+                                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <span class="font-medium text-sm">No hay oportunidades recientes.</span>
                             </div>
                         </td>
                     </tr>
@@ -1834,84 +2058,88 @@
         <div class="apple-card">
             <div class="flex items-start gap-4">
                 <div class="flex-shrink-0">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-blue);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        style="color: var(--apple-blue);">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                     </svg>
                 </div>
                 <p class="apple-body flex-1" style="text-align: justify; line-height: 1.6;">
-                    Ser la empresa líder en soluciones tecnológicas, formando equipos audaces de trabajo, 
-                    verdaderos y auténticos con estrategias inteligentes éticas, legales y meritorias, 
+                    Ser la empresa líder en soluciones tecnológicas, formando equipos audaces de trabajo,
+                    verdaderos y auténticos con estrategias inteligentes éticas, legales y meritorias,
                     para honrar a nuestras familias y reforzar la confianza brindada por nuestros socios de negocios.
                 </p>
             </div>
         </div>
     </section>
-    
-    
+
+
     <!-- Modal para seleccionar acción de oportunidad -->
-    <div id="opportunity-action-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div id="opportunity-action-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center transform transition-all sm:max-w-lg sm:w-full">
             <h3 class="text-xl font-semibold text-white mb-4">Selecciona una acción para la oportunidad</h3>
             <p class="text-gray-300 mb-6" id="modal-opportunity-name"></p>
             <div class="flex justify-center space-x-4">
-                <button id="create-quotation-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
+                <button id="create-quotation-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
                     Crear Cotización
                 </button>
-                <button id="create-volumetry-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
+                <button id="create-volumetry-btn"
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
                     Crear Volumetría
                 </button>
-                <button onclick="closeOpportunityActionModal()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
+                <button onclick="closeOpportunityActionModal()"
+                    class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
                     Cancelar
                 </button>
             </div>
         </div>
     </div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Navigation routes
-    const routes = {
-        dashboard: '{% url "dashboard" %}',
-        opportunities: '{% url "todos" %}',
-        quotations: '{% url "cotizaciones" %}',
-        clients: '{% url "reporte_ventas_por_cliente" %}'
-    };
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Navigation routes
+            const routes = {
+                dashboard: '{% url "dashboard" %}',
+                opportunities: '{% url "todos" %}',
+                quotations: '{% url "cotizaciones" %}',
+                clients: '{% url "reporte_ventas_por_cliente" %}'
+            };
 
-    // Central search bar click handler - opens global spotlight
-    const mainSearchBar = document.getElementById('main-search-bar');
-    const mainSearchContainer = document.getElementById('main-search-container');
-    
-    if (mainSearchBar) {
-        mainSearchBar.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Use the global openSpotlight function from base.html
-            if (window.openSpotlight) {
-                window.openSpotlight();
+            // Central search bar click handler - opens global spotlight
+            const mainSearchBar = document.getElementById('main-search-bar');
+            const mainSearchContainer = document.getElementById('main-search-container');
+
+            if (mainSearchBar) {
+                mainSearchBar.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Use the global openSpotlight function from base.html
+                    if (window.openSpotlight) {
+                        window.openSpotlight();
+                    }
+                });
+            }
+
+            if (mainSearchContainer) {
+                mainSearchContainer.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Use the global openSpotlight function from base.html
+                    if (window.openSpotlight) {
+                        window.openSpotlight();
+                    }
+                });
+            }
+
+            // Floating widget news button functionality
+            const newsBtn = document.getElementById('news-btn');
+            if (newsBtn) {
+                newsBtn.addEventListener('click', function () {
+                    // Navigate to dashboard or reports section
+                    window.location.href = routes.dashboard;
+                });
             }
         });
-    }
-    
-    if (mainSearchContainer) {
-        mainSearchContainer.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Use the global openSpotlight function from base.html
-            if (window.openSpotlight) {
-                window.openSpotlight();
-            }
-        });
-    }
-
-    // Floating widget news button functionality
-    const newsBtn = document.getElementById('news-btn');
-    if (newsBtn) {
-        newsBtn.addEventListener('click', function() {
-            // Navigate to dashboard or reports section
-            window.location.href = routes.dashboard;
-        });
-    }
-});
-</script>
+    </script>
 
 </main>
 {% endblock %}
-

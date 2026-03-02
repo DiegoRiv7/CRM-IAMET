@@ -52,8 +52,21 @@ def format_currency_es(value):
 
     # Formato manual: separador de miles = ',', decimal = '.'
     formatted_value = f"{decimal_value:,.2f}"
-    
+
     return formatted_value
+
+@register.filter
+def format_currency_short(value):
+    """
+    Formatea un valor como moneda sin centavos. Ej: 50000.00 -> 50,000
+    """
+    if value is None:
+        return "0"
+    try:
+        decimal_value = Decimal(value)
+    except InvalidOperation:
+        return value
+    return f"{int(decimal_value):,}"
 
 @register.filter
 def div(value, arg):

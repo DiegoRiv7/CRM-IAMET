@@ -30,12 +30,24 @@ class UserProfile(models.Model):
         ('en', 'English'),
     ]
     
+    THEME_CHOICES = [
+        ('perla', 'Perla'),
+        ('sakura', 'Sakura'),
+        ('duna', 'Duna'),
+        ('espacial', 'Espacial'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bitrix_user_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Usuario en Bitrix24")
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name="Avatar o Foto de Perfil")
     usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
     avatar_tipo = models.CharField(max_length=20, choices=AVATAR_TIPO_CHOICES, default='1', verbose_name="Tipo de Avatar")
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
+    theme = models.CharField(max_length=20, choices=THEME_CHOICES, default='perla', verbose_name="Tema de color")
+    meta_mensual = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('1500000'), verbose_name="Meta Facturado")
+    meta_oportunidades = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Oportunidades")
+    meta_cotizado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cotizado")
+    meta_cobrado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cobrado")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
@@ -86,6 +98,41 @@ class UserProfile(models.Model):
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     UserProfile.objects.get_or_create(user=instance)
+
+class SolicitudCambioPerfil(models.Model):
+    """
+    Modelo para manejar solicitudes de cambio de información de perfil que requieren autorización del administrador.
+    """
+    solicitante = models.ForeignKey(User, on_delete=models.CASCADE, related_name='solicitudes_perfil')
+    
+    # Valores propuestos
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(blank=True)
+    language = models.CharField(max_length=2, blank=True)
+    avatar = models.ImageField(upload_to='avatars/solicitudes/', blank=True, null=True)
+    
+    # Valores actuales (para referencia en la comparación)
+    old_first_name = models.CharField(max_length=150, blank=True)
+    old_last_name = models.CharField(max_length=150, blank=True)
+    old_email = models.EmailField(blank=True)
+    old_language = models.CharField(max_length=2, blank=True)
+    
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    procesada = models.BooleanField(default=False)
+    aprobada = models.BooleanField(null=True, blank=True) # null = pendiente, True = aprobado, False = rechazado
+    procesado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='cambios_perfil_autorizados')
+    fecha_procesamiento = models.DateTimeField(null=True, blank=True)
+    comentario_admin = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Solicitud de Cambio de Perfil"
+        verbose_name_plural = "Solicitudes de Cambio de Perfil"
+        ordering = ['-fecha_solicitud']
+
+    def __str__(self):
+        estado = "Pendiente" if not self.procesada else ("Aprobada" if self.aprobada else "Rechazada")
+        return f"Solicitud de {self.solicitante.username} - {estado}"
 
 class PendingFileUpload(models.Model):
     """
@@ -167,6 +214,13 @@ class Cliente(models.Model):
     asignado_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes_asignados', verbose_name="Asignado a")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
+
+    # Meta mensual de facturación por cliente (establecida por el admin)
+    meta_mensual = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        verbose_name="Meta Mensual",
+        help_text="Meta de facturación mensual para este cliente"
+    )
 
     def __str__(self):
         """
@@ -250,6 +304,10 @@ class TodoItem(models.Model):
     bitrix_company_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Compañía en Bitrix24")
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
     
+    # Campos para seguimiento de facturación
+    monto_facturacion = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name="Monto de Facturación")
+    meta_oportunidad = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name="Meta (Oportunidad)")
+    
     # Nuevo campo para CRM avanzado
     estado_crm = models.CharField(
         max_length=50, 
@@ -275,6 +333,22 @@ class TodoItem(models.Model):
         """
         return self.oportunidad
 
+class ProductoOportunidad(models.Model):
+    """Productos adicionales vinculados a una oportunidad (multi-producto)."""
+    oportunidad = models.ForeignKey(
+        TodoItem, on_delete=models.CASCADE, related_name='productos_adicionales'
+    )
+    producto = models.CharField(max_length=100, choices=TodoItem.PRODUCTO_CHOICES)
+    notas = models.CharField(max_length=255, blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.oportunidad} – {self.producto}"
+
+
 class Contacto(models.Model):
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Contacto")
     apellido = models.CharField(max_length=100, blank=True, null=True, verbose_name="Apellido del Contacto")
@@ -291,6 +365,28 @@ class Contacto(models.Model):
         verbose_name = "Contacto"
         verbose_name_plural = "Contactos"
         ordering = ['nombre', 'apellido']
+
+class ArchivoFacturacion(models.Model):
+    """
+    Almacena el archivo XLS de facturación subido por administración
+    y el desglose de pagos por cliente para calcular total facturado.
+    """
+    archivo = models.FileField(upload_to='facturacion/')
+    mes = models.CharField(max_length=2)
+    anio = models.IntegerField()
+    total_facturado = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    datos_json = models.JSONField(default=dict, blank=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    subido_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ['mes', 'anio']
+        verbose_name = "Archivo de Facturación"
+        verbose_name_plural = "Archivos de Facturación"
+
+    def __str__(self):
+        return f"Facturación {self.mes}/{self.anio} - ${self.total_facturado}"
+
 
 class Cotizacion(models.Model):
     """
@@ -1384,6 +1480,13 @@ class Notificacion(models.Model):
         ('tarea_participante', 'Agregado como participante a tarea'),
         ('tarea_observador', 'Agregado como observador a tarea'),
         ('sistema', 'Notificación del sistema'),
+        ('tarea_opp_asignada', 'Tarea de oportunidad asignada'),
+        ('tarea_opp_comentario', 'Comentario en tarea de oportunidad'),
+        ('oportunidad_mensaje', 'Nuevo mensaje en oportunidad'),
+        ('muro_mencion', 'Mención en el muro'),
+        ('muro_post', 'Nuevo anuncio en el muro'),
+        ('rendimiento_bajo', 'Bajo rendimiento de usuario'),
+        ('solicitud_cambio_perfil', 'Solicitud de cambio de perfil'),
     ]
     
     usuario_destinatario = models.ForeignKey(
@@ -1399,6 +1502,13 @@ class Notificacion(models.Model):
         verbose_name="Usuario Remitente",
         null=True,
         blank=True
+    )
+    solicitud_perfil = models.ForeignKey(
+        'SolicitudCambioPerfil',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notificaciones'
     )
     tipo = models.CharField(
         max_length=25,
@@ -1449,6 +1559,14 @@ class Notificacion(models.Model):
         null=True,
         blank=True,
         verbose_name="Título de la Tarea"
+    )
+    tarea_opp = models.ForeignKey(
+        'TareaOportunidad',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notificaciones',
+        verbose_name="Tarea de Oportunidad"
     )
     leida = models.BooleanField(
         default=False,
@@ -2004,7 +2122,23 @@ class Tarea(models.Model):
         blank=True,
         verbose_name="Fecha de Inicio de Sesión de Trabajo"
     )
-    
+    oportunidad = models.ForeignKey(
+        'TodoItem',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tareas_generales',
+        verbose_name="Oportunidad"
+    )
+    cliente = models.ForeignKey(
+        'Cliente',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tareas',
+        verbose_name="Cliente"
+    )
+
     class Meta:
         verbose_name = "Tarea"
         verbose_name_plural = "Tareas"
@@ -2329,6 +2463,171 @@ class CompartirArchivo(models.Model):
         return f"{self.archivo.nombre_original} → {self.usuario.get_full_name()}"
 
 
+# ============= DRIVE DE OPORTUNIDADES =============
+
+def archivo_opp_upload_path(instance, filename):
+    return f'oportunidades/{instance.oportunidad.id}/archivos/{filename}'
+
+
+class CarpetaOportunidad(models.Model):
+    """Carpetas del Drive vinculadas a una Oportunidad (TodoItem)"""
+    nombre = models.CharField(max_length=255)
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='carpetas_drive'
+    )
+    carpeta_padre = models.ForeignKey(
+        'self', on_delete=models.CASCADE,
+        null=True, blank=True, related_name='subcarpetas'
+    )
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_modificacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [('oportunidad', 'carpeta_padre', 'nombre')]
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+    def puede_eliminar(self):
+        return not (self.subcarpetas.exists() or self.archivos.exists())
+
+
+class ArchivoOportunidad(models.Model):
+    """Archivos del Drive vinculados a una Oportunidad (TodoItem)"""
+    TIPO_CHOICES = [
+        ('documento', 'Documento'), ('imagen', 'Imagen'), ('video', 'Video'),
+        ('audio', 'Audio'), ('hoja_calculo', 'Hoja de Cálculo'),
+        ('presentacion', 'Presentación'), ('pdf', 'PDF'),
+        ('archivo_comprimido', 'Archivo Comprimido'), ('otro', 'Otro'),
+    ]
+
+    nombre_original = models.CharField(max_length=255)
+    archivo = models.FileField(upload_to=archivo_opp_upload_path)
+    tipo_archivo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otro')
+    tamaño = models.BigIntegerField()
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='archivos_drive'
+    )
+    carpeta = models.ForeignKey(
+        CarpetaOportunidad, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='archivos'
+    )
+    subido_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    extension = models.CharField(max_length=10, blank=True)
+    mime_type = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_subida']
+
+    def __str__(self):
+        return self.nombre_original
+
+    @property
+    def tamaño_formateado(self):
+        if self.tamaño < 1024:
+            return f"{self.tamaño} B"
+        elif self.tamaño < 1024 * 1024:
+            return f"{self.tamaño / 1024:.1f} KB"
+        elif self.tamaño < 1024 * 1024 * 1024:
+            return f"{self.tamaño / (1024 * 1024):.1f} MB"
+        return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
+
+
+# ============= CHAT / BITÁCORA DE OPORTUNIDAD =============
+
+def chat_imagen_upload_path(instance, filename):
+    return f'chat/{instance.oportunidad_id}/{filename}'
+
+class MensajeOportunidad(models.Model):
+    """Mensajes de chat/bitácora vinculados a una Oportunidad."""
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='mensajes_chat'
+    )
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    texto = models.TextField(blank=True)
+    imagen = models.ImageField(upload_to=chat_imagen_upload_path, null=True, blank=True)
+    reply_to = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='respuestas'
+    )
+    editado = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.usuario} → {self.oportunidad_id}: {self.texto[:40]}'
+
+
+# ============= TAREAS DE OPORTUNIDAD =============
+
+class TareaOportunidad(models.Model):
+    """Tareas vinculadas directamente a una Oportunidad de venta."""
+    PRIORIDAD_CHOICES = [
+        ('normal', 'Normal'),
+        ('alta', 'Alta'),
+    ]
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('completada', 'Completada'),
+    ]
+
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='tareas_oportunidad'
+    )
+    titulo = models.CharField(max_length=255)
+    descripcion = models.TextField(blank=True)
+    prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='normal')
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
+    fecha_limite = models.DateTimeField(null=True, blank=True)
+    creado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True,
+        related_name='tareas_opp_creadas'
+    )
+    responsable = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='tareas_opp_asignadas'
+    )
+    participantes = models.ManyToManyField(
+        User, blank=True, related_name='tareas_opp_participando'
+    )
+    observadores = models.ManyToManyField(
+        User, blank=True, related_name='tareas_opp_observando'
+    )
+    actividad_calendario = models.ForeignKey(
+        'Actividad', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='tarea_oportunidad_origen'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-prioridad', 'fecha_limite']
+
+    def __str__(self):
+        return f'{self.titulo} → {self.oportunidad}'
+
+
+class ComentarioTareaOpp(models.Model):
+    """Comentarios dentro de una TareaOportunidad."""
+    tarea = models.ForeignKey(
+        TareaOportunidad, on_delete=models.CASCADE, related_name='comentarios'
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='comentarios_tarea_opp'
+    )
+    contenido = models.TextField()
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_creacion']
+
+    def __str__(self):
+        return f'Comentario de {self.autor} en "{self.tarea.titulo}"'
+
+
 # ============= SISTEMA DE INTERCAMBIO NAVIDEÑO =============
 
 class IntercambioNavidad(models.Model):
@@ -2558,6 +2857,219 @@ class SolicitudAccesoProyecto(models.Model):
         verbose_name_plural = "Solicitudes de Acceso a Proyectos"
         unique_together = ['proyecto', 'usuario_solicitante']
         ordering = ['-fecha_solicitud']
-    
+
+
+class PostMuro(models.Model):
+    """Post en el muro empresarial (red social interna)."""
+    autor = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='posts_muro',
+        verbose_name="Autor"
+    )
+    contenido = models.TextField(verbose_name="Contenido")
+    imagen = models.ImageField(
+        upload_to='muro/',
+        blank=True,
+        null=True,
+        verbose_name="Imagen"
+    )
+    etiquetados = models.ManyToManyField(
+        User,
+        related_name='etiquetados_muro',
+        blank=True,
+        verbose_name="Usuarios Etiquetados"
+    )
+    likes = models.ManyToManyField(
+        User,
+        related_name='likes_muro',
+        blank=True,
+        verbose_name="Me gusta"
+    )
+    es_anuncio = models.BooleanField(default=False, verbose_name="Es Anuncio")
+    programado_para = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Programado Para"
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    editado = models.BooleanField(default=False, verbose_name="Editado")
+
+    class Meta:
+        verbose_name = "Post del Muro"
+        verbose_name_plural = "Posts del Muro"
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"Post de {self.autor.get_full_name() or self.autor.username} – {self.fecha_creacion:%Y-%m-%d}"
+
+    @property
+    def visible(self):
+        """Un post programado solo es visible cuando ya llegó su fecha."""
+        if self.programado_para and self.programado_para > timezone.now():
+            return False
+        return True
+
+
+class ComentarioMuro(models.Model):
+    """Comentario en un post del muro empresarial."""
+    post = models.ForeignKey(
+        PostMuro,
+        on_delete=models.CASCADE,
+        related_name='comentarios',
+        verbose_name="Post"
+    )
+    autor = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='comentarios_muro',
+        verbose_name="Autor"
+    )
+    contenido = models.TextField(verbose_name="Contenido")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    editado = models.BooleanField(default=False, verbose_name="Editado")
+
+    class Meta:
+        verbose_name = "Comentario del Muro"
+        verbose_name_plural = "Comentarios del Muro"
+        ordering = ['fecha_creacion']
+
+    def __str__(self):
+        return f"Comentario de {self.autor.get_full_name() or self.autor.username} en post {self.post_id}"
+
     def __str__(self):
         return f"{self.usuario_solicitante.get_full_name()} - {self.proyecto.nombre} ({self.estado})"
+
+
+# ══════════════════════════════════════════════════════════════
+# ── Mail Module ──────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+
+class MailConexion(models.Model):
+    """Per-user IMAP/SMTP credentials for the integrated mail module."""
+    usuario = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='mail_conexion'
+    )
+    correo_electronico = models.EmailField()
+    imap_servidor = models.CharField(max_length=200, default='mail.iamet.mx')
+    imap_puerto = models.IntegerField(default=993)
+    imap_usar_ssl = models.BooleanField(default=True)
+    smtp_servidor = models.CharField(max_length=200, default='mail.iamet.mx')
+    smtp_puerto = models.IntegerField(default=465)
+    smtp_usar_ssl = models.BooleanField(default=True)
+    password_encriptado = models.TextField(blank=True)  # Fernet-encrypted at rest
+    activo = models.BooleanField(default=True)
+    ultima_sincronizacion = models.DateTimeField(null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Conexión de Correo"
+        verbose_name_plural = "Conexiones de Correo"
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.correo_electronico}"
+
+
+class MailCorreo(models.Model):
+    """Cached email (headers synced eagerly; body fetched on first open)."""
+    CARPETA_CHOICES = [('INBOX', 'Bandeja de entrada'), ('SENT', 'Enviados')]
+
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='correos_mail'
+    )
+    uid_imap = models.CharField(max_length=50)           # Stable IMAP UID
+    message_id = models.CharField(max_length=500, blank=True)  # Message-ID header
+    in_reply_to = models.CharField(max_length=500, blank=True)  # For thread linking
+    carpeta_imap = models.CharField(max_length=100, default='INBOX')  # Real folder name on server
+    carpeta_display = models.CharField(max_length=20, choices=CARPETA_CHOICES, default='INBOX')
+    remitente_nombre = models.CharField(max_length=300, blank=True)
+    remitente_email = models.CharField(max_length=300, blank=True)
+    destinatarios_json = models.TextField(default='[]')  # JSON: [{nombre, email}]
+    asunto = models.CharField(max_length=500, blank=True)
+    cuerpo_texto = models.TextField(blank=True)   # Populated on first open
+    cuerpo_html = models.TextField(blank=True)    # Populated on first open (max 500 KB)
+    fecha_envio = models.DateTimeField(null=True, blank=True)
+    leido = models.BooleanField(default=False)
+    tiene_adjuntos = models.BooleanField(default=False)
+    cuerpo_cargado = models.BooleanField(default=False)  # True once RFC822 was fetched
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='correos_vinculados'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('usuario', 'uid_imap', 'carpeta_imap')
+        ordering = ['-fecha_envio']
+        verbose_name = "Correo"
+        verbose_name_plural = "Correos"
+
+    def __str__(self):
+        return f"[{self.carpeta_display}] {self.asunto[:60]} — {self.remitente_email}"
+
+
+class MailAdjunto(models.Model):
+    """Attachment metadata + cached binary content (base64)."""
+    correo = models.ForeignKey(MailCorreo, on_delete=models.CASCADE, related_name='adjuntos')
+    nombre_archivo = models.CharField(max_length=300)
+    content_type = models.CharField(max_length=100, blank=True)
+    tamanio_bytes = models.IntegerField(default=0)
+    parte_num = models.CharField(max_length=20, blank=True)
+    datos_b64 = models.TextField(blank=True)  # base64-encoded file bytes cached at parse time
+
+    class Meta:
+        verbose_name = "Adjunto de Correo"
+        verbose_name_plural = "Adjuntos de Correo"
+
+    def __str__(self):
+        return f"{self.nombre_archivo} ({self.correo.asunto[:40]})"
+
+
+# ═══ MODELOS PARA CONTROL DE ASISTENCIA Y EFICIENCIA ═══
+
+class AsistenciaJornada(models.Model):
+    """
+    Modelo para registrar el inicio, fin y pausas de la jornada laboral de cada empleado.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='jornadas')
+    fecha = models.DateField(auto_now_add=True)
+    hora_inicio = models.DateTimeField()
+    hora_fin = models.DateTimeField(null=True, blank=True)
+    segundos_laborados = models.PositiveIntegerField(default=0)
+    pausado = models.BooleanField(default=False)
+    ultima_pausa = models.DateTimeField(null=True, blank=True)
+    segundos_pausa = models.PositiveIntegerField(default=0)
+    eficiencia_dia = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    class Meta:
+        ordering = ['-fecha', '-hora_inicio']
+        verbose_name = "Registro de Asistencia"
+        verbose_name_plural = "Registros de Asistencia"
+
+    def __str__(self):
+        return f"Jornada {self.usuario.username} - {self.fecha}"
+
+
+class EficienciaMensual(models.Model):
+    """
+    Modelo para consolidar el rendimiento mensual y determinar el empleado del mes.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='eficiencias_mensuales')
+    mes = models.PositiveSmallIntegerField()
+    anio = models.PositiveIntegerField()
+    promedio_eficiencia = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tareas_completadas = models.PositiveIntegerField(default=0)
+    actividades_completadas = models.PositiveIntegerField(default=0)
+    oportunidades_cobradas = models.PositiveIntegerField(default=0)
+    empleado_del_mes = models.BooleanField(default=False)
+    anuncio_publicado = models.BooleanField(default=False)
+    
+    class Meta:
+        unique_together = ['usuario', 'mes', 'anio']
+        verbose_name = "Eficiencia Mensual"
+        verbose_name_plural = "Eficiencias Mensuales"
+
+    def __str__(self):
+        return f"Eficiencia {self.usuario.username} - {self.mes}/{self.anio}"
