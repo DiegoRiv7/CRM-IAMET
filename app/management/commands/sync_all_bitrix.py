@@ -26,6 +26,7 @@ class Command(BaseCommand):
             ('sync_bitrix', '🏢 Sincronizando empresas/clientes de Bitrix'),
             ('sync_bitrix_contacts', '📞 Sincronizando contactos de Bitrix'),
             ('import_bitrix_opportunities', '🎯 Importando oportunidades de Bitrix'),
+            ('sync_bitrix_projects_tasks', '📂 Importando proyectos y tareas de Bitrix'),
         ]
         
         results = {

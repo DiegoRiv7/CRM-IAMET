@@ -1668,7 +1668,13 @@ class Proyecto(models.Model):
         auto_now=True,
         verbose_name="Última Actualización"
     )
-    
+    bitrix_group_id = models.IntegerField(
+        null=True,
+        blank=True,
+        unique=True,
+        verbose_name="ID del Grupo en Bitrix24"
+    )
+
     class Meta:
         verbose_name = "Proyecto"
         verbose_name_plural = "Proyectos"
@@ -2138,6 +2144,12 @@ class Tarea(models.Model):
         related_name='tareas',
         verbose_name="Cliente"
     )
+    bitrix_task_id = models.IntegerField(
+        null=True,
+        blank=True,
+        unique=True,
+        verbose_name="ID de Tarea en Bitrix24"
+    )
 
     class Meta:
         verbose_name = "Tarea"
@@ -2504,9 +2516,9 @@ class ArchivoOportunidad(models.Model):
     ]
 
     nombre_original = models.CharField(max_length=255)
-    archivo = models.FileField(upload_to=archivo_opp_upload_path)
+    archivo = models.FileField(upload_to=archivo_opp_upload_path, blank=True)
     tipo_archivo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otro')
-    tamaño = models.BigIntegerField()
+    tamaño = models.BigIntegerField(default=0)
     oportunidad = models.ForeignKey(
         'TodoItem', on_delete=models.CASCADE, related_name='archivos_drive'
     )
@@ -2518,6 +2530,8 @@ class ArchivoOportunidad(models.Model):
     fecha_subida = models.DateTimeField(auto_now_add=True)
     extension = models.CharField(max_length=10, blank=True)
     mime_type = models.CharField(max_length=100, blank=True)
+    bitrix_file_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Archivo en Bitrix24")
+    bitrix_download_url = models.TextField(blank=True, verbose_name="URL de Descarga Bitrix24")
 
     class Meta:
         ordering = ['-fecha_subida']
@@ -2602,6 +2616,10 @@ class TareaOportunidad(models.Model):
         related_name='tarea_oportunidad_origen'
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    bitrix_task_id = models.IntegerField(
+        null=True, blank=True, unique=True,
+        verbose_name="ID de Tarea en Bitrix24"
+    )
 
     class Meta:
         ordering = ['-prioridad', 'fecha_limite']
