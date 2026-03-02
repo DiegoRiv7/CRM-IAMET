@@ -14,13 +14,22 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='actividad_participantes',
-            name='actividad',
-        ),
-        migrations.RemoveField(
-            model_name='actividad_participantes',
-            name='user',
+        # Use SeparateDatabaseAndState because on fresh databases the actividad_id
+        # and user_id columns were already removed by squashed migrations 0037-0042
+        # that no longer exist as files. Skipping the DB ops avoids the
+        # "Can't DROP actividad_id; check that column/key exists" error.
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.RemoveField(
+                    model_name='actividad_participantes',
+                    name='actividad',
+                ),
+                migrations.RemoveField(
+                    model_name='actividad_participantes',
+                    name='user',
+                ),
+            ],
         ),
         migrations.RemoveConstraint(
             model_name='carpetaproyecto',
@@ -92,7 +101,19 @@ class Migration(migrations.Migration):
             name='solicitudaccesoproyecto',
             unique_together={('proyecto', 'usuario_solicitante')},
         ),
-        migrations.DeleteModel(
-            name='Actividad_participantes',
+        # Use SeparateDatabaseAndState + RunSQL IF EXISTS so the table drop
+        # works regardless of whether the columns still exist or not.
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    "DROP TABLE IF EXISTS `app_actividad_participantes`",
+                    reverse_sql=migrations.RunSQL.noop,
+                ),
+            ],
+            state_operations=[
+                migrations.DeleteModel(
+                    name='Actividad_participantes',
+                ),
+            ],
         ),
     ]

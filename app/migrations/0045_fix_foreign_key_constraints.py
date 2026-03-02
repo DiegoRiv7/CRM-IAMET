@@ -3,6 +3,57 @@
 from django.db import migrations
 
 
+def fix_fk_constraints(apps, schema_editor):
+    """
+    Drops old FK constraints (pointing to app_todoitem) and recreates them
+    pointing to app_proyecto. On fresh databases these old constraints don't
+    exist, so we check before dropping.
+    """
+    from django.db import connection
+    with connection.cursor() as cursor:
+        migrations_to_fix = [
+            {
+                'table': 'app_carpetaproyecto',
+                'old_fk': 'app_carpetaproyecto_proyecto_id_5a032215_fk_app_todoitem_id',
+                'new_fk': 'app_carpetaproyecto_proyecto_id_5a032215_fk_app_proyecto_id',
+                'column': 'proyecto_id',
+                'ref_table': 'app_proyecto',
+            },
+            {
+                'table': 'app_archivoproyecto',
+                'old_fk': 'app_archivoproyecto_proyecto_id_d809e875_fk_app_todoitem_id',
+                'new_fk': 'app_archivoproyecto_proyecto_id_d809e875_fk_app_proyecto_id',
+                'column': 'proyecto_id',
+                'ref_table': 'app_proyecto',
+            },
+        ]
+        for m in migrations_to_fix:
+            # Only drop old FK if it exists (existing installations upgrading)
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE CONSTRAINT_SCHEMA = DATABASE()
+                  AND TABLE_NAME = %s
+                  AND CONSTRAINT_NAME = %s
+            """, [m['table'], m['old_fk']])
+            if cursor.fetchone()[0] > 0:
+                cursor.execute(
+                    f"ALTER TABLE `{m['table']}` DROP FOREIGN KEY `{m['old_fk']}`"
+                )
+
+            # Only add new FK if it doesn't exist yet
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE CONSTRAINT_SCHEMA = DATABASE()
+                  AND TABLE_NAME = %s
+                  AND CONSTRAINT_NAME = %s
+            """, [m['table'], m['new_fk']])
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    f"ALTER TABLE `{m['table']}` ADD CONSTRAINT `{m['new_fk']}` "
+                    f"FOREIGN KEY (`{m['column']}`) REFERENCES `{m['ref_table']}` (`id`)"
+                )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,23 +61,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Eliminar constraints existentes que apuntan a TodoItem
-        migrations.RunSQL(
-            "ALTER TABLE app_carpetaproyecto DROP FOREIGN KEY app_carpetaproyecto_proyecto_id_5a032215_fk_app_todoitem_id;",
-            reverse_sql="ALTER TABLE app_carpetaproyecto ADD CONSTRAINT app_carpetaproyecto_proyecto_id_5a032215_fk_app_todoitem_id FOREIGN KEY (proyecto_id) REFERENCES app_todoitem (id);"
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE app_archivoproyecto DROP FOREIGN KEY app_archivoproyecto_proyecto_id_d809e875_fk_app_todoitem_id;",
-            reverse_sql="ALTER TABLE app_archivoproyecto ADD CONSTRAINT app_archivoproyecto_proyecto_id_d809e875_fk_app_todoitem_id FOREIGN KEY (proyecto_id) REFERENCES app_todoitem (id);"
-        ),
-        
-        # Crear nuevas constraints que apuntan a app_proyecto
-        migrations.RunSQL(
-            "ALTER TABLE app_carpetaproyecto ADD CONSTRAINT app_carpetaproyecto_proyecto_id_5a032215_fk_app_proyecto_id FOREIGN KEY (proyecto_id) REFERENCES app_proyecto (id);",
-            reverse_sql="ALTER TABLE app_carpetaproyecto DROP FOREIGN KEY app_carpetaproyecto_proyecto_id_5a032215_fk_app_proyecto_id;"
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE app_archivoproyecto ADD CONSTRAINT app_archivoproyecto_proyecto_id_d809e875_fk_app_proyecto_id FOREIGN KEY (proyecto_id) REFERENCES app_proyecto (id);",
-            reverse_sql="ALTER TABLE app_archivoproyecto DROP FOREIGN KEY app_archivoproyecto_proyecto_id_d809e875_fk_app_proyecto_id;"
-        ),
+        migrations.RunPython(fix_fk_constraints, migrations.RunPython.noop),
     ]
