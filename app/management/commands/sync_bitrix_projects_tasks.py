@@ -284,29 +284,45 @@ class Command(BaseCommand):
         # ── Reporte de proyectos sin vincular con evidencia de PO ──────────────
         sin_po = self.stats["sin_vincular_con_po"]
         if sin_po:
+            # Separar: con archivos en drive vs solo PO en nombre
+            con_archivos = [e for e in sin_po if e["archivos_po"]]
+            solo_nombre  = [e for e in sin_po if not e["archivos_po"]]
+
             self.stdout.write("")
             self.stdout.write(self.style.WARNING(
                 f"=== Proyectos SIN oportunidad vinculada CON evidencia de PO ({len(sin_po)}) ==="
             ))
-            self.stdout.write("  (Estos pueden tener órdenes de compra importantes)")
-            self.stdout.write("")
-            for entry in sin_po:
-                partes = []
-                if entry["po_nombre"]:
-                    partes.append(f"PO en nombre: {entry['po_nombre']}")
-                if entry["archivos_po"]:
+            self.stdout.write(
+                f"  Con archivos en Drive: {len(con_archivos)}  |  Solo PO en nombre (sin archivos): {len(solo_nombre)}"
+            )
+
+            # ── Grupo 1: con archivos en drive (prioritarios) ──────────────
+            if con_archivos:
+                self.stdout.write("")
+                self.stdout.write(self.style.WARNING(
+                    f"  ── PRIORITARIOS: tienen archivos en Drive ({len(con_archivos)}) ──"
+                ))
+                for entry in con_archivos:
                     nombres = ", ".join(entry["archivos_po"][:3])
                     if len(entry["archivos_po"]) > 3:
                         nombres += f" (+{len(entry['archivos_po']) - 3} más)"
-                    partes.append(f"Archivos: {nombres}")
-                detalle = " | ".join(partes)
+                    po_extra = f" | PO en nombre: {entry['po_nombre']}" if entry["po_nombre"] else ""
+                    self.stdout.write(f"  [ID {entry['id']}] {entry['nombre'][:65]}")
+                    self.stdout.write(f"          → Archivos: {nombres}{po_extra}")
+
+            # ── Grupo 2: solo PO en nombre, sin archivos (menos urgentes) ──
+            if solo_nombre:
+                self.stdout.write("")
                 self.stdout.write(
-                    f"  [ID {entry['id']}] {entry['nombre'][:65]}"
+                    f"  ── Sin archivos en Drive, solo PO en nombre ({len(solo_nombre)}) ──"
                 )
-                self.stdout.write(f"          → {detalle}")
+                for entry in solo_nombre:
+                    self.stdout.write(f"  [ID {entry['id']}] {entry['nombre'][:65]}")
+                    self.stdout.write(f"          → PO en nombre: {entry['po_nombre']}")
+
             self.stdout.write("")
             self.stdout.write(
-                "  TIP: Revisa estos proyectos manualmente para vincularlos."
+                "  TIP: Enfócate primero en los PRIORITARIOS (tienen archivos en Drive)."
             )
 
     def _reset_sync_data(self):
