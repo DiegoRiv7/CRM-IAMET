@@ -269,9 +269,13 @@ class Command(BaseCommand):
         """Limpia todos los datos importados por syncs anteriores."""
         self.stdout.write(self.style.WARNING("Limpiando datos previos del sync..."))
 
-        # Tareas de oportunidad importadas desde Bitrix
-        count = TareaOportunidad.objects.filter(bitrix_task_id__isnull=False).delete()[0]
-        self.stdout.write(f"  TareaOportunidad eliminadas: {count}")
+        # Tareas importadas desde Bitrix (ahora todas en modelo Tarea)
+        count = Tarea.objects.filter(bitrix_task_id__isnull=False).delete()[0]
+        self.stdout.write(f"  Tarea (Bitrix) eliminadas: {count}")
+        # Limpiar también TareaOportunidad del sync anterior (migración de modelo)
+        count_old = TareaOportunidad.objects.filter(bitrix_task_id__isnull=False).delete()[0]
+        if count_old:
+            self.stdout.write(f"  TareaOportunidad (antiguas) eliminadas: {count_old}")
 
         # Archivos de oportunidad importados desde Bitrix
         count = ArchivoOportunidad.objects.filter(bitrix_file_id__isnull=False).delete()[0]
@@ -437,31 +441,31 @@ class Command(BaseCommand):
                 responsable = up.user
 
         if oportunidad:
-            prioridad = _map_prioridad_opp(t.get("priority", "1"))
-            estado = _map_estado_opp(t.get("status", "1"))
+            estado = _map_status_tarea(t.get("status", "1"))
+            prioridad = _map_priority_tarea(t.get("priority", "1"))
 
             if not dry_run:
-                tarea, created = TareaOportunidad.objects.update_or_create(
+                tarea, created = Tarea.objects.update_or_create(
                     bitrix_task_id=bitrix_task_id,
                     defaults={
-                        "oportunidad": oportunidad,
                         "titulo": titulo,
                         "descripcion": descripcion,
-                        "prioridad": prioridad,
                         "estado": estado,
+                        "prioridad": prioridad,
                         "fecha_limite": fecha_limite,
+                        "oportunidad": oportunidad,
                         "creado_por": default_user,
-                        "responsable": responsable,
+                        "asignado_a": responsable if responsable != default_user else None,
                     },
                 )
                 if bitrix_created and created:
-                    TareaOportunidad.objects.filter(pk=tarea.pk).update(fecha_creacion=bitrix_created)
+                    Tarea.objects.filter(pk=tarea.pk).update(fecha_creacion=bitrix_created)
                 if created:
                     self.stats["tareas_opp_creadas"] += 1
                 else:
                     self.stats["tareas_opp_actualizadas"] += 1
             else:
-                self.stdout.write(f"      [DRY] TAREA-OPP '{titulo[:50]}'")
+                self.stdout.write(f"      [DRY] TAREA '{titulo[:50]}' [{estado}]")
         else:
             if not dry_run and proyecto:
                 _, created = Tarea.objects.update_or_create(

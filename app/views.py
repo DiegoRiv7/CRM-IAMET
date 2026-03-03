@@ -1911,6 +1911,7 @@ def api_tareas(request):
         # Obtener tareas por proyecto si se especifica, sino mostrar TODAS las tareas
         proyecto_id = request.GET.get('proyecto_id')
         
+        oportunidad_id = request.GET.get('oportunidad_id')
         try:
             if proyecto_id:
                 # Filtrar por proyecto específico
@@ -1918,10 +1919,15 @@ def api_tareas(request):
                 tareas = Tarea.objects.filter(proyecto=proyecto).select_related(
                     'creado_por', 'asignado_a', 'proyecto'
                 ).order_by('-fecha_creacion')
+            elif oportunidad_id:
+                # Filtrar por oportunidad (tareas del widget de oportunidad)
+                tareas = Tarea.objects.filter(oportunidad_id=oportunidad_id).select_related(
+                    'creado_por', 'asignado_a', 'proyecto', 'oportunidad'
+                ).order_by('fecha_limite', '-fecha_creacion')
             else:
                 # Mostrar TODAS las tareas del usuario (sin importar el proyecto)
                 tareas = Tarea.objects.filter(
-                    Q(creado_por=request.user) | 
+                    Q(creado_por=request.user) |
                     Q(asignado_a=request.user) |
                     Q(participantes=request.user)
                 ).distinct().select_related('creado_por', 'asignado_a', 'proyecto').order_by('-fecha_creacion')
