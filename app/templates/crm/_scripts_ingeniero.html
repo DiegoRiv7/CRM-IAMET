@@ -1,0 +1,317 @@
+<script>
+'use strict';
+
+// ═══ INGENIERO — Tablero de Actividades ═══
+
+var _boardItems = [];
+var _dragKey = null;
+var _dragOverKey = null;
+
+// ── Inicialización ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    // Mostrar tablero por defecto
+    ingenieroMostrarActividades();
+
+    // Conectar botón CRM del topbar ingeniero
+    var btnCRM = document.getElementById('btnCRM');
+    if (btnCRM) btnCRM.addEventListener('click', function () {
+        setIngenieroNav('crm');
+        document.getElementById('actividadesBoard').style.display = 'none';
+        var content = document.getElementById('crmContentSection');
+        if (content) content.style.display = '';
+    });
+
+    var btnTareas = document.getElementById('btnTareas');
+    if (btnTareas) btnTareas.addEventListener('click', function () {
+        // Reusar el panel de tareas existente
+        setIngenieroNav('tareas');
+        document.getElementById('actividadesBoard').style.display = 'none';
+        var content = document.getElementById('crmContentSection');
+        if (content) content.style.display = '';
+        // Simular clic en tab tareas si existe
+        var tabTareas = document.getElementById('tabTareas');
+        if (tabTareas) tabTareas.click();
+    });
+
+    // Ocultar tabs que el ingeniero no debe ver
+    var tabsOcultar = ['tabCotizado', 'tabCobrado', 'tabFacturado'];
+    tabsOcultar.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // Ocultar sección de meta/progreso en topbar
+    ['facturadoAmount', 'progressPct', 'islandFiltersSection', 'islandSepFilters'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+});
+
+function setIngenieroNav(active) {
+    document.querySelectorAll('.island-nav .island-nav-btn').forEach(function (b) {
+        b.classList.remove('active');
+    });
+    var map = {
+        'actividades': 'btnActividades',
+        'crm': 'btnCRM',
+        'tareas': 'btnTareas',
+    };
+    var el = document.getElementById(map[active]);
+    if (el) el.classList.add('active');
+}
+
+function ingenieroMostrarActividades() {
+    setIngenieroNav('actividades');
+    var board = document.getElementById('actividadesBoard');
+    var content = document.getElementById('crmContentSection');
+    if (board) board.style.display = 'block';
+    if (content) content.style.display = 'none';
+    ingenieroCargarActividades();
+}
+
+// ── Cargar actividades ──────────────────────────────────────────
+function ingenieroCargarActividades() {
+    document.getElementById('boardLoading').style.display = 'block';
+    document.getElementById('boardEmpty').style.display = 'none';
+    document.getElementById('boardColumns').style.display = 'none';
+
+    fetch('/app/api/ingeniero/actividades/')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            _boardItems = data.items || [];
+            document.getElementById('boardLoading').style.display = 'none';
+            if (_boardItems.length === 0) {
+                document.getElementById('boardEmpty').style.display = 'block';
+            } else {
+                renderBoard();
+            }
+        })
+        .catch(function () {
+            document.getElementById('boardLoading').style.display = 'none';
+        });
+}
+
+// ── Clasificar por fecha ────────────────────────────────────────
+function clasificarFecha(fechaStr, fechaPlaneada) {
+    var f = fechaPlaneada || fechaStr;
+    if (!f) return 'sinfecha';
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var d = new Date(f + 'T00:00:00');
+    var diff = Math.floor((d - today) / 86400000);
+    if (diff < 0) return 'vencida';
+    if (diff === 0) return 'hoy';
+    if (diff <= 3) return 'proximas';
+    return 'futuro';
+}
+
+function grupoLabel(grupo) {
+    var labels = {
+        'vencida': '⚠ Vencidas',
+        'hoy': '● Hoy',
+        'proximas': '◆ Próximos 3 días',
+        'futuro': '○ Futuras',
+        'sinfecha': '— Sin fecha',
+    };
+    return labels[grupo] || grupo;
+}
+
+// ── Render del tablero ──────────────────────────────────────────
+function renderBoard() {
+    var cols = document.getElementById('boardColumns');
+    cols.innerHTML = '';
+    cols.style.display = 'grid';
+
+    var grupos = { vencida: [], hoy: [], proximas: [], futuro: [], sinfecha: [] };
+    _boardItems.forEach(function (item) {
+        var g = clasificarFecha(item.fecha_limite, item.fecha_planeada);
+        grupos[g].push(item);
+    });
+
+    var orden = ['vencida', 'hoy', 'proximas', 'futuro', 'sinfecha'];
+    orden.forEach(function (grupo) {
+        var items = grupos[grupo];
+        if (!items.length) return;
+        var col = document.createElement('div');
+        col.className = 'board-col board-col-' + grupo;
+        col.dataset.grupo = grupo;
+
+        var header = document.createElement('div');
+        header.className = 'board-col-header';
+        header.innerHTML = '<span>' + grupoLabel(grupo) + '</span><span style="font-size:0.65rem;opacity:0.7;">' + items.length + ' tarea' + (items.length !== 1 ? 's' : '') + '</span>';
+        col.appendChild(header);
+
+        var body = document.createElement('div');
+        body.className = 'board-col-body';
+        body.addEventListener('dragover', function (e) { e.preventDefault(); });
+        body.addEventListener('drop', function (e) { e.preventDefault(); handleDrop(grupo); });
+        items.forEach(function (item) { body.appendChild(makeCard(item, grupo)); });
+        col.appendChild(body);
+        cols.appendChild(col);
+    });
+}
+
+function makeCard(item, grupo) {
+    var card = document.createElement('div');
+    card.className = 'board-card board-card-prio-' + (item.prioridad === 'alta' ? 'alta' : 'normal');
+    card.dataset.key = item.key;
+    card.draggable = true;
+
+    // Drag events
+    card.addEventListener('dragstart', function () {
+        _dragKey = item.key;
+        card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', function () {
+        card.classList.remove('dragging');
+        _dragKey = null;
+    });
+    card.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        card.classList.add('drag-over');
+        _dragOverKey = item.key;
+    });
+    card.addEventListener('dragleave', function () {
+        card.classList.remove('drag-over');
+    });
+    card.addEventListener('drop', function (e) {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        if (_dragKey && _dragKey !== item.key) {
+            reorderItems(_dragKey, item.key);
+        }
+    });
+
+    // Fecha badge
+    var dateCls = grupo === 'vencida' ? 'vencida' : grupo === 'hoy' ? 'hoy' : grupo === 'proximas' ? 'pronto' : '';
+    var fechaDisplay = item.fecha_planeada
+        ? formatDate(item.fecha_planeada) + ' (planeada)'
+        : (item.fecha_limite_display || 'Sin fecha');
+
+    var clienteStr = item.cliente ? '<span>📍 ' + item.cliente + '</span>' : '';
+    var oppStr = item.oportunidad ? '<span>· ' + truncar(item.oportunidad, 30) + '</span>' : '';
+
+    card.innerHTML =
+        '<div class="board-card-title" onclick="ingenieroAbrirOportunidad(' + (item.oportunidad_id || 0) + ')">' +
+            truncar(item.titulo, 60) +
+        '</div>' +
+        '<div class="board-card-meta">' +
+            clienteStr + oppStr +
+            '<span class="board-card-date ' + dateCls + '">Vence: ' + (item.fecha_limite_display || '—') + '</span>' +
+        '</div>' +
+        '<div class="board-card-actions">' +
+            '<button class="board-btn board-btn-complete" onclick="ingenieroCompletarTarea(\'' + item.key + '\',' + item.id + ',\'' + item.tipo + '\')">✓ Completar</button>' +
+            '<button class="board-btn" onclick="ingenieroReprogramar(\'' + item.key + '\')" title="Reprogramar en mi tablero">📅</button>' +
+        '</div>';
+    return card;
+}
+
+// ── Reordenar drag & drop ───────────────────────────────────────
+function reorderItems(fromKey, toKey) {
+    var fromIdx = _boardItems.findIndex(function (i) { return i.key === fromKey; });
+    var toIdx = _boardItems.findIndex(function (i) { return i.key === toKey; });
+    if (fromIdx === -1 || toIdx === -1) return;
+    var item = _boardItems.splice(fromIdx, 1)[0];
+    _boardItems.splice(toIdx, 0, item);
+    renderBoard();
+    saveOrder();
+}
+
+function handleDrop(grupo) {
+    if (!_dragKey) return;
+    // Mover al final del grupo (drop en columna vacía)
+    var fromIdx = _boardItems.findIndex(function (i) { return i.key === _dragKey; });
+    if (fromIdx === -1) return;
+    var item = _boardItems.splice(fromIdx, 1)[0];
+    // Encontrar el último item del grupo
+    var insertAt = _boardItems.length;
+    _boardItems.splice(insertAt, 0, item);
+    renderBoard();
+    saveOrder();
+}
+
+function saveOrder() {
+    var payload = _boardItems.map(function (item, i) {
+        return { key: item.key, orden: i, fecha_planeada: item.fecha_planeada || null };
+    });
+    fetch('/app/api/ingeniero/board/reorder/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+        body: JSON.stringify(payload)
+    }).catch(function () {});
+}
+
+// ── Reprogramar (cambiar fecha planeada personal) ───────────────
+function ingenieroReprogramar(key) {
+    var item = _boardItems.find(function (i) { return i.key === key; });
+    if (!item) return;
+    var actual = item.fecha_planeada || item.fecha_limite || '';
+    var nuevaFecha = prompt('Fecha planeada (YYYY-MM-DD):\nEsto NO cambia la fecha de vencimiento real.', actual);
+    if (!nuevaFecha) return;
+    item.fecha_planeada = nuevaFecha;
+    renderBoard();
+    saveOrder();
+}
+
+// ── Completar tarea ─────────────────────────────────────────────
+function ingenieroCompletarTarea(key, id, tipo) {
+    if (!confirm('¿Marcar esta tarea como completada?')) return;
+    var url = tipo === 'tarea_opp'
+        ? '/app/api/tareas-oportunidad/' + id + '/completar/'
+        : '/app/api/tareas/' + id + '/completar/';
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF() }
+    }).then(function (r) { return r.json(); }).then(function (resp) {
+        if (resp.ok || resp.success) {
+            _boardItems = _boardItems.filter(function (i) { return i.key !== key; });
+            renderBoard();
+            if (_boardItems.length === 0) {
+                document.getElementById('boardColumns').style.display = 'none';
+                document.getElementById('boardEmpty').style.display = 'block';
+            }
+        }
+    }).catch(function () {});
+}
+
+// ── Abrir oportunidad ───────────────────────────────────────────
+function ingenieroAbrirOportunidad(oppId) {
+    if (!oppId) return;
+    if (typeof openDetalle === 'function') openDetalle(oppId);
+}
+
+// ── Helpers ─────────────────────────────────────────────────────
+function truncar(str, n) {
+    if (!str) return '';
+    return str.length > n ? str.substring(0, n) + '…' : str;
+}
+
+function formatDate(str) {
+    if (!str) return '—';
+    var parts = str.split('-');
+    if (parts.length !== 3) return str;
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+function getCSRF() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+}
+
+// ── Restricciones para ingeniero en widget oportunidad ──────────
+document.addEventListener('DOMContentLoaded', function () {
+    // Esperar a que el widget esté disponible y bloquear edición
+    var observer = new MutationObserver(function () {
+        if (!window.ES_INGENIERO) return;
+        // Deshabilitar stage buttons, title edit, etc.
+        var detalleContent = document.getElementById('detalleContent');
+        if (detalleContent && !detalleContent.dataset.ingBound) {
+            detalleContent.dataset.ingBound = '1';
+            // Override de funciones de edición para que no hagan nada
+            window._ingenieroModeActive = true;
+        }
+    });
+    var overlay = document.getElementById('widgetDetalle');
+    if (overlay) observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+});
+</script>

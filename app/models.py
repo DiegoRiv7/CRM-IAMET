@@ -49,6 +49,12 @@ class UserProfile(models.Model):
     meta_cotizado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cotizado")
     meta_cobrado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cobrado")
 
+    ROL_CHOICES = [
+        ('vendedor', 'Vendedor'),
+        ('ingeniero', 'Ingeniero'),
+    ]
+    rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='vendedor', verbose_name="Rol")
+
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
         logger.info(f"  - self.avatar: {self.avatar}")
@@ -3096,3 +3102,37 @@ class EficienciaMensual(models.Model):
 
     def __str__(self):
         return f"Eficiencia {self.usuario.username} - {self.mes}/{self.anio}"
+
+
+# ============= TABLERO INGENIERO =============
+
+class IngenieroBoardItem(models.Model):
+    """
+    Orden personal del tablero de actividades del ingeniero.
+    No modifica la fecha real de la tarea, solo guarda la posición
+    y fecha planeada por el ingeniero para organizarse.
+    """
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='board_items'
+    )
+    tarea_opp = models.ForeignKey(
+        'TareaOportunidad', on_delete=models.CASCADE,
+        null=True, blank=True, related_name='board_items'
+    )
+    tarea = models.ForeignKey(
+        'Tarea', on_delete=models.CASCADE,
+        null=True, blank=True, related_name='board_items'
+    )
+    orden = models.IntegerField(default=0)
+    fecha_planeada = models.DateField(
+        null=True, blank=True,
+        verbose_name="Fecha planeada por el ingeniero"
+    )
+
+    class Meta:
+        verbose_name = "Item Tablero Ingeniero"
+        verbose_name_plural = "Items Tablero Ingeniero"
+        ordering = ['orden']
+
+    def __str__(self):
+        return f"{self.usuario.username} - orden {self.orden}"

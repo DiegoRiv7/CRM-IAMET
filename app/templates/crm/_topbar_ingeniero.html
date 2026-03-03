@@ -1,0 +1,63 @@
+<!-- ═══ TOPBAR INGENIERO ═══ -->
+<div class="crm-unified-header">
+    <div class="crm-island" id="mainIsland">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
+
+            <!-- Avatar + usuario + eficiencia -->
+            <div style="display:flex;align-items:center;gap:8px;cursor:pointer;"
+                onclick="var wp=document.getElementById('widgetPerfil'); if(wp) wp.classList.add('active');">
+                <div class="crm-avatar crm-avatar-lg">
+                    {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+                </div>
+                <div style="font-size:0.78rem;color:#4A6FA5;font-weight:700;white-space:nowrap;line-height:1.4;">
+                    {{ usuario.get_full_name|default:usuario.username }}<br>
+                    <span style="font-size:0.68rem;color:#5856D6;font-weight:700;">INGENIERO</span><br>
+                    <span style="font-size:0.65rem;color:#8E8E93;font-weight:500;">
+                        EFECT. AYER: <span id="islandEfectAyer" style="color:#007AFF;font-weight:700;">—</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="island-sep"></div>
+
+            <!-- Navegación ingeniero -->
+            <nav class="island-nav">
+                <button type="button" class="island-nav-btn active" id="btnActividades"
+                    onclick="ingenieroMostrarActividades()">
+                    ACTIVIDADES
+                </button>
+                <button type="button" class="island-nav-btn" id="btnCRM">CRM</button>
+                <button type="button" class="island-nav-btn" id="btnTareas">TAREAS</button>
+                <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">MURO</button>
+                <button type="button" class="island-nav-btn" id="btnCalendario" onclick="calendarioAbrir()">CALENDARIO</button>
+                <button type="button" class="island-nav-btn" id="btnNotificaciones"
+                    onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';">
+                    NOTIF.
+                </button>
+            </nav>
+
+        </div>
+    </div>
+</div>
+
+<div id="islandExpandedContent" style="display:none;"></div>
+
+<script>
+(function () {
+    fetch('/app/api/jornada/ayer/')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            var el = document.getElementById('islandEfectAyer');
+            if (!el) return;
+            if (d.eficiencia !== null && d.eficiencia !== undefined) {
+                var pct = Math.round(d.eficiencia);
+                el.textContent = pct + '%';
+                el.style.color = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
+            } else {
+                el.textContent = 'Sin datos';
+                el.style.color = '#8E8E93';
+            }
+        })
+        .catch(function () {});
+})();
+</script>

@@ -270,8 +270,9 @@ def crm_home(request):
     mes_nombre = dict(mes_choices).get(mes_filter, '')
     mes_nombre_db = MES_CODE_TO_NAME.get(mes_filter, mes_filter)
 
-    # ── Supervisor / Vendedor logic ──
+    # ── Supervisor / Vendedor / Ingeniero logic ──
     es_supervisor = is_supervisor(user)
+    es_ingeniero = (getattr(profile, 'rol', 'vendedor') == 'ingeniero')
     vendedores_filter = request.GET.get('vendedores', '')  # "1,2,3" or ""
     vendedores_ids = []
     if vendedores_filter:
@@ -539,6 +540,7 @@ def crm_home(request):
         'total_cotizado': total_cotizado,
         'total_cobrado': total_cobrado,
         'es_supervisor': es_supervisor,
+        'es_ingeniero': es_ingeniero,
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
     }
@@ -1198,6 +1200,7 @@ def api_admin_usuarios(request):
                 'meta_oportunidades': str(getattr(profile, 'meta_oportunidades', 0)) if profile else '0',
                 'meta_cotizado': str(getattr(profile, 'meta_cotizado', 0)) if profile else '0',
                 'meta_cobrado': str(getattr(profile, 'meta_cobrado', 0)) if profile else '0',
+                'rol': getattr(profile, 'rol', 'vendedor') if profile else 'vendedor',
             })
         return JsonResponse({'usuarios': data})
 
@@ -1224,7 +1227,11 @@ def api_admin_usuarios(request):
             username=username, password=password,
             first_name=first_name, last_name=last_name, email=email
         )
-        UserProfile.objects.get_or_create(user=user)
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        rol = data.get('rol', 'vendedor').strip()
+        if rol in ('vendedor', 'ingeniero'):
+            profile.rol = rol
+            profile.save(update_fields=['rol'])
 
         if data.get('is_supervisor'):
             grupo, _ = Group.objects.get_or_create(name='Supervisores')
@@ -1263,9 +1270,130 @@ def api_admin_usuario_detalle(request, user_id):
             usuario.set_password(data['password'].strip())
         usuario.save()
 
+        # Actualizar rol en perfil
+        if 'rol' in data:
+            profile, _ = UserProfile.objects.get_or_create(user=usuario)
+            profile.rol = data['rol']
+            profile.save(update_fields=['rol'])
+
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_ingeniero_actividades(request):
+    """
+    Devuelve las tareas asignadas al ingeniero ordenadas para su tablero personal.
+    Combina TareaOportunidad y Tarea generales.
+    """
+    from app.models import IngenieroBoardItem, TareaOportunidad, Tarea
+    user = request.user
+
+    # TareaOportunidad asignadas a este usuario (no completadas)
+    tareas_opp = TareaOportunidad.objects.filter(
+        responsable=user
+    ).exclude(estado='completada').select_related('oportunidad', 'oportunidad__cliente')
+
+    # Tareas generales asignadas a este usuario (no completadas)
+    tareas_gen = Tarea.objects.filter(
+        asignado_a=user
+    ).exclude(estado='completada').select_related('oportunidad', 'oportunidad__cliente', 'proyecto')
+
+    # Obtener órdenes personales guardados
+    board_map_opp = {
+        bi.tarea_opp_id: bi
+        for bi in IngenieroBoardItem.objects.filter(usuario=user, tarea_opp__isnull=False)
+    }
+    board_map_gen = {
+        bi.tarea_id: bi
+        for bi in IngenieroBoardItem.objects.filter(usuario=user, tarea__isnull=False)
+    }
+
+    items = []
+    for t in tareas_opp:
+        bi = board_map_opp.get(t.id)
+        items.append({
+            'key': f'opp_{t.id}',
+            'tipo': 'tarea_opp',
+            'id': t.id,
+            'titulo': t.titulo,
+            'descripcion': t.descripcion or '',
+            'estado': t.estado,
+            'prioridad': t.prioridad,
+            'fecha_limite': t.fecha_limite.strftime('%Y-%m-%d') if t.fecha_limite else None,
+            'fecha_limite_display': t.fecha_limite.strftime('%d/%m/%Y') if t.fecha_limite else 'Sin fecha',
+            'oportunidad': t.oportunidad.oportunidad if t.oportunidad else '',
+            'oportunidad_id': t.oportunidad_id,
+            'cliente': (t.oportunidad.cliente.nombre_empresa if t.oportunidad and t.oportunidad.cliente else ''),
+            'orden': bi.orden if bi else 9999,
+            'fecha_planeada': str(bi.fecha_planeada) if bi and bi.fecha_planeada else None,
+        })
+
+    for t in tareas_gen:
+        bi = board_map_gen.get(t.id)
+        nombre_contexto = ''
+        if t.oportunidad:
+            nombre_contexto = t.oportunidad.oportunidad or ''
+        elif t.proyecto:
+            nombre_contexto = t.proyecto.nombre or ''
+        items.append({
+            'key': f'gen_{t.id}',
+            'tipo': 'tarea',
+            'id': t.id,
+            'titulo': t.titulo,
+            'descripcion': t.descripcion or '',
+            'estado': t.estado,
+            'prioridad': t.prioridad,
+            'fecha_limite': t.fecha_limite.strftime('%Y-%m-%d') if t.fecha_limite else None,
+            'fecha_limite_display': t.fecha_limite.strftime('%d/%m/%Y') if t.fecha_limite else 'Sin fecha',
+            'oportunidad': nombre_contexto,
+            'oportunidad_id': t.oportunidad_id,
+            'cliente': (t.oportunidad.cliente.nombre_empresa if t.oportunidad and t.oportunidad.cliente else ''),
+            'orden': bi.orden if bi else 9999,
+            'fecha_planeada': str(bi.fecha_planeada) if bi and bi.fecha_planeada else None,
+        })
+
+    # Ordenar: primero por orden personal, luego por fecha_limite
+    from datetime import date as _date
+    items.sort(key=lambda x: (
+        x['orden'],
+        x['fecha_limite'] or '9999-12-31'
+    ))
+
+    return JsonResponse({'items': items})
+
+
+@login_required
+@csrf_exempt
+def api_ingeniero_board_reorder(request):
+    """Guarda el orden personal del tablero del ingeniero."""
+    from app.models import IngenieroBoardItem
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requerido'}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    # data = [{'key': 'opp_5', 'orden': 0, 'fecha_planeada': '2026-03-05'}, ...]
+    for i, item in enumerate(data):
+        key = item.get('key', '')
+        fecha_planeada = item.get('fecha_planeada') or None
+        if key.startswith('opp_'):
+            tid = int(key[4:])
+            IngenieroBoardItem.objects.update_or_create(
+                usuario=request.user, tarea_opp_id=tid, tarea=None,
+                defaults={'orden': i, 'fecha_planeada': fecha_planeada}
+            )
+        elif key.startswith('gen_'):
+            tid = int(key[4:])
+            IngenieroBoardItem.objects.update_or_create(
+                usuario=request.user, tarea_id=tid, tarea_opp=None,
+                defaults={'orden': i, 'fecha_planeada': fecha_planeada}
+            )
+
+    return JsonResponse({'ok': True})
 
 
 @login_required

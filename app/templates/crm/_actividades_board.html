@@ -1,0 +1,124 @@
+<!-- ═══ TABLERO DE ACTIVIDADES — INGENIERO ═══ -->
+<div id="actividadesBoard" style="display:none; padding:1rem 1.2rem; max-width:100%;">
+
+    <!-- Header del tablero -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div>
+            <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1D1D1F;">Mi Tablero de Actividades</h2>
+            <p style="margin:0;font-size:0.72rem;color:#8E8E93;">Organiza tus tareas. Arrastra para reordenar. La fecha de vencimiento real no cambia.</p>
+        </div>
+        <button onclick="ingenieroCargarActividades()" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:8px;padding:6px 12px;font-size:0.72rem;font-weight:600;color:#3C3C43;cursor:pointer;">
+            ↻ Actualizar
+        </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="boardLoading" style="text-align:center;padding:3rem;color:#8E8E93;font-size:0.85rem;">
+        <svg style="animation:spin 1s linear infinite;width:20px;height:20px;margin:0 auto 0.5rem;display:block;" viewBox="0 0 24 24" fill="none" stroke="#5856D6" stroke-width="2">
+            <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93"/>
+        </svg>
+        Cargando actividades...
+    </div>
+
+    <!-- Empty -->
+    <div id="boardEmpty" style="display:none;text-align:center;padding:4rem 2rem;color:#8E8E93;">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">&#10003;</div>
+        <div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.5rem;">Sin actividades pendientes</div>
+        <div style="font-size:0.82rem;">No tienes tareas asignadas por el momento.</div>
+    </div>
+
+    <!-- Tablero — columnas por fecha -->
+    <div id="boardColumns" style="display:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;align-items:start;">
+        <!-- Columnas generadas por JS -->
+    </div>
+
+</div>
+
+<style>
+.board-col {
+    background: #F9FAFB;
+    border-radius: 12px;
+    border: 1px solid #E5E5EA;
+    overflow: hidden;
+}
+.board-col-header {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid #E5E5EA;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.board-col-body {
+    padding: 0.5rem;
+    min-height: 60px;
+}
+.board-card {
+    background: #fff;
+    border: 1px solid #E5E5EA;
+    border-radius: 10px;
+    padding: 0.65rem 0.8rem;
+    margin-bottom: 0.5rem;
+    cursor: grab;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+}
+.board-card:active { cursor: grabbing; }
+.board-card.dragging { opacity: 0.4; border-color: #5856D6; }
+.board-card.drag-over { border-color: #5856D6; box-shadow: 0 0 0 2px rgba(88,86,214,0.2); }
+.board-card-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1D1D1F;
+    margin-bottom: 0.3rem;
+    cursor: pointer;
+}
+.board-card-title:hover { color: #5856D6; }
+.board-card-meta {
+    font-size: 0.68rem;
+    color: #8E8E93;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.board-card-date {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #F2F2F7;
+    color: #3C3C43;
+}
+.board-card-date.vencida { background: #FFF0F0; color: #FF3B30; }
+.board-card-date.hoy { background: #FFF7E6; color: #FF9500; }
+.board-card-date.pronto { background: #F0F8FF; color: #007AFF; }
+.board-card-prio-alta { border-left: 3px solid #FF3B30; }
+.board-card-prio-normal { border-left: 3px solid #E5E5EA; }
+.board-card-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+.board-btn {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid #E5E5EA;
+    background: #F9FAFB;
+    color: #3C3C43;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.board-btn:hover { background: #E5E5EA; }
+.board-btn-complete { border-color: #34C759; color: #34C759; }
+.board-btn-complete:hover { background: #34C759; color: #fff; }
+.board-col-vencida .board-col-header { background: #FFF5F5; color: #FF3B30; }
+.board-col-hoy .board-col-header { background: #FFFBF0; color: #FF9500; }
+.board-col-proximas .board-col-header { background: #F0F5FF; color: #007AFF; }
+.board-col-sinfecha .board-col-header { background: #F5F5F7; color: #8E8E93; }
+</style>

@@ -679,6 +679,27 @@
 
                 // Setup inline editing
                 woSetupEditableFields(d);
+
+                // Restricciones para rol Ingeniero
+                if (window.ES_INGENIERO) {
+                    // Título: solo lectura
+                    var titleElI = document.getElementById('woTitle');
+                    if (titleElI) { titleElI.style.cursor = 'default'; titleElI.title = ''; titleElI.onclick = null; }
+                    // Badge: no cambia tipo
+                    var badgeI = document.getElementById('woTypeBadge');
+                    if (badgeI) { badgeI.style.cursor = 'default'; badgeI.onclick = null; }
+                    // Stage buttons: deshabilitados
+                    document.querySelectorAll('.wo-stage-btn').forEach(function (b) {
+                        b.style.pointerEvents = 'none'; b.style.opacity = '0.7';
+                    });
+                    // Cotizar button: ocultar
+                    var cotizarBtn = document.getElementById('woNuevaCotBtn');
+                    if (cotizarBtn) cotizarBtn.style.display = 'none';
+                    // Campos editables: solo lectura
+                    document.querySelectorAll('.wo-editable').forEach(function (el) {
+                        el.style.cursor = 'default'; el.onclick = null;
+                    });
+                }
             }
 
             // ══════════════════════════════════════════════
