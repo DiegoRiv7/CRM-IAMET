@@ -477,6 +477,7 @@ def get_all_bitrix_deals(request=None):
                 'select': [
                     'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
                     'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID', 'CATEGORY_ID',
+                    'DATE_CREATE', 'CLOSEDATE',
                     'UF_CRM_1752859685662', # Producto (Runrate)
                     'UF_CRM_1750723256972', # Solución (Proyectos)
                     'UF_CRM_1752859525038',  # Área

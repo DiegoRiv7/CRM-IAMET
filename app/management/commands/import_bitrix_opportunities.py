@@ -3,7 +3,21 @@ from app.models import TodoItem, Cliente, UserProfile, Contacto
 from django.contrib.auth.models import User
 from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_company_details, get_bitrix_user_details, get_bitrix_contact_details, map_bitrix_category_to_tipo_negociacion, get_producto_from_bitrix_deal, get_etapa_from_bitrix_stage
 from decimal import Decimal
+from datetime import datetime, timezone as dt_timezone
 import json
+
+
+def _parse_bitrix_date(raw):
+    """Parse Bitrix ISO date string into timezone-aware datetime, or None."""
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=dt_timezone.utc)
+        return dt
+    except (ValueError, TypeError):
+        return None
 
 class Command(BaseCommand):
     help = 'Imports or updates opportunities from Bitrix24 into the Django application.'
@@ -159,9 +173,9 @@ class Command(BaseCommand):
                 }
 
                 MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE = {
-                    "196": "Enero", "198": "Febrero", "200": "Marzo", "202": "Abril",
-                    "204": "Mayo", "206": "Junio", "208": "Julio", "210": "Agosto",
-                    "212": "Septiembre", "214": "Octubre", "216": "Noviembre", "218": "Diciembre",
+                    "196": "01", "198": "02", "200": "03", "202": "04",
+                    "204": "05", "206": "06", "208": "07", "210": "08",
+                    "212": "09", "214": "10", "216": "11", "218": "12",
                 }
 
                 PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING = {
@@ -171,7 +185,7 @@ class Command(BaseCommand):
                 }
 
                 area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
-                mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default to January
+                mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), '01') # Default to January (numeric)
                 
                 # Mapear tipo de negociación desde CATEGORY_ID
                 tipo_negociacion = map_bitrix_category_to_tipo_negociacion(category_id)
@@ -214,7 +228,7 @@ class Command(BaseCommand):
                         'usuario': usuario_obj,  # We ensure this exists above
                         'producto': producto or 'SOFTWARE',  # Default value
                         'area': area or 'SISTEMAS',  # Default value
-                        'mes_cierre': mes_cierre or 'Enero',  # Default value
+                        'mes_cierre': mes_cierre or '01',  # Default value (numeric format)
                         'tipo_negociacion': tipo_negociacion,  # Nuevo campo
                         'etapa_corta': etapa_corta,  # Nuevo campo
                         'etapa_completa': etapa_completa,  # Nuevo campo
@@ -226,6 +240,11 @@ class Command(BaseCommand):
                         'contacto': contacto_obj,
                     }
                 )
+
+                # Set fecha_creacion from Bitrix DATE_CREATE using update() to bypass auto_now_add
+                fecha_bitrix = _parse_bitrix_date(deal.get('DATE_CREATE'))
+                if fecha_bitrix:
+                    TodoItem.objects.filter(pk=opportunity.pk).update(fecha_creacion=fecha_bitrix)
 
                 if created:
                     created_count += 1
@@ -262,7 +281,7 @@ class Command(BaseCommand):
                             'usuario': default_usuario,
                             'producto': 'SOFTWARE',
                             'area': 'SISTEMAS',
-                            'mes_cierre': 'Enero',
+                            'mes_cierre': '01',
                             'tipo_negociacion': 'runrate',  # Default para importación mínima
                             'etapa_corta': minimal_etapa_corta,
                             'etapa_completa': minimal_etapa_completa,
@@ -274,6 +293,9 @@ class Command(BaseCommand):
                             'contacto': None,
                         }
                     )
+                    fecha_bitrix_min = _parse_bitrix_date(deal.get('DATE_CREATE'))
+                    if fecha_bitrix_min:
+                        TodoItem.objects.filter(pk=opportunity.pk).update(fecha_creacion=fecha_bitrix_min)
                     if created:
                         created_count += 1
                         self.stdout.write(self.style.SUCCESS(f'  Minimal import successful: {opportunity.oportunidad}'))
