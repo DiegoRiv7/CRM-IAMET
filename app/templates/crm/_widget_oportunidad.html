@@ -903,34 +903,24 @@
 
                 var banner = document.getElementById('woConvActividadesBanner');
                 if (banner) {
-                    banner.innerHTML = '<span style="font-size:0.75rem;color:#86868B;">Cargando...</span>';
-                    fetch('/app/api/oportunidad/' + _woCurrentOppId + '/tareas/')
+                    banner.innerHTML = '';
+                    fetch('/app/api/actividades/?oportunidad_id=' + _woCurrentOppId)
                         .then(function (r) { return r.json(); })
                         .then(function (res) {
-                            if (res.success && res.tareas && res.tareas.length > 0) {
-                                // Solo mostrar en el banner las tareas con fecha_límite próxima (≤7 días)
-                                var hoy = new Date();
-                                var limite7 = new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000);
-                                var pendientes = res.tareas.filter(function (t) {
-                                    if (t.estado === 'completada') return false;
-                                    if (!t.fecha_limite) return false;
-                                    var fl = new Date(t.fecha_limite);
-                                    return fl <= limite7;
+                            var acts = (res.events || res.actividades || []).filter(function (a) {
+                                return a.estado !== 'completada';
+                            });
+                            if (acts.length > 0) {
+                                var html = '';
+                                acts.forEach(function (a) {
+                                    html += '<span onclick="woVerActividad(' + a.id + ')" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:600;color:#1D1D1F;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:background 0.15s;" onmouseenter="this.style.background=\'#E5E5EA\'" onmouseleave="this.style.background=\'#F2F2F7\'" title="' + woEscape(a.title) + '">' +
+                                        '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0052D4;margin-right:5px;vertical-align:middle;"></span>' +
+                                        woEscape(a.title) +
+                                        '</span>';
                                 });
-                                if (pendientes.length > 0) {
-                                    var html = '';
-                                    pendientes.forEach(function (t) {
-                                        html += '<span onclick="woVerActividad(' + t.id + ')" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:600;color:#1D1D1F;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:background 0.15s;" onmouseenter="this.style.background=\'#E5E5EA\'" onmouseleave="this.style.background=\'#F2F2F7\'" title="' + woEscape(t.titulo) + '">' +
-                                            '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0052D4;margin-right:5px;vertical-align:middle;"></span>' +
-                                            woEscape(t.titulo) +
-                                            '</span>';
-                                    });
-                                    banner.innerHTML = html;
-                                } else {
-                                    banner.innerHTML = '<span style="font-size:0.75rem;color:#D1D1D6;font-style:italic;">Sin actividades pendientes.</span>';
-                                }
+                                banner.innerHTML = html;
                             } else {
-                                banner.innerHTML = '<span style="font-size:0.75rem;color:#D1D1D6;font-style:italic;">Sin actividades pendientes.</span>';
+                                banner.innerHTML = '';
                             }
                         }).catch(function () { banner.innerHTML = ''; });
                 }
@@ -1585,28 +1575,22 @@
                             if (typeof woAbrirGestorConversacion === 'function') {
                                 var banner = document.getElementById('woConvActividadesBanner');
                                 if (banner) {
-                                    fetch('/app/api/oportunidad/' + _woCurrentOppId + '/tareas/')
+                                    fetch('/app/api/actividades/?oportunidad_id=' + _woCurrentOppId)
                                         .then(function (r) { return r.json(); })
                                         .then(function (res2) {
-                                            if (res2.success && res2.tareas) {
-                                                var hoy2 = new Date();
-                                                var limite7b = new Date(hoy2.getTime() + 7 * 24 * 60 * 60 * 1000);
-                                                var pendientes = res2.tareas.filter(function (t) {
-                                                    if (t.estado === 'completada') return false;
-                                                    if (!t.fecha_limite) return false;
-                                                    return new Date(t.fecha_limite) <= limite7b;
+                                            var acts2 = (res2.events || res2.actividades || []).filter(function (a) {
+                                                return a.estado !== 'completada';
+                                            });
+                                            if (acts2.length > 0) {
+                                                var html = '';
+                                                acts2.forEach(function (a) {
+                                                    html += '<span onclick="woVerActividad(' + a.id + ')" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:600;color:#1D1D1F;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:background 0.15s;" onmouseenter="this.style.background=\'#E5E5EA\'" onmouseleave="this.style.background=\'#F2F2F7\'" title="' + woEscape(a.title) + '">' +
+                                                        '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0052D4;margin-right:5px;vertical-align:middle;"></span>' +
+                                                        woEscape(a.title) + '</span>';
                                                 });
-                                                if (pendientes.length > 0) {
-                                                    var html = '';
-                                                    pendientes.forEach(function (t) {
-                                                        html += '<span onclick="woVerActividad(' + t.id + ')" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:600;color:#1D1D1F;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:background 0.15s;" onmouseenter="this.style.background=\'#E5E5EA\'" onmouseleave="this.style.background=\'#F2F2F7\'" title="' + woEscape(t.titulo) + '">' +
-                                                            '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0052D4;margin-right:5px;vertical-align:middle;"></span>' +
-                                                            woEscape(t.titulo) + '</span>';
-                                                    });
-                                                    banner.innerHTML = html;
-                                                } else {
-                                                    banner.innerHTML = '<span style="font-size:0.75rem;color:#D1D1D6;font-style:italic;">Sin actividades pendientes.</span>';
-                                                }
+                                                banner.innerHTML = html;
+                                            } else {
+                                                banner.innerHTML = '';
                                             }
                                         });
                                 }

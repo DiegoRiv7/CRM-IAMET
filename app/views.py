@@ -3705,6 +3705,11 @@ def actividad_list_create(request):
             except Exception:
                 pass
 
+        # Filtro por oportunidad
+        oportunidad_id = request.GET.get('oportunidad_id', '').strip()
+        if oportunidad_id:
+            actividades = actividades.filter(oportunidad_id=oportunidad_id)
+
         actividades = actividades.select_related('creado_por', 'oportunidad').prefetch_related('participantes')
 
         events = []
