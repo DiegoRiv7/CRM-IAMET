@@ -205,6 +205,18 @@ def _detect_tipo_archivo(nombre):
     return mapping.get(ext, "otro"), ext
 
 
+def _is_po_file(nombre):
+    """Detecta si un nombre de archivo tiene evidencia de orden de compra."""
+    n = nombre.lower()
+    return bool(
+        re.search(r'\bpo[\s\-_]?\d{4,}', n) or
+        re.search(r'\boc[\s\-_]?\d{4,}', n) or
+        'purchase order' in n or
+        'orden de compra' in n or
+        re.search(r'\border\s+de\s+compra', n)
+    )
+
+
 def _get_or_create_default_user():
     user, _ = User.objects.get_or_create(
         username="bitrix_import",
@@ -251,6 +263,7 @@ class Command(BaseCommand):
             "carpetas_opp": 0, "carpetas_gral": 0,
             "archivos_opp": 0,
             "errores": 0,
+            "sin_vincular_con_po": [],  # proyectos sin opp pero con evidencia de PO
         }
 
         self._run(
@@ -263,7 +276,38 @@ class Command(BaseCommand):
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("=== Sincronización completada ==="))
         for k, v in self.stats.items():
-            self.stdout.write(f"  {k}: {v}")
+            if k == "sin_vincular_con_po":
+                self.stdout.write(f"  {k}: {len(v)}")
+            else:
+                self.stdout.write(f"  {k}: {v}")
+
+        # ── Reporte de proyectos sin vincular con evidencia de PO ──────────────
+        sin_po = self.stats["sin_vincular_con_po"]
+        if sin_po:
+            self.stdout.write("")
+            self.stdout.write(self.style.WARNING(
+                f"=== Proyectos SIN oportunidad vinculada CON evidencia de PO ({len(sin_po)}) ==="
+            ))
+            self.stdout.write("  (Estos pueden tener órdenes de compra importantes)")
+            self.stdout.write("")
+            for entry in sin_po:
+                partes = []
+                if entry["po_nombre"]:
+                    partes.append(f"PO en nombre: {entry['po_nombre']}")
+                if entry["archivos_po"]:
+                    nombres = ", ".join(entry["archivos_po"][:3])
+                    if len(entry["archivos_po"]) > 3:
+                        nombres += f" (+{len(entry['archivos_po']) - 3} más)"
+                    partes.append(f"Archivos: {nombres}")
+                detalle = " | ".join(partes)
+                self.stdout.write(
+                    f"  [ID {entry['id']}] {entry['nombre'][:65]}"
+                )
+                self.stdout.write(f"          → {detalle}")
+            self.stdout.write("")
+            self.stdout.write(
+                "  TIP: Revisa estos proyectos manualmente para vincularlos."
+            )
 
     def _reset_sync_data(self):
         """Limpia todos los datos importados por syncs anteriores."""
@@ -389,8 +433,20 @@ class Command(BaseCommand):
             self._sync_tasks(bitrix_group_id, proyecto, oportunidad, default_user, dry_run)
 
         # Archivos / Carpetas
+        po_archivos = [] if not oportunidad else None  # solo rastreamos para sin vincular
         if not skip_files:
-            self._sync_drive(bitrix_group_id, proyecto, oportunidad, default_user, dry_run)
+            self._sync_drive(bitrix_group_id, proyecto, oportunidad, default_user, dry_run, po_archivos)
+
+        # Registrar proyectos sin vincular que tienen evidencia de PO
+        if not oportunidad:
+            po_en_nombre = _extract_po_number(nombre)
+            if po_en_nombre or po_archivos:
+                self.stats["sin_vincular_con_po"].append({
+                    "id": bitrix_group_id,
+                    "nombre": nombre,
+                    "po_nombre": po_en_nombre,
+                    "archivos_po": po_archivos or [],
+                })
 
     # ── Tareas ────────────────────────────────────────────────────────────────────
 
@@ -488,7 +544,7 @@ class Command(BaseCommand):
 
     # ── Drive (carpetas + archivos) ───────────────────────────────────────────────
 
-    def _sync_drive(self, group_id, proyecto, oportunidad, default_user, dry_run):
+    def _sync_drive(self, group_id, proyecto, oportunidad, default_user, dry_run, po_archivos=None):
         try:
             storage_data = _call("disk.storage.getlist",
                                   {"filter": {"ENTITY_TYPE": "group", "ENTITY_ID": group_id}})
@@ -507,10 +563,10 @@ class Command(BaseCommand):
         self.stdout.write(f"    Drive: {len(children)} items en raíz")
         self._process_children(children, oportunidad, proyecto, default_user,
                                carpeta_opp_padre=None, carpeta_proj_padre=None,
-                               dry_run=dry_run, depth=0)
+                               dry_run=dry_run, depth=0, po_archivos=po_archivos)
 
     def _process_children(self, children, oportunidad, proyecto, default_user,
-                          carpeta_opp_padre, carpeta_proj_padre, dry_run, depth):
+                          carpeta_opp_padre, carpeta_proj_padre, dry_run, depth, po_archivos=None):
         if depth > 6:
             return
 
@@ -522,13 +578,14 @@ class Command(BaseCommand):
 
             if item_type == "folder":
                 self._process_folder(item, nombre, oportunidad, proyecto, default_user,
-                                     carpeta_opp_padre, carpeta_proj_padre, dry_run, depth)
+                                     carpeta_opp_padre, carpeta_proj_padre, dry_run, depth,
+                                     po_archivos=po_archivos)
             else:
                 self._process_file(item, nombre, oportunidad, default_user,
-                                   carpeta_opp_padre, dry_run)
+                                   carpeta_opp_padre, dry_run, po_archivos=po_archivos)
 
     def _process_folder(self, item, nombre, oportunidad, proyecto, default_user,
-                        carpeta_opp_padre, carpeta_proj_padre, dry_run, depth):
+                        carpeta_opp_padre, carpeta_proj_padre, dry_run, depth, po_archivos=None):
         nueva_opp = None
         nueva_proj = None
 
@@ -562,12 +619,16 @@ class Command(BaseCommand):
                 self._process_children(sub_children, oportunidad, proyecto, default_user,
                                        carpeta_opp_padre=nueva_opp,
                                        carpeta_proj_padre=nueva_proj,
-                                       dry_run=dry_run, depth=depth + 1)
+                                       dry_run=dry_run, depth=depth + 1,
+                                       po_archivos=po_archivos)
         except Exception:
             pass
 
-    def _process_file(self, item, nombre, oportunidad, default_user, carpeta_opp_padre, dry_run):
+    def _process_file(self, item, nombre, oportunidad, default_user, carpeta_opp_padre, dry_run, po_archivos=None):
         if not oportunidad:
+            # Sin oportunidad: solo rastrear si el archivo tiene evidencia de PO
+            if po_archivos is not None and _is_po_file(nombre):
+                po_archivos.append(nombre)
             return
 
         bitrix_file_id = int(item.get("ID") or item.get("id") or 0)
