@@ -908,7 +908,15 @@
                         .then(function (r) { return r.json(); })
                         .then(function (res) {
                             if (res.success && res.tareas && res.tareas.length > 0) {
-                                var pendientes = res.tareas.filter(function (t) { return t.estado !== 'completada'; });
+                                // Solo mostrar en el banner las tareas con fecha_límite próxima (≤7 días)
+                                var hoy = new Date();
+                                var limite7 = new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000);
+                                var pendientes = res.tareas.filter(function (t) {
+                                    if (t.estado === 'completada') return false;
+                                    if (!t.fecha_limite) return false;
+                                    var fl = new Date(t.fecha_limite);
+                                    return fl <= limite7;
+                                });
                                 if (pendientes.length > 0) {
                                     var html = '';
                                     pendientes.forEach(function (t) {
@@ -1581,7 +1589,13 @@
                                         .then(function (r) { return r.json(); })
                                         .then(function (res2) {
                                             if (res2.success && res2.tareas) {
-                                                var pendientes = res2.tareas.filter(function (t) { return t.estado !== 'completada'; });
+                                                var hoy2 = new Date();
+                                                var limite7b = new Date(hoy2.getTime() + 7 * 24 * 60 * 60 * 1000);
+                                                var pendientes = res2.tareas.filter(function (t) {
+                                                    if (t.estado === 'completada') return false;
+                                                    if (!t.fecha_limite) return false;
+                                                    return new Date(t.fecha_limite) <= limite7b;
+                                                });
                                                 if (pendientes.length > 0) {
                                                     var html = '';
                                                     pendientes.forEach(function (t) {
