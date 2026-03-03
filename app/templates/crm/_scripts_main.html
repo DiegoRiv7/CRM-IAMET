@@ -413,6 +413,12 @@
                         renderDetalle(data);
                         detalleLoading.style.display = 'none';
                         detalleContent.style.display = 'flex';
+                        // Para proyectos Bitrix24: abrir el Drive automáticamente
+                        if (data.tipo_negociacion === 'bitrix_proyecto') {
+                            setTimeout(function () {
+                                if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
+                            }, 150);
+                        }
                     })
                     .catch(function () {
                         showToast('Error cargando detalle', 'error');
@@ -448,17 +454,39 @@
                 // Type badge
                 var badge = document.getElementById('woTypeBadge');
                 badge.className = 'wo-type-badge ' + tipo;
-                badge.style.cursor = 'pointer';
-                var badgeIcon = tipo === 'proyecto'
-                    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
-                    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>';
-                badge.innerHTML = badgeIcon + '<span>' + (tipo === 'proyecto' ? 'VENTA PROYECTO' : 'VENTA RUNRATE') + '</span>';
+                var badgeIcon, badgeLabel;
+                if (tipo === 'bitrix_proyecto') {
+                    badgeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+                    badgeLabel = 'PROYECTO BITRIX24';
+                    badge.style.cursor = 'default';
+                    badge.style.background = '#5856D6';
+                    badge.style.borderColor = '#5856D6';
+                    badge.style.color = '#fff';
+                } else {
+                    badge.style.cursor = 'pointer';
+                    badge.style.background = '';
+                    badge.style.borderColor = '';
+                    badge.style.color = '';
+                    badgeIcon = tipo === 'proyecto'
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>';
+                    badgeLabel = tipo === 'proyecto' ? 'VENTA PROYECTO' : 'VENTA RUNRATE';
+                }
+                badge.innerHTML = badgeIcon + '<span>' + badgeLabel + '</span>';
 
                 // Limpiar event listeners previos
                 var newBadge = badge.cloneNode(true);
                 badge.parentNode.replaceChild(newBadge, badge);
                 badge = newBadge;
 
+                // bitrix_proyecto: badge no cambia de tipo
+                if (tipo === 'bitrix_proyecto') {
+                    badge.style.cursor = 'default';
+                    badge.style.background = '#5856D6';
+                    badge.style.borderColor = '#5856D6';
+                    badge.style.color = '#fff';
+                    // skip click handler
+                } else
                 badge.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -507,7 +535,7 @@
                             }
                         });
                     };
-                });
+                }); // end badge click
 
                 // Title (editable)
                 var titleEl = document.getElementById('woTitle');
@@ -540,6 +568,13 @@
                 // Pipeline
                 var stagesContainer = document.getElementById('woPipelineStages');
                 stagesContainer.innerHTML = '';
+                var pipelineWrap = document.getElementById('woPipelineScroll') && document.getElementById('woPipelineScroll').closest('.wo-pipeline');
+                if (tipo === 'bitrix_proyecto') {
+                    // Mostrar una sola etiqueta en lugar del pipeline completo
+                    if (pipelineWrap) pipelineWrap.style.display = 'none';
+                } else {
+                    if (pipelineWrap) pipelineWrap.style.display = '';
+                }
                 var etapas = tipo === 'proyecto' ? ETAPAS_PROYECTO : ETAPAS_RUNRATE;
                 var currentEtapa = d.etapa_corta || etapas[0];
                 var currentIdx = -1;
@@ -1169,30 +1204,48 @@
             }
 
             function buildCrmRow(r) {
+                var esBitrix = r.tipo_negociacion === 'bitrix_proyecto';
                 var prodCells = '';
-                for (var i = 0; i < PRODUCT_COLS.length; i++) {
-                    var match = productMatch(r.producto, PRODUCT_COLS[i]);
-                    prodCells += '<td class="px-2 py-4 text-right">' + (match ? '<span class="text-blue-600 font-bold">$' + fmtShort(r.monto) + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
+                if (esBitrix) {
+                    // Pipeline Bitrix24: todas las celdas de producto muestran —, sin importes
+                    var totalCols = PRODUCT_COLS.length + 1; // +1 por "Otros"
+                    for (var i = 0; i < totalCols; i++) {
+                        prodCells += '<td class="px-2 py-4 text-right"><span class="money-zero">—</span></td>';
+                    }
+                } else {
+                    for (var i = 0; i < PRODUCT_COLS.length; i++) {
+                        var match = productMatch(r.producto, PRODUCT_COLS[i]);
+                        prodCells += '<td class="px-2 py-4 text-right">' + (match ? '<span class="text-blue-600 font-bold">$' + fmtShort(r.monto) + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
+                    }
+                    // Otros
+                    prodCells += '<td class="px-2 py-4 text-right">' + (isOtherProduct(r.producto) && r.producto ? '<span class="text-blue-600 font-bold">$' + fmtShort(r.monto) + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
                 }
-                // Otros
-                prodCells += '<td class="px-2 py-4 text-right">' + (isOtherProduct(r.producto) && r.producto ? '<span class="text-blue-600 font-bold">$' + fmtShort(r.monto) + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
 
                 var nameStyle = '';
                 var vencidaIcon = '';
                 var rowExtraClass = '';
                 if (r.tiene_actividad_vencida) {
                     nameStyle = ' style="color:#EF4444 !important;"';
-                    vencidaIcon = '<span title="Actividad vencida" style="color:#EF4444;font-size:0.7rem;margin-left:4px;">⚠</span>';
+                    vencidaIcon = '<span title="Actividad vencida" style="color:#EF4444;font-size:0.7rem;margin-left:4px;">&#9888;</span>';
                     rowExtraClass = ' crm-row-vencida';
                 }
 
+                // Badge para proyectos Bitrix24
+                var bitrixBadge = esBitrix
+                    ? '<span style="display:inline-block;background:#5856D6;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;letter-spacing:0.04em;">B24</span>'
+                    : '';
+
+                var totalCell = esBitrix
+                    ? '<td class="px-2 py-4 text-right font-black border-l border-gray-100 bg-gray-50/20"><span class="money-zero">$0</span></td>'
+                    : '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.monto + '</td>';
+
                 return '<tr class="crm-data-row' + rowExtraClass + '" data-opp-id="' + r.id + '">' +
-                    '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '"' + nameStyle + '>' + r.oportunidad + vencidaIcon + '</span>' +
+                    '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '"' + nameStyle + '>' + r.oportunidad + vencidaIcon + '</span>' + bitrixBadge +
                     '<div class="text-[9px] text-gray-400 font-medium uppercase mt-1">' + r.cliente + '</div></td>' +
                     '<td class="px-2 py-4 text-gray-600">' + r.contacto + '</td>' +
                     '<td class="px-2 py-4 text-gray-400 text-xs italic">' + r.area + '</td>' +
                     prodCells +
-                    '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.monto + '</td>' +
+                    totalCell +
                     '</tr>';
             }
 

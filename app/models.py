@@ -276,6 +276,7 @@ class TodoItem(models.Model):
     TIPO_NEGOCIACION_CHOICES = [
         ('runrate', 'Runrate'),
         ('proyecto', 'Proyecto'),
+        ('bitrix_proyecto', 'Proyecto Bitrix24'),
     ]
 
     # 'usuario' es el campo que vincula la oportunidad con el usuario que la creó/posee
@@ -1673,6 +1674,10 @@ class Proyecto(models.Model):
         blank=True,
         unique=True,
         verbose_name="ID del Grupo en Bitrix24"
+    )
+    tiene_archivos_po = models.BooleanField(
+        default=False,
+        verbose_name="Tiene archivos PO en Drive"
     )
 
     class Meta:

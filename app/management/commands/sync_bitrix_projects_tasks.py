@@ -457,6 +457,9 @@ class Command(BaseCommand):
         if not oportunidad:
             po_en_nombre = _extract_po_number(nombre)
             if po_en_nombre or po_archivos:
+                # Marcar el proyecto con tiene_archivos_po si tiene archivos reales en Drive
+                if proyecto and po_archivos and not dry_run:
+                    Proyecto.objects.filter(pk=proyecto.pk).update(tiene_archivos_po=True)
                 self.stats["sin_vincular_con_po"].append({
                     "id": bitrix_group_id,
                     "nombre": nombre,

@@ -648,6 +648,7 @@ def api_crm_table_data(request):
                     tiene_pendiente = True
                     if t.fecha_limite and t.fecha_limite < _now:
                         tiene_vencida = True
+            es_bitrix = item.tipo_negociacion == 'bitrix_proyecto'
             rows.append({
                 'id': item.id,
                 'oportunidad': (item.oportunidad or '')[:35],
@@ -656,10 +657,11 @@ def api_crm_table_data(request):
                 'contacto': (item.contacto.nombre[:18] if item.contacto else '-'),
                 'area': item.area or '-',
                 'producto': item.producto or '',
-                'monto': format_money(item.monto),
+                'monto': '0' if es_bitrix else format_money(item.monto),
                 'fecha_iso': item.fecha_creacion.strftime('%Y-%m-%d'),
                 'tiene_actividad_vencida': tiene_vencida,
                 'sin_actividad_pendiente': not tiene_pendiente,
+                'tipo_negociacion': item.tipo_negociacion or 'runrate',
             })
         # Ordenar: primero las que tienen actividad vencida
         rows.sort(key=lambda x: (not x['tiene_actividad_vencida'], x.get('fecha_iso', '')), reverse=False)
