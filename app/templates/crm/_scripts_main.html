@@ -1150,7 +1150,8 @@
 
             function fmtShort(val) {
                 // Format number without decimals, with comma separators: 50000 -> "50,000"
-                var n = parseFloat(val);
+                // Strip commas first: API returns "1,086" (Python format) which parseFloat reads as 1
+                var n = parseFloat(String(val).replace(/,/g, ''));
                 if (isNaN(n)) return val;
                 return Math.round(n).toLocaleString('en-US');
             }
@@ -1652,12 +1653,25 @@
                 // ── METAS ──
                 function loadMetas() {
                     fetch('/app/api/admin/usuarios/').then(function (r) { return r.json(); }).then(function (data) {
+                        var fmt = function (v) { return parseFloat(String(v || 0).replace(/,/g, '')).toLocaleString('en-US', { maximumFractionDigits: 0 }); };
                         var html = '<div class="adm-section-title">Metas Mensuales por Vendedor</div>';
-                        html += '<table class="adm-table"><thead><tr><th>Vendedor</th><th>Meta Mensual (USD)</th></tr></thead><tbody>';
+                        html += '<table class="adm-table"><thead><tr>';
+                        html += '<th>Vendedor</th>';
+                        html += '<th>Oportunidades (MXN)</th>';
+                        html += '<th>Cotizado (MXN)</th>';
+                        html += '<th>Cobrado (MXN)</th>';
+                        html += '<th>Facturado (MXN)</th>';
+                        html += '</tr></thead><tbody>';
                         data.usuarios.forEach(function (u) {
                             if (u.is_supervisor) return;
-                            html += '<tr><td><strong>' + (u.first_name + ' ' + u.last_name).trim() + '</strong><br><span style="color:#8E8E93;font-size:0.72rem;">@' + u.username + '</span></td>';
-                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" value="' + parseFloat(u.meta_mensual).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '" style="max-width:180px;text-align:right;font-weight:600;"></td></tr>';
+                            var inpStyle = 'max-width:130px;text-align:right;font-weight:600;';
+                            html += '<tr>';
+                            html += '<td><strong>' + (u.first_name + ' ' + u.last_name).trim() + '</strong><br><span style="color:#8E8E93;font-size:0.72rem;">@' + u.username + '</span></td>';
+                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="oportunidades" value="' + fmt(u.meta_oportunidades) + '" style="' + inpStyle + '"></td>';
+                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="cotizado"     value="' + fmt(u.meta_cotizado)      + '" style="' + inpStyle + '"></td>';
+                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="cobrado"      value="' + fmt(u.meta_cobrado)       + '" style="' + inpStyle + '"></td>';
+                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="mensual"      value="' + fmt(u.meta_mensual)       + '" style="' + inpStyle + '"></td>';
+                            html += '</tr>';
                         });
                         html += '</tbody></table>';
                         html += '<div style="margin-top:16px;"><button class="adm-btn adm-btn-primary" id="admSaveMetas">Guardar Metas</button></div>';
@@ -1667,8 +1681,10 @@
                             var metas = {};
                             document.querySelectorAll('.adm-meta-input').forEach(function (inp) {
                                 var uid = inp.getAttribute('data-uid');
+                                var field = inp.getAttribute('data-field');
                                 var val = inp.value.replace(/,/g, '').trim();
-                                if (val) metas[uid] = val;
+                                if (!metas[uid]) metas[uid] = {};
+                                if (val) metas[uid][field] = val;
                             });
                             fetch('/app/api/admin/metas/', {
                                 method: 'PUT',
