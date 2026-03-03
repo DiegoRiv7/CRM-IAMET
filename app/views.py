@@ -1257,11 +1257,24 @@ def api_admin_usuario_detalle(request, user_id):
             usuario.email = data['email']
         if 'is_active' in data:
             usuario.is_active = data['is_active']
+        if data.get('password', '').strip():
+            usuario.set_password(data['password'].strip())
         usuario.save()
 
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_jornada_ayer(request):
+    """Retorna la eficiencia del día anterior del usuario."""
+    from datetime import timedelta
+    ayer = timezone.localdate() - timedelta(days=1)
+    jornada = AsistenciaJornada.objects.filter(usuario=request.user, fecha=ayer).first()
+    if jornada:
+        return JsonResponse({'eficiencia': float(jornada.eficiencia_dia), 'fecha': str(ayer)})
+    return JsonResponse({'eficiencia': None, 'fecha': str(ayer)})
 
 
 @login_required

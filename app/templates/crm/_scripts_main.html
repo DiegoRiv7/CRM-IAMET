@@ -1486,17 +1486,29 @@
                         html += '<div class="adm-form-row"><input class="adm-input" id="nuEmail" placeholder="Email" type="email"></div>';
                         html += '<div style="display:flex;gap:8px;margin-top:8px;"><button class="adm-btn adm-btn-primary" id="admSaveUser">Crear</button><button class="adm-btn adm-btn-secondary" id="admCancelUser">Cancelar</button></div>';
                         html += '</div>';
+                        // Inline edit panel (hidden by default)
+                        html += '<div id="admEditUserPanel" style="display:none;background:#F0F4FF;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #C7D4F0;">';
+                        html += '<div style="font-size:0.8rem;font-weight:700;color:#1d1d1f;margin-bottom:12px;">Editar usuario: <span id="admEditUsername" style="color:#4A6FA5;"></span></div>';
+                        html += '<div class="adm-form-row"><input class="adm-input" id="euFirstName" placeholder="Nombre"><input class="adm-input" id="euLastName" placeholder="Apellido"></div>';
+                        html += '<div class="adm-form-row"><input class="adm-input" id="euEmail" placeholder="Email" type="email"><input class="adm-input" id="euPassword" placeholder="Nueva contraseña (dejar vacío para no cambiar)" type="password"></div>';
+                        html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">';
+                        html += '<button class="adm-btn adm-btn-primary" id="admSaveEditUser">Guardar</button>';
+                        html += '<button class="adm-btn adm-btn-secondary" id="admCancelEditUser">Cancelar</button>';
+                        html += '<label style="font-size:0.75rem;color:#86868b;margin-left:8px;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="euIsActive"> Activo</label>';
+                        html += '</div></div>';
                         html += '<table class="adm-table"><thead><tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th></tr></thead><tbody>';
                         data.usuarios.forEach(function (u) {
                             var badge = u.is_supervisor ? '<span class="adm-badge adm-badge-blue">Admin</span>' : '<span class="adm-badge adm-badge-gray">Vendedor</span>';
                             var estado = u.is_active ? '<span class="adm-badge adm-badge-green">Activo</span>' : '<span class="adm-badge adm-badge-gray">Inactivo</span>';
-                            html += '<tr><td><strong>' + u.username + '</strong></td><td>' + u.first_name + ' ' + u.last_name + '</td><td>' + u.email + '</td><td>' + badge + '</td><td>' + estado + '</td></tr>';
+                            html += '<tr style="cursor:pointer;" class="adm-user-row" data-uid="' + u.id + '" data-username="' + u.username + '" data-fn="' + u.first_name + '" data-ln="' + u.last_name + '" data-email="' + (u.email||'') + '" data-active="' + (u.is_active?'1':'0') + '">';
+                            html += '<td><strong>' + u.username + '</strong></td><td>' + u.first_name + ' ' + u.last_name + '</td><td>' + u.email + '</td><td>' + badge + '</td><td>' + estado + '</td></tr>';
                         });
                         html += '</tbody></table>';
                         adminContent.innerHTML = html;
 
                         document.getElementById('admNewUser').addEventListener('click', function () {
                             document.getElementById('admNewUserForm').style.display = 'block';
+                            document.getElementById('admEditUserPanel').style.display = 'none';
                         });
                         document.getElementById('admCancelUser').addEventListener('click', function () {
                             document.getElementById('admNewUserForm').style.display = 'none';
@@ -1517,6 +1529,42 @@
                                 if (res.success) loadUsuarios();
                                 else alert(res.error || 'Error');
                             });
+                        });
+
+                        // Click on row → open edit panel
+                        document.querySelectorAll('.adm-user-row').forEach(function (row) {
+                            row.addEventListener('click', function () {
+                                var uid = row.dataset.uid;
+                                document.getElementById('admEditUserPanel').style.display = 'block';
+                                document.getElementById('admNewUserForm').style.display = 'none';
+                                document.getElementById('admEditUsername').textContent = row.dataset.username;
+                                document.getElementById('euFirstName').value = row.dataset.fn;
+                                document.getElementById('euLastName').value = row.dataset.ln;
+                                document.getElementById('euEmail').value = row.dataset.email;
+                                document.getElementById('euPassword').value = '';
+                                document.getElementById('euIsActive').checked = row.dataset.active === '1';
+                                document.getElementById('admSaveEditUser').onclick = function () {
+                                    var body = {
+                                        first_name: document.getElementById('euFirstName').value,
+                                        last_name: document.getElementById('euLastName').value,
+                                        email: document.getElementById('euEmail').value,
+                                        is_active: document.getElementById('euIsActive').checked,
+                                        password: document.getElementById('euPassword').value,
+                                    };
+                                    fetch('/app/api/admin/usuarios/' + uid + '/', {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                                        body: JSON.stringify(body)
+                                    }).then(function (r) { return r.json(); }).then(function (res) {
+                                        if (res.success) loadUsuarios();
+                                        else alert(res.error || 'Error al guardar');
+                                    });
+                                };
+                            });
+                        });
+
+                        document.getElementById('admCancelEditUser').addEventListener('click', function () {
+                            document.getElementById('admEditUserPanel').style.display = 'none';
                         });
                     });
                 }
