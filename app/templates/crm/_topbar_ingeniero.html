@@ -9,12 +9,9 @@
                 <div class="crm-avatar crm-avatar-lg">
                     {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
                 </div>
-                <div style="font-size:0.78rem;color:#4A6FA5;font-weight:700;white-space:nowrap;line-height:1.4;">
-                    {{ usuario.get_full_name|default:usuario.username }}<br>
-                    <span style="font-size:0.68rem;color:#5856D6;font-weight:700;">INGENIERO</span><br>
-                    <span style="font-size:0.65rem;color:#8E8E93;font-weight:500;">
-                        EFECT. AYER: <span id="islandEfectAyer" style="color:#007AFF;font-weight:700;">—</span>
-                    </span>
+                <div style="font-size:0.70rem;color:#4A6FA5;font-weight:700;white-space:nowrap;line-height:1.4;">
+                    {{ usuario.get_full_name|default:usuario.username }}&nbsp;<span id="islandEfectAyer" style="display:none;font-size:0.62rem;font-weight:700;"></span><br>
+                    <span style="font-size:0.60rem;color:#5856D6;font-weight:700;">INGENIERO</span>
                 </div>
             </div>
 
@@ -22,15 +19,16 @@
 
             <!-- Navegación ingeniero -->
             <nav class="island-nav">
-                <button type="button" class="island-nav-btn active" id="btnActividades"
+                <button type="button" class="island-nav-btn active" id="btnTablero"
                     onclick="ingenieroMostrarActividades()">
-                    ACTIVIDADES
+                    TABLERO
                 </button>
-                <button type="button" class="island-nav-btn" id="btnCRM">CRM</button>
                 <button type="button" class="island-nav-btn" id="btnTareas">TAREAS</button>
-                <button type="button" class="island-nav-btn" id="btnCotizarRapido" onclick="cotizarRapidoAbrir()">COTIZAR</button>
                 <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">MURO</button>
                 <button type="button" class="island-nav-btn" id="btnCalendario" onclick="calendarioAbrir()">CALENDARIO</button>
+                <button type="button" class="island-nav-btn" id="btnCorreo" onclick="mailAbrir()">
+                    &#9993; CORREO
+                </button>
                 <button type="button" class="island-nav-btn" id="btnNotificaciones"
                     onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';">
                     NOTIF.
@@ -54,9 +52,7 @@
                 var pct = Math.round(d.eficiencia);
                 el.textContent = pct + '%';
                 el.style.color = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
-            } else {
-                el.textContent = 'Sin datos';
-                el.style.color = '#8E8E93';
+                el.style.display = 'inline';
             }
         })
         .catch(function () {});

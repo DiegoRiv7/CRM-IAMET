@@ -1,46 +1,35 @@
 <script>
 'use strict';
 
-// ═══ INGENIERO — Tablero de Actividades ═══
+// ═══ INGENIERO — Tablero Calendario ═══
 
 var _boardItems = [];
-var _dragKey = null;
-var _dragOverKey = null;
+var _currentWeekStart = null;
 
 // ── Inicialización ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-    // Mostrar tablero por defecto
+    _currentWeekStart = getWeekStart(new Date());
     ingenieroMostrarActividades();
 
-    // Conectar botón CRM del topbar ingeniero
-    var btnCRM = document.getElementById('btnCRM');
-    if (btnCRM) btnCRM.addEventListener('click', function () {
-        setIngenieroNav('crm');
-        document.getElementById('actividadesBoard').style.display = 'none';
-        var content = document.getElementById('crmContentSection');
-        if (content) content.style.display = '';
-    });
-
+    // Tareas: solo mostrar tareasSection, NO crmContentSection
     var btnTareas = document.getElementById('btnTareas');
     if (btnTareas) btnTareas.addEventListener('click', function () {
-        // Reusar el panel de tareas existente
         setIngenieroNav('tareas');
-        document.getElementById('actividadesBoard').style.display = 'none';
-        var content = document.getElementById('crmContentSection');
-        if (content) content.style.display = '';
-        // Simular clic en tab tareas si existe
-        var tabTareas = document.getElementById('tabTareas');
-        if (tabTareas) tabTareas.click();
+        var board = document.getElementById('actividadesBoard');
+        if (board) board.style.display = 'none';
+        var crmContent = document.getElementById('crmContentSection');
+        if (crmContent) crmContent.style.display = 'none';
+        var tareasSection = document.getElementById('tareasSection');
+        if (tareasSection) tareasSection.classList.add('active');
     });
 
     // Ocultar tabs que el ingeniero no debe ver
-    var tabsOcultar = ['tabCotizado', 'tabCobrado', 'tabFacturado'];
-    tabsOcultar.forEach(function (id) {
+    ['tabCotizado', 'tabCobrado', 'tabFacturado'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
 
-    // Ocultar sección de meta/progreso en topbar
+    // Ocultar meta/progreso/filtros en topbar
     ['facturadoAmount', 'progressPct', 'islandFiltersSection', 'islandSepFilters'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -51,207 +40,225 @@ function setIngenieroNav(active) {
     document.querySelectorAll('.island-nav .island-nav-btn').forEach(function (b) {
         b.classList.remove('active');
     });
-    var map = {
-        'actividades': 'btnActividades',
-        'crm': 'btnCRM',
-        'tareas': 'btnTareas',
-    };
+    var map = { 'tablero': 'btnTablero', 'tareas': 'btnTareas' };
     var el = document.getElementById(map[active]);
     if (el) el.classList.add('active');
 }
 
 function ingenieroMostrarActividades() {
-    setIngenieroNav('actividades');
+    setIngenieroNav('tablero');
     var board = document.getElementById('actividadesBoard');
     var content = document.getElementById('crmContentSection');
-    if (board) board.style.display = 'block';
+    var tareasSection = document.getElementById('tareasSection');
+    if (board) { board.style.display = 'flex'; board.style.flexDirection = 'column'; }
     if (content) content.style.display = 'none';
+    if (tareasSection) tareasSection.classList.remove('active');
     ingenieroCargarActividades();
 }
+window.ingenieroMostrarActividades = ingenieroMostrarActividades;
+
+// ── Week helpers ─────────────────────────────────────────────────
+function getWeekStart(date) {
+    var d = new Date(date);
+    var day = d.getDay();
+    var diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function addDays(d, n) {
+    var r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+}
+
+function toYMD(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+}
+
+function fmtShortDate(d) {
+    var months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return d.getDate() + ' ' + months[d.getMonth()];
+}
+
+function boardPrevWeek() {
+    _currentWeekStart = addDays(_currentWeekStart, -7);
+    renderBoard();
+}
+window.boardPrevWeek = boardPrevWeek;
+
+function boardNextWeek() {
+    _currentWeekStart = addDays(_currentWeekStart, 7);
+    renderBoard();
+}
+window.boardNextWeek = boardNextWeek;
+
+function boardGoToday() {
+    _currentWeekStart = getWeekStart(new Date());
+    renderBoard();
+}
+window.boardGoToday = boardGoToday;
 
 // ── Cargar actividades ──────────────────────────────────────────
 function ingenieroCargarActividades() {
-    document.getElementById('boardLoading').style.display = 'block';
-    document.getElementById('boardEmpty').style.display = 'none';
-    document.getElementById('boardColumns').style.display = 'none';
+    var loading = document.getElementById('boardLoading');
+    var empty = document.getElementById('boardEmpty');
+    var cols = document.getElementById('boardColumns');
+    if (loading) loading.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+    if (cols) cols.style.display = 'none';
 
     fetch('/app/api/ingeniero/actividades/')
         .then(function (r) { return r.json(); })
         .then(function (data) {
             _boardItems = data.items || [];
-            document.getElementById('boardLoading').style.display = 'none';
+            if (loading) loading.style.display = 'none';
             if (_boardItems.length === 0) {
-                document.getElementById('boardEmpty').style.display = 'block';
+                if (empty) empty.style.display = 'block';
             } else {
                 renderBoard();
             }
         })
         .catch(function () {
-            document.getElementById('boardLoading').style.display = 'none';
+            if (loading) loading.style.display = 'none';
         });
 }
+window.ingenieroCargarActividades = ingenieroCargarActividades;
 
-// ── Clasificar por fecha ────────────────────────────────────────
-function clasificarFecha(fechaStr, fechaPlaneada) {
-    var f = fechaPlaneada || fechaStr;
-    if (!f) return 'sinfecha';
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-    var d = new Date(f + 'T00:00:00');
-    var diff = Math.floor((d - today) / 86400000);
-    if (diff < 0) return 'vencida';
-    if (diff === 0) return 'hoy';
-    if (diff <= 3) return 'proximas';
-    return 'futuro';
-}
-
-function grupoLabel(grupo) {
-    var labels = {
-        'vencida': '⚠ Vencidas',
-        'hoy': '● Hoy',
-        'proximas': '◆ Próximos 3 días',
-        'futuro': '○ Futuras',
-        'sinfecha': '— Sin fecha',
-    };
-    return labels[grupo] || grupo;
-}
-
-// ── Render del tablero ──────────────────────────────────────────
+// ── Render tablero como calendario semanal ──────────────────────
 function renderBoard() {
     var cols = document.getElementById('boardColumns');
-    cols.innerHTML = '';
-    cols.style.display = 'grid';
+    var empty = document.getElementById('boardEmpty');
+    if (!cols) return;
+    if (!_currentWeekStart) _currentWeekStart = getWeekStart(new Date());
 
-    var grupos = { vencida: [], hoy: [], proximas: [], futuro: [], sinfecha: [] };
+    var DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+    var MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var todayStr = toYMD(today);
+
+    var weekDays = [];
+    for (var i = 0; i < 5; i++) weekDays.push(addDays(_currentWeekStart, i));
+
+    // Update week label
+    var weekLabel = document.getElementById('boardWeekLabel');
+    if (weekLabel) {
+        weekLabel.textContent = fmtShortDate(_currentWeekStart) + ' — ' + fmtShortDate(addDays(_currentWeekStart, 4));
+    }
+
+    // Group tasks by day
+    var byDay = {};
+    weekDays.forEach(function (d) { byDay[toYMD(d)] = []; });
+    var otrasItems = [];
+
     _boardItems.forEach(function (item) {
-        var g = clasificarFecha(item.fecha_limite, item.fecha_planeada);
-        grupos[g].push(item);
-    });
-
-    var orden = ['vencida', 'hoy', 'proximas', 'futuro', 'sinfecha'];
-    orden.forEach(function (grupo) {
-        var items = grupos[grupo];
-        if (!items.length) return;
-        var col = document.createElement('div');
-        col.className = 'board-col board-col-' + grupo;
-        col.dataset.grupo = grupo;
-
-        var header = document.createElement('div');
-        header.className = 'board-col-header';
-        header.innerHTML = '<span>' + grupoLabel(grupo) + '</span><span style="font-size:0.65rem;opacity:0.7;">' + items.length + ' tarea' + (items.length !== 1 ? 's' : '') + '</span>';
-        col.appendChild(header);
-
-        var body = document.createElement('div');
-        body.className = 'board-col-body';
-        body.addEventListener('dragover', function (e) { e.preventDefault(); });
-        body.addEventListener('drop', function (e) { e.preventDefault(); handleDrop(grupo); });
-        items.forEach(function (item) { body.appendChild(makeCard(item, grupo)); });
-        col.appendChild(body);
-        cols.appendChild(col);
-    });
-}
-
-function makeCard(item, grupo) {
-    var card = document.createElement('div');
-    card.className = 'board-card board-card-prio-' + (item.prioridad === 'alta' ? 'alta' : 'normal');
-    card.dataset.key = item.key;
-    card.draggable = true;
-
-    // Drag events
-    card.addEventListener('dragstart', function () {
-        _dragKey = item.key;
-        card.classList.add('dragging');
-    });
-    card.addEventListener('dragend', function () {
-        card.classList.remove('dragging');
-        _dragKey = null;
-    });
-    card.addEventListener('dragover', function (e) {
-        e.preventDefault();
-        card.classList.add('drag-over');
-        _dragOverKey = item.key;
-    });
-    card.addEventListener('dragleave', function () {
-        card.classList.remove('drag-over');
-    });
-    card.addEventListener('drop', function (e) {
-        e.preventDefault();
-        card.classList.remove('drag-over');
-        if (_dragKey && _dragKey !== item.key) {
-            reorderItems(_dragKey, item.key);
+        var f = (item.fecha_planeada || item.fecha_limite || '').substring(0, 10);
+        if (!f) { otrasItems.push(item); return; }
+        if (byDay.hasOwnProperty(f)) {
+            byDay[f].push(item);
+        } else {
+            otrasItems.push(item);
         }
     });
 
-    // Fecha badge
-    var dateCls = grupo === 'vencida' ? 'vencida' : grupo === 'hoy' ? 'hoy' : grupo === 'proximas' ? 'pronto' : '';
-    var fechaDisplay = item.fecha_planeada
-        ? formatDate(item.fecha_planeada) + ' (planeada)'
-        : (item.fecha_limite_display || 'Sin fecha');
-
-    var clienteStr = item.cliente ? '<span>📍 ' + item.cliente + '</span>' : '';
-    var oppStr = item.oportunidad ? '<span>· ' + truncar(item.oportunidad, 30) + '</span>' : '';
-
-    card.innerHTML =
-        '<div class="board-card-title" onclick="ingenieroAbrirOportunidad(' + (item.oportunidad_id || 0) + ')">' +
-            truncar(item.titulo, 60) +
-        '</div>' +
-        '<div class="board-card-meta">' +
-            clienteStr + oppStr +
-            '<span class="board-card-date ' + dateCls + '">Vence: ' + (item.fecha_limite_display || '—') + '</span>' +
-        '</div>' +
-        '<div class="board-card-actions">' +
-            '<button class="board-btn board-btn-complete" onclick="ingenieroCompletarTarea(\'' + item.key + '\',' + item.id + ',\'' + item.tipo + '\')">✓ Completar</button>' +
-            '<button class="board-btn" onclick="ingenieroReprogramar(\'' + item.key + '\')" title="Reprogramar en mi tablero">📅</button>' +
-        '</div>';
-    return card;
-}
-
-// ── Reordenar drag & drop ───────────────────────────────────────
-function reorderItems(fromKey, toKey) {
-    var fromIdx = _boardItems.findIndex(function (i) { return i.key === fromKey; });
-    var toIdx = _boardItems.findIndex(function (i) { return i.key === toKey; });
-    if (fromIdx === -1 || toIdx === -1) return;
-    var item = _boardItems.splice(fromIdx, 1)[0];
-    _boardItems.splice(toIdx, 0, item);
-    renderBoard();
-    saveOrder();
-}
-
-function handleDrop(grupo) {
-    if (!_dragKey) return;
-    // Mover al final del grupo (drop en columna vacía)
-    var fromIdx = _boardItems.findIndex(function (i) { return i.key === _dragKey; });
-    if (fromIdx === -1) return;
-    var item = _boardItems.splice(fromIdx, 1)[0];
-    // Encontrar el último item del grupo
-    var insertAt = _boardItems.length;
-    _boardItems.splice(insertAt, 0, item);
-    renderBoard();
-    saveOrder();
-}
-
-function saveOrder() {
-    var payload = _boardItems.map(function (item, i) {
-        return { key: item.key, orden: i, fecha_planeada: item.fecha_planeada || null };
+    // Build calendar HTML
+    var h = '<div class="cal-grid">';
+    weekDays.forEach(function (day, idx) {
+        var dStr = toYMD(day);
+        var isToday = dStr === todayStr;
+        var tasks = byDay[dStr] || [];
+        h += '<div class="cal-col' + (isToday ? ' cal-col-today' : '') + '">';
+        h += '<div class="cal-col-header">';
+        h += '<div class="cal-day-name">' + DAY_NAMES[idx] + '</div>';
+        h += '<div class="cal-day-num">' + day.getDate() + '</div>';
+        h += '<div class="cal-day-month">' + MONTHS[day.getMonth()] + '</div>';
+        h += '</div>';
+        h += '<div class="cal-col-body">';
+        if (tasks.length === 0) {
+            h += '<div style="color:#C7C7CC;font-size:0.65rem;text-align:center;padding:10px 0;">—</div>';
+        } else {
+            tasks.forEach(function (item) {
+                var isVencida = item.fecha_limite && item.fecha_limite.substring(0, 10) < todayStr;
+                var cardClass = 'cal-card' + (isVencida ? ' cal-card-vencida' : (item.prioridad === 'alta' ? ' cal-card-alta' : ''));
+                var safeKey = String(item.key).replace(/'/g, "\\'");
+                h += '<div class="' + cardClass + '" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
+                h += '<div class="cal-card-title">' + escHtml(truncar(item.titulo, 50)) + '</div>';
+                if (item.cliente) h += '<div class="cal-card-client">&#128205; ' + escHtml(truncar(item.cliente, 28)) + '</div>';
+                h += '<button class="cal-card-btn" onclick="event.stopPropagation();ingenieroCompletarTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">&#10003; Completar</button>';
+                h += '</div>';
+            });
+        }
+        h += '</div></div>';
     });
-    fetch('/app/api/ingeniero/board/reorder/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
-        body: JSON.stringify(payload)
-    }).catch(function () {});
+    h += '</div>';
+
+    // Otras semanas
+    if (otrasItems.length > 0) {
+        h += '<div class="cal-extras">';
+        h += '<div style="font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Otras semanas (' + otrasItems.length + ')</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+        otrasItems.forEach(function (item) {
+            var f = (item.fecha_planeada || item.fecha_limite || '').substring(0, 10);
+            var fDisplay = f ? formatDate(f) : '—';
+            var todayStr2 = toYMD(today);
+            var isVencida = f && f < todayStr2;
+            var safeKey = String(item.key).replace(/'/g, "\\'");
+            h += '<div class="cal-card" style="flex:0 0 auto;min-width:140px;max-width:180px;" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
+            h += '<div class="cal-card-title">' + escHtml(truncar(item.titulo, 32)) + '</div>';
+            h += '<div class="cal-card-client" style="color:' + (isVencida ? '#FF3B30' : '#8E8E93') + ';">' + escHtml(fDisplay) + '</div>';
+            h += '</div>';
+        });
+        h += '</div></div>';
+    }
+
+    cols.innerHTML = h;
+    cols.style.display = '';
+    if (empty) empty.style.display = 'none';
 }
 
-// ── Reprogramar (cambiar fecha planeada personal) ───────────────
-function ingenieroReprogramar(key) {
+// ── Abrir tarea directamente (no la oportunidad) ─────────────────
+function ingenieroAbrirTarea(key, id, tipo) {
     var item = _boardItems.find(function (i) { return i.key === key; });
-    if (!item) return;
-    var actual = item.fecha_planeada || item.fecha_limite || '';
-    var nuevaFecha = prompt('Fecha planeada (YYYY-MM-DD):\nEsto NO cambia la fecha de vencimiento real.', actual);
-    if (!nuevaFecha) return;
-    item.fecha_planeada = nuevaFecha;
-    renderBoard();
-    saveOrder();
+    var overlay = document.getElementById('boardTareaOverlay');
+    if (!overlay || !item) return;
+
+    var tituloEl = document.getElementById('btpTitulo');
+    var metaEl = document.getElementById('btpMeta');
+    var fechaEl = document.getElementById('btpFecha');
+    var completeBtn = document.getElementById('btpCompleteBtn');
+
+    if (tituloEl) tituloEl.textContent = item.titulo || '—';
+    var meta = [];
+    if (item.cliente) meta.push('&#128205; ' + item.cliente);
+    if (item.oportunidad) meta.push(item.oportunidad);
+    if (metaEl) metaEl.innerHTML = meta.join(' &middot; ') || '&mdash;';
+
+    var f = item.fecha_limite_display || (item.fecha_limite ? formatDate(item.fecha_limite.substring(0, 10)) : '—');
+    if (fechaEl) fechaEl.textContent = 'Vence: ' + f;
+
+    if (completeBtn) {
+        completeBtn.onclick = function () {
+            ingenieroCompletarTarea(key, id, tipo);
+            ingenieroTareaCerrar();
+        };
+    }
+
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
+window.ingenieroAbrirTarea = ingenieroAbrirTarea;
+
+function ingenieroTareaCerrar() {
+    var overlay = document.getElementById('boardTareaOverlay');
+    if (overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
+}
+window.ingenieroTareaCerrar = ingenieroTareaCerrar;
 
 // ── Completar tarea ─────────────────────────────────────────────
 function ingenieroCompletarTarea(key, id, tipo) {
@@ -265,53 +272,48 @@ function ingenieroCompletarTarea(key, id, tipo) {
     }).then(function (r) { return r.json(); }).then(function (resp) {
         if (resp.ok || resp.success) {
             _boardItems = _boardItems.filter(function (i) { return i.key !== key; });
-            renderBoard();
             if (_boardItems.length === 0) {
-                document.getElementById('boardColumns').style.display = 'none';
-                document.getElementById('boardEmpty').style.display = 'block';
+                var cols = document.getElementById('boardColumns');
+                if (cols) cols.style.display = 'none';
+                var empty = document.getElementById('boardEmpty');
+                if (empty) empty.style.display = 'block';
+            } else {
+                renderBoard();
             }
         }
     }).catch(function () {});
 }
+window.ingenieroCompletarTarea = ingenieroCompletarTarea;
 
-// ── Abrir oportunidad ───────────────────────────────────────────
-function ingenieroAbrirOportunidad(oppId) {
-    if (!oppId) return;
-    if (typeof openDetalle === 'function') openDetalle(oppId);
-}
-
-// ── Helpers ─────────────────────────────────────────────────────
-function truncar(str, n) {
-    if (!str) return '';
-    return str.length > n ? str.substring(0, n) + '…' : str;
-}
-
-function formatDate(str) {
-    if (!str) return '—';
-    var parts = str.split('-');
-    if (parts.length !== 3) return str;
-    return parts[2] + '/' + parts[1] + '/' + parts[0];
-}
-
-function getCSRF() {
-    var el = document.querySelector('[name=csrfmiddlewaretoken]');
-    return el ? el.value : '';
-}
-
-// ── Restricciones para ingeniero en widget oportunidad ──────────
+// ── Restricciones ingeniero en widget oportunidad ───────────────
 document.addEventListener('DOMContentLoaded', function () {
-    // Esperar a que el widget esté disponible y bloquear edición
     var observer = new MutationObserver(function () {
         if (!window.ES_INGENIERO) return;
-        // Deshabilitar stage buttons, title edit, etc.
         var detalleContent = document.getElementById('detalleContent');
         if (detalleContent && !detalleContent.dataset.ingBound) {
             detalleContent.dataset.ingBound = '1';
-            // Override de funciones de edición para que no hagan nada
             window._ingenieroModeActive = true;
         }
     });
     var overlay = document.getElementById('widgetDetalle');
     if (overlay) observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
 });
+
+// ── Helpers ─────────────────────────────────────────────────────
+function truncar(str, n) {
+    if (!str) return '';
+    return str.length > n ? str.substring(0, n) + '\u2026' : str;
+}
+function formatDate(str) {
+    if (!str) return '—';
+    var p = str.split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : str;
+}
+function escHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function getCSRF() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+}
 </script>

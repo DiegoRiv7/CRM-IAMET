@@ -11,8 +11,8 @@
         {% include "crm/_topbar.html" %}
     {% endif %}
 
+    {% include "crm/_widget_mail.html" %}
     {% if not es_ingeniero %}
-        {% include "crm/_widget_mail.html" %}
         {% include "crm/_widget_negociacion.html" %}
     {% endif %}
     {% include "crm/_widget_oportunidad.html" %}
@@ -38,9 +38,7 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 {% include "crm/_scripts_main.html" %}
 {% include "crm/_scripts_muro.html" %}
-{% if not es_ingeniero %}
-    {% include "crm/_scripts_mail.html" %}
-{% endif %}
+{% include "crm/_scripts_mail.html" %}
 {% if es_ingeniero %}
     {% include "crm/_scripts_ingeniero.html" %}
 {% endif %}
