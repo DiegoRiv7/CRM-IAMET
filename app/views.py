@@ -1457,13 +1457,28 @@ def api_empleados_jornadas(request):
 
 @login_required
 def api_clientes_rapido(request):
-    """Retorna lista de clientes para el widget de cotizar rápido."""
-    if is_supervisor(request.user):
-        clientes = Cliente.objects.all().order_by('nombre_empresa')
-    else:
-        clientes = Cliente.objects.filter(asignado_a=request.user).order_by('nombre_empresa')
-    data = [{'id': c.id, 'nombre': c.nombre_empresa} for c in clientes]
-    return JsonResponse({'clientes': data})
+    """GET: lista de clientes. POST: crear cliente rápido."""
+    if request.method == 'GET':
+        if is_supervisor(request.user):
+            clientes = Cliente.objects.all().order_by('nombre_empresa')
+        else:
+            clientes = Cliente.objects.filter(asignado_a=request.user).order_by('nombre_empresa')
+        data = [{'id': c.id, 'nombre': c.nombre_empresa} for c in clientes]
+        return JsonResponse({'clientes': data})
+    elif request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        nombre = (body.get('nombre') or '').strip()
+        if not nombre:
+            return JsonResponse({'error': 'Nombre requerido'}, status=400)
+        cliente = Cliente.objects.create(
+            nombre_empresa=nombre,
+            asignado_a=request.user,
+        )
+        return JsonResponse({'id': cliente.id, 'nombre': cliente.nombre_empresa})
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
 @login_required

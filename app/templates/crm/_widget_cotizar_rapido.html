@@ -10,13 +10,33 @@
                 style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#8E8E93;padding:4px 8px;border-radius:8px;line-height:1;">&times;</button>
         </div>
 
-        <!-- Cliente -->
+        <!-- Cliente (busqueda por texto) -->
         <div style="margin-bottom:14px;">
             <label style="display:block;font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Cliente</label>
-            <select id="crClienteSelect" onchange="crCargarOpps()"
-                style="width:100%;padding:8px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.8rem;color:#1D1D1F;background:#F9F9F9;outline:none;cursor:pointer;">
-                <option value="">— seleccionar cliente —</option>
-            </select>
+            <div style="display:flex;gap:6px;align-items:flex-start;">
+                <div style="flex:1;position:relative;">
+                    <input type="text" id="crClienteInput" placeholder="Buscar cliente..."
+                        autocomplete="off" oninput="crFiltrarClientes()"
+                        style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.8rem;color:#1D1D1F;background:#F9F9F9;outline:none;">
+                    <input type="hidden" id="crClienteId" value="">
+                    <div id="crClienteDropdown"
+                        style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #E5E5EA;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:10000;max-height:200px;overflow-y:auto;">
+                    </div>
+                </div>
+                <button onclick="crToggleNuevoCliente()" title="Nuevo cliente"
+                    style="flex-shrink:0;background:#F0EFFE;border:none;border-radius:8px;padding:8px 12px;font-size:1rem;cursor:pointer;color:#5856D6;font-weight:700;line-height:1;">+</button>
+            </div>
+        </div>
+
+        <!-- Nuevo cliente inline -->
+        <div id="crNuevoClienteSection" style="display:none;margin-top:-8px;margin-bottom:14px;background:#F9F9FB;border-radius:10px;padding:10px 12px;border:1px solid #E5E5EA;">
+            <label style="display:block;font-size:0.65rem;font-weight:700;color:#8E8E93;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em;">Nombre del nuevo cliente</label>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="crNuevoClienteNombre" placeholder="Ej. Empresa XYZ S.A. de C.V."
+                    style="flex:1;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.78rem;color:#1D1D1F;background:#fff;outline:none;">
+                <button onclick="crCrearCliente()"
+                    style="background:#5856D6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">Crear</button>
+            </div>
         </div>
 
         <!-- Oportunidad -->
