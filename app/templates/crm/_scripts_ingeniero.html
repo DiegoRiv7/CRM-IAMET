@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
     _currentMonthStart = getMonthStart(new Date());
     ingenieroMostrarActividades();
 
-    // Tareas: solo mostrar tareasSection, NO crmContentSection
     var btnTareas = document.getElementById('btnTareas');
     if (btnTareas) btnTareas.addEventListener('click', function () {
         setIngenieroNav('tareas');
@@ -23,13 +22,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (tareasSection) tareasSection.classList.add('active');
     });
 
-    // Ocultar tabs que el ingeniero no debe ver
     ['tabCotizado', 'tabCobrado', 'tabFacturado'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
 
-    // Ocultar meta/progreso/filtros en topbar
     ['facturadoAmount', 'progressPct', 'islandFiltersSection', 'islandSepFilters'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -113,7 +110,7 @@ function ingenieroCargarActividades() {
 }
 window.ingenieroCargarActividades = ingenieroCargarActividades;
 
-// ── Render tablero como calendario mensual ──────────────────────
+// ── Render: 4-5 semanas del mes, cada fila = Lun-Vie ─────────────
 function renderBoard() {
     var cols = document.getElementById('boardColumns');
     var empty = document.getElementById('boardEmpty');
@@ -121,34 +118,32 @@ function renderBoard() {
     if (!_currentMonthStart) _currentMonthStart = getMonthStart(new Date());
 
     var MONTHS_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    var DOW = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    var MONTHS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var DAY_NAMES = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
 
     var today = new Date();
     today.setHours(0, 0, 0, 0);
     var todayStr = toYMD(today);
 
-    var year = _currentMonthStart.getFullYear();
+    var year  = _currentMonthStart.getFullYear();
     var month = _currentMonthStart.getMonth();
-    var monthPrefix = year + '-' + String(month + 1).padStart(2, '0');
+    var lastDay = new Date(year, month + 1, 0);
 
-    // Update label
+    // Etiqueta del mes
     var label = document.getElementById('boardWeekLabel');
     if (label) label.textContent = MONTHS_FULL[month] + ' ' + year;
 
-    var daysInMonth = new Date(year, month + 1, 0).getDate();
-    var firstDow = new Date(year, month, 1).getDay(); // 0=Sun
-    // Monday-based offset: Mon=0 … Sun=6
-    var startOffset = firstDow === 0 ? 6 : firstDow - 1;
-
-    // Group tasks by date
+    // Agrupar tareas por fecha
     var byDay = {};
-    var sinFecha = [];
     var otrosMeses = [];
+    var sinFecha = [];
 
     _boardItems.forEach(function (item) {
         var f = (item.fecha_planeada || item.fecha_limite || '').substring(0, 10);
         if (!f) { sinFecha.push(item); return; }
-        if (f.substring(0, 7) === monthPrefix) {
+        var parts = f.split('-');
+        var fy = parseInt(parts[0]), fm = parseInt(parts[1]) - 1;
+        if (fy === year && fm === month) {
             if (!byDay[f]) byDay[f] = [];
             byDay[f].push(item);
         } else {
@@ -156,91 +151,115 @@ function renderBoard() {
         }
     });
 
-    var MAX_VISIBLE = 2;
+    // ── Calcular semanas del mes (Lun-Vie) ──
+    // Monday de la primera semana que toca el mes
+    var firstDow = _currentMonthStart.getDay(); // 0=Dom, 1=Lun...
+    var backDays = firstDow === 0 ? 6 : firstDow - 1; // retroceso hasta lunes
+    var firstMonday = new Date(year, month, 1 - backDays);
 
-    // ── Build grid ──
-    var h = '<div class="cal-month-grid">';
+    // Generar todos los lunes hasta cubrir el último día del mes
+    var weeks = [];
+    var mon = new Date(firstMonday);
+    while (mon <= lastDay) {
+        // Generar la semana completa (Lun=0 … Vie=4)
+        var week = [];
+        for (var d = 0; d < 5; d++) {
+            var dayDate = new Date(mon);
+            dayDate.setDate(dayDate.getDate() + d);
+            week.push({
+                date: dayDate,
+                inMonth: dayDate.getMonth() === month && dayDate.getFullYear() === year
+            });
+        }
+        // Solo incluir semanas que tengan al menos un día del mes
+        if (week.some(function (c) { return c.inMonth; })) {
+            weeks.push(week);
+        }
+        mon.setDate(mon.getDate() + 7);
+    }
 
-    // Day-of-week headers
-    DOW.forEach(function (name) {
-        h += '<div class="cal-month-dow">' + name + '</div>';
+    var MAX_VISIBLE = 3;
+
+    // ── Construir HTML ──
+    var h = '';
+
+    weeks.forEach(function (week, wi) {
+        // Etiqueta semana (opcional, sutil)
+        var firstInMonth = week.find(function (c) { return c.inMonth; });
+        h += '<div class="cal-week-label">Semana ' + (wi + 1) + ' &mdash; ' + (firstInMonth ? firstInMonth.date.getDate() + ' ' + MONTHS_SHORT[firstInMonth.date.getMonth()] : '') + '</div>';
+
+        h += '<div class="cal-grid">';
+        week.forEach(function (cell) {
+            var dStr   = toYMD(cell.date);
+            var isToday = dStr === todayStr;
+            var tasks  = cell.inMonth ? (byDay[dStr] || []) : [];
+            var extra  = tasks.length > MAX_VISIBLE ? tasks.length - MAX_VISIBLE : 0;
+
+            var colClass = 'cal-col';
+            if (isToday) colClass += ' cal-col-today';
+            if (!cell.inMonth) colClass += ' cal-col-outside';
+
+            h += '<div class="' + colClass + '">';
+            h += '<div class="cal-col-header">';
+            h += '<div class="cal-day-name">' + DAY_NAMES[cell.date.getDay() - 1] + '</div>';
+            h += '<div class="cal-day-num">' + cell.date.getDate() + '</div>';
+            h += '<div class="cal-day-month">' + MONTHS_SHORT[cell.date.getMonth()] + '</div>';
+            h += '</div>';
+            h += '<div class="cal-col-body">';
+
+            if (!cell.inMonth) {
+                // celda fuera del mes, vacía
+            } else if (tasks.length === 0) {
+                h += '<div style="color:#C7C7CC;font-size:0.65rem;text-align:center;padding:10px 0;">—</div>';
+            } else {
+                // Tarjetas visibles
+                tasks.slice(0, MAX_VISIBLE).forEach(function (item) {
+                    h += buildCard(item, todayStr);
+                });
+                // Extra colapsadas
+                if (extra > 0) {
+                    h += '<div id="calExtra-' + dStr + '" style="display:none;">';
+                    tasks.slice(MAX_VISIBLE).forEach(function (item) {
+                        h += buildCard(item, todayStr);
+                    });
+                    h += '</div>';
+                    h += '<button class="cal-card-more" data-count="' + extra + '" onclick="calToggleExtra(\'' + dStr + '\', this)">+' + extra + ' más</button>';
+                }
+            }
+
+            h += '</div></div>';
+        });
+        h += '</div>';
     });
 
-    // Leading empty cells
-    for (var i = 0; i < startOffset; i++) {
-        h += '<div class="cal-month-cell-empty"></div>';
-    }
-
-    // Day cells
-    for (var d = 1; d <= daysInMonth; d++) {
-        var dStr = toYMD(new Date(year, month, d));
-        var isToday = dStr === todayStr;
-        var tasks = byDay[dStr] || [];
-        var extra = tasks.length > MAX_VISIBLE ? tasks.length - MAX_VISIBLE : 0;
-
-        h += '<div class="cal-month-cell' + (isToday ? ' cal-month-cell-today' : '') + '">';
-
-        // Day number
-        if (isToday) {
-            h += '<div class="cal-month-daynum"><span class="cal-month-daynum-circle">' + d + '</span></div>';
-        } else {
-            h += '<div class="cal-month-daynum">' + d + '</div>';
-        }
-
-        // Visible task cards
-        tasks.slice(0, MAX_VISIBLE).forEach(function (item) {
-            h += buildMonthCard(item, todayStr);
-        });
-
-        // Collapsible extra tasks
-        if (extra > 0) {
-            h += '<div id="calExtra-' + dStr + '" style="display:none;">';
-            tasks.slice(MAX_VISIBLE).forEach(function (item) {
-                h += buildMonthCard(item, todayStr);
-            });
-            h += '</div>';
-            h += '<button class="cal-month-more" data-count="' + extra + '" onclick="calToggleExtra(\'' + dStr + '\', this)">+' + extra + ' más</button>';
-        }
-
-        h += '</div>';
-    }
-
-    // Trailing empty cells to complete last row
-    var totalCells = startOffset + daysInMonth;
-    var trailing = (7 - (totalCells % 7)) % 7;
-    for (var j = 0; j < trailing; j++) {
-        h += '<div class="cal-month-cell-empty"></div>';
-    }
-
-    h += '</div>';
-
-    // ── Otros meses section ──
+    // ── Otros meses ──
     if (otrosMeses.length > 0) {
-        h += '<div class="cal-section-extra">';
-        h += '<div class="cal-section-extra-title">Otros meses (' + otrosMeses.length + ')</div>';
-        h += '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+        h += '<div class="cal-extras">';
+        h += '<div style="font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Otros meses (' + otrosMeses.length + ')</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
         otrosMeses.forEach(function (item) {
             var f = (item.fecha_planeada || item.fecha_limite || '').substring(0, 10);
             var isVencida = f && f < todayStr;
             var safeKey = String(item.key).replace(/'/g, "\\'");
-            var fDisp = f ? (f.split('-')[2] + '/' + f.split('-')[1] + '/' + f.split('-')[0]) : '—';
-            h += '<div class="cal-mini-chip' + (isVencida ? ' chip-vencida' : '') + '" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
-            h += '<span class="cal-mini-chip-label">' + escHtml(truncar(item.titulo, 24)) + '</span>';
-            h += '<span class="cal-mini-chip-date">' + fDisp + '</span>';
+            var p = f ? f.split('-') : null;
+            var fDisp = p ? p[2] + '/' + p[1] + '/' + p[0] : '—';
+            h += '<div class="cal-card" style="flex:0 0 auto;min-width:140px;max-width:200px;" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
+            h += '<div class="cal-card-title">' + escHtml(truncar(item.titulo, 32)) + '</div>';
+            h += '<div class="cal-card-client" style="color:' + (isVencida ? '#FF3B30' : '#8E8E93') + ';">' + escHtml(fDisp) + '</div>';
             h += '</div>';
         });
         h += '</div></div>';
     }
 
-    // ── Sin fecha section ──
+    // ── Sin fecha ──
     if (sinFecha.length > 0) {
-        h += '<div class="cal-section-extra">';
-        h += '<div class="cal-section-extra-title">Sin fecha (' + sinFecha.length + ')</div>';
-        h += '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+        h += '<div class="cal-extras" style="margin-top:6px;">';
+        h += '<div style="font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Sin fecha (' + sinFecha.length + ')</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
         sinFecha.forEach(function (item) {
             var safeKey = String(item.key).replace(/'/g, "\\'");
-            h += '<div class="cal-mini-chip" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
-            h += '<span class="cal-mini-chip-label">' + escHtml(truncar(item.titulo, 28)) + '</span>';
+            h += '<div class="cal-card" style="flex:0 0 auto;min-width:140px;max-width:200px;" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
+            h += '<div class="cal-card-title">' + escHtml(truncar(item.titulo, 32)) + '</div>';
             h += '</div>';
         });
         h += '</div></div>';
@@ -251,46 +270,45 @@ function renderBoard() {
     if (empty) empty.style.display = 'none';
 }
 
-function buildMonthCard(item, todayStr) {
-    var f = item.fecha_limite || '';
-    var fDate = f.substring(0, 10);
+// ── Construir tarjeta ────────────────────────────────────────────
+function buildCard(item, todayStr) {
+    var fDate = (item.fecha_limite || '').substring(0, 10);
     var isVencida = fDate && fDate < todayStr;
-    var cardClass = 'cal-month-card' +
-        (isVencida ? ' card-vencida' : (item.prioridad === 'alta' ? ' card-alta' : ''));
+    var cardClass = 'cal-card' +
+        (isVencida ? ' cal-card-vencida' : (item.prioridad === 'alta' ? ' cal-card-alta' : ''));
     var safeKey = String(item.key).replace(/'/g, "\\'");
 
-    // Extract time (only show if not midnight)
+    // Hora de vencimiento (sólo si no es 00:00)
     var timeStr = '';
-    if (f.length > 10) {
-        var tp = f.substring(11, 16);
+    var fl = item.fecha_limite || '';
+    if (fl.length > 10) {
+        var tp = fl.substring(11, 16);
         if (tp && tp !== '00:00') timeStr = tp;
     }
 
     var h = '<div class="' + cardClass + '" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
-    h += '<div class="cal-month-card-title">' + escHtml(truncar(item.titulo, 26)) + '</div>';
-    if (timeStr) {
-        h += '<div class="cal-month-card-time">&#9201; ' + timeStr + '</div>';
-    }
+    h += '<div class="cal-card-title">' + escHtml(truncar(item.titulo, 50)) + '</div>';
+    if (item.cliente) h += '<div class="cal-card-client">&#128205; ' + escHtml(truncar(item.cliente, 28)) + '</div>';
+    if (timeStr) h += '<div class="cal-card-time">&#9201; ' + timeStr + '</div>';
     h += '</div>';
     return h;
 }
 
-// ── Toggle extra tasks in a day cell ────────────────────────────
+// ── Toggle extra tareas de un día ────────────────────────────────
 function calToggleExtra(dStr, btn) {
     var extra = document.getElementById('calExtra-' + dStr);
     if (!extra) return;
-    var isHidden = extra.style.display === 'none';
-    extra.style.display = isHidden ? '' : 'none';
-    btn.textContent = isHidden ? 'Ver menos' : ('+' + btn.getAttribute('data-count') + ' más');
+    var hidden = extra.style.display === 'none';
+    extra.style.display = hidden ? '' : 'none';
+    btn.textContent = hidden ? 'Ver menos' : ('+' + btn.getAttribute('data-count') + ' más');
 }
 window.calToggleExtra = calToggleExtra;
 
-// ── Abrir tarea en el widget de detalle existente ───────────────
+// ── Abrir tarea en widget de detalle ─────────────────────────────
 function ingenieroAbrirTarea(key, id, tipo) {
     if (tipo === 'tarea') {
         if (window.crmTaskVerDetalle) { window.crmTaskVerDetalle(id); return; }
     }
-    // tarea_opp: abrir crmTaskDetailModal con datos del endpoint de tarea_opp
     var modal = document.getElementById('crmTaskDetailModal');
     if (!modal) return;
     modal.classList.add('active');
@@ -299,10 +317,8 @@ function ingenieroAbrirTarea(key, id, tipo) {
     fetch('/app/api/tarea-opp/' + id + '/detalle/')
         .then(function (r) { return r.json(); })
         .then(function (data) {
-            if (window.crmTaskRenderData) {
-                window.crmTaskRenderData(data);
-            }
-            // Override botón terminar para usar endpoint correcto
+            if (window.crmTaskRenderData) window.crmTaskRenderData(data);
+
             var btnT = document.getElementById('crmTaskBtnTerminar');
             if (btnT && data.estado !== 'completada') {
                 btnT.onclick = function () {
@@ -311,7 +327,6 @@ function ingenieroAbrirTarea(key, id, tipo) {
                     document.body.style.overflow = '';
                 };
             }
-            // Cargar comentarios del endpoint de tarea_opp
             var feed = document.getElementById('crm-task-activity-feed');
             if (feed) {
                 feed.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;">Cargando...</div>';
@@ -341,32 +356,31 @@ function ingenieroAbrirTarea(key, id, tipo) {
 }
 window.ingenieroAbrirTarea = ingenieroAbrirTarea;
 
-// ── Completar tarea ─────────────────────────────────────────────
+// ── Completar tarea ──────────────────────────────────────────────
 function ingenieroCompletarTarea(key, id, tipo) {
     if (!confirm('¿Marcar esta tarea como completada?')) return;
     var url = tipo === 'tarea_opp'
         ? '/app/api/tareas-oportunidad/' + id + '/completar/'
         : '/app/api/tareas/' + id + '/completar/';
-    fetch(url, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCSRF() }
-    }).then(function (r) { return r.json(); }).then(function (resp) {
-        if (resp.ok || resp.success) {
-            _boardItems = _boardItems.filter(function (i) { return i.key !== key; });
-            if (_boardItems.length === 0) {
-                var cols = document.getElementById('boardColumns');
-                if (cols) cols.style.display = 'none';
-                var empty = document.getElementById('boardEmpty');
-                if (empty) empty.style.display = 'block';
-            } else {
-                renderBoard();
+    fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function (r) { return r.json(); })
+        .then(function (resp) {
+            if (resp.ok || resp.success) {
+                _boardItems = _boardItems.filter(function (i) { return i.key !== key; });
+                if (_boardItems.length === 0) {
+                    var c = document.getElementById('boardColumns');
+                    if (c) c.style.display = 'none';
+                    var e = document.getElementById('boardEmpty');
+                    if (e) e.style.display = 'block';
+                } else {
+                    renderBoard();
+                }
             }
-        }
-    }).catch(function () {});
+        }).catch(function () {});
 }
 window.ingenieroCompletarTarea = ingenieroCompletarTarea;
 
-// ── Restricciones ingeniero en widget oportunidad ───────────────
+// ── Restricciones ingeniero en widget oportunidad ────────────────
 document.addEventListener('DOMContentLoaded', function () {
     var observer = new MutationObserver(function () {
         if (!window.ES_INGENIERO) return;
@@ -380,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (overlay) observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
 });
 
-// ── Helpers ─────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────
 function truncar(str, n) {
     if (!str) return '';
     return str.length > n ? str.substring(0, n) + '\u2026' : str;
