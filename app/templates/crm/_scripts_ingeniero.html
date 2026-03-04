@@ -4,11 +4,11 @@
 // ═══ INGENIERO — Tablero Calendario ═══
 
 var _boardItems = [];
-var _currentWeekStart = null;
+var _currentMonthStart = null;
 
 // ── Inicialización ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-    _currentWeekStart = getWeekStart(new Date());
+    _currentMonthStart = getMonthStart(new Date());
     ingenieroMostrarActividades();
 
     // Tareas: solo mostrar tareasSection, NO crmContentSection
@@ -57,20 +57,9 @@ function ingenieroMostrarActividades() {
 }
 window.ingenieroMostrarActividades = ingenieroMostrarActividades;
 
-// ── Week helpers ─────────────────────────────────────────────────
-function getWeekStart(date) {
-    var d = new Date(date);
-    var day = d.getDay();
-    var diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
-function addDays(d, n) {
-    var r = new Date(d);
-    r.setDate(r.getDate() + n);
-    return r;
+// ── Month helpers ─────────────────────────────────────────────────
+function getMonthStart(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
 function toYMD(d) {
@@ -80,25 +69,20 @@ function toYMD(d) {
     return y + '-' + m + '-' + day;
 }
 
-function fmtShortDate(d) {
-    var months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    return d.getDate() + ' ' + months[d.getMonth()];
-}
-
-function boardPrevWeek() {
-    _currentWeekStart = addDays(_currentWeekStart, -7);
+function boardPrevMonth() {
+    _currentMonthStart = new Date(_currentMonthStart.getFullYear(), _currentMonthStart.getMonth() - 1, 1);
     renderBoard();
 }
-window.boardPrevWeek = boardPrevWeek;
+window.boardPrevMonth = boardPrevMonth;
 
-function boardNextWeek() {
-    _currentWeekStart = addDays(_currentWeekStart, 7);
+function boardNextMonth() {
+    _currentMonthStart = new Date(_currentMonthStart.getFullYear(), _currentMonthStart.getMonth() + 1, 1);
     renderBoard();
 }
-window.boardNextWeek = boardNextWeek;
+window.boardNextMonth = boardNextMonth;
 
 function boardGoToday() {
-    _currentWeekStart = getWeekStart(new Date());
+    _currentMonthStart = getMonthStart(new Date());
     renderBoard();
 }
 window.boardGoToday = boardGoToday;
@@ -129,88 +113,134 @@ function ingenieroCargarActividades() {
 }
 window.ingenieroCargarActividades = ingenieroCargarActividades;
 
-// ── Render tablero como calendario semanal ──────────────────────
+// ── Render tablero como calendario mensual ──────────────────────
 function renderBoard() {
     var cols = document.getElementById('boardColumns');
     var empty = document.getElementById('boardEmpty');
     if (!cols) return;
-    if (!_currentWeekStart) _currentWeekStart = getWeekStart(new Date());
+    if (!_currentMonthStart) _currentMonthStart = getMonthStart(new Date());
 
-    var DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-    var MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    var MONTHS_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var DOW = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
     var today = new Date();
     today.setHours(0, 0, 0, 0);
     var todayStr = toYMD(today);
 
-    var weekDays = [];
-    for (var i = 0; i < 5; i++) weekDays.push(addDays(_currentWeekStart, i));
+    var year = _currentMonthStart.getFullYear();
+    var month = _currentMonthStart.getMonth();
+    var monthPrefix = year + '-' + String(month + 1).padStart(2, '0');
 
-    // Update week label
-    var weekLabel = document.getElementById('boardWeekLabel');
-    if (weekLabel) {
-        weekLabel.textContent = fmtShortDate(_currentWeekStart) + ' — ' + fmtShortDate(addDays(_currentWeekStart, 4));
-    }
+    // Update label
+    var label = document.getElementById('boardWeekLabel');
+    if (label) label.textContent = MONTHS_FULL[month] + ' ' + year;
 
-    // Group tasks by day
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var firstDow = new Date(year, month, 1).getDay(); // 0=Sun
+    // Monday-based offset: Mon=0 … Sun=6
+    var startOffset = firstDow === 0 ? 6 : firstDow - 1;
+
+    // Group tasks by date
     var byDay = {};
-    weekDays.forEach(function (d) { byDay[toYMD(d)] = []; });
-    var otrasItems = [];
+    var sinFecha = [];
+    var otrosMeses = [];
 
     _boardItems.forEach(function (item) {
         var f = (item.fecha_planeada || item.fecha_limite || '').substring(0, 10);
-        if (!f) { otrasItems.push(item); return; }
-        if (byDay.hasOwnProperty(f)) {
+        if (!f) { sinFecha.push(item); return; }
+        if (f.substring(0, 7) === monthPrefix) {
+            if (!byDay[f]) byDay[f] = [];
             byDay[f].push(item);
         } else {
-            otrasItems.push(item);
+            otrosMeses.push(item);
         }
     });
 
-    // Build calendar HTML
-    var h = '<div class="cal-grid">';
-    weekDays.forEach(function (day, idx) {
-        var dStr = toYMD(day);
+    var MAX_VISIBLE = 2;
+
+    // ── Build grid ──
+    var h = '<div class="cal-month-grid">';
+
+    // Day-of-week headers
+    DOW.forEach(function (name) {
+        h += '<div class="cal-month-dow">' + name + '</div>';
+    });
+
+    // Leading empty cells
+    for (var i = 0; i < startOffset; i++) {
+        h += '<div class="cal-month-cell-empty"></div>';
+    }
+
+    // Day cells
+    for (var d = 1; d <= daysInMonth; d++) {
+        var dStr = toYMD(new Date(year, month, d));
         var isToday = dStr === todayStr;
         var tasks = byDay[dStr] || [];
-        h += '<div class="cal-col' + (isToday ? ' cal-col-today' : '') + '">';
-        h += '<div class="cal-col-header">';
-        h += '<div class="cal-day-name">' + DAY_NAMES[idx] + '</div>';
-        h += '<div class="cal-day-num">' + day.getDate() + '</div>';
-        h += '<div class="cal-day-month">' + MONTHS[day.getMonth()] + '</div>';
-        h += '</div>';
-        h += '<div class="cal-col-body">';
-        if (tasks.length === 0) {
-            h += '<div style="color:#C7C7CC;font-size:0.65rem;text-align:center;padding:10px 0;">—</div>';
+        var extra = tasks.length > MAX_VISIBLE ? tasks.length - MAX_VISIBLE : 0;
+
+        h += '<div class="cal-month-cell' + (isToday ? ' cal-month-cell-today' : '') + '">';
+
+        // Day number
+        if (isToday) {
+            h += '<div class="cal-month-daynum"><span class="cal-month-daynum-circle">' + d + '</span></div>';
         } else {
-            tasks.forEach(function (item) {
-                var isVencida = item.fecha_limite && item.fecha_limite.substring(0, 10) < todayStr;
-                var cardClass = 'cal-card' + (isVencida ? ' cal-card-vencida' : (item.prioridad === 'alta' ? ' cal-card-alta' : ''));
-                var safeKey = String(item.key).replace(/'/g, "\\'");
-                h += '<div class="' + cardClass + '" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
-                h += '<div class="cal-card-title">' + escHtml(truncar(item.titulo, 50)) + '</div>';
-                if (item.cliente) h += '<div class="cal-card-client">&#128205; ' + escHtml(truncar(item.cliente, 28)) + '</div>';
-                h += '<button class="cal-card-btn" onclick="event.stopPropagation();ingenieroCompletarTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">&#10003; Completar</button>';
-                h += '</div>';
-            });
+            h += '<div class="cal-month-daynum">' + d + '</div>';
         }
-        h += '</div></div>';
-    });
+
+        // Visible task cards
+        tasks.slice(0, MAX_VISIBLE).forEach(function (item) {
+            h += buildMonthCard(item, todayStr);
+        });
+
+        // Collapsible extra tasks
+        if (extra > 0) {
+            h += '<div id="calExtra-' + dStr + '" style="display:none;">';
+            tasks.slice(MAX_VISIBLE).forEach(function (item) {
+                h += buildMonthCard(item, todayStr);
+            });
+            h += '</div>';
+            h += '<button class="cal-month-more" data-count="' + extra + '" onclick="calToggleExtra(\'' + dStr + '\', this)">+' + extra + ' más</button>';
+        }
+
+        h += '</div>';
+    }
+
+    // Trailing empty cells to complete last row
+    var totalCells = startOffset + daysInMonth;
+    var trailing = (7 - (totalCells % 7)) % 7;
+    for (var j = 0; j < trailing; j++) {
+        h += '<div class="cal-month-cell-empty"></div>';
+    }
+
     h += '</div>';
 
-    // Otras semanas
-    if (otrasItems.length > 0) {
-        h += '<div class="cal-extras">';
-        h += '<div style="font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Otras semanas (' + otrasItems.length + ')</div>';
-        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-        otrasItems.forEach(function (item) {
+    // ── Otros meses section ──
+    if (otrosMeses.length > 0) {
+        h += '<div class="cal-section-extra">';
+        h += '<div class="cal-section-extra-title">Otros meses (' + otrosMeses.length + ')</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+        otrosMeses.forEach(function (item) {
             var f = (item.fecha_planeada || item.fecha_limite || '').substring(0, 10);
-            var fDisplay = f ? formatDate(f) : '—';
-            var todayStr2 = toYMD(today);
-            var isVencida = f && f < todayStr2;
+            var isVencida = f && f < todayStr;
             var safeKey = String(item.key).replace(/'/g, "\\'");
-            h += '<div class="cal-card" style="flex:0 0 auto;min-width:140px;max-width:180px;" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
-            h += '<div class="cal-card-title">' + escHtml(truncar(item.titulo, 32)) + '</div>';
-            h += '<div class="cal-card-client" style="color:' + (isVencida ? '#FF3B30' : '#8E8E93') + ';">' + escHtml(fDisplay) + '</div>';
+            var fDisp = f ? (f.split('-')[2] + '/' + f.split('-')[1] + '/' + f.split('-')[0]) : '—';
+            h += '<div class="cal-mini-chip' + (isVencida ? ' chip-vencida' : '') + '" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
+            h += '<span class="cal-mini-chip-label">' + escHtml(truncar(item.titulo, 24)) + '</span>';
+            h += '<span class="cal-mini-chip-date">' + fDisp + '</span>';
+            h += '</div>';
+        });
+        h += '</div></div>';
+    }
+
+    // ── Sin fecha section ──
+    if (sinFecha.length > 0) {
+        h += '<div class="cal-section-extra">';
+        h += '<div class="cal-section-extra-title">Sin fecha (' + sinFecha.length + ')</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+        sinFecha.forEach(function (item) {
+            var safeKey = String(item.key).replace(/'/g, "\\'");
+            h += '<div class="cal-mini-chip" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
+            h += '<span class="cal-mini-chip-label">' + escHtml(truncar(item.titulo, 28)) + '</span>';
             h += '</div>';
         });
         h += '</div></div>';
@@ -221,12 +251,46 @@ function renderBoard() {
     if (empty) empty.style.display = 'none';
 }
 
+function buildMonthCard(item, todayStr) {
+    var f = item.fecha_limite || '';
+    var fDate = f.substring(0, 10);
+    var isVencida = fDate && fDate < todayStr;
+    var cardClass = 'cal-month-card' +
+        (isVencida ? ' card-vencida' : (item.prioridad === 'alta' ? ' card-alta' : ''));
+    var safeKey = String(item.key).replace(/'/g, "\\'");
+
+    // Extract time (only show if not midnight)
+    var timeStr = '';
+    if (f.length > 10) {
+        var tp = f.substring(11, 16);
+        if (tp && tp !== '00:00') timeStr = tp;
+    }
+
+    var h = '<div class="' + cardClass + '" onclick="ingenieroAbrirTarea(\'' + safeKey + '\',' + item.id + ',\'' + item.tipo + '\')">';
+    h += '<div class="cal-month-card-title">' + escHtml(truncar(item.titulo, 26)) + '</div>';
+    if (timeStr) {
+        h += '<div class="cal-month-card-time">&#9201; ' + timeStr + '</div>';
+    }
+    h += '</div>';
+    return h;
+}
+
+// ── Toggle extra tasks in a day cell ────────────────────────────
+function calToggleExtra(dStr, btn) {
+    var extra = document.getElementById('calExtra-' + dStr);
+    if (!extra) return;
+    var isHidden = extra.style.display === 'none';
+    extra.style.display = isHidden ? '' : 'none';
+    btn.textContent = isHidden ? 'Ver menos' : ('+' + btn.getAttribute('data-count') + ' más');
+}
+window.calToggleExtra = calToggleExtra;
+
 // ── Abrir tarea en el widget de detalle existente ───────────────
 function ingenieroAbrirTarea(key, id, tipo) {
     if (tipo === 'tarea') {
         if (window.crmTaskVerDetalle) { window.crmTaskVerDetalle(id); return; }
     }
-    // tarea_opp: abrir el modal de detalle de tarea con los datos de la tarea de oportunidad
+    // tarea_opp: abrir crmTaskDetailModal con datos del endpoint de tarea_opp
     var modal = document.getElementById('crmTaskDetailModal');
     if (!modal) return;
     modal.classList.add('active');
@@ -320,11 +384,6 @@ document.addEventListener('DOMContentLoaded', function () {
 function truncar(str, n) {
     if (!str) return '';
     return str.length > n ? str.substring(0, n) + '\u2026' : str;
-}
-function formatDate(str) {
-    if (!str) return '—';
-    var p = str.split('-');
-    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : str;
 }
 function escHtml(str) {
     return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

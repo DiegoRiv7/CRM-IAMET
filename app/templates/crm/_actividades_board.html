@@ -1,17 +1,17 @@
 <!-- ═══ TABLERO CALENDARIO — INGENIERO ═══ -->
 <div id="actividadesBoard" style="display:none;width:100%;height:calc(100vh - 84px);margin-top:10px;flex-direction:column;box-sizing:border-box;overflow:hidden;background:#F7F7F9;border-radius:14px 14px 0 0;">
 
-    <!-- Header del tablero -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid #E5E5EA;background:#fff;flex-shrink:0;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid #E5E5EA;background:#fff;flex-shrink:0;border-radius:14px 14px 0 0;">
         <div style="display:flex;align-items:center;gap:12px;">
             <h2 style="margin:0;font-size:0.92rem;font-weight:700;color:#1D1D1F;">Tablero</h2>
-            <!-- Week navigation -->
+            <!-- Month navigation -->
             <div style="display:flex;align-items:center;gap:4px;">
-                <button onclick="boardPrevWeek()"
+                <button onclick="boardPrevMonth()"
                     style="background:#F2F2F7;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.85rem;color:#3C3C43;font-weight:600;line-height:1;">&lsaquo;</button>
                 <span id="boardWeekLabel"
-                    style="font-size:0.75rem;font-weight:600;color:#1D1D1F;white-space:nowrap;min-width:170px;text-align:center;padding:0 4px;">—</span>
-                <button onclick="boardNextWeek()"
+                    style="font-size:0.8rem;font-weight:700;color:#1D1D1F;white-space:nowrap;min-width:160px;text-align:center;padding:0 4px;">—</span>
+                <button onclick="boardNextMonth()"
                     style="background:#F2F2F7;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.85rem;color:#3C3C43;font-weight:600;line-height:1;">&rsaquo;</button>
                 <button onclick="boardGoToday()"
                     style="background:#F2F2F7;border:none;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:0.7rem;font-weight:700;color:#007AFF;">Hoy</button>
@@ -34,117 +34,164 @@
     <!-- Empty -->
     <div id="boardEmpty" style="display:none;text-align:center;padding:4rem 2rem;color:#8E8E93;">
         <div style="font-size:2.5rem;margin-bottom:0.5rem;">&#10003;</div>
-        <div style="font-size:0.9rem;font-weight:600;color:#1D1D1F;margin-bottom:0.3rem;">Sin tareas esta semana</div>
-        <div style="font-size:0.78rem;">No tienes tareas asignadas para estos días.</div>
+        <div style="font-size:0.9rem;font-weight:600;color:#1D1D1F;margin-bottom:0.3rem;">Sin tareas este mes</div>
+        <div style="font-size:0.78rem;">No tienes tareas asignadas para este período.</div>
     </div>
 
-    <!-- Calendar grid container -->
+    <!-- Calendar container -->
     <div id="boardColumns" style="display:none;flex:1;overflow-y:auto;overflow-x:auto;padding:12px 16px;box-sizing:border-box;"></div>
 
 </div>
 
 <style>
 @keyframes boardSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.cal-grid {
+
+/* ── Monthly grid ── */
+.cal-month-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    align-items: start;
-    min-width: 600px;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    min-width: 560px;
 }
-.cal-col {
-    background: #FAFAFA;
-    border-radius: 10px;
-    border: 1px solid #E5E5EA;
-    overflow: hidden;
-}
-.cal-col-today {
-    background: #EEF5FF;
-    border-color: #007AFF;
-}
-.cal-col-header {
-    padding: 8px 10px;
+.cal-month-dow {
     text-align: center;
-    background: #F2F2F7;
-    border-bottom: 1px solid #E5E5EA;
-}
-.cal-col-today .cal-col-header {
-    background: #007AFF;
-    border-bottom-color: #0062CC;
-}
-.cal-day-name {
-    font-size: 0.63rem;
+    font-size: 0.62rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: #8E8E93;
-    margin-bottom: 2px;
+    padding: 5px 0 6px;
 }
-.cal-col-today .cal-day-name { color: rgba(255,255,255,0.8); }
-.cal-day-num {
-    font-size: 1.3rem;
+.cal-month-cell {
+    background: #FAFAFA;
+    border-radius: 7px;
+    border: 1px solid #E5E5EA;
+    min-height: 82px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.cal-month-cell-today {
+    background: #EEF5FF;
+    border-color: #007AFF;
+}
+.cal-month-cell-empty {
+    background: transparent;
+    border: 1px solid #F0F0F5;
+    pointer-events: none;
+    min-height: 82px;
+    border-radius: 7px;
+}
+.cal-month-daynum {
+    font-size: 0.7rem;
     font-weight: 700;
-    color: #1D1D1F;
-    line-height: 1.1;
-}
-.cal-col-today .cal-day-num { color: #fff; }
-.cal-day-month {
-    font-size: 0.58rem;
     color: #8E8E93;
-    margin-top: 1px;
+    text-align: right;
+    margin-bottom: 3px;
+    flex-shrink: 0;
+    line-height: 1;
 }
-.cal-col-today .cal-day-month { color: rgba(255,255,255,0.7); }
-.cal-col-body {
-    padding: 6px;
-    min-height: 60px;
+.cal-month-daynum-circle {
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    background: #007AFF;
+    color: #fff;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.66rem;
 }
-.cal-card {
+.cal-month-card {
     background: #fff;
     border: 1px solid #E5E5EA;
-    border-radius: 8px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
+    border-radius: 4px;
+    padding: 3px 5px 3px;
+    margin-bottom: 2px;
     cursor: pointer;
-    border-left: 3px solid #E5E5EA;
-    transition: box-shadow 0.12s, transform 0.1s;
+    border-left: 3px solid #C7C7CC;
+    transition: box-shadow 0.1s;
+    overflow: hidden;
+    flex-shrink: 0;
 }
-.cal-card:hover {
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
-}
-.cal-card-alta { border-left-color: #FF3B30; }
-.cal-card-vencida { border-left-color: #FF3B30; background: #FFF8F8; }
-.cal-card-title {
-    font-size: 0.74rem;
+.cal-month-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.cal-month-card.card-alta { border-left-color: #FF3B30; }
+.cal-month-card.card-vencida { border-left-color: #FF3B30; background: #FFF8F8; }
+.cal-month-card-title {
+    font-size: 0.63rem;
     font-weight: 600;
     color: #1D1D1F;
-    margin-bottom: 3px;
-    line-height: 1.3;
-}
-.cal-card-client {
-    font-size: 0.62rem;
-    color: #8E8E93;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 4px;
+    line-height: 1.3;
 }
-.cal-card-btn {
-    font-size: 0.6rem;
+.cal-month-card-time {
+    font-size: 0.56rem;
+    color: #8E8E93;
+    margin-top: 1px;
+    white-space: nowrap;
+}
+.cal-month-more {
+    font-size: 0.58rem;
     font-weight: 700;
-    color: #34C759;
-    border: 1px solid #34C759;
-    background: none;
-    border-radius: 5px;
-    padding: 2px 7px;
+    color: #007AFF;
     cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-top: 2px;
+    text-align: center;
+    border: none;
+    background: none;
+    width: 100%;
+    flex-shrink: 0;
 }
-.cal-card-btn:hover { background: #34C759; color: #fff; }
-.cal-extras {
+.cal-month-more:hover { background: rgba(0,122,255,0.08); }
+
+/* ── Extra sections below grid ── */
+.cal-section-extra {
     margin-top: 10px;
     padding: 10px 14px;
     background: #F9F9FB;
     border-radius: 10px;
     border: 1px solid #E5E5EA;
+}
+.cal-section-extra-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #8E8E93;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+}
+.cal-mini-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border: 1px solid #E5E5EA;
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.67rem;
+    font-weight: 600;
+    color: #1D1D1F;
+    border-left: 3px solid #C7C7CC;
+    max-width: 180px;
+    overflow: hidden;
+}
+.cal-mini-chip:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.cal-mini-chip.chip-vencida { border-left-color: #FF3B30; background: #FFF8F8; }
+.cal-mini-chip-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cal-mini-chip-date {
+    font-size: 0.58rem;
+    color: #8E8E93;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 </style>
