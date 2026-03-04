@@ -32,6 +32,7 @@
                     {% if request.user.userprofile.language == 'en' %}OPPORTUNITY{% else %}OPORTUNIDAD{% endif %}
                 </button>
                 {% endif %}
+                <button type="button" class="island-nav-btn" id="btnCotizarRapido" onclick="cotizarRapidoAbrir()">COTIZAR</button>
                 <button type="button" class="island-nav-btn active" id="btnCRM">CRM</button>
                 <button type="button" class="island-nav-btn" id="btnTareas">
                     {% if request.user.userprofile.language == 'en' %}TASKS{% else %}TAREAS{% endif %}
@@ -72,13 +73,6 @@
                     {% endfor %}
                 </select>
                 {% if es_supervisor %}
-                <button type="button" class="island-select" id="btnEmpleados"
-                    onclick="empleadosAbrir()"
-                    style="white-space:nowrap;font-weight:700;color:#5856D6;border-color:#5856D6;cursor:pointer;">
-                    Empleados
-                </button>
-                {% endif %}
-                {% if es_supervisor %}
                 <div class="vendor-filter-wrap" style="position:relative;">
                     <button type="button" class="island-select vendor-filter-btn" id="vendorFilterBtn">
                         {% if request.user.userprofile.language == 'en' %}Vendors{% else %}Vendedores{% endif %}
@@ -96,6 +90,11 @@
                         {% endfor %}
                     </div>
                 </div>
+                <button type="button" class="island-select" id="btnEmpleados"
+                    onclick="empleadosAbrir()"
+                    style="white-space:nowrap;font-weight:700;color:#5856D6;border-color:#5856D6;cursor:pointer;">
+                    Empleados
+                </button>
                 {% endif %}
             </div>
 

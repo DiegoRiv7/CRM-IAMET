@@ -1,0 +1,53 @@
+<!-- ═══ WIDGET COTIZAR RÁPIDO ═══ -->
+<div class="widget-overlay" id="widgetCotizarRapido"
+    onclick="if(event.target===this){cotizarRapidoCerrar();}">
+    <div style="width:420px;max-width:95vw;background:#fff;border-radius:20px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.2);border:1px solid rgba(0,0,0,0.05);">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h2 style="margin:0;font-size:0.95rem;font-weight:700;color:#1D1D1F;">Cotizar Rápido</h2>
+            <button onclick="cotizarRapidoCerrar()"
+                style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#8E8E93;padding:4px 8px;border-radius:8px;line-height:1;">&times;</button>
+        </div>
+
+        <!-- Cliente -->
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Cliente</label>
+            <select id="crClienteSelect" onchange="crCargarOpps()"
+                style="width:100%;padding:8px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.8rem;color:#1D1D1F;background:#F9F9F9;outline:none;cursor:pointer;">
+                <option value="">— seleccionar cliente —</option>
+            </select>
+        </div>
+
+        <!-- Oportunidad -->
+        <div style="margin-bottom:6px;">
+            <label style="display:block;font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Oportunidad</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <select id="crOppSelect" onchange="crOppChanged()" disabled
+                    style="flex:1;padding:8px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.8rem;color:#1D1D1F;background:#F9F9F9;outline:none;">
+                    <option value="">— seleccionar —</option>
+                </select>
+                <button onclick="crToggleNuevaOpp()" title="Nueva oportunidad"
+                    style="background:#F0EFFE;border:none;border-radius:8px;padding:8px 12px;font-size:1rem;cursor:pointer;color:#5856D6;font-weight:700;line-height:1;">+</button>
+            </div>
+        </div>
+
+        <!-- Nueva oportunidad inline -->
+        <div id="crNuevaOppSection" style="display:none;margin-top:8px;margin-bottom:14px;background:#F9F9FB;border-radius:10px;padding:10px 12px;border:1px solid #E5E5EA;">
+            <label style="display:block;font-size:0.65rem;font-weight:700;color:#8E8E93;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em;">Nombre de nueva oportunidad</label>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="crNuevaOppNombre" placeholder="Ej. Proyecto Cableado 2026"
+                    style="flex:1;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.78rem;color:#1D1D1F;background:#fff;outline:none;">
+                <button onclick="crCrearOpp()"
+                    style="background:#5856D6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">Crear</button>
+            </div>
+        </div>
+
+        <!-- Ir a Cotizar -->
+        <button id="crGoBtn" onclick="cotizarRapidoIr()" disabled
+            style="width:100%;margin-top:12px;padding:11px;background:#007AFF;color:#fff;border:none;border-radius:10px;font-size:0.85rem;font-weight:700;cursor:not-allowed;opacity:0.5;">
+            Ir a Cotizar
+        </button>
+
+    </div>
+</div>

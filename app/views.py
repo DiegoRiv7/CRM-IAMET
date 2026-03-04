@@ -1428,6 +1428,19 @@ def api_empleados_jornadas(request):
             'eficiencia': float(j.eficiencia_dia),
         }
 
+    # Today's status (only relevant if viewing current month)
+    today = _date.today()
+    today_estados = {}
+    if mes == today.month and anio == today.year:
+        hoy_jornadas = AsistenciaJornada.objects.filter(fecha=today)
+        for j in hoy_jornadas:
+            if j.hora_fin:
+                today_estados[j.usuario_id] = 'inactivo'
+            elif j.pausado:
+                today_estados[j.usuario_id] = 'pausa'
+            else:
+                today_estados[j.usuario_id] = 'activo'
+
     empleados = []
     for u in users:
         dias = data.get(u.id, {})
@@ -1435,10 +1448,64 @@ def api_empleados_jornadas(request):
             'id': u.id,
             'nombre': ((u.first_name + ' ' + u.last_name).strip() or u.username),
             'dias': {str(d): v for d, v in dias.items()},
+            'estado_hoy': today_estados.get(u.id),
         })
 
     _, num_dias = _cal.monthrange(anio, mes)
     return JsonResponse({'empleados': empleados, 'mes': mes, 'anio': anio, 'num_dias': num_dias})
+
+
+@login_required
+def api_clientes_rapido(request):
+    """Retorna lista de clientes para el widget de cotizar rápido."""
+    if is_supervisor(request.user):
+        clientes = Cliente.objects.all().order_by('nombre_empresa')
+    else:
+        clientes = Cliente.objects.filter(asignado_a=request.user).order_by('nombre_empresa')
+    data = [{'id': c.id, 'nombre': c.nombre_empresa} for c in clientes]
+    return JsonResponse({'clientes': data})
+
+
+@login_required
+def api_oportunidades_rapido(request):
+    """GET: oportunidades de un cliente. POST: crea oportunidad rápida."""
+    if request.method == 'GET':
+        cliente_id = request.GET.get('cliente_id')
+        if not cliente_id:
+            return JsonResponse({'opps': []})
+        qs = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-id')
+        if not is_supervisor(request.user):
+            qs = qs.filter(usuario=request.user)
+        data = [{'id': o.id, 'nombre': o.oportunidad} for o in qs[:50]]
+        return JsonResponse({'opps': data})
+    elif request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        nombre = (body.get('nombre') or '').strip()
+        cliente_id = body.get('cliente_id')
+        if not nombre or not cliente_id:
+            return JsonResponse({'error': 'Nombre y cliente requeridos'}, status=400)
+        try:
+            cliente = Cliente.objects.get(id=cliente_id)
+        except Cliente.DoesNotExist:
+            return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
+        today = timezone.localdate()
+        opp = TodoItem.objects.create(
+            usuario=request.user,
+            oportunidad=nombre,
+            cliente=cliente,
+            producto='ZEBRA',
+            monto=Decimal('0.00'),
+            probabilidad_cierre=5,
+            mes_cierre=str(today.month).zfill(2),
+            area='SISTEMAS',
+            tipo_negociacion='runrate',
+            estado_crm='nueva',
+        )
+        return JsonResponse({'id': opp.id, 'nombre': opp.oportunidad})
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
 @login_required

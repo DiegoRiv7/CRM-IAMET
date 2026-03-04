@@ -3890,23 +3890,89 @@
     }
 
     // ═══ EMPLEADOS WIDGET — SUPERVISOR ONLY ═══
+    var _empCurrentMes = null, _empCurrentAnio = null;
+    var _EMP_MES_NOMBRES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
     function empleadosAbrir() {
         var overlay = document.getElementById('widgetEmpleados');
         if (!overlay) return;
         var topbarMes = document.getElementById('mesFilter');
         var topbarAnio = document.getElementById('anioFilter');
-        var empMes = document.getElementById('empMesFilter');
-        var empAnio = document.getElementById('empAnioFilter');
-        if (topbarMes && empMes) {
+        if (topbarMes) {
             var mv = parseInt(topbarMes.value, 10);
-            if (mv >= 1 && mv <= 12) empMes.value = String(mv);
+            if (mv >= 1 && mv <= 12) _empCurrentMes = mv;
         }
-        if (topbarAnio && empAnio) empAnio.value = topbarAnio.value;
+        if (topbarAnio) _empCurrentAnio = parseInt(topbarAnio.value, 10) || new Date().getFullYear();
+        if (!_empCurrentMes) _empCurrentMes = new Date().getMonth() + 1;
+        if (!_empCurrentAnio) _empCurrentAnio = new Date().getFullYear();
+        empInitDatePicker();
         overlay.classList.add('active');
         document.body.style.overflow = 'hidden';
         empCargarDatos();
     }
     window.empleadosAbrir = empleadosAbrir;
+
+    function empCerrar() {
+        var overlay = document.getElementById('widgetEmpleados');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    window.empCerrar = empCerrar;
+
+    function empInitDatePicker() {
+        var mesOpts = document.getElementById('empMesOpts');
+        var anioOpts = document.getElementById('empAnioOpts');
+        var label = document.getElementById('empDatePickerLabel');
+        if (!mesOpts || !anioOpts) return;
+        var mHtml = '';
+        for (var m = 1; m <= 12; m++) {
+            var mActive = m === _empCurrentMes ? 'background:#F0F4FF;color:#007AFF;font-weight:700;' : 'color:#1D1D1F;';
+            mHtml += '<div style="padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.72rem;' + mActive + '"'
+                + ' onclick="empSelectMes(' + m + ')">' + _EMP_MES_NOMBRES[m] + '</div>';
+        }
+        mesOpts.innerHTML = mHtml;
+        var now = new Date();
+        var aHtml = '';
+        for (var y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
+            var yActive = y === _empCurrentAnio ? 'background:#F0F4FF;color:#007AFF;font-weight:700;' : 'color:#1D1D1F;';
+            aHtml += '<div style="padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.72rem;' + yActive + '"'
+                + ' onclick="empSelectAnio(' + y + ')">' + y + '</div>';
+        }
+        anioOpts.innerHTML = aHtml;
+        if (label) label.textContent = (_empCurrentMes ? _EMP_MES_NOMBRES[_empCurrentMes] : '—') + ' ' + (_empCurrentAnio || '—');
+        var mesInp = document.getElementById('empMesFilter');
+        var anioInp = document.getElementById('empAnioFilter');
+        if (mesInp) mesInp.value = _empCurrentMes || '';
+        if (anioInp) anioInp.value = _empCurrentAnio || '';
+    }
+    window.empInitDatePicker = empInitDatePicker;
+
+    function empToggleDatePicker(ev) {
+        if (ev) ev.stopPropagation();
+        var dd = document.getElementById('empDatePickerDropdown');
+        if (!dd) return;
+        dd.style.display = dd.style.display === 'none' ? '' : 'none';
+    }
+    window.empToggleDatePicker = empToggleDatePicker;
+
+    function empSelectMes(m) {
+        _empCurrentMes = m;
+        var dd = document.getElementById('empDatePickerDropdown');
+        if (dd) dd.style.display = 'none';
+        empInitDatePicker();
+        empCargarDatos();
+    }
+    window.empSelectMes = empSelectMes;
+
+    function empSelectAnio(y) {
+        _empCurrentAnio = y;
+        var dd = document.getElementById('empDatePickerDropdown');
+        if (dd) dd.style.display = 'none';
+        empInitDatePicker();
+        empCargarDatos();
+    }
+    window.empSelectAnio = empSelectAnio;
 
     function empCargarDatos() {
         var mes = document.getElementById('empMesFilter');
@@ -3926,23 +3992,23 @@
     function empRenderDatos(data) {
         var content = document.getElementById('empContent');
         if (!content) return;
-        var MES_NOMBRES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        var mesNom = MES_NOMBRES[data.mes] || data.mes;
-
+        var mesNom = _EMP_MES_NOMBRES[data.mes] || data.mes;
+        var now = new Date();
+        var isCurrentMonth = (data.mes === (now.getMonth() + 1) && data.anio === now.getFullYear());
         if (!data.empleados || data.empleados.length === 0) {
             content.innerHTML = '<div style="text-align:center;padding:3rem;color:#8E8E93;">Sin empleados activos</div>';
             return;
         }
-
+        var colSpan = isCurrentMonth ? 6 : 5;
         var h = '<div style="font-size:0.72rem;font-weight:700;color:#8E8E93;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">'
             + mesNom + ' ' + data.anio + '</div>';
         h += '<table class="adm-table"><thead><tr>'
             + '<th style="text-align:left;">Empleado</th>'
-            + '<th style="text-align:center;">Dias</th>'
+            + '<th style="text-align:center;">Días</th>'
             + '<th style="text-align:center;">Horas Tot.</th>'
-            + '<th style="text-align:center;">Efic. Prom.</th>'
-            + '<th></th></tr></thead><tbody>';
+            + '<th style="text-align:center;">Efic. Prom.</th>';
+        if (isCurrentMonth) h += '<th style="text-align:center;">Estado Hoy</th>';
+        h += '<th></th></tr></thead><tbody>';
 
         data.empleados.forEach(function (emp) {
             var diasEntries = Object.entries(emp.dias).sort(function (a, b) { return parseInt(a[0]) - parseInt(b[0]); });
@@ -3952,16 +4018,29 @@
             var avgEfic = numDias > 0 ? totalEfic / numDias : 0;
             var efColor = avgEfic >= 80 ? '#34C759' : avgEfic >= 50 ? '#FF9500' : avgEfic > 0 ? '#FF3B30' : '#8E8E93';
             var efText = numDias > 0 ? Math.round(avgEfic) + '%' : '&mdash;';
-
+            var estadoTd = '';
+            if (isCurrentMonth) {
+                var est = emp.estado_hoy;
+                if (est === 'activo') {
+                    estadoTd = '<td style="text-align:center;"><span style="background:#E8F8ED;color:#34C759;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">Activo</span></td>';
+                } else if (est === 'pausa') {
+                    estadoTd = '<td style="text-align:center;"><span style="background:#FFF5E6;color:#FF9500;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">Pausa</span></td>';
+                } else if (est === 'inactivo') {
+                    estadoTd = '<td style="text-align:center;"><span style="background:#FFF0F0;color:#FF3B30;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">Inactivo</span></td>';
+                } else {
+                    estadoTd = '<td style="text-align:center;color:#C7C7CC;font-size:0.8rem;">&mdash;</td>';
+                }
+            }
             h += '<tr style="cursor:pointer;" onclick="empToggleDetalle(' + emp.id + ')">'
                 + '<td><strong>' + emp.nombre + '</strong></td>'
                 + '<td style="text-align:center;">' + numDias + '</td>'
                 + '<td style="text-align:center;">' + totalHoras.toFixed(1) + 'h</td>'
                 + '<td style="text-align:center;color:' + efColor + ';font-weight:700;">' + efText + '</td>'
+                + estadoTd
                 + '<td style="text-align:center;font-size:0.7rem;color:#8E8E93;">&#9660;</td>'
                 + '</tr>';
 
-            h += '<tr id="empDetalle_' + emp.id + '" style="display:none;"><td colspan="5" style="padding:0;">'
+            h += '<tr id="empDetalle_' + emp.id + '" style="display:none;"><td colspan="' + colSpan + '" style="padding:0;">'
                 + '<div style="padding:6px 12px 10px;background:#F9FAFB;border-top:1px solid #F2F2F7;">';
             if (diasEntries.length === 0) {
                 h += '<span style="color:#8E8E93;font-size:0.72rem;">Sin registros este mes</span>';
@@ -3997,4 +4076,139 @@
         row.style.display = row.style.display === 'none' ? '' : 'none';
     }
     window.empToggleDetalle = empToggleDetalle;
+
+    document.addEventListener('click', function (e) {
+        var wrap = document.getElementById('empPickerWrap');
+        if (wrap && !wrap.contains(e.target)) {
+            var dd = document.getElementById('empDatePickerDropdown');
+            if (dd) dd.style.display = 'none';
+        }
+    });
+
+    // ═══ COTIZAR RÁPIDO ═══
+    function cotizarRapidoAbrir() {
+        var overlay = document.getElementById('widgetCotizarRapido');
+        if (!overlay) return;
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        crCargarClientes();
+    }
+    window.cotizarRapidoAbrir = cotizarRapidoAbrir;
+
+    function cotizarRapidoCerrar() {
+        var overlay = document.getElementById('widgetCotizarRapido');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        var oppSel = document.getElementById('crOppSelect');
+        if (oppSel) { oppSel.innerHTML = '<option value="">— seleccionar —</option>'; oppSel.disabled = true; }
+        var sec = document.getElementById('crNuevaOppSection');
+        if (sec) sec.style.display = 'none';
+        var goBtn = document.getElementById('crGoBtn');
+        if (goBtn) { goBtn.disabled = true; goBtn.style.opacity = '0.5'; goBtn.style.cursor = 'not-allowed'; }
+    }
+    window.cotizarRapidoCerrar = cotizarRapidoCerrar;
+
+    function crCargarClientes() {
+        fetch('/app/api/cotizar-rapido/clientes/')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var sel = document.getElementById('crClienteSelect');
+                if (!sel) return;
+                sel.innerHTML = '<option value="">— seleccionar cliente —</option>';
+                (data.clientes || []).forEach(function (c) {
+                    sel.innerHTML += '<option value="' + c.id + '">' + c.nombre + '</option>';
+                });
+            });
+    }
+    window.crCargarClientes = crCargarClientes;
+
+    function crCargarOpps() {
+        var sel = document.getElementById('crClienteSelect');
+        var oppSel = document.getElementById('crOppSelect');
+        var goBtn = document.getElementById('crGoBtn');
+        if (!sel || !oppSel) return;
+        var cid = sel.value;
+        if (!cid) {
+            oppSel.innerHTML = '<option value="">— seleccionar —</option>';
+            oppSel.disabled = true;
+            if (goBtn) { goBtn.disabled = true; goBtn.style.opacity = '0.5'; goBtn.style.cursor = 'not-allowed'; }
+            return;
+        }
+        oppSel.disabled = false;
+        oppSel.innerHTML = '<option value="">Cargando...</option>';
+        fetch('/app/api/cotizar-rapido/oportunidades/?cliente_id=' + cid)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                oppSel.innerHTML = '<option value="">— seleccionar oportunidad —</option>';
+                (data.opps || []).forEach(function (o) {
+                    oppSel.innerHTML += '<option value="' + o.id + '">' + o.nombre + '</option>';
+                });
+            });
+    }
+    window.crCargarOpps = crCargarOpps;
+
+    function crOppChanged() {
+        var oppSel = document.getElementById('crOppSelect');
+        var goBtn = document.getElementById('crGoBtn');
+        if (goBtn) {
+            var hasVal = oppSel && oppSel.value;
+            goBtn.disabled = !hasVal;
+            goBtn.style.opacity = hasVal ? '1' : '0.5';
+            goBtn.style.cursor = hasVal ? 'pointer' : 'not-allowed';
+        }
+    }
+    window.crOppChanged = crOppChanged;
+
+    function crToggleNuevaOpp() {
+        var sec = document.getElementById('crNuevaOppSection');
+        if (!sec) return;
+        sec.style.display = sec.style.display === 'none' ? '' : 'none';
+    }
+    window.crToggleNuevaOpp = crToggleNuevaOpp;
+
+    function crCrearOpp() {
+        var clienteSel = document.getElementById('crClienteSelect');
+        var nombreInp = document.getElementById('crNuevaOppNombre');
+        var nombre = (nombreInp ? nombreInp.value : '').trim();
+        if (!clienteSel || !clienteSel.value) { alert('Selecciona un cliente primero'); return; }
+        if (!nombre) { alert('Escribe un nombre para la oportunidad'); return; }
+        var csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
+        var csrf = csrfMatch ? csrfMatch[1] : '';
+        fetch('/app/api/cotizar-rapido/oportunidades/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ cliente_id: clienteSel.value, nombre: nombre })
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.id) {
+                    var oppSel = document.getElementById('crOppSelect');
+                    if (oppSel) {
+                        var opt = document.createElement('option');
+                        opt.value = data.id;
+                        opt.textContent = data.nombre;
+                        oppSel.insertBefore(opt, oppSel.options[1] || null);
+                        oppSel.value = data.id;
+                        oppSel.disabled = false;
+                    }
+                    var sec = document.getElementById('crNuevaOppSection');
+                    if (sec) sec.style.display = 'none';
+                    if (nombreInp) nombreInp.value = '';
+                    crOppChanged();
+                } else {
+                    alert(data.error || 'Error al crear oportunidad');
+                }
+            })
+            .catch(function () { alert('Error de conexión'); });
+    }
+    window.crCrearOpp = crCrearOpp;
+
+    function cotizarRapidoIr() {
+        var oppSel = document.getElementById('crOppSelect');
+        if (!oppSel || !oppSel.value) return;
+        var oppId = parseInt(oppSel.value, 10);
+        cotizarRapidoCerrar();
+        openCotizador(oppId);
+    }
+    window.cotizarRapidoIr = cotizarRapidoIr;
 </script>
