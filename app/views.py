@@ -1397,6 +1397,51 @@ def api_ingeniero_board_reorder(request):
 
 
 @login_required
+def api_empleados_jornadas(request):
+    """Retorna horas trabajadas y eficiencia por día de cada empleado en el mes dado."""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    import calendar as _cal
+    from datetime import date as _date
+    try:
+        mes = int(request.GET.get('mes', _date.today().month))
+        anio = int(request.GET.get('anio', _date.today().year))
+    except (ValueError, TypeError):
+        mes, anio = _date.today().month, _date.today().year
+
+    users = User.objects.filter(is_active=True).exclude(
+        groups__name='Supervisores'
+    ).order_by('first_name', 'last_name')
+
+    jornadas = AsistenciaJornada.objects.filter(
+        fecha__year=anio, fecha__month=mes
+    ).select_related('usuario')
+
+    data = {}
+    for j in jornadas:
+        uid = j.usuario_id
+        day = j.fecha.day
+        if uid not in data:
+            data[uid] = {}
+        data[uid][day] = {
+            'horas': round(j.segundos_laborados / 3600, 1),
+            'eficiencia': float(j.eficiencia_dia),
+        }
+
+    empleados = []
+    for u in users:
+        dias = data.get(u.id, {})
+        empleados.append({
+            'id': u.id,
+            'nombre': ((u.first_name + ' ' + u.last_name).strip() or u.username),
+            'dias': {str(d): v for d, v in dias.items()},
+        })
+
+    _, num_dias = _cal.monthrange(anio, mes)
+    return JsonResponse({'empleados': empleados, 'mes': mes, 'anio': anio, 'num_dias': num_dias})
+
+
+@login_required
 def api_jornada_ayer(request):
     """Retorna la eficiencia del día anterior del usuario."""
     from datetime import timedelta

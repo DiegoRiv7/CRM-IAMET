@@ -1,0 +1,38 @@
+{% if es_supervisor %}
+<!-- ═══ WIDGET EMPLEADOS — JORNADAS ═══ -->
+<div class="widget-overlay" id="widgetEmpleados"
+    onclick="if(event.target===this){var wo=this;wo.classList.add('closing');setTimeout(function(){wo.classList.remove('active','closing');document.body.style.overflow='';},250);}">
+    <div class="admin-panel" style="max-width:860px;width:96%;">
+        <div class="admin-sidebar" style="width:auto;min-width:0;padding:0 20px;">
+            <div class="admin-sidebar-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 0 12px;">
+                <span style="font-size:0.82rem;font-weight:700;color:#1D1D1F;">Empleados</span>
+                <select class="adm-select" id="empMesFilter" onchange="empCargarDatos()" style="font-size:0.72rem;padding:4px 8px;">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+                <select class="adm-select" id="empAnioFilter" onchange="empCargarDatos()" style="font-size:0.72rem;padding:4px 8px;">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
+        <div class="admin-content" id="empContent" style="padding:16px 20px;overflow-y:auto;max-height:70vh;">
+            <div style="text-align:center;color:#8E8E93;padding:3rem;">Cargando...</div>
+        </div>
+        <button class="admin-close" id="empClose"
+            onclick="var wo=document.getElementById('widgetEmpleados');wo.classList.add('closing');setTimeout(function(){wo.classList.remove('active','closing');document.body.style.overflow='';},250);">&times;</button>
+    </div>
+</div>
+{% endif %}

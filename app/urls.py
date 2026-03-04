@@ -361,6 +361,7 @@ urlpatterns = [
     path('api/jornada/iniciar/', views.api_jornada_iniciar, name='api_jornada_iniciar'),
     path('api/jornada/pausar/', views.api_jornada_pausar, name='api_jornada_pausar'),
     path('api/jornada/terminar/', views.api_jornada_terminar, name='api_jornada_terminar'),
+    path('api/empleados/jornadas/', views.api_empleados_jornadas, name='api_empleados_jornadas'),
     path('api/jornada/ayer/', views.api_jornada_ayer, name='api_jornada_ayer'),
     path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),
     path('api/ingeniero/board/reorder/', views.api_ingeniero_board_reorder, name='api_ingeniero_board_reorder'),

@@ -395,6 +395,10 @@
             ];
 
             function openDetalle(oppId) {
+                // Sanitize: strip any non-digit characters (e.g. locale thousands separators)
+                var cleanId = parseInt(String(oppId).replace(/[^\d]/g, ''), 10);
+                if (!cleanId || isNaN(cleanId)) return;
+                oppId = cleanId;
                 currentOppId = oppId;
                 if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(oppId);
                 detalleOverlay.classList.add('active');
@@ -431,7 +435,12 @@
             try {
                 var _savedOppId = sessionStorage.getItem('_crm_open_opp_id');
                 if (_savedOppId) {
-                    setTimeout(function () { openDetalle(_savedOppId); }, 300);
+                    var _savedClean = parseInt(String(_savedOppId).replace(/[^\d]/g, ''), 10);
+                    if (_savedClean) {
+                        setTimeout(function () { openDetalle(_savedClean); }, 300);
+                    } else {
+                        sessionStorage.removeItem('_crm_open_opp_id');
+                    }
                 }
             } catch (e) { }
 
@@ -3879,4 +3888,113 @@
             });
         }
     }
+
+    // ═══ EMPLEADOS WIDGET — SUPERVISOR ONLY ═══
+    function empleadosAbrir() {
+        var overlay = document.getElementById('widgetEmpleados');
+        if (!overlay) return;
+        var topbarMes = document.getElementById('mesFilter');
+        var topbarAnio = document.getElementById('anioFilter');
+        var empMes = document.getElementById('empMesFilter');
+        var empAnio = document.getElementById('empAnioFilter');
+        if (topbarMes && empMes) {
+            var mv = parseInt(topbarMes.value, 10);
+            if (mv >= 1 && mv <= 12) empMes.value = String(mv);
+        }
+        if (topbarAnio && empAnio) empAnio.value = topbarAnio.value;
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        empCargarDatos();
+    }
+    window.empleadosAbrir = empleadosAbrir;
+
+    function empCargarDatos() {
+        var mes = document.getElementById('empMesFilter');
+        var anio = document.getElementById('empAnioFilter');
+        var content = document.getElementById('empContent');
+        if (!mes || !anio || !content) return;
+        content.innerHTML = '<div style="text-align:center;padding:3rem;color:#8E8E93;font-size:0.85rem;">Cargando...</div>';
+        fetch('/app/api/empleados/jornadas/?mes=' + mes.value + '&anio=' + anio.value)
+            .then(function (r) { return r.json(); })
+            .then(function (data) { empRenderDatos(data); })
+            .catch(function () {
+                content.innerHTML = '<div style="color:#FF3B30;padding:2rem;text-align:center;">Error cargando datos</div>';
+            });
+    }
+    window.empCargarDatos = empCargarDatos;
+
+    function empRenderDatos(data) {
+        var content = document.getElementById('empContent');
+        if (!content) return;
+        var MES_NOMBRES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        var mesNom = MES_NOMBRES[data.mes] || data.mes;
+
+        if (!data.empleados || data.empleados.length === 0) {
+            content.innerHTML = '<div style="text-align:center;padding:3rem;color:#8E8E93;">Sin empleados activos</div>';
+            return;
+        }
+
+        var h = '<div style="font-size:0.72rem;font-weight:700;color:#8E8E93;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">'
+            + mesNom + ' ' + data.anio + '</div>';
+        h += '<table class="adm-table"><thead><tr>'
+            + '<th style="text-align:left;">Empleado</th>'
+            + '<th style="text-align:center;">Dias</th>'
+            + '<th style="text-align:center;">Horas Tot.</th>'
+            + '<th style="text-align:center;">Efic. Prom.</th>'
+            + '<th></th></tr></thead><tbody>';
+
+        data.empleados.forEach(function (emp) {
+            var diasEntries = Object.entries(emp.dias).sort(function (a, b) { return parseInt(a[0]) - parseInt(b[0]); });
+            var numDias = diasEntries.length;
+            var totalHoras = 0, totalEfic = 0;
+            diasEntries.forEach(function (e) { totalHoras += e[1].horas; totalEfic += e[1].eficiencia; });
+            var avgEfic = numDias > 0 ? totalEfic / numDias : 0;
+            var efColor = avgEfic >= 80 ? '#34C759' : avgEfic >= 50 ? '#FF9500' : avgEfic > 0 ? '#FF3B30' : '#8E8E93';
+            var efText = numDias > 0 ? Math.round(avgEfic) + '%' : '&mdash;';
+
+            h += '<tr style="cursor:pointer;" onclick="empToggleDetalle(' + emp.id + ')">'
+                + '<td><strong>' + emp.nombre + '</strong></td>'
+                + '<td style="text-align:center;">' + numDias + '</td>'
+                + '<td style="text-align:center;">' + totalHoras.toFixed(1) + 'h</td>'
+                + '<td style="text-align:center;color:' + efColor + ';font-weight:700;">' + efText + '</td>'
+                + '<td style="text-align:center;font-size:0.7rem;color:#8E8E93;">&#9660;</td>'
+                + '</tr>';
+
+            h += '<tr id="empDetalle_' + emp.id + '" style="display:none;"><td colspan="5" style="padding:0;">'
+                + '<div style="padding:6px 12px 10px;background:#F9FAFB;border-top:1px solid #F2F2F7;">';
+            if (diasEntries.length === 0) {
+                h += '<span style="color:#8E8E93;font-size:0.72rem;">Sin registros este mes</span>';
+            } else {
+                h += '<table style="width:100%;font-size:0.68rem;border-collapse:collapse;">'
+                    + '<thead><tr style="color:#8E8E93;"><th style="text-align:left;padding:2px 8px;">Fecha</th>'
+                    + '<th style="text-align:right;padding:2px 8px;">Horas</th>'
+                    + '<th style="text-align:right;padding:2px 8px;">Eficiencia</th></tr></thead><tbody>';
+                diasEntries.forEach(function (entry) {
+                    var d = entry[1];
+                    var ef = Math.round(d.eficiencia);
+                    var efc = ef >= 80 ? '#34C759' : ef >= 50 ? '#FF9500' : '#FF3B30';
+                    var dStr = String(entry[0]).padStart(2, '0') + '/' + String(data.mes).padStart(2, '0') + '/' + data.anio;
+                    h += '<tr style="border-bottom:1px solid #F2F2F7;">'
+                        + '<td style="padding:3px 8px;">' + dStr + '</td>'
+                        + '<td style="text-align:right;padding:3px 8px;">' + d.horas.toFixed(1) + 'h</td>'
+                        + '<td style="text-align:right;padding:3px 8px;color:' + efc + ';font-weight:700;">' + ef + '%</td>'
+                        + '</tr>';
+                });
+                h += '</tbody></table>';
+            }
+            h += '</div></td></tr>';
+        });
+
+        h += '</tbody></table>';
+        content.innerHTML = h;
+    }
+    window.empRenderDatos = empRenderDatos;
+
+    function empToggleDetalle(uid) {
+        var row = document.getElementById('empDetalle_' + uid);
+        if (!row) return;
+        row.style.display = row.style.display === 'none' ? '' : 'none';
+    }
+    window.empToggleDetalle = empToggleDetalle;
 </script>
