@@ -1,5 +1,5 @@
 <!-- ═══ TABLERO CALENDARIO — INGENIERO ═══ -->
-<div id="actividadesBoard" style="display:none;width:100%;height:calc(100vh - 72px);flex-direction:column;box-sizing:border-box;overflow:hidden;background:#F7F7F9;">
+<div id="actividadesBoard" style="display:none;width:100%;height:calc(100vh - 84px);margin-top:10px;flex-direction:column;box-sizing:border-box;overflow:hidden;background:#F7F7F9;border-radius:14px 14px 0 0;">
 
     <!-- Header del tablero -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid #E5E5EA;background:#fff;flex-shrink:0;">
@@ -41,27 +41,6 @@
     <!-- Calendar grid container -->
     <div id="boardColumns" style="display:none;flex:1;overflow-y:auto;overflow-x:auto;padding:12px 16px;box-sizing:border-box;"></div>
 
-</div>
-
-<!-- ── Mini-overlay: detalle de tarea ── -->
-<div id="boardTareaOverlay"
-    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:8000;align-items:center;justify-content:center;"
-    onclick="if(event.target===this)ingenieroTareaCerrar();">
-    <div style="background:#fff;border-radius:18px;padding:22px 24px;box-shadow:0 20px 56px rgba(0,0,0,0.22);width:400px;max-width:94vw;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
-            <div id="btpTitulo" style="font-size:0.9rem;font-weight:700;color:#1D1D1F;line-height:1.4;flex:1;padding-right:8px;"></div>
-            <button onclick="ingenieroTareaCerrar()"
-                style="background:none;border:none;font-size:1.3rem;color:#8E8E93;cursor:pointer;padding:0;line-height:1;flex-shrink:0;">&times;</button>
-        </div>
-        <div id="btpMeta" style="font-size:0.72rem;color:#8E8E93;margin-bottom:6px;"></div>
-        <div id="btpFecha" style="font-size:0.72rem;font-weight:600;color:#3C3C43;margin-bottom:18px;"></div>
-        <div style="display:flex;gap:8px;">
-            <button id="btpCompleteBtn"
-                style="flex:1;background:#34C759;color:#fff;border:none;border-radius:9px;padding:10px;font-size:0.82rem;font-weight:700;cursor:pointer;">&#10003; Completar</button>
-            <button onclick="ingenieroTareaCerrar()"
-                style="background:#F2F2F7;border:none;border-radius:9px;padding:10px 16px;font-size:0.82rem;font-weight:600;color:#3C3C43;cursor:pointer;">Cerrar</button>
-        </div>
-    </div>
 </div>
 
 <style>

@@ -44,11 +44,6 @@
                     <span style="font-size:1.2rem;width:24px;text-align:center;">✅</span> Tareas
                     <span class="notif-red-badge" id="cBadgeTareas" style="display:none;">0</span>
                 </button>
-                <button class="notif-cat original" data-cat="oportunidades"
-                    onclick="notifSetFiltro('oportunidades', this)">
-                    <span style="font-size:1.2rem;width:24px;text-align:center;">💼</span> Oportunidades
-                    <span class="notif-red-badge" id="cBadgeOportunidades" style="display:none;">0</span>
-                </button>
                 <button class="notif-cat original" data-cat="muro" onclick="notifSetFiltro('muro', this)">
                     <span style="font-size:1.2rem;width:24px;text-align:center;">📢</span> Muro / Feed
                     <span class="notif-red-badge" id="cBadgeMuro" style="display:none;">0</span>
@@ -223,24 +218,22 @@
     }
 
     function notifOUpdateCounts() {
-        let counts = { tareas: 0, oportunidades: 0, muro: 0, all: 0 };
+        let counts = { tareas: 0, muro: 0, all: 0 };
         nOData.forEach(n => {
             if (!n.leida) {
                 counts.all++;
                 const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(n.tipo);
-                const isOpp = ['tarea_opp_asignada', 'tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje', 'actividad_por_vencer', 'actividad_vencida'].includes(n.tipo);
                 const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(n.tipo);
                 const isUsuario = ['rendimiento_bajo', 'solicitud_cambio_perfil'].includes(n.tipo);
 
                 if (isTarea) counts.tareas++;
-                else if (isOpp) counts.oportunidades++;
                 else if (isMuro) counts.muro++;
                 else if (isUsuario) counts.usuarios = (counts.usuarios || 0) + 1;
             }
         });
 
 
-        ['tareas', 'oportunidades', 'muro', 'usuarios'].forEach(cat => {
+        ['tareas', 'muro', 'usuarios'].forEach(cat => {
             const el = document.getElementById('cBadge' + cat.charAt(0).toUpperCase() + cat.slice(1));
             if (el) {
                 el.innerText = counts[cat] || 0;
@@ -287,12 +280,10 @@
 
         let filtered = nOData.filter(n => {
             const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(n.tipo);
-            const isOpp = ['tarea_opp_asignada', 'tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje', 'actividad_por_vencer', 'actividad_vencida'].includes(n.tipo);
             const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(n.tipo);
             const isUsuario = ['rendimiento_bajo', 'solicitud_cambio_perfil'].includes(n.tipo);
 
             if (nOFiltro === 'tareas') return isTarea;
-            if (nOFiltro === 'oportunidades') return isOpp;
             if (nOFiltro === 'muro') return isMuro;
             if (nOFiltro === 'usuarios') return isUsuario;
             return false;
@@ -329,7 +320,6 @@
 
     window.notifHandleClick = async function (id, tareaId, oppId, actId, tipo) {
         const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(tipo);
-        const isOpp = ['tarea_opp_asignada', 'tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje', 'actividad_por_vencer', 'actividad_vencida'].includes(tipo);
         const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(tipo);
         const isUsuario = ['rendimiento_bajo'].includes(tipo);
 
@@ -403,18 +393,6 @@
         // APERTURA DE WIDGETS O REDIRECCIÓN
         if (isTarea && tareaId && typeof window.crmTaskVerDetalle === 'function') {
             window.crmTaskVerDetalle(tareaId);
-        } else if (isOpp && typeof window.openDetalle === 'function') {
-            // Oportunidad_id fallback to actId if needed
-            if (oppId) {
-                window.openDetalle(oppId);
-                if (['tarea_opp_comentario', 'comentario_oportunidad', 'oportunidad_mensaje'].includes(tipo)) {
-                    setTimeout(function () {
-                        if (typeof window.woAbrirGestorConversacion === 'function') {
-                            window.woAbrirGestorConversacion();
-                        }
-                    }, 500);
-                }
-            }
         } else if (isMuro && typeof window.muroAbrir === 'function') {
             window.muroAbrir();
         }

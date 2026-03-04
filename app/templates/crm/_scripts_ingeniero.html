@@ -221,44 +221,61 @@ function renderBoard() {
     if (empty) empty.style.display = 'none';
 }
 
-// ── Abrir tarea directamente (no la oportunidad) ─────────────────
+// ── Abrir tarea en el widget de detalle existente ───────────────
 function ingenieroAbrirTarea(key, id, tipo) {
-    var item = _boardItems.find(function (i) { return i.key === key; });
-    var overlay = document.getElementById('boardTareaOverlay');
-    if (!overlay || !item) return;
-
-    var tituloEl = document.getElementById('btpTitulo');
-    var metaEl = document.getElementById('btpMeta');
-    var fechaEl = document.getElementById('btpFecha');
-    var completeBtn = document.getElementById('btpCompleteBtn');
-
-    if (tituloEl) tituloEl.textContent = item.titulo || '—';
-    var meta = [];
-    if (item.cliente) meta.push('&#128205; ' + item.cliente);
-    if (item.oportunidad) meta.push(item.oportunidad);
-    if (metaEl) metaEl.innerHTML = meta.join(' &middot; ') || '&mdash;';
-
-    var f = item.fecha_limite_display || (item.fecha_limite ? formatDate(item.fecha_limite.substring(0, 10)) : '—');
-    if (fechaEl) fechaEl.textContent = 'Vence: ' + f;
-
-    if (completeBtn) {
-        completeBtn.onclick = function () {
-            ingenieroCompletarTarea(key, id, tipo);
-            ingenieroTareaCerrar();
-        };
+    if (tipo === 'tarea') {
+        if (window.crmTaskVerDetalle) { window.crmTaskVerDetalle(id); return; }
     }
-
-    overlay.style.display = 'flex';
+    // tarea_opp: abrir el modal de detalle de tarea con los datos de la tarea de oportunidad
+    var modal = document.getElementById('crmTaskDetailModal');
+    if (!modal) return;
+    modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    fetch('/app/api/tarea-opp/' + id + '/detalle/')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (window.crmTaskRenderData) {
+                window.crmTaskRenderData(data);
+            }
+            // Override botón terminar para usar endpoint correcto
+            var btnT = document.getElementById('crmTaskBtnTerminar');
+            if (btnT && data.estado !== 'completada') {
+                btnT.onclick = function () {
+                    ingenieroCompletarTarea(key, id, tipo);
+                    modal.classList.remove('active');
+                    document.body.style.overflow = '';
+                };
+            }
+            // Cargar comentarios del endpoint de tarea_opp
+            var feed = document.getElementById('crm-task-activity-feed');
+            if (feed) {
+                feed.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;">Cargando...</div>';
+                fetch('/app/api/tarea-opp/' + id + '/comentarios/')
+                    .then(function (r) { return r.json(); })
+                    .then(function (cd) {
+                        var cs = cd.comentarios || [];
+                        if (cs.length === 0) {
+                            feed.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.85rem;">No hay comentarios aún.</div>';
+                        } else {
+                            feed.innerHTML = cs.map(function (c) {
+                                var nm = (c.usuario && c.usuario.nombre) ? c.usuario.nombre : 'Usuario';
+                                var parts = nm.trim().split(/\s+/);
+                                var ini = (parts.length >= 2 ? parts[0][0] + parts[1][0] : nm.substring(0, 2)).toUpperCase();
+                                return '<div style="display:flex;gap:0.75rem;padding:0.75rem;background:#F9FAFB;border-radius:10px;border:1px solid #F3F4F6;margin-bottom:6px;">' +
+                                    '<div style="width:32px;height:32px;border-radius:50%;background:#0052D4;display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:#fff;font-weight:700;flex-shrink:0;">' + ini + '</div>' +
+                                    '<div style="flex:1;"><div style="font-weight:600;font-size:0.85rem;color:#1D1D1F;margin-bottom:2px;">' + escHtml(nm) + '</div>' +
+                                    '<div style="font-size:0.85rem;color:#374151;line-height:1.5;">' + escHtml(c.contenido || '') + '</div></div></div>';
+                            }).join('');
+                        }
+                    }).catch(function () { feed.innerHTML = ''; });
+            }
+        }).catch(function () {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        });
 }
 window.ingenieroAbrirTarea = ingenieroAbrirTarea;
-
-function ingenieroTareaCerrar() {
-    var overlay = document.getElementById('boardTareaOverlay');
-    if (overlay) overlay.style.display = 'none';
-    document.body.style.overflow = '';
-}
-window.ingenieroTareaCerrar = ingenieroTareaCerrar;
 
 // ── Completar tarea ─────────────────────────────────────────────
 function ingenieroCompletarTarea(key, id, tipo) {
