@@ -346,7 +346,7 @@
                                             'X-CSRFToken': csrfToken
                                         },
                                         body: JSON.stringify({ oportunidad_id: data.id })
-                                    }).catch(function() {});
+                                    }).catch(function () { });
                                 }
                             } else {
                                 showToast(data.error || 'Error al crear', 'error');
@@ -496,55 +496,55 @@
                     badge.style.color = '#fff';
                     // skip click handler
                 } else
-                badge.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log("[DEBUG] Badge clicked by addEventListener!");
-                    var newTipo = tipo === 'proyecto' ? 'runrate' : 'proyecto';
-                    var targetName = newTipo === 'proyecto' ? 'Ventas de Proyectos' : 'Ventas Runrate';
+                    badge.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("[DEBUG] Badge clicked by addEventListener!");
+                        var newTipo = tipo === 'proyecto' ? 'runrate' : 'proyecto';
+                        var targetName = newTipo === 'proyecto' ? 'Ventas de Proyectos' : 'Ventas Runrate';
 
-                    var txt = document.getElementById('confirmTipoText');
-                    if (txt) txt.innerHTML = '¿Estás seguro que deseas cambiar esta oportunidad a <b>' + targetName + '</b>?<br><br>Al confirmar, las etapas del pipeline se reiniciarán a su estado inicial.';
+                        var txt = document.getElementById('confirmTipoText');
+                        if (txt) txt.innerHTML = '¿Estás seguro que deseas cambiar esta oportunidad a <b>' + targetName + '</b>?<br><br>Al confirmar, las etapas del pipeline se reiniciarán a su estado inicial.';
 
-                    var overlay = document.getElementById('widgetConfirmTipo');
-                    if (!overlay) {
-                        console.error("[DEBUG] No se encontró widgetConfirmTipo!");
-                        showToast("Error: widgetConfirmTipo no encontrado", "error");
-                        return;
-                    }
-                    var btnCancel = document.getElementById('confirmTipoCancel');
-                    var btnAccept = document.getElementById('confirmTipoAccept');
+                        var overlay = document.getElementById('widgetConfirmTipo');
+                        if (!overlay) {
+                            console.error("[DEBUG] No se encontró widgetConfirmTipo!");
+                            showToast("Error: widgetConfirmTipo no encontrado", "error");
+                            return;
+                        }
+                        var btnCancel = document.getElementById('confirmTipoCancel');
+                        var btnAccept = document.getElementById('confirmTipoAccept');
 
-                    overlay.classList.add('active');
+                        overlay.classList.add('active');
 
-                    btnCancel.onclick = function () {
-                        overlay.classList.remove('active');
-                    };
+                        btnCancel.onclick = function () {
+                            overlay.classList.remove('active');
+                        };
 
-                    btnAccept.onclick = function () {
-                        overlay.classList.remove('active');
-                        var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                        var formData = new FormData();
-                        formData.append('tipo_negociacion', newTipo);
-                        // Also reset etapa to first stage of new type
-                        var newEtapas = newTipo === 'proyecto' ? ETAPAS_PROYECTO : ETAPAS_RUNRATE;
-                        formData.append('etapa_corta', newEtapas[0]);
-                        btnAccept.textContent = 'Cambiando...';
-                        fetch('/app/api/editar-oportunidad/' + d.id + '/', {
-                            method: 'POST',
-                            headers: { 'X-CSRFToken': csrfToken },
-                            body: formData
-                        }).then(function (r) { return r.json(); }).then(function (resp) {
-                            btnAccept.textContent = 'Sí, cambiar';
-                            if (resp.success) {
-                                showToast('Tipo cambiado a ' + (newTipo === 'proyecto' ? 'Proyecto' : 'Runrate'), 'success');
-                                openDetalle(d.id);
-                            } else {
-                                showToast(resp.error || 'Error', 'error');
-                            }
-                        });
-                    };
-                }); // end badge click
+                        btnAccept.onclick = function () {
+                            overlay.classList.remove('active');
+                            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                            var formData = new FormData();
+                            formData.append('tipo_negociacion', newTipo);
+                            // Also reset etapa to first stage of new type
+                            var newEtapas = newTipo === 'proyecto' ? ETAPAS_PROYECTO : ETAPAS_RUNRATE;
+                            formData.append('etapa_corta', newEtapas[0]);
+                            btnAccept.textContent = 'Cambiando...';
+                            fetch('/app/api/editar-oportunidad/' + d.id + '/', {
+                                method: 'POST',
+                                headers: { 'X-CSRFToken': csrfToken },
+                                body: formData
+                            }).then(function (r) { return r.json(); }).then(function (resp) {
+                                btnAccept.textContent = 'Sí, cambiar';
+                                if (resp.success) {
+                                    showToast('Tipo cambiado a ' + (newTipo === 'proyecto' ? 'Proyecto' : 'Runrate'), 'success');
+                                    openDetalle(d.id);
+                                } else {
+                                    showToast(resp.error || 'Error', 'error');
+                                }
+                            });
+                        };
+                    }); // end badge click
 
                 // Title (editable)
                 var titleEl = document.getElementById('woTitle');
@@ -1271,7 +1271,7 @@
 
                 return '<tr class="crm-data-row' + rowExtraClass + '" data-opp-id="' + r.id + '">' +
                     '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '"' + nameStyle + '>' + r.oportunidad + vencidaIcon + '</span>' + bitrixBadge +
-                    '<div class="text-[9px] text-gray-400 font-medium uppercase mt-1">' + r.cliente + '</div></td>' +
+                    '<span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="' + (r.cliente_id || '') + '" data-tab="crm">' + (r.cliente || '- Sin Cliente -') + '</span></td>' +
                     '<td class="px-2 py-4 text-gray-600">' + r.contacto + '</td>' +
                     '<td class="px-2 py-4 text-gray-400 text-xs italic">' + r.area + '</td>' +
                     prodCells +
@@ -1300,7 +1300,8 @@
 
             function buildCobradoRow(r) {
                 return '<tr class="crm-data-row" data-opp-id="' + r.id + '">' +
-                    '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '">' + r.oportunidad + '</span><div class="text-[9px] text-gray-400 font-medium uppercase mt-1">' + r.cliente + '</div></td>' +
+                    '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '">' + r.oportunidad + '</span>' +
+                    '<span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="' + (r.cliente_id || '') + '" data-tab="crm">' + (r.cliente || '- Sin Cliente -') + '</span></td>' +
                     '<td class="px-2 py-4"><span class="text-xs font-medium text-gray-600">' + r.producto + '</span></td>' +
                     '<td class="px-2 py-4 text-gray-500 text-xs">' + r.usuario + '</td>' +
                     '<td class="px-2 py-4 text-center text-gray-400 text-xs">' + r.fecha + '</td>' +
@@ -1314,7 +1315,7 @@
                     : '—';
                 return '<tr class="crm-data-row" data-opp-id="' + (r.oportunidad_id || '') + '">' +
                     '<td class="px-2 py-4">' + oppCell +
-                    '<div class="text-[9px] text-gray-400 font-medium uppercase mt-1">' + r.cliente + '</div></td>' +
+                    '<span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="' + (r.cliente_id || '') + '" data-tab="crm">' + (r.cliente || '- Sin Cliente -') + '</span></td>' +
                     '<td class="px-2 py-4"><a href="' + r.pdf_url + '" target="_blank" class="px-2 py-1 bg-blue-50 rounded text-xs font-mono font-bold text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors cursor-pointer" style="text-decoration:none;">COT-' + r.id + '</a></td>' +
                     '<td class="px-2 py-4 text-gray-500 text-xs">' + (r.usuario || '—') + '</td>' +
                     '<td class="px-2 py-4 text-right text-gray-400 font-medium">$' + r.subtotal + '</td>' +
@@ -1413,6 +1414,9 @@
         window.addEventListener('message', function (e) {
             if (e.data && e.data.type === 'cotizacion-created') {
                 cotizacionCreated = true;
+                if (typeof currentOppId !== 'undefined' && currentOppId && typeof openDetalle === 'function') {
+                    openDetalle(currentOppId);
+                }
             }
         });
 
@@ -1821,9 +1825,9 @@
                             html += '<tr>';
                             html += '<td><strong>' + (u.first_name + ' ' + u.last_name).trim() + '</strong><br><span style="color:#8E8E93;font-size:0.72rem;">@' + u.username + '</span></td>';
                             html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="oportunidades" value="' + fmt(u.meta_oportunidades) + '" style="' + inpStyle + '"></td>';
-                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="cotizado"     value="' + fmt(u.meta_cotizado)      + '" style="' + inpStyle + '"></td>';
-                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="cobrado"      value="' + fmt(u.meta_cobrado)       + '" style="' + inpStyle + '"></td>';
-                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="mensual"      value="' + fmt(u.meta_mensual)       + '" style="' + inpStyle + '"></td>';
+                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="cotizado"     value="' + fmt(u.meta_cotizado) + '" style="' + inpStyle + '"></td>';
+                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="cobrado"      value="' + fmt(u.meta_cobrado) + '" style="' + inpStyle + '"></td>';
+                            html += '<td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" data-field="mensual"      value="' + fmt(u.meta_mensual) + '" style="' + inpStyle + '"></td>';
                             html += '</tr>';
                         });
                         html += '</tbody></table>';
@@ -2568,47 +2572,47 @@
         // ── Cargar tareas desde API ──
         var _crmTareasPrioFilter = 'todas';
 
-        
-    window.updateGlobalNavBadges = function(counts) {
-        // Tareas Vencidas Badge
-        const btnTareas = document.getElementById('btnTareas');
-        if (btnTareas) {
-            let badge = btnTareas.querySelector('.tareas-red-badge');
-            if (counts && counts.tareas > 0) {
-                if (!badge) {
-                    badge = document.createElement('span');
-                    badge.className = 'tareas-red-badge';
-                    badge.style.cssText = 'position:absolute;top:-4px;right:-8px;background:#EF4444;color:#fff;font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:10px;line-height:1;pointer-events:none;z-index:10;border:2px solid #fff;';
-                    btnTareas.style.position = 'relative';
-                    btnTareas.appendChild(badge);
-                }
-                // Specifically count vencidas in notif labels if possible, but requested by category is fine
-                badge.innerText = counts.tareas > 99 ? '99+' : counts.tareas;
-            } else if (badge) {
-                badge.remove();
-            }
-        }
 
-        // Muro Badge
-        const btnMuro = document.getElementById('btnMuro');
-        if (btnMuro) {
-            let badge = btnMuro.querySelector('.muro-red-badge');
-            if (counts && counts.muro > 0) {
-                if (!badge) {
-                    badge = document.createElement('span');
-                    badge.className = 'muro-red-badge';
-                    badge.style.cssText = 'position:absolute;top:-4px;right:-8px;background:#EF4444;color:#fff;font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:10px;line-height:1;pointer-events:none;z-index:10;border:2px solid #fff;';
-                    btnMuro.style.position = 'relative';
-                    btnMuro.appendChild(badge);
+        window.updateGlobalNavBadges = function (counts) {
+            // Tareas Vencidas Badge
+            const btnTareas = document.getElementById('btnTareas');
+            if (btnTareas) {
+                let badge = btnTareas.querySelector('.tareas-red-badge');
+                if (counts && counts.tareas > 0) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'tareas-red-badge';
+                        badge.style.cssText = 'position:absolute;top:-4px;right:-8px;background:#EF4444;color:#fff;font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:10px;line-height:1;pointer-events:none;z-index:10;border:2px solid #fff;';
+                        btnTareas.style.position = 'relative';
+                        btnTareas.appendChild(badge);
+                    }
+                    // Specifically count vencidas in notif labels if possible, but requested by category is fine
+                    badge.innerText = counts.tareas > 99 ? '99+' : counts.tareas;
+                } else if (badge) {
+                    badge.remove();
                 }
-                badge.innerText = counts.muro > 99 ? '99+' : counts.muro;
-            } else if (badge) {
-                badge.remove();
             }
-        }
-    };
 
-    function cargarTareasCRM() {
+            // Muro Badge
+            const btnMuro = document.getElementById('btnMuro');
+            if (btnMuro) {
+                let badge = btnMuro.querySelector('.muro-red-badge');
+                if (counts && counts.muro > 0) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'muro-red-badge';
+                        badge.style.cssText = 'position:absolute;top:-4px;right:-8px;background:#EF4444;color:#fff;font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:10px;line-height:1;pointer-events:none;z-index:10;border:2px solid #fff;';
+                        btnMuro.style.position = 'relative';
+                        btnMuro.appendChild(badge);
+                    }
+                    badge.innerText = counts.muro > 99 ? '99+' : counts.muro;
+                } else if (badge) {
+                    badge.remove();
+                }
+            }
+        };
+
+        function cargarTareasCRM() {
             var tbody = document.getElementById('tareasTableBody');
             if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#9CA3AF;">Cargando tareas...</td></tr>';
 
@@ -2636,15 +2640,15 @@
         }
 
         // ── Renderizar tabla de tareas ──
-        
-    document.addEventListener('DOMContentLoaded', function() {
-        // Refresh tasks every minute to check for new vencimientos
-        setInterval(function() {
-            if (typeof cargarTareasCRM === 'function') cargarTareasCRM();
-        }, 60000);
-    });
 
-    function renderTareasCRM(filtro) {
+        document.addEventListener('DOMContentLoaded', function () {
+            // Refresh tasks every minute to check for new vencimientos
+            setInterval(function () {
+                if (typeof cargarTareasCRM === 'function') cargarTareasCRM();
+            }, 60000);
+        });
+
+        function renderTareasCRM(filtro) {
             var tbody = document.getElementById('tareasTableBody');
             var countEl = document.getElementById('tareasCount');
             if (!tbody) return;

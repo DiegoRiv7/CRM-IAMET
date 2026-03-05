@@ -132,7 +132,157 @@
     function muroRenderComentarios(pId, comments) { var list = $m('muro-cmt-list-' + pId); list.innerHTML = ''; comments.forEach(c => { var d = document.createElement('div'); d.style.cssText = 'display:flex;gap:0.5rem;align-items:flex-start;'; d.innerHTML = muroAvatarHtml(c.autor_avatar, c.autor_iniciales, 30) + '<div style="flex:1;background:#fff;border-radius:10px;padding:7px 10px;box-shadow:0 1px 2px rgba(0,0,0,0.05);"><div style="font-size:0.8rem;font-weight:700;">' + c.autor_nombre + '</div><div style="font-size:0.84rem;color:#374151;">' + _muroEscapeHtml(c.contenido) + '</div></div>'; list.appendChild(d); }); }
     window.muroEnviarComentario = function (pId) { var inp = $m('muro-cmt-input-' + pId); var val = inp.value.trim(); if (!val) return; fetch('/app/api/muro/posts/' + pId + '/comentarios/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() }, body: JSON.stringify({ contenido: val }) }).then(r => r.json()).then(data => { if (data.success) { inp.value = ''; muroCargarComentarios(pId); } }); };
 
+    window.muroToggleAnuncio = function (btn) {
+        var isAnuncio = btn.getAttribute('data-activo') === 'true';
+        if (isAnuncio) {
+            btn.setAttribute('data-activo', 'false');
+            btn.style.background = '#F3F4F8';
+            btn.style.color = '#4B5563';
+        } else {
+            btn.setAttribute('data-activo', 'true');
+            btn.style.background = '#0052D4';
+            btn.style.color = '#fff';
+        }
+    };
+
+    window.muroToggleEtiquetar = function () {
+        var c = $m('muroEtiqContainer');
+        c.style.display = c.style.display === 'none' ? 'block' : 'none';
+        if (c.style.display === 'block') $m('muroEtiqSearch').focus();
+    };
+
+    window.muroToggleProgramar = function () {
+        var p = $m('muroProgramarContainer');
+        p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window.muroPreviewImagen = function (input) {
+        if (input.files && input.files[0]) {
+            var r = new FileReader();
+            r.onload = function (e) {
+                $m('muroImgPreviewImg').src = e.target.result;
+                $m('muroImgPreview').style.display = 'block';
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+    };
+
+    window.muroQuitarImagen = function () {
+        $m('muroImgInput').value = '';
+        $m('muroImgPreviewImg').src = '';
+        $m('muroImgPreview').style.display = 'none';
+    };
+
+    var _muroSearchTimer;
+    window.muroBuscarEtiquetado = function (q) {
+        clearTimeout(_muroSearchTimer);
+        var resId = $m('muroEtiqResults');
+        if (!q.trim()) { resId.style.display = 'none'; return; }
+        _muroSearchTimer = setTimeout(function () {
+            fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(d => {
+                    var html = '';
+                    (d.usuarios || []).forEach(u => {
+                        html += '<div onclick="muroAddEtiqueta(' + u.id + ', \'' + _muroEscapeHtml(u.nombre) + '\')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;">' + _muroEscapeHtml(u.nombre) + '</div>';
+                    });
+                    resId.innerHTML = html || '<div style="padding:8px;color:#999;">Sin resultados</div>';
+                    resId.style.display = 'block';
+                });
+        }, 300);
+    };
+
+    window.muroAddEtiqueta = function (id, nombre) {
+        if (!_muroEtiquetados.some(x => x.id === id)) {
+            _muroEtiquetados.push({ id: id, nombre: nombre });
+            muroRenderEtiqChips();
+        }
+        $m('muroEtiqSearch').value = '';
+        $m('muroEtiqResults').style.display = 'none';
+    };
+
+    window.muroQuitarEtiqueta = function (id) {
+        _muroEtiquetados = _muroEtiquetados.filter(x => x.id !== id);
+        muroRenderEtiqChips();
+    };
+
+    function muroRenderEtiqChips() {
+        var c = $m('muroEtiqChips');
+        c.innerHTML = '';
+        _muroEtiquetados.forEach(v => {
+            c.innerHTML += '<span style="background:#E5E7EB;padding:3px 8px;border-radius:12px;font-size:0.75rem;display:flex;align-items:center;gap:4px;">' + v.nombre + ' <button onclick="muroQuitarEtiqueta(' + v.id + ')" style="border:none;background:none;color:#555;cursor:pointer;">&times;</button></span>';
+        });
+    }
+
+    window.muroPublicar = function () {
+        var texto = $m('muroContenido').value.trim();
+        var files = $m('muroImgInput').files;
+        var btnA = $m('muroBtnAnuncio');
+        var isAnuncio = btnA ? (btnA.getAttribute('data-activo') === 'true') : false;
+        var fechaProg = $m('muroProgramarFecha') ? $m('muroProgramarFecha').value : '';
+
+        if (!texto && files.length === 0) return;
+
+        var fd = new FormData();
+        fd.append('contenido', texto);
+        if (files.length > 0) fd.append('archivo', files[0]);
+        if (isAnuncio) fd.append('es_anuncio', 'true');
+        if (fechaProg) fd.append('fecha_programacion', fechaProg);
+        if (_muroEtiquetados.length > 0) {
+            fd.append('etiquetas_json', JSON.stringify(_muroEtiquetados.map(x => x.id)));
+        }
+
+        fetch('/app/api/muro/posts/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrf() },
+            body: fd
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                // reset
+                $m('muroContenido').value = '';
+                muroQuitarImagen();
+                _muroEtiquetados = [];
+                muroRenderEtiqChips();
+                if (btnA) { btnA.setAttribute('data-activo', 'false'); btnA.style.background = '#F3F4F8'; btnA.style.color = '#4B5563'; }
+                if ($m('muroProgramarFecha')) $m('muroProgramarFecha').value = '';
+                var prog = $m('muroProgramarContainer'); if (prog) prog.style.display = 'none';
+                var eti = $m('muroEtiqContainer'); if (eti) eti.style.display = 'none';
+                muroCargar();
+            } else {
+                alert(data.error || 'Error al publicar');
+            }
+        });
+    };
+
     window.muroTogglePostMenu = function (e, pId) { e.stopPropagation(); var m = $m('muro-menu-' + pId); var vis = m.style.display === 'block'; document.querySelectorAll('.muro-post-menu').forEach(x => x.style.display = 'none'); if (!vis) m.style.display = 'block'; };
+
+    window.muroEliminarPost = function (pId) {
+        if (confirm('¿Eliminar esta publicación?')) {
+            fetch('/app/api/muro/posts/' + pId + '/', {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCsrf() }
+            }).then(r => r.json()).then(d => {
+                if (d.success) muroCargar();
+            });
+        }
+    };
+
+    window.muroEditarPost = function (pId) {
+        var preId = 'muro-contenido-' + pId;
+        var el = $m(preId);
+        var cur = el.innerText;
+        var newT = prompt('Editar publicación:', cur);
+        if (newT && newT !== cur) {
+            fetch('/app/api/muro/posts/' + pId + '/', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+                body: JSON.stringify({ contenido: newT })
+            }).then(r => r.json()).then(d => {
+                if (d.success) muroCargar();
+            });
+        }
+    };
+
     document.addEventListener('click', () => document.querySelectorAll('.muro-post-menu').forEach(x => x.style.display = 'none'));
 
 }) (); 

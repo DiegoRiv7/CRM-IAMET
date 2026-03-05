@@ -770,9 +770,9 @@
                                 : '';
                             var acciones = streamUrl
                                 ? '<div style="display:flex;gap:4px;justify-content:center;margin-top:0.3rem;">' +
-                                  '<a href="' + woEscape(streamUrl) + '" target="_blank" title="Previsualizar" style="font-size:0.65rem;color:#0052D4;text-decoration:none;background:#F0F5FF;border-radius:4px;padding:2px 6px;" onclick="event.stopPropagation();">Ver</a>' +
-                                  '<a href="' + woEscape(dlUrl) + '" title="Descargar" style="font-size:0.65rem;color:#34C759;text-decoration:none;background:#F0FFF5;border-radius:4px;padding:2px 6px;" onclick="event.stopPropagation();">Descargar</a>' +
-                                  '</div>'
+                                '<a href="' + woEscape(streamUrl) + '" target="_blank" title="Previsualizar" style="font-size:0.65rem;color:#0052D4;text-decoration:none;background:#F0F5FF;border-radius:4px;padding:2px 6px;" onclick="event.stopPropagation();">Ver</a>' +
+                                '<a href="' + woEscape(dlUrl) + '" title="Descargar" style="font-size:0.65rem;color:#34C759;text-decoration:none;background:#F0FFF5;border-radius:4px;padding:2px 6px;" onclick="event.stopPropagation();">Descargar</a>' +
+                                '</div>'
                                 : '';
                             html += '<div style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
                                 badgeBitrix +
@@ -1394,6 +1394,10 @@
                     // Solo recargamos todo para actualizar el cartel superior (banner)
                     woCargarNotas(_woCurrentOppId);
 
+                    if (typeof woCargarTareasInline === 'function') {
+                        woCargarTareasInline(_woCurrentOppId);
+                    }
+
                     // Si el calendario general está allí, forzarlo a refrescar también
                     if (typeof calGlobalRefetch === 'function') {
                         calGlobalRefetch();
@@ -1480,10 +1484,15 @@
             _woCurrentViewingTaskFechaLimite = null;
 
             fetch('/app/api/tarea-opp/' + idActividad + '/detalle/')
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (!r.ok) {
+                        return { error: 'No se encontró la actividad o hubo un error (' + r.status + ')' };
+                    }
+                    return r.json();
+                })
                 .then(function (t) {
                     if (t.error) {
-                        document.getElementById('woVerActNombre').textContent = 'Error: ' + t.error;
+                        document.getElementById('woVerActNombre').textContent = t.error;
                         return;
                     }
                     document.getElementById('woVerActNombre').textContent = t.titulo || 'Sin título';
