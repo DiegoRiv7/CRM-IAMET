@@ -367,6 +367,10 @@ urlpatterns = [
     path('api/jornada/ayer/', views.api_jornada_ayer, name='api_jornada_ayer'),
     path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),
     path('api/ingeniero/board/reorder/', views.api_ingeniero_board_reorder, name='api_ingeniero_board_reorder'),
+    path('api/ingeniero/dashboard-stats/', views.api_ingeniero_dashboard_stats, name='api_ingeniero_dashboard_stats'),
+    path('api/programacion/actividades/', views.api_programacion_actividades, name='api_programacion_actividades'),
+    path('api/programacion/actividad/<int:actividad_id>/', views.api_programacion_actividad_detail, name='api_programacion_actividad_detail'),
+    path('api/programacion/disponibilidad/', views.api_programacion_disponibilidad, name='api_programacion_disponibilidad'),
     path('api/verificar-empleado-mes/', views.api_verificar_empleado_mes, name='api_verificar_empleado_mes'),
     
     # APIs de Perfil y Cambios

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propuesta CRM - Fábrica de Software IA</title>
+    <style>
+        :root {
+            --bg-color: #fbfbfd;
+            --text-main: #1d1d1f;
+            --text-muted: #86868b;
+            --accent: #0066cc;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .presentation-container {
+            width: 100%;
+            max-width: 1500px;
+            /* Aumentado para abarcar más pantalla */
+            height: 100%;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+            transform: translateY(20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 100px;
+            /* Más espacio interno */
+            pointer-events: none;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 5rem;
+            /* Letra mucho más grande */
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 30px;
+            line-height: 1.1;
+        }
+
+        h2 {
+            font-size: 3.5rem;
+            /* Letra mucho más grande */
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        p,
+        li {
+            font-size: 1.8rem;
+            /* Texto de cuerpo más grande */
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+        }
+
+        ul {
+            list-style-type: none;
+        }
+
+        li {
+            margin-bottom: 20px;
+        }
+
+        li::before {
+            content: "•";
+            color: var(--accent);
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            /* Mayor separación entre tarjetas */
+            margin-top: 50px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 50px;
+            /* Tarjetas más amplias */
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.06);
+        }
+
+        .card h3 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        button {
+            background: rgba(0, 0, 0, 0.05);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e8f2fc;
+            color: var(--accent);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: fit-content;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="presentation-container">
+
+        <!-- Slide 1: Título -->
+        <div class="slide active" id="slide-1">
+            <span class="badge">Propuesta Estratégica</span>
+            <h1>Evolucionando el Desarrollo:<br>La Fábrica de Software con IA</h1>
+            <p>Un enfoque agéntico para desarrollar un CRM robusto con un <i class="highlight">Time-to-Market</i>
+                acelerado.</p>
+        </div>
+
+        <!-- Slide 2: Justificación -->
+        <div class="slide" id="slide-2">
+            <h2>El Desafío Actual</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>El Modelo Tradicional</h3>
+                    <p>Desarrollar un CRM completo (Ventas, Nómina, Proyectos, Reportes) línea por línea toma un
+                        estimado de <span class="highlight">7 meses</span>.</p>
+                    <p>Esto retrasa la salida a ventas, posterga la adquisición de clientes y prolonga drásticamente el
+                        retorno de inversión.</p>
+                </div>
+                <div class="card">
+                    <h3>El Objetivo</h3>
+                    <p>Reducir drásticamente el tiempo de desarrollo sin sacrificar calidad, robustez ni seguridad,
+                        generando ingresos lo antes posible.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: La Estrella (La Fábrica) -->
+        <div class="slide" id="slide-3">
+            <span class="badge">Innovación</span>
+            <h2>Fábrica de Software</h2>
+            <p>En lugar de programar de forma lineal, implementaremos una "Fábrica" donde agentes de IA especializados
+                construyen el código bajo nuestra supervisión arquitectónica estricta.</p>
+            <div class="grid-2" style="margin-top: 30px;">
+                <div>
+                    <ul>
+                        <li><span class="highlight">Estación 1: Arquitectura (Gemini)</span><br>Diseño de bases de datos
+                            y reglas de negocio.</li>
+                        <li><span class="highlight">Estación 2: Motor (Manus AI)</span><br>Construcción rápida y masiva
+                            de módulos backend.</li>
+                    </ul>
+                </div>
+                <div>
+                    <ul>
+                        <li><span class="highlight">Estación 3: Control de Calidad (Claude)</span><br>Refinamiento,
+                            validaciones y conexión de piezas.</li>
+                        <li><span class="highlight">Estación 4: Despliegue (Docker/GitHub)</span><br>Automatización
+                            directa hacia producción.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Costos y Ahorros -->
+        <div class="slide" id="slide-4">
+            <span class="badge">Análisis Financiero</span>
+            <h2>Impacto en Costos y ROI</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Costo de Operar la Fábrica</h3>
+                    <ul>
+                        <li>Manus AI (Generación): ~$40 USD/mes</li>
+                        <li>Claude / Antigravity (QA): ~$20 USD/mes</li>
+                        <li>Gemini / GitHub Actions: $0 USD</li>
+                        <li style="margin-top: 20px; border-top: 2px solid #f0f0f0; padding-top: 20px;"><strong
+                                class="highlight" style="font-size: 2rem;">Total: ~$60 - $80 USD al mes</strong></li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Ahorro Proyectado</h3>
+                    <p>Ahorro radical de <span class="highlight">múltiples meses</span> de costos operativos, sueldos de
+                        desarrollo prolongado e infraestructura en etapa pre-lanzamiento.</p>
+                    <p style="margin-top: 20px;"><strong>Resultado:</strong> Ventas adelantadas y recuperación de
+                        inversión en tiempo récord.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="controls">
+        <button onclick="prevSlide()" aria-label="Anterior">&#8592;</button>
+        <button onclick="nextSlide()" aria-label="Siguiente">&#8594;</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.remove('active');
+                if (i === index) {
+                    slide.classList.add('active');
+                }
+            });
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                e.preventDefault(); // Evitar scroll con espacio
+                nextSlide();
+            }
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // Cambio de slide al hacer clic, ignorando los botones
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+                nextSlide();
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -4,21 +4,22 @@
 {% include "crm/_styles.html" %}
 
 <div class="crm-page">
+    <form style="display:none;">{% csrf_token %}</form>
 
     {% if es_ingeniero %}
-        {% include "crm/_topbar_ingeniero.html" %}
+    {% include "crm/_topbar_ingeniero.html" %}
     {% else %}
-        {% include "crm/_topbar.html" %}
+    {% include "crm/_topbar.html" %}
     {% endif %}
 
     {% include "crm/_widget_mail.html" %}
     {% if not es_ingeniero %}
-        {% include "crm/_widget_negociacion.html" %}
+    {% include "crm/_widget_negociacion.html" %}
     {% endif %}
     {% include "crm/_widget_oportunidad.html" %}
     {% include "crm/_widget_extras.html" %}
     {% if not es_ingeniero %}
-        {% include "crm/_widget_admin.html" %}
+    {% include "crm/_widget_admin.html" %}
     {% endif %}
     {% include "crm/_widget_empleados.html" %}
     {% include "crm/_widget_cotizar_rapido.html" %}
@@ -26,7 +27,7 @@
     {% include "crm/_widget_perfil.html" %}
 
     {% if es_ingeniero %}
-        {% include "crm/_actividades_board.html" %}
+    {% include "crm/_actividades_board.html" %}
     {% endif %}
     {% include "crm/_content.html" %}
 
@@ -40,11 +41,11 @@
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
 {% if es_ingeniero %}
-    {% include "crm/_scripts_ingeniero.html" %}
+{% include "crm/_scripts_ingeniero.html" %}
 {% endif %}
 
 <script>
-var ES_INGENIERO = {{ es_ingeniero|yesno:"true,false" }};
+    var ES_INGENIERO = {{ es_ingeniero|yesno:"true,false" }};
 </script>
 
 {% endblock %}

@@ -17,7 +17,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -1394,6 +1394,428 @@ def api_ingeniero_board_reorder(request):
             )
 
     return JsonResponse({'ok': True})
+
+
+@login_required
+def api_ingeniero_dashboard_stats(request):
+    """
+    Dashboard stats for the engineer: efficiency, hours, project status.
+    Efficiency factors in: tareas, actividades (tareas_opp), and proyectos.
+    Hours calculated using business hours only: Mon-Fri, 8am-6pm (10h/day).
+    """
+    from app.models import TareaOportunidad, Tarea, Proyecto, AsistenciaJornada, EficienciaMensual
+    from datetime import timedelta, datetime as dt_class, time as time_class
+    import math
+
+    user = request.user
+    ahora = timezone.now()
+    hoy = timezone.localdate()
+
+    # ── Tareas asignadas ──
+    tareas = Tarea.objects.filter(asignado_a=user).exclude(estado='cancelada')
+    total_tareas = tareas.count()
+    tareas_completadas = tareas.filter(estado='completada').count()
+    tareas_progreso = tareas.filter(estado__in=['en_progreso', 'iniciada']).count()
+    tareas_pendientes = tareas.filter(estado='pendiente').count()
+    tareas_vencidas = tareas.filter(fecha_limite__lt=ahora).exclude(estado='completada').count()
+
+    # ── Actividades (Tareas de Oportunidad) ──
+    acts = TareaOportunidad.objects.filter(responsable=user)
+    total_acts = acts.count()
+    acts_completadas = acts.filter(estado='completada').count()
+    acts_pendientes = acts.filter(estado='pendiente').count()
+    acts_vencidas = acts.filter(fecha_limite__lt=ahora, estado='pendiente').count()
+
+    # ── Proyectos ── (where user has tasks assigned)
+    proyecto_ids = set(
+        tareas.exclude(proyecto__isnull=True).values_list('proyecto_id', flat=True)
+    )
+    proyectos = Proyecto.objects.filter(id__in=proyecto_ids) if proyecto_ids else Proyecto.objects.none()
+    total_proyectos = proyectos.count()
+
+    # ── EFICIENCIA DEL INGENIERO ──
+    # Base: % of items completed on time vs total actionable items
+    total_items = total_tareas + total_acts + total_proyectos
+    completados = tareas_completadas + acts_completadas
+    vencidos = tareas_vencidas + acts_vencidas
+
+    if total_items > 0:
+        # Positive: completed items add points
+        puntos_posibles = total_items * 10
+        puntos_obtenidos = completados * 10
+        # Negative: overdue items penalize
+        puntos_obtenidos -= vencidos * 5
+        puntos_obtenidos = max(0, puntos_obtenidos)
+        eficiencia = round((puntos_obtenidos / puntos_posibles) * 100, 1)
+    else:
+        eficiencia = 100.0
+
+    # Also check EficienciaMensual for historical data
+    em = EficienciaMensual.objects.filter(
+        usuario=user, mes=hoy.month, anio=hoy.year
+    ).first()
+    eficiencia_mensual = float(em.promedio_eficiencia) if em else eficiencia
+
+    # ── HORAS para item seleccionado ──
+    # Business hours calculation: Mon-Fri, 8am-6pm (10h/day)
+    selected_key = request.GET.get('selected', '')
+    horas_plan = 0
+    horas_actual = 0
+
+    def _business_hours_between(start_dt, end_dt):
+        """Calculate business hours between two datetimes (Mon-Fri, 8:00-18:00)."""
+        if not start_dt or not end_dt:
+            return 0
+        # Ensure timezone aware
+        if timezone.is_naive(start_dt):
+            start_dt = timezone.make_aware(start_dt)
+        if timezone.is_naive(end_dt):
+            end_dt = timezone.make_aware(end_dt)
+        if start_dt >= end_dt:
+            return 0
+
+        total_minutes = 0
+        current = start_dt
+
+        while current < end_dt:
+            # Skip weekends
+            if current.weekday() >= 5:
+                current = current.replace(hour=8, minute=0, second=0) + timedelta(days=1)
+                continue
+
+            day_start = current.replace(hour=8, minute=0, second=0, microsecond=0)
+            day_end = current.replace(hour=18, minute=0, second=0, microsecond=0)
+
+            # Clamp to business hours
+            effective_start = max(current, day_start)
+            effective_end = min(end_dt, day_end)
+
+            if effective_start < effective_end:
+                total_minutes += (effective_end - effective_start).total_seconds() / 60
+
+            # Move to next day
+            current = day_start + timedelta(days=1)
+
+        return round(total_minutes / 60, 1)
+
+    if selected_key:
+        if selected_key.startswith('opp_'):
+            tid = int(selected_key[4:])
+            try:
+                t = TareaOportunidad.objects.get(id=tid)
+                # Actual: business hours since creation until now (or completion)
+                horas_actual = _business_hours_between(t.fecha_creacion, ahora)
+                # Plan: business hours from creation to deadline
+                if t.fecha_limite:
+                    horas_plan = _business_hours_between(t.fecha_creacion, t.fecha_limite)
+            except TareaOportunidad.DoesNotExist:
+                pass
+        elif selected_key.startswith('gen_'):
+            tid = int(selected_key[4:])
+            try:
+                t = Tarea.objects.get(id=tid)
+                horas_actual = _business_hours_between(t.fecha_creacion, ahora)
+                if t.fecha_limite:
+                    horas_plan = _business_hours_between(t.fecha_creacion, t.fecha_limite)
+            except Tarea.DoesNotExist:
+                pass
+
+    return JsonResponse({
+        'eficiencia': eficiencia,
+        'eficiencia_mensual': eficiencia_mensual,
+        'total_tareas': total_tareas,
+        'tareas_completadas': tareas_completadas,
+        'tareas_progreso': tareas_progreso,
+        'tareas_pendientes': tareas_pendientes,
+        'tareas_vencidas': tareas_vencidas,
+        'total_acts': total_acts,
+        'acts_completadas': acts_completadas,
+        'acts_pendientes': acts_pendientes,
+        'acts_vencidas': acts_vencidas,
+        'total_proyectos': total_proyectos,
+        'horas_plan': horas_plan,
+        'horas_actual': horas_actual,
+    })
+
+
+# ═══ APIS PARA PROGRAMACIÓN DE ACTIVIDADES (CALENDARIO PROYECTO) ═══
+
+@login_required
+def api_programacion_actividades(request):
+    """GET: lista actividades de un proyecto_key. POST: crear una nueva."""
+    if request.method == 'GET':
+        proyecto_key = request.GET.get('proyecto_key', '')
+        if not proyecto_key:
+            return JsonResponse({'error': 'proyecto_key requerido'}, status=400)
+
+        acts = ProgramacionActividad.objects.filter(
+            proyecto_key=proyecto_key
+        ).prefetch_related('responsables')
+
+        items = []
+        for a in acts:
+            responsables = []
+            for u in a.responsables.all():
+                profile = getattr(u, 'userprofile', None)
+                iniciales = profile.iniciales() if profile else (u.first_name[:1] + u.last_name[:1]).upper() if u.first_name else u.username[:2].upper()
+                responsables.append({
+                    'id': u.id,
+                    'nombre': u.get_full_name() or u.username,
+                    'iniciales': iniciales,
+                })
+            items.append({
+                'id': a.id,
+                'titulo': a.titulo,
+                'dia_semana': a.dia_semana,
+                'fecha': str(a.fecha) if a.fecha else None,
+                'hora_inicio': a.hora_inicio.strftime('%H:%M'),
+                'hora_fin': a.hora_fin.strftime('%H:%M'),
+                'responsables': responsables,
+                'creado_por': a.creado_por.get_full_name() or a.creado_por.username,
+            })
+
+        return JsonResponse({'success': True, 'items': items})
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        proyecto_key = data.get('proyecto_key', '')
+        titulo = data.get('titulo', '').strip()
+        dia_semana = data.get('dia_semana', '')
+        hora_inicio_str = data.get('hora_inicio', '')
+        hora_fin_str = data.get('hora_fin', '')
+        responsable_ids = data.get('responsables', [])
+        fecha_str = data.get('fecha', '')
+
+        if not proyecto_key or not dia_semana or not hora_inicio_str or not hora_fin_str:
+            return JsonResponse({'error': 'Campos requeridos: proyecto_key, dia_semana, hora_inicio, hora_fin'}, status=400)
+
+        from datetime import time as time_class, datetime as dt_class, timedelta
+        try:
+            h_ini = dt_class.strptime(hora_inicio_str, '%H:%M').time()
+            h_fin = dt_class.strptime(hora_fin_str, '%H:%M').time()
+        except ValueError:
+            return JsonResponse({'error': 'Formato de hora inválido (usar HH:MM)'}, status=400)
+
+        if h_ini >= h_fin:
+            return JsonResponse({'error': 'La hora de inicio debe ser antes de la hora de fin'}, status=400)
+
+        fecha = None
+        if fecha_str:
+            try:
+                fecha = dt_class.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+
+        # Verificar conflictos para cada responsable
+        conflictos = []
+        for uid in responsable_ids:
+            user_conflicts = ProgramacionActividad.get_conflictos_usuario(
+                uid, dia_semana, h_ini, h_fin, fecha=fecha
+            )
+            if user_conflicts.exists():
+                try:
+                    u = User.objects.get(id=uid)
+                    nombre = u.get_full_name() or u.username
+                except User.DoesNotExist:
+                    nombre = f'ID {uid}'
+                for c in user_conflicts:
+                    conflictos.append({
+                        'usuario': nombre,
+                        'usuario_id': uid,
+                        'actividad': c.titulo,
+                        'proyecto_key': c.proyecto_key,
+                        'hora': f"{c.hora_inicio.strftime('%H:%M')}-{c.hora_fin.strftime('%H:%M')}",
+                    })
+
+        if conflictos:
+            return JsonResponse({
+                'success': False,
+                'error': 'conflicto',
+                'conflictos': conflictos,
+                'mensaje': 'Algunos responsables tienen conflictos de horario',
+            }, status=409)
+
+        act = ProgramacionActividad.objects.create(
+            proyecto_key=proyecto_key,
+            titulo=titulo or 'Actividad sin título',
+            dia_semana=dia_semana,
+            fecha=fecha,
+            hora_inicio=h_ini,
+            hora_fin=h_fin,
+            creado_por=request.user,
+        )
+        usuarios_asignados = []
+        if responsable_ids:
+            usuarios_asignados = list(User.objects.filter(id__in=responsable_ids))
+            act.responsables.set(usuarios_asignados)
+
+        # ── Create calendar Actividad for each assigned person ──
+        # Use next occurrence of dia_semana if no fecha given
+        from datetime import datetime as dt_class
+        if fecha:
+            act_fecha = fecha
+        else:
+            dias_map = {'Lunes':0,'Martes':1,'Miércoles':2,'Jueves':3,'Viernes':4,'Sábado':5,'Domingo':6}
+            target_day = dias_map.get(dia_semana, 0)
+            today = timezone.localdate()
+            days_ahead = target_day - today.weekday()
+            if days_ahead <= 0:
+                days_ahead += 7
+            act_fecha = today + timedelta(days=days_ahead)
+
+        fecha_inicio_cal = timezone.make_aware(dt_class.combine(act_fecha, h_ini))
+        fecha_fin_cal = timezone.make_aware(dt_class.combine(act_fecha, h_fin))
+
+        proyecto_titulo = data.get('proyecto_titulo', proyecto_key)
+
+        cal_actividad = Actividad.objects.create(
+            titulo=f"📋 {proyecto_titulo}: {titulo or 'Actividad programada'}",
+            tipo_actividad='reunion',
+            descripcion=f"Actividad programada para el proyecto. Día: {dia_semana}.",
+            fecha_inicio=fecha_inicio_cal,
+            fecha_fin=fecha_fin_cal,
+            creado_por=request.user,
+            color='#FF2D55',  # Rosa
+        )
+        if usuarios_asignados:
+            cal_actividad.participantes.set(usuarios_asignados)
+
+        # ── Send notifications to assigned users ──
+        for u in usuarios_asignados:
+            try:
+                crear_notificacion(
+                    usuario_destinatario=u,
+                    tipo='programacion_proyecto',
+                    titulo=f"Asignado a actividad de proyecto",
+                    mensaje=f"Se te asignó a '{titulo or 'Actividad'}' el {dia_semana} de {h_ini.strftime('%H:%M')} a {h_fin.strftime('%H:%M')} en el proyecto '{proyecto_titulo}'.",
+                    usuario_remitente=request.user,
+                    proyecto_nombre=proyecto_titulo,
+                )
+            except Exception:
+                pass
+
+        return JsonResponse({'success': True, 'id': act.id})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_programacion_actividad_detail(request, actividad_id):
+    """PUT actualizar / DELETE eliminar una actividad programada."""
+    act = get_object_or_404(ProgramacionActividad, pk=actividad_id)
+
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        titulo = data.get('titulo', '').strip()
+        if titulo:
+            act.titulo = titulo
+        hora_inicio_str = data.get('hora_inicio', '')
+        hora_fin_str = data.get('hora_fin', '')
+        if hora_inicio_str and hora_fin_str:
+            from datetime import datetime as dt_class
+            try:
+                act.hora_inicio = dt_class.strptime(hora_inicio_str, '%H:%M').time()
+                act.hora_fin = dt_class.strptime(hora_fin_str, '%H:%M').time()
+            except ValueError:
+                pass
+        responsable_ids = data.get('responsables')
+        if responsable_ids is not None:
+            conflictos = []
+            for uid in responsable_ids:
+                user_conflicts = ProgramacionActividad.get_conflictos_usuario(
+                    uid, act.dia_semana, act.hora_inicio, act.hora_fin,
+                    exclude_id=act.id, fecha=act.fecha
+                )
+                if user_conflicts.exists():
+                    try:
+                        u = User.objects.get(id=uid)
+                        nombre = u.get_full_name() or u.username
+                    except User.DoesNotExist:
+                        nombre = f'ID {uid}'
+                    for c in user_conflicts:
+                        conflictos.append({
+                            'usuario': nombre,
+                            'actividad': c.titulo,
+                            'hora': f"{c.hora_inicio.strftime('%H:%M')}-{c.hora_fin.strftime('%H:%M')}",
+                        })
+            if conflictos:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'conflicto',
+                    'conflictos': conflictos,
+                }, status=409)
+            act.responsables.set(User.objects.filter(id__in=responsable_ids))
+        act.save()
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        act.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_programacion_disponibilidad(request):
+    """
+    GET: Verifica disponibilidad de usuarios para un día y rango de hora.
+    """
+    dia_semana = request.GET.get('dia_semana', '')
+    hora_inicio_str = request.GET.get('hora_inicio', '')
+    hora_fin_str = request.GET.get('hora_fin', '')
+    fecha_str = request.GET.get('fecha', '')
+    exclude_id = request.GET.get('exclude_id')
+
+    if not dia_semana or not hora_inicio_str or not hora_fin_str:
+        return JsonResponse({'error': 'Parámetros requeridos: dia_semana, hora_inicio, hora_fin'}, status=400)
+
+    from datetime import datetime as dt_class
+    try:
+        h_ini = dt_class.strptime(hora_inicio_str, '%H:%M').time()
+        h_fin = dt_class.strptime(hora_fin_str, '%H:%M').time()
+    except ValueError:
+        return JsonResponse({'error': 'Formato de hora inválido'}, status=400)
+
+    fecha = None
+    if fecha_str:
+        try:
+            fecha = dt_class.strptime(fecha_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    usuarios = User.objects.filter(is_active=True).select_related('userprofile').order_by('first_name', 'last_name')
+
+    resultado = []
+    for u in usuarios:
+        profile = getattr(u, 'userprofile', None)
+        iniciales = profile.iniciales() if profile else (u.first_name[:1] + u.last_name[:1]).upper() if u.first_name else u.username[:2].upper()
+        rol = profile.rol if profile else 'vendedor'
+
+        conflictos = ProgramacionActividad.get_conflictos_usuario(
+            u.id, dia_semana, h_ini, h_fin,
+            exclude_id=int(exclude_id) if exclude_id else None,
+            fecha=fecha
+        )
+
+        conflict_list = []
+        for c in conflictos:
+            conflict_list.append({
+                'id': c.id,
+                'titulo': c.titulo,
+                'proyecto_key': c.proyecto_key,
+                'hora': f"{c.hora_inicio.strftime('%H:%M')}-{c.hora_fin.strftime('%H:%M')}",
+            })
+
+        resultado.append({
+            'id': u.id,
+            'nombre': u.get_full_name() or u.username,
+            'iniciales': iniciales,
+            'rol': rol,
+            'disponible': len(conflict_list) == 0,
+            'conflictos': conflict_list,
+        })
+
+    return JsonResponse({'success': True, 'usuarios': resultado})
 
 
 @login_required

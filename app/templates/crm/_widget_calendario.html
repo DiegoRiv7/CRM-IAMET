@@ -9,6 +9,14 @@
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <div style="font-size: 1.75rem; font-weight: 700; color: #1D1D1F; letter-spacing: -0.03em;">Calendario
                 </div>
+                <!-- Employee selector -->
+                <div style="display:flex;align-items:center;gap:8px;margin-left:12px;">
+                    <span style="font-size:0.72rem;font-weight:600;color:#86868B;">Ver calendario de:</span>
+                    <select id="calUserFilter" onchange="calFilterByUser(this.value)"
+                        style="padding:7px 12px;border:1px solid #E5E5EA;border-radius:10px;font-size:0.85rem;font-weight:600;color:#1D1D1F;outline:none;cursor:pointer;background:#F9FAFB;font-family:inherit;min-width:180px;">
+                        <option value="all">👥 Todos</option>
+                    </select>
+                </div>
             </div>
 
             <div style="display: flex; gap: 1.25rem; align-items: center;">
@@ -390,7 +398,7 @@
                     start: e.start,
                     end: e.end,
                     description: e.description,
-                    color: '#0052D4',
+                    color: e.color || '#0052D4',
                     extendedProps: {
                         participants: e.participants,
                         opportunity: e.opportunity,
@@ -410,12 +418,69 @@
                     extendedProps: { tipo_actividad: 'tarea', tarea_id: t.id }
                 });
             });
-            if (_globalCalendar) {
-                _globalCalendar.removeAllEventSources();
-                _globalCalendar.addEventSource(_globalEvents);
-            }
+            // Store raw for filtering
+            window._calAllEvents = _globalEvents.slice();
+            // Apply current filter
+            var sel = document.getElementById('calUserFilter');
+            var filterVal = sel ? sel.value : 'all';
+            calApplyFilter(filterVal);
         });
+        // Also load user list for the dropdown
+        calLoadUserFilter();
     };
+
+    // ═══ Employee filter ═══
+    var _calUsersLoaded = false;
+
+    function calLoadUserFilter() {
+        if (_calUsersLoaded) return;
+        fetch('/app/api/buscar-usuarios/?q=').then(function (r) { return r.json(); }).then(function (data) {
+            var users = data.usuarios || [];
+            var sel = document.getElementById('calUserFilter');
+            if (!sel) return;
+            // Keep "Todos" option
+            users.forEach(function (u) {
+                var opt = document.createElement('option');
+                opt.value = String(u.id);
+                opt.textContent = u.nombre + ' (' + u.rol + ')';
+                sel.appendChild(opt);
+            });
+            _calUsersLoaded = true;
+        }).catch(function () { });
+    }
+
+    window.calFilterByUser = function (val) {
+        calApplyFilter(val);
+    };
+
+    function calApplyFilter(filterVal) {
+        var events = window._calAllEvents || _globalEvents;
+        var filtered;
+        if (filterVal === 'all') {
+            filtered = events;
+        } else {
+            var uid = parseInt(filterVal);
+            filtered = events.filter(function (ev) {
+                // Check if user is a participant
+                var parts = (ev.extendedProps || {}).participants || [];
+                var isParticipant = parts.some(function (p) {
+                    return p.id === uid || p.value === uid;
+                });
+                // Check if user is the creator
+                var creador = (ev.extendedProps || {}).creado_por;
+                var isCreator = false;
+                if (creador) {
+                    if (typeof creador === 'object') isCreator = creador.id === uid;
+                    else isCreator = parseInt(creador) === uid;
+                }
+                return isParticipant || isCreator;
+            });
+        }
+        if (_globalCalendar) {
+            _globalCalendar.removeAllEventSources();
+            _globalCalendar.addEventSource(filtered);
+        }
+    }
 
     window.calGlobalAbrirCrearActividad = function () {
         document.getElementById('calFormActNombre').value = '';

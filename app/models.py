@@ -1494,6 +1494,7 @@ class Notificacion(models.Model):
         ('muro_post', 'Nuevo anuncio en el muro'),
         ('rendimiento_bajo', 'Bajo rendimiento de usuario'),
         ('solicitud_cambio_perfil', 'Solicitud de cambio de perfil'),
+        ('programacion_proyecto', 'Asignado a actividad de proyecto'),
     ]
     
     usuario_destinatario = models.ForeignKey(
@@ -3136,3 +3137,78 @@ class IngenieroBoardItem(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} - orden {self.orden}"
+
+
+# ============= PROGRAMACIÓN DE ACTIVIDADES (CALENDARIO PROYECTO) =============
+
+class ProgramacionActividad(models.Model):
+    """
+    Bloque de actividad programado en el calendario del proyecto.
+    El supervisor programa qué actividades se hacen, en qué día/hora,
+    y asigna responsables. El sistema valida conflictos.
+    """
+    proyecto_key = models.CharField(
+        max_length=100,
+        verbose_name="Clave del proyecto/tarea",
+        help_text="Key del item (ej: proy_1, opp_123, gen_45)"
+    )
+    titulo = models.CharField(
+        max_length=255,
+        verbose_name="Descripción de la actividad"
+    )
+    dia_semana = models.CharField(
+        max_length=20,
+        verbose_name="Día de la semana",
+        help_text="Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo"
+    )
+    fecha = models.DateField(
+        null=True, blank=True,
+        verbose_name="Fecha específica"
+    )
+    hora_inicio = models.TimeField(
+        verbose_name="Hora de inicio"
+    )
+    hora_fin = models.TimeField(
+        verbose_name="Hora de fin"
+    )
+    responsables = models.ManyToManyField(
+        User,
+        related_name='actividades_programadas',
+        blank=True,
+        verbose_name="Responsables"
+    )
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='actividades_programadas_creadas',
+        verbose_name="Creado por"
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Actividad Programada"
+        verbose_name_plural = "Actividades Programadas"
+        ordering = ['dia_semana', 'hora_inicio']
+
+    def __str__(self):
+        return f"{self.titulo} ({self.dia_semana} {self.hora_inicio}-{self.hora_fin})"
+
+    @classmethod
+    def get_conflictos_usuario(cls, usuario_id, dia_semana, hora_inicio, hora_fin, exclude_id=None, fecha=None):
+        """
+        Retorna actividades que se solapan con el horario dado para un usuario.
+        Un conflicto existe si: existing_start < new_end AND existing_end > new_start
+        """
+        from django.db.models import Q
+        qs = cls.objects.filter(
+            responsables__id=usuario_id,
+            dia_semana=dia_semana,
+            hora_inicio__lt=hora_fin,
+            hora_fin__gt=hora_inicio
+        )
+        if fecha:
+            qs = qs.filter(Q(fecha=fecha) | Q(fecha__isnull=True))
+        if exclude_id:
+            qs = qs.exclude(id=exclude_id)
+        return qs

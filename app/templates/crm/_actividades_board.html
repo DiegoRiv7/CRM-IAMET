@@ -1,180 +1,826 @@
-<!-- ═══ TABLERO CALENDARIO — INGENIERO ═══ -->
-<div id="actividadesBoard" style="display:none;width:100%;height:calc(100vh - 84px);margin-top:10px;flex-direction:column;box-sizing:border-box;overflow:hidden;background:#F7F7F9;border-radius:14px 14px 0 0;">
+<!-- ═══ DASHBOARD APPLE — INGENIERO ═══ -->
+<div id="actividadesBoard"
+    style="display:none;width:100%;min-height:calc(100vh - 84px);margin-top:10px;flex-direction:column;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;padding:0 24px 24px;">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid #E5E5EA;background:#fff;flex-shrink:0;border-radius:14px 14px 0 0;">
+    <!-- ═══ HEADER PANEL DE CONTROL ═══ -->
+    <header id="dashHeader"
+        style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:22px;padding-top:8px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div id="dashAvatarCircle"
+                style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#374151,#111827);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+                <span style="color:#fff;font-weight:700;font-size:0.78rem;" id="dashAvatarLetters">PI</span>
+            </div>
+            <h1 style="font-size:1.7rem;font-weight:700;color:#1D1D1F;margin:0;letter-spacing:-0.02em;">Panel de Control
+            </h1>
+        </div>
+        <div id="dashSegmentedControl"
+            style="background:rgba(0,0,0,0.04);padding:4px;border-radius:12px;display:flex;align-items:center;backdrop-filter:blur(20px);">
+            <button class="dash-seg-btn" data-view="tareas" onclick="dashSwitchView('tareas')">Tareas</button>
+            <button class="dash-seg-btn" data-view="actividades"
+                onclick="dashSwitchView('actividades')">Actividades</button>
+            <button class="dash-seg-btn dash-seg-active" data-view="proyectos"
+                onclick="dashSwitchView('proyectos')">Proyectos</button>
+        </div>
         <div style="display:flex;align-items:center;gap:12px;">
-            <h2 style="margin:0;font-size:0.92rem;font-weight:700;color:#1D1D1F;">Tablero</h2>
-            <div style="display:flex;align-items:center;gap:4px;">
-                <button onclick="boardPrevMonth()"
-                    style="background:#F2F2F7;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.85rem;color:#3C3C43;font-weight:600;line-height:1;">&lsaquo;</button>
-                <span id="boardWeekLabel"
-                    style="font-size:0.8rem;font-weight:700;color:#1D1D1F;white-space:nowrap;min-width:160px;text-align:center;padding:0 4px;">—</span>
-                <button onclick="boardNextMonth()"
-                    style="background:#F2F2F7;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.85rem;color:#3C3C43;font-weight:600;line-height:1;">&rsaquo;</button>
-                <button onclick="boardGoToday()"
-                    style="background:#F2F2F7;border:none;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:0.7rem;font-weight:700;color:#007AFF;">Hoy</button>
+            <div style="position:relative;">
+                <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9CA3AF;" width="16"
+                    height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input type="text" id="dashSearchInput" placeholder="Buscar..." oninput="dashFilterTable()"
+                    style="background:#fff;border:1px solid #E5E7EB;border-radius:22px;padding:9px 16px 9px 36px;font-size:0.85rem;outline:none;width:240px;transition:all 0.2s;font-family:inherit;"
+                    onfocus="this.style.borderColor='#3B82F6';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)'"
+                    onblur="this.style.borderColor='#E5E7EB';this.style.boxShadow='none'">
+            </div>
+            <button onclick="dashRefreshData()"
+                style="background:#3B82F6;color:#fff;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(59,130,246,0.25);"
+                onmouseover="this.style.background='#2563EB'" onmouseout="this.style.background='#3B82F6'">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                    <path d="M16 16h5v5" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══ CONTENIDO PRINCIPAL: Tabla + Calendario ═══ -->
+    <main id="dashMainContent"
+        style="display:flex;background:#fff;border-radius:18px;box-shadow:0 2px 20px rgba(0,0,0,0.03);border:1px solid #F3F4F6;overflow:hidden;height:620px;margin-bottom:22px;">
+        <!-- LADO IZQUIERDO: Tabla -->
+        <div id="dashTableSide"
+            style="width:32%;border-right:1px solid #F3F4F6;display:flex;flex-direction:column;background:#fff;z-index:2;">
+            <div
+                style="display:grid;grid-template-columns:5fr 2fr 2fr;gap:8px;padding:14px 14px;background:#FAFBFC;border-bottom:1px solid #F3F4F6;">
+                <span class="dash-th" id="dashColName">Tarea</span>
+                <span class="dash-th" style="text-align:center;">Prioridad</span>
+                <span class="dash-th" style="text-align:center;">Estado</span>
+            </div>
+            <div id="dashTableBody" style="flex:1;overflow-y:auto;">
+                <div id="dashTableLoading"
+                    style="display:flex;align-items:center;justify-content:center;height:100%;color:#9CA3AF;font-size:0.88rem;">
+                    <div style="text-align:center;">
+                        <svg style="animation:dashSpin 1s linear infinite;width:26px;height:26px;margin:0 auto 10px;display:block;"
+                            viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                            <path
+                                d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+                        </svg>
+                        Cargando datos...
+                    </div>
+                </div>
+                <div id="dashTableRows" style="display:none;"></div>
             </div>
         </div>
-        <button onclick="ingenieroCargarActividades()"
-            style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:8px;padding:5px 12px;font-size:0.72rem;font-weight:600;color:#3C3C43;cursor:pointer;">
-            &#8635; Actualizar
-        </button>
-    </div>
 
-    <!-- Loading -->
-    <div id="boardLoading" style="text-align:center;padding:3rem;color:#8E8E93;font-size:0.85rem;flex-shrink:0;">
-        <svg style="animation:boardSpin 1s linear infinite;width:20px;height:20px;margin:0 auto 0.5rem;display:block;" viewBox="0 0 24 24" fill="none" stroke="#5856D6" stroke-width="2">
-            <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93"/>
-        </svg>
-        Cargando...
-    </div>
+        <!-- LADO DERECHO: Calendario de Programación -->
+        <div id="dashCalSide"
+            style="width:68%;display:flex;flex-direction:column;background:#F9FAFB;overflow:hidden;position:relative;">
+            <!-- Estado vacío -->
+            <div id="dashCalEmpty"
+                style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9CA3AF;padding:36px;text-align:center;">
+                <div
+                    style="width:64px;height:64px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.04);border:1px solid #F3F4F6;margin-bottom:16px;">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.5">
+                        <rect width="18" height="18" x="3" y="4" rx="2" />
+                        <line x1="16" x2="16" y1="2" y2="6" />
+                        <line x1="8" x2="8" y1="2" y2="6" />
+                        <line x1="3" x2="21" y1="10" y2="10" />
+                    </svg>
+                </div>
+                <h3 style="font-size:1rem;font-weight:600;color:#374151;margin:0 0 6px;">Calendario de Trabajo</h3>
+                <p style="font-size:0.85rem;margin:0;line-height:1.5;max-width:300px;">Selecciona un elemento en la
+                    tabla izquierda para programar actividades.</p>
+            </div>
+            <!-- Estado activo -->
+            <div id="dashCalActive" style="display:none;flex-direction:column;height:100%;">
+                <div
+                    style="padding:14px 20px;border-bottom:1px solid #E5E7EB;background:#fff;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,0.02);z-index:2;">
+                    <div>
+                        <div style="font-size:0.62rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;"
+                            id="dashCalLabel">Programación de proyecto</div>
+                        <div style="font-size:0.95rem;font-weight:600;color:#1D1D1F;" id="dashCalItemName">—</div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <button onclick="dashSaveCal()"
+                            style="color:#3B82F6;font-size:0.72rem;font-weight:700;background:rgba(59,130,246,0.08);padding:7px 14px;border-radius:18px;border:none;cursor:pointer;transition:all 0.15s;"
+                            onmouseover="this.style.background='rgba(59,130,246,0.14)'"
+                            onmouseout="this.style.background='rgba(59,130,246,0.08)'">Guardar</button>
+                        <button onclick="dashExpandCal()"
+                            style="color:#6B7280;background:#F3F4F6;border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;"
+                            onmouseover="this.style.background='#E5E7EB'" onmouseout="this.style.background='#F3F4F6'"
+                            title="Expandir programación">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="dashCalGrid" style="flex:1;display:flex;overflow-x:auto;padding:16px;gap:12px;"></div>
+            </div>
+        </div>
+    </main>
 
-    <!-- Empty -->
-    <div id="boardEmpty" style="display:none;text-align:center;padding:4rem 2rem;color:#8E8E93;">
-        <div style="font-size:2.5rem;margin-bottom:0.5rem;">&#10003;</div>
-        <div style="font-size:0.9rem;font-weight:600;color:#1D1D1F;margin-bottom:0.3rem;">Sin tareas este mes</div>
-        <div style="font-size:0.78rem;">No tienes tareas asignadas para este período.</div>
-    </div>
+    <!-- ═══ SECCIÓN INFERIOR: Widgets ═══ -->
+    <section id="dashWidgets" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+        <!-- Widget 1: Estado General -->
+        <div class="dash-widget">
+            <h3 class="dash-widget-title">Estado general</h3>
+            <div style="display:flex;align-items:center;justify-content:center;gap:28px;flex:1;">
+                <div id="dashPieChart"
+                    style="position:relative;width:130px;height:130px;border-radius:50%;box-shadow:inset 0 2px 6px rgba(0,0,0,0.06);">
+                    <div
+                        style="position:absolute;inset:12px;background:#fff;border-radius:50%;box-shadow:inset 0 1px 3px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;">
+                        <span id="dashPiePct" style="font-size:1.35rem;font-weight:700;color:#1D1D1F;">0%</span>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div class="dash-legend"><span class="dash-legend-dot" style="background:#22C55E;"></span><span
+                            id="dashLegCompletadas">Ejecutadas (0)</span></div>
+                    <div class="dash-legend"><span class="dash-legend-dot" style="background:#F97316;"></span><span
+                            id="dashLegProgreso">En progreso (0)</span></div>
+                    <div class="dash-legend"><span class="dash-legend-dot" style="background:#EF4444;"></span><span
+                            id="dashLegAtrasadas">Atrasadas (0)</span></div>
+                    <div class="dash-legend"><span class="dash-legend-dot" style="background:#E5E7EB;"></span><span
+                            id="dashLegPendientes">Sin empezar (0)</span></div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Calendar container -->
-    <div id="boardColumns" style="display:none;flex:1;overflow-y:auto;overflow-x:auto;padding:12px 16px;box-sizing:border-box;"></div>
+        <!-- Widget 2: Horas Invertidas vs Planeadas -->
+        <div class="dash-widget">
+            <h3 class="dash-widget-title">Horas invertidas vs Planeadas</h3>
+            <div id="dashHorasEmpty"
+                style="display:flex;align-items:center;justify-content:center;flex:1;color:#9CA3AF;font-size:0.82rem;text-align:center;padding:0 20px;">
+                Selecciona una tarea o actividad para ver sus horas</div>
+            <div id="dashHorasContent"
+                style="display:none;flex-direction:column;justify-content:center;gap:22px;flex:1;padding:0 18px;">
+                <div style="text-align:center;margin-bottom:4px;"><span id="dashHorasItemName"
+                        style="font-size:0.72rem;font-weight:600;color:#6B7280;background:#F3F4F6;padding:3px 10px;border-radius:8px;"></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span
+                        style="font-size:0.78rem;font-weight:600;color:#6B7280;width:48px;text-align:right;">Actual</span>
+                    <div style="flex:1;height:24px;background:#F3F4F6;border-radius:12px;overflow:hidden;">
+                        <div id="dashBarActual"
+                            style="height:100%;background:#22C55E;border-radius:12px;width:0%;transition:width 0.8s cubic-bezier(0.4,0,0.2,1);">
+                        </div>
+                    </div>
+                    <span id="dashBarActualLabel"
+                        style="font-size:0.78rem;font-weight:700;color:#374151;width:40px;">0h</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span
+                        style="font-size:0.78rem;font-weight:600;color:#6B7280;width:48px;text-align:right;">Plan</span>
+                    <div style="flex:1;height:24px;background:#F3F4F6;border-radius:12px;overflow:hidden;">
+                        <div id="dashBarPlan"
+                            style="height:100%;background:#3B82F6;border-radius:12px;width:0%;transition:width 0.8s cubic-bezier(0.4,0,0.2,1);">
+                        </div>
+                    </div>
+                    <span id="dashBarPlanLabel"
+                        style="font-size:0.78rem;font-weight:700;color:#374151;width:40px;">0h</span>
+                </div>
+                <div style="text-align:center;"><span id="dashHorasNote"
+                        style="font-size:0.62rem;color:#9CA3AF;font-style:italic;">Horas laborales: Lun-Vie,
+                        8am–6pm</span></div>
+            </div>
+        </div>
 
+        <!-- Widget 3: Eficiencia -->
+        <div class="dash-widget" style="position:relative;overflow:hidden;">
+            <h3 class="dash-widget-title">Mi Eficiencia</h3>
+            <div style="display:flex;align-items:center;justify-content:center;flex:1;gap:20px;">
+                <div style="position:relative;width:140px;height:140px;">
+                    <svg viewBox="0 0 120 120" style="width:100%;height:100%;transform:rotate(-90deg);">
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="#F3F4F6" stroke-width="10" />
+                        <circle id="dashEficienciaArc" cx="60" cy="60" r="50" fill="none" stroke="#22C55E"
+                            stroke-width="10" stroke-linecap="round" stroke-dasharray="314.16"
+                            stroke-dashoffset="314.16"
+                            style="transition:stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1),stroke 0.5s;" />
+                    </svg>
+                    <div
+                        style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                        <span id="dashEficienciaPct"
+                            style="font-size:1.8rem;font-weight:800;color:#1D1D1F;line-height:1;">0%</span>
+                        <span
+                            style="font-size:0.6rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">actual</span>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div class="dash-efic-detail"><span class="dash-efic-label">Completadas</span><span
+                            class="dash-efic-value" id="dashEficCompletadas" style="color:#22C55E;">0</span></div>
+                    <div class="dash-efic-detail"><span class="dash-efic-label">En progreso</span><span
+                            class="dash-efic-value" id="dashEficProgreso" style="color:#F97316;">0</span></div>
+                    <div class="dash-efic-detail"><span class="dash-efic-label">Vencidas</span><span
+                            class="dash-efic-value" id="dashEficVencidas" style="color:#EF4444;">0</span></div>
+                    <div style="border-top:1px solid #F3F4F6;padding-top:6px;margin-top:2px;">
+                        <div class="dash-efic-detail"><span class="dash-efic-label">Mes</span><span
+                                class="dash-efic-value" id="dashEficMensual" style="color:#6366F1;">—</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 
+<!-- ═══ OVERLAY: Programación Expandida (Fullscreen) ═══ -->
+<div id="dashExpandOverlay"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:10050;background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+    <div
+        style="width:96vw;height:94vh;max-width:1800px;background:#fff;border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Header -->
+        <div
+            style="padding:18px 28px;border-bottom:1px solid #F3F4F6;display:flex;justify-content:space-between;align-items:center;background:#fff;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <span style="font-size:1.4rem;">📋</span>
+                <div>
+                    <div
+                        style="font-size:0.65rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;">
+                        Programación de proyecto</div>
+                    <div style="font-size:1.1rem;font-weight:700;color:#1D1D1F;" id="dashExpandCalTitle">—</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <button onclick="dashSaveCal()"
+                    style="color:#fff;font-size:0.82rem;font-weight:600;background:#3B82F6;padding:9px 22px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 2px 8px rgba(59,130,246,0.25);">Guardar</button>
+                <button onclick="dashCollapseCal()"
+                    style="color:#6B7280;background:#F3F4F6;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.2rem;transition:all 0.15s;"
+                    onmouseover="this.style.background='#E5E7EB'" onmouseout="this.style.background='#F3F4F6'"
+                    title="Cerrar">✕</button>
+            </div>
+        </div>
+        <!-- Grid expandido (7 días) -->
+        <div id="dashExpandCalGrid" style="flex:1;display:flex;overflow-x:auto;padding:20px 28px;gap:14px;"></div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: Nueva Actividad ═══ -->
+<div id="dashNewActModal" class="dash-modal-overlay" style="display:none;">
+    <div class="dash-modal-box" style="width:460px;">
+        <div
+            style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid #F3F4F6;">
+            <h3 style="margin:0;font-size:1rem;font-weight:700;color:#1D1D1F;">📋 Nueva Actividad</h3>
+            <button onclick="dashCloseNewActModal()"
+                style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:1.2rem;line-height:1;">✕</button>
+        </div>
+        <div style="padding:18px 22px;">
+            <!-- Day label -->
+            <div style="margin-bottom:14px;">
+                <span id="dashNewActDayLabel"
+                    style="font-size:0.72rem;font-weight:700;color:#3B82F6;background:#EFF6FF;padding:4px 12px;border-radius:8px;text-transform:uppercase;letter-spacing:0.05em;"></span>
+            </div>
+            <!-- Time pickers -->
+            <div style="margin-bottom:16px;">
+                <label
+                    style="font-size:0.72rem;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Horario</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="time" id="dashNewActStart" value="08:00"
+                        style="flex:1;padding:10px 12px;border:1px solid #E5E7EB;border-radius:10px;font-size:0.88rem;font-weight:600;font-family:inherit;outline:none;color:#1D1D1F;"
+                        onfocus="this.style.borderColor='#3B82F6'" onblur="this.style.borderColor='#E5E7EB'">
+                    <span style="font-size:0.82rem;color:#9CA3AF;font-weight:600;">→</span>
+                    <input type="time" id="dashNewActEnd" value="09:00"
+                        style="flex:1;padding:10px 12px;border:1px solid #E5E7EB;border-radius:10px;font-size:0.88rem;font-weight:600;font-family:inherit;outline:none;color:#1D1D1F;"
+                        onfocus="this.style.borderColor='#3B82F6'" onblur="this.style.borderColor='#E5E7EB'">
+                </div>
+            </div>
+            <!-- Description -->
+            <div style="margin-bottom:16px;">
+                <label style="font-size:0.72rem;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">¿Qué se
+                    hará?</label>
+                <textarea id="dashNewActDesc" placeholder="Ej: Visitar al cliente para levantamiento..."
+                    style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;resize:none;height:60px;color:#374151;line-height:1.5;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#3B82F6'" onblur="this.style.borderColor='#E5E7EB'"></textarea>
+            </div>
+            <!-- Persons -->
+            <div style="margin-bottom:6px;">
+                <label
+                    style="font-size:0.72rem;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Responsables</label>
+                <div id="dashNewActPersonsSelected" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+                    <span style="font-size:0.72rem;color:#9CA3AF;">Ninguno seleccionado</span>
+                </div>
+                <div id="dashNewActPersonsLoading"
+                    style="text-align:center;padding:8px;color:#9CA3AF;font-size:0.78rem;">Cargando equipo...</div>
+                <div id="dashNewActPersonsList"
+                    style="max-height:160px;overflow-y:auto;border:1px solid #F3F4F6;border-radius:10px;"></div>
+            </div>
+        </div>
+        <div style="padding:14px 22px;border-top:1px solid #F3F4F6;display:flex;justify-content:flex-end;gap:10px;">
+            <button onclick="dashCloseNewActModal()"
+                style="background:#F3F4F6;color:#6B7280;border:none;padding:10px 20px;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancelar</button>
+            <button onclick="dashConfirmNewAct()"
+                style="background:#3B82F6;color:#fff;border:none;padding:10px 24px;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(59,130,246,0.25);">Confirmar</button>
+        </div>
+    </div>
+</div>
+<!-- ═══ MODAL: Asignar persona ═══ -->
+<div id="dashPersonModal" class="dash-modal-overlay" style="display:none;">
+    <div class="dash-modal-box" style="width:400px;max-height:500px;">
+        <div
+            style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #F3F4F6;">
+            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#1D1D1F;">Asignar Responsables</h3>
+            <button onclick="dashClosePersonModal()"
+                style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:1.2rem;">✕</button>
+        </div>
+        <div style="padding:12px 20px;border-bottom:1px solid #F3F4F6;">
+            <div id="dashPersonTimeInfo" style="font-size:0.72rem;color:#6B7280;margin-bottom:8px;"></div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;" id="dashPersonSelected"></div>
+        </div>
+        <div id="dashPersonLoading" style="padding:24px;text-align:center;color:#9CA3AF;font-size:0.85rem;">Cargando
+            disponibilidad...</div>
+        <div id="dashPersonList" style="overflow-y:auto;max-height:300px;padding:8px 12px;"></div>
+        <div style="padding:12px 20px;border-top:1px solid #F3F4F6;display:flex;justify-content:flex-end;">
+            <button onclick="dashConfirmPersons()"
+                style="background:#3B82F6;color:#fff;border:none;padding:8px 24px;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: Confirmar Eliminación ═══ -->
+<div id="dashDeleteConfirmModal" class="dash-modal-overlay" style="display:none;">
+    <div class="dash-modal-box" style="width:380px;text-align:center;">
+        <div style="padding:28px 24px 10px;">
+            <div
+                style="width:56px;height:56px;border-radius:50%;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"
+                    stroke-linecap="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+            </div>
+            <h3 style="margin:0 0 8px;font-size:1.05rem;font-weight:700;color:#1D1D1F;">¿Eliminar actividad?</h3>
+            <p id="dashDeleteConfirmText" style="margin:0;font-size:0.82rem;color:#6B7280;line-height:1.5;">Esta acción
+                no se puede deshacer.</p>
+        </div>
+        <div style="padding:14px 24px 22px;display:flex;gap:10px;justify-content:center;">
+            <button onclick="dashCancelDelete()"
+                style="flex:1;padding:11px 16px;background:#F3F4F6;color:#374151;border:none;border-radius:12px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;"
+                onmouseover="this.style.background='#E5E7EB'"
+                onmouseout="this.style.background='#F3F4F6'">Cancelar</button>
+            <button onclick="dashExecDelete()"
+                style="flex:1;padding:11px 16px;background:#DC2626;color:#fff;border:none;border-radius:12px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;box-shadow:0 2px 8px rgba(220,38,38,0.25);"
+                onmouseover="this.style.background='#B91C1C'"
+                onmouseout="this.style.background='#DC2626'">Eliminar</button>
+        </div>
+    </div>
+</div>
+<!-- ═══ ESTILOS ═══ -->
 <style>
-@keyframes boardSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes dashSpin {
+        from {
+            transform: rotate(0deg);
+        }
 
-/* ── Semana (igual que antes: 5 columnas Lun-Vie) ── */
-.cal-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    align-items: start;
-    min-width: 600px;
-    margin-bottom: 10px;
-}
-.cal-col {
-    background: #FAFAFA;
-    border-radius: 10px;
-    border: 1px solid #E5E5EA;
-    overflow: hidden;
-}
-.cal-col-outside {
-    background: #F5F5F7;
-    opacity: 0.45;
-    pointer-events: none;
-}
-.cal-col-today {
-    background: #EEF5FF;
-    border-color: #007AFF;
-}
-.cal-col-header {
-    padding: 8px 10px;
-    text-align: center;
-    background: #F2F2F7;
-    border-bottom: 1px solid #E5E5EA;
-}
-.cal-col-today .cal-col-header {
-    background: #007AFF;
-    border-bottom-color: #0062CC;
-}
-.cal-day-name {
-    font-size: 0.63rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #8E8E93;
-    margin-bottom: 2px;
-}
-.cal-col-today .cal-day-name { color: rgba(255,255,255,0.8); }
-.cal-day-num {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #1D1D1F;
-    line-height: 1.1;
-}
-.cal-col-today .cal-day-num { color: #fff; }
-.cal-day-month {
-    font-size: 0.58rem;
-    color: #8E8E93;
-    margin-top: 1px;
-}
-.cal-col-today .cal-day-month { color: rgba(255,255,255,0.7); }
-.cal-col-body {
-    padding: 6px;
-    min-height: 60px;
-}
-.cal-card {
-    background: #fff;
-    border: 1px solid #E5E5EA;
-    border-radius: 8px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
-    cursor: pointer;
-    border-left: 3px solid #E5E5EA;
-    transition: box-shadow 0.12s, transform 0.1s;
-}
-.cal-card:hover {
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
-}
-.cal-card-alta { border-left-color: #FF3B30; }
-.cal-card-vencida { border-left-color: #FF3B30; background: #FFF8F8; }
-.cal-card-title {
-    font-size: 0.74rem;
-    font-weight: 600;
-    color: #1D1D1F;
-    margin-bottom: 3px;
-    line-height: 1.3;
-}
-.cal-card-client {
-    font-size: 0.62rem;
-    color: #8E8E93;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 2px;
-}
-.cal-card-time {
-    font-size: 0.6rem;
-    font-weight: 600;
-    color: #5856D6;
-}
-.cal-card-more {
-    display: block;
-    width: 100%;
-    text-align: center;
-    font-size: 0.62rem;
-    font-weight: 700;
-    color: #007AFF;
-    background: none;
-    border: 1px dashed #C0D9FF;
-    border-radius: 6px;
-    padding: 3px 0;
-    cursor: pointer;
-    margin-top: 2px;
-    box-sizing: border-box;
-}
-.cal-card-more:hover { background: rgba(0,122,255,0.06); }
+        to {
+            transform: rotate(360deg);
+        }
+    }
 
-/* ── Separador de semana ── */
-.cal-week-label {
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: #C7C7CC;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 5px;
-    padding-left: 2px;
-}
+    @keyframes dashFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
 
-/* ── Sección extras debajo del grid ── */
-.cal-extras {
-    margin-top: 10px;
-    padding: 10px 14px;
-    background: #F9F9FB;
-    border-radius: 10px;
-    border: 1px solid #E5E5EA;
-}
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .dash-seg-btn {
+        padding: 7px 22px;
+        border-radius: 9px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #6B7280;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+
+    .dash-seg-btn:hover {
+        color: #374151;
+    }
+
+    .dash-seg-btn.dash-seg-active {
+        background: #fff;
+        color: #1D1D1F;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .dash-th {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #9CA3AF;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .dash-tr {
+        display: grid;
+        grid-template-columns: 5fr 2fr 2fr;
+        gap: 8px;
+        padding: 11px 14px;
+        border-bottom: 1px solid #F9FAFB;
+        font-size: 0.82rem;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.15s;
+        animation: dashFadeIn 0.25s ease both;
+    }
+
+    .dash-tr:hover {
+        background: #FAFBFC;
+    }
+
+    .dash-tr.dash-tr-selected {
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    .dash-stars {
+        display: flex;
+        gap: 2px;
+        justify-content: center;
+    }
+
+    .dash-star {
+        width: 13px;
+        height: 13px;
+    }
+
+    .dash-star-filled {
+        fill: #1D1D1F;
+        color: #1D1D1F;
+    }
+
+    .dash-star-empty {
+        fill: none;
+        color: #E5E7EB;
+    }
+
+    .dash-badge {
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+    }
+
+    .dash-badge-completed {
+        background: #DCFCE7;
+        color: #16A34A;
+    }
+
+    .dash-badge-progress {
+        background: #FFF7ED;
+        color: #EA580C;
+    }
+
+    .dash-badge-delayed {
+        background: #FEF2F2;
+        color: #DC2626;
+    }
+
+    .dash-badge-pending {
+        background: #F3F4F6;
+        color: #6B7280;
+    }
+
+    .dash-widget {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.03);
+        border: 1px solid #F3F4F6;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        min-height: 210px;
+    }
+
+    .dash-widget-title {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #1D1D1F;
+        margin: 0 0 18px;
+        text-align: center;
+    }
+
+    .dash-legend {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #6B7280;
+    }
+
+    .dash-legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .dash-efic-detail {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-width: 120px;
+    }
+
+    .dash-efic-label {
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: #6B7280;
+    }
+
+    .dash-efic-value {
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .dash-cal-day {
+        flex: 1;
+        min-width: 185px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dash-cal-day-title {
+        text-align: center;
+        margin-bottom: 14px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #9CA3AF;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .dash-cal-card {
+        background: #fff;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #E5E7EB;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        margin-bottom: 8px;
+        position: relative;
+        transition: border-color 0.15s;
+    }
+
+    .dash-cal-card:hover {
+        border-color: #93C5FD;
+    }
+
+    .dash-cal-card-del {
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #FEE2E2;
+        color: #DC2626;
+        border: none;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .dash-cal-card:hover .dash-cal-card-del {
+        display: flex;
+    }
+
+    .dash-cal-card-del:hover {
+        background: #EF4444;
+        color: #fff;
+    }
+
+    .dash-time-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .dash-time-input {
+        width: auto;
+        flex: 1;
+        padding: 5px 4px;
+        border: 1px solid #E5E7EB;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-align: center;
+        color: #1D1D1F;
+        outline: none;
+        font-family: inherit;
+        background: #FAFBFC;
+    }
+
+    .dash-time-input:focus {
+        border-color: #3B82F6;
+        background: #fff;
+    }
+
+    .dash-time-sep {
+        font-size: 0.65rem;
+        color: #9CA3AF;
+        font-weight: 600;
+    }
+
+    /* Textarea */
+    .dash-cal-card textarea {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 0.78rem;
+        color: #374151;
+        resize: none;
+        height: 40px;
+        line-height: 1.4;
+        font-family: inherit;
+    }
+
+    .dash-cal-card textarea::placeholder {
+        color: #D1D5DB;
+    }
+
+    /* Assigned persons */
+    .dash-persons-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+    }
+
+    .dash-person-chip {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        background: #EFF6FF;
+        border: 1px solid #BFDBFE;
+        padding: 2px 8px 2px 4px;
+        border-radius: 12px;
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: #1D4ED8;
+    }
+
+    .dash-person-avatar {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3B82F6;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.45rem;
+        font-weight: 700;
+    }
+
+    .dash-add-person-btn {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #F3F4F6;
+        border: 1px dashed #D1D5DB;
+        color: #9CA3AF;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        transition: all 0.15s;
+    }
+
+    .dash-add-person-btn:hover {
+        background: #EFF6FF;
+        border-color: #93C5FD;
+        color: #3B82F6;
+    }
+
+    /* Add activity button */
+    .dash-cal-add {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px dashed #D1D5DB;
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.5);
+        color: #9CA3AF;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+
+    .dash-cal-add:hover {
+        color: #3B82F6;
+        border-color: #93C5FD;
+        background: rgba(59, 130, 246, 0.04);
+    }
+
+    /* Modal overlay */
+    .dash-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .dash-modal-box {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        animation: dashFadeIn 0.2s ease;
+    }
+
+    /* Person list items */
+    .dash-person-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.12s;
+        margin-bottom: 4px;
+    }
+
+    .dash-person-item:hover {
+        background: #F3F4F6;
+    }
+
+    .dash-person-item.dash-person-busy {
+        opacity: 0.55;
+    }
+
+    .dash-person-item.dash-person-selected {
+        background: #EFF6FF;
+        border: 1px solid #BFDBFE;
+    }
+
+    /* Scrollbar */
+    #dashTableBody::-webkit-scrollbar,
+    #dashCalGrid::-webkit-scrollbar,
+    #dashPersonList::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    #dashTableBody::-webkit-scrollbar-thumb,
+    #dashCalGrid::-webkit-scrollbar-thumb,
+    #dashPersonList::-webkit-scrollbar-thumb {
+        background: #E5E7EB;
+        border-radius: 4px;
+    }
+
+    @media (max-width: 1200px) {
+        #dashMainContent {
+            flex-direction: column;
+            height: auto;
+        }
+
+        #dashTableSide {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #F3F4F6;
+            max-height: 340px;
+        }
+
+        #dashCalSide {
+            width: 100%;
+            min-height: 320px;
+        }
+
+        #dashWidgets {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
