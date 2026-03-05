@@ -23,10 +23,13 @@ urlpatterns = [
 ]
 
 # ESTAS LÍNEAS DEBEN ESTAR DESPUÉS DE LA DEFINICIÓN COMPLETA DE urlpatterns
-# Sirve archivos estáticos y de medios solo en modo de depuración (DEBUG=True).
-# EN PRODUCCIÓN REAL, ESTO DEBE SER MANEJADO POR UN SERVIDOR COMO NGINX.
+from django.views.static import serve
+from django.urls import re_path
+
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
+]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    # La siguiente línea es para los archivos de medios, si los usas.
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-#holaa
