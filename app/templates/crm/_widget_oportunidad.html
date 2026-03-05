@@ -1074,7 +1074,7 @@
                             if (n && n.trim() && n.trim() !== texto) {
                                 fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/mensaje/' + msgId + '/', {
                                     method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json' },
+                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': typeof getCsrf !== 'undefined' ? getCsrf() : getCookieCRM('csrftoken') },
                                     body: JSON.stringify({ texto: n.trim() })
                                 }).then(function () { woCargarNotas(_woCurrentOppId); }).catch(console.error);
                             }
@@ -1085,7 +1085,8 @@
                     label: 'Eliminar', color: '#FF3B30', onClick: function () {
                         woDialogConfirm('Eliminar Mensaje', '¿Estás seguro de que quieres eliminar este mensaje?', '#FF3B30', function () {
                             fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/mensaje/' + msgId + '/', {
-                                method: 'DELETE'
+                                method: 'DELETE',
+                                headers: { 'X-CSRFToken': typeof getCsrf !== 'undefined' ? getCsrf() : getCookieCRM('csrftoken') }
                             }).then(function () { woCargarNotas(_woCurrentOppId); }).catch(console.error);
                         });
                     }
@@ -1117,6 +1118,7 @@
 
             fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
                 method: 'POST',
+                headers: { 'X-CSRFToken': typeof getCsrf !== 'undefined' ? getCsrf() : getCookieCRM('csrftoken') },
                 body: fd
             }).then(function () {
                 // Marcar notificaciones de esta oportunidad como leidas (al contestar)
