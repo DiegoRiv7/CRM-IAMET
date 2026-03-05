@@ -225,7 +225,7 @@
 
         var fd = new FormData();
         fd.append('contenido', texto);
-        if (files.length > 0) fd.append('archivo', files[0]);
+        if (files.length > 0) fd.append('imagen', files[0]);
         if (isAnuncio) fd.append('es_anuncio', 'true');
         if (fechaProg) fd.append('fecha_programacion', fechaProg);
         if (_muroEtiquetados.length > 0) {

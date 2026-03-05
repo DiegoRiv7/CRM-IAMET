@@ -15420,7 +15420,7 @@ def api_muro_posts(request):
                 except Exception:
                     programado_para = None
 
-        if not contenido:
+        if not contenido and not imagen:
             return JsonResponse({'success': False, 'error': 'El contenido no puede estar vacío'}, status=400)
 
         # Solo supervisores pueden publicar anuncios o programar posts
