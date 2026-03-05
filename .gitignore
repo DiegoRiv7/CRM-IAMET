@@ -22,3 +22,6 @@ __pycache__/
 
 # Archivos de sistema operativo
 .DS_Store
+# Archivos estáticos y multimedia
+/media/
+/staticfiles/
