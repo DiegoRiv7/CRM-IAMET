@@ -4370,115 +4370,117 @@ def calendario_view(request):
 def actividad_list_create(request):
     """
     API para listar y crear actividades del calendario.
-    Soporta ?vendedores=id1,id2 y ?mes=YYYY-MM para filtrar.
     """
-    if request.method == 'GET':
-        if is_supervisor(request.user):
-            actividades = Actividad.objects.all()
-        else:
-            actividades = Actividad.objects.filter(Q(creado_por=request.user) | Q(participantes=request.user)).distinct()
+    try:
+        if request.method == 'GET':
+            if is_supervisor(request.user):
+                actividades = Actividad.objects.all()
+            else:
+                    actividades = Actividad.objects.filter(Q(creado_por=request.user) | Q(participantes=request.user)).distinct()
 
-        # Filtro por vendedores (IDs separados por coma)
-        vendedores_param = request.GET.get('vendedores', '').strip()
-        if vendedores_param and is_supervisor(request.user):
+            # Filtro por vendedores (IDs separados por coma)
+            vendedores_param = request.GET.get('vendedores', '').strip()
+            if vendedores_param and is_supervisor(request.user):
+                try:
+                    ids = [int(x) for x in vendedores_param.split(',') if x.strip().isdigit()]
+                    if ids:
+                        actividades = actividades.filter(creado_por_id__in=ids)
+                except Exception:
+                    pass
+
+            # Filtro por mes (YYYY-MM)
+            mes_param = request.GET.get('mes', '').strip()
+            if mes_param:
+                try:
+                    from datetime import datetime as _dt
+                    year, month = int(mes_param[:4]), int(mes_param[5:7])
+                    from django.utils import timezone as _tz
+                    import calendar as _cal
+                    last_day = _cal.monthrange(year, month)[1]
+                    desde = _tz.make_aware(_dt(year, month, 1, 0, 0, 0))
+                    hasta = _tz.make_aware(_dt(year, month, last_day, 23, 59, 59))
+                    actividades = actividades.filter(fecha_inicio__lte=hasta, fecha_fin__gte=desde)
+                except Exception:
+                    pass
+
+            # Filtro por oportunidad
+            oportunidad_id = request.GET.get('oportunidad_id', '').strip()
+            if oportunidad_id:
+                actividades = actividades.filter(oportunidad_id=oportunidad_id)
+
+            actividades = actividades.select_related('creado_por', 'oportunidad').prefetch_related('participantes')
+
+            events = []
+            for actividad in actividades:
+                participants_data = [{'id': p.id, 'text': p.get_full_name() or p.username} for p in actividad.participantes.all()]
+                opportunity_data = None
+                if actividad.oportunidad:
+                    opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+                events.append({
+                    'id': actividad.id,
+                    'title': actividad.titulo,
+                    'tipo': actividad.tipo_actividad,
+                    'start': actividad.fecha_inicio.isoformat(),
+                    'end': actividad.fecha_fin.isoformat(),
+                    'description': actividad.descripcion or '',
+                    'color': actividad.color,
+                    'participants': participants_data,
+                    'opportunity': opportunity_data,
+                    'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
+                    'es_mio': actividad.creado_por_id == request.user.pk,
+                })
+            return JsonResponse(events, safe=False)
+
+        elif request.method == 'POST':
+            data = json.loads(request.body)
+        
+            # Validar fechas
             try:
-                ids = [int(x) for x in vendedores_param.split(',') if x.strip().isdigit()]
-                if ids:
-                    actividades = actividades.filter(creado_por_id__in=ids)
-            except Exception:
-                pass
+                start_date = datetime.fromisoformat(data['start'])
+                end_date = datetime.fromisoformat(data['end'])
+            except ValueError:
+                return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
 
-        # Filtro por mes (YYYY-MM)
-        mes_param = request.GET.get('mes', '').strip()
-        if mes_param:
-            try:
-                from datetime import datetime as _dt
-                year, month = int(mes_param[:4]), int(mes_param[5:7])
-                from django.utils import timezone as _tz
-                import calendar as _cal
-                last_day = _cal.monthrange(year, month)[1]
-                desde = _tz.make_aware(_dt(year, month, 1, 0, 0, 0))
-                hasta = _tz.make_aware(_dt(year, month, last_day, 23, 59, 59))
-                actividades = actividades.filter(fecha_inicio__lte=hasta, fecha_fin__gte=desde)
-            except Exception:
-                pass
-
-        # Filtro por oportunidad
-        oportunidad_id = request.GET.get('oportunidad_id', '').strip()
-        if oportunidad_id:
-            actividades = actividades.filter(oportunidad_id=oportunidad_id)
-
-        actividades = actividades.select_related('creado_por', 'oportunidad').prefetch_related('participantes')
-
-        events = []
-        for actividad in actividades:
-            participants_data = [{'id': p.id, 'text': p.get_full_name() or p.username} for p in actividad.participantes.all()]
+            actividad = Actividad.objects.create(
+                titulo=data['title'],
+                tipo_actividad=data.get('tipo', 'otro'),
+                descripcion=data.get('description', ''),
+                fecha_inicio=start_date,
+                fecha_fin=end_date,
+                creado_por=request.user,
+                color=data.get('color', '#1D1D1F'),
+                oportunidad_id=data.get('opportunity')
+            )
+        
+            if 'participants' in data and data['participants']:
+                actividad.participantes.set(data['participants'])
+        
+            participants_data = []
+            for p in actividad.participantes.all():
+                participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
+        
             opportunity_data = None
             if actividad.oportunidad:
                 opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
-            events.append({
+
+            return JsonResponse({
                 'id': actividad.id,
                 'title': actividad.titulo,
                 'tipo': actividad.tipo_actividad,
                 'start': actividad.fecha_inicio.isoformat(),
                 'end': actividad.fecha_fin.isoformat(),
-                'description': actividad.descripcion or '',
+                'description': actividad.descripcion,
                 'color': actividad.color,
                 'participants': participants_data,
                 'opportunity': opportunity_data,
                 'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
-                'es_mio': actividad.creado_por_id == request.user.pk,
-            })
-        return JsonResponse(events, safe=False)
-
-    elif request.method == 'POST':
-        data = json.loads(request.body)
-        
-        # Validar fechas
-        try:
-            start_date = datetime.fromisoformat(data['start'])
-            end_date = datetime.fromisoformat(data['end'])
-        except ValueError:
-            return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
-
-        actividad = Actividad.objects.create(
-            titulo=data['title'],
-            tipo_actividad=data.get('tipo', 'otro'),
-            descripcion=data.get('description', ''),
-            fecha_inicio=start_date,
-            fecha_fin=end_date,
-            creado_por=request.user,
-            color=data.get('color', '#1D1D1F'),
-            oportunidad_id=data.get('opportunity')
-        )
-        
-        if 'participants' in data and data['participants']:
-            actividad.participantes.set(data['participants'])
-        
-        participants_data = []
-        for p in actividad.participantes.all():
-            participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
-        
-        opportunity_data = None
-        if actividad.oportunidad:
-            opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
-
-        return JsonResponse({
-            'id': actividad.id,
-            'title': actividad.titulo,
-            'tipo': actividad.tipo_actividad,
-            'start': actividad.fecha_inicio.isoformat(),
-            'end': actividad.fecha_fin.isoformat(),
-            'description': actividad.descripcion,
-            'color': actividad.color,
-            'participants': participants_data,
-            'opportunity': opportunity_data,
-            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
-            'es_mio': True,
-        }, status=201)
+                'es_mio': True,
+            }, status=201)
     
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
-
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    except Exception as e:
+        import traceback
+        return JsonResponse({'error': str(e), 'trace': traceback.format_exc()}, status=500)
 @login_required
 @csrf_exempt
 def actividad_detail(request, pk):
@@ -14964,76 +14966,81 @@ def _serialize_tarea_opp(t):
 @login_required
 def api_tareas_oportunidad(request, opp_id):
     """GET lista / POST crear — tareas de una oportunidad específica."""
-    opp = get_object_or_404(TodoItem, pk=opp_id)
+    try:
+        opp = get_object_or_404(TodoItem, pk=opp_id)
 
-    if request.method == 'GET':
-        from django.db.models import IntegerField
-        tareas = opp.tareas_oportunidad.select_related('creado_por', 'responsable').annotate(
-            prio_order=Case(When(prioridad='alta', then=Value(0)), default=Value(1), output_field=IntegerField())
-        ).order_by('prio_order', F('fecha_limite').asc(nulls_last=True), 'fecha_creacion')
-        return JsonResponse({'success': True, 'tareas': [_serialize_tarea_opp(t) for t in tareas]})
+        if request.method == 'GET':
+            from django.db.models import IntegerField
+            tareas = opp.tareas_oportunidad.select_related('creado_por', 'responsable').annotate(
+                prio_order=Case(When(prioridad='alta', then=Value(0)), default=Value(1), output_field=IntegerField())
+            ).order_by('prio_order', F('fecha_limite').asc(nulls_last=True), 'fecha_creacion')
+            return JsonResponse({'success': True, 'tareas': [_serialize_tarea_opp(t) for t in tareas]})
 
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        titulo = data.get('titulo', '').strip()
-        if not titulo:
-            return JsonResponse({'success': False, 'error': 'Título requerido'}, status=400)
+        if request.method == 'POST':
+            data = json.loads(request.body)
+            titulo = data.get('titulo', '').strip()
+            if not titulo:
+                return JsonResponse({'success': False, 'error': 'Título requerido'}, status=400)
 
-        fecha_limite = None
-        raw_fecha = data.get('fecha_limite')
-        if raw_fecha:
-            from django.utils.dateparse import parse_datetime
-            fecha_limite = parse_datetime(raw_fecha)
+            fecha_limite = None
+            raw_fecha = data.get('fecha_limite')
+            if raw_fecha:
+                from django.utils.dateparse import parse_datetime
+                fecha_limite = parse_datetime(raw_fecha)
 
-        tarea = TareaOportunidad.objects.create(
-            oportunidad=opp,
-            titulo=titulo,
-            descripcion=data.get('descripcion', ''),
-            prioridad='alta' if data.get('alta_prioridad') else 'normal',
-            fecha_limite=fecha_limite,
-            creado_por=request.user,
-            responsable_id=data.get('responsable_id') or None,
-        )
-        if data.get('participantes'):
-            tarea.participantes.set(data['participantes'])
-        if data.get('observadores'):
-            tarea.observadores.set(data['observadores'])
-
-        # Crear actividad en el calendario (roja por defecto)
-        from django.utils.dateparse import parse_datetime as _pdt
-        cal_inicio_raw = data.get('cal_inicio')
-        cal_fin_raw = data.get('cal_fin')
-        if cal_inicio_raw and cal_fin_raw:
-            cal_ini = _pdt(cal_inicio_raw)
-            cal_fin = _pdt(cal_fin_raw)
-            if cal_ini and cal_fin:
-                actividad = Actividad.objects.create(
-                    titulo=tarea.titulo,
-                    tipo_actividad='tarea',
-                    descripcion=tarea.descripcion or '',
-                    fecha_inicio=cal_ini,
-                    fecha_fin=cal_fin,
-                    creado_por=request.user,
-                    color='#0052D4',  # azul
-                    oportunidad=opp,
-                )
-                tarea.actividad_calendario = actividad
-                tarea.save(update_fields=['actividad_calendario'])
-
-        # Notificar al responsable si es distinto al creador
-        if tarea.responsable and tarea.responsable != request.user:
-            remitente_nombre = request.user.get_full_name() or request.user.username
-            crear_notificacion(
-                usuario_destinatario=tarea.responsable,
-                tipo='tarea_opp_asignada',
-                titulo=f'Tarea asignada: {tarea.titulo}',
-                mensaje=f'{remitente_nombre} te asignó una tarea en la oportunidad "{opp.oportunidad}".',
+            tarea = TareaOportunidad.objects.create(
                 oportunidad=opp,
-                usuario_remitente=request.user,
-                tarea_opp=tarea,
+                titulo=titulo,
+                descripcion=data.get('descripcion', ''),
+                prioridad='alta' if data.get('alta_prioridad') else 'normal',
+                fecha_limite=fecha_limite,
+                creado_por=request.user,
+                responsable_id=data.get('responsable_id') or None,
             )
+            if data.get('participantes'):
+                tarea.participantes.set(data['participantes'])
+            if data.get('observadores'):
+                tarea.observadores.set(data['observadores'])
 
-        return JsonResponse({'success': True, 'tarea': _serialize_tarea_opp(tarea)})
+            # Crear actividad en el calendario (roja por defecto)
+            from django.utils.dateparse import parse_datetime as _pdt
+            cal_inicio_raw = data.get('cal_inicio')
+            cal_fin_raw = data.get('cal_fin')
+            if cal_inicio_raw and cal_fin_raw:
+                cal_ini = _pdt(cal_inicio_raw)
+                cal_fin = _pdt(cal_fin_raw)
+                if cal_ini and cal_fin:
+                    actividad = Actividad.objects.create(
+                        titulo=tarea.titulo,
+                        tipo_actividad='tarea',
+                        descripcion=tarea.descripcion or '',
+                        fecha_inicio=cal_ini,
+                        fecha_fin=cal_fin,
+                        creado_por=request.user,
+                        color='#0052D4',  # azul
+                        oportunidad=opp,
+                    )
+                    tarea.actividad_calendario = actividad
+                    tarea.save(update_fields=['actividad_calendario'])
+
+            # Notificar al responsable si es distinto al creador
+            if tarea.responsable and tarea.responsable != request.user:
+                remitente_nombre = request.user.get_full_name() or request.user.username
+                crear_notificacion(
+                    usuario_destinatario=tarea.responsable,
+                    tipo='tarea_opp_asignada',
+                    titulo=f'Tarea asignada: {tarea.titulo}',
+                    mensaje=f'{remitente_nombre} te asignó una tarea en la oportunidad "{opp.oportunidad}".',
+                    oportunidad=opp,
+                    usuario_remitente=request.user,
+                    tarea_opp=tarea,
+                )
+
+            return JsonResponse({'success': True, 'tarea': _serialize_tarea_opp(tarea)})
+
+    except Exception as e:
+        import traceback
+        return JsonResponse({'error': str(e), 'trace': traceback.format_exc()}, status=500)
 
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
