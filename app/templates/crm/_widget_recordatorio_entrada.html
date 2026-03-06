@@ -1,0 +1,295 @@
+<!-- ═══ WIDGET: RECORDATORIO DE ENTRADA ═══ -->
+<div id="widgetRecordatorioEntrada" style="
+    display:none;
+    position:fixed; inset:0; z-index:11000;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    align-items:center; justify-content:center;
+">
+    <div id="recordatorioCard" style="
+        width:420px; background:rgba(255,255,255,0.98);
+        backdrop-filter:blur(30px); border-radius:28px;
+        overflow:hidden; box-shadow:0 40px 120px rgba(0,0,0,0.3);
+        border:1px solid rgba(255,255,255,0.5);
+        animation: recSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        text-align:center; padding:0;
+    ">
+        <!-- Header decorativo -->
+        <div style="
+            background: linear-gradient(135deg, #007AFF 0%, #00C6FF 50%, #5AC8FA 100%);
+            padding:35px 30px 30px; position:relative; overflow:hidden;
+        ">
+            <!-- Patrón decorativo sutil -->
+            <div style="position:absolute; inset:0; opacity:0.1;
+                background-image: radial-gradient(circle at 20% 80%, white 1px, transparent 1px),
+                                  radial-gradient(circle at 80% 20%, white 1px, transparent 1px);
+                background-size: 30px 30px;
+            "></div>
+
+            <!-- Icono animado -->
+            <div id="recAnimIcon" style="
+                font-size:3.5rem; margin-bottom:10px;
+                animation: recBounce 2s ease-in-out infinite;
+                filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+            ">👋</div>
+
+            <h2 style="
+                margin:0 0 6px; font-size:1.5rem; font-weight:800;
+                color:#fff; letter-spacing:-0.5px;
+                text-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            ">¡Buenos días!</h2>
+            <p style="
+                margin:0; font-size:0.95rem; color:rgba(255,255,255,0.85);
+                font-weight:500;
+            " id="recGreetingName">
+                {{ request.user.first_name|default:request.user.username }}
+            </p>
+        </div>
+
+        <!-- Contenido -->
+        <div style="padding:25px 30px 10px;">
+            <!-- Mensaje principal -->
+            <div style="
+                background:rgba(0,122,255,0.06); border-radius:16px;
+                padding:18px 20px; margin-bottom:20px;
+                border:1px solid rgba(0,122,255,0.1);
+            ">
+                <div style="display:flex; align-items:flex-start; gap:12px; text-align:left;">
+                    <div style="
+                        flex-shrink:0; width:36px; height:36px;
+                        background:rgba(0,122,255,0.1); border-radius:10px;
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:1.2rem;
+                    ">⏰</div>
+                    <div>
+                        <p style="
+                            margin:0 0 4px; font-size:0.95rem; font-weight:700;
+                            color:#1d1d1f; line-height:1.3;
+                        ">No olvides marcar tu entrada</p>
+                        <p style="
+                            margin:0; font-size:0.82rem; color:#86868b;
+                            line-height:1.5; font-weight:400;
+                        ">
+                            Haz clic en el <strong style="color:#007AFF;">círculo</strong>
+                            junto a tu nombre en la barra lateral para iniciar tu jornada laboral.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instrucción visual -->
+            <div style="
+                display:flex; align-items:center; gap:14px;
+                background:#F5F5F7; border-radius:14px;
+                padding:14px 16px; margin-bottom:22px;
+            ">
+                <!-- Simulación del círculo -->
+                <div style="position:relative; flex-shrink:0;">
+                    <div style="
+                        width:38px; height:38px; border-radius:50%;
+                        background: linear-gradient(135deg, #007AFF, #00C6FF);
+                        display:flex; align-items:center; justify-content:center;
+                        color:#fff; font-weight:800; font-size:0.9rem;
+                        box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+                    ">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</div>
+                    <!-- Indicador de "clic aquí" -->
+                    <div style="
+                        position:absolute; top:-4px; right:-4px;
+                        width:14px; height:14px; border-radius:50%;
+                        background:#FF3B30; border:2px solid #fff;
+                        animation: recPulse 1.5s ease-in-out infinite;
+                    "></div>
+                </div>
+                <div style="text-align:left;">
+                    <p style="margin:0; font-size:0.85rem; font-weight:700; color:#1d1d1f;">
+                        Tu perfil
+                    </p>
+                    <p style="margin:2px 0 0; font-size:0.75rem; color:#86868b;">
+                        Toca aquí para abrir tu jornada
+                    </p>
+                </div>
+                <div style="margin-left:auto; font-size:1.1rem; color:#C7C7CC;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div style="padding:0 30px 25px; display:flex; flex-direction:column; gap:10px;">
+            <button onclick="recIniciarDia()" style="
+                width:100%; padding:16px; border:none; border-radius:16px;
+                background: linear-gradient(135deg, #007AFF 0%, #0066CC 100%);
+                color:#fff; font-size:1.05rem; font-weight:700;
+                cursor:pointer; display:flex; align-items:center;
+                justify-content:center; gap:8px;
+                box-shadow: 0 8px 24px rgba(0,122,255,0.3);
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 12px 30px rgba(0,122,255,0.4)';"
+                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 8px 24px rgba(0,122,255,0.3)';">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+                Iniciar mi día
+            </button>
+            <button onclick="recCerrar()" style="
+                width:100%; padding:13px; border:none; border-radius:14px;
+                background:rgba(0,0,0,0.04); color:#86868b;
+                font-size:0.9rem; font-weight:600; cursor:pointer;
+                transition: all 0.2s ease;
+            " onmouseover="this.style.background='rgba(0,0,0,0.08)';"
+                onmouseout="this.style.background='rgba(0,0,0,0.04)';">
+                Recordarme más tarde
+            </button>
+        </div>
+
+        <!-- Hora actual -->
+        <div style="
+            background:rgba(0,0,0,0.02); padding:10px 20px;
+            border-top:1px solid rgba(0,0,0,0.04);
+            font-size:0.75rem; color:#C7C7CC; font-weight:500;
+        ">
+            <span id="recCurrentTime"></span>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes recSlideUp {
+        from {
+            opacity: 0;
+            transform: scale(0.92) translateY(40px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    @keyframes recBounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-8px);
+        }
+    }
+
+    @keyframes recPulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        50% {
+            transform: scale(1.3);
+            opacity: 0.7;
+        }
+    }
+
+    @keyframes recFadeOut {
+        from {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        to {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        // Verificar si la jornada ya fue iniciada hoy
+        // Si ya iniciaron, no mostramos el recordatorio
+        function checkAndShowReminder() {
+            fetch('/app/api/jornada/estado/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    // Si la jornada NO está activa y NO ha terminado hoy
+                    if (!data.activo && !data.fin) {
+                        // Verificar si el usuario ya descartó el recordatorio hoy
+                        var today = new Date().toISOString().slice(0, 10);
+                        var dismissed = localStorage.getItem('rec_entrada_dismissed');
+                        if (dismissed === today) return; // Ya lo cerró hoy
+
+                        // Mostrar el widget con un pequeño delay para que la página cargue
+                        setTimeout(function () {
+                            var widget = document.getElementById('widgetRecordatorioEntrada');
+                            if (widget) {
+                                widget.style.display = 'flex';
+                                updateRecTime();
+                            }
+                        }, 1500);
+                    }
+                })
+                .catch(function (e) {
+                    console.log('[Recordatorio] No se pudo verificar estado de jornada:', e);
+                });
+        }
+
+        // Actualizar hora en el widget
+        function updateRecTime() {
+            var el = document.getElementById('recCurrentTime');
+            if (!el) return;
+            var now = new Date();
+            var h = String(now.getHours()).padStart(2, '0');
+            var m = String(now.getMinutes()).padStart(2, '0');
+            var dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            el.textContent = dias[now.getDay()] + ' ' + now.getDate() + ' de ' + meses[now.getMonth()] + ', ' + h + ':' + m;
+        }
+
+        // Cerrar el widget con animación
+        window.recCerrar = function () {
+            var card = document.getElementById('recordatorioCard');
+            var widget = document.getElementById('widgetRecordatorioEntrada');
+            if (card) {
+                card.style.animation = 'recFadeOut 0.3s ease forwards';
+                setTimeout(function () {
+                    if (widget) widget.style.display = 'none';
+                    card.style.animation = 'recSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                }, 300);
+            }
+        };
+
+        // Botón "Iniciar mi día" — cierra este widget y abre el de Perfil
+        window.recIniciarDia = function () {
+            // Guardar que ya no lo muestre de nuevo hoy
+            var today = new Date().toISOString().slice(0, 10);
+            localStorage.setItem('rec_entrada_dismissed', today);
+
+            // Cerrar este widget
+            var widget = document.getElementById('widgetRecordatorioEntrada');
+            if (widget) widget.style.display = 'none';
+
+            // Abrir el widget de perfil
+            var perfilWidget = document.getElementById('widgetPerfil');
+            if (perfilWidget) {
+                perfilWidget.classList.add('active');
+            }
+        };
+
+        // "Recordarme más tarde" — lo cierra sin marcar como descartado
+        var origRecCerrar = window.recCerrar;
+        // No guardamos nada para que vuelva a salir si recarga
+
+        document.addEventListener('DOMContentLoaded', function () {
+            checkAndShowReminder();
+            // Actualizar reloj cada 30 segundos
+            setInterval(updateRecTime, 30000);
+        });
+    })();
+</script>

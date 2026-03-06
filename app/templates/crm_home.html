@@ -25,6 +25,7 @@
     {% include "crm/_widget_cotizar_rapido.html" %}
     {% include "crm/_widget_notificaciones.html" %}
     {% include "crm/_widget_perfil.html" %}
+    {% include "crm/_widget_recordatorio_entrada.html" %}
 
     {% if es_ingeniero %}
     {% include "crm/_actividades_board.html" %}
@@ -45,7 +46,7 @@
 {% endif %}
 
 <script>
-    var ES_INGENIERO = {{ es_ingeniero|yesno:"true,false" }};
+    var ES_INGENIERO = {{ es_ingeniero| yesno: "true,false" }};
 </script>
 
 {% endblock %}
