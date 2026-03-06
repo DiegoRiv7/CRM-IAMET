@@ -1686,6 +1686,10 @@ class Proyecto(models.Model):
         default=False,
         verbose_name="Tiene archivos PO en Drive"
     )
+    es_ingenieria = models.BooleanField(
+        default=False,
+        verbose_name="Es Proyecto de Ingeniería (importado de Bitrix)"
+    )
 
     class Meta:
         verbose_name = "Proyecto"
@@ -1745,7 +1749,9 @@ class ProyectoComentario(models.Model):
     )
     usuario = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         verbose_name="Usuario"
     )
     contenido = models.TextField(
@@ -1763,6 +1769,14 @@ class ProyectoComentario(models.Model):
     editado = models.BooleanField(
         default=False,
         verbose_name="Editado"
+    )
+    bitrix_comment_id = models.IntegerField(
+        null=True, blank=True,
+        verbose_name="ID de Comentario en Bitrix24"
+    )
+    bitrix_autor_nombre = models.CharField(
+        max_length=255, blank=True,
+        verbose_name="Nombre Autor Bitrix"
     )
     usuarios_mencionados = models.ManyToManyField(
         User,
@@ -2311,7 +2325,8 @@ class CarpetaProyecto(models.Model):
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_modificacion = models.DateTimeField(auto_now=True, verbose_name="Última Modificación")
-    
+    bitrix_folder_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Carpeta en Bitrix24")
+
     class Meta:
         verbose_name = "Carpeta del Proyecto"
         verbose_name_plural = "Carpetas del Proyecto"
@@ -2356,7 +2371,7 @@ class ArchivoProyecto(models.Model):
     ]
     
     nombre_original = models.CharField(max_length=255, verbose_name="Nombre Original")
-    archivo = models.FileField(upload_to=archivo_upload_path, verbose_name="Archivo")
+    archivo = models.FileField(upload_to=archivo_upload_path, blank=True, verbose_name="Archivo")
     tipo_archivo = models.CharField(
         max_length=20, 
         choices=TIPO_ARCHIVO_CHOICES, 
@@ -2390,7 +2405,9 @@ class ArchivoProyecto(models.Model):
     # Metadatos de archivo
     extension = models.CharField(max_length=10, blank=True, verbose_name="Extensión")
     mime_type = models.CharField(max_length=100, blank=True, verbose_name="MIME Type")
-    
+    bitrix_file_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Archivo en Bitrix24")
+    bitrix_download_url = models.TextField(blank=True, verbose_name="URL de Descarga Bitrix24")
+
     class Meta:
         verbose_name = "Archivo del Proyecto"
         verbose_name_plural = "Archivos del Proyecto"

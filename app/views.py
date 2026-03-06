@@ -3207,6 +3207,53 @@ def api_crear_tarea(request):
 
 
 @login_required
+@login_required
+def proyectos_ingenieria(request):
+    """
+    Lista de proyectos de ingeniería importados de Bitrix24.
+    Accesible para ingenieros y supervisores.
+    """
+    profile = getattr(request.user, 'userprofile', None)
+    es_ing = profile and getattr(profile, 'rol', '') == 'ingeniero'
+    if not (is_supervisor(request.user) or es_ing):
+        return redirect('home')
+
+    proyectos_qs = Proyecto.objects.filter(es_ingenieria=True).prefetch_related(
+        'miembros', 'miembros__userprofile'
+    ).order_by('-fecha_creacion')
+
+    proyectos_data = []
+    for p in proyectos_qs:
+        miembros = []
+        for m in p.miembros.all()[:5]:
+            iniciales = ''.join(
+                w[0].upper() for w in (m.get_full_name() or m.username).split()[:2]
+            )
+            avatar_url = None
+            if hasattr(m, 'userprofile'):
+                try:
+                    avatar_url = m.userprofile.get_avatar_url()
+                except Exception:
+                    pass
+            miembros.append({
+                'nombre': m.get_full_name() or m.username,
+                'iniciales': iniciales,
+                'avatar_url': avatar_url,
+            })
+        proyectos_data.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'fecha_creacion': p.fecha_creacion,
+            'miembros': miembros,
+            'total_miembros': p.miembros.count(),
+        })
+
+    return render(request, 'proyectos_ingenieria.html', {
+        'proyectos': proyectos_data,
+        'total': len(proyectos_data),
+    })
+
+
 def proyecto_detalle(request, proyecto_id):
     """
     Vista para el detalle individual de un proyecto

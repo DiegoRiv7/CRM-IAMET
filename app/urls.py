@@ -24,6 +24,7 @@ urlpatterns = [
     
     # Tareas y Proyectos (solo superusuarios)
     path("tareas-proyectos/", views.tareas_proyectos, name="tareas_proyectos"),
+    path("proyectos-ingenieria/", views.proyectos_ingenieria, name="proyectos_ingenieria"),
     path("proyecto/<int:proyecto_id>/", views.proyecto_detalle, name="proyecto_detalle"),
     
     # APIs para comentarios de proyecto
