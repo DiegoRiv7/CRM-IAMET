@@ -140,6 +140,7 @@ urlpatterns = [
     path("register/", views.register, name="register"),
     path("login/", views.user_login, name="user_login"),
     path("logout/", views.user_logout, name="user_logout"),
+    path("api/solicitar-reset-password/", views.solicitar_reset_password, name="solicitar_reset_password"),
     path("set-language/", views.set_language, name="set_language"),
 
     # Ruta para editar o eliminar una oportunidad de venta específica

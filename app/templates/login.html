@@ -1,235 +1,221 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>nethive - Iniciar Sesión</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <title>CRM IAMET - Iniciar Sesión</title>
     <style>
         :root {
-            --apple-blue: #007AFF;
-            --apple-gray: #8E8E93;
-            --apple-background: #000000;
-            --apple-background-secondary: #1D1D1F;
-            --apple-label: #FFFFFF;
-            --apple-label-secondary: #EBEBF5;
-            --apple-label-tertiary: #EBEBF599;
-            --apple-separator: #38383A;
-            --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+            --bg-white: #ffffff;
+            --text-main: #1d1d1f;
+            --text-muted: #86868b;
+            --accent-blue: #0066cc;
+            --accent-hover: #005bb5;
+            --input-bg: #f5f5f7;
+            --input-border: #d2d2d7;
+            --brand-bg-start: #0f172a;
+            --brand-bg-end: #1e3a8a;
+            --brand-text: #ffffff;
+            --brand-text-muted: #cbd5e1;
+            --error-color: #c0392b;
         }
 
-        body {
-            font-family: var(--apple-font-family);
-            background: var(--apple-background);
-            color: var(--apple-label);
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--bg-white); color: var(--text-main); overflow: hidden; }
 
-        .apple-bg {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            background:
-                radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
-                linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);
-        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .login-container {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            animation: appleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
+        .anim-stagger-1 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.1s; }
+        .anim-stagger-2 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.2s; }
+        .anim-stagger-3 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.3s; }
+        .anim-stagger-4 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.4s; }
+        .anim-stagger-5 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.5s; }
 
-        .page-title {
-            font-family: var(--apple-font-family);
-            font-size: 4rem;
-            font-weight: 600;
-            color: var(--apple-label);
-            letter-spacing: -0.025em;
-            margin-bottom: 2rem;
-        }
+        .branding-section { flex: 1.2; background: linear-gradient(135deg, var(--brand-bg-start) 0%, var(--brand-bg-end) 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; position: relative; overflow: hidden; color: var(--brand-text); }
+        .branding-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px); background-size: 30px 30px; opacity: 0.3; z-index: 1; animation: fadeIn 2s ease forwards; }
+        .branding-content { position: relative; z-index: 2; width: 100%; max-width: 480px; }
+        .branding-content h1 { font-size: 3.5rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 20px; line-height: 1.1; }
+        .branding-content p { font-size: 1.2rem; color: var(--brand-text-muted); line-height: 1.6; margin-bottom: 40px; }
+        .feature-list { display: flex; flex-direction: column; gap: 15px; }
+        .feature-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        .feature-icon { display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; background: var(--accent-blue); border-radius: 8px; font-weight: bold; flex-shrink: 0; }
 
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 300px;
-        }
+        .login-section { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; background-color: var(--bg-white); }
+        .login-box { width: 100%; max-width: 380px; }
+        .logo { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 10px; color: var(--accent-blue); }
+        .subtitle { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 40px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 8px; color: var(--text-main); }
+        .input-group input[type="text"],
+        .input-group input[type="password"] { width: 100%; padding: 14px 16px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid transparent; border-radius: 12px; outline: none; transition: all 0.3s ease; color: var(--text-main); }
+        .input-group input[type="text"]:focus,
+        .input-group input[type="password"]:focus { background-color: var(--bg-white); border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.15); }
+        .input-group input.input-error { border-color: var(--error-color) !important; background-color: #fff5f5 !important; }
 
-        .login-field {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid var(--apple-separator);
-            border-radius: 8px;
-            color: var(--apple-label);
-            font-family: var(--apple-font-family);
-            font-size: 1rem;
-            padding: 12px 16px;
-            width: 100%;
-            transition: all 0.3s;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
+        .error-banner { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: 0.875rem; color: var(--error-color); }
 
-        .login-field:focus {
-            outline: none;
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
-        }
+        .options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; font-size: 0.9rem; }
+        .forgot-password { color: var(--accent-blue); text-decoration: none; font-weight: 500; cursor: pointer; background: none; border: none; font-size: 0.9rem; padding: 0; }
+        .forgot-password:hover { text-decoration: underline; }
+        .btn-submit { width: 100%; padding: 16px; background-color: var(--accent-blue); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background-color 0.3s ease, transform 0.1s ease; }
+        .btn-submit:hover { background-color: var(--accent-hover); }
+        .btn-submit:active { transform: scale(0.98); }
 
-        .login-button {
-            background: var(--apple-blue);
-            color: var(--apple-label);
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            padding: 12px 24px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 0.5rem;
-            width: auto;
-        }
+        /* Modal "Olvidé mi contraseña" */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .modal-box h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+        .modal-box p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
+        .modal-box input { width: 100%; padding: 12px 14px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid transparent; border-radius: 10px; outline: none; transition: all 0.3s ease; color: var(--text-main); margin-bottom: 12px; }
+        .modal-box input:focus { background-color: var(--bg-white); border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(0,102,204,0.15); }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease; }
+        .btn-modal-cancel { background: var(--input-bg); color: var(--text-muted); }
+        .btn-modal-cancel:hover { background: var(--input-border); }
+        .btn-modal-send { background: var(--accent-blue); color: white; }
+        .btn-modal-send:hover { background: var(--accent-hover); }
+        .modal-msg { font-size: 0.85rem; margin-top: 10px; text-align: center; min-height: 1.2em; }
+        .modal-msg.success { color: #16a34a; }
+        .modal-msg.error { color: var(--error-color); }
 
-        .login-button:hover {
-            filter: brightness(1.1);
-        }
-
-        .error-message {
-            color: #FF453A;
-            font-size: 0.875rem;
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        @keyframes appleFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* --- THEME SYSTEM --- */
-        body[data-theme="perla"] {
-            --apple-background: #F5F5F7;
-            --apple-background-secondary: #FFFFFF;
-            --apple-label: #1D1D1F;
-            --apple-separator: #D2D2D7;
-            --apple-blue: #007AFF;
-        }
-
-        body[data-theme="sakura"] {
-            --apple-background: #FFF5F8;
-            --apple-background-secondary: #FFF9FB;
-            --apple-label: #2D1B2E;
-            --apple-separator: #FFC0CB;
-            --apple-blue: #FF6B9D;
-        }
-
-        body[data-theme="duna"] {
-            --apple-background: #FAF3E0;
-            --apple-background-secondary: #FDFBF9;
-            --apple-label: #3E2723;
-            --apple-separator: #D7CCC8;
-            --apple-blue: #8D6E63;
-        }
-
-        body[data-theme="espacial"] {
-            --apple-background: #050505;
-            --apple-background-secondary: #1D1D1F;
-            --apple-label: #FFFFFF;
-            --apple-separator: #38383A;
-            --apple-blue: #0A84FF;
-        }
-
-        body[data-theme] {
-            background: var(--apple-background) !important;
-            color: var(--apple-label) !important;
-        }
-
-        body[data-theme] .apple-bg {
-            background: linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%) !important;
-        }
-
-        body[data-theme] .page-title {
-            color: var(--apple-label) !important;
-        }
-
-        body[data-theme] .login-field {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--apple-separator);
-            color: var(--apple-label);
-        }
-
-        body[data-theme="perla"] .login-field,
-        body[data-theme="sakura"] .login-field,
-        body[data-theme="duna"] .login-field {
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        body[data-theme] .login-button {
-            background: var(--apple-blue);
-        }
+        @media (max-width: 900px) { .branding-section { display: none; } .login-section { flex: 1; } }
     </style>
 </head>
-
 <body>
-    <div class="apple-bg"></div>
-    <div class="login-container">
-        <h1 class="page-title">nethive</h1>
-        <form method="post" class="login-form">
-            {% csrf_token %}
-            <input type="text" name="username" id="id_username" class="login-field" placeholder="Usuario" required
-                value="{{ form.username.value|default:'' }}">
-            <input type="password" name="password" id="id_password" class="login-field" placeholder="Contraseña"
-                required>
-            <button type="submit" class="login-button" id="btnLogin">Iniciar Sesión</button>
-            {% if form.errors %}
-            <p class="error-message" id="errorMsg">Credenciales incorrectas. Inténtalo de nuevo.</p>
-            {% endif %}
-        </form>
+    <div class="branding-section">
+        <div class="branding-content">
+            <h1 class="anim-stagger-1">Bienvenido a tu CRM.</h1>
+            <p class="anim-stagger-2">El núcleo operativo central para optimizar tus procesos empresariales, desde la prospección hasta la ingeniería y facturación.</p>
+            <div class="feature-list">
+                <div class="feature-item anim-stagger-3"><div class="feature-icon">&#10003;</div><div><strong style="display: block; font-size: 1.05rem;">CRM y Oportunidades</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Gestión integral de ventas y cotizaciones.</span></div></div>
+                <div class="feature-item anim-stagger-4"><div class="feature-icon">&#9889;</div><div><strong style="display: block; font-size: 1.05rem;">Proyectos e Ingeniería</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Seguimiento de tareas, tiempos y volumetría.</span></div></div>
+                <div class="feature-item anim-stagger-5"><div class="feature-icon">&#128202;</div><div><strong style="display: block; font-size: 1.05rem;">Control Operativo</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Nómina, eficiencia y reportes en tiempo real.</span></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-section">
+        <div class="login-box">
+            <div class="logo anim-stagger-1">CRM IAMET</div>
+            <p class="subtitle anim-stagger-2">Ingresa tus credenciales para acceder.</p>
+
+            <form action="{% url 'user_login' %}" method="POST" class="anim-stagger-3">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                <div class="error-banner">
+                    Credenciales incorrectas. Verifica tu usuario y contraseña.
+                </div>
+                {% endif %}
+
+                <div class="input-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" name="username"
+                           placeholder="ej. diego.rivera"
+                           value="{{ form.username.value|default:'' }}"
+                           {% if form.errors %}class="input-error"{% endif %}
+                           required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password"
+                           placeholder="••••••••"
+                           {% if form.errors %}class="input-error"{% endif %}
+                           required>
+                </div>
+
+                <div class="options anim-stagger-4">
+                    <label style="display: flex; align-items: center; gap: 8px; color: var(--text-muted); cursor: pointer;">
+                        <input type="checkbox" name="remember" style="width: 16px; height: 16px; accent-color: var(--accent-blue);"> Recordarme
+                    </label>
+                    <button type="button" id="btn-forgot-pwd" class="forgot-password">¿Olvidaste tu contraseña?</button>
+                </div>
+
+                <button type="submit" class="btn-submit anim-stagger-5">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Olvidé mi contraseña -->
+    <div class="modal-overlay" id="modalForgot">
+        <div class="modal-box">
+            <h2>Restablecer contraseña</h2>
+            <p>Ingresa tu nombre de usuario y se notificará a un supervisor para gestionar el cambio.</p>
+            <input type="text" id="modalUsername" placeholder="ej. diego.rivera" autocomplete="username">
+            <div class="modal-actions">
+                <button class="btn-modal-cancel" id="btnModalCancel">Cancelar</button>
+                <button class="btn-modal-send" id="btnModalSend">Enviar solicitud</button>
+            </div>
+            <p class="modal-msg" id="modalMsg"></p>
+        </div>
     </div>
 
     <script>
-        (function () {
-            try {
-                const savedTheme = localStorage.getItem('crm_theme') || 'espacial';
-                document.body.setAttribute('data-theme', savedTheme);
+        const modal = document.getElementById('modalForgot');
+        const modalInput = document.getElementById('modalUsername');
+        const modalMsg = document.getElementById('modalMsg');
 
-                const savedLang = localStorage.getItem('crm_language') || 'es';
-                if (savedLang === 'en') {
-                    document.getElementById('id_username').placeholder = "Username";
-                    document.getElementById('id_password').placeholder = "Password";
-                    document.getElementById('btnLogin').innerText = "Login";
-                    const err = document.getElementById('errorMsg');
-                    if (err) err.innerText = "Incorrect credentials. Try again.";
-                }
-            } catch (e) {
-                document.body.setAttribute('data-theme', 'espacial');
+        document.getElementById('btn-forgot-pwd').addEventListener('click', function () {
+            modalInput.value = '';
+            modalMsg.textContent = '';
+            modalMsg.className = 'modal-msg';
+            modal.classList.add('active');
+            setTimeout(() => modalInput.focus(), 100);
+        });
+
+        document.getElementById('btnModalCancel').addEventListener('click', function () {
+            modal.classList.remove('active');
+        });
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) modal.classList.remove('active');
+        });
+
+        document.getElementById('btnModalSend').addEventListener('click', function () {
+            const username = modalInput.value.trim();
+            if (!username) {
+                modalMsg.textContent = 'Por favor ingresa tu nombre de usuario.';
+                modalMsg.className = 'modal-msg error';
+                return;
             }
-        })();
+
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            modalMsg.textContent = '';
+            modalMsg.className = 'modal-msg';
+
+            fetch('/app/api/solicitar-reset-password/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ username: username })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    modalMsg.textContent = data.message || 'Solicitud enviada. Un supervisor te contactará pronto.';
+                    modalMsg.className = 'modal-msg success';
+                    modalInput.value = '';
+                    setTimeout(() => modal.classList.remove('active'), 3000);
+                } else {
+                    modalMsg.textContent = data.message || 'Ocurrió un error. Intenta de nuevo.';
+                    modalMsg.className = 'modal-msg error';
+                }
+            })
+            .catch(() => {
+                modalMsg.textContent = 'Error de conexión. Intenta de nuevo.';
+                modalMsg.className = 'modal-msg error';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = 'Enviar solicitud';
+            });
+        });
     </script>
 </body>
-
 </html>

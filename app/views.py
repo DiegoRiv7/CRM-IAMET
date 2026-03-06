@@ -13,7 +13,7 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
@@ -4253,14 +4253,61 @@ def user_login(request):
             user = form.get_user()
             print(f"DEBUG: User {user.username} authenticated. Attempting login.")
             login(request, user)
+            if request.POST.get('remember'):
+                request.session.set_expiry(1209600)  # 2 semanas
+            else:
+                request.session.set_expiry(0)  # Expira al cerrar el navegador
             print(f"DEBUG: User {user.username} logged in. Redirecting to {settings.LOGIN_REDIRECT_URL}")
-            return redirect(settings.LOGIN_REDIRECT_URL) # Redirigir a 'home' después de iniciar sesión
+            return redirect(settings.LOGIN_REDIRECT_URL)
         else:
             print(f"DEBUG: Form is NOT valid. Errors: {form.errors}")
     else:
         form = AuthenticationForm()
         print("DEBUG: GET request. Displaying login form.")
-    return render(request, 'login.html', {'form': form, 'hide_dock': True}) # Pasar hide_dock=True para ocultar el dock
+    return render(request, 'login.html', {'form': form, 'hide_dock': True})
+
+
+@require_POST
+def solicitar_reset_password(request):
+    try:
+        import json
+        data = json.loads(request.body)
+        username = data.get('username', '').strip()
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Solicitud inválida.'}, status=400)
+
+    if not username:
+        return JsonResponse({'status': 'error', 'message': 'El nombre de usuario es requerido.'}, status=400)
+
+    from django.contrib.auth.models import User as AuthUser
+    from .models import Notificacion
+
+    try:
+        usuario = AuthUser.objects.get(username=username)
+    except AuthUser.DoesNotExist:
+        # Respuesta genérica para no revelar si el usuario existe
+        return JsonResponse({'status': 'ok', 'message': 'Si el usuario existe, la solicitud fue enviada a los supervisores.'})
+
+    supervisores = AuthUser.objects.filter(is_superuser=True)
+    if not supervisores.exists():
+        return JsonResponse({'status': 'error', 'message': 'No hay supervisores disponibles. Contacta al administrador.'}, status=500)
+
+    titulo = f"Solicitud de restablecimiento de contraseña"
+    mensaje = (
+        f"El usuario '{usuario.username}' ha solicitado un restablecimiento de contraseña. "
+        f"Por favor, autorice y gestione el cambio."
+    )
+
+    for supervisor in supervisores:
+        Notificacion.objects.create(
+            usuario_destinatario=supervisor,
+            usuario_remitente=None,
+            tipo='sistema',
+            titulo=titulo,
+            mensaje=mensaje,
+        )
+
+    return JsonResponse({'status': 'ok', 'message': 'Solicitud enviada. Un supervisor se pondrá en contacto contigo pronto.'})
 
 @login_required
 def user_logout(request):
