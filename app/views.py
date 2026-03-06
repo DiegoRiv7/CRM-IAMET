@@ -3201,10 +3201,9 @@ def api_crear_tarea(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Datos JSON inválidos'}, status=400)
     except Exception as e:
-        print(f"❌ Error creando tarea: {e}")
         import traceback
         traceback.print_exc()
-        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
+        return JsonResponse({'error': str(e), 'trace': traceback.format_exc()}, status=500)
 
 
 @login_required
