@@ -1,4 +1,5 @@
 from django.conf import settings
+import os
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
@@ -13703,6 +13704,28 @@ def api_archivo_detalle(request, proyecto_id, archivo_id):
             
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def api_archivo_proyecto_stream(request, proyecto_id, archivo_id):
+    """
+    Descarga/previsualización en tiempo real para archivos de proyecto.
+    """
+    from django.http import FileResponse
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    archivo = get_object_or_404(ArchivoProyecto, id=archivo_id, proyecto=proyecto)
+
+    if archivo.archivo:
+        try:
+            return FileResponse(
+                archivo.archivo.open('rb'),
+                as_attachment=request.GET.get('dl') == '1',
+                filename=archivo.nombre_original,
+            )
+        except Exception:
+            pass
+
+    return JsonResponse({'error': 'Archivo no disponible'}, status=404)
 
 
 # =============================================
