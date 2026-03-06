@@ -14,6 +14,15 @@
         var _mailBusqTimeout = null;
         var _mailPollInterval = null;
         var _mailPendingBadge = 0;
+        var _mailConexionId = null;
+
+        window.mailCambiarConexion = function () {
+            var sel = document.getElementById('mailWidgetEmailSelect');
+            if (sel) {
+                _mailConexionId = sel.value;
+                mailCargarLista(_mailCarpeta);
+            }
+        };
 
         function csrf() {
             var el = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -68,33 +77,50 @@
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    var emailEl = document.getElementById('mailWidgetEmail');
+                    var selectEl = document.getElementById('mailWidgetEmailSelect');
                     var syncBtn = document.getElementById('mailWidgetSyncBtn');
                     var composeBtn = document.getElementById('mailComposeBtn');
                     var sidebarNote = document.getElementById('mailSidebarNote');
+                    var btnText = document.getElementById('mailBtnConfigText');
 
-                    if (data.correo_electronico) {
-                        if (emailEl) emailEl.textContent = data.correo_electronico;
+                    if (data.tiene_conexion && data.conexiones && data.conexiones.length > 0) {
+                        if (selectEl) {
+                            selectEl.innerHTML = '';
+                            data.conexiones.forEach(function (c) {
+                                var opt = document.createElement('option');
+                                opt.value = c.id;
+                                opt.textContent = c.correo_electronico;
+                                selectEl.appendChild(opt);
+                            });
+                            selectEl.style.display = 'block';
+                            if (!_mailConexionId || !data.conexiones.find(c => c.id == _mailConexionId)) {
+                                _mailConexionId = data.conexiones[0].id;
+                            }
+                            selectEl.value = _mailConexionId;
+                        }
+                        if (btnText) btnText.style.display = 'none';
                         if (syncBtn) syncBtn.style.display = 'flex';
                         if (composeBtn) composeBtn.style.display = 'flex';
                         if (sidebarNote) sidebarNote.style.display = 'none';
 
+                        var activeConn = data.conexiones.find(c => c.id == _mailConexionId) || data.conexiones[0];
                         var cfgEmail = document.getElementById('mailCfgEmail');
                         var cfgImapSrv = document.getElementById('mailCfgImapSrv');
                         var cfgImapPort = document.getElementById('mailCfgImapPort');
                         var cfgSmtpSrv = document.getElementById('mailCfgSmtpSrv');
                         var cfgSmtpPort = document.getElementById('mailCfgSmtpPort');
 
-                        if (cfgEmail) cfgEmail.value = data.correo_electronico;
-                        if (cfgImapSrv) cfgImapSrv.value = data.imap_servidor || 'mail.iamet.mx';
-                        if (cfgImapPort) cfgImapPort.value = data.imap_puerto || 993;
-                        if (cfgSmtpSrv) cfgSmtpSrv.value = data.smtp_servidor || 'mail.iamet.mx';
-                        if (cfgSmtpPort) cfgSmtpPort.value = data.smtp_puerto || 465;
+                        if (cfgEmail) cfgEmail.value = activeConn.correo_electronico;
+                        if (cfgImapSrv) cfgImapSrv.value = activeConn.imap_servidor || 'mail.iamet.mx';
+                        if (cfgImapPort) cfgImapPort.value = activeConn.imap_puerto || 993;
+                        if (cfgSmtpSrv) cfgSmtpSrv.value = activeConn.smtp_servidor || 'mail.iamet.mx';
+                        if (cfgSmtpPort) cfgSmtpPort.value = activeConn.smtp_puerto || 465;
 
                         mailCargarLista(_mailCarpeta);
                         _mailStartPolling();
                     } else {
-                        if (emailEl) emailEl.textContent = 'Sin cuenta configurada';
+                        if (selectEl) selectEl.style.display = 'none';
+                        if (btnText) btnText.style.display = 'inline';
                         if (syncBtn) syncBtn.style.display = 'none';
                         if (composeBtn) composeBtn.style.display = 'none';
                         if (sidebarNote) sidebarNote.style.display = 'block';
@@ -124,7 +150,9 @@
             var loadMore = document.getElementById('mailLoadMore');
             if (loadMore) loadMore.style.display = 'none';
 
-            fetch('/app/api/mail/lista/?carpeta=' + carpeta + '&pagina=1')
+            var url = '/app/api/mail/lista/?carpeta=' + carpeta + '&pagina=1';
+            if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+            fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     _mailTodos = data.correos || [];
@@ -188,7 +216,9 @@
         /* ── Load more ──────────────────────────────── */
         window.mailCargarMas = function () {
             _mailPagina++;
-            fetch('/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=' + _mailPagina)
+            var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=' + _mailPagina;
+            if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+            fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var mas = data.correos || [];
@@ -274,7 +304,8 @@
             }
             fetch('/app/api/mail/sincronizar/', {
                 method: 'POST',
-                headers: { 'X-CSRFToken': csrf() }
+                headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conexion_id: _mailConexionId })
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
@@ -483,7 +514,9 @@
         }
 
         function _mailPollUnreadCount() {
-            fetch('/app/api/mail/lista/?carpeta=INBOX&pagina=1')
+            var url = '/app/api/mail/lista/?carpeta=INBOX&pagina=1';
+            if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+            fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var unread = (data.correos || []).filter(function (c) { return !c.leido; }).length;

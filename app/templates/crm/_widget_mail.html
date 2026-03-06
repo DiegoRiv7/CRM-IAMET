@@ -11,7 +11,18 @@
                 <polyline points="22,6 12,13 2,6" />
             </svg>
             <span style="font-size:1rem;font-weight:700;color:#1A1A2E;flex:1;">Correo</span>
-            <span id="mailWidgetEmail" style="font-size:0.78rem;color:#9CA3AF;font-weight:500;"></span>
+            <select id="mailWidgetEmailSelect" onchange="mailCambiarConexion()"
+                style="display:none; font-size:0.78rem; color:#4B5563; font-weight:600; background:#F3F4F6; border:1px solid #E5E7EB; border-radius:6px; padding:4px 20px 4px 8px; appearance:none; outline:none; cursor:pointer; background-image:url('data:image/svg+xml;utf8,<svg fill=%22none%22 stroke=%22%236B7280%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 xmlns=%22http://www.w3.org/2000/svg%22><polyline points=%226 9 12 15 18 9%22/></svg>'); background-repeat:no-repeat; background-position:right 4px center; background-size:12px;">
+            </select>
+            <button onclick="mailAbrirConfig()"
+                style="background:none; border:none; outline:none; color:#007AFF; font-size:0.8rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; padding:4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span id="mailBtnConfigText" style="display:none;">Agregar</span>
+            </button>
             <button id="mailWidgetSyncBtn" onclick="mailSincronizar()"
                 style="display:none;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:6px 13px;font-size:0.8rem;font-weight:600;cursor:pointer;">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -313,11 +324,14 @@
     <!-- Modal Config -->
     <div id="mailModalConfig"
         style="display:none;position:fixed;inset:0;z-index:10310;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:16px;width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,30,0.25);">
+        <div
+            style="background:#fff;border-radius:16px;width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,30,0.25);">
             <!-- Header -->
-            <div style="padding:16px 20px 12px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <div
+                style="padding:16px 20px 12px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;flex-shrink:0;">
                 <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Configurar cuenta de correo</span>
-                <button onclick="mailCerrarModal('mailModalConfig')" style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+                <button onclick="mailCerrarModal('mailModalConfig')"
+                    style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
             </div>
             <!-- Body -->
             <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;flex:1;overflow-y:auto;">
@@ -333,14 +347,18 @@
                     </button>
                 </div>
                 <!-- Info IAMET -->
-                <div id="mailCfgInfoIamet" style="font-size:0.76rem;color:#374151;line-height:1.5;background:#F0F9FF;padding:10px 13px;border-radius:8px;border:1px solid #BAE6FD;">
+                <div id="mailCfgInfoIamet"
+                    style="font-size:0.76rem;color:#374151;line-height:1.5;background:#F0F9FF;padding:10px 13px;border-radius:8px;border:1px solid #BAE6FD;">
                     <strong style="color:#0369A1;">&#9432; Correo IAMET (@iamet.mx)</strong><br>
-                    Usa tu contraseña normal del correo. Servidor: <code style="background:#E0F2FE;padding:1px 5px;border-radius:4px;font-size:0.75rem;">mail.iamet.mx</code>
+                    Usa tu contraseña normal del correo. Servidor: <code
+                        style="background:#E0F2FE;padding:1px 5px;border-radius:4px;font-size:0.75rem;">mail.iamet.mx</code>
                 </div>
                 <!-- Info Baja-Net -->
-                <div id="mailCfgInfoBajanet" style="display:none;font-size:0.76rem;color:#92400E;line-height:1.5;background:#FFFBEB;padding:10px 13px;border-radius:8px;border:1px solid #FDE68A;">
+                <div id="mailCfgInfoBajanet"
+                    style="display:none;font-size:0.76rem;color:#92400E;line-height:1.5;background:#FFFBEB;padding:10px 13px;border-radius:8px;border:1px solid #FDE68A;">
                     <strong>&#9888; Correo Baja-Net (@baja-net.com) — Google Workspace</strong><br>
-                    <strong>NO uses tu contraseña normal.</strong> Necesitas una <strong>Contraseña de Aplicación</strong>:<br>
+                    <strong>NO uses tu contraseña normal.</strong> Necesitas una <strong>Contraseña de
+                        Aplicación</strong>:<br>
                     <ol style="margin:6px 0 0 16px;padding:0;font-size:0.74rem;">
                         <li>Ve a <strong>myaccount.google.com</strong> con tu cuenta @baja-net.com</li>
                         <li>Seguridad → Verificación en 2 pasos (debe estar activada)</li>
@@ -351,103 +369,131 @@
                 </div>
                 <!-- Correo -->
                 <div>
-                    <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Correo electrónico</div>
-                    <input type="email" class="wf-input" id="mailCfgEmail" placeholder="tu@iamet.mx" style="width:100%;box-sizing:border-box;">
+                    <div
+                        style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                        Correo electrónico</div>
+                    <input type="email" class="wf-input" id="mailCfgEmail" placeholder="tu@iamet.mx"
+                        style="width:100%;box-sizing:border-box;">
                 </div>
                 <!-- Contraseña -->
                 <div>
-                    <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Contraseña</div>
-                    <input type="password" class="wf-input" id="mailCfgPass" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
-                    <div id="mailCfgInfoBajanetPass" style="display:none;font-size:0.71rem;color:#6B7280;margin-top:3px;">Para Baja-Net: pega aquí la Contraseña de Aplicación de 16 caracteres.</div>
+                    <div
+                        style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                        Contraseña</div>
+                    <input type="password" class="wf-input" id="mailCfgPass" placeholder="••••••••"
+                        style="width:100%;box-sizing:border-box;">
+                    <div id="mailCfgInfoBajanetPass"
+                        style="display:none;font-size:0.71rem;color:#6B7280;margin-top:3px;">Para Baja-Net: pega aquí la
+                        Contraseña de Aplicación de 16 caracteres.</div>
                 </div>
                 <!-- IMAP -->
                 <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;">
                     <div>
-                        <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Servidor IMAP</div>
-                        <input type="text" class="wf-input" id="mailCfgImapSrv" value="mail.iamet.mx" style="width:100%;box-sizing:border-box;">
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Servidor IMAP</div>
+                        <input type="text" class="wf-input" id="mailCfgImapSrv" value="mail.iamet.mx"
+                            style="width:100%;box-sizing:border-box;">
                     </div>
                     <div>
-                        <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Puerto</div>
-                        <input type="number" class="wf-input" id="mailCfgImapPort" value="993" style="width:100%;box-sizing:border-box;">
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Puerto</div>
+                        <input type="number" class="wf-input" id="mailCfgImapPort" value="993"
+                            style="width:100%;box-sizing:border-box;">
                     </div>
                 </div>
                 <!-- SMTP -->
                 <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;">
                     <div>
-                        <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Servidor SMTP</div>
-                        <input type="text" class="wf-input" id="mailCfgSmtpSrv" value="mail.iamet.mx" style="width:100%;box-sizing:border-box;">
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Servidor SMTP</div>
+                        <input type="text" class="wf-input" id="mailCfgSmtpSrv" value="mail.iamet.mx"
+                            style="width:100%;box-sizing:border-box;">
                     </div>
                     <div>
-                        <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Puerto</div>
-                        <input type="number" class="wf-input" id="mailCfgSmtpPort" value="465" style="width:100%;box-sizing:border-box;">
+                        <div
+                            style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+                            Puerto</div>
+                        <input type="number" class="wf-input" id="mailCfgSmtpPort" value="465"
+                            style="width:100%;box-sizing:border-box;">
                     </div>
                 </div>
                 <!-- Error / OK -->
-                <div id="mailCfgErr" style="display:none;font-size:0.76rem;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:8px 12px;"></div>
-                <div id="mailCfgOk" style="display:none;font-size:0.76rem;color:#059669;background:#F0FDF4;border-radius:8px;padding:8px 12px;"></div>
+                <div id="mailCfgErr"
+                    style="display:none;font-size:0.76rem;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:8px 12px;">
+                </div>
+                <div id="mailCfgOk"
+                    style="display:none;font-size:0.76rem;color:#059669;background:#F0FDF4;border-radius:8px;padding:8px 12px;">
+                </div>
             </div>
             <!-- Footer -->
-            <div style="padding:12px 20px;border-top:1.5px solid #F0F2F5;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
-                <button onclick="mailCerrarModal('mailModalConfig')" style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:8px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">Cancelar</button>
-                <button id="mailBtnCfgGuardar" onclick="mailGuardarConexion()" style="background:#007AFF;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:600;cursor:pointer;">Guardar y Conectar</button>
+            <div
+                style="padding:12px 20px;border-top:1.5px solid #F0F2F5;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
+                <button onclick="mailCerrarModal('mailModalConfig')"
+                    style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:8px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">Cancelar</button>
+                <button id="mailBtnCfgGuardar" onclick="mailGuardarConexion()"
+                    style="background:#007AFF;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:600;cursor:pointer;">Guardar
+                    y Conectar</button>
             </div>
         </div>
     </div>
 
-        <!-- CSS for mail widget folder buttons -->
-        <style>
-            .mail-folder-wb {
-                display: flex;
-                align-items: center;
-                gap: 9px;
-                background: none;
-                border: none;
-                border-radius: 8px;
-                padding: 9px 10px;
-                font-size: 0.86rem;
-                font-weight: 500;
-                color: #374151;
-                cursor: pointer;
-                width: 100%;
-                text-align: left;
-                transition: background 0.12s;
-                font-family: inherit;
-            }
+    <!-- CSS for mail widget folder buttons -->
+    <style>
+        .mail-folder-wb {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 0.86rem;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            transition: background 0.12s;
+            font-family: inherit;
+        }
 
-            .mail-folder-wb:hover {
-                background: #F0F2F5;
-            }
+        .mail-folder-wb:hover {
+            background: #F0F2F5;
+        }
 
-            .mail-folder-wb.active {
-                background: rgba(0, 122, 255, 0.1);
-                color: #007AFF;
-                font-weight: 600;
-            }
+        .mail-folder-wb.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: #007AFF;
+            font-weight: 600;
+        }
 
-            .mail-card-wb {
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-                padding: 10px 12px;
-                border-bottom: 1px solid #F0F2F5;
-                cursor: pointer;
-                transition: background 0.1s;
-            }
+        .mail-card-wb {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #F0F2F5;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
 
-            .mail-card-wb:hover {
-                background: #F9FAFB;
-            }
+        .mail-card-wb:hover {
+            background: #F9FAFB;
+        }
 
-            .mail-card-wb.selected {
-                background: rgba(0, 122, 255, 0.07);
-            }
+        .mail-card-wb.selected {
+            background: rgba(0, 122, 255, 0.07);
+        }
 
-            .mail-card-wb.unread .mw-from {
-                font-weight: 700;
-            }
+        .mail-card-wb.unread .mw-from {
+            font-weight: 700;
+        }
 
-            .mail-card-wb.unread .mw-subject {
-                font-weight: 600;
-            }
-        </style>
+        .mail-card-wb.unread .mw-subject {
+            font-weight: 600;
+        }
+    </style>
 </div>

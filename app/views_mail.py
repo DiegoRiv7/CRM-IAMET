@@ -194,10 +194,14 @@ def mail_home(request):
 @require_http_methods(['GET', 'POST'])
 def api_mail_conexion(request):
     if request.method == 'GET':
-        try:
-            c = MailConexion.objects.get(usuario=request.user)
-            return JsonResponse({
-                'ok': True,
+        conexiones = MailConexion.objects.filter(usuario=request.user)
+        if not conexiones.exists():
+            return JsonResponse({'ok': False, 'tiene_conexion': False})
+        
+        lista = []
+        for c in conexiones:
+            lista.append({
+                'id': c.id,
                 'correo_electronico': c.correo_electronico,
                 'imap_servidor': c.imap_servidor,
                 'imap_puerto': c.imap_puerto,
@@ -208,8 +212,7 @@ def api_mail_conexion(request):
                 'activo': c.activo,
                 'ultima_sincronizacion': c.ultima_sincronizacion.isoformat() if c.ultima_sincronizacion else None,
             })
-        except MailConexion.DoesNotExist:
-            return JsonResponse({'ok': False, 'tiene_conexion': False})
+        return JsonResponse({'ok': True, 'tiene_conexion': True, 'conexiones': lista})
 
     # POST — save/update connection
     try:
@@ -250,7 +253,7 @@ def api_mail_conexion(request):
         return JsonResponse({'ok': False, 'error': f'No se pudo conectar al servidor IMAP: {e}'}, status=400)
 
     # Save with encrypted password
-    conexion, _ = MailConexion.objects.get_or_create(usuario=request.user)
+    conexion, _ = MailConexion.objects.get_or_create(usuario=request.user, correo_electronico=correo)
     conexion.correo_electronico = correo
     conexion.imap_servidor = imap_srv
     conexion.imap_puerto = imap_puerto
@@ -261,17 +264,30 @@ def api_mail_conexion(request):
     conexion.password_encriptado = _encrypt_password(password_plain)
     conexion.activo = True
     conexion.save()
-    return JsonResponse({'ok': True, 'message': 'Conexión configurada correctamente'})
+    return JsonResponse({'ok': True, 'message': 'Conexión configurada correctamente', 'conexion_id': conexion.id})
 
 
 @login_required
 @csrf_exempt
 @require_http_methods(['POST'])
 def api_mail_sincronizar(request):
+    conexion_id = request.GET.get('conexion_id')
+    if not conexion_id:
+        try:
+            import json
+            data = json.loads(request.body)
+            conexion_id = data.get('conexion_id')
+        except:
+            pass
     try:
-        conexion = MailConexion.objects.get(usuario=request.user, activo=True)
+        if conexion_id:
+            conexion = MailConexion.objects.get(id=conexion_id, usuario=request.user, activo=True)
+        else:
+            conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if not conexion:
+                raise MailConexion.DoesNotExist
     except MailConexion.DoesNotExist:
-        return JsonResponse({'ok': False, 'error': 'No hay conexión de correo configurada'}, status=400)
+        return JsonResponse({'ok': False, 'error': 'Conexión no encontrada'}, status=400)
 
     try:
         imap = _get_imap(conexion)
@@ -330,6 +346,7 @@ def api_mail_sincronizar(request):
 
                 MailCorreo.objects.create(
                     usuario=request.user,
+                    conexion=conexion,
                     uid_imap=uid,
                     carpeta_imap='INBOX',
                     carpeta_display='INBOX',
@@ -382,6 +399,7 @@ def api_mail_sincronizar(request):
 
                 MailCorreo.objects.create(
                     usuario=request.user,
+                    conexion=conexion,
                     uid_imap=uid,
                     carpeta_imap=sent_folder,
                     carpeta_display='SENT',
@@ -406,7 +424,7 @@ def api_mail_sincronizar(request):
     conexion.ultima_sincronizacion = django_tz.now()
     conexion.save(update_fields=['ultima_sincronizacion'])
 
-    total = MailCorreo.objects.filter(usuario=request.user).count()
+    total = MailCorreo.objects.filter(usuario=request.user, conexion=conexion).count()
     return JsonResponse({'ok': True, 'nuevos': nuevos_total, 'total': total})
 
 
@@ -414,10 +432,13 @@ def api_mail_sincronizar(request):
 @require_http_methods(['GET'])
 def api_mail_lista(request):
     carpeta = request.GET.get('carpeta', 'INBOX')
+    conexion_id = request.GET.get('conexion_id')
     pagina = max(1, int(request.GET.get('pagina', 1)))
     por_pagina = 25
 
     qs = MailCorreo.objects.filter(usuario=request.user)
+    if conexion_id:
+        qs = qs.filter(conexion_id=conexion_id)
     if carpeta == 'SENT':
         qs = qs.filter(carpeta_display='SENT')
     else:
@@ -464,7 +485,9 @@ def api_mail_detalle(request, correo_id):
     # Fetch body from IMAP if not yet loaded
     if not correo.cuerpo_cargado:
         try:
-            conexion = MailConexion.objects.get(usuario=request.user, activo=True)
+            conexion = correo.conexion
+            if not conexion:
+                conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
             imap = _get_imap(conexion)
             imap.select(correo.carpeta_imap, readonly=False)
 
@@ -586,7 +609,13 @@ def api_mail_enviar(request):
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
     try:
-        conexion = MailConexion.objects.get(usuario=request.user, activo=True)
+        conexion_id = data.get('conexion_id')
+        if conexion_id:
+            conexion = MailConexion.objects.get(id=conexion_id, usuario=request.user, activo=True)
+        else:
+            conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if not conexion:
+                raise MailConexion.DoesNotExist
     except MailConexion.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Sin conexión de correo'}, status=400)
 
@@ -622,6 +651,7 @@ def api_mail_enviar(request):
     # Save to sent cache
     MailCorreo.objects.create(
         usuario=request.user,
+        conexion=conexion,
         uid_imap=f'sent_{django_tz.now().timestamp()}',
         carpeta_imap='SENT',
         carpeta_display='SENT',
@@ -654,7 +684,13 @@ def api_mail_responder(request, correo_id):
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
     try:
-        conexion = MailConexion.objects.get(usuario=request.user, activo=True)
+        conexion_id = data.get('conexion_id')
+        if conexion_id:
+            conexion = MailConexion.objects.get(id=conexion_id, usuario=request.user, activo=True)
+        else:
+            conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if not conexion:
+                raise MailConexion.DoesNotExist
     except MailConexion.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Sin conexión de correo'}, status=400)
 
@@ -684,6 +720,7 @@ def api_mail_responder(request, correo_id):
     # Save sent reply
     reply = MailCorreo.objects.create(
         usuario=request.user,
+        conexion=conexion,
         uid_imap=f'reply_{django_tz.now().timestamp()}',
         carpeta_imap='SENT',
         carpeta_display='SENT',
@@ -884,7 +921,13 @@ def api_mail_descargar_adjunto(request, adjunto_id):
     # ── Slow path: re-fetch full email from IMAP ──────────────────────────────
     correo = adj.correo
     try:
-        conexion = MailConexion.objects.get(usuario=request.user, activo=True)
+        conexion_id = request.GET.get('conexion_id')
+        if conexion_id:
+            conexion = MailConexion.objects.get(id=conexion_id, usuario=request.user, activo=True)
+        else:
+            conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if not conexion:
+                raise MailConexion.DoesNotExist
     except MailConexion.DoesNotExist:
         return JsonResponse({'error': 'Sin conexión configurada'}, status=400)
 
@@ -975,7 +1018,19 @@ def api_mail_descargar_adjunto(request, adjunto_id):
 def api_mail_check_nuevos(request):
     """Lightweight endpoint: syncs INBOX and returns count of new emails."""
     try:
-        conexion = MailConexion.objects.get(usuario=request.user, activo=True)
+        data = {}
+        try:
+            import json
+            data = json.loads(request.body)
+        except:
+            pass
+        conexion_id = data.get('conexion_id')
+        if conexion_id:
+            conexion = MailConexion.objects.get(id=conexion_id, usuario=request.user, activo=True)
+        else:
+            conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if not conexion:
+                raise MailConexion.DoesNotExist
     except MailConexion.DoesNotExist:
         return JsonResponse({'ok': False, 'nuevos': 0})
 
