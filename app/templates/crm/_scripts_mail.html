@@ -307,6 +307,7 @@
             var btnBajanet = document.getElementById('mailCfgBtnBajanet');
             var infoIamet = document.getElementById('mailCfgInfoIamet');
             var infoBajanet = document.getElementById('mailCfgInfoBajanet');
+            var infoBajanetPass = document.getElementById('mailCfgInfoBajanetPass');
 
             var imapSrv = document.getElementById('mailCfgImapSrv');
             var imapPort = document.getElementById('mailCfgImapPort');
@@ -320,6 +321,7 @@
                 if (btnBajanet) { btnBajanet.style.border = '1px solid #E5E7EB'; btnBajanet.style.background = '#F9FAFB'; btnBajanet.style.color = '#6B7280'; }
                 if (infoIamet) infoIamet.style.display = 'block';
                 if (infoBajanet) infoBajanet.style.display = 'none';
+                if (infoBajanetPass) infoBajanetPass.style.display = 'none';
                 // Form
                 if (imapSrv) imapSrv.value = 'mail.iamet.mx';
                 if (imapPort) imapPort.value = '993';
@@ -333,11 +335,12 @@
                 if (btnIamet) { btnIamet.style.border = '1px solid #E5E7EB'; btnIamet.style.background = '#F9FAFB'; btnIamet.style.color = '#6B7280'; }
                 if (infoBajanet) infoBajanet.style.display = 'block';
                 if (infoIamet) infoIamet.style.display = 'none';
+                if (infoBajanetPass) infoBajanetPass.style.display = 'block';
                 // Form
                 if (imapSrv) imapSrv.value = 'imap.gmail.com';
                 if (imapPort) imapPort.value = '993';
                 if (smtpSrv) smtpSrv.value = 'smtp.gmail.com';
-                if (smtpPort) smtpPort.value = '465'; // can also be 587 but dj-email plays nice w 465 ssl usually
+                if (smtpPort) smtpPort.value = '465';
                 if (!noClear && emailInput && !emailInput.value.includes('@baja-net.com')) emailInput.value = '';
                 if (emailInput && !emailInput.value) emailInput.placeholder = 'tu@baja-net.com';
             }
