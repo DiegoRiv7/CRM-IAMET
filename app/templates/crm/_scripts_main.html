@@ -2923,7 +2923,11 @@
 
         function crmTaskShowSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
-            if (bar) bar.style.display = 'flex';
+            if (bar) {
+                bar.style.display = 'flex';
+                // Add a small animation effect
+                bar.style.animation = 'crmFadeInDown 0.3s ease';
+            }
         }
         function crmTaskHideSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
@@ -3005,12 +3009,16 @@
             ta.value = current;
             ta.style.cssText = 'width:100%;border:1px solid #0052D4;border-radius:6px;padding:6px 8px;font-size:0.85rem;outline:none;color:#1D1D1F;resize:vertical;font-family:inherit;background:#FAFAFA;';
             descEl.replaceWith(ta); ta.focus();
+            crmTaskShowSaveBar();
             ta.addEventListener('input', function () {
                 if (ta.value !== _crmTaskOriginal.descripcion) {
-                    _crmTaskEdits.descripcion = ta.value; crmTaskShowSaveBar();
-                } else { delete _crmTaskEdits.descripcion; if (!Object.keys(_crmTaskEdits).length) crmTaskHideSaveBar(); }
+                    _crmTaskEdits.descripcion = ta.value;
+                } else { delete _crmTaskEdits.descripcion; }
             });
-            ta.addEventListener('keydown', function (e) { if (e.key === 'Escape') crmTaskCancelarEdicion(); });
+            ta.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') crmTaskCancelarEdicion();
+                if (e.key === 'Enter' && e.ctrlKey) crmTaskGuardar();
+            });
         }
 
         function crmTaskEditarTitulo() {
@@ -3021,10 +3029,15 @@
             inp.type = 'text'; inp.value = current; inp.id = 'crm-task-titulo';
             inp.style.cssText = 'font-size:1.1rem;font-weight:700;width:100%;border:none;border-bottom:2px solid #0052D4;outline:none;background:transparent;color:#1D1D1F;padding:2px 0;';
             titleEl.replaceWith(inp); inp.focus(); inp.select();
+            crmTaskShowSaveBar();
             inp.addEventListener('input', function () {
                 if (inp.value.trim() && inp.value.trim() !== _crmTaskOriginal.titulo) {
-                    _crmTaskEdits.titulo = inp.value.trim(); crmTaskShowSaveBar();
-                } else { delete _crmTaskEdits.titulo; if (!Object.keys(_crmTaskEdits).length) crmTaskHideSaveBar(); }
+                    _crmTaskEdits.titulo = inp.value.trim();
+                } else { delete _crmTaskEdits.titulo; }
+            });
+            inp.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') crmTaskCancelarEdicion();
+                if (e.key === 'Enter') { inp.blur(); crmTaskGuardar(); }
             });
         }
 
@@ -3036,12 +3049,18 @@
             inp.style.cssText = 'font-size:0.82rem;border:1px solid #0052D4;border-radius:6px;padding:2px 6px;outline:none;color:#1D1D1F;';
             if (currentIso) { try { var d = new Date(currentIso); inp.value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); } catch (e) { } }
             fechaEl.replaceWith(inp); inp.focus();
-            inp.addEventListener('change', function () { _crmTaskEdits.fecha_limite = inp.value || ''; crmTaskShowSaveBar(); });
+            crmTaskShowSaveBar();
+            inp.addEventListener('change', function () { _crmTaskEdits.fecha_limite = inp.value || ''; });
+            inp.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') crmTaskCancelarEdicion();
+                if (e.key === 'Enter') { inp.blur(); crmTaskGuardar(); }
+            });
         }
 
         function crmTaskEditarResponsable() {
             var respContainer = document.getElementById('crm-task-responsable-container');
             if (!respContainer) return;
+            crmTaskShowSaveBar();
             respContainer.innerHTML = '<div id="crmTaskRespSW" style="position:relative;width:100%;"></div>';
             var wrap = document.getElementById('crmTaskRespSW');
             var inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Buscar usuario...';
@@ -3362,6 +3381,7 @@
             dd.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);max-height:180px;overflow-y:auto;z-index:200;display:none;';
             wrap.appendChild(inp); wrap.appendChild(dd);
             clienteEl.replaceWith(wrap); inp.focus();
+            crmTaskShowSaveBar();
             function buscarCliente(q) {
                 if (q.length < 2) { dd.style.display = 'none'; return; }
                 fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q))

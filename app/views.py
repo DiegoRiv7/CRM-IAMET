@@ -13380,7 +13380,7 @@ def api_carpetas_proyecto(request, proyecto_id):
                     'subido_por': archivo.subido_por.get_full_name() or archivo.subido_por.username,
                     'es_publico': archivo.es_publico,
                     'descripcion': archivo.descripcion,
-                    'url': archivo.archivo.url if archivo.archivo else '',
+                    'url': f'/app/api/proyecto/{proyecto_id}/archivo/{archivo.id}/stream/',
                     'tipo': 'archivo'
                 })
             
@@ -13628,7 +13628,7 @@ def api_archivos_proyecto(request, proyecto_id):
                     'subido_por': archivo.subido_por.get_full_name() or archivo.subido_por.username,
                     'es_publico': archivo.es_publico,
                     'descripcion': archivo.descripcion,
-                    'url': archivo.archivo.url,
+                    'url': f'/app/api/proyecto/{proyecto_id}/archivo/{archivo.id}/stream/',
                     'tipo': 'archivo'
                 }
             })
@@ -13746,7 +13746,7 @@ def api_drive_oportunidad(request, opp_id):
                           'tipo_archivo': a.tipo_archivo,
                           'extension': a.extension,
                           'tamaño': a.tamaño,
-                          'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/' if (not a.archivo and getattr(a, 'bitrix_file_id', None)) else (a.archivo.url if a.archivo else ''),
+                          'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
                           'es_bitrix': bool(not a.archivo and getattr(a, 'bitrix_file_id', None)),
                           'fecha_subida': a.fecha_subida.isoformat(),
                           'tipo': 'archivo'} for a in archivos],
@@ -13866,7 +13866,7 @@ def api_drive_oportunidad_archivo(request, opp_id):
         return JsonResponse({'success': True, 'archivo': {
             'id': a.id, 'nombre': a.nombre_original,
             'tipo_archivo': a.tipo_archivo, 'extension': a.extension,
-            'tamaño': a.tamaño, 'url': a.archivo.url,
+            'tamaño': a.tamaño, 'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
             'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo'
         }})
 

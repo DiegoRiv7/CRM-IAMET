@@ -2601,6 +2601,29 @@
         line-height: 1.2;
     }
 
+    #crmTaskSaveBar {
+        position: sticky;
+        top: -1.5rem;
+        z-index: 1100;
+        margin: -1.5rem -1.5rem 0.5rem -1.5rem;
+        border-radius: 0;
+        backdrop-filter: blur(12px);
+        background: rgba(240, 247, 255, 0.9);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    @keyframes crmFadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .crm-task-badges {
         display: flex;
         flex-wrap: wrap;
@@ -3319,6 +3342,7 @@
         justify-content: center;
         flex-shrink: 0;
     }
+
     .crm-avatar-lg {
         width: 30px;
         height: 30px;

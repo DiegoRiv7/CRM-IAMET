@@ -47,6 +47,7 @@ urlpatterns = [
     path("api/proyecto/<int:proyecto_id>/carpeta/<int:carpeta_id>/", views.api_carpeta_detalle, name="api_carpeta_detalle"),
     path("api/proyecto/<int:proyecto_id>/archivos/", views.api_archivos_proyecto, name="api_archivos_proyecto"),
     path("api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/", views.api_archivo_detalle, name="api_archivo_detalle"),
+    path("api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/stream/", views.api_archivo_proyecto_stream, name="api_archivo_proyecto_stream"),
 
     # Drive de Oportunidades
     path("api/oportunidad/<int:opp_id>/drive/", views.api_drive_oportunidad, name="api_drive_oportunidad"),
