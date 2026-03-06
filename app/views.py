@@ -4244,25 +4244,35 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def user_login(request):
-    print(f"DEBUG: user_login view called. Method: {request.method}")
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        print(f"DEBUG: Form created. Is valid: {form.is_valid()}")
+        username_input = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+
+        # Si el usuario escribió un correo, buscar el username asociado
+        if '@' in username_input:
+            from django.contrib.auth.models import User as AuthUser
+            try:
+                found_user = AuthUser.objects.get(email__iexact=username_input)
+                username_input = found_user.username
+            except AuthUser.DoesNotExist:
+                # El correo no existe, dejamos que falle naturalmente
+                pass
+
+        # Crear datos modificados con el username correcto
+        post_data = request.POST.copy()
+        post_data['username'] = username_input
+
+        form = AuthenticationForm(request, data=post_data)
         if form.is_valid():
             user = form.get_user()
-            print(f"DEBUG: User {user.username} authenticated. Attempting login.")
             login(request, user)
             if request.POST.get('remember'):
                 request.session.set_expiry(1209600)  # 2 semanas
             else:
                 request.session.set_expiry(0)  # Expira al cerrar el navegador
-            print(f"DEBUG: User {user.username} logged in. Redirecting to {settings.LOGIN_REDIRECT_URL}")
             return redirect(settings.LOGIN_REDIRECT_URL)
-        else:
-            print(f"DEBUG: Form is NOT valid. Errors: {form.errors}")
     else:
         form = AuthenticationForm()
-        print("DEBUG: GET request. Displaying login form.")
     return render(request, 'login.html', {'form': form, 'hide_dock': True})
 
 
