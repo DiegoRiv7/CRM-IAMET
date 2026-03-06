@@ -20,14 +20,10 @@ def add_column_if_missing(apps, schema_editor):
         """)
         exists = cursor.fetchone()[0]
         if not exists:
-            cursor.execute("""
-                ALTER TABLE app_notificacion
-                ADD COLUMN solicitud_perfil_id INT NULL,
-                ADD CONSTRAINT app_notif_solicitud_fk
-                    FOREIGN KEY (solicitud_perfil_id)
-                    REFERENCES app_solicitudcambioperfil(id)
-                    ON DELETE SET NULL
-            """)
+            cursor.execute(
+                "ALTER TABLE app_notificacion "
+                "ADD COLUMN solicitud_perfil_id BIGINT NULL"
+            )
     elif vendor == 'sqlite':
         cursor = db.cursor()
         cursor.execute("PRAGMA table_info(app_notificacion)")
