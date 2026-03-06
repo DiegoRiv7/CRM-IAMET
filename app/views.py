@@ -1,10 +1,8 @@
-from django.conf import settings
-import os
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 import json
 import logging
 import requests
+import mimetypes
+import os
 from django.conf import settings
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
@@ -13717,12 +13715,24 @@ def api_archivo_proyecto_stream(request, proyecto_id, archivo_id):
 
     if archivo.archivo:
         try:
-            return FileResponse(
+            content_type, _ = mimetypes.guess_type(archivo.nombre_original)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = FileResponse(
                 archivo.archivo.open('rb'),
-                as_attachment=request.GET.get('dl') == '1',
-                filename=archivo.nombre_original,
+                content_type=content_type
             )
-        except Exception:
+            
+            nombre_encoded = urllib.parse.quote(archivo.nombre_original)
+            if request.GET.get('dl') == '1':
+                response['Content-Disposition'] = f"attachment; filename*=UTF-8''{nombre_encoded}"
+            else:
+                response['Content-Disposition'] = f"inline; filename*=UTF-8''{nombre_encoded}"
+                
+            return response
+        except Exception as e:
+            print(f"Error streaming local project file: {e}")
             pass
 
     return JsonResponse({'error': 'Archivo no disponible'}, status=404)
@@ -13943,12 +13953,25 @@ def api_drive_archivo_stream(request, opp_id, archivo_id):
     # Caso 1: archivo físico local
     if archivo.archivo:
         try:
-            return FileResponse(
+            content_type, _ = mimetypes.guess_type(archivo.nombre_original)
+            if not content_type:
+                content_type = 'application/octet-stream'
+
+            response = FileResponse(
                 archivo.archivo.open('rb'),
-                as_attachment=request.GET.get('dl') == '1',
-                filename=archivo.nombre_original,
+                content_type=content_type
             )
-        except Exception:
+            
+            nombre_encoded = urllib.parse.quote(archivo.nombre_original)
+            if request.GET.get('dl') == '1':
+                response['Content-Disposition'] = f"attachment; filename*=UTF-8''{nombre_encoded}"
+            else:
+                # IMPORTANTE: disposition='inline' para que el navegador lo muestre
+                response['Content-Disposition'] = f"inline; filename*=UTF-8''{nombre_encoded}"
+            
+            return response
+        except Exception as e:
+            print(f"Error streaming local file: {e}")
             pass  # fallback a Bitrix si el físico no existe
 
     # Caso 2: archivo en Bitrix (streaming sin guardar)
@@ -13980,7 +14003,14 @@ def api_drive_archivo_stream(request, opp_id, archivo_id):
         bitrix_resp = requests.get(download_url, stream=True, timeout=60)
         bitrix_resp.raise_for_status()
 
-        content_type = bitrix_resp.headers.get("Content-Type", "application/octet-stream")
+        content_type = bitrix_resp.headers.get("Content-Type", "")
+        if not content_type or content_type == 'application/octet-stream':
+             guessed_type, _ = mimetypes.guess_type(archivo.nombre_original)
+             if guessed_type:
+                 content_type = guessed_type
+             else:
+                 content_type = 'application/octet-stream'
+
         nombre_encoded = urllib.parse.quote(archivo.nombre_original)
         disposition = "attachment" if request.GET.get('dl') == '1' else "inline"
 
