@@ -12498,7 +12498,7 @@ def marcar_todas_notificaciones_leidas_api(request):
         }, status=500)
 
 
-def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None, tarea_opp=None, solicitud_perfil=None):
+def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None, tarea_opp=None, solicitud_perfil=None, tarea_id=None, tarea_titulo=None):
     """
     Función auxiliar para crear notificaciones
     """
@@ -12519,6 +12519,8 @@ def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=
             proyecto_nombre=proyecto_nombre,
             tarea_opp=tarea_opp,
             solicitud_perfil=solicitud_perfil,
+            tarea_id=tarea_id,
+            tarea_titulo=tarea_titulo,
         )
         
         print(f"✅ Notificación creada: {titulo} para {usuario_destinatario.username}")
