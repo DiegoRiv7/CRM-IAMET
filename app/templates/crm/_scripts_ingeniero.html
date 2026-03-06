@@ -81,7 +81,7 @@
     function dashGetCurrentData() {
         if (_dashCurrentView === 'proyectos') return _dashProyectos.map(function (p) { return { id: p.id, key: p.key, tipo: 'proyecto', titulo: p.titulo, asignado: p.asignado, prioridad: p.prioridad, estado: p.estado, fecha_limite: p.fecha_limite }; });
         if (_dashCurrentView === 'actividades') return _dashAllItems.filter(function (t) { return t.tipo === 'tarea_opp'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, asignado: t.cliente || '—', prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite }; });
-        return _dashAllItems.map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, asignado: t.cliente || t.oportunidad || '—', prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite }; });
+        return _dashAllItems.filter(function (t) { return t.tipo === 'tarea'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, asignado: t.cliente || t.oportunidad || '—', prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite }; });
     }
     function dashNE(e) { if (!e) return 'pendiente'; if (e === 'completada') return 'completada'; if (e === 'en_progreso' || e === 'iniciada') return 'en_progreso'; return 'pendiente'; }
 
@@ -95,7 +95,7 @@
         var h = ''; items.forEach(function (it, ix) {
             var sel = _dashSelectedItem === it.key, st = dashSC(it.estado, it.fecha_limite), pr = dashPS(it.prioridad);
             h += '<div class="dash-tr' + (sel ? ' dash-tr-selected' : '') + '" onclick="dashSelectItem(\'' + escH(it.key) + '\')" style="animation-delay:' + ix * 0.03 + 's;">';
-            h += '<div style="font-weight:600;color:#1D1D1F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;">' + escH(trun(it.titulo, 32)) + '</div>';
+            h += '<div onclick="event.stopPropagation(); window.ingenieroAbrirTarea(\'' + escH(it.key) + '\', \'' + it.id + '\', \'' + it.tipo + '\')" style="font-weight:600;color:#007AFF;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;" title="Abrir widget">' + escH(trun(it.titulo, 32)) + '</div>';
             h += '<div style="display:flex;justify-content:center;">' + pr + '</div>';
             h += '<div style="display:flex;justify-content:center;"><span class="dash-badge ' + st.bc + '">' + st.l + '</span></div></div>';
         });
