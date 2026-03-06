@@ -121,7 +121,7 @@ class Migration(migrations.Migration):
                     name='Actividad_participantes',
                     fields=[
                         ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                        ('actividad', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='app.actividad')),
+                        ('actividad_id', models.ForeignKey(db_column='actividad_id', on_delete=django.db.models.deletion.CASCADE, to='app.actividad')),
                         ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
                     ],
                 ),
