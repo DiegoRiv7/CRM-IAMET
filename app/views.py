@@ -4251,12 +4251,9 @@ def user_login(request):
         # Si el usuario escribió un correo, buscar el username asociado
         if '@' in username_input:
             from django.contrib.auth.models import User as AuthUser
-            try:
-                found_user = AuthUser.objects.get(email__iexact=username_input)
+            found_user = AuthUser.objects.filter(email__iexact=username_input).first()
+            if found_user:
                 username_input = found_user.username
-            except AuthUser.DoesNotExist:
-                # El correo no existe, dejamos que falle naturalmente
-                pass
 
         # Crear datos modificados con el username correcto
         post_data = request.POST.copy()
@@ -12283,7 +12280,7 @@ def obtener_notificaciones_api(request):
 
             # Idem para tareas de oportunidad
             mis_tareas_opp = TareaOportunidad.objects.filter(
-                asignado_a=user,
+                responsable=user,
                 estado__in=['pendiente', 'en_progreso'],
                 fecha_limite__isnull=False
             )
