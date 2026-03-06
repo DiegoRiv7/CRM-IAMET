@@ -2994,8 +2994,8 @@ class ComentarioMuro(models.Model):
 
 class MailConexion(models.Model):
     """Per-user IMAP/SMTP credentials for the integrated mail module."""
-    usuario = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='mail_conexion'
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='mail_conexiones'
     )
     correo_electronico = models.EmailField()
     imap_servidor = models.CharField(max_length=200, default='mail.iamet.mx')
