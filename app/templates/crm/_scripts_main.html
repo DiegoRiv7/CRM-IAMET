@@ -3571,11 +3571,7 @@
         var _crmTaskSelectedObs = [];
 
         function crmTaskSearchUsers(query, callback) {
-            if (_crmTaskUsers.length > 0) {
-                var filtered = _crmTaskUsers.filter(function (u) { return u.nombre.toLowerCase().indexOf(query.toLowerCase()) !== -1; });
-                callback(filtered);
-                return;
-            }
+            // No cacheamos para asegurar que siempre traiga los resultados más recientes y no se pierdan usuarios por límites previos.
             fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(query))
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

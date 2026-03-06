@@ -1179,8 +1179,12 @@ def api_cliente_cotizaciones(request, cliente_id):
 
 @login_required
 def api_admin_usuarios(request):
-    if not is_supervisor(request.user):
+    # El GET lo permitimos a cualquier autenticado para poder seleccionar usuarios en tareas
+    if request.method != 'GET' and not is_supervisor(request.user):
         return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    if not request.user.is_authenticated:
+         return JsonResponse({'error': 'No autenticado'}, status=401)
 
     if request.method == 'GET':
         usuarios = User.objects.select_related('userprofile').all().order_by('first_name', 'last_name')
@@ -2917,10 +2921,10 @@ def api_buscar_usuarios(request):
             Q(first_name__icontains=search_query) |
             Q(last_name__icontains=search_query) |
             Q(username__icontains=search_query)
-        ).exclude(id=request.user.id)[:10]  # Excluir usuario actual y limitar a 10
+        )[:100]  # Aumentamos el límite y permitimos mostrar al usuario actual
     else:
         # Si no hay query, devolver todos los usuarios (para mostrar lista completa)
-        usuarios = User.objects.exclude(id=request.user.id).order_by('first_name', 'last_name', 'username')[:15]
+        usuarios = User.objects.all().order_by('first_name', 'last_name', 'username')[:100]
     
     usuarios_data = []
     for usuario in usuarios:

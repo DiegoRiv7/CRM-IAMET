@@ -3025,6 +3025,9 @@ class MailCorreo(models.Model):
     usuario = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='correos_mail'
     )
+    conexion = models.ForeignKey(
+        MailConexion, on_delete=models.CASCADE, related_name='correos', null=True, blank=True
+    )
     uid_imap = models.CharField(max_length=50)           # Stable IMAP UID
     message_id = models.CharField(max_length=500, blank=True)  # Message-ID header
     in_reply_to = models.CharField(max_length=500, blank=True)  # For thread linking
