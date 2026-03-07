@@ -54,11 +54,28 @@ _KEYWORDS = [
     r'fibra.?[oó]ptica',
     r'dise[ñn]o.?t[eé]cn',
     r'presupuesto.?t[eé]cn',
+    r'levantamiento',
+    r'nodos?',
+    r'reubicaci[oó]n',
+    r'instalaci[oó]n',
+    r'configuraci[oó]n',
+    r'infraestructura',
+    r'switch',
+    r'router',
+    r'access.?point',
+    r'ups',
+    r'servidor',
+    r'datacenter',
+    r'data.?center',
+    r'backbone',
 ]
 _PATTERN_IMP = re.compile('|'.join(_KEYWORDS), re.IGNORECASE)
 
-# Extensiones que también califican si el nombre de carpeta es importante
-_IMPORTANT_EXTS = {'.xlsx', '.xls', '.docx', '.doc', '.pptx', '.ppt', '.pdf', '.dwg', '.dxf', '.vsdx', '.vsd'}
+# Extensiones que califican POR SÍ SOLAS (sin importar el nombre del archivo)
+_ALWAYS_IMPORTANT_EXTS = {'.xlsx', '.xls', '.numbers', '.ods', '.csv'}
+
+# Extensiones que califican solo si el nombre también contiene palabras técnicas
+_IMPORTANT_EXTS = {'.docx', '.doc', '.pptx', '.ppt', '.pdf', '.dwg', '.dxf', '.vsdx', '.vsd'}
 
 # ── Tipos de archivo ──────────────────────────────────────────────────────────
 _EXT_TYPE = {
@@ -120,11 +137,15 @@ def _es_importante(nombre):
         return False
     if _PATTERN_IMP.search(nombre):
         return True
-    # También valida si tiene extensión importante + cualquier palabra técnica
     ext = ('.' + nombre.rsplit('.', 1)[-1].lower()) if '.' in nombre else ''
+    # Excel, Numbers y similares califican por sí solos sin importar el nombre
+    if ext in _ALWAYS_IMPORTANT_EXTS:
+        return True
+    # Otros documentos califican solo si el nombre también contiene palabras técnicas
     if ext in _IMPORTANT_EXTS:
         palabras_tecnicas = re.compile(
-            r'ingenier[íi]|t[eé]cni|propuesta|cotizaci|especif|plano|diagrama|noc|cableado|rack|fibra',
+            r'ingenier[íi]|t[eé]cni|propuesta|cotizaci|especif|plano|diagrama|noc|cableado|rack|fibra'
+            r'|levantamiento|nodos?|reubicaci[oó]n|instalaci[oó]n|configuraci[oó]n|switch|router|ups|servidor',
             re.IGNORECASE
         )
         if palabras_tecnicas.search(nombre):
