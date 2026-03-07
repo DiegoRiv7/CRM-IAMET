@@ -181,7 +181,7 @@ def _get_project_storage(group_id):
     return None, None
 
 
-def _check_folder_importante(folder_id, depth=0, max_depth=3):
+def _check_folder_importante(folder_id, depth=0, max_depth=3, debug_out=None):
     """
     Revisa recursivamente si hay archivos/carpetas importantes en el drive.
     Devuelve True en cuanto encuentra uno.
@@ -191,25 +191,34 @@ def _check_folder_importante(folder_id, depth=0, max_depth=3):
     try:
         data = _call("disk.folder.getchildren", {"id": folder_id})
         children = data.get("result") or []
+        if debug_out and depth == 0:
+            debug_out(f"    [drive-debug] {len(children)} elementos en raíz")
         for item in children:
             nombre = item.get("NAME", "")
             tipo = item.get("TYPE", "")
+            if debug_out and depth == 0:
+                debug_out(f"    [drive-debug]   '{nombre}' tipo={tipo} match={_es_importante(nombre)}")
             if _es_importante(nombre):
                 return True
             if tipo == "folder":
-                if _check_folder_importante(item["ID"], depth + 1, max_depth):
+                if _check_folder_importante(item["ID"], depth + 1, max_depth, debug_out):
                     return True
-    except Exception:
-        pass
+    except Exception as e:
+        if debug_out:
+            debug_out(f"    [drive-debug] Excepción: {e}")
     return False
 
 
-def _proyecto_es_ingenieria(group_id):
+def _proyecto_es_ingenieria(group_id, debug_out=None):
     """Devuelve True si el drive del grupo contiene archivos de ingeniería."""
     _, root_folder_id = _get_project_storage(group_id)
     if not root_folder_id:
+        if debug_out:
+            debug_out("    [drive-debug] Sin storage o ROOT_OBJECT_ID vacío")
         return False
-    return _check_folder_importante(root_folder_id)
+    if debug_out:
+        debug_out(f"    [drive-debug] root_folder_id={root_folder_id}")
+    return _check_folder_importante(root_folder_id, debug_out=debug_out)
 
 
 # ── Importar Drive ────────────────────────────────────────────────────────────
@@ -413,6 +422,8 @@ class Command(BaseCommand):
         parser.add_argument("--skip-feed", action="store_true")
         parser.add_argument("--skip-drive", action="store_true")
         parser.add_argument("--group-ids", nargs="+", type=int)
+        parser.add_argument("--debug-drive", action="store_true",
+                            help="Muestra qué archivos encuentra en el drive de cada grupo")
 
     def handle(self, *args, **options):
         if not WEBHOOK_BASE:
@@ -480,8 +491,11 @@ class Command(BaseCommand):
                 # Solo evaluar drive si no se forzaron IDs específicos
                 if not options["skip_drive"]:
                     self.stdout.write("    Verificando drive...", ending="")
+                    debug_fn = self.stdout.write if options.get("debug_drive") else None
+                    if debug_fn:
+                        self.stdout.write("")  # newline antes del debug
                     try:
-                        importante = _proyecto_es_ingenieria(group_id)
+                        importante = _proyecto_es_ingenieria(group_id, debug_out=debug_fn)
                     except Exception as e:
                         self.stdout.write(self.style.ERROR(f" Error: {e}"))
                         stats["errores"] += 1
@@ -492,6 +506,7 @@ class Command(BaseCommand):
                         stats["descartados"] += 1
                         continue
                     self.stdout.write(self.style.SUCCESS(" [IMPORTANTE]"))
+
 
             stats["importantes"] += 1
 
