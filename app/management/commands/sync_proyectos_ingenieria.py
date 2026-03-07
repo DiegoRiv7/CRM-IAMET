@@ -68,6 +68,12 @@ _KEYWORDS = [
     r'datacenter',
     r'data.?center',
     r'backbone',
+    r'propuesta',
+    r'compra',
+    r'cotizaci[oó]n',
+    r'orden.?de.?compra',
+    r'oc[-_\s]?\d',
+    r'po[-_\s]?\d',
 ]
 _PATTERN_IMP = re.compile('|'.join(_KEYWORDS), re.IGNORECASE)
 
