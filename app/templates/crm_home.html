@@ -18,7 +18,7 @@
     {% endif %}
     {% include "crm/_widget_oportunidad.html" %}
     {% include "crm/_widget_extras.html" %}
-    {% if not es_ingeniero %}
+    {% if not es_ingeniero or es_supervisor %}
     {% include "crm/_widget_admin.html" %}
     {% endif %}
     {% include "crm/_widget_empleados.html" %}
