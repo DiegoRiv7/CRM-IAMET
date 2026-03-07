@@ -411,13 +411,15 @@
                     <label
                         style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">INICIO</label>
                     <input type="time" id="woFormActInicio"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;">
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;"
+                        onfocus="woMostrarCalendarioDia(this)">
                 </div>
                 <div style="width:140px;">
                     <label
                         style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FIN</label>
                     <input type="time" id="woFormActFin"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;">
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;"
+                        onfocus="woMostrarCalendarioDia(this)">
                 </div>
             </div>
             <div>
@@ -1036,6 +1038,35 @@
                         }
                         if (textoPlano.startsWith('[ACT_COMPLETADA:')) isSystemMsg = true;
 
+                        // Actividades agendadas: tarjeta azul clickeable [ACT:ID]titulo|fecha|ini|fin|desc
+                        if (textoPlano.startsWith('[ACT:')) {
+                            isSystemMsg = true;
+                            var aParts = textoPlano.split(']');
+                            if (aParts.length >= 2) {
+                                var aId = aParts[0].substring(5);
+                                var aBody = aParts.slice(1).join(']');
+                                var aFields = aBody.split('|');
+                                var aTit = aFields[0] || '';
+                                var aFecha = aFields[1] || '';
+                                var aIni = aFields[2] || '';
+                                var aFin = aFields[3] || '';
+                                var aDesc = aFields[4] || '';
+                                var aSubLine = '';
+                                if (aFecha) aSubLine += aFecha;
+                                if (aIni && aFin) aSubLine += (aSubLine ? '  ' : '') + aIni + ' – ' + aFin;
+                                parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + aId + ')">' +
+                                    '<div style="width:28px;height:28px;border-radius:50%;background:rgba(0,82,212,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
+                                    '</div>' +
+                                    '<div style="display:flex;flex-direction:column;min-width:0;">' +
+                                    '<span style="font-weight:600;font-size:0.85rem;color:#0052D4;">' + woEscape(aTit) + '</span>' +
+                                    (aSubLine ? '<span style="font-size:0.7rem;opacity:0.7;">' + woEscape(aSubLine) + '</span>' : '') +
+                                    (aDesc ? '<span style="font-size:0.72rem;color:#86868B;margin-top:2px;">' + woEscape(aDesc.substring(0, 60)) + (aDesc.length > 60 ? '...' : '') + '</span>' : '') +
+                                    '</div></div>';
+                                innerBubbleStyle = 'background:rgba(0,82,212,0.06);color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid rgba(0,82,212,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.04);cursor:pointer;';
+                            }
+                        }
+
                         html += '<div style="' + innerBubbleStyle + '">' +
                             replyHtml + imgHtml + parsedContent +
                             '</div>';
@@ -1388,12 +1419,10 @@
                     document.body.appendChild(toast);
                     setTimeout(function () { toast.remove(); }, 3200);
 
-                    // Publicar mensaje en la conversación con los detalles
+                    // Publicar mensaje en la conversación como tarjeta clickeable [ACT:ID]
                     var fechaFmt = f_date ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; })(f_date) : '';
-                    var chatMsg = '📅 Actividad agendada: ' + titulo;
-                    if (fechaFmt) chatMsg += '\n📆 ' + fechaFmt;
-                    if (t_ini && t_fin) chatMsg += '  ' + t_ini + ' – ' + t_fin;
-                    if (desc) chatMsg += '\n' + desc;
+                    var tareaId = res.tarea ? res.tarea.id : '';
+                    var chatMsg = '[ACT:' + tareaId + ']' + titulo + '|' + fechaFmt + '|' + t_ini + '|' + t_fin + '|' + desc;
                     var fd = new FormData();
                     fd.append('texto', chatMsg);
                     fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
@@ -1554,6 +1583,90 @@
                     console.error(e);
                 });
         };
+
+        // ── Mini calendario de día al hacer focus en hora ──────────────────────
+        var _woDayCalPopup = null;
+        var _woDayCalFetching = false;
+
+        window.woMostrarCalendarioDia = function (inputEl) {
+            var fecha = document.getElementById('woFormActFecha').value;
+            if (!fecha) return;
+
+            // Crear popup si no existe
+            if (!_woDayCalPopup) {
+                _woDayCalPopup = document.createElement('div');
+                _woDayCalPopup.id = 'woDayCalPopup';
+                _woDayCalPopup.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #E5E5EA;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:0;min-width:280px;max-width:320px;max-height:320px;overflow:hidden;display:flex;flex-direction:column;';
+                document.body.appendChild(_woDayCalPopup);
+                document.addEventListener('click', function woDayCalClose(e) {
+                    if (_woDayCalPopup && !_woDayCalPopup.contains(e.target) && e.target !== document.getElementById('woFormActInicio') && e.target !== document.getElementById('woFormActFin')) {
+                        _woDayCalPopup.style.display = 'none';
+                        document.removeEventListener('click', woDayCalClose);
+                    }
+                }, { capture: true });
+            }
+
+            // Posicionar debajo del input
+            var rect = inputEl.getBoundingClientRect();
+            _woDayCalPopup.style.left = Math.min(rect.left, window.innerWidth - 330) + 'px';
+            _woDayCalPopup.style.top = (rect.bottom + 6) + 'px';
+            _woDayCalPopup.style.display = 'flex';
+
+            // Header del popup
+            var partes = fecha.split('-');
+            var labelFecha = partes[2] + '/' + partes[1] + '/' + partes[0];
+            var mes = fecha.substring(0, 7); // YYYY-MM
+
+            _woDayCalPopup.innerHTML = '<div style="padding:10px 14px;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;justify-content:space-between;">' +
+                '<span style="font-size:0.82rem;font-weight:700;color:#1D1D1F;">Agenda del ' + labelFecha + '</span>' +
+                '<button onclick="_woDayCalPopup.style.display=\'none\'" style="background:none;border:none;color:#86868B;cursor:pointer;font-size:1rem;line-height:1;padding:0 2px;">&times;</button>' +
+                '</div>' +
+                '<div id="woDayCalBody" style="overflow-y:auto;padding:8px 0;flex:1;">' +
+                '<div style="padding:10px 14px;font-size:0.8rem;color:#86868B;">Cargando...</div>' +
+                '</div>';
+
+            if (_woDayCalFetching) return;
+            _woDayCalFetching = true;
+
+            fetch('/app/api/actividades/?mes=' + mes)
+                .then(function(r){ return r.json(); })
+                .then(function(events) {
+                    _woDayCalFetching = false;
+                    var body = document.getElementById('woDayCalBody');
+                    if (!body) return;
+
+                    var dayEvents = (Array.isArray(events) ? events : (events.events || [])).filter(function(e) {
+                        return e.start && e.start.startsWith(fecha);
+                    });
+
+                    dayEvents.sort(function(a, b){ return a.start < b.start ? -1 : 1; });
+
+                    if (dayEvents.length === 0) {
+                        body.innerHTML = '<div style="padding:14px;font-size:0.82rem;color:#86868B;text-align:center;">Sin actividades agendadas para este día</div>';
+                        return;
+                    }
+
+                    var h = '';
+                    dayEvents.forEach(function(ev) {
+                        var ini = ev.start ? ev.start.substring(11, 16) : '';
+                        var fin = ev.end ? ev.end.substring(11, 16) : '';
+                        var dot = ev.color || '#0052D4';
+                        h += '<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 14px;border-bottom:1px solid #F9F9F9;">' +
+                            '<div style="width:6px;height:6px;border-radius:50%;background:' + dot + ';margin-top:5px;flex-shrink:0;"></div>' +
+                            '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(ev.title) + '</div>' +
+                            '<div style="font-size:0.72rem;color:#86868B;">' + ini + (fin ? ' – ' + fin : '') + '</div>' +
+                            '</div></div>';
+                    });
+                    body.innerHTML = h;
+                })
+                .catch(function() {
+                    _woDayCalFetching = false;
+                    var body = document.getElementById('woDayCalBody');
+                    if (body) body.innerHTML = '<div style="padding:10px 14px;font-size:0.8rem;color:#FF3B30;">Error al cargar actividades</div>';
+                });
+        };
+        // ────────────────────────────────────────────────────────────────────
 
         window.woCompletarActividad = function () {
             if (!_woCurrentViewingTaskId) return;
