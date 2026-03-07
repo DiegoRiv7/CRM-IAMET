@@ -166,57 +166,16 @@ def _get_tipo_archivo(nombre):
 
 # ── Drive: verificar si el proyecto tiene archivos importantes ────────────────
 
-def _get_project_storage(group_id):
-    """Devuelve (storage_id, root_folder_id) del drive del grupo."""
-    storage_id = None
-    root_folder_id = None
+def _get_storage_id(group_id):
+    """Devuelve el storage_id del drive del grupo usando ENTITY_TYPE=group (igual que sync_bitrix_projects_tasks)."""
     try:
-        data = _call("disk.storage.getlist", {"filter": {"ENTITY_TYPE": "G", "ENTITY_ID": group_id}})
+        data = _call("disk.storage.getlist", {"filter": {"ENTITY_TYPE": "group", "ENTITY_ID": group_id}})
         storages = data.get("result") or []
-        for s in storages:
-            if str(s.get("ENTITY_ID")) == str(group_id):
-                storage_id = s.get("ID")
-                root_folder_id = s.get("ROOT_OBJECT_ID")
-                break
-        if not storage_id and storages:
-            storage_id = storages[0].get("ID")
-            root_folder_id = storages[0].get("ROOT_OBJECT_ID")
+        if storages:
+            return storages[0]["ID"]
     except Exception:
         pass
-
-    # Fallback: si tenemos storage_id pero no root_folder_id, intentar obtenerlo
-    if storage_id and not root_folder_id:
-        try:
-            data2 = _call("disk.storage.get", {"id": storage_id})
-            s2 = data2.get("result") or {}
-            root_folder_id = s2.get("ROOT_OBJECT_ID")
-        except Exception:
-            pass
-
-    return storage_id, root_folder_id
-
-
-def _check_storage_importante(storage_id, debug_out=None):
-    """Revisa los hijos directos de un storage cuando no hay ROOT_OBJECT_ID."""
-    try:
-        data = _call("disk.storage.getchildren", {"id": storage_id})
-        children = data.get("result") or []
-        if debug_out:
-            debug_out(f"    [drive-debug] storage.getchildren: {len(children)} elementos")
-        for item in children:
-            nombre = item.get("NAME", "")
-            tipo = item.get("TYPE", "")
-            if debug_out:
-                debug_out(f"    [drive-debug]   '{nombre}' tipo={tipo} match={_es_importante(nombre)}")
-            if _es_importante(nombre):
-                return True
-            if tipo == "folder":
-                if _check_folder_importante(item["ID"], depth=1, debug_out=debug_out):
-                    return True
-    except Exception as e:
-        if debug_out:
-            debug_out(f"    [drive-debug] storage.getchildren error: {e}")
-    return False
+    return None
 
 
 def _check_folder_importante(folder_id, depth=0, max_depth=3, debug_out=None):
@@ -249,16 +208,31 @@ def _check_folder_importante(folder_id, depth=0, max_depth=3, debug_out=None):
 
 def _proyecto_es_ingenieria(group_id, debug_out=None):
     """Devuelve True si el drive del grupo contiene archivos de ingeniería."""
-    storage_id, root_folder_id = _get_project_storage(group_id)
+    storage_id = _get_storage_id(group_id)
     if debug_out:
-        debug_out(f"    [drive-debug] storage_id={storage_id} root_folder_id={root_folder_id}")
-    if root_folder_id:
-        return _check_folder_importante(root_folder_id, debug_out=debug_out)
-    if storage_id:
-        # ROOT_OBJECT_ID vacío — usar storage.getchildren como fallback
-        return _check_storage_importante(storage_id, debug_out=debug_out)
-    if debug_out:
-        debug_out("    [drive-debug] Sin storage encontrado")
+        debug_out(f"    [drive-debug] storage_id={storage_id}")
+    if not storage_id:
+        if debug_out:
+            debug_out("    [drive-debug] Sin storage encontrado")
+        return False
+    try:
+        data = _call("disk.storage.getchildren", {"id": storage_id})
+        children = data.get("result") or []
+        if debug_out:
+            debug_out(f"    [drive-debug] {len(children)} elementos en raíz")
+        for item in children:
+            nombre = item.get("NAME", "")
+            tipo = (item.get("TYPE") or "").lower()
+            if debug_out:
+                debug_out(f"    [drive-debug]   '{nombre}' tipo={tipo} match={_es_importante(nombre)}")
+            if _es_importante(nombre):
+                return True
+            if tipo == "folder":
+                if _check_folder_importante(item["ID"], depth=1, debug_out=debug_out):
+                    return True
+    except Exception as e:
+        if debug_out:
+            debug_out(f"    [drive-debug] Error: {e}")
     return False
 
 
@@ -266,9 +240,15 @@ def _proyecto_es_ingenieria(group_id, debug_out=None):
 
 def _import_drive(grupo_id, proyecto, default_user, dry_run, stdout):
     """Importa estructura de carpetas y archivos del drive de Bitrix al proyecto."""
-    _, root_folder_id = _get_project_storage(grupo_id)
-    if not root_folder_id:
+    storage_id = _get_storage_id(grupo_id)
+    if not storage_id:
         stdout.write("    [drive] Sin storage encontrado")
+        return 0, 0
+    try:
+        root_data = _call("disk.storage.getchildren", {"id": storage_id})
+        root_children = root_data.get("result") or []
+    except Exception as e:
+        stdout.write(f"    [drive] Error obteniendo raíz: {e}")
         return 0, 0
 
     carpetas_count, archivos_count = 0, 0
@@ -336,7 +316,49 @@ def _import_drive(grupo_id, proyecto, default_user, dry_run, stdout):
                         )
                 archivos_count += 1
 
-    _process_folder(root_folder_id)
+    # Procesar los hijos de la raíz del storage directamente
+    def _process_children(children, carpeta_padre_django=None, depth=0):
+        nonlocal carpetas_count, archivos_count
+        if depth > 5:
+            return
+        for item in children:
+            nombre = item.get("NAME", "Sin nombre")
+            tipo = (item.get("TYPE") or "").lower()
+            if tipo == "folder":
+                if not dry_run:
+                    carpeta_obj, _ = CarpetaProyecto.objects.get_or_create(
+                        proyecto=proyecto,
+                        carpeta_padre=carpeta_padre_django,
+                        nombre=nombre[:255],
+                        defaults={'creado_por': default_user, 'bitrix_folder_id': item.get("ID")},
+                    )
+                    if not carpeta_obj.bitrix_folder_id:
+                        CarpetaProyecto.objects.filter(pk=carpeta_obj.pk).update(bitrix_folder_id=item.get("ID"))
+                else:
+                    carpeta_obj = None
+                carpetas_count += 1
+                try:
+                    sub = _call("disk.folder.getchildren", {"id": item["ID"]})
+                    _process_children(sub.get("result") or [], carpeta_obj, depth + 1)
+                except Exception:
+                    pass
+            else:
+                tipo_archivo, ext = _get_tipo_archivo(nombre)
+                download_url = item.get("DOWNLOAD_URL") or item.get("DETAIL_URL") or ""
+                bitrix_file_id = item.get("ID")
+                tamaño = int(item.get("SIZE") or 0)
+                if not dry_run:
+                    existing = ArchivoProyecto.objects.filter(proyecto=proyecto, bitrix_file_id=bitrix_file_id).first() if bitrix_file_id else None
+                    if not existing:
+                        ArchivoProyecto.objects.create(
+                            nombre_original=nombre[:255], archivo='', tipo_archivo=tipo_archivo,
+                            tamaño=tamaño, proyecto=proyecto, carpeta=carpeta_padre_django,
+                            subido_por=default_user, extension=ext[:10],
+                            bitrix_file_id=bitrix_file_id, bitrix_download_url=download_url,
+                        )
+                archivos_count += 1
+
+    _process_children(root_children)
     return carpetas_count, archivos_count
 
 
