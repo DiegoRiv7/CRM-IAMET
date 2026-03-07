@@ -581,8 +581,106 @@
     function boardNextMonth() { } window.boardNextMonth = boardNextMonth;
     function boardGoToday() { } window.boardGoToday = boardGoToday;
 
-    function ingenieroAbrirTarea(key, id, tipo) { if (tipo === 'tarea') { if (window.crmTaskVerDetalle) { window.crmTaskVerDetalle(id); return; } } var modal = document.getElementById('crmTaskDetailModal'); if (!modal) return; modal.classList.add('active'); document.body.style.overflow = 'hidden'; fetch('/app/api/tarea-opp/' + id + '/detalle/').then(function (r) { return r.json(); }).then(function (data) { if (window.crmTaskRenderData) window.crmTaskRenderData(data); var btnT = document.getElementById('crmTaskBtnTerminar'); if (btnT && data.estado !== 'completada') { btnT.onclick = function () { ingenieroCompletarTarea(key, id, tipo); modal.classList.remove('active'); document.body.style.overflow = ''; }; } }).catch(function () { modal.classList.remove('active'); document.body.style.overflow = ''; }); }
+    function ingenieroAbrirTarea(key, id, tipo) {
+        if (tipo === 'proyecto') { ingenieroAbrirProyecto(id); return; }
+        if (tipo === 'tarea') { if (window.crmTaskVerDetalle) { window.crmTaskVerDetalle(id); return; } }
+        var modal = document.getElementById('crmTaskDetailModal'); if (!modal) return;
+        modal.classList.add('active'); document.body.style.overflow = 'hidden';
+        fetch('/app/api/tarea-opp/' + id + '/detalle/').then(function (r) { return r.json(); }).then(function (data) {
+            if (window.crmTaskRenderData) window.crmTaskRenderData(data);
+            var btnT = document.getElementById('crmTaskBtnTerminar');
+            if (btnT && data.estado !== 'completada') { btnT.onclick = function () { ingenieroCompletarTarea(key, id, tipo); modal.classList.remove('active'); document.body.style.overflow = ''; }; }
+        }).catch(function () { modal.classList.remove('active'); document.body.style.overflow = ''; });
+    }
     window.ingenieroAbrirTarea = ingenieroAbrirTarea;
+
+    // ── Proyecto detalle ──────────────────────────────────────────────────
+    function wpdTab(tab) {
+        document.getElementById('wpdPanelTareas').style.display = tab === 'tareas' ? '' : 'none';
+        document.getElementById('wpdPanelDrive').style.display = tab === 'drive' ? '' : 'none';
+        document.getElementById('wpdTabTareas').style.cssText = tab === 'tareas'
+            ? 'background:none;border:none;border-bottom:2px solid #0052D4;color:#0052D4;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;'
+            : 'background:none;border:none;border-bottom:2px solid transparent;color:#86868B;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;';
+        document.getElementById('wpdTabDrive').style.cssText = tab === 'drive'
+            ? 'background:none;border:none;border-bottom:2px solid #0052D4;color:#0052D4;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;'
+            : 'background:none;border:none;border-bottom:2px solid transparent;color:#86868B;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;';
+    }
+    window.wpdTab = wpdTab;
+
+    function ingenieroAbrirProyecto(id) {
+        var widget = document.getElementById('widgetProyectoDetalle');
+        if (!widget) return;
+        document.getElementById('wpd-titulo').textContent = 'Cargando...';
+        document.getElementById('wpd-desc').textContent = '';
+        document.getElementById('wpdPanelTareas').innerHTML = '<div style="padding:20px;text-align:center;color:#86868B;font-size:0.85rem;">Cargando...</div>';
+        document.getElementById('wpdPanelDrive').innerHTML = '';
+        wpdTab('tareas');
+        widget.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        fetch('/app/api/ingeniero/proyecto/' + id + '/')
+            .then(function(r){ return r.json(); })
+            .then(function(d) {
+                if (d.error) { document.getElementById('wpd-titulo').textContent = d.error; return; }
+                document.getElementById('wpd-titulo').textContent = d.titulo;
+                document.getElementById('wpd-desc').textContent = d.descripcion || '';
+
+                // ── Tareas ──
+                var estadoColor = { pendiente: '#FF9500', iniciada: '#0052D4', en_progreso: '#0052D4', completada: '#34C759', cancelada: '#86868B' };
+                var ht = '';
+                if (!d.tareas || !d.tareas.length) {
+                    ht = '<div style="padding:20px;text-align:center;color:#86868B;font-size:0.85rem;">Sin tareas registradas</div>';
+                } else {
+                    d.tareas.forEach(function(t) {
+                        var col = estadoColor[t.estado] || '#86868B';
+                        ht += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F9F9F9;">' +
+                            '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + col + ';flex-shrink:0;"></span>' +
+                            '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-size:0.85rem;font-weight:600;color:#1D1D1F;">' + escH(t.titulo) + '</div>' +
+                            '<div style="font-size:0.72rem;color:#86868B;">' + escH(t.asignado_a) + (t.fecha_limite ? ' · ' + t.fecha_limite : '') + '</div>' +
+                            '</div>' +
+                            '<span style="font-size:0.7rem;font-weight:600;color:' + col + ';background:' + col + '18;padding:2px 8px;border-radius:20px;white-space:nowrap;">' + t.estado + '</span>' +
+                            '</div>';
+                    });
+                }
+                document.getElementById('wpdPanelTareas').innerHTML = ht;
+
+                // ── Drive ──
+                var hd = '';
+                var fileIcon = { pdf: '📄', documento: '📝', hoja_calculo: '📊', presentacion: '📊', imagen: '🖼️', otro: '📎' };
+                function renderArchivos(archivos) {
+                    var s = '';
+                    archivos.forEach(function(a) {
+                        var ico = fileIcon[a.tipo_archivo] || '📎';
+                        var link = a.bitrix_download_url ? ' onclick="window.open(\'' + a.bitrix_download_url + '\',\'_blank\')" style="cursor:pointer;"' : '';
+                        s += '<div' + link + ' style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;' + (a.bitrix_download_url ? 'cursor:pointer;' : '') + '" onmouseenter="this.style.background=\'#F5F5F7\'" onmouseleave="this.style.background=\'transparent\'">' +
+                            '<span style="font-size:1rem;">' + ico + '</span>' +
+                            '<span style="font-size:0.82rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escH(a.nombre_original) + '</span>' +
+                            (a.bitrix_download_url ? '<span style="margin-left:auto;font-size:0.7rem;color:#0052D4;">↓</span>' : '') +
+                            '</div>';
+                    });
+                    return s;
+                }
+
+                if (d.archivos_raiz && d.archivos_raiz.length) hd += renderArchivos(d.archivos_raiz);
+                if (d.carpetas && d.carpetas.length) {
+                    d.carpetas.forEach(function(c) {
+                        hd += '<div style="margin-top:8px;">' +
+                            '<div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:700;color:#1D1D1F;padding:6px 0 4px;">' +
+                            '<span>📁</span><span>' + escH(c.nombre) + '</span></div>' +
+                            '<div style="padding-left:16px;">' + renderArchivos(c.archivos) + '</div>' +
+                            '</div>';
+                    });
+                }
+                if (!hd) hd = '<div style="padding:20px;text-align:center;color:#86868B;font-size:0.85rem;">Sin archivos en el drive</div>';
+                document.getElementById('wpdPanelDrive').innerHTML = hd;
+            })
+            .catch(function(e) {
+                document.getElementById('wpd-titulo').textContent = 'Error al cargar';
+                console.error(e);
+            });
+    }
+    window.ingenieroAbrirProyecto = ingenieroAbrirProyecto;
     function ingenieroCompletarTarea(key, id, tipo) { if (!confirm('¿Marcar como completada?')) return; var url = tipo === 'tarea_opp' ? '/app/api/tareas-oportunidad/' + id + '/completar/' : '/app/api/tareas/' + id + '/completar/'; fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } }).then(function (r) { return r.json(); }).then(function (resp) { if (resp.ok || resp.success) { _dashAllItems = _dashAllItems.filter(function (i) { return i.key !== key; }); dashRenderTable(); dashFetchStats(); } }); }
     window.ingenieroCompletarTarea = ingenieroCompletarTarea;
 

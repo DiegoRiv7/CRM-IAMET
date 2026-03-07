@@ -1435,6 +1435,57 @@ def api_ingeniero_proyectos(request):
 
 
 @login_required
+def api_ingeniero_proyecto_detalle(request, proyecto_id):
+    """Detalle de un proyecto de ingeniería: info, tareas, carpetas y archivos raíz."""
+    from app.models import Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto
+    try:
+        if is_supervisor(request.user):
+            proyecto = Proyecto.objects.get(pk=proyecto_id, es_ingenieria=True)
+        else:
+            proyecto = Proyecto.objects.get(pk=proyecto_id, es_ingenieria=True, miembros=request.user)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
+
+    tareas = list(
+        Tarea.objects.filter(proyecto=proyecto)
+        .select_related('asignado_a')
+        .order_by('estado', 'fecha_limite')
+        .values('id', 'titulo', 'estado', 'prioridad', 'fecha_limite', 'asignado_a__first_name', 'asignado_a__last_name')
+    )
+    for t in tareas:
+        fn = t.pop('asignado_a__first_name') or ''
+        ln = t.pop('asignado_a__last_name') or ''
+        t['asignado_a'] = (fn + ' ' + ln).strip() or 'Sin asignar'
+        t['fecha_limite'] = t['fecha_limite'].strftime('%d/%m/%Y') if t['fecha_limite'] else None
+
+    carpetas = list(
+        CarpetaProyecto.objects.filter(proyecto=proyecto, carpeta_padre=None)
+        .values('id', 'nombre')
+    )
+    for c in carpetas:
+        c['archivos'] = list(
+            ArchivoProyecto.objects.filter(carpeta_id=c['id'])
+            .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url')
+        )
+
+    archivos_raiz = list(
+        ArchivoProyecto.objects.filter(proyecto=proyecto, carpeta=None)
+        .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url')
+    )
+
+    return JsonResponse({
+        'id': proyecto.id,
+        'titulo': proyecto.nombre,
+        'descripcion': proyecto.descripcion or '',
+        'estado': getattr(proyecto, 'estado', '') or '',
+        'fecha_creacion': proyecto.fecha_creacion.strftime('%d/%m/%Y') if getattr(proyecto, 'fecha_creacion', None) else '',
+        'tareas': tareas,
+        'carpetas': carpetas,
+        'archivos_raiz': archivos_raiz,
+    })
+
+
+@login_required
 @csrf_exempt
 def api_ingeniero_dashboard_stats(request):
     """
