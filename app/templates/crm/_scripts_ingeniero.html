@@ -81,7 +81,7 @@
     function dashGetCurrentData() {
         if (_dashCurrentView === 'proyectos') return _dashProyectos.map(function (p) { return { id: p.id, key: p.key, tipo: 'proyecto', titulo: p.titulo, prioridad: p.prioridad, estado: dashNE(p.estado), fecha_limite: p.fecha_limite, subtitulo: '' }; });
         if (_dashCurrentView === 'actividades') return _dashAllItems.filter(function (t) { return t.tipo === 'tarea_opp'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; });
-        return _dashAllItems.filter(function (t) { return t.tipo === 'tarea'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; });
+        return _dashAllItems.filter(function (t) { return t.tipo === 'tarea'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; }).sort(function(a, b){ return (b.fecha_creacion||'') > (a.fecha_creacion||'') ? 1 : -1; });
     }
     function dashNE(e) { if (!e) return 'pendiente'; if (e === 'completada') return 'completada'; if (e === 'en_progreso' || e === 'iniciada') return 'en_progreso'; return 'pendiente'; }
 

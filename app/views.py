@@ -1298,10 +1298,19 @@ def api_ingeniero_actividades(request):
         responsable=user
     ).exclude(estado='completada').select_related('oportunidad', 'oportunidad__cliente')
 
-    # Tareas generales asignadas a este usuario (no completadas)
-    tareas_gen = Tarea.objects.filter(
-        asignado_a=user
-    ).exclude(estado='completada').select_related('oportunidad', 'oportunidad__cliente', 'proyecto')
+    # Tareas generales: las asignadas al usuario + las de proyectos de ingeniería donde es miembro
+    from django.db.models import Q
+    if is_supervisor(user):
+        tareas_gen = Tarea.objects.exclude(estado='completada').select_related(
+            'oportunidad', 'oportunidad__cliente', 'proyecto'
+        ).filter(Q(asignado_a=user) | Q(proyecto__es_ingenieria=True)).distinct()
+    else:
+        tareas_gen = Tarea.objects.exclude(estado='completada').select_related(
+            'oportunidad', 'oportunidad__cliente', 'proyecto'
+        ).filter(
+            Q(asignado_a=user) |
+            Q(proyecto__es_ingenieria=True, proyecto__miembros=user)
+        ).distinct()
 
     # Obtener órdenes personales guardados
     board_map_opp = {
@@ -1350,6 +1359,7 @@ def api_ingeniero_actividades(request):
             'prioridad': t.prioridad,
             'fecha_limite': t.fecha_limite.strftime('%Y-%m-%d') if t.fecha_limite else None,
             'fecha_limite_display': t.fecha_limite.strftime('%d/%m/%Y') if t.fecha_limite else 'Sin fecha',
+            'fecha_creacion': t.fecha_creacion.strftime('%Y-%m-%d') if getattr(t, 'fecha_creacion', None) else '1970-01-01',
             'oportunidad': nombre_contexto,
             'oportunidad_id': t.oportunidad_id,
             'cliente': (t.oportunidad.cliente.nombre_empresa if t.oportunidad and t.oportunidad.cliente else ''),
@@ -1357,12 +1367,8 @@ def api_ingeniero_actividades(request):
             'fecha_planeada': str(bi.fecha_planeada) if bi and bi.fecha_planeada else None,
         })
 
-    # Ordenar: primero por orden personal, luego por fecha_limite
-    from datetime import date as _date
-    items.sort(key=lambda x: (
-        x['orden'],
-        x['fecha_limite'] or '9999-12-31'
-    ))
+    # Ordenar tareas por fecha_creacion (más reciente primero)
+    items.sort(key=lambda x: x.get('fecha_creacion', '1970-01-01'), reverse=True)
 
     return JsonResponse({'items': items})
 
