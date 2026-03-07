@@ -1380,27 +1380,35 @@
             }).then(function (r) { return r.json(); }).then(function (res) {
                 if (res.success) {
                     document.getElementById('widgetOppCrearActividad').style.display = 'none';
-                    // Actividad agendada ahora se procesa globalmente o solo impacta el top banner.
-                    // Ya NO agregamos esto al feed de conversación como un mensaje extra.
-                    // var fd = new FormData();
-                    // var taskRefHTML = '[ACT_AGENDADA:' + res.tarea.id + ':' + (cal_inicio || '') + ']' + titulo;
-                    // fd.append('texto', taskRefHTML);
-                    // fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
-                    //     method: 'POST',
-                    //     headers: { 'X-CSRFToken': csrf },
-                    //     body: fd
-                    // }).then(function () {
-                    //    woCargarNotas(_woCurrentOppId);
-                    // });
 
-                    // Solo recargamos todo para actualizar el cartel superior (banner)
-                    woCargarNotas(_woCurrentOppId);
+                    // Mostrar toast de confirmación
+                    var toast = document.createElement('div');
+                    toast.textContent = 'Actividad agendada correctamente';
+                    toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:10px 22px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.18);pointer-events:none;';
+                    document.body.appendChild(toast);
+                    setTimeout(function () { toast.remove(); }, 3200);
+
+                    // Publicar mensaje en la conversación con los detalles
+                    var fechaFmt = f_date ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; })(f_date) : '';
+                    var chatMsg = '📅 Actividad agendada: ' + titulo;
+                    if (fechaFmt) chatMsg += '\n📆 ' + fechaFmt;
+                    if (t_ini && t_fin) chatMsg += '  ' + t_ini + ' – ' + t_fin;
+                    if (desc) chatMsg += '\n' + desc;
+                    var fd = new FormData();
+                    fd.append('texto', chatMsg);
+                    fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrf },
+                        body: fd
+                    }).then(function () {
+                        woCargarNotas(_woCurrentOppId);
+                    }).catch(function () {
+                        woCargarNotas(_woCurrentOppId);
+                    });
 
                     if (typeof woCargarTareasInline === 'function') {
                         woCargarTareasInline(_woCurrentOppId);
                     }
-
-                    // Si el calendario general está allí, forzarlo a refrescar también
                     if (typeof calGlobalRefetch === 'function') {
                         calGlobalRefetch();
                     }
