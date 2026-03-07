@@ -20,13 +20,8 @@
     var _dashPersonModalDay = null;
     var _dashPersonSelectedIds = [];
 
-    // ═══ Datos ficticios de Proyectos ═══
-    var _dashProyectos = [
-        { id: 'p1', key: 'proy_1', titulo: 'Migración Servidor Core', asignado: 'Alex B.', prioridad: 'alta', estado: 'en_progreso', fecha_limite: '2026-04-15' },
-        { id: 'p2', key: 'proy_2', titulo: 'Implementación Red SITE B', asignado: 'Jacobo S.', prioridad: 'media', estado: 'pendiente', fecha_limite: '2026-05-01' },
-        { id: 'p3', key: 'proy_3', titulo: 'Auditoría de Seguridad Anual', asignado: 'Francisco C.', prioridad: 'alta', estado: 'completada', fecha_limite: '2026-03-01' },
-        { id: 'p4', key: 'proy_4', titulo: 'Upgrade Infraestructura Cloud', asignado: 'Kennedy K.', prioridad: 'media', estado: 'en_progreso', fecha_limite: '2026-06-15' },
-    ];
+    // ═══ Proyectos de Ingeniería (cargados desde API) ═══
+    var _dashProyectos = [];
 
     // ═══ INICIALIZACIÓN ═══
     document.addEventListener('DOMContentLoaded', function () {
@@ -63,8 +58,13 @@
     function dashRefreshData() {
         var ld = document.getElementById('dashTableLoading'), rw = document.getElementById('dashTableRows');
         if (ld) ld.style.display = 'flex'; if (rw) rw.style.display = 'none';
-        fetch('/app/api/ingeniero/actividades/').then(function (r) { return r.json(); }).then(function (d) {
+        var p1 = fetch('/app/api/ingeniero/actividades/').then(function (r) { return r.json(); }).then(function (d) {
             _dashBoardItems = d.items || []; _dashAllItems = _dashBoardItems.slice();
+        });
+        var p2 = fetch('/app/api/ingeniero/proyectos/').then(function (r) { return r.json(); }).then(function (d) {
+            _dashProyectos = d.items || [];
+        });
+        Promise.all([p1, p2]).then(function () {
             if (ld) ld.style.display = 'none'; dashRenderTable(); dashFetchStats();
         }).catch(function (e) { console.error(e); if (ld) ld.innerHTML = '<div style="text-align:center;color:#EF4444;">Error al cargar</div>'; });
     }
@@ -79,9 +79,9 @@
 
     // ═══ DATOS ACTUALES ═══
     function dashGetCurrentData() {
-        if (_dashCurrentView === 'proyectos') return _dashProyectos.map(function (p) { return { id: p.id, key: p.key, tipo: 'proyecto', titulo: p.titulo, asignado: p.asignado, prioridad: p.prioridad, estado: p.estado, fecha_limite: p.fecha_limite }; });
-        if (_dashCurrentView === 'actividades') return _dashAllItems.filter(function (t) { return t.tipo === 'tarea_opp'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, asignado: t.cliente || '—', prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite }; });
-        return _dashAllItems.filter(function (t) { return t.tipo === 'tarea'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, asignado: t.cliente || t.oportunidad || '—', prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite }; });
+        if (_dashCurrentView === 'proyectos') return _dashProyectos.map(function (p) { return { id: p.id, key: p.key, tipo: 'proyecto', titulo: p.titulo, prioridad: p.prioridad, estado: dashNE(p.estado), fecha_limite: p.fecha_limite, subtitulo: '' }; });
+        if (_dashCurrentView === 'actividades') return _dashAllItems.filter(function (t) { return t.tipo === 'tarea_opp'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; });
+        return _dashAllItems.filter(function (t) { return t.tipo === 'tarea'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; });
     }
     function dashNE(e) { if (!e) return 'pendiente'; if (e === 'completada') return 'completada'; if (e === 'en_progreso' || e === 'iniciada') return 'en_progreso'; return 'pendiente'; }
 
@@ -95,7 +95,10 @@
         var h = ''; items.forEach(function (it, ix) {
             var sel = _dashSelectedItem === it.key, st = dashSC(it.estado, it.fecha_limite), pr = dashPS(it.prioridad);
             h += '<div class="dash-tr' + (sel ? ' dash-tr-selected' : '') + '" onclick="dashSelectItem(\'' + escH(it.key) + '\')" style="animation-delay:' + ix * 0.03 + 's;">';
-            h += '<div onclick="event.stopPropagation(); window.ingenieroAbrirTarea(\'' + escH(it.key) + '\', \'' + it.id + '\', \'' + it.tipo + '\')" style="font-weight:600;color:#007AFF;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;" title="Abrir widget">' + escH(trun(it.titulo, 32)) + '</div>';
+            var subtituloHtml = it.subtitulo ? '<div style="font-size:0.7rem;color:#9CA3AF;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escH(trun(it.subtitulo, 30)) + '</div>' : '';
+            h += '<div onclick="event.stopPropagation(); window.ingenieroAbrirTarea(\'' + escH(it.key) + '\', \'' + it.id + '\', \'' + it.tipo + '\')" style="cursor:pointer;overflow:hidden;">' +
+                 '<div style="font-weight:600;color:#007AFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;" title="' + escH(it.titulo) + '">' + escH(trun(it.titulo, 32)) + '</div>' +
+                 subtituloHtml + '</div>';
             h += '<div style="display:flex;justify-content:center;">' + pr + '</div>';
             h += '<div style="display:flex;justify-content:center;"><span class="dash-badge ' + st.bc + '">' + st.l + '</span></div></div>';
         });

@@ -299,7 +299,7 @@ def _import_tasks(group_id, proyecto, bitrix_user_map, default_user, dry_run, st
                     'descripcion': t.get("description") or t.get("DESCRIPTION") or "",
                     'estado': _status_map.get(str(t.get("status") or t.get("STATUS") or "1"), "pendiente"),
                     'prioridad': _priority_map.get(str(t.get("priority") or t.get("PRIORITY") or "1"), "media"),
-                    'responsable': responsable,
+                    'asignado_a': responsable,
                     'creado_por': default_user,
                     'proyecto': proyecto,
                     'fecha_limite': parse_datetime(t.get("deadline") or t.get("DEADLINE") or "") or None,

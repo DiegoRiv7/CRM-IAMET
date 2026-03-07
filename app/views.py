@@ -1400,6 +1400,42 @@ def api_ingeniero_board_reorder(request):
 
 
 @login_required
+@login_required
+def api_ingeniero_proyectos(request):
+    """
+    Devuelve proyectos de ingeniería (es_ingenieria=True) donde el usuario
+    es miembro o los puede ver (supervisores ven todos).
+    """
+    from app.models import Proyecto
+    user = request.user
+    if is_supervisor(user):
+        qs = Proyecto.objects.filter(es_ingenieria=True)
+    else:
+        qs = Proyecto.objects.filter(es_ingenieria=True, miembros=user)
+
+    _estado_map = {
+        'pendiente': 'pendiente',
+        'en_progreso': 'en_progreso',
+        'completado': 'completada',
+        'cancelado': 'cancelada',
+    }
+    items = []
+    for p in qs.order_by('-fecha_creacion'):
+        estado_raw = getattr(p, 'estado', 'en_progreso') or 'en_progreso'
+        items.append({
+            'id': p.id,
+            'key': f'proy_{p.id}',
+            'titulo': p.nombre,
+            'prioridad': getattr(p, 'prioridad', 'media') or 'media',
+            'estado': estado_raw,
+            'fecha_limite': p.fecha_fin.strftime('%Y-%m-%d') if getattr(p, 'fecha_fin', None) else None,
+            'fecha_limite_display': p.fecha_fin.strftime('%d/%m/%Y') if getattr(p, 'fecha_fin', None) else 'Sin fecha',
+        })
+    return JsonResponse({'items': items})
+
+
+@login_required
+@csrf_exempt
 def api_ingeniero_dashboard_stats(request):
     """
     Dashboard stats for the engineer: efficiency, hours, project status.

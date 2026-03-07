@@ -369,6 +369,7 @@ urlpatterns = [
     path('api/cotizar-rapido/oportunidades/', views.api_oportunidades_rapido, name='api_oportunidades_rapido'),
     path('api/jornada/ayer/', views.api_jornada_ayer, name='api_jornada_ayer'),
     path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),
+    path('api/ingeniero/proyectos/', views.api_ingeniero_proyectos, name='api_ingeniero_proyectos'),
     path('api/ingeniero/board/reorder/', views.api_ingeniero_board_reorder, name='api_ingeniero_board_reorder'),
     path('api/ingeniero/dashboard-stats/', views.api_ingeniero_dashboard_stats, name='api_ingeniero_dashboard_stats'),
     path('api/programacion/actividades/', views.api_programacion_actividades, name='api_programacion_actividades'),
