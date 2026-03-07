@@ -168,17 +168,55 @@ def _get_tipo_archivo(nombre):
 
 def _get_project_storage(group_id):
     """Devuelve (storage_id, root_folder_id) del drive del grupo."""
+    storage_id = None
+    root_folder_id = None
     try:
         data = _call("disk.storage.getlist", {"filter": {"ENTITY_TYPE": "G", "ENTITY_ID": group_id}})
         storages = data.get("result") or []
         for s in storages:
             if str(s.get("ENTITY_ID")) == str(group_id):
-                return s.get("ID"), s.get("ROOT_OBJECT_ID")
-        if storages:
-            return storages[0].get("ID"), storages[0].get("ROOT_OBJECT_ID")
+                storage_id = s.get("ID")
+                root_folder_id = s.get("ROOT_OBJECT_ID")
+                break
+        if not storage_id and storages:
+            storage_id = storages[0].get("ID")
+            root_folder_id = storages[0].get("ROOT_OBJECT_ID")
     except Exception:
         pass
-    return None, None
+
+    # Fallback: si tenemos storage_id pero no root_folder_id, intentar obtenerlo
+    if storage_id and not root_folder_id:
+        try:
+            data2 = _call("disk.storage.get", {"id": storage_id})
+            s2 = data2.get("result") or {}
+            root_folder_id = s2.get("ROOT_OBJECT_ID")
+        except Exception:
+            pass
+
+    return storage_id, root_folder_id
+
+
+def _check_storage_importante(storage_id, debug_out=None):
+    """Revisa los hijos directos de un storage cuando no hay ROOT_OBJECT_ID."""
+    try:
+        data = _call("disk.storage.getchildren", {"id": storage_id})
+        children = data.get("result") or []
+        if debug_out:
+            debug_out(f"    [drive-debug] storage.getchildren: {len(children)} elementos")
+        for item in children:
+            nombre = item.get("NAME", "")
+            tipo = item.get("TYPE", "")
+            if debug_out:
+                debug_out(f"    [drive-debug]   '{nombre}' tipo={tipo} match={_es_importante(nombre)}")
+            if _es_importante(nombre):
+                return True
+            if tipo == "folder":
+                if _check_folder_importante(item["ID"], depth=1, debug_out=debug_out):
+                    return True
+    except Exception as e:
+        if debug_out:
+            debug_out(f"    [drive-debug] storage.getchildren error: {e}")
+    return False
 
 
 def _check_folder_importante(folder_id, depth=0, max_depth=3, debug_out=None):
@@ -211,14 +249,17 @@ def _check_folder_importante(folder_id, depth=0, max_depth=3, debug_out=None):
 
 def _proyecto_es_ingenieria(group_id, debug_out=None):
     """Devuelve True si el drive del grupo contiene archivos de ingeniería."""
-    _, root_folder_id = _get_project_storage(group_id)
-    if not root_folder_id:
-        if debug_out:
-            debug_out("    [drive-debug] Sin storage o ROOT_OBJECT_ID vacío")
-        return False
+    storage_id, root_folder_id = _get_project_storage(group_id)
     if debug_out:
-        debug_out(f"    [drive-debug] root_folder_id={root_folder_id}")
-    return _check_folder_importante(root_folder_id, debug_out=debug_out)
+        debug_out(f"    [drive-debug] storage_id={storage_id} root_folder_id={root_folder_id}")
+    if root_folder_id:
+        return _check_folder_importante(root_folder_id, debug_out=debug_out)
+    if storage_id:
+        # ROOT_OBJECT_ID vacío — usar storage.getchildren como fallback
+        return _check_storage_importante(storage_id, debug_out=debug_out)
+    if debug_out:
+        debug_out("    [drive-debug] Sin storage encontrado")
+    return False
 
 
 # ── Importar Drive ────────────────────────────────────────────────────────────
