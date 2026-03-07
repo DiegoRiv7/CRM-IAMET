@@ -493,24 +493,33 @@ class Command(BaseCommand):
             self.stdout.write(f"\n  [{group_id}] {nombre[:70]}")
 
             # ── Filtro de importancia ──────────────────────────────────────
-            if not options.get("group_ids"):
-                # Solo evaluar drive si no se forzaron IDs específicos
-                if not options["skip_drive"]:
-                    self.stdout.write("    Verificando drive...", ending="")
-                    debug_fn = self.stdout.write if options.get("debug_drive") else None
-                    if debug_fn:
-                        self.stdout.write("")  # newline antes del debug
-                    try:
-                        importante = _proyecto_es_ingenieria(group_id, debug_out=debug_fn)
-                    except Exception as e:
-                        self.stdout.write(self.style.ERROR(f" Error: {e}"))
-                        stats["errores"] += 1
-                        continue
+            forzar_ids = bool(options.get("group_ids"))
+            debug_drive = bool(options.get("debug_drive"))
+            # Si se usa --debug-drive, siempre corre el check (aunque se especifiquen IDs)
+            run_drive_check = (not forzar_ids or debug_drive) and not options["skip_drive"]
 
-                    if not importante:
+            if run_drive_check:
+                self.stdout.write("    Verificando drive...", ending="")
+                debug_fn = self.stdout.write if debug_drive else None
+                if debug_fn:
+                    self.stdout.write("")  # newline antes del debug
+                try:
+                    importante = _proyecto_es_ingenieria(group_id, debug_out=debug_fn)
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f" Error: {e}"))
+                    stats["errores"] += 1
+                    continue
+
+                if not importante:
+                    if forzar_ids:
+                        # Con --group-ids + --debug-drive: muestra el resultado pero no descarta
+                        self.stdout.write(self.style.WARNING(" [DRIVE: sin match] — importando igualmente por --group-ids"))
+                    else:
                         self.stdout.write(self.style.WARNING(" [DESCARTADO] Sin archivos de ingeniería"))
                         stats["descartados"] += 1
                         continue
+                else:
+                    self.stdout.write(self.style.SUCCESS(" [IMPORTANTE]"))
                     self.stdout.write(self.style.SUCCESS(" [IMPORTANTE]"))
 
 
