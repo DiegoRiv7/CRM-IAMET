@@ -583,7 +583,6 @@ class Command(BaseCommand):
                         continue
                 else:
                     self.stdout.write(self.style.SUCCESS(" [IMPORTANTE]"))
-                    self.stdout.write(self.style.SUCCESS(" [IMPORTANTE]"))
 
 
             stats["importantes"] += 1
