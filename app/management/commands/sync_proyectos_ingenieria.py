@@ -466,6 +466,12 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Total grupos en Bitrix: {len(groups)}")
 
+        # Filtrar por IDs específicos si se indicaron (la API no lo filtra correctamente)
+        if options.get("group_ids"):
+            ids_set = set(options["group_ids"])
+            groups = [g for g in groups if int(g["ID"]) in ids_set]
+            self.stdout.write(f"Filtrando a {len(groups)} grupo(s): {options['group_ids']}")
+
         stats = {
             "evaluados": 0,
             "importantes": 0,
