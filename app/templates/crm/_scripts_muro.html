@@ -10,6 +10,7 @@
 
     function $m(id) { return document.getElementById(id); }
     function getCsrf() { var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
+    window.getCsrf = getCsrf;
 
     window.muroAbrir = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('active'); ov.classList.remove('closing'); muroCargar(); };
     window.muroCerrar = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('closing'); setTimeout(function () { ov.classList.remove('active', 'closing'); }, 220); var btn = $m('btnMuro'); if (btn) btn.classList.remove('active'); };

@@ -1,4 +1,12 @@
 <script>
+    /* ── Utilidad CSRF global (disponible para todos los scripts) ── */
+    if (typeof window.getCsrf === 'undefined') {
+        window.getCsrf = function () {
+            var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+            return v ? v.pop() : '';
+        };
+    }
+
     /* ── Auto-cambio de mes en día 1 ── */
     (function () {
         var today = new Date();
