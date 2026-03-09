@@ -662,6 +662,8 @@ def api_crm_table_data(request):
                 'producto': item.producto or '',
                 'monto': '0' if es_bitrix else format_money(item.monto),
                 'fecha_iso': item.fecha_creacion.strftime('%Y-%m-%d'),
+                'fecha_ts': int(item.fecha_actualizacion.timestamp()) if item.fecha_actualizacion else 0,
+                'etapa': item.etapa_corta or '',
                 'tiene_actividad_vencida': tiene_vencida,
                 'sin_actividad_pendiente': not tiene_pendiente,
                 'tipo_negociacion': item.tipo_negociacion or 'runrate',

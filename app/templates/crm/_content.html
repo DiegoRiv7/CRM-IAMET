@@ -90,7 +90,16 @@
                     </div>
                     <div class="crm-filter-item">
                         <label>Etapa</label>
-                        <input type="text" id="filterEtapa" placeholder="Ej: Enviada...">
+                        <input type="text" id="filterEtapa" list="etapaOptionsList" placeholder="Buscar etapa..." autocomplete="off">
+                        <datalist id="etapaOptionsList"></datalist>
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Orden fecha</label>
+                        <select id="filterFecha">
+                            <option value="">Sin orden</option>
+                            <option value="desc">Reciente → Antiguo</option>
+                            <option value="asc">Antiguo → Reciente</option>
+                        </select>
                     </div>
                     <div class="crm-filter-actions">
                         <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">
@@ -159,7 +168,7 @@
                     data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
                     data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}"
                     data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}"
-                    data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}">
+                    data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
                     <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
                         <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span>
                     </td>

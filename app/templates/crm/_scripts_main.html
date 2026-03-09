@@ -1277,7 +1277,7 @@
                     ? '<td class="px-2 py-4 text-right font-black border-l border-gray-100 bg-gray-50/20"><span class="money-zero">$0</span></td>'
                     : '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.monto + '</td>';
 
-                return '<tr class="crm-data-row' + rowExtraClass + '" data-opp-id="' + r.id + '">' +
+                return '<tr class="crm-data-row' + rowExtraClass + '" data-opp-id="' + r.id + '" data-tipo="' + (r.tipo_negociacion || '') + '" data-etapa="' + (r.etapa || '') + '" data-fecha="' + (r.fecha_ts || '0') + '">' +
                     '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '"' + nameStyle + '>' + r.oportunidad + vencidaIcon + '</span>' + bitrixBadge +
                     '<span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="' + (r.cliente_id || '') + '" data-tab="crm">' + (r.cliente || '- Sin Cliente -') + '</span></td>' +
                     '<td class="px-2 py-4 text-gray-600">' + r.contacto + '</td>' +
@@ -1368,6 +1368,7 @@
                             else html += buildCrmRow(data.rows[i]);
                         }
                         tbody.innerHTML = html;
+                        if (typeof populateEtapaDatalist === 'function') populateEtapaDatalist();
                     }
 
                     // Update footer
@@ -2103,7 +2104,9 @@
             contacto: '',
             monto: '',
             producto: '',
-            tipo: ''
+            tipo: '',
+            etapa: '',
+            fecha: ''
         };
 
         // Abrir/Toggle filtros en la isla
@@ -2276,15 +2279,38 @@
             });
         }
 
+        // Poblar datalist de etapas con valores únicos de las filas cargadas
+        function populateEtapaDatalist() {
+            var datalist = document.getElementById('etapaOptionsList');
+            if (!datalist) return;
+            var tbody = document.getElementById('crmTbody');
+            if (!tbody) return;
+            var seen = {};
+            datalist.innerHTML = '';
+            tbody.querySelectorAll('tr[data-etapa]').forEach(function (row) {
+                var val = (row.dataset.etapa || '').trim();
+                if (val && !seen[val]) {
+                    seen[val] = true;
+                    var opt = document.createElement('option');
+                    opt.value = val;
+                    datalist.appendChild(opt);
+                }
+            });
+        }
+        populateEtapaDatalist();
+
+        // Filtro orden por fecha
+        setupIslandFilterListener('filterFecha', 'fecha');
+
         // Limpiar filtros (Island button)
         var btnClearIsland = document.getElementById('btnClearIslandFilters');
         if (btnClearIsland) {
             btnClearIsland.addEventListener('click', function () {
-                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo', 'filterEtapa'].forEach(function (id) {
+                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo', 'filterEtapa', 'filterFecha'].forEach(function (id) {
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '' };
                 applyFiltersToTable();
             });
         }
@@ -2298,12 +2324,14 @@
                 var fm = document.getElementById('filterMonto');
                 var fp = document.getElementById('filterProducto');
                 var fe = document.getElementById('filterEtapa');
+                var ff = document.getElementById('filterFecha');
                 if (fc) currentFilters.cliente = fc.value;
                 if (fa) currentFilters.area = fa.value;
                 if (fcont) currentFilters.contacto = fcont.value;
                 if (fm) currentFilters.monto = fm.value;
                 if (fp) currentFilters.producto = fp.value;
                 if (fe) currentFilters.etapa = fe.value;
+                if (ff) currentFilters.fecha = ff.value;
                 applyFiltersToTable();
                 closeFilterPanel();
             });
@@ -2312,11 +2340,11 @@
         // Limpiar filtros
         if (btnClearFilters) {
             btnClearFilters.addEventListener('click', function () {
-                ['filterCliente', 'filterArea', 'filterContacto', 'filterMonto', 'filterProducto', 'filterTipo'].forEach(function (id) {
+                ['filterCliente', 'filterArea', 'filterContacto', 'filterMonto', 'filterProducto', 'filterTipo', 'filterEtapa', 'filterFecha'].forEach(function (id) {
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '' };
                 applyFiltersToTable();
             });
         }
@@ -2424,6 +2452,15 @@
                     } else {
                         return montoA - montoB;
                     }
+                });
+            }
+
+            // Ordenar por fecha si se especificó
+            if (currentFilters.fecha) {
+                filteredRows.sort(function (a, b) {
+                    var fa = parseInt(a.dataset.fecha || '0', 10);
+                    var fb = parseInt(b.dataset.fecha || '0', 10);
+                    return currentFilters.fecha === 'desc' ? fb - fa : fa - fb;
                 });
             }
 
