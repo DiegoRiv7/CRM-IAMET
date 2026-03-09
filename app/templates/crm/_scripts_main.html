@@ -3742,8 +3742,6 @@
             var oppIdEl = document.getElementById('crmTaskOppId');
             if (oppIdEl && oppIdEl.value) payload.oportunidad_id = oppIdEl.value;
 
-            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
-
             var submitBtn = document.getElementById('crmTaskSubmitBtn');
             if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creando...'; }
 
@@ -3752,7 +3750,7 @@
                 body: JSON.stringify(payload),
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfEl ? csrfEl.value : ''
+                    'X-CSRFToken': getCsrf()
                 }
             })
                 .then(function (r) { return r.json(); })
@@ -3783,7 +3781,7 @@
                 .catch(function (err) {
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Crear tarea'; }
                     console.error('Error creando tarea:', err);
-                    alert('Error de conexión al crear la tarea');
+                    alert('Error al crear la tarea. Intenta recargar la página e intentarlo de nuevo.');
                 });
         }
 
