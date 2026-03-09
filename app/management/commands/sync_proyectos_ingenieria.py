@@ -370,15 +370,19 @@ def _import_tasks(group_id, proyecto, bitrix_user_map, default_user, dry_run, st
         data = _call("tasks.task.list", {
             "filter": {"GROUP_ID": group_id},
             "select": ["ID", "TITLE", "DESCRIPTION", "STATUS", "PRIORITY",
-                       "DEADLINE", "CREATED_DATE", "RESPONSIBLE_ID"],
+                       "DEADLINE", "CREATED_DATE", "RESPONSIBLE_ID", "CREATED_BY"],
         })
         tasks = (data.get("result") or {}).get("tasks") or []
     except Exception as e:
         stdout.write(f"    [tasks] Error: {e}")
         return 0
 
-    _status_map = {"1": "pendiente", "2": "iniciada", "3": "completada",
-                   "4": "en_progreso", "5": "cancelada", "6": "cancelada"}
+    # Bitrix24 status codes:
+    # 1=New, 2=Pending, 3=In Progress, 4=Supposedly Completed, 5=Completed, 6=Deferred, 7=Declined
+    _status_map = {
+        "1": "pendiente", "2": "pendiente", "3": "en_progreso",
+        "4": "en_progreso", "5": "completada", "6": "pendiente", "7": "cancelada",
+    }
     _priority_map = {"0": "baja", "1": "media", "2": "alta"}
     count = 0
 
@@ -387,8 +391,14 @@ def _import_tasks(group_id, proyecto, bitrix_user_map, default_user, dry_run, st
         if not bitrix_task_id:
             continue
 
-        responsible_id = int(t.get("responsibleId") or t.get("RESPONSIBLE_ID") or 0)
-        responsable = bitrix_user_map.get(responsible_id) or default_user
+        resp_id = str(t.get("responsibleId") or t.get("RESPONSIBLE_ID") or "")
+        responsable = bitrix_user_map.get(resp_id) or default_user
+
+        created_by_id = str(t.get("createdBy") or t.get("CREATED_BY") or "")
+        creador = bitrix_user_map.get(created_by_id) or default_user
+
+        status_val = str(t.get("status") or t.get("STATUS") or "1")
+        priority_val = str(t.get("priority") if t.get("priority") is not None else (t.get("PRIORITY") or "1"))
 
         if not dry_run:
             Tarea.objects.update_or_create(
@@ -396,10 +406,10 @@ def _import_tasks(group_id, proyecto, bitrix_user_map, default_user, dry_run, st
                 defaults={
                     'titulo': (t.get("title") or t.get("TITLE") or "Sin título")[:255],
                     'descripcion': t.get("description") or t.get("DESCRIPTION") or "",
-                    'estado': _status_map.get(str(t.get("status") or t.get("STATUS") or "1"), "pendiente"),
-                    'prioridad': _priority_map.get(str(t.get("priority") or t.get("PRIORITY") or "1"), "media"),
+                    'estado': _status_map.get(status_val, "pendiente"),
+                    'prioridad': _priority_map.get(priority_val, "media"),
                     'asignado_a': responsable,
-                    'creado_por': default_user,
+                    'creado_por': creador,
                     'proyecto': proyecto,
                     'fecha_limite': parse_datetime(t.get("deadline") or t.get("DEADLINE") or "") or None,
                 }
@@ -504,7 +514,7 @@ class Command(BaseCommand):
         # Mapa bitrix_user_id → Django User
         bitrix_user_map = {}
         for profile in UserProfile.objects.filter(bitrix_user_id__isnull=False).select_related('user'):
-            bitrix_user_map[profile.bitrix_user_id] = profile.user
+            bitrix_user_map[str(profile.bitrix_user_id)] = profile.user
 
         self.stdout.write(f"Usuarios mapeados con Bitrix: {len(bitrix_user_map)}")
 
