@@ -83,8 +83,21 @@ class Command(BaseCommand):
         self.stdout.write(f'Oportunidades: {len(oportunidades)}')
         self.stdout.write(f'Threshold: {threshold}')
 
-        # Precompute normalized opp names
-        opps_norm = [(opp, _normalizar(opp.oportunidad)) for opp in oportunidades]
+        # Precompute normalized opp names — filtrar oportunidades con menos de 3 tokens
+        # para evitar falsos positivos por nombres demasiado genéricos
+        opps_norm = []
+        opps_descartadas = 0
+        for opp in oportunidades:
+            norm = _normalizar(opp.oportunidad)
+            if len(norm.split()) >= 3:
+                opps_norm.append((opp, norm))
+            else:
+                opps_descartadas += 1
+
+        if opps_descartadas:
+            self.stdout.write(
+                self.style.WARNING(f'Oportunidades omitidas (nombre muy generico, <3 tokens): {opps_descartadas}')
+            )
 
         proyectos_procesados = 0
         sugerencias_creadas = 0
@@ -92,13 +105,12 @@ class Command(BaseCommand):
 
         for proyecto in proyectos:
             norm_proyecto = _normalizar(proyecto.nombre)
-            if not norm_proyecto:
+            # Proyecto también debe tener al menos 2 tokens significativos
+            if not norm_proyecto or len(norm_proyecto.split()) < 2:
                 continue
 
             matches = []
             for opp, norm_opp in opps_norm:
-                if not norm_opp:
-                    continue
                 score = fuzz.token_set_ratio(norm_proyecto, norm_opp)
                 if score >= threshold:
                     matches.append((opp, score))
