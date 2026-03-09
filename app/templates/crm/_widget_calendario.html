@@ -381,7 +381,7 @@
     };
 
     window.calGlobalRefetch = function () {
-        var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (function(){ var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; })();
         var pActividades = fetch('/app/api/actividades/', {
             method: 'GET',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }

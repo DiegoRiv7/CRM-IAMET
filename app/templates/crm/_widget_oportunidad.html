@@ -1402,7 +1402,7 @@
                 participantes: participantes
             };
 
-            var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+            var csrf = getCsrf();
 
             fetch('/app/api/oportunidad/' + _woCurrentOppId + '/tareas/', {
                 method: 'POST',

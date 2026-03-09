@@ -108,6 +108,16 @@ logger = logging.getLogger(__name__)
 def is_supervisor(user):
     return user.is_superuser or user.groups.filter(name='Supervisores').exists()
 
+
+# Función auxiliar para comprobar si el usuario es ingeniero
+def is_ingeniero(user):
+    try:
+        from app.models import UserProfile
+        profile = UserProfile.objects.get(user=user)
+        return getattr(profile, 'rol', 'vendedor') == 'ingeniero'
+    except Exception:
+        return False
+
 def is_engineer(user):
     return user.groups.filter(name='Ingenieros').exists()
 
@@ -1293,17 +1303,24 @@ def api_ingeniero_actividades(request):
     from app.models import IngenieroBoardItem, TareaOportunidad, Tarea
     user = request.user
 
-    # TareaOportunidad asignadas a este usuario (no completadas)
-    tareas_opp = TareaOportunidad.objects.filter(
-        responsable=user
-    ).exclude(estado='completada').select_related('oportunidad', 'oportunidad__cliente')
-
-    # Tareas generales: las asignadas al usuario + las de proyectos de ingeniería donde es miembro
     from django.db.models import Q
-    if is_supervisor(user):
+    _puede_ver_todo = is_supervisor(user) or is_ingeniero(user)
+
+    # TareaOportunidad: admins/ingenieros ven todas, vendedores solo las suyas
+    if _puede_ver_todo:
+        tareas_opp = TareaOportunidad.objects.exclude(
+            estado='completada'
+        ).select_related('oportunidad', 'oportunidad__cliente', 'responsable')
+    else:
+        tareas_opp = TareaOportunidad.objects.filter(
+            responsable=user
+        ).exclude(estado='completada').select_related('oportunidad', 'oportunidad__cliente')
+
+    # Tareas generales: admins/ingenieros ven todas las de proyectos de ingeniería + sus propias
+    if _puede_ver_todo:
         tareas_gen = Tarea.objects.exclude(estado='completada').select_related(
-            'oportunidad', 'oportunidad__cliente', 'proyecto'
-        ).filter(Q(asignado_a=user) | Q(proyecto__es_ingenieria=True)).distinct()
+            'oportunidad', 'oportunidad__cliente', 'proyecto', 'asignado_a'
+        ).filter(Q(proyecto__es_ingenieria=True) | Q(asignado_a=user)).distinct()
     else:
         tareas_gen = Tarea.objects.exclude(estado='completada').select_related(
             'oportunidad', 'oportunidad__cliente', 'proyecto'
@@ -1338,6 +1355,7 @@ def api_ingeniero_actividades(request):
             'oportunidad': t.oportunidad.oportunidad if t.oportunidad else '',
             'oportunidad_id': t.oportunidad_id,
             'cliente': (t.oportunidad.cliente.nombre_empresa if t.oportunidad and t.oportunidad.cliente else ''),
+            'asignado': (f"{t.responsable.first_name} {t.responsable.last_name}".strip() if getattr(t, 'responsable', None) else ''),
             'orden': bi.orden if bi else 9999,
             'fecha_planeada': str(bi.fecha_planeada) if bi and bi.fecha_planeada else None,
         })
@@ -1414,7 +1432,7 @@ def api_ingeniero_proyectos(request):
     """
     from app.models import Proyecto
     user = request.user
-    if is_supervisor(user):
+    if is_supervisor(user) or is_ingeniero(user):
         qs = Proyecto.objects.filter(es_ingenieria=True)
     else:
         qs = Proyecto.objects.filter(es_ingenieria=True, miembros=user)
@@ -1445,7 +1463,7 @@ def api_ingeniero_proyecto_detalle(request, proyecto_id):
     """Detalle de un proyecto de ingeniería: info, tareas, carpetas y archivos raíz."""
     from app.models import Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto
     try:
-        if is_supervisor(request.user):
+        if is_supervisor(request.user) or is_ingeniero(request.user):
             proyecto = Proyecto.objects.get(pk=proyecto_id, es_ingenieria=True)
         else:
             proyecto = Proyecto.objects.get(pk=proyecto_id, es_ingenieria=True, miembros=request.user)

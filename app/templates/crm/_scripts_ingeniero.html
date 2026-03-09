@@ -51,8 +51,25 @@
     window.ingenieroMostrarActividades = ingenieroMostrarActividades;
 
     // ═══ CONTROL SEGMENTADO ═══
-    function dashSwitchView(v) { _dashCurrentView = v; _dashSelectedItem = null; document.querySelectorAll('.dash-seg-btn').forEach(function (b) { b.classList.remove('dash-seg-active'); if (b.getAttribute('data-view') === v) b.classList.add('dash-seg-active'); }); var cn = document.getElementById('dashColName'); if (cn) { var l = { tareas: 'Tarea', actividades: 'Actividad', proyectos: 'Proyecto' }; cn.textContent = l[v] || 'Item'; } dashCalShowEmpty(); dashHorasShowEmpty(); dashRenderTable(); dashUpdateWidgets(); }
+    function dashSwitchView(v) {
+        _dashCurrentView = v;
+        _dashSelectedItem = null;
+        document.querySelectorAll('.dash-seg-btn').forEach(function (b) { b.classList.remove('dash-seg-active'); if (b.getAttribute('data-view') === v) b.classList.add('dash-seg-active'); });
+        var cn = document.getElementById('dashColName'); if (cn) { var l = { tareas: 'Tarea', actividades: 'Actividad', proyectos: 'Proyecto' }; cn.textContent = l[v] || 'Item'; }
+        // Mostrar botón "Crear Tarea" solo en vista de tareas
+        var btnCrear = document.getElementById('dashBtnCrearTarea');
+        if (btnCrear) { btnCrear.style.display = (v === 'tareas') ? 'flex' : 'none'; }
+        dashCalShowEmpty(); dashHorasShowEmpty(); dashRenderTable(); dashUpdateWidgets();
+    }
     window.dashSwitchView = dashSwitchView;
+
+    // ═══ CREAR TAREA DESDE DASHBOARD ═══
+    function dashAbrirCrearTarea() {
+        if (typeof crmTaskAbrirCrear === 'function') {
+            crmTaskAbrirCrear(null);
+        }
+    }
+    window.dashAbrirCrearTarea = dashAbrirCrearTarea;
 
     // ═══ CARGA DATOS ═══
     function dashRefreshData() {

@@ -3769,6 +3769,7 @@
                         crmTaskCerrarCrear();
                         cargarTareasCRM();
                         showToast('Tarea creada exitosamente', 'success');
+                        if (typeof dashRefreshData === 'function') { dashRefreshData(); }
                         if (oppId && typeof woCargarTareasInline === 'function') {
                             woCargarTareasInline(oppId);
                         }
