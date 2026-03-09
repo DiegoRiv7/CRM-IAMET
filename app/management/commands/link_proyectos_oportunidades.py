@@ -1,0 +1,142 @@
+"""
+Comando para generar sugerencias de vinculos proyecto-oportunidad
+basadas en similitud de nombres usando rapidfuzz.
+
+Uso:
+  python manage.py link_proyectos_oportunidades
+  python manage.py link_proyectos_oportunidades --threshold 70
+  python manage.py link_proyectos_oportunidades --dry-run
+  python manage.py link_proyectos_oportunidades --reset   # borra sugerencias no confirmadas y regenera
+"""
+import unicodedata
+from django.core.management.base import BaseCommand
+from rapidfuzz import fuzz
+
+
+STOPWORDS = {
+    'proyecto', 'de', 'del', 'la', 'el', 'los', 'las', 'en', 'con', 'para',
+    'por', 'y', 'e', 'o', 'a', 'al', 'instalacion', 'instalaciones',
+    'servicio', 'servicios', 'sistema', 'sistemas', 'mantenimiento',
+    'implementacion', 'soporte', 'suministro', 'red', 'redes',
+}
+
+
+def _normalizar(texto):
+    """Lowercase, remove accents, remove stopwords, collapse spaces."""
+    if not texto:
+        return ''
+    # Remove accents
+    nfkd = unicodedata.normalize('NFKD', texto)
+    sin_acentos = ''.join(c for c in nfkd if not unicodedata.combining(c))
+    # Lowercase
+    lower = sin_acentos.lower()
+    # Keep only alphanum + spaces
+    limpio = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in lower)
+    # Remove stopwords
+    tokens = [t for t in limpio.split() if t not in STOPWORDS]
+    return ' '.join(tokens)
+
+
+class Command(BaseCommand):
+    help = 'Genera sugerencias de vinculos proyecto-oportunidad usando rapidfuzz'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--threshold',
+            type=int,
+            default=65,
+            help='Score minimo para considerar un match (default: 65)',
+        )
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='Solo mostrar resultados sin guardar en la base de datos',
+        )
+        parser.add_argument(
+            '--reset',
+            action='store_true',
+            help='Eliminar sugerencias no confirmadas y no rechazadas antes de generar nuevas',
+        )
+
+    def handle(self, *args, **options):
+        from app.models import Proyecto, TodoItem, ProyectoOportunidadLink
+
+        threshold = options['threshold']
+        dry_run = options['dry_run']
+        reset = options['reset']
+
+        if dry_run:
+            self.stdout.write(self.style.WARNING('Modo DRY-RUN: no se guardaran cambios.'))
+
+        # Reset sugerencias pendientes (no confirmadas, no rechazadas)
+        if reset and not dry_run:
+            deleted_count, _ = ProyectoOportunidadLink.objects.filter(
+                confirmado=False,
+                rechazado=False,
+            ).delete()
+            self.stdout.write(f'Reset: eliminadas {deleted_count} sugerencias pendientes.')
+
+        proyectos = list(Proyecto.objects.filter(es_ingenieria=True))
+        oportunidades = list(TodoItem.objects.select_related('cliente').all())
+
+        self.stdout.write(f'Proyectos de ingenieria: {len(proyectos)}')
+        self.stdout.write(f'Oportunidades: {len(oportunidades)}')
+        self.stdout.write(f'Threshold: {threshold}')
+
+        # Precompute normalized opp names
+        opps_norm = [(opp, _normalizar(opp.oportunidad)) for opp in oportunidades]
+
+        proyectos_procesados = 0
+        sugerencias_creadas = 0
+        ya_confirmados = 0
+
+        for proyecto in proyectos:
+            norm_proyecto = _normalizar(proyecto.nombre)
+            if not norm_proyecto:
+                continue
+
+            matches = []
+            for opp, norm_opp in opps_norm:
+                if not norm_opp:
+                    continue
+                score = fuzz.token_set_ratio(norm_proyecto, norm_opp)
+                if score >= threshold:
+                    matches.append((opp, score))
+
+            # Keep top 3
+            matches.sort(key=lambda x: x[1], reverse=True)
+            matches = matches[:3]
+
+            proyectos_procesados += 1
+
+            for opp, score in matches:
+                if dry_run:
+                    self.stdout.write(
+                        f'  [{score:.0f}%] {proyecto.nombre!r} <-> {opp.oportunidad!r}'
+                    )
+                    sugerencias_creadas += 1
+                    continue
+
+                # Skip if already confirmed or rejected
+                existing = ProyectoOportunidadLink.objects.filter(
+                    proyecto=proyecto,
+                    oportunidad=opp,
+                ).first()
+                if existing and (existing.confirmado or existing.rechazado):
+                    ya_confirmados += 1
+                    continue
+
+                _, created = ProyectoOportunidadLink.objects.update_or_create(
+                    proyecto=proyecto,
+                    oportunidad=opp,
+                    defaults={'score': score},
+                )
+                if created:
+                    sugerencias_creadas += 1
+
+        self.stdout.write(self.style.SUCCESS(
+            f'\nResumen:'
+            f'\n  Proyectos procesados: {proyectos_procesados}'
+            f'\n  Sugerencias {"que se crearian" if dry_run else "creadas"}: {sugerencias_creadas}'
+            f'\n  Omitidos (ya confirmados/rechazados): {ya_confirmados}'
+        ))

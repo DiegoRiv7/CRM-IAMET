@@ -16305,3 +16305,150 @@ def api_procesar_solicitud_perfil(request, solicitud_id):
         logger.error(f"Error en api_procesar_solicitud_perfil: {e}")
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API: Vinculo Proyecto <-> Oportunidad
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def api_oportunidad_proyectos(request, opp_id):
+    """GET: devuelve confirmados y sugerencias de proyectos para una oportunidad."""
+    from app.models import ProyectoOportunidadLink, TodoItem
+    try:
+        opp = TodoItem.objects.get(pk=opp_id)
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
+
+    confirmados_qs = ProyectoOportunidadLink.objects.filter(
+        oportunidad=opp, confirmado=True, rechazado=False
+    ).select_related('proyecto')
+    sugerencias_qs = ProyectoOportunidadLink.objects.filter(
+        oportunidad=opp, confirmado=False, rechazado=False
+    ).select_related('proyecto').order_by('-score')
+
+    confirmados = [
+        {
+            'link_id': lnk.id,
+            'id': lnk.proyecto.id,
+            'nombre': lnk.proyecto.nombre,
+            'score': lnk.score,
+            'bitrix_group_id': lnk.proyecto.bitrix_group_id,
+        }
+        for lnk in confirmados_qs
+    ]
+    sugerencias = [
+        {
+            'link_id': lnk.id,
+            'id': lnk.proyecto.id,
+            'nombre': lnk.proyecto.nombre,
+            'score': lnk.score,
+            'bitrix_group_id': lnk.proyecto.bitrix_group_id,
+        }
+        for lnk in sugerencias_qs
+    ]
+    return JsonResponse({'confirmados': confirmados, 'sugerencias': sugerencias})
+
+
+@login_required
+def api_oportunidad_proyectos_accion(request, opp_id, link_id):
+    """POST {"accion": "confirmar"|"rechazar"}: actualiza el link."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+    from app.models import ProyectoOportunidadLink
+    try:
+        lnk = ProyectoOportunidadLink.objects.get(pk=link_id, oportunidad_id=opp_id)
+    except ProyectoOportunidadLink.DoesNotExist:
+        return JsonResponse({'error': 'Vinculo no encontrado'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+    accion = data.get('accion', '')
+    if accion == 'confirmar':
+        lnk.confirmado = True
+        lnk.rechazado = False
+        lnk.vinculado_por = request.user
+        lnk.save()
+    elif accion == 'rechazar':
+        lnk.rechazado = True
+        lnk.confirmado = False
+        lnk.save()
+    else:
+        return JsonResponse({'error': 'Accion invalida'}, status=400)
+
+    return JsonResponse({'success': True})
+
+
+@login_required
+def api_oportunidad_proyectos_buscar(request, opp_id):
+    """
+    GET ?q=texto : busca proyectos por nombre, devuelve top 10 no ligados.
+    POST {"proyecto_id": X} : crea un vinculo confirmado manualmente (score=100).
+    """
+    from app.models import ProyectoOportunidadLink, TodoItem, Proyecto
+
+    try:
+        opp = TodoItem.objects.get(pk=opp_id)
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
+
+    if request.method == 'GET':
+        q = request.GET.get('q', '').strip()
+        if not q:
+            return JsonResponse({'results': []})
+
+        ya_ligados = set(
+            ProyectoOportunidadLink.objects.filter(oportunidad=opp).values_list('proyecto_id', flat=True)
+        )
+        proyectos = Proyecto.objects.filter(nombre__icontains=q).exclude(id__in=ya_ligados)[:10]
+
+        try:
+            from rapidfuzz import fuzz
+            opp_nombre = opp.oportunidad or ''
+        except ImportError:
+            fuzz = None
+            opp_nombre = ''
+
+        results = []
+        for p in proyectos:
+            score = fuzz.token_set_ratio(opp_nombre, p.nombre) if fuzz else 0
+            results.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'bitrix_group_id': p.bitrix_group_id,
+                'score': score,
+            })
+        results.sort(key=lambda x: x['score'], reverse=True)
+        return JsonResponse({'results': results})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+        proyecto_id = data.get('proyecto_id')
+        if not proyecto_id:
+            return JsonResponse({'error': 'proyecto_id requerido'}, status=400)
+
+        try:
+            proyecto = Proyecto.objects.get(pk=proyecto_id)
+        except Proyecto.DoesNotExist:
+            return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
+
+        lnk, _ = ProyectoOportunidadLink.objects.update_or_create(
+            proyecto=proyecto,
+            oportunidad=opp,
+            defaults={
+                'score': 100.0,
+                'confirmado': True,
+                'rechazado': False,
+                'vinculado_por': request.user,
+            },
+        )
+        return JsonResponse({'success': True, 'link_id': lnk.id})
+
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)

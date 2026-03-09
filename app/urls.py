@@ -55,6 +55,10 @@ urlpatterns = [
     path("api/oportunidad/<int:opp_id>/drive/archivos/", views.api_drive_oportunidad_archivo, name="api_drive_oportunidad_archivo"),
     path("api/oportunidad/<int:opp_id>/drive/archivo/<int:archivo_id>/", views.api_drive_oportunidad_archivo_detalle, name="api_drive_oportunidad_archivo_detalle"),
     path("api/oportunidad/<int:opp_id>/drive/archivo/<int:archivo_id>/stream/", views.api_drive_archivo_stream, name="api_drive_archivo_stream"),
+    # Proyecto <-> Oportunidad linking
+    path("api/oportunidad/<int:opp_id>/proyectos/", views.api_oportunidad_proyectos, name="api_oportunidad_proyectos"),
+    path("api/oportunidad/<int:opp_id>/proyectos/<int:link_id>/accion/", views.api_oportunidad_proyectos_accion, name="api_oportunidad_proyectos_accion"),
+    path("api/oportunidad/<int:opp_id>/proyectos/buscar/", views.api_oportunidad_proyectos_buscar, name="api_oportunidad_proyectos_buscar"),
     path("api/oportunidad/<int:opp_id>/chat/", views.api_chat_oportunidad, name="api_chat_oportunidad"),
     path("api/oportunidad/<int:opp_id>/chat/mensaje/<int:msg_id>/", views.api_chat_mensaje, name="api_chat_mensaje"),
     path("api/oportunidad/<int:opp_id>/tareas/", views.api_tareas_oportunidad, name="api_tareas_oportunidad"),

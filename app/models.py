@@ -3232,3 +3232,21 @@ class ProgramacionActividad(models.Model):
         if exclude_id:
             qs = qs.exclude(id=exclude_id)
         return qs
+
+
+class ProyectoOportunidadLink(models.Model):
+    proyecto = models.ForeignKey('Proyecto', on_delete=models.CASCADE, related_name='links_oportunidad')
+    oportunidad = models.ForeignKey('TodoItem', on_delete=models.CASCADE, related_name='links_proyecto')
+    score = models.FloatField(default=0.0, verbose_name="Score de similitud (0-100)")
+    confirmado = models.BooleanField(default=False, verbose_name="Vinculo confirmado")
+    rechazado = models.BooleanField(default=False, verbose_name="Sugerencia rechazada")
+    vinculado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='links_confirmados')
+    fecha_vinculo = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('proyecto', 'oportunidad')
+        verbose_name = "Vinculo Proyecto-Oportunidad"
+        ordering = ['-score']
+
+    def __str__(self):
+        return f"{self.proyecto.nombre} <-> {self.oportunidad.oportunidad} ({self.score:.0f}%)"

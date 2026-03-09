@@ -162,6 +162,46 @@
                                 </div>
                             </div>
 
+                            <!-- Proyectos vinculados mini-card -->
+                            <div class="wo-card" style="padding:0.85rem 1rem;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
+                                    <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">PROYECTOS VINCULADOS</span>
+                                    <button type="button" onclick="woToggleProyectosPanel()"
+                                        style="background:none;border:none;cursor:pointer;color:#0052D4;font-size:0.75rem;font-weight:600;padding:0;">
+                                        Ver / gestionar
+                                    </button>
+                                </div>
+                                <div id="woProyectosResumen" style="font-size:0.8rem;color:#86868B;">Cargando...</div>
+                            </div>
+
+                            <!-- Panel expandible de Proyectos -->
+                            <div id="woProyectosPanel" style="display:none;">
+                                <div class="wo-card" style="padding:1rem;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;">
+                                        <span style="font-size:0.85rem;font-weight:700;color:#1D1D1F;">Proyectos</span>
+                                        <button type="button" onclick="woToggleProyectosPanel()"
+                                            style="background:none;border:none;cursor:pointer;color:#86868B;font-size:1.1rem;line-height:1;">&times;</button>
+                                    </div>
+                                    <div id="woProyectosContainer">
+                                        <div style="text-align:center;padding:24px;color:#9CA3AF;font-size:0.85rem;">Cargando...</div>
+                                    </div>
+                                    <!-- Busqueda manual -->
+                                    <div style="margin-top:1rem;border-top:1px solid #F2F2F7;padding-top:0.85rem;">
+                                        <div style="font-size:0.75rem;font-weight:600;color:#3C3C43;margin-bottom:0.4rem;">Vincular proyecto manualmente</div>
+                                        <div style="display:flex;gap:0.5rem;">
+                                            <input type="text" id="woProyectosBuscarInput" placeholder="Buscar por nombre..."
+                                                style="flex:1;border:1px solid #E5E5EA;border-radius:8px;padding:6px 10px;font-size:0.8rem;outline:none;"
+                                                onkeydown="if(event.key==='Enter')woBuscarProyecto()">
+                                            <button type="button" onclick="woBuscarProyecto()"
+                                                style="background:#0052D4;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                                                Buscar
+                                            </button>
+                                        </div>
+                                        <div id="woProyectosBuscarResultados" style="margin-top:0.5rem;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Drive + Conversación side-by-side -->
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
                                 <!-- Drive mini-card -->
@@ -1172,11 +1212,169 @@
             }
         };
 
+        // ── Proyectos vinculados ──
+
+        window.woToggleProyectosPanel = function () {
+            var panel = document.getElementById('woProyectosPanel');
+            if (!panel) return;
+            var visible = panel.style.display !== 'none';
+            panel.style.display = visible ? 'none' : 'block';
+            if (!visible && _woCurrentOppId) {
+                woCargarProyectos(_woCurrentOppId);
+            }
+        };
+
+        window.woCargarProyectos = function (oppId) {
+            var container = document.getElementById('woProyectosContainer');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;padding:24px;color:#9CA3AF;font-size:0.85rem;">Cargando...</div>';
+            fetch('/app/api/oportunidad/' + oppId + '/proyectos/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) { woRenderProyectos(data, oppId); })
+                .catch(function () {
+                    container.innerHTML = '<div style="color:#EF4444;padding:16px;">Error al cargar proyectos</div>';
+                });
+        };
+
+        function woActualizarResumenProyectos(oppId) {
+            var resumen = document.getElementById('woProyectosResumen');
+            if (!resumen || !oppId) return;
+            fetch('/app/api/oportunidad/' + oppId + '/proyectos/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var nc = (data.confirmados || []).length;
+                    var ns = (data.sugerencias || []).length;
+                    if (nc === 0 && ns === 0) {
+                        resumen.textContent = 'Sin proyectos vinculados';
+                    } else if (nc > 0) {
+                        resumen.textContent = nc + ' proyecto' + (nc > 1 ? 's' : '') + ' vinculado' + (nc > 1 ? 's' : '') + (ns > 0 ? ' · ' + ns + ' sugerencia' + (ns > 1 ? 's' : '') : '');
+                    } else {
+                        resumen.textContent = ns + ' sugerencia' + (ns > 1 ? 's' : '') + ' pendiente' + (ns > 1 ? 's' : '');
+                    }
+                })
+                .catch(function () { resumen.textContent = '-'; });
+        }
+
+        function woRenderProyectos(data, oppId) {
+            var container = document.getElementById('woProyectosContainer');
+            if (!container) return;
+            var confirmados = data.confirmados || [];
+            var sugerencias = data.sugerencias || [];
+            var html = '';
+
+            if (confirmados.length > 0) {
+                html += '<div style="font-size:0.72rem;font-weight:700;color:#6B7280;letter-spacing:0.06em;margin-bottom:0.4rem;">VINCULADOS</div>';
+                confirmados.forEach(function (p) {
+                    html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:7px 0;border-bottom:1px solid #F2F2F7;">' +
+                        '<span style="background:#D1FAE5;color:#065F46;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:12px;flex-shrink:0;">✓</span>' +
+                        '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + woEscape(p.nombre) + '">' + woEscape(p.nombre) + '</span>' +
+                        (p.bitrix_group_id ? '<button type="button" onclick="ingenieroAbrirProyecto(' + p.id + ')" style="background:none;border:1px solid #0052D4;color:#0052D4;border-radius:6px;padding:3px 8px;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;">Ver Drive</button>' : '') +
+                        '</div>';
+                });
+            }
+
+            if (sugerencias.length > 0) {
+                html += '<div style="font-size:0.72rem;font-weight:700;color:#6B7280;letter-spacing:0.06em;margin-top:' + (confirmados.length > 0 ? '0.75rem' : '0') + ';margin-bottom:0.4rem;">SUGERENCIAS</div>';
+                sugerencias.forEach(function (p) {
+                    var sc = Math.round(p.score);
+                    var badgeBg, badgeColor;
+                    if (sc >= 85) { badgeBg = '#D1FAE5'; badgeColor = '#065F46'; }
+                    else if (sc >= 70) { badgeBg = '#FEF3C7'; badgeColor = '#92400E'; }
+                    else { badgeBg = '#FFEDD5'; badgeColor = '#9A3412'; }
+                    html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:7px 0;border-bottom:1px solid #F2F2F7;">' +
+                        '<span style="background:' + badgeBg + ';color:' + badgeColor + ';font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:12px;flex-shrink:0;">' + sc + '%</span>' +
+                        '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + woEscape(p.nombre) + '">' + woEscape(p.nombre) + '</span>' +
+                        '<button type="button" onclick="woAccionLink(' + oppId + ',' + p.link_id + ',\'confirmar\')" title="Confirmar" style="background:none;border:1px solid #34C759;color:#34C759;border-radius:6px;padding:3px 7px;font-size:0.75rem;font-weight:700;cursor:pointer;flex-shrink:0;">&#10003;</button>' +
+                        '<button type="button" onclick="woAccionLink(' + oppId + ',' + p.link_id + ',\'rechazar\')" title="Rechazar" style="background:none;border:1px solid #FF3B30;color:#FF3B30;border-radius:6px;padding:3px 7px;font-size:0.75rem;font-weight:700;cursor:pointer;flex-shrink:0;">&#10007;</button>' +
+                        '</div>';
+                });
+            }
+
+            if (confirmados.length === 0 && sugerencias.length === 0) {
+                html = '<div style="text-align:center;padding:20px;color:#9CA3AF;font-size:0.82rem;">Sin proyectos vinculados ni sugerencias.<br>Usa el buscador de abajo para vincular un proyecto.</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        window.woAccionLink = function (oppId, linkId, accion) {
+            var csrf = getCsrf ? getCsrf() : (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+            fetch('/app/api/oportunidad/' + oppId + '/proyectos/' + linkId + '/accion/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ accion: accion }),
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        woCargarProyectos(oppId);
+                        woActualizarResumenProyectos(oppId);
+                    }
+                })
+                .catch(console.error);
+        };
+
+        window.woBuscarProyecto = function () {
+            var q = (document.getElementById('woProyectosBuscarInput') || {}).value || '';
+            q = q.trim();
+            var resultados = document.getElementById('woProyectosBuscarResultados');
+            if (!resultados) return;
+            if (!q) { resultados.innerHTML = ''; return; }
+            if (!_woCurrentOppId) return;
+            resultados.innerHTML = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Buscando...</div>';
+            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/proyectos/buscar/?q=' + encodeURIComponent(q))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var list = data.results || [];
+                    if (list.length === 0) {
+                        resultados.innerHTML = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin resultados.</div>';
+                        return;
+                    }
+                    var h = '';
+                    list.forEach(function (p) {
+                        h += '<div style="display:flex;align-items:center;gap:0.5rem;padding:5px 0;border-bottom:1px solid #F9F9F9;">' +
+                            '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(p.nombre) + '</span>' +
+                            '<button type="button" onclick="woVincularProyecto(' + p.id + ')" style="background:#0052D4;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;">Vincular</button>' +
+                            '</div>';
+                    });
+                    resultados.innerHTML = h;
+                })
+                .catch(function () { resultados.innerHTML = '<div style="font-size:0.78rem;color:#EF4444;">Error al buscar.</div>'; });
+        };
+
+        window.woVincularProyecto = function (proyectoId) {
+            if (!_woCurrentOppId) return;
+            var csrf = getCsrf ? getCsrf() : (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/proyectos/buscar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ proyecto_id: proyectoId }),
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        document.getElementById('woProyectosBuscarInput').value = '';
+                        document.getElementById('woProyectosBuscarResultados').innerHTML = '';
+                        woCargarProyectos(_woCurrentOppId);
+                        woActualizarResumenProyectos(_woCurrentOppId);
+                    }
+                })
+                .catch(console.error);
+        };
+
         // Hook: when detalle loads an opp, store its id and load inline tasks
         var origWoSetCurrentOppId = window.woSetCurrentOppId;
         window.woSetCurrentOppId = function (id) {
             _woCurrentOppId = id;
             woCargarTareasInline(id);
+            woActualizarResumenProyectos(id);
+            // Reset proyectos panel state
+            var panel = document.getElementById('woProyectosPanel');
+            if (panel) panel.style.display = 'none';
+            var buscarInput = document.getElementById('woProyectosBuscarInput');
+            if (buscarInput) buscarInput.value = '';
+            var buscarRes = document.getElementById('woProyectosBuscarResultados');
+            if (buscarRes) buscarRes.innerHTML = '';
         };
 
         function woEscape(str) {
