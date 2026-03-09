@@ -172,15 +172,20 @@ class Command(BaseCommand):
             elif fecha_cierre:
                 update_fields['mes_cierre'] = str(fecha_cierre.month).zfill(2)
 
+            # anio_cierre from CLOSEDATE year (the actual deal year)
+            if fecha_cierre:
+                update_fields['anio_cierre'] = fecha_cierre.year
+
             if not update_fields:
                 continue
 
             if dry_run:
                 fc_str = fecha_creacion.strftime('%Y-%m-%d') if fecha_creacion else '—'
                 mc_str = update_fields.get('mes_cierre', item.mes_cierre)
+                ac_str = update_fields.get('anio_cierre', '—')
                 self.stdout.write(
                     f'  [DRY] #{item.pk} "{item.oportunidad[:50]}" '
-                    f'fecha_creacion → {fc_str}  mes_cierre → {mc_str}'
+                    f'fecha_creacion → {fc_str}  mes_cierre → {mc_str}  anio_cierre → {ac_str}'
                 )
             else:
                 # Use update() to bypass auto_now_add and auto_now on fecha_actualizacion

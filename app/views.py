@@ -287,16 +287,12 @@ def crm_home(request):
     if vendedores_filter:
         vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()]
 
-    # Base queryset - oportunidades filtradas por fecha_creacion (mes/año)
+    # Base queryset - oportunidades filtradas por anio_cierre/mes_cierre
     base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-        fecha_creacion__year=anio_int
+        anio_cierre=anio_int
     )
     if mes_filter != 'todos':
-        try:
-            mes_int = int(mes_filter)
-            base_qs = base_qs.filter(fecha_creacion__month=mes_int)
-        except (ValueError, TypeError):
-            pass
+        base_qs = base_qs.filter(mes_cierre=mes_filter)
 
     # Si NO es supervisor, filtrar solo sus oportunidades
     if not es_supervisor:
@@ -599,14 +595,10 @@ def api_crm_table_data(request):
         )
     else:
         base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-            fecha_creacion__year=anio_int
+            anio_cierre=anio_int
         )
         if mes_filter != 'todos':
-            try:
-                mes_int = int(mes_filter)
-                base_qs = base_qs.filter(fecha_creacion__month=mes_int)
-            except (ValueError, TypeError):
-                pass
+            base_qs = base_qs.filter(mes_cierre=mes_filter)
 
     if not es_supervisor:
         base_qs = base_qs.filter(usuario=user)
@@ -1080,16 +1072,12 @@ def api_cliente_oportunidades(request, cliente_id):
     if anio_filter != 'todos':
         try:
             anio_int = int(anio_filter)
-            qs = qs.filter(fecha_creacion__year=anio_int)
+            qs = qs.filter(anio_cierre=anio_int)
         except (ValueError, TypeError):
             pass
 
     if mes_filter != 'todos':
-        try:
-            mes_int = int(mes_filter)
-            qs = qs.filter(fecha_creacion__month=mes_int)
-        except (ValueError, TypeError):
-            pass
+        qs = qs.filter(mes_cierre=mes_filter)
 
     if not es_supervisor:
         qs = qs.filter(usuario=user)

@@ -243,8 +243,14 @@ class Command(BaseCommand):
 
                 # Set fecha_creacion from Bitrix DATE_CREATE using update() to bypass auto_now_add
                 fecha_bitrix = _parse_bitrix_date(deal.get('DATE_CREATE'))
+                fecha_cierre_bitrix = _parse_bitrix_date(deal.get('CLOSEDATE'))
+                date_updates = {}
                 if fecha_bitrix:
-                    TodoItem.objects.filter(pk=opportunity.pk).update(fecha_creacion=fecha_bitrix)
+                    date_updates['fecha_creacion'] = fecha_bitrix
+                if fecha_cierre_bitrix:
+                    date_updates['anio_cierre'] = fecha_cierre_bitrix.year
+                if date_updates:
+                    TodoItem.objects.filter(pk=opportunity.pk).update(**date_updates)
 
                 if created:
                     created_count += 1

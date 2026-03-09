@@ -301,6 +301,7 @@ class TodoItem(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto de la Oportunidad", default=Decimal('0.00'))
     probabilidad_cierre = models.IntegerField(verbose_name="Probabilidad de Cierre (%)", default=5)
     mes_cierre = models.CharField(max_length=50, choices=MES_CHOICES, verbose_name="Mes de Cierre Esperado", default='01')
+    anio_cierre = models.IntegerField(verbose_name="Año de Cierre", default=2025)
     area = models.CharField(max_length=50, choices=AREA_CHOICES, verbose_name="Área")
     tipo_negociacion = models.CharField(max_length=20, choices=TIPO_NEGOCIACION_CHOICES, verbose_name="Tipo de Negociación", default='runrate')
     etapa_corta = models.CharField(max_length=50, blank=True, null=True, verbose_name="Etapa (Corta)")
