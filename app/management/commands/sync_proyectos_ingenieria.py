@@ -22,9 +22,11 @@ from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
+from datetime import timedelta
+
 from app.models import (
     Proyecto, CarpetaProyecto, ArchivoProyecto,
-    ProyectoComentario, Tarea, UserProfile,
+    ProyectoComentario, Tarea, UserProfile, Actividad,
 )
 
 # ── Webhook ───────────────────────────────────────────────────────────────────
@@ -400,20 +402,50 @@ def _import_tasks(group_id, proyecto, bitrix_user_map, default_user, dry_run, st
         status_val = str(t.get("status") or t.get("STATUS") or "1")
         priority_val = str(t.get("priority") if t.get("priority") is not None else (t.get("PRIORITY") or "1"))
 
+        titulo = (t.get("title") or t.get("TITLE") or "Sin título")[:255]
+        estado = _status_map.get(status_val, "pendiente")
+        fecha_limite = parse_datetime(t.get("deadline") or t.get("DEADLINE") or "") or None
+
         if not dry_run:
             Tarea.objects.update_or_create(
                 bitrix_task_id=bitrix_task_id,
                 defaults={
-                    'titulo': (t.get("title") or t.get("TITLE") or "Sin título")[:255],
+                    'titulo': titulo,
                     'descripcion': t.get("description") or t.get("DESCRIPTION") or "",
-                    'estado': _status_map.get(status_val, "pendiente"),
+                    'estado': estado,
                     'prioridad': _priority_map.get(priority_val, "media"),
                     'asignado_a': responsable,
                     'creado_por': creador,
                     'proyecto': proyecto,
-                    'fecha_limite': parse_datetime(t.get("deadline") or t.get("DEADLINE") or "") or None,
+                    'fecha_limite': fecha_limite,
                 }
             )
+
+            # ── Calendario: crear/actualizar entrada para tareas activas ──────
+            marker = f'[bitrix_task:{bitrix_task_id}]'
+            if estado != 'completada' and fecha_limite:
+                existing_act = Actividad.objects.filter(descripcion__contains=marker).first()
+                if existing_act:
+                    existing_act.titulo = titulo[:200]
+                    existing_act.fecha_inicio = fecha_limite
+                    existing_act.fecha_fin = fecha_limite + timedelta(hours=1)
+                    existing_act.save(update_fields=['titulo', 'fecha_inicio', 'fecha_fin'])
+                else:
+                    act = Actividad.objects.create(
+                        titulo=titulo[:200],
+                        tipo_actividad='tarea',
+                        descripcion=marker,
+                        fecha_inicio=fecha_limite,
+                        fecha_fin=fecha_limite + timedelta(hours=1),
+                        creado_por=default_user,
+                        color='#007AFF',
+                    )
+                    if responsable and responsable != default_user:
+                        act.participantes.add(responsable)
+            else:
+                # Si la tarea está completada/cancelada, eliminar la entrada del calendario
+                Actividad.objects.filter(descripcion__contains=marker).delete()
+
         count += 1
 
     return count

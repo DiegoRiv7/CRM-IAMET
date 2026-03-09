@@ -827,23 +827,36 @@
 
 <!-- ═══ WIDGET DETALLE PROYECTO ═══ -->
 <div id="widgetProyectoDetalle" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,0.22);width:min(700px,96vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="background:#F9FAFB;border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,0.22);width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
         <!-- Header -->
-        <div style="padding:20px 24px 16px;border-bottom:1px solid #F2F2F7;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-            <div style="flex:1;min-width:0;">
-                <div id="wpd-titulo" style="font-size:1.05rem;font-weight:700;color:#1D1D1F;line-height:1.3;"></div>
-                <div id="wpd-desc" style="font-size:0.8rem;color:#86868B;margin-top:4px;"></div>
+        <div style="padding:20px 24px 16px;border-bottom:1px solid #E5E7EB;background:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0052D4,#6366F1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Proyecto de Ingeniería</div>
+                    <div id="wpd-titulo" style="font-size:1rem;font-weight:700;color:#1D1D1F;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                    <div id="wpd-desc" style="font-size:0.78rem;color:#86868B;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                </div>
             </div>
             <button onclick="document.getElementById('widgetProyectoDetalle').style.display='none';document.body.style.overflow='';"
-                style="flex-shrink:0;background:none;border:none;color:#86868B;cursor:pointer;font-size:1.3rem;line-height:1;padding:2px 6px;border-radius:8px;"
-                onmouseenter="this.style.background='#F2F2F7'" onmouseleave="this.style.background='none'">&times;</button>
+                style="flex-shrink:0;width:32px;height:32px;background:#F3F4F6;border:none;color:#6B7280;cursor:pointer;font-size:1.1rem;line-height:1;border-radius:50%;display:flex;align-items:center;justify-content:center;"
+                onmouseenter="this.style.background='#E5E7EB'" onmouseleave="this.style.background='#F3F4F6'">&times;</button>
         </div>
-        <!-- Body con tabs -->
-        <div style="display:flex;gap:0;border-bottom:1px solid #F2F2F7;padding:0 24px;">
-            <button onclick="wpdTab('tareas')" id="wpdTabTareas" style="background:none;border:none;border-bottom:2px solid #0052D4;color:#0052D4;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;">TAREAS</button>
-            <button onclick="wpdTab('drive')" id="wpdTabDrive" style="background:none;border:none;border-bottom:2px solid transparent;color:#86868B;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;">DRIVE</button>
+        <!-- Tabs -->
+        <div style="display:flex;gap:0;border-bottom:1px solid #E5E7EB;padding:0 24px;background:#fff;">
+            <button onclick="wpdTab('tareas')" id="wpdTabTareas" style="background:none;border:none;border-bottom:2px solid #0052D4;color:#0052D4;font-weight:600;font-size:0.82rem;padding:11px 16px 9px;cursor:pointer;font-family:inherit;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:5px;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                TAREAS
+            </button>
+            <button onclick="wpdTab('drive')" id="wpdTabDrive" style="background:none;border:none;border-bottom:2px solid transparent;color:#86868B;font-weight:600;font-size:0.82rem;padding:11px 16px 9px;cursor:pointer;font-family:inherit;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:5px;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                DRIVE
+            </button>
         </div>
-        <div style="overflow-y:auto;flex:1;padding:16px 24px 20px;">
+        <!-- Panels -->
+        <div style="overflow-y:auto;flex:1;padding:16px 20px 20px;">
             <div id="wpdPanelTareas"></div>
             <div id="wpdPanelDrive" style="display:none;"></div>
         </div>
