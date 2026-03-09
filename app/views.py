@@ -1471,12 +1471,12 @@ def api_ingeniero_proyecto_detalle(request, proyecto_id):
     for c in carpetas:
         c['archivos'] = list(
             ArchivoProyecto.objects.filter(carpeta_id=c['id'])
-            .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url')
+            .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url', 'tamaño')
         )
 
     archivos_raiz = list(
         ArchivoProyecto.objects.filter(proyecto=proyecto, carpeta=None)
-        .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url')
+        .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url', 'tamaño')
     )
 
     return JsonResponse({

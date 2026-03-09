@@ -88,6 +88,10 @@
                             <option value="proyecto">Proyecto</option>
                         </select>
                     </div>
+                    <div class="crm-filter-item">
+                        <label>Etapa</label>
+                        <input type="text" id="filterEtapa" placeholder="Ej: Enviada...">
+                    </div>
                     <div class="crm-filter-actions">
                         <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 001 1h4M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
@@ -155,7 +159,7 @@
                     data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
                     data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}"
                     data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}"
-                    data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}">
+                    data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}">
                     <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
                         <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span>
                     </td>

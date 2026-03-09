@@ -2260,16 +2260,23 @@
                 applyFiltersToTable();
             });
         }
+        var filterEtapaEl = document.getElementById('filterEtapa');
+        if (filterEtapaEl) {
+            filterEtapaEl.addEventListener('input', function () {
+                currentFilters.etapa = this.value;
+                applyFiltersToTable();
+            });
+        }
 
         // Limpiar filtros (Island button)
         var btnClearIsland = document.getElementById('btnClearIslandFilters');
         if (btnClearIsland) {
             btnClearIsland.addEventListener('click', function () {
-                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo'].forEach(function (id) {
+                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo', 'filterEtapa'].forEach(function (id) {
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '' };
                 applyFiltersToTable();
             });
         }
@@ -2282,11 +2289,13 @@
                 var fcont = document.getElementById('filterContacto');
                 var fm = document.getElementById('filterMonto');
                 var fp = document.getElementById('filterProducto');
+                var fe = document.getElementById('filterEtapa');
                 if (fc) currentFilters.cliente = fc.value;
                 if (fa) currentFilters.area = fa.value;
                 if (fcont) currentFilters.contacto = fcont.value;
                 if (fm) currentFilters.monto = fm.value;
                 if (fp) currentFilters.producto = fp.value;
+                if (fe) currentFilters.etapa = fe.value;
                 applyFiltersToTable();
                 closeFilterPanel();
             });
@@ -2299,7 +2308,7 @@
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '' };
                 applyFiltersToTable();
             });
         }
@@ -2385,6 +2394,12 @@
                 if (currentFilters.tipo && activeTab === 'crm') {
                     var tipoVal = (row.dataset.tipo || '').toLowerCase();
                     if (tipoVal !== currentFilters.tipo) return false;
+                }
+
+                // Filtro por etapa (solo tab crm)
+                if (currentFilters.etapa && activeTab === 'crm') {
+                    var etapaVal = (row.dataset.etapa || '').toLowerCase();
+                    if (!etapaVal.includes(currentFilters.etapa.toLowerCase())) return false;
                 }
 
                 return true;
@@ -3711,7 +3726,7 @@
             if (!titulo.trim()) { alert('El nombre de la tarea es requerido'); return; }
 
             var descEditor = document.getElementById('crmTaskDescEditor');
-            var descripcion = descEditor ? descEditor.textContent : '';
+            var descripcion = descEditor ? (descEditor.innerText || descEditor.textContent) : '';
             var highPriority = (document.getElementById('crmTaskHighPriority') || {}).checked;
             var dueDate = (document.getElementById('crmTaskDueDate') || {}).value || '';
 
