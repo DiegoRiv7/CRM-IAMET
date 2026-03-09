@@ -15,15 +15,28 @@ from rapidfuzz import fuzz
 
 
 STOPWORDS = {
+    # Artículos, preposiciones y conectores
     'proyecto', 'de', 'del', 'la', 'el', 'los', 'las', 'en', 'con', 'para',
-    'por', 'y', 'e', 'o', 'a', 'al', 'instalacion', 'instalaciones',
-    'servicio', 'servicios', 'sistema', 'sistemas', 'mantenimiento',
-    'implementacion', 'soporte', 'suministro', 'red', 'redes',
+    'por', 'y', 'e', 'o', 'a', 'al', 'un', 'una', 'su', 'al',
+    # Términos de servicio genéricos
+    'instalacion', 'instalaciones', 'servicio', 'servicios',
+    'sistema', 'sistemas', 'mantenimiento', 'implementacion',
+    'soporte', 'suministro', 'suministros', 'red', 'redes',
+    # Términos técnicos ultra-genéricos en este dominio
+    # (aparecen en cientos de proyectos y oportunidades — no identifican nada)
+    'control', 'acceso', 'cctv', 'nodo', 'nodos',
+    'camara', 'camaras', 'reubicacion', 'bajada', 'bajadas',
 }
 
-# Palabras que son muy genéricas en este dominio y no sirven como
-# identificador de cliente (no se usan en la validación de cliente)
-_PREFIJOS_NO_CLIENTE = {'bd', 'po', 'pv', 'eit', 'crm'}
+# Palabras que no sirven como identificador de cliente
+# (números de PO, siglas de sistema, términos de dominio genéricos)
+_PREFIJOS_NO_CLIENTE = {
+    'bd', 'po', 'pv', 'eit', 'crm',
+    'control', 'acceso', 'cctv', 'nodo', 'nodos',
+    'camara', 'camaras', 'reubicacion', 'bajada', 'bajadas',
+    'instalacion', 'instalaciones', 'sistema', 'sistemas',
+    'red', 'redes', 'servicio', 'servicios',
+}
 
 
 def _limpiar(texto):
@@ -110,7 +123,7 @@ class Command(BaseCommand):
         opps_descartadas = 0
         for opp in oportunidades:
             norm = _normalizar(opp.oportunidad)
-            if len(norm.split()) >= 3:
+            if len(norm.split()) >= 2:
                 nombre_cliente_norm = _limpiar(opp.cliente.nombre_empresa if opp.cliente else '')
                 opps_norm.append((opp, norm, nombre_cliente_norm))
             else:
