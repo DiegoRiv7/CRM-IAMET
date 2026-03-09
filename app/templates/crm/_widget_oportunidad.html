@@ -1105,7 +1105,7 @@
                             if (n && n.trim() && n.trim() !== texto) {
                                 fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/mensaje/' + msgId + '/', {
                                     method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': typeof getCsrf !== 'undefined' ? getCsrf() : getCookieCRM('csrftoken') },
+                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
                                     body: JSON.stringify({ texto: n.trim() })
                                 }).then(function () { woCargarNotas(_woCurrentOppId); }).catch(console.error);
                             }
@@ -1117,7 +1117,7 @@
                         woDialogConfirm('Eliminar Mensaje', '¿Estás seguro de que quieres eliminar este mensaje?', '#FF3B30', function () {
                             fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/mensaje/' + msgId + '/', {
                                 method: 'DELETE',
-                                headers: { 'X-CSRFToken': typeof getCsrf !== 'undefined' ? getCsrf() : getCookieCRM('csrftoken') }
+                                headers: { 'X-CSRFToken': getCsrf() }
                             }).then(function () { woCargarNotas(_woCurrentOppId); }).catch(console.error);
                         });
                     }
@@ -1149,14 +1149,14 @@
 
             fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
                 method: 'POST',
-                headers: { 'X-CSRFToken': typeof getCsrf !== 'undefined' ? getCsrf() : getCookieCRM('csrftoken') },
+                headers: { 'X-CSRFToken': getCsrf() },
                 body: fd
             }).then(function () {
                 // Marcar notificaciones de esta oportunidad como leidas (al contestar)
                 try {
                     fetch('/app/api/marcar-todas-notificaciones-leidas/', {
                         method: 'POST',
-                        headers: { 'X-CSRFToken': getCookieCRM('csrftoken'), 'Content-Type': 'application/json' },
+                        headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 'oportunidad_id': _woCurrentOppId })
                     }).then(function () { if (typeof notifLoad === 'function') notifLoad(); });
                 } catch (ex) { }
