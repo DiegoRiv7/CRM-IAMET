@@ -55,8 +55,14 @@ ETAPAS_CERRADAS = {
     'closed won', 'closed lost',
 }
 
-# TYPE_ID de actividades CRM que se ignoran (Emails = cotizaciones ya en el sistema)
-TIPOS_IGNORADOS = {'6'}
+# Palabras en el asunto que indican cotización generada por el sistema (se ignoran).
+# Las actividades manuales tipo "Cotizando con proveedor" no tienen este patrón.
+# El formato de cotizaciones del sistema es: "Cliente - AcciónCotización - Proyecto"
+_COTIZACION_KEYWORDS = (
+    '- solicitar cotización', '- generar cotización', '- envío de cotización',
+    '- envio de cotizacion', '- cotización enviada', '- cotizacion enviada',
+    'solicitar cotizaci', 'generar cotizaci', 'envío de cotizaci', 'envio de cotizaci',
+)
 
 # Bitrix task STATUS: 5 = completada
 TASK_STATUS_COMPLETADA = {'5', '4'}  # 4=supposedly_completed, 5=completed
@@ -90,6 +96,12 @@ def _get_user_map():
     for p in UserProfile.objects.select_related('user').exclude(bitrix_user_id=None):
         mapping[str(p.bitrix_user_id)] = p.user
     return mapping
+
+
+def _es_cotizacion_sistema(subject: str) -> bool:
+    """Detecta si una actividad es una cotización generada por el sistema (no importar)."""
+    s = subject.lower()
+    return any(kw in s for kw in _COTIZACION_KEYWORDS)
 
 
 def _is_etapa_cerrada(opp: TodoItem) -> bool:
@@ -341,16 +353,15 @@ class Command(BaseCommand):
             activities = _fetch_activities(deal_id)
             for act in activities:
                 tipo_id = str(act.get('TYPE_ID', ''))
-
-                # Ignorar emails (cotizaciones)
-                if tipo_id in TIPOS_IGNORADOS:
-                    cnt_act_tipo_skip += 1
-                    continue
-
                 bitrix_act_id = int(act['ID'])
                 completada = act.get('COMPLETED') == 'Y'
                 tipo_str = ACTIVITY_TYPES.get(tipo_id, 'Actividad')
                 subject = (act.get('SUBJECT') or '').strip() or '(sin título)'
+
+                # Ignorar cotizaciones generadas por el sistema (detectadas por asunto)
+                if _es_cotizacion_sistema(subject):
+                    cnt_act_tipo_skip += 1
+                    continue
                 desc = (act.get('DESCRIPTION') or '').strip()
                 responsable_id = str(act.get('RESPONSIBLE_ID', ''))
                 autor = user_map.get(responsable_id)
@@ -439,7 +450,7 @@ class Command(BaseCommand):
         self.stdout.write('\n' + '─' * 55)
         self.stdout.write(f'✅ Actividades CRM importadas : {cnt_act_new}')
         self.stdout.write(f'⏭  Actividades duplicadas    : {cnt_act_skip}')
-        self.stdout.write(f'⏭  Emails ignorados (cotz.)  : {cnt_act_tipo_skip}')
+        self.stdout.write(f'⏭  Cotizaciones ignoradas    : {cnt_act_tipo_skip}')
         self.stdout.write(f'✅ Tareas Bitrix importadas   : {cnt_task_new}')
         self.stdout.write(f'⏭  Tareas duplicadas         : {cnt_task_skip}')
         self.stdout.write(f'✅ Comentarios importados     : {cnt_cmt_new}')
