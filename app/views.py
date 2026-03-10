@@ -7994,6 +7994,7 @@ def crear_oportunidad_api(request):
         'usuario': request.user, # Assign the current user
         'area': area,
         'mes_cierre': mes_cierre,
+        'anio_cierre': timezone.localdate().year,
         'probabilidad_cierre': int(probabilidad_cierre),
         'producto': producto, # Use default or provided
         'comentarios': comentarios, # Use default or provided
@@ -11520,7 +11521,8 @@ def api_crear_oportunidad(request):
             etapa_color_init = '#FFFFFF'
 
         from datetime import datetime as dt_create
-        mes_actual = str(dt_create.now().month).zfill(2)
+        now_dt = dt_create.now()
+        mes_actual = str(now_dt.month).zfill(2)
 
         todo = TodoItem(
             usuario=request.user,
@@ -11530,6 +11532,7 @@ def api_crear_oportunidad(request):
             monto=monto,
             probabilidad_cierre=int(data.get('probabilidad_cierre', 25)),
             mes_cierre=data.get('mes_cierre', mes_actual),
+            anio_cierre=now_dt.year,
             area=data.get('area', 'SISTEMAS'),
             producto=data.get('producto', 'SOFTWARE'),
             tipo_negociacion=tipo_neg,

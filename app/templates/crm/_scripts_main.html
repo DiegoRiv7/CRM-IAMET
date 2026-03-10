@@ -341,7 +341,13 @@
                             if (data.ok) {
                                 closeWidget();
                                 showToast(data.message, 'success');
+                                // Cambiar a mes=todos para que la nueva oportunidad sea visible
+                                currentMes = 'todos';
                                 refreshCrmTable();
+                                // Abrir el widget de la nueva oportunidad directamente
+                                if (data.id) {
+                                    setTimeout(function () { openDetalle(data.id); }, 800);
+                                }
 
                                 // Si fue abierto desde un correo, vincular automáticamente
                                 var correoId = window._mailOppFromCorreoId;
