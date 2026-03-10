@@ -140,8 +140,8 @@ ACTIVITY_TYPES = {
 def _activity_to_texto(act: dict) -> str:
     """Formatea una actividad Bitrix como texto para MensajeOportunidad."""
     tipo = ACTIVITY_TYPES.get(str(act.get('TYPE_ID', '')), 'Actividad')
-    subject = act.get('SUBJECT', '').strip()
-    desc = act.get('DESCRIPTION', '').strip()
+    subject = (act.get('SUBJECT') or '').strip()
+    desc = (act.get('DESCRIPTION') or '').strip()
     deadline = act.get('DEADLINE', '')
     completada = act.get('COMPLETED') == 'Y'
 
