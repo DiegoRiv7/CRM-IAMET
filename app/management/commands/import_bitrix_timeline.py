@@ -277,22 +277,20 @@ def _import_actividad_o_tarea(
     TareaOportunidad.objects.filter(pk=tarea.pk).update(fecha_creacion=fecha_bitrix)
 
     if not completada:
-        if not autor:
-            # Sin usuario mapeado: no crear Actividad en calendario (no sabemos a quién asignarla)
-            stdout.write(f'    ⚠ sin usuario → tarea creada pero NO agendada en calendario')
-        else:
-            actividad = Actividad.objects.create(
-                titulo=tarea.titulo,
-                tipo_actividad='tarea',
-                descripcion=desc,
-                fecha_inicio=inicio_dt,
-                fecha_fin=fin_dt,
-                creado_por=autor,
-                color='#0052D4',
-                oportunidad=opp,
-            )
-            tarea.actividad_calendario = actividad
-            tarea.save(update_fields=['actividad_calendario'])
+        # Si el usuario de Bitrix no está mapeado, usar el responsable de la oportunidad
+        autor_calendario = autor or opp.usuario
+        actividad = Actividad.objects.create(
+            titulo=tarea.titulo,
+            tipo_actividad='tarea',
+            descripcion=desc,
+            fecha_inicio=inicio_dt,
+            fecha_fin=fin_dt,
+            creado_por=autor_calendario,
+            color='#0052D4',
+            oportunidad=opp,
+        )
+        tarea.actividad_calendario = actividad
+        tarea.save(update_fields=['actividad_calendario'])
 
     if completada:
         chat_texto = f'[ACT_COMPLETADA:{tarea.id}]{tarea.titulo}'
