@@ -452,6 +452,22 @@
                 }
             } catch (e) { }
 
+            // Auto-abrir oportunidad desde parámetro ?open_opp=ID (viene del spotlight)
+            try {
+                var _urlParams = new URLSearchParams(window.location.search);
+                var _openOppId = _urlParams.get('open_opp');
+                if (_openOppId) {
+                    var _openOppClean = parseInt(_openOppId, 10);
+                    if (_openOppClean) {
+                        setTimeout(function () { openDetalle(_openOppClean); }, 600);
+                        // Limpiar el parámetro de la URL sin recargar la página
+                        _urlParams.delete('open_opp');
+                        var newUrl = window.location.pathname + (_urlParams.toString() ? '?' + _urlParams.toString() : '');
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                }
+            } catch (e) { }
+
             var MES_NOMBRES = {
                 '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
                 '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',

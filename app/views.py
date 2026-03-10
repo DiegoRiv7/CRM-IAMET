@@ -2041,6 +2041,7 @@ def api_oportunidades_rapido(request):
             monto=Decimal('0.00'),
             probabilidad_cierre=5,
             mes_cierre=str(today.month).zfill(2),
+            anio_cierre=today.year,
             area='SISTEMAS',
             tipo_negociacion='runrate',
             estado_crm='nueva',
@@ -9460,18 +9461,21 @@ def spotlight_search_api(request):
         oportunidades = oportunidades.filter(usuario=request.user)
     
     for oportunidad in oportunidades[:8]:  # Limitar a 8 resultados
+        anio = oportunidad.anio_cierre or oportunidad.fecha_creacion.year
+        mes = oportunidad.mes_cierre or str(oportunidad.fecha_creacion.month).zfill(2)
+        crm_url = f'/app/todos/?tab=crm&anio={anio}&mes=todos&open_opp={oportunidad.id}'
         results.append({
             'type': 'oportunidad',
             'id': oportunidad.id,
             'title': oportunidad.oportunidad,
-            'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • ${oportunidad.monto:.2f}',
-            'description': f'Probabilidad: {oportunidad.probabilidad_cierre}% • {oportunidad.get_area_display()}',
+            'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • {oportunidad.etapa_corta or oportunidad.mes_cierre}',
+            'description': f'Año {anio} • {oportunidad.get_area_display()} • ${oportunidad.monto:,.0f}',
             'date': convert_to_tijuana_time(oportunidad.fecha_creacion).strftime('%d/%m/%Y'),
             'icon': 'star',
-            'url': f'/app/cliente/{oportunidad.cliente.id if oportunidad.cliente else 0}/crear-cotizacion/?oportunidad_id={oportunidad.id}',
-            'priority': 3,  # Oportunidades tienen menor prioridad
+            'url': crm_url,
+            'priority': 3,
             'actions': [
-                {'name': 'Crear Cotización', 'action': 'create_quote', 'color': 'blue'}
+                {'name': 'Ver en CRM', 'action': 'view', 'color': 'blue'}
             ]
         })
     
