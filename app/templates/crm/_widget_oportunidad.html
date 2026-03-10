@@ -253,7 +253,8 @@
 <!-- ═══ WIDGET: DRIVE GESTOR DE ARCHIVOS ═══ -->
 <div class="widget-overlay" id="widgetOppDrive" style="z-index:10010;display:none;">
     <div class="widget-card widget-card-md"
-        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;">
+        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;"
+        ondragenter="woDriveDragEnter(event)" ondragover="woDriveDragOver(event)" ondragleave="woDriveDragLeave(event)" ondrop="woDriveDrop(event)">
         <div class="wo-header" style="border-bottom:1px solid #E5E5EA;background:#fff;">
             <div class="wo-header-top">
                 <div style="display:flex;align-items:center;gap:0.75rem;">
@@ -300,16 +301,8 @@
         </div>
 
         <!-- Dropzone & File List -->
-        <div id="woDriveDropzone" style="flex:1;overflow-y:auto;padding:1.5rem;position:relative;"
-            ondragover="woDriveDragOver(event)" ondragleave="woDriveDragLeave(event)" ondrop="woDriveDrop(event)">
-            <div id="woDriveDragOverlay"
-                style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,82,212,0.05);border:2px dashed #0052D4;border-radius:12px;z-index:10;align-items:center;justify-content:center;flex-direction:column;color:#0052D4;">
-                <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"
-                    style="margin-bottom:1rem;">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5-5 5m5-5v12" />
-                </svg>
-                <h3 style="margin:0;font-size:1.2rem;font-weight:600;">Suelta los archivos aquí</h3>
-            </div>
+        <div id="woDriveDropzone" style="flex:1;overflow-y:auto;padding:1.5rem;position:relative;">
+            <div id="woDriveDragOverlay" style="display:none;"></div>
 
             <!-- Loading State -->
             <div id="woDriveLoading" style="display:none;text-align:center;padding:3rem;color:#86868B;">
@@ -880,21 +873,34 @@
             });
         };
 
+        var _woDragCounter = 0;
+
+        window.woDriveDragEnter = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            _woDragCounter++;
+            document.getElementById('woDriveDragOverlay').style.display = 'flex';
+        };
+
         window.woDriveDragOver = function (e) {
             e.preventDefault();
             e.stopPropagation();
-            document.getElementById('woDriveDragOverlay').style.display = 'flex';
         };
 
         window.woDriveDragLeave = function (e) {
             e.preventDefault();
             e.stopPropagation();
-            document.getElementById('woDriveDragOverlay').style.display = 'none';
+            _woDragCounter--;
+            if (_woDragCounter <= 0) {
+                _woDragCounter = 0;
+                document.getElementById('woDriveDragOverlay').style.display = 'none';
+            }
         };
 
         window.woDriveDrop = function (e) {
             e.preventDefault();
             e.stopPropagation();
+            _woDragCounter = 0;
             document.getElementById('woDriveDragOverlay').style.display = 'none';
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 woDriveHandleFiles(e.dataTransfer.files);
