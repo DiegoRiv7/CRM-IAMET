@@ -676,6 +676,23 @@
                 setTimeout(function () { calendarioAbrir(); }, 500);
             }
         } catch (e) { }
+
+        // Auto-ajustar hora fin cuando cambia la hora de inicio (mantiene duración de 1h)
+        var inicioEl = document.getElementById('calFormActInicio');
+        var finEl = document.getElementById('calFormActFin');
+        if (inicioEl && finEl) {
+            inicioEl.addEventListener('change', function () {
+                var inicioVal = this.value; // "HH:MM"
+                if (!inicioVal) return;
+                var parts = inicioVal.split(':');
+                var h = parseInt(parts[0], 10);
+                var m = parseInt(parts[1], 10);
+                h += 1;
+                if (h >= 24) h = 23;
+                var newFin = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                finEl.value = newFin;
+            });
+        }
     });
 
 </script>
