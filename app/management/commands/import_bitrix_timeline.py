@@ -98,14 +98,6 @@ def _get_user_map():
     return mapping
 
 
-def _get_fallback_user():
-    """Usuario por defecto cuando el responsable de Bitrix no está mapeado."""
-    from django.contrib.auth.models import User
-    # Intentar usar el primer superuser activo
-    su = User.objects.filter(is_superuser=True, is_active=True).first()
-    if su:
-        return su
-    return User.objects.filter(is_active=True).first()
 
 
 def _es_cotizacion_sistema(subject: str) -> bool:
@@ -263,7 +255,7 @@ def _fmt_hora(dt) -> str:
 
 def _import_actividad_o_tarea(
     opp, bitrix_id, titulo, desc, autor, fecha_bitrix,
-    inicio_dt, fin_dt, completada, dry_run, stdout, fallback_user=None
+    inicio_dt, fin_dt, completada, dry_run, stdout
 ):
     """Lógica compartida para importar una actividad CRM o una tarea Bitrix."""
     lbl = '✓' if completada else '⏳'
@@ -271,9 +263,6 @@ def _import_actividad_o_tarea(
 
     if dry_run:
         return True
-
-    # Actividad.creado_por es NOT NULL — usar fallback si el usuario no está mapeado
-    autor_requerido = autor or fallback_user
 
     tarea = TareaOportunidad.objects.create(
         oportunidad=opp,
@@ -288,18 +277,22 @@ def _import_actividad_o_tarea(
     TareaOportunidad.objects.filter(pk=tarea.pk).update(fecha_creacion=fecha_bitrix)
 
     if not completada:
-        actividad = Actividad.objects.create(
-            titulo=tarea.titulo,
-            tipo_actividad='tarea',
-            descripcion=desc,
-            fecha_inicio=inicio_dt,
-            fecha_fin=fin_dt,
-            creado_por=autor_requerido,
-            color='#0052D4',
-            oportunidad=opp,
-        )
-        tarea.actividad_calendario = actividad
-        tarea.save(update_fields=['actividad_calendario'])
+        if not autor:
+            # Sin usuario mapeado: no crear Actividad en calendario (no sabemos a quién asignarla)
+            stdout.write(f'    ⚠ sin usuario → tarea creada pero NO agendada en calendario')
+        else:
+            actividad = Actividad.objects.create(
+                titulo=tarea.titulo,
+                tipo_actividad='tarea',
+                descripcion=desc,
+                fecha_inicio=inicio_dt,
+                fecha_fin=fin_dt,
+                creado_por=autor,
+                color='#0052D4',
+                oportunidad=opp,
+            )
+            tarea.actividad_calendario = actividad
+            tarea.save(update_fields=['actividad_calendario'])
 
     if completada:
         chat_texto = f'[ACT_COMPLETADA:{tarea.id}]{tarea.titulo}'
@@ -338,8 +331,8 @@ class Command(BaseCommand):
             return
 
         user_map = _get_user_map()
-        fallback_user = _get_fallback_user()
-        self.stdout.write(f'Usuarios mapeados: {len(user_map)}  |  Fallback: {fallback_user}')
+        self.stdout.write(f'Usuarios mapeados: {len(user_map)}')
+        bitrix_ids_sin_mapear = set()  # para reporte final
 
         qs = TodoItem.objects.exclude(bitrix_deal_id=None).order_by('id')
         if single_deal:
@@ -379,6 +372,8 @@ class Command(BaseCommand):
                 desc = (act.get('DESCRIPTION') or '').strip()
                 responsable_id = str(act.get('RESPONSIBLE_ID', ''))
                 autor = user_map.get(responsable_id)
+                if not autor and responsable_id:
+                    bitrix_ids_sin_mapear.add(responsable_id)
                 fecha_bitrix = _parse_date(act.get('CREATED')) or timezone.now()
                 inicio_dt, fin_dt = _dates_for_activity(act)
 
@@ -390,7 +385,7 @@ class Command(BaseCommand):
                 titulo = f'[{tipo_str}] {subject}' if tipo_str != 'Actividad' else subject
                 _import_actividad_o_tarea(
                     opp, bitrix_act_id, titulo, desc, autor, fecha_bitrix,
-                    inicio_dt, fin_dt, completada, dry_run, self.stdout, fallback_user
+                    inicio_dt, fin_dt, completada, dry_run, self.stdout
                 )
                 cnt_act_new += 1
 
@@ -415,12 +410,14 @@ class Command(BaseCommand):
                 desc = (task.get('description', task.get('DESCRIPTION', '')) or '').strip()
                 responsable_id = str(task.get('responsibleId', task.get('RESPONSIBLE_ID', task.get('CREATOR_ID', ''))))
                 autor = user_map.get(responsable_id)
+                if not autor and responsable_id:
+                    bitrix_ids_sin_mapear.add(responsable_id)
                 fecha_bitrix = _parse_date(task.get('createdDate', task.get('CREATED_DATE', ''))) or timezone.now()
                 inicio_dt, fin_dt = _dates_for_task(task)
 
                 _import_actividad_o_tarea(
                     opp, stored_id, titulo, desc, autor, fecha_bitrix,
-                    inicio_dt, fin_dt, completada, dry_run, self.stdout, fallback_user
+                    inicio_dt, fin_dt, completada, dry_run, self.stdout
                 )
                 cnt_task_new += 1
 
@@ -469,5 +466,14 @@ class Command(BaseCommand):
         self.stdout.write(f'⏭  Tareas duplicadas         : {cnt_task_skip}')
         self.stdout.write(f'✅ Comentarios importados     : {cnt_cmt_new}')
         self.stdout.write(f'⏭  Comentarios duplicados    : {cnt_cmt_skip}')
+        if bitrix_ids_sin_mapear:
+            self.stdout.write(self.style.WARNING(
+                f'\n⚠ IDs de Bitrix SIN usuario mapeado ({len(bitrix_ids_sin_mapear)}): '
+                + ', '.join(sorted(bitrix_ids_sin_mapear))
+            ))
+            self.stdout.write(
+                '  → Las actividades/tareas de estos usuarios se importaron SIN calendario.\n'
+                '  → Para corregirlo: Admin → UserProfile → asigna bitrix_user_id a cada usuario.'
+            )
         if dry_run:
             self.stdout.write(self.style.WARNING('\nDRY RUN — nada guardado'))
