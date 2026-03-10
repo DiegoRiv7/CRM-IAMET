@@ -274,6 +274,9 @@ class Command(BaseCommand):
 
     def _reset(self):
         self.stdout.write(self.style.WARNING("Limpiando datos Bitrix anteriores..."))
+        # Aplanar jerarquía y limpiar FKs para evitar conflictos de CASCADE en MySQL
+        CarpetaOportunidad.objects.filter(carpeta_padre__isnull=False).update(carpeta_padre=None)
+        ArchivoOportunidad.objects.filter(carpeta__isnull=False).update(carpeta=None)
         n = ArchivoOportunidad.objects.exclude(bitrix_file_id=None).delete()[0]
         self.stdout.write(f"  ArchivoOportunidad (Bitrix) borrados: {n}")
         n = CarpetaOportunidad.objects.all().delete()[0]
