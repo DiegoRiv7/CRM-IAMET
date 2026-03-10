@@ -141,8 +141,8 @@ class Command(BaseCommand):
 
         # IDs de grupos ya vinculados en el sistema
         vinculados_ids = set(
-            OportunidadProyecto.objects.values_list('proyecto__bitrix_group_id', flat=True)
-            .exclude(proyecto__bitrix_group_id=None)
+            OportunidadProyecto.objects.exclude(bitrix_project_id=None)
+            .values_list('bitrix_project_id', flat=True)
         )
         self.stdout.write(f"Grupos ya vinculados en DB: {len(vinculados_ids)}")
 
