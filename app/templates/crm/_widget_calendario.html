@@ -226,9 +226,9 @@
         style="width: 550px; max-width: 95vw; background: #fff; border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
         <div
             style="padding: 1.5rem; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-weight: 600; font-size: 1.1rem; color: #1D1D1F;">Nueva Actividad</div>
+            <div id="calFormActTitulo" style="font-weight: 600; font-size: 1.1rem; color: #1D1D1F;">Nueva Actividad</div>
             <button type="button" class="widget-close"
-                onclick="document.getElementById('widgetGlobalCrearActividad').style.display='none'">&times;</button>
+                onclick="document.getElementById('widgetGlobalCrearActividad').style.display='none'; window._calEditandoId=null; document.getElementById('calFormActTitulo').textContent='Nueva Actividad';">&times;</button>
         </div>
         <div
             style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.2rem; overflow-y: auto; max-height: 70vh;">
@@ -351,6 +351,61 @@
                     viewDidMount: function (viewInfo) {
                         // Guardar vista cada vez que cambie
                         try { sessionStorage.setItem('_crm_cal_view', viewInfo.view.type); } catch (e) { }
+                    },
+                    editable: true,
+                    eventDrop: function (info) {
+                        var ev = info.event;
+                        var stored = _globalEvents.find(function (x) { return String(x.id) === String(ev.id); });
+                        if (!stored || stored.extendedProps.esTarea) { info.revert(); return; }
+                        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [, ''])[1];
+                        var ep = stored.extendedProps;
+                        fetch('/app/api/actividades/' + ev.id + '/', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                            body: JSON.stringify({
+                                title: ev.title,
+                                start: ev.startStr,
+                                end: ev.endStr || ev.startStr,
+                                description: ep.description || '',
+                                tipo: ep.tipo || 'otro',
+                                color: stored.color || '#1D1D1F',
+                                participants: (ep.participants || []).map(function (p) { return p.id; }),
+                                opportunity: ep.opportunity ? ep.opportunity.id : null
+                            })
+                        }).then(function (r) { return r.json(); }).then(function (res) {
+                            if (res.error) { info.revert(); }
+                            else {
+                                stored.start = ev.startStr;
+                                stored.end = ev.endStr || ev.startStr;
+                            }
+                        }).catch(function () { info.revert(); });
+                    },
+                    eventResize: function (info) {
+                        var ev = info.event;
+                        var stored = _globalEvents.find(function (x) { return String(x.id) === String(ev.id); });
+                        if (!stored || stored.extendedProps.esTarea) { info.revert(); return; }
+                        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [, ''])[1];
+                        var ep = stored.extendedProps;
+                        fetch('/app/api/actividades/' + ev.id + '/', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                            body: JSON.stringify({
+                                title: ev.title,
+                                start: ev.startStr,
+                                end: ev.endStr || ev.startStr,
+                                description: ep.description || '',
+                                tipo: ep.tipo || 'otro',
+                                color: stored.color || '#1D1D1F',
+                                participants: (ep.participants || []).map(function (p) { return p.id; }),
+                                opportunity: ep.opportunity ? ep.opportunity.id : null
+                            })
+                        }).then(function (r) { return r.json(); }).then(function (res) {
+                            if (res.error) { info.revert(); }
+                            else {
+                                stored.start = ev.startStr;
+                                stored.end = ev.endStr || ev.startStr;
+                            }
+                        }).catch(function () { info.revert(); });
                     },
                     eventClick: function (info) {
                         var e = info.event;
@@ -499,10 +554,14 @@
         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
     };
 
+    window._calCurrentActividadId = null;
+
     window.woVerActividadGenerica = function (id) {
         var evt = _globalEvents.find(function (ev) { return String(ev.id) === String(id); });
         if (!evt) return;
         var e = evt.extendedProps;
+        var esTarea = !!e.esTarea;
+        window._calCurrentActividadId = esTarea ? null : id;
 
         var verPop = document.getElementById('woVerActNombre');
         if (!verPop) {
@@ -553,7 +612,67 @@
             }
         }
 
+        // Mostrar/ocultar botones según tipo
+        var btnCompletar = document.getElementById('woVerActBtnCompletar');
+        var btnEditar = document.getElementById('woVerActBtnEditar');
+        var btnEliminar = document.getElementById('woVerActBtnEliminar');
+        if (esTarea) {
+            if (btnCompletar) btnCompletar.style.display = 'inline-flex';
+            if (btnEditar) btnEditar.style.display = 'none';
+            if (btnEliminar) btnEliminar.style.display = 'none';
+        } else {
+            if (btnCompletar) btnCompletar.style.display = 'none';
+            if (btnEditar) btnEditar.style.display = 'inline-flex';
+            if (btnEliminar) btnEliminar.style.display = 'inline-flex';
+        }
+
         document.getElementById('widgetOppVerActividad').style.display = 'flex';
+    };
+
+    window.calEliminarActividad = function () {
+        if (!window._calCurrentActividadId) return;
+        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [, ''])[1];
+        if (!confirm('¿Eliminar esta actividad del calendario?')) return;
+        fetch('/app/api/actividades/' + window._calCurrentActividadId + '/', {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrf }
+        }).then(function () {
+            document.getElementById('widgetOppVerActividad').style.display = 'none';
+            window._calCurrentActividadId = null;
+            calGlobalRefetch();
+        }).catch(console.error);
+    };
+
+    window.calEditarActividad = function () {
+        var id = window._calCurrentActividadId;
+        if (!id) return;
+        var evt = _globalEvents.find(function (ev) { return String(ev.id) === String(id); });
+        if (!evt) return;
+        var e = evt.extendedProps;
+        document.getElementById('widgetOppVerActividad').style.display = 'none';
+
+        // Pre-llenar el form
+        var d1 = new Date(evt.start);
+        var d2 = new Date(evt.end || evt.start);
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        var fecha = d1.getFullYear() + '-' + pad(d1.getMonth() + 1) + '-' + pad(d1.getDate());
+        var inicio = pad(d1.getHours()) + ':' + pad(d1.getMinutes());
+        var fin = pad(d2.getHours()) + ':' + pad(d2.getMinutes());
+
+        document.getElementById('calFormActNombre').value = evt.title || '';
+        document.getElementById('calFormActFecha').value = fecha;
+        document.getElementById('calFormActInicio').value = inicio;
+        document.getElementById('calFormActFin').value = fin;
+        document.getElementById('calFormActDesc').value = e.description || '';
+
+        _calParticipantesSel = e.participants ? e.participants.map(function (p) { return { id: p.id, nombre: p.text || p.nombre }; }) : [];
+        calRenderParticipantes();
+
+        // Marcar como modo edición
+        window._calEditandoId = id;
+        document.getElementById('calFormActTitulo').textContent = 'Editar Actividad';
+
+        document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
     };
 
     function calGlobalCrearActividadSubmit() {
@@ -576,21 +695,34 @@
             return;
         }
 
+        // Incluir offset local para que el servidor guarde en la hora correcta
+        function localIso(dtStr) {
+            var d = new Date(dtStr);
+            var off = -d.getTimezoneOffset();
+            var sign = off >= 0 ? '+' : '-';
+            var hh = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0');
+            var mm = String(Math.abs(off) % 60).padStart(2, '0');
+            return dtStr + sign + hh + ':' + mm;
+        }
+
         var data = {
             title: titulo,
             description: desc,
             tipo: 'tarea',
-            start: start_dt + 'Z',
-            end: end_dt + 'Z',
+            start: localIso(start_dt),
+            end: localIso(end_dt),
             color: '#1D1D1F',
             opportunity: null,
             participants: _calParticipantesSel.map(function (u) { return u.id; })
         };
 
         var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+        var editandoId = window._calEditandoId || null;
+        var url = editandoId ? '/app/api/actividades/' + editandoId + '/' : '/app/api/actividades/';
+        var method = editandoId ? 'PUT' : 'POST';
 
-        fetch('/app/api/actividades/', {
-            method: 'POST',
+        fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
             body: JSON.stringify(data)
         })
@@ -599,6 +731,8 @@
                 if (out.error) {
                     alert('Error: ' + out.error);
                 } else {
+                    window._calEditandoId = null;
+                    document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
                     document.getElementById('widgetGlobalCrearActividad').style.display = 'none';
                     calGlobalRefetch();
                 }

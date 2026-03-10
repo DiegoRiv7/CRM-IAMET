@@ -217,14 +217,20 @@
             .catch(err => console.error("Error", err));
     }
 
+    const TIPOS_TAREA = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida',
+        'tarea_opp_asignada', 'tarea_opp_comentario', 'actividad_por_vencer', 'actividad_vencida',
+        'comentario_oportunidad', 'oportunidad_mensaje', 'programacion_proyecto'];
+    const TIPOS_MURO = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'];
+    const TIPOS_USUARIO = ['rendimiento_bajo', 'solicitud_cambio_perfil'];
+
     function notifOUpdateCounts() {
         let counts = { tareas: 0, muro: 0, all: 0 };
         nOData.forEach(n => {
             if (!n.leida) {
                 counts.all++;
-                const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(n.tipo);
-                const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(n.tipo);
-                const isUsuario = ['rendimiento_bajo', 'solicitud_cambio_perfil'].includes(n.tipo);
+                const isTarea = TIPOS_TAREA.includes(n.tipo);
+                const isMuro = TIPOS_MURO.includes(n.tipo);
+                const isUsuario = TIPOS_USUARIO.includes(n.tipo);
 
                 if (isTarea) counts.tareas++;
                 else if (isMuro) counts.muro++;
@@ -279,9 +285,9 @@
         if (!container) return;
 
         let filtered = nOData.filter(n => {
-            const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(n.tipo);
-            const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(n.tipo);
-            const isUsuario = ['rendimiento_bajo', 'solicitud_cambio_perfil'].includes(n.tipo);
+            const isTarea = TIPOS_TAREA.includes(n.tipo);
+            const isMuro = TIPOS_MURO.includes(n.tipo);
+            const isUsuario = TIPOS_USUARIO.includes(n.tipo);
 
             if (nOFiltro === 'tareas') return isTarea;
             if (nOFiltro === 'muro') return isMuro;
@@ -319,8 +325,8 @@
     }
 
     window.notifHandleClick = async function (id, tareaId, oppId, actId, tipo) {
-        const isTarea = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida'].includes(tipo);
-        const isMuro = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'].includes(tipo);
+        const isTarea = TIPOS_TAREA.includes(tipo);
+        const isMuro = TIPOS_MURO.includes(tipo);
         const isUsuario = ['rendimiento_bajo'].includes(tipo);
 
         // Obtener URL de la notificación si existe

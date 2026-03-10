@@ -564,21 +564,36 @@
                 </button>
             </div>
 
-            <!-- Estado + Botón completar -->
+            <!-- Estado + Botones -->
             <div id="woVerActAcciones"
-                style="margin-top:0.5rem;padding-top:1rem;border-top:1px dashed #E5E5EA;display:flex;align-items:center;justify-content:space-between;">
+                style="margin-top:0.5rem;padding-top:1rem;border-top:1px dashed #E5E5EA;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
                 <div id="woVerActEstadoBadge"
                     style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;">
                 </div>
-                <button id="woVerActBtnCompletar" onclick="woCompletarActividad()"
-                    style="background:#34C759;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s,background 0.2s;"
-                    onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='none'">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Completar Actividad
-                </button>
+                <div style="display:flex;gap:0.5rem;">
+                    <button id="woVerActBtnCompletar" onclick="woCompletarActividad()"
+                        style="background:#34C759;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s,background 0.2s;"
+                        onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='none'">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Completar Actividad
+                    </button>
+                    <button id="woVerActBtnEditar" onclick="calEditarActividad()"
+                        style="display:none;background:#0052D4;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:none;align-items:center;gap:6px;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Editar
+                    </button>
+                    <button id="woVerActBtnEliminar" onclick="calEliminarActividad()"
+                        style="display:none;background:#FF3B30;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:none;align-items:center;gap:6px;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                        </svg>
+                        Eliminar
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -4638,11 +4638,15 @@ def actividad_list_create(request):
 
         elif request.method == 'POST':
             data = json.loads(request.body)
-        
+
             # Validar fechas
             try:
                 start_date = datetime.fromisoformat(data['start'])
                 end_date = datetime.fromisoformat(data['end'])
+                if timezone.is_naive(start_date):
+                    start_date = timezone.make_aware(start_date)
+                if timezone.is_naive(end_date):
+                    end_date = timezone.make_aware(end_date)
             except ValueError:
                 return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
 
@@ -4732,6 +4736,10 @@ def actividad_detail(request, pk):
         try:
             start_date = datetime.fromisoformat(data['start'])
             end_date = datetime.fromisoformat(data['end'])
+            if timezone.is_naive(start_date):
+                start_date = timezone.make_aware(start_date)
+            if timezone.is_naive(end_date):
+                end_date = timezone.make_aware(end_date)
         except ValueError:
             return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
 
@@ -13401,7 +13409,20 @@ def api_completar_tarea(request, tarea_id):
         tarea.estado = 'completada'
         tarea.fecha_completada = ahora
         tarea.save()
-        
+
+        # Notificar al creador si es distinto al que completó
+        if tarea.creado_por and tarea.creado_por != request.user:
+            completador = request.user.get_full_name() or request.user.username
+            crear_notificacion(
+                usuario_destinatario=tarea.creado_por,
+                tipo='tarea_vencida',
+                titulo=f'Tarea completada: {tarea.titulo}',
+                mensaje=f'{completador} marcó como completada la tarea "{tarea.titulo}".',
+                usuario_remitente=request.user,
+                tarea_id=tarea.id,
+                tarea_titulo=tarea.titulo,
+            )
+
         # Formatear tiempo trabajado para respuesta
         tiempo_total_str = "00:00:00"
         if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado:
