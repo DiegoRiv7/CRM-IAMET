@@ -14185,7 +14185,7 @@ def api_chat_oportunidad(request, opp_id):
                 'nombre': rnombre,
                 'tiene_imagen': bool(m.reply_to.imagen),
             }
-        # Detectar y limpiar entradas importadas de Bitrix
+        # Detectar y limpiar prefijo técnico de Bitrix
         texto = m.texto
         es_bitrix = False
         bitrix_tipo = None
@@ -14194,9 +14194,7 @@ def api_chat_oportunidad(request, opp_id):
             es_bitrix = True
             bitrix_tipo = 'actividad' if bitrix_match.group(1) == 'ACT' else 'comentario'
             texto = texto[bitrix_match.end():]
-            if not nombre or nombre == 'Usuario':
-                nombre = 'Bitrix24'
-                iniciales = 'B'
+            # Comentarios de Bitrix: mostrar como mensaje normal del autor
         return {
             'id': m.id,
             'texto': texto,

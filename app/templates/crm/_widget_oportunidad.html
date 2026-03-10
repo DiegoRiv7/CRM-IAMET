@@ -1054,17 +1054,16 @@
                         var innerBubbleStyle = 'background:' + bg + ';color:' + color + ';padding:0.75rem 1rem;border-radius:' + radius + ';font-size:0.95rem;line-height:1.4;position:relative;box-shadow:0 1px 2px rgba(0,0,0,0.05);';
                         var parsedContent = woEscape(textoPlano);
 
-                        // Entradas importadas de Bitrix: tarjeta naranja/gris estilo historial
-                        if (m.es_bitrix) {
+                        // Actividades importadas de Bitrix: tarjeta naranja (solo actividades, no comentarios)
+                        if (m.es_bitrix && m.bitrix_tipo === 'actividad') {
                             isSystemMsg = true;
-                            var bIcon = m.bitrix_tipo === 'actividad'
-                                ? '<svg width="13" height="13" fill="none" stroke="#FF6B00" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>'
-                                : '<svg width="13" height="13" fill="none" stroke="#FF6B00" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>';
                             var bLineas = textoPlano.split('\n');
                             var bTitulo = bLineas[0];
                             var bResto = bLineas.slice(1).join('<br>');
                             parsedContent = '<div style="display:flex;gap:10px;align-items:flex-start;">' +
-                                '<div style="width:26px;height:26px;border-radius:6px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">' + bIcon + '</div>' +
+                                '<div style="width:26px;height:26px;border-radius:6px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">' +
+                                '<svg width="13" height="13" fill="none" stroke="#FF6B00" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>' +
+                                '</div>' +
                                 '<div style="min-width:0;">' +
                                 '<div style="font-size:0.7rem;font-weight:700;color:#FF6B00;letter-spacing:0.03em;text-transform:uppercase;margin-bottom:2px;">Bitrix24 · ' + woEscape(m.nombre) + '</div>' +
                                 '<div style="font-weight:600;font-size:0.85rem;color:#1D1D1F;">' + woEscape(bTitulo) + '</div>' +
@@ -1073,6 +1072,7 @@
                             innerBubbleStyle = 'background:rgba(255,107,0,0.04);color:#1D1D1F;padding:10px 14px;border-radius:12px;position:relative;border:1px solid rgba(255,107,0,0.18);box-shadow:0 1px 4px rgba(0,0,0,0.04);width:100%;max-width:95%;';
                             align = 'flex-start';
                         }
+                        // Comentarios de Bitrix: se renderizan como mensajes normales (sin tarjeta especial)
 
                         // Actividades completadas se muestran como tarjeta de historial
                         if (textoPlano.startsWith('[ACT_COMPLETADA:')) {
