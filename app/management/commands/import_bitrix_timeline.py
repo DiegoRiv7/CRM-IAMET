@@ -32,12 +32,20 @@ Uso:
 
 from datetime import datetime, timedelta, timezone as dt_timezone
 
+import os
+
 import requests
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from app.bitrix_integration import BITRIX_WEBHOOK_URL
 from app.models import Actividad, MensajeOportunidad, TareaOportunidad, TodoItem
+
+# Webhook de proyectos (tiene scope 'task') — el mismo que usa sync_bitrix_projects_tasks
+BITRIX_PROJECTS_WEBHOOK_URL = os.getenv(
+    "BITRIX_PROJECTS_WEBHOOK_URL",
+    "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json"
+)
 
 
 # Etapas que indican oportunidad cerrada — se ignoran
@@ -121,14 +129,17 @@ def _fetch_activities(deal_id: int) -> list:
     return activities
 
 
+def _tasks_url() -> str:
+    """URL base del webhook de proyectos (tiene scope 'task')."""
+    base = BITRIX_PROJECTS_WEBHOOK_URL.rsplit("/", 1)[0] + "/"
+    return base + "tasks.task.list.json"
+
+
 def _fetch_tasks(deal_id: int) -> list:
     """Tareas del módulo Tasks vinculadas al deal (tasks.task.list).
-
-    REQUIERE que el webhook de Bitrix tenga el scope 'task' habilitado.
-    Si retorna 401, edita el webhook en Bitrix24 → Desarrolladores → Webhooks
-    y activa la casilla 'task' (Tareas y Proyectos).
+    Usa el webhook de proyectos (BITRIX_PROJECTS_WEBHOOK_URL) que tiene scope 'task'.
     """
-    url = _url("tasks.task.list")
+    url = _tasks_url()
     tasks = []
     start = 0
     crm_ref = f"D_{deal_id}"
@@ -142,11 +153,6 @@ def _fetch_tasks(deal_id: int) -> list:
                            'CREATOR_ID'],
                 'start': start,
             }, timeout=30)
-            if resp.status_code == 401:
-                print("  ⚠ tasks: 401 Unauthorized — el webhook no tiene scope 'task'.")
-                print("    → En Bitrix24: Desarrolladores → Webhooks entrantes → edita el webhook")
-                print("      y activa la casilla 'task' (Tareas y Proyectos). Luego reintenta.")
-                break
             resp.raise_for_status()
             data = resp.json()
             result = data.get('result', {})
