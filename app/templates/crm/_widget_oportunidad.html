@@ -398,12 +398,16 @@
                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
             </button>
-            <div
-                style="flex:1;background:#F2F2F7;border-radius:18px;padding:0;display:flex;align-items:center;border:1px solid #E5E5EA;">
-                <textarea id="woConvInputText" rows="1"
-                    style="flex:1;background:none;border:none;padding:0.6rem 1rem;font-size:0.9rem;resize:none;outline:none;font-family:inherit;max-height:100px;line-height:1.4;"
-                    placeholder="Escribe un mensaje..."
-                    onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); woConvSendMessage(); }"></textarea>
+            <div style="flex:1;position:relative;">
+                <div style="background:#F2F2F7;border-radius:18px;padding:0;display:flex;align-items:center;border:1px solid #E5E5EA;">
+                    <textarea id="woConvInputText" rows="1"
+                        style="flex:1;background:none;border:none;padding:0.6rem 1rem;font-size:0.9rem;resize:none;outline:none;font-family:inherit;max-height:100px;line-height:1.4;width:100%;"
+                        placeholder="Escribe un mensaje... usa @nombre para etiquetar"
+                        onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); woConvSendMessage(); } woMentionKeydown(event);"
+                        oninput="woMentionInput(this)"></textarea>
+                </div>
+                <!-- Dropdown de menciones -->
+                <div id="woMentionDropdown" style="display:none;position:absolute;bottom:110%;left:0;background:#fff;border:1px solid #E5E5EA;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:10050;min-width:200px;max-height:200px;overflow-y:auto;"></div>
             </div>
             <button onclick="woConvSendMessage()"
                 style="width:36px;height:36px;border-radius:50%;background:#0052D4;border:none;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;flex-shrink:0;">
@@ -1211,6 +1215,82 @@
         window.woConvCancelReply = function () {
             _woConvReplyToId = null;
             document.getElementById('woConvReplyBar').style.display = 'none';
+        };
+
+        // ── Menciones @usuario ──
+        var _woMentionUsers = null;
+        var _woMentionQuery = '';
+        var _woMentionIdx = 0;
+
+        function woMentionGetUsers(cb) {
+            if (_woMentionUsers) { cb(_woMentionUsers); return; }
+            fetch('/app/api/buscar-usuarios/?q=').then(function (r) { return r.json(); }).then(function (d) {
+                _woMentionUsers = (d.usuarios || []).map(function (u) {
+                    return { id: u.id, nombre: u.nombre, username: u.username || u.nombre.toLowerCase().replace(/\s+/g, '.') };
+                });
+                cb(_woMentionUsers);
+            }).catch(function () { cb([]); });
+        }
+
+        window.woMentionInput = function (ta) {
+            var val = ta.value;
+            var pos = ta.selectionStart;
+            // Buscar @ antes del cursor
+            var before = val.substring(0, pos);
+            var atMatch = before.match(/@([\w.]*)$/);
+            if (!atMatch) { document.getElementById('woMentionDropdown').style.display = 'none'; return; }
+            _woMentionQuery = atMatch[1].toLowerCase();
+            _woMentionIdx = 0;
+            woMentionGetUsers(function (users) {
+                var filtered = users.filter(function (u) {
+                    return u.nombre.toLowerCase().indexOf(_woMentionQuery) !== -1 ||
+                           u.username.toLowerCase().indexOf(_woMentionQuery) !== -1;
+                }).slice(0, 6);
+                var dd = document.getElementById('woMentionDropdown');
+                if (!filtered.length) { dd.style.display = 'none'; return; }
+                dd.innerHTML = filtered.map(function (u, i) {
+                    return '<div class="wo-mention-item" data-username="' + u.username + '" data-idx="' + i + '" ' +
+                        'style="padding:8px 14px;cursor:pointer;font-size:0.85rem;color:#1D1D1F;display:flex;align-items:center;gap:8px;" ' +
+                        'onmousedown="event.preventDefault();woMentionSelect(\'' + u.username + '\')" ' +
+                        'onmouseover="woMentionHighlight(' + i + ')">' +
+                        '<span style="font-weight:600;">' + u.nombre + '</span>' +
+                        '<span style="color:#86868B;font-size:0.78rem;">@' + u.username + '</span></div>';
+                }).join('');
+                woMentionHighlight(0);
+                dd.style.display = 'block';
+            });
+        };
+
+        window.woMentionKeydown = function (e) {
+            var dd = document.getElementById('woMentionDropdown');
+            if (dd.style.display === 'none') return;
+            var items = dd.querySelectorAll('.wo-mention-item');
+            if (e.key === 'ArrowDown') { e.preventDefault(); _woMentionIdx = Math.min(_woMentionIdx + 1, items.length - 1); woMentionHighlight(_woMentionIdx); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); _woMentionIdx = Math.max(_woMentionIdx - 1, 0); woMentionHighlight(_woMentionIdx); }
+            else if (e.key === 'Tab' || e.key === 'Enter') {
+                var sel = dd.querySelector('[data-idx="' + _woMentionIdx + '"]');
+                if (sel) { e.preventDefault(); e.stopPropagation(); woMentionSelect(sel.getAttribute('data-username')); }
+            } else if (e.key === 'Escape') { dd.style.display = 'none'; }
+        };
+
+        function woMentionHighlight(idx) {
+            _woMentionIdx = idx;
+            document.querySelectorAll('#woMentionDropdown .wo-mention-item').forEach(function (el, i) {
+                el.style.background = i === idx ? '#F2F2F7' : '';
+            });
+        }
+
+        window.woMentionSelect = function (username) {
+            var ta = document.getElementById('woConvInputText');
+            var val = ta.value;
+            var pos = ta.selectionStart;
+            var before = val.substring(0, pos);
+            var after = val.substring(pos);
+            var newBefore = before.replace(/@[\w.]*$/, '@' + username + ' ');
+            ta.value = newBefore + after;
+            ta.selectionStart = ta.selectionEnd = newBefore.length;
+            document.getElementById('woMentionDropdown').style.display = 'none';
+            ta.focus();
         };
 
         window.woConvSendMessage = function (filesObj) {

@@ -588,7 +588,14 @@ def api_crm_table_data(request):
     vendedores_filter = request.GET.get('vendedores', '')
     vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()] if vendedores_filter else []
 
-    if usando_periodo:
+    q_search = request.GET.get('q', '').strip()
+
+    if q_search:
+        # Búsqueda global: ignora mes/año, busca en nombre de oportunidad y cliente
+        base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
+            Q(oportunidad__icontains=q_search) | Q(cliente__nombre__icontains=q_search)
+        )
+    elif usando_periodo:
         base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
             fecha_creacion__date__gte=desde_filter,
             fecha_creacion__date__lte=hasta_filter,

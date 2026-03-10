@@ -1476,16 +1476,33 @@
             }
         });
 
-        // ── Search bar filter ──
+        // ── Search bar filter (global: busca en todos los años vía API) ──
         var searchInput = document.getElementById('islandSearch');
+        var _searchTimer = null;
         if (searchInput) {
             searchInput.addEventListener('input', function () {
-                var q = this.value.toLowerCase();
-                document.querySelectorAll('.crm-table tbody tr').forEach(function (row) {
-                    if (!row.getAttribute('data-opp-id')) return;
-                    var text = row.textContent.toLowerCase();
-                    row.style.display = text.indexOf(q) !== -1 ? '' : 'none';
-                });
+                var q = this.value.trim();
+                clearTimeout(_searchTimer);
+                if (!q) {
+                    // Sin query: restaurar tabla normal con filtros de mes/año
+                    refreshCrmTable();
+                    return;
+                }
+                // Con query: llamar API sin mes/año
+                _searchTimer = setTimeout(function () {
+                    var vendedores = getVendedoresParam();
+                    var url = '/app/api/crm-table-data/?tab=' + currentTab + '&q=' + encodeURIComponent(q);
+                    if (vendedores) url += '&vendedores=' + vendedores;
+                    fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+                        var tbody = document.getElementById('crmTbody');
+                        if (!tbody) return;
+                        if (!data.rows || data.rows.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:2rem;color:#9CA3AF;">Sin resultados para "' + q + '"</td></tr>';
+                        } else {
+                            tbody.innerHTML = data.rows.map(buildCrmRow).join('');
+                        }
+                    });
+                }, 350);
             });
         }
 
@@ -2660,6 +2677,7 @@
 
         // ── Cargar tareas desde API ──
         var _crmTareasPrioFilter = 'todas';
+        var _crmTareasRespFilter = 'todos';
 
 
         window.updateGlobalNavBadges = function (counts) {
@@ -2716,6 +2734,20 @@
                 .then(function (data) {
                     if (data.success && Array.isArray(data.tareas)) {
                         _crmAllTareas = data.tareas;
+                        // Poblar dropdown de responsables
+                        var sel = document.getElementById('tareasFilterResponsable');
+                        if (sel) {
+                            var respSet = {};
+                            data.tareas.forEach(function (t) { if (t.responsable) respSet[t.responsable] = 1; });
+                            var current = sel.value;
+                            sel.innerHTML = '<option value="todos">Todos los responsables</option>';
+                            Object.keys(respSet).sort().forEach(function (r) {
+                                var o = document.createElement('option');
+                                o.value = r; o.textContent = r;
+                                sel.appendChild(o);
+                            });
+                            if (current && respSet[current]) sel.value = current;
+                        }
                         renderTareasCRM(_crmCurrentFilter);
                     } else {
                         console.error('[Tareas] Respuesta inesperada:', data);
@@ -2752,6 +2784,10 @@
             // Apply priority filter
             if (_crmTareasPrioFilter && _crmTareasPrioFilter !== 'todas') {
                 tareas = tareas.filter(function (t) { return t.prioridad === _crmTareasPrioFilter; });
+            }
+            // Apply responsable filter
+            if (_crmTareasRespFilter && _crmTareasRespFilter !== 'todos') {
+                tareas = tareas.filter(function (t) { return t.responsable === _crmTareasRespFilter; });
             }
 
             // Apply search filter
@@ -2857,6 +2893,15 @@
                     renderTareasCRM(_crmCurrentFilter);
                 });
             }
+        }
+
+        // ── Filtro responsable ──
+        var tareasRespSel = document.getElementById('tareasFilterResponsable');
+        if (tareasRespSel) {
+            tareasRespSel.addEventListener('change', function () {
+                _crmTareasRespFilter = this.value;
+                renderTareasCRM(_crmCurrentFilter);
+            });
         }
 
         // ── Búsqueda ──
