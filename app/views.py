@@ -14169,6 +14169,8 @@ def api_chat_oportunidad(request, opp_id):
     from .models import MensajeOportunidad
     opp = get_object_or_404(TodoItem, id=opp_id)
 
+    import re as _re
+
     def serializar(m):
         u = m.usuario
         nombre = u.get_full_name() or u.username if u else 'Usuario'
@@ -14183,9 +14185,21 @@ def api_chat_oportunidad(request, opp_id):
                 'nombre': rnombre,
                 'tiene_imagen': bool(m.reply_to.imagen),
             }
+        # Detectar y limpiar entradas importadas de Bitrix
+        texto = m.texto
+        es_bitrix = False
+        bitrix_tipo = None
+        bitrix_match = _re.match(r'^\[BITRIX_(ACT|CMT):(\d+)\]\s*', texto)
+        if bitrix_match:
+            es_bitrix = True
+            bitrix_tipo = 'actividad' if bitrix_match.group(1) == 'ACT' else 'comentario'
+            texto = texto[bitrix_match.end():]
+            if not nombre or nombre == 'Usuario':
+                nombre = 'Bitrix24'
+                iniciales = 'B'
         return {
             'id': m.id,
-            'texto': m.texto,
+            'texto': texto,
             'imagen_url': m.imagen.url if m.imagen else None,
             'editado': m.editado,
             'reply_to': reply,
@@ -14194,6 +14208,8 @@ def api_chat_oportunidad(request, opp_id):
             'nombre': nombre,
             'iniciales': iniciales,
             'es_mio': (u.id == request.user.id) if u else False,
+            'es_bitrix': es_bitrix,
+            'bitrix_tipo': bitrix_tipo,
         }
 
     if request.method == 'GET':
