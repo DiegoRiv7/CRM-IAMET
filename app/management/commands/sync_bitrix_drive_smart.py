@@ -281,7 +281,7 @@ class Command(BaseCommand):
         with connection.cursor() as cur:
             cur.execute("SET FOREIGN_KEY_CHECKS=0")
             cur.execute(
-                "DELETE FROM app_archivoorportunidad WHERE bitrix_file_id IS NOT NULL"
+                "DELETE FROM app_archivooportunidad WHERE bitrix_file_id IS NOT NULL"
             )
             n_arch = cur.rowcount
             cur.execute("DELETE FROM app_carpetaoportunidad")
