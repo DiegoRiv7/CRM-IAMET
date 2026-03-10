@@ -6,15 +6,21 @@ Qué se salta:
   - Actividades de tipo Email (TYPE_ID=6) — son cotizaciones ya en el sistema
   - Comentarios vacíos o de archivos adjuntos Bitrix [DISK FILE...]
 
+Fuentes de datos:
+  - crm.activity.list  → llamadas, reuniones, actividades CRM
+  - tasks.task.list    → tareas del módulo Tasks vinculadas al deal (UF_CRM_TASK)
+  - crm.timeline.comment.list → comentarios del timeline
+
 Comportamiento:
-  - Actividades ABIERTAS → TareaOportunidad (pendiente) + Actividad calendario
+  - Actividades/Tareas ABIERTAS → TareaOportunidad (pendiente) + Actividad calendario
     + mensaje [ACT:ID] (tarjeta azul clickeable en conversación)
-  - Actividades CERRADAS → TareaOportunidad (completada)
+  - Actividades/Tareas CERRADAS → TareaOportunidad (completada)
     + mensaje [ACT_COMPLETADA:ID] (historial verde)
   - Comentarios del timeline → MensajeOportunidad normal (texto plano)
 
 Anti-duplicados:
-  - Actividades: TareaOportunidad.bitrix_task_id
+  - Actividades CRM: TareaOportunidad.bitrix_task_id (positivo)
+  - Tareas Bitrix:   TareaOportunidad.bitrix_task_id (negativo, para separar namespaces)
   - Comentarios: texto empieza con [BITRIX_CMT:ID]
 
 Uso:
@@ -24,7 +30,6 @@ Uso:
     python manage.py import_bitrix_timeline --limit 50
 """
 
-import time
 from datetime import datetime, timedelta, timezone as dt_timezone
 
 import requests
@@ -42,8 +47,14 @@ ETAPAS_CERRADAS = {
     'closed won', 'closed lost',
 }
 
-# TYPE_ID de Bitrix que se ignoran (Emails = cotizaciones ya en el sistema)
+# TYPE_ID de actividades CRM que se ignoran (Emails = cotizaciones ya en el sistema)
 TIPOS_IGNORADOS = {'6'}
+
+# Bitrix task STATUS: 5 = completada
+TASK_STATUS_COMPLETADA = {'5', '4'}  # 4=supposedly_completed, 5=completed
+
+# Prefijo negativo para tareas Bitrix (separar del namespace de actividades CRM)
+BITRIX_TASK_ID_OFFSET = -100_000_000
 
 # ──────────────────────────────────────────────
 # Helpers
@@ -84,6 +95,7 @@ def _is_etapa_cerrada(opp: TodoItem) -> bool:
 
 
 def _fetch_activities(deal_id: int) -> list:
+    """Actividades CRM: llamadas, reuniones, etc. (crm.activity.list)"""
     url = _url("crm.activity.list")
     activities = []
     start = 0
@@ -109,14 +121,54 @@ def _fetch_activities(deal_id: int) -> list:
     return activities
 
 
+def _fetch_tasks(deal_id: int) -> list:
+    """Tareas del módulo Tasks vinculadas al deal (tasks.task.list)."""
+    url = _url("tasks.task.list")
+    tasks = []
+    start = 0
+    # Bitrix acepta el filtro con el formato "D_<deal_id>" en UF_CRM_TASK
+    crm_ref = f"D_{deal_id}"
+    while True:
+        try:
+            resp = requests.post(url, json={
+                'filter': {'UF_CRM_TASK': crm_ref},
+                'select': ['ID', 'TITLE', 'DESCRIPTION', 'RESPONSIBLE_ID',
+                           'CREATED_DATE', 'CLOSED_DATE', 'DEADLINE',
+                           'START_DATE_PLAN', 'END_DATE_PLAN', 'STATUS',
+                           'CREATOR_ID'],
+                'start': start,
+            }, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            result = data.get('result', {})
+            # tasks.task.list retorna {"result": {"tasks": [...]}}
+            if isinstance(result, dict):
+                items = result.get('tasks', [])
+            elif isinstance(result, list):
+                items = result
+            else:
+                items = []
+            tasks.extend(items)
+            if 'next' in data:
+                start = data['next']
+            else:
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"  ⚠ tasks deal {deal_id}: {e}")
+            break
+    return tasks
+
+
 def _fetch_timeline_comments(deal_id: int) -> list:
+    """Comentarios del timeline del deal."""
     url = _url("crm.timeline.comment.list")
     comments = []
     start = 0
     while True:
         try:
+            # Intentar con ENTITY_TYPE_ID numérico (2 = deal) y también con string
             resp = requests.post(url, json={
-                'filter': {'ENTITY_TYPE': 'deal', 'ENTITY_ID': deal_id},
+                'filter': {'ENTITY_TYPE_ID': 2, 'ENTITY_ID': deal_id},
                 'start': start,
             }, timeout=30)
             resp.raise_for_status()
@@ -152,12 +204,77 @@ def _dates_for_activity(act: dict):
     return inicio, fin
 
 
+def _dates_for_task(task: dict):
+    inicio = (_parse_date(task.get('START_DATE_PLAN'))
+              or _parse_date(task.get('CREATED_DATE')))
+    fin = (_parse_date(task.get('END_DATE_PLAN'))
+           or _parse_date(task.get('DEADLINE'))
+           or _parse_date(task.get('CLOSED_DATE')))
+    if not inicio:
+        inicio = timezone.now()
+    if not fin or fin <= inicio:
+        fin = inicio + timedelta(hours=1)
+    return inicio, fin
+
+
 def _fmt_fecha(dt) -> str:
     return dt.astimezone().strftime('%d/%m/%Y') if dt else ''
 
 
 def _fmt_hora(dt) -> str:
     return dt.astimezone().strftime('%H:%M') if dt else ''
+
+
+def _import_actividad_o_tarea(
+    opp, bitrix_id, titulo, desc, autor, fecha_bitrix,
+    inicio_dt, fin_dt, completada, dry_run, stdout
+):
+    """Lógica compartida para importar una actividad CRM o una tarea Bitrix."""
+    lbl = '✓' if completada else '⏳'
+    stdout.write(f'  {lbl} {bitrix_id}: {titulo[:60]}')
+
+    if dry_run:
+        return True
+
+    tarea = TareaOportunidad.objects.create(
+        oportunidad=opp,
+        titulo=titulo,
+        descripcion=desc,
+        estado='completada' if completada else 'pendiente',
+        fecha_limite=fin_dt if not completada else None,
+        creado_por=autor,
+        responsable=autor,
+        bitrix_task_id=bitrix_id,
+    )
+    TareaOportunidad.objects.filter(pk=tarea.pk).update(fecha_creacion=fecha_bitrix)
+
+    if not completada:
+        actividad = Actividad.objects.create(
+            titulo=tarea.titulo,
+            tipo_actividad='tarea',
+            descripcion=desc,
+            fecha_inicio=inicio_dt,
+            fecha_fin=fin_dt,
+            creado_por=autor,
+            color='#0052D4',
+            oportunidad=opp,
+        )
+        tarea.actividad_calendario = actividad
+        tarea.save(update_fields=['actividad_calendario'])
+
+    if completada:
+        chat_texto = f'[ACT_COMPLETADA:{tarea.id}]{tarea.titulo}'
+    else:
+        chat_texto = (
+            f'[ACT:{tarea.id}]{tarea.titulo}'
+            f'|{_fmt_fecha(inicio_dt)}|{_fmt_hora(inicio_dt)}'
+            f'|{_fmt_hora(fin_dt)}|{desc[:100]}'
+        )
+    msg = MensajeOportunidad.objects.create(
+        oportunidad=opp, usuario=autor, texto=chat_texto
+    )
+    MensajeOportunidad.objects.filter(pk=msg.pk).update(fecha=fecha_bitrix)
+    return True
 
 
 # ──────────────────────────────────────────────
@@ -199,13 +316,14 @@ class Command(BaseCommand):
         )
 
         cnt_act_new = cnt_act_skip = cnt_act_tipo_skip = 0
+        cnt_task_new = cnt_task_skip = 0
         cnt_cmt_new = cnt_cmt_skip = 0
 
         for i, opp in enumerate(opps, 1):
             deal_id = opp.bitrix_deal_id
             self.stdout.write(f'[{i}/{total}] #{opp.id} Deal#{deal_id} {opp.oportunidad[:55]}')
 
-            # ── ACTIVIDADES ──
+            # ── ACTIVIDADES CRM (llamadas, reuniones, etc.) ──
             activities = _fetch_activities(deal_id)
             for act in activities:
                 tipo_id = str(act.get('TYPE_ID', ''))
@@ -225,58 +343,49 @@ class Command(BaseCommand):
                 fecha_bitrix = _parse_date(act.get('CREATED')) or timezone.now()
                 inicio_dt, fin_dt = _dates_for_activity(act)
 
-                # Anti-duplicado
+                # Anti-duplicado (ID positivo para actividades CRM)
                 if TareaOportunidad.objects.filter(bitrix_task_id=bitrix_act_id).exists():
                     cnt_act_skip += 1
                     continue
 
-                lbl = '✓' if completada else '⏳'
-                self.stdout.write(f'  {lbl} [{tipo_str}] {bitrix_act_id}: {subject[:55]}')
-
-                if not dry_run:
-                    titulo = f'[{tipo_str}] {subject}' if tipo_str != 'Actividad' else subject
-                    tarea = TareaOportunidad.objects.create(
-                        oportunidad=opp,
-                        titulo=titulo,
-                        descripcion=desc,
-                        estado='completada' if completada else 'pendiente',
-                        fecha_limite=fin_dt if not completada else None,
-                        creado_por=autor,
-                        responsable=autor,
-                        bitrix_task_id=bitrix_act_id,
-                    )
-                    TareaOportunidad.objects.filter(pk=tarea.pk).update(fecha_creacion=fecha_bitrix)
-
-                    if not completada:
-                        actividad = Actividad.objects.create(
-                            titulo=tarea.titulo,
-                            tipo_actividad='tarea',
-                            descripcion=desc,
-                            fecha_inicio=inicio_dt,
-                            fecha_fin=fin_dt,
-                            creado_por=autor,
-                            color='#0052D4',
-                            oportunidad=opp,
-                        )
-                        tarea.actividad_calendario = actividad
-                        tarea.save(update_fields=['actividad_calendario'])
-
-                    if completada:
-                        chat_texto = f'[ACT_COMPLETADA:{tarea.id}]{tarea.titulo}'
-                    else:
-                        chat_texto = (
-                            f'[ACT:{tarea.id}]{tarea.titulo}'
-                            f'|{_fmt_fecha(inicio_dt)}|{_fmt_hora(inicio_dt)}'
-                            f'|{_fmt_hora(fin_dt)}|{desc[:100]}'
-                        )
-                    msg = MensajeOportunidad.objects.create(
-                        oportunidad=opp, usuario=autor, texto=chat_texto
-                    )
-                    MensajeOportunidad.objects.filter(pk=msg.pk).update(fecha=fecha_bitrix)
-
+                titulo = f'[{tipo_str}] {subject}' if tipo_str != 'Actividad' else subject
+                _import_actividad_o_tarea(
+                    opp, bitrix_act_id, titulo, desc, autor, fecha_bitrix,
+                    inicio_dt, fin_dt, completada, dry_run, self.stdout
+                )
                 cnt_act_new += 1
 
-            # ── COMENTARIOS ──
+            # ── TAREAS BITRIX (módulo Tasks vinculadas al deal) ──
+            btasks = _fetch_tasks(deal_id)
+            for task in btasks:
+                task_id = int(task.get('id', task.get('ID', 0)))
+                if not task_id:
+                    continue
+
+                # Usamos ID negativo para separar namespace de actividades CRM
+                stored_id = BITRIX_TASK_ID_OFFSET - task_id
+
+                # Anti-duplicado
+                if TareaOportunidad.objects.filter(bitrix_task_id=stored_id).exists():
+                    cnt_task_skip += 1
+                    continue
+
+                status = str(task.get('status', task.get('STATUS', '')))
+                completada = status in TASK_STATUS_COMPLETADA
+                titulo = (task.get('title', task.get('TITLE', '')) or '').strip() or '(sin título)'
+                desc = (task.get('description', task.get('DESCRIPTION', '')) or '').strip()
+                responsable_id = str(task.get('responsibleId', task.get('RESPONSIBLE_ID', task.get('CREATOR_ID', ''))))
+                autor = user_map.get(responsable_id)
+                fecha_bitrix = _parse_date(task.get('createdDate', task.get('CREATED_DATE', ''))) or timezone.now()
+                inicio_dt, fin_dt = _dates_for_task(task)
+
+                _import_actividad_o_tarea(
+                    opp, stored_id, titulo, desc, autor, fecha_bitrix,
+                    inicio_dt, fin_dt, completada, dry_run, self.stdout
+                )
+                cnt_task_new += 1
+
+            # ── COMENTARIOS TIMELINE ──
             comments = _fetch_timeline_comments(deal_id)
             for cmt in comments:
                 cmt_id = cmt.get('ID', cmt.get('id', ''))
@@ -304,8 +413,6 @@ class Command(BaseCommand):
                 self.stdout.write(f'  💬 Comentario {cmt_id}: {content[:60]}')
 
                 if not dry_run:
-                    # Guardar con prefijo interno solo para anti-duplicado,
-                    # el serializer lo limpia antes de mostrar al usuario
                     msg = MensajeOportunidad.objects.create(
                         oportunidad=opp,
                         usuario=autor,
@@ -316,10 +423,12 @@ class Command(BaseCommand):
                 cnt_cmt_new += 1
 
         self.stdout.write('\n' + '─' * 55)
-        self.stdout.write(f'✅ Actividades importadas   : {cnt_act_new}')
-        self.stdout.write(f'⏭  Actividades duplicadas   : {cnt_act_skip}')
-        self.stdout.write(f'⏭  Emails ignorados (cotz.) : {cnt_act_tipo_skip}')
-        self.stdout.write(f'✅ Comentarios importados   : {cnt_cmt_new}')
-        self.stdout.write(f'⏭  Comentarios duplicados   : {cnt_cmt_skip}')
+        self.stdout.write(f'✅ Actividades CRM importadas : {cnt_act_new}')
+        self.stdout.write(f'⏭  Actividades duplicadas    : {cnt_act_skip}')
+        self.stdout.write(f'⏭  Emails ignorados (cotz.)  : {cnt_act_tipo_skip}')
+        self.stdout.write(f'✅ Tareas Bitrix importadas   : {cnt_task_new}')
+        self.stdout.write(f'⏭  Tareas duplicadas         : {cnt_task_skip}')
+        self.stdout.write(f'✅ Comentarios importados     : {cnt_cmt_new}')
+        self.stdout.write(f'⏭  Comentarios duplicados    : {cnt_cmt_skip}')
         if dry_run:
             self.stdout.write(self.style.WARNING('\nDRY RUN — nada guardado'))
