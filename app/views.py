@@ -23,7 +23,7 @@ from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, Opor
 from django.db.models import Sum, Count, F, Q, Case, When, Value
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
-from datetime import date
+from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from decimal import Decimal
@@ -4616,17 +4616,22 @@ def actividad_list_create(request):
             actividades = actividades.select_related('creado_por', 'oportunidad').prefetch_related('participantes')
 
             events = []
+            _1h = timedelta(hours=1)
             for actividad in actividades:
                 participants_data = [{'id': p.id, 'text': p.get_full_name() or p.username} for p in actividad.participantes.all()]
                 opportunity_data = None
                 if actividad.oportunidad:
                     opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+                # Clampar eventos multi-día a 1h para que no crucen semanas en el calendario
+                fin_display = actividad.fecha_fin
+                if (fin_display - actividad.fecha_inicio).days >= 1:
+                    fin_display = actividad.fecha_inicio + _1h
                 events.append({
                     'id': actividad.id,
                     'title': actividad.titulo,
                     'tipo': actividad.tipo_actividad,
                     'start': actividad.fecha_inicio.isoformat(),
-                    'end': actividad.fecha_fin.isoformat(),
+                    'end': fin_display.isoformat(),
                     'description': actividad.descripcion or '',
                     'color': actividad.color,
                     'participants': participants_data,
