@@ -32,6 +32,7 @@ import time
 import requests
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
+from django.db import connection
 from django.utils.dateparse import parse_datetime
 
 from app.models import (
@@ -274,13 +275,20 @@ class Command(BaseCommand):
 
     def _reset(self):
         self.stdout.write(self.style.WARNING("Limpiando datos Bitrix anteriores..."))
-        # Aplanar jerarquía y limpiar FKs para evitar conflictos de CASCADE en MySQL
-        CarpetaOportunidad.objects.filter(carpeta_padre__isnull=False).update(carpeta_padre=None)
-        ArchivoOportunidad.objects.filter(carpeta__isnull=False).update(carpeta=None)
-        n = ArchivoOportunidad.objects.exclude(bitrix_file_id=None).delete()[0]
-        self.stdout.write(f"  ArchivoOportunidad (Bitrix) borrados: {n}")
-        n = CarpetaOportunidad.objects.all().delete()[0]
-        self.stdout.write(f"  CarpetaOportunidad borradas: {n}")
+        # MySQL revalida todos los FK en cada UPDATE/DELETE aunque la columna no cambie.
+        # Hay filas huérfanas (oportunidad_id → TodoItem borrado), así que usamos
+        # FOREIGN_KEY_CHECKS=0 para saltarlas de forma segura.
+        with connection.cursor() as cur:
+            cur.execute("SET FOREIGN_KEY_CHECKS=0")
+            cur.execute(
+                "DELETE FROM app_archivoorportunidad WHERE bitrix_file_id IS NOT NULL"
+            )
+            n_arch = cur.rowcount
+            cur.execute("DELETE FROM app_carpetaoportunidad")
+            n_carp = cur.rowcount
+            cur.execute("SET FOREIGN_KEY_CHECKS=1")
+        self.stdout.write(f"  ArchivoOportunidad (Bitrix) borrados: {n_arch}")
+        self.stdout.write(f"  CarpetaOportunidad borradas: {n_carp}")
         n = OportunidadProyecto.objects.all().delete()[0]
         self.stdout.write(f"  OportunidadProyecto borrados: {n}")
         for p in Proyecto.objects.filter(bitrix_group_id__isnull=False):
