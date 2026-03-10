@@ -118,10 +118,21 @@ def _build_cotizacion_index():
 
 
 # ── Matching helpers ──────────────────────────────────────────────────────────
+#
+# Prioridad (de más a menos confiable):
+#   1. Nombre exacto completo  — proyecto == oportunidad (sin limpiar)
+#   2. Número largo compartido — ≥7 dígitos seguidos en ambos títulos
+#   3. Documento compartido    — archivo del drive == nombre_cotizacion del sistema
+#   4. Nombre limpio           — nombre sin prefijo PO/RFQ contenido en oportunidad
+# ─────────────────────────────────────────────────────────────────────────────
 
-def _extract_po(text):
-    m = re.search(r'\bPO[\s\-]?(\d{4,})', text or '', re.IGNORECASE)
-    return m.group(1) if m else None
+# Regex para extraer todos los números ≥7 dígitos de un texto (PO, OC, serial, etc.)
+_NUM_RE = re.compile(r'\b(\d{7,})\b')
+
+
+def _extract_numbers(text: str) -> list:
+    """Extrae todos los números ≥7 dígitos del texto (únicos)."""
+    return list(dict.fromkeys(_NUM_RE.findall(text or '')))
 
 
 def _clean_name(name):
@@ -130,8 +141,36 @@ def _clean_name(name):
     return segment if len(segment) >= 5 else clean
 
 
+# ─── Fase 1: mismo nombre completo ───────────────────────────────────────────
+
+def _find_opp_by_exact_name(nombre):
+    """Nombre del proyecto == nombre de oportunidad (sin tocar)."""
+    opps = TodoItem.objects.filter(oportunidad__iexact=nombre.strip())
+    if opps.count() == 1:
+        return opps.first(), "nombre idéntico"
+    return None, None
+
+
+# ─── Fase 2: número largo compartido ─────────────────────────────────────────
+
+def _find_opp_by_number(nombre):
+    """Un número ≥7 dígitos del nombre del proyecto aparece en exactamente una oportunidad."""
+    for num in _extract_numbers(nombre):
+        opps = TodoItem.objects.filter(oportunidad__icontains=num)
+        if opps.count() == 1:
+            return opps.first(), f"número {num}"
+        # Si hay más de una, verificar que el número aparezca como palabra completa
+        if opps.count() > 1:
+            exactas = [o for o in opps if re.search(r'\b' + re.escape(num) + r'\b', o.oportunidad or '')]
+            if len(exactas) == 1:
+                return exactas[0], f"número {num} exacto"
+    return None, None
+
+
+# ─── Fase 3: documento compartido ────────────────────────────────────────────
+
 def _find_opp_by_doc(file_names, cot_index):
-    """Fase 1: busca oportunidad por coincidencia de nombre de archivo."""
+    """Nombre normalizado de un archivo del drive coincide con nombre_cotizacion."""
     for fname in file_names:
         key = _norm(fname)
         if key in cot_index:
@@ -139,32 +178,16 @@ def _find_opp_by_doc(file_names, cot_index):
     return None, None
 
 
-def _find_opp_by_po(nombre):
-    """Fase 2: busca oportunidad por número PO en nombre del proyecto."""
-    po = _extract_po(nombre)
-    if not po:
-        return None, None
-    opps = TodoItem.objects.filter(oportunidad__icontains=po)
-    if opps.count() == 1:
-        return opps.first(), f"PO {po}"
-    if opps.count() > 1:
-        for o in opps:
-            if re.search(r'\b' + re.escape(po) + r'\b', o.oportunidad or ''):
-                return o, f"PO {po} exacto"
-    return None, None
+# ─── Fase 4: nombre limpio ────────────────────────────────────────────────────
 
-
-def _find_opp_by_name(nombre):
-    """Fase 3: busca oportunidad por nombre del proyecto."""
+def _find_opp_by_clean_name(nombre):
+    """Nombre sin prefijo PO/RFQ contenido en exactamente una oportunidad."""
     clean = _clean_name(nombre)
     if len(clean) < 8:
         return None, None
-    opps = TodoItem.objects.filter(oportunidad__iexact=clean)
-    if opps.count() == 1:
-        return opps.first(), "nombre exacto"
     opps = TodoItem.objects.filter(oportunidad__icontains=clean)
     if opps.count() == 1:
-        return opps.first(), "nombre contenido"
+        return opps.first(), f"nombre limpio '{clean[:40]}'"
     return None, None
 
 
@@ -226,7 +249,7 @@ class Command(BaseCommand):
 
         default_user = _default_user()
         stats = dict(
-            fase1=0, fase2=0, fase3=0, sin_vincular=0,
+            f_nombre=0, f_numero=0, f_doc=0, f_clean=0, sin_vincular=0,
             archivos=0, carpetas=0, errores=0
         )
 
@@ -238,9 +261,10 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"  Error grupo {group.get('ID')}: {e}"))
 
         self.stdout.write("\n" + "─" * 55)
-        self.stdout.write(f"✅ Vinculados por documento : {stats['fase1']}")
-        self.stdout.write(f"✅ Vinculados por PO        : {stats['fase2']}")
-        self.stdout.write(f"✅ Vinculados por nombre    : {stats['fase3']}")
+        self.stdout.write(f"✅ Nombre idéntico          : {stats['f_nombre']}")
+        self.stdout.write(f"✅ Número compartido        : {stats['f_numero']}")
+        self.stdout.write(f"✅ Documento compartido     : {stats['f_doc']}")
+        self.stdout.write(f"✅ Nombre limpio            : {stats['f_clean']}")
         self.stdout.write(f"⏭  Sin vincular            : {stats['sin_vincular']}")
         self.stdout.write(f"📁 Carpetas importadas      : {stats['carpetas']}")
         self.stdout.write(f"📄 Archivos importados      : {stats['archivos']}")
@@ -267,30 +291,40 @@ class Command(BaseCommand):
         group_id = int(group["ID"])
         nombre = (group.get("NAME") or f"Grupo {group_id}").strip()
 
-        # Obtener lista de archivos del drive (solo nombres, sin descargar)
-        file_names = self._get_drive_file_names(group_id)
-
-        # ── Fase 1: documento ──
-        opp, motivo = _find_opp_by_doc(file_names, cot_index)
+        # ── Fase 1: nombre idéntico (más confiable) ──
+        opp, motivo = _find_opp_by_exact_name(nombre)
         if opp:
-            stats["fase1"] += 1
-            fase_lbl = f"FASE1-DOC ({motivo})"
+            stats["f_nombre"] += 1
+            fase_lbl = f"NOMBRE ({motivo})"
         else:
-            # ── Fase 2: PO ──
-            opp, motivo = _find_opp_by_po(nombre)
+            # ── Fase 2: número largo compartido ──
+            opp, motivo = _find_opp_by_number(nombre)
             if opp:
-                stats["fase2"] += 1
-                fase_lbl = f"FASE2-PO ({motivo})"
+                stats["f_numero"] += 1
+                fase_lbl = f"NÚMERO ({motivo})"
             else:
-                # ── Fase 3: nombre ──
-                opp, motivo = _find_opp_by_name(nombre)
+                # ── Obtener archivos del drive solo si hace falta para Fase 3 ──
+                file_names = self._get_drive_file_names(group_id)
+
+                # ── Fase 3: documento compartido ──
+                opp, motivo = _find_opp_by_doc(file_names, cot_index)
                 if opp:
-                    stats["fase3"] += 1
-                    fase_lbl = f"FASE3-NOMBRE ({motivo})"
+                    stats["f_doc"] += 1
+                    fase_lbl = f"DOCUMENTO ({motivo})"
                 else:
-                    stats["sin_vincular"] += 1
-                    self.stdout.write(f"  [{group_id}] ⊘ sin vincular: {nombre[:65]}")
-                    return  # Sin oportunidad → no importamos nada
+                    # ── Fase 4: nombre limpio ──
+                    opp, motivo = _find_opp_by_clean_name(nombre)
+                    if opp:
+                        stats["f_clean"] += 1
+                        fase_lbl = f"NOMBRE-LIMPIO ({motivo})"
+                    else:
+                        stats["sin_vincular"] += 1
+                        self.stdout.write(f"  [{group_id}] ⊘ sin vincular: {nombre[:65]}")
+                        return  # Sin oportunidad → no importamos nada
+
+        # Para fases 1 y 2 (sin drive aún) necesitamos los nombres para dry-run
+        if 'file_names' not in dir():
+            file_names = self._get_drive_file_names(group_id) if dry_run else []
 
         self.stdout.write(
             self.style.SUCCESS(f"  [{group_id}] {fase_lbl} → {opp.oportunidad[:50]}")
