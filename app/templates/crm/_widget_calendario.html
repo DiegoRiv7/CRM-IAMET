@@ -267,6 +267,18 @@
                     style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none; resize: none;"
                     placeholder="Cualquier apunte adicional..."></textarea>
             </div>
+            <div>
+                <label style="display:block;font-size:0.75rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">COLOR</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;" id="calColorPicker">
+                    <button type="button" onclick="calSelColor('#0052D4',this)" style="width:28px;height:28px;border-radius:50%;background:#0052D4;border:3px solid transparent;cursor:pointer;" title="Azul"></button>
+                    <button type="button" onclick="calSelColor('#34C759',this)" style="width:28px;height:28px;border-radius:50%;background:#34C759;border:3px solid transparent;cursor:pointer;" title="Verde"></button>
+                    <button type="button" onclick="calSelColor('#FF9500',this)" style="width:28px;height:28px;border-radius:50%;background:#FF9500;border:3px solid transparent;cursor:pointer;" title="Naranja"></button>
+                    <button type="button" onclick="calSelColor('#FF3B30',this)" style="width:28px;height:28px;border-radius:50%;background:#FF3B30;border:3px solid transparent;cursor:pointer;" title="Rojo"></button>
+                    <button type="button" onclick="calSelColor('#AF52DE',this)" style="width:28px;height:28px;border-radius:50%;background:#AF52DE;border:3px solid transparent;cursor:pointer;" title="Morado"></button>
+                    <button type="button" onclick="calSelColor('#FF2D55',this)" style="width:28px;height:28px;border-radius:50%;background:#FF2D55;border:3px solid transparent;cursor:pointer;" title="Rosa"></button>
+                    <button type="button" onclick="calSelColor('#1D1D1F',this)" style="width:28px;height:28px;border-radius:50%;background:#1D1D1F;border:3px solid transparent;cursor:pointer;" title="Negro"></button>
+                </div>
+            </div>
             <div style="position: relative;">
                 <label
                     style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">PARTICIPANTES</label>
@@ -292,6 +304,28 @@
     </div>
 </div>
 
+<!-- ═══ WIDGET: CONFIRMAR ELIMINACIÓN ═══ -->
+<div class="widget-overlay" id="widgetConfirmarEliminar" style="z-index: 10030; display: none;">
+    <div style="background:#fff; border-radius:16px; padding:2rem; width:380px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:1.25rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+            <div style="width:40px;height:40px;border-radius:50%;background:#FFF0F0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" fill="none" stroke="#FF3B30" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </div>
+            <div>
+                <div style="font-weight:700;font-size:1rem;color:#1D1D1F;">Eliminar actividad</div>
+                <div style="font-size:0.85rem;color:#86868B;margin-top:2px;">Esta acción no se puede deshacer.</div>
+            </div>
+        </div>
+        <div id="calConfirmEliminarNombre" style="background:#F9FAFB;border-radius:10px;padding:0.75rem 1rem;font-size:0.9rem;color:#1D1D1F;font-weight:500;border:1px solid #E5E5EA;"></div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+            <button onclick="document.getElementById('widgetConfirmarEliminar').style.display='none'"
+                style="padding:0.7rem 1.25rem;background:#F2F2F7;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:0.9rem;color:#1D1D1F;">Cancelar</button>
+            <button id="calConfirmEliminarBtn"
+                style="padding:0.7rem 1.25rem;background:#FF3B30;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:0.9rem;color:#fff;">Eliminar</button>
+        </div>
+    </div>
+</div>
+
 <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.11/index.global.min.js'></script>
 <script>
     function woEscape(str) {
@@ -302,6 +336,7 @@
     var _globalCalendar = null;
     var _globalEvents = [];
     var _calParticipantesSel = [];
+    var _calSelectedColor = '#0052D4';
 
     window.calendarioAbrir = function () {
         var ov = document.getElementById('widgetCalendarioMaster');
@@ -410,7 +445,28 @@
                     eventClick: function (info) {
                         var e = info.event;
                         woVerActividadGenerica(e.id);
-                    }
+                    },
+                    selectable: true,
+                    select: function(info) {
+                        // Pre-fill form with selected time slot
+                        var start = info.start;
+                        var end = info.end;
+                        var pad = function(n) { return String(n).padStart(2,'0'); };
+                        document.getElementById('calFormActNombre').value = '';
+                        document.getElementById('calFormActFecha').value = start.getFullYear()+'-'+pad(start.getMonth()+1)+'-'+pad(start.getDate());
+                        document.getElementById('calFormActInicio').value = pad(start.getHours())+':'+pad(start.getMinutes());
+                        // Cap end at 18:00
+                        var endH = end.getHours(), endM = end.getMinutes();
+                        if (endH > 18 || (endH === 18 && endM > 0)) { endH = 18; endM = 0; }
+                        document.getElementById('calFormActFin').value = pad(endH)+':'+pad(endM);
+                        document.getElementById('calFormActDesc').value = '';
+                        _calParticipantesSel = [];
+                        calRenderParticipantes();
+                        window._calEditandoId = null;
+                        document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
+                        document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
+                        _globalCalendar.unselect();
+                    },
                 });
                 _globalCalendar.render();
             }
@@ -500,6 +556,12 @@
                 opt.textContent = u.nombre + ' (' + u.rol + ')';
                 sel.appendChild(opt);
             });
+            // Set default to current user
+            var currentUserId = "{{ request.user.id }}";
+            if (currentUserId) {
+                sel.value = currentUserId;
+                calApplyFilter(currentUserId);
+            }
             _calUsersLoaded = true;
         }).catch(function () { });
     }
@@ -551,6 +613,9 @@
         document.getElementById('calFormActDesc').value = '';
         _calParticipantesSel = [];
         calRenderParticipantes();
+        _calSelectedColor = '#0052D4';
+        var firstBtn = document.querySelector('#calColorPicker button');
+        if (firstBtn) calSelColor('#0052D4', firstBtn);
         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
     };
 
@@ -631,16 +696,22 @@
 
     window.calEliminarActividad = function () {
         if (!window._calCurrentActividadId) return;
-        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [, ''])[1];
-        if (!confirm('¿Eliminar esta actividad del calendario?')) return;
-        fetch('/app/api/actividades/' + window._calCurrentActividadId + '/', {
-            method: 'DELETE',
-            headers: { 'X-CSRFToken': csrf }
-        }).then(function () {
-            document.getElementById('widgetOppVerActividad').style.display = 'none';
-            window._calCurrentActividadId = null;
-            calGlobalRefetch();
-        }).catch(console.error);
+        var evt = _globalEvents.find(function (ev) { return String(ev.id) === String(window._calCurrentActividadId); });
+        var nombre = evt ? evt.title : 'esta actividad';
+        document.getElementById('calConfirmEliminarNombre').textContent = nombre;
+        document.getElementById('calConfirmEliminarBtn').onclick = function () {
+            var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [, ''])[1];
+            document.getElementById('widgetConfirmarEliminar').style.display = 'none';
+            fetch('/app/api/actividades/' + window._calCurrentActividadId + '/', {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': csrf }
+            }).then(function () {
+                document.getElementById('widgetOppVerActividad').style.display = 'none';
+                window._calCurrentActividadId = null;
+                calGlobalRefetch();
+            }).catch(console.error);
+        };
+        document.getElementById('widgetConfirmarEliminar').style.display = 'flex';
     };
 
     window.calEditarActividad = function () {
@@ -667,6 +738,17 @@
 
         _calParticipantesSel = e.participants ? e.participants.map(function (p) { return { id: p.id, nombre: p.text || p.nombre }; }) : [];
         calRenderParticipantes();
+
+        var evtColor = evt.color || '#0052D4';
+        _calSelectedColor = evtColor;
+        document.querySelectorAll('#calColorPicker button').forEach(function(b) {
+            b.style.border = '3px solid transparent';
+            b.style.transform = 'scale(1)';
+            if (b.style.background === evtColor || b.title && evtColor.toLowerCase() === b.style.background.toLowerCase()) {
+                b.style.border = '3px solid #1D1D1F';
+                b.style.transform = 'scale(1.2)';
+            }
+        });
 
         // Marcar como modo edición
         window._calEditandoId = id;
@@ -711,7 +793,7 @@
             tipo: 'tarea',
             start: localIso(start_dt),
             end: localIso(end_dt),
-            color: '#1D1D1F',
+            color: _calSelectedColor,
             opportunity: null,
             participants: _calParticipantesSel.map(function (u) { return u.id; })
         };
@@ -789,6 +871,16 @@
             c.innerHTML = '<span style="color:#86868B;font-size:0.85rem;padding:6px;font-weight:500;">' + woEscape(currentUserName) + '</span>';
         }
     }
+
+    window.calSelColor = function(color, btn) {
+        _calSelectedColor = color;
+        document.querySelectorAll('#calColorPicker button').forEach(function(b) {
+            b.style.border = '3px solid transparent';
+            b.style.transform = 'scale(1)';
+        });
+        btn.style.border = '3px solid #1D1D1F';
+        btn.style.transform = 'scale(1.2)';
+    };
 
     window.calRemoveParticipante = function (id) {
         _calParticipantesSel = _calParticipantesSel.filter(function (u) { return u.id !== id; });
