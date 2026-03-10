@@ -122,11 +122,15 @@ def _fetch_activities(deal_id: int) -> list:
 
 
 def _fetch_tasks(deal_id: int) -> list:
-    """Tareas del módulo Tasks vinculadas al deal (tasks.task.list)."""
+    """Tareas del módulo Tasks vinculadas al deal (tasks.task.list).
+
+    REQUIERE que el webhook de Bitrix tenga el scope 'task' habilitado.
+    Si retorna 401, edita el webhook en Bitrix24 → Desarrolladores → Webhooks
+    y activa la casilla 'task' (Tareas y Proyectos).
+    """
     url = _url("tasks.task.list")
     tasks = []
     start = 0
-    # Bitrix acepta el filtro con el formato "D_<deal_id>" en UF_CRM_TASK
     crm_ref = f"D_{deal_id}"
     while True:
         try:
@@ -138,6 +142,11 @@ def _fetch_tasks(deal_id: int) -> list:
                            'CREATOR_ID'],
                 'start': start,
             }, timeout=30)
+            if resp.status_code == 401:
+                print("  ⚠ tasks: 401 Unauthorized — el webhook no tiene scope 'task'.")
+                print("    → En Bitrix24: Desarrolladores → Webhooks entrantes → edita el webhook")
+                print("      y activa la casilla 'task' (Tareas y Proyectos). Luego reintenta.")
+                break
             resp.raise_for_status()
             data = resp.json()
             result = data.get('result', {})
@@ -166,9 +175,8 @@ def _fetch_timeline_comments(deal_id: int) -> list:
     start = 0
     while True:
         try:
-            # Intentar con ENTITY_TYPE_ID numérico (2 = deal) y también con string
             resp = requests.post(url, json={
-                'filter': {'ENTITY_TYPE_ID': 2, 'ENTITY_ID': deal_id},
+                'filter': {'ENTITY_TYPE': 'deal', 'ENTITY_ID': deal_id},
                 'start': start,
             }, timeout=30)
             resp.raise_for_status()
