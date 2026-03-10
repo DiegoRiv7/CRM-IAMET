@@ -98,6 +98,16 @@ def _get_user_map():
     return mapping
 
 
+def _get_fallback_user():
+    """Usuario por defecto cuando el responsable de Bitrix no está mapeado."""
+    from django.contrib.auth.models import User
+    # Intentar usar el primer superuser activo
+    su = User.objects.filter(is_superuser=True, is_active=True).first()
+    if su:
+        return su
+    return User.objects.filter(is_active=True).first()
+
+
 def _es_cotizacion_sistema(subject: str) -> bool:
     """Detecta si una actividad es una cotización generada por el sistema (no importar)."""
     s = subject.lower()
@@ -253,7 +263,7 @@ def _fmt_hora(dt) -> str:
 
 def _import_actividad_o_tarea(
     opp, bitrix_id, titulo, desc, autor, fecha_bitrix,
-    inicio_dt, fin_dt, completada, dry_run, stdout
+    inicio_dt, fin_dt, completada, dry_run, stdout, fallback_user=None
 ):
     """Lógica compartida para importar una actividad CRM o una tarea Bitrix."""
     lbl = '✓' if completada else '⏳'
@@ -261,6 +271,9 @@ def _import_actividad_o_tarea(
 
     if dry_run:
         return True
+
+    # Actividad.creado_por es NOT NULL — usar fallback si el usuario no está mapeado
+    autor_requerido = autor or fallback_user
 
     tarea = TareaOportunidad.objects.create(
         oportunidad=opp,
@@ -281,7 +294,7 @@ def _import_actividad_o_tarea(
             descripcion=desc,
             fecha_inicio=inicio_dt,
             fecha_fin=fin_dt,
-            creado_por=autor,
+            creado_por=autor_requerido,
             color='#0052D4',
             oportunidad=opp,
         )
@@ -325,7 +338,8 @@ class Command(BaseCommand):
             return
 
         user_map = _get_user_map()
-        self.stdout.write(f'Usuarios mapeados: {len(user_map)}')
+        fallback_user = _get_fallback_user()
+        self.stdout.write(f'Usuarios mapeados: {len(user_map)}  |  Fallback: {fallback_user}')
 
         qs = TodoItem.objects.exclude(bitrix_deal_id=None).order_by('id')
         if single_deal:
@@ -376,7 +390,7 @@ class Command(BaseCommand):
                 titulo = f'[{tipo_str}] {subject}' if tipo_str != 'Actividad' else subject
                 _import_actividad_o_tarea(
                     opp, bitrix_act_id, titulo, desc, autor, fecha_bitrix,
-                    inicio_dt, fin_dt, completada, dry_run, self.stdout
+                    inicio_dt, fin_dt, completada, dry_run, self.stdout, fallback_user
                 )
                 cnt_act_new += 1
 
@@ -406,7 +420,7 @@ class Command(BaseCommand):
 
                 _import_actividad_o_tarea(
                     opp, stored_id, titulo, desc, autor, fecha_bitrix,
-                    inicio_dt, fin_dt, completada, dry_run, self.stdout
+                    inicio_dt, fin_dt, completada, dry_run, self.stdout, fallback_user
                 )
                 cnt_task_new += 1
 
