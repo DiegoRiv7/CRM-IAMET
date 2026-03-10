@@ -139,10 +139,13 @@ class Command(BaseCommand):
         limit = options['limit']
         csv_path = options['csv']
 
-        # IDs de grupos ya vinculados en el sistema
+        # IDs de grupos ya vinculados en el sistema (bitrix_project_id se guarda como str)
         vinculados_ids = set(
+            int(x) for x in
             OportunidadProyecto.objects.exclude(bitrix_project_id=None)
+            .exclude(bitrix_project_id='')
             .values_list('bitrix_project_id', flat=True)
+            if x and str(x).isdigit()
         )
         self.stdout.write(f"Grupos ya vinculados en DB: {len(vinculados_ids)}")
 
