@@ -1274,6 +1274,19 @@
             window.selectResult = function (index) {
                 var r = currentResults[index]; if (!r) return;
                 closeSpotlight();
+
+                // Si es una oportunidad y ya estamos en el CRM, abrir el widget directo
+                if (r.type === 'oportunidad' && r.id) {
+                    var enCRM = window.location.pathname === '/app/todos/';
+                    if (enCRM && typeof window.openDetalle === 'function') {
+                        window.openDetalle(r.id);
+                        return;
+                    }
+                    // Si no estamos en el CRM, navegar con open_opp para que se abra al cargar
+                    window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.id;
+                    return;
+                }
+
                 if (r.url) window.location.href = r.url;
             };
 
