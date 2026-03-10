@@ -1059,6 +1059,7 @@
                             showToast('Cambios guardados', 'success');
                             woEditedFields = {};
                             woHideSaveBar();
+                            _crmTableDirty = true;
                             // Refresh data
                             openDetalle(currentOppId);
                         } else {
@@ -1126,6 +1127,8 @@
                 }
             }
 
+            var _crmTableDirty = false; // Solo refrescar si algo cambió
+
             function _doCloseDetalle() {
                 detalleOverlay.classList.add('closing');
                 setTimeout(function () {
@@ -1133,7 +1136,10 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
-                refreshCrmTable();
+                if (_crmTableDirty) {
+                    _crmTableDirty = false;
+                    refreshCrmTable();
+                }
             }
 
             function _showMissingActivityWarning() {
@@ -1445,6 +1451,7 @@
         window.addEventListener('message', function (e) {
             if (e.data && e.data.type === 'cotizacion-created') {
                 cotizacionCreated = true;
+                _crmTableDirty = true;
                 if (typeof currentOppId !== 'undefined' && currentOppId && typeof openDetalle === 'function') {
                     openDetalle(currentOppId);
                 }
