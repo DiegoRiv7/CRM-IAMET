@@ -258,7 +258,7 @@ class Command(BaseCommand):
         else:
             vinculos = []
             if proyecto: vinculos.append(f"Proy: {proyecto.nombre[:15]}...")
-            if oportunidad: vinculos.append(f"Opp: {oportunidad.titulo[:15]}...")
+            if oportunidad: vinculos.append(f"Opp: {oportunidad.oportunidad[:15]}...")
             
             vinculos_str = " | ".join(vinculos)
             if vinculos_str:
@@ -266,4 +266,13 @@ class Command(BaseCommand):
             else:
                 vinculos_str = "| Sin Vínculos"
 
-            self.stdout.write(f"  [DRY] TAREA '{titulo[:40]}' - {responsable.username} {vinculos_str}")
+            creator_name = creador.username
+            resp_name = responsable.username
+            
+            part_names = [self.user_map[str(uid)].username for uid in accomplices_ids if str(uid) in self.user_map]
+            obs_names = [self.user_map[str(uid)].username for uid in auditors_ids if str(uid) in self.user_map]
+
+            part_str = f" | Part: {','.join(part_names)}" if part_names else ""
+            obs_str = f" | Obs: {','.join(obs_names)}" if obs_names else ""
+
+            self.stdout.write(f"  [DRY] TAREA '{titulo[:40]}' - Creador: {creator_name} -> Resp: {resp_name}{part_str}{obs_str} {vinculos_str}")
