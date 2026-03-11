@@ -92,6 +92,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--dry-run", action="store_true", help="Muestra acciones sin guardar")
+        parser.add_argument("--task-id", type=str, help="ID de Bitrix de una tarea específica para probar")
 
     def handle(self, *args, **options):
         if not WEBHOOK_BASE:
@@ -99,6 +100,8 @@ class Command(BaseCommand):
             return
 
         dry_run = options["dry_run"]
+        task_id = options.get("task_id")
+        
         if dry_run:
             self.stdout.write(self.style.WARNING("MODO DRY-RUN — no se guardará nada"))
 
@@ -192,16 +195,20 @@ class Command(BaseCommand):
 
         default_user = _get_or_create_default_user()
 
-        self.stdout.write("Descargando TODAS las tareas de Bitrix24...")
+        self.stdout.write("Descargando tareas de Bitrix24...")
         try:
-            # Traemos TODAS las tareas (sin filtrar por GROUP_ID)
-            tasks = _get_all_pages("tasks.task.list", {
+            payload = {
                 "select": [
                     "ID", "TITLE", "DESCRIPTION", "STATUS", "PRIORITY",
                     "DEADLINE", "CREATED_DATE", "RESPONSIBLE_ID", "CREATED_BY",
                     "ACCOMPLICES", "AUDITORS", "CLOSED_DATE", "GROUP_ID", "UF_CRM_TASK"
-                ],
-            })
+                ]
+            }
+            if task_id:
+                payload["filter"] = {"ID": task_id}
+                
+            # Traemos TODAS las tareas (sin filtrar por GROUP_ID)
+            tasks = _get_all_pages("tasks.task.list", payload)
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Error fatal al descargar tareas: {e}"))
             return
