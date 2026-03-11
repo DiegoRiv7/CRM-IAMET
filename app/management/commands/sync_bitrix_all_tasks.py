@@ -17,7 +17,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 
-from app.models import Proyecto, Tarea, UserProfile
+from app.models import Proyecto, Tarea, UserProfile, TodoItem
 
 WEBHOOK_BASE = os.getenv(
     "BITRIX_PROJECTS_WEBHOOK_URL",
@@ -114,6 +114,11 @@ class Command(BaseCommand):
         for p in Proyecto.objects.filter(bitrix_group_id__isnull=False):
             self.proyecto_map[str(p.bitrix_group_id)] = p
 
+        # 3. Mapa de Oportunidades (Deals)
+        self.deal_map = {}
+        for d in TodoItem.objects.filter(bitrix_deal_id__isnull=False):
+            self.deal_map[str(d.bitrix_deal_id)] = d
+
         default_user = _get_or_create_default_user()
 
         self.stdout.write("Descargando TODAS las tareas de Bitrix24...")
@@ -123,7 +128,7 @@ class Command(BaseCommand):
                 "select": [
                     "ID", "TITLE", "DESCRIPTION", "STATUS", "PRIORITY",
                     "DEADLINE", "CREATED_DATE", "RESPONSIBLE_ID", "CREATED_BY",
-                    "ACCOMPLICES", "AUDITORS", "CLOSED_DATE", "GROUP_ID"
+                    "ACCOMPLICES", "AUDITORS", "CLOSED_DATE", "GROUP_ID", "UF_CRM_TASK"
                 ],
             })
         except Exception as e:
@@ -177,6 +182,20 @@ class Command(BaseCommand):
         group_id = str(t.get("groupId") or t.get("GROUP_ID") or "")
         proyecto = self.proyecto_map.get(group_id)
 
+        # Vincular a Oportunidad si existe en UF_CRM_TASK
+        uf_crm = t.get("ufCrmTask") or t.get("UF_CRM_TASK") or []
+        if isinstance(uf_crm, str):
+            uf_crm = [uf_crm]
+
+        oportunidad = None
+        for item in uf_crm:
+            # Bitrix deals guardan el formato "D_1234"
+            if item.startswith("D_"):
+                deal_id = item.replace("D_", "")
+                oportunidad = self.deal_map.get(deal_id)
+                if oportunidad:
+                    break
+
         if not dry_run:
             tarea, created = Tarea.objects.update_or_create(
                 bitrix_task_id=bitrix_task_id,
@@ -188,6 +207,7 @@ class Command(BaseCommand):
                     "fecha_limite": fecha_limite,
                     "fecha_completada": fecha_completada,
                     "proyecto": proyecto, # Se vincula directo aquí
+                    "oportunidad": oportunidad, # Se vincula a la oportunidad
                     "creado_por": creador,
                     "asignado_a": responsable,
                 },
@@ -213,5 +233,14 @@ class Command(BaseCommand):
             if proyecto:
                 self.stats["vinculadas_proyecto"] += 1
         else:
-            proyecto_str = f"| Proy: {proyecto.nombre[:15]}..." if proyecto else "| Sin Proyecto"
-            self.stdout.write(f"  [DRY] TAREA '{titulo[:40]}' - {responsable.username} {proyecto_str}")
+            vinculos = []
+            if proyecto: vinculos.append(f"Proy: {proyecto.nombre[:15]}...")
+            if oportunidad: vinculos.append(f"Opp: {oportunidad.titulo[:15]}...")
+            
+            vinculos_str = " | ".join(vinculos)
+            if vinculos_str:
+                vinculos_str = "| " + vinculos_str
+            else:
+                vinculos_str = "| Sin Vínculos"
+
+            self.stdout.write(f"  [DRY] TAREA '{titulo[:40]}' - {responsable.username} {vinculos_str}")
