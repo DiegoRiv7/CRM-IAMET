@@ -2734,7 +2734,7 @@ def api_tareas(request):
                     Q(creado_por=request.user) |
                     Q(asignado_a=request.user) |
                     Q(participantes=request.user)
-                ).distinct().select_related('creado_por', 'asignado_a', 'proyecto').order_by('-fecha_creacion')
+                ).distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
             
             tareas_data = []
             for tarea in tareas:
@@ -2760,6 +2760,9 @@ def api_tareas(request):
                     'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
                     'proyecto_nombre': tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto',
                     'proyecto_id': tarea.proyecto.id if tarea.proyecto else None,
+                    'oportunidad_id': tarea.oportunidad.id if tarea.oportunidad else None,
+                    'oportunidad_nombre': tarea.oportunidad.oportunidad if tarea.oportunidad else None,
+                    'oportunidad_cliente': tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                     'pausado': getattr(tarea, 'pausado', False),
@@ -15115,6 +15118,16 @@ def api_actualizar_tarea_real(request, tarea_id):
                     pass
             else:
                 tarea.cliente = None
+
+        if 'oportunidad_id' in data:
+            opp_id_val = data.get('oportunidad_id')
+            if opp_id_val:
+                try:
+                    tarea.oportunidad = TodoItem.objects.get(id=opp_id_val)
+                except TodoItem.DoesNotExist:
+                    pass
+            else:
+                tarea.oportunidad = None
 
         # Guardar cambios
         tarea.save()

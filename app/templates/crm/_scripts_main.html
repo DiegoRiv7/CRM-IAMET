@@ -2833,13 +2833,91 @@
             var tituloStyle = done ? 'text-decoration:line-through;color:#9CA3AF;' : (vencida ? 'color:#FF3B30;' : '');
             var fechaStyle = vencida ? 'color:#FF3B30;font-weight:600;' : 'color:#6B7280;';
             var icon = isHP ? '<span style="color:#F59E0B;font-size:0.8rem;">&#9650;</span>' : (vencida ? '<span style="color:#FF3B30;font-size:0.8rem;">&#9888;</span>' : '');
+            var oppCell;
+            if (tarea.oportunidad_id) {
+                var oppLabel = tarea.oportunidad_nombre || 'Oportunidad';
+                if (oppLabel.length > 35) oppLabel = oppLabel.substring(0, 33) + '…';
+                oppCell = '<span style="color:#0052D4;font-size:0.78rem;cursor:pointer;" title="' + (tarea.oportunidad_nombre || '') + '" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ')">' + oppLabel + '</span>';
+            } else {
+                oppCell = '<span class="crm-task-asignar-opp" data-task-id="' + tarea.id + '" style="color:#9CA3AF;font-size:0.78rem;cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation();crmTaskAbrirAsignarOpp(this,' + tarea.id + ')">Asignar...</span>';
+            }
             return '<tr class="' + (isHP ? 'task-row-priority' : '') + '" style="' + rowBg + 'cursor:pointer;" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
                 '<td><div style="display:flex;align-items:center;gap:0.4rem;">' + icon + '<span class="task-name" style="' + tituloStyle + '">' + tarea.titulo + '</span></div></td>' +
                 '<td>' + getEstadoBadgeCRM(tarea.estado) + '</td>' +
                 '<td style="' + fechaStyle + '">' + (tarea.fecha_limite ? formatearFechaCRM(tarea.fecha_limite) : 'Sin fecha') + '</td>' +
                 '<td style="color:#6B7280;">' + tarea.creado_por + '</td>' +
                 '<td style="color:#6B7280;">' + (tarea.responsable || 'Sin asignar') + '</td>' +
+                '<td>' + oppCell + '</td>' +
                 '</tr>';
+        }
+
+        // ── Dropdown para asignar oportunidad a tarea ──
+        var _crmOppPickerTaskId = null;
+        var _crmOppPickerTimer = null;
+        function crmTaskAbrirAsignarOpp(anchor, tareaId) {
+            var existing = document.getElementById('crmOppPickerDropdown');
+            if (existing) existing.remove();
+            if (_crmOppPickerTaskId === tareaId) { _crmOppPickerTaskId = null; return; }
+            _crmOppPickerTaskId = tareaId;
+            var drop = document.createElement('div');
+            drop.id = 'crmOppPickerDropdown';
+            drop.style.cssText = 'position:fixed;background:#fff;border:1px solid #E5E5EA;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:99999;width:280px;padding:8px;';
+            drop.innerHTML = '<input id="crmOppPickerInput" placeholder="Buscar oportunidad..." style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.82rem;outline:none;margin-bottom:6px;"><div id="crmOppPickerList" style="max-height:200px;overflow-y:auto;"></div>';
+            document.body.appendChild(drop);
+            var rect = anchor.getBoundingClientRect();
+            drop.style.top = (rect.bottom + 4) + 'px';
+            drop.style.left = Math.min(rect.left, window.innerWidth - 290) + 'px';
+            var inp = document.getElementById('crmOppPickerInput');
+            inp.focus();
+            crmOppPickerSearch('');
+            inp.addEventListener('input', function() {
+                clearTimeout(_crmOppPickerTimer);
+                _crmOppPickerTimer = setTimeout(function() { crmOppPickerSearch(inp.value); }, 250);
+            });
+            setTimeout(function() {
+                document.addEventListener('click', function _closePicker(e) {
+                    if (!drop.contains(e.target)) { drop.remove(); _crmOppPickerTaskId = null; document.removeEventListener('click', _closePicker); }
+                });
+            }, 50);
+        }
+        function crmOppPickerSearch(q) {
+            var list = document.getElementById('crmOppPickerList');
+            if (!list) return;
+            list.innerHTML = '<div style="color:#9CA3AF;font-size:0.78rem;padding:6px;">Buscando...</div>';
+            fetch('/app/api/buscar-oportunidades-proyecto/?q=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!list) return;
+                    var opps = data.oportunidades || [];
+                    if (!opps.length) { list.innerHTML = '<div style="color:#9CA3AF;font-size:0.78rem;padding:6px;">Sin resultados</div>'; return; }
+                    list.innerHTML = opps.map(function(o) {
+                        var lbl = (o.titulo || o.oportunidad || '').substring(0, 40);
+                        var cli = (o['cliente__nombre_empresa'] || o.cliente || '').substring(0, 25);
+                        return '<div style="padding:7px 8px;border-radius:6px;cursor:pointer;font-size:0.82rem;" onmouseenter="this.style.background=\'#F2F2F7\'" onmouseleave="this.style.background=\'\'" onclick="crmOppPickerSelect(' + o.id + ',\'' + lbl.replace(/'/g,'') + '\')">' +
+                            '<div style="font-weight:600;color:#1D1D1F;">' + lbl + '</div>' +
+                            (cli ? '<div style="color:#8E8E93;font-size:0.72rem;">' + cli + '</div>' : '') +
+                            '</div>';
+                    }).join('');
+                });
+        }
+        function crmOppPickerSelect(oppId, oppNombre) {
+            var tareaId = _crmOppPickerTaskId;
+            var drop = document.getElementById('crmOppPickerDropdown');
+            if (drop) drop.remove();
+            _crmOppPickerTaskId = null;
+            if (!tareaId) return;
+            fetch('/app/api/tarea/' + tareaId + '/actualizar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: JSON.stringify({ oportunidad_id: oppId })
+            }).then(function(r) { return r.json(); }).then(function(res) {
+                if (res.success) {
+                    showToast('Oportunidad asignada', 'success');
+                    cargarTareasCRM();
+                } else {
+                    showToast(res.error || 'Error al asignar', 'error');
+                }
+            });
         }
 
         function getEstadoBadgeCRM(estado) {
