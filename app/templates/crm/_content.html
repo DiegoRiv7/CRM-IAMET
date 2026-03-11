@@ -152,12 +152,9 @@
             </colgroup>
             <thead class="bg-gray-50/80">
                 <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en'
-                        %}Opportunity{% else %}Oportunidad{% endif %}</th>
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en'
-                        %}Contact{% else %}Contacto{% endif %}</th>
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Area{%
-                        else %}Área{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en'             %}Opportunity{% else %}Oportunidad{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en'             %}Contact{% else %}Contacto{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Area{%             else %}Área{% endif %}</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
@@ -191,39 +188,22 @@
                         }}{% else %}-{% endif %}</td>
                     <td class="px-2 py-4 text-gray-400 text-xs italic">{{ item.area|default:'-' }}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'PANDUIT' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'APC' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION'
-                        %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION'             %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'GENETEC' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'AXIS' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo'
-                        %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo'             %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'RUNRATE' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'PÓLIZA' or item.producto == 'POLIZA'
-                        %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
-                        %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and
-                        item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and
-                        item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and
-                        item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and
-                        item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{
-                            item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{%
-                        endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'PÓLIZA' or item.producto == 'POLIZA'             %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else             %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and             item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and             item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and             item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and             item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{
+                            item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
                         ${{ item.monto|format_currency_es }}</td>
                 </tr>
@@ -300,8 +280,7 @@
                             op.oportunidad|truncatechars:35 }}</span>
                         <span
                             class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block"
-                            data-cliente-id="{% if op.cliente %}{{ op.cliente.id }}{% endif %}" data-tab="cobrado">{% if
-                            op.cliente %}{{ op.cliente.nombre_empresa|truncatechars:35 }}{% else %}—{% endif %}</span>
+                            data-cliente-id="{% if op.cliente %}{{ op.cliente.id }}{% endif %}" data-tab="cobrado">{% if               op.cliente %}{{ op.cliente.nombre_empresa|truncatechars:35 }}{% else %}—{% endif %}</span>
                     </td>
                     <td class="px-2 py-4"><span class="text-xs font-medium text-gray-600">{{ op.get_producto_display
                             }}</span></td>
@@ -357,35 +336,25 @@
                     <td class="px-2 py-4 text-gray-600">-</td>
                     <td class="px-2 py-4 text-gray-400 text-xs italic">-</td>
                     <td class="px-2 py-4 text-right">{% if item.zebra > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.zebra|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.zebra|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.panduit > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.panduit|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.panduit|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.apc > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.apc|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif
-                        %}</td>
+                            item.apc|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif             %}</td>
                     <td class="px-2 py-4 text-right">{% if item.avigilon > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.avigilon|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.avigilon|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.genetec > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.genetec|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.genetec|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.axis > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.axis|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.axis|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.software > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.software|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.software|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.runrate > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.runrate|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.runrate|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.poliza > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.poliza|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.poliza|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.otros > 0 %}<span class="text-blue-600 font-bold">${{
-                            item.otros|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
-                        endif %}</td>
+                            item.otros|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%             endif %}</td>
                     <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
                         ${{ item.total|format_currency_es }}</td>
                     <td class="px-2 py-4 text-right font-bold border-l border-gray-100 bg-gray-50/20">${{
@@ -413,11 +382,9 @@
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-gray-400">{% if request.user.userprofile.language == 'en' %}Coming Soon{%
-                else %}Próximamente{% endif %}</h3>
+            <h3 class="text-lg font-bold text-gray-400">{% if request.user.userprofile.language == 'en' %}Coming Soon{%         else %}Próximamente{% endif %}</h3>
             <p class="text-[11px] font-medium">{% if request.user.userprofile.language == 'en' %}This section will be
-                available in the next update.{% else %}Esta sección estará disponible en la siguiente actualización.{%
-                endif %}</p>
+                available in the next update.{% else %}Esta sección estará disponible en la siguiente actualización.{%         endif %}</p>
         </div>
         {% endif %}
     </div>
