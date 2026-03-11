@@ -62,7 +62,7 @@ class Command(BaseCommand):
         self.stdout.write('\n📊 GENERAL ANALYSIS:')
         
         # Buscar todos los bitrix_user_ids duplicados
-        all_profiles = UserProfile.objects.exclude(bitrix_user_id__isnull=True).exclude(bitrix_user_id='')
+        all_profiles = UserProfile.objects.exclude(bitrix_user_id__isnull=True)
         bitrix_ids = [profile.bitrix_user_id for profile in all_profiles]
         id_counts = Counter(bitrix_ids)
         duplicates = {bitrix_id: count for bitrix_id, count in id_counts.items() if count > 1}
@@ -85,7 +85,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'  - {user.username} (ID: {user.id})')
         
         # Verificar si hay UserProfiles con bitrix_user_id nulo o vacío
-        null_profiles = UserProfile.objects.filter(bitrix_user_id__isnull=True) | UserProfile.objects.filter(bitrix_user_id='')
+        null_profiles = UserProfile.objects.filter(bitrix_user_id__isnull=True)
         if null_profiles.exists():
             self.stdout.write(f'\n⚠️  Found {null_profiles.count()} UserProfiles without bitrix_user_id:')
             for profile in null_profiles[:5]:
