@@ -944,7 +944,7 @@
                 };
 
                 // ── PO Number ──
-                window.woGuardarPO = function(input) {
+                window.woGuardarPO = function (input) {
                     input.style.borderBottomColor = 'transparent';
                     var val = input.value.trim();
                     if (val === (woOriginalData.po_number || '')) return;
@@ -952,11 +952,11 @@
                     fd.append('po_number', val);
                     fetch('/app/api/oportunidad/' + woCurrentId + '/po/', {
                         method: 'POST', body: fd,
-                        headers: {'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''}
-                    }).then(function(r){ return r.json(); }).then(function(data){
+                        headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+                    }).then(function (r) { return r.json(); }).then(function (data) {
                         if (data.ok) { woOriginalData.po_number = val; }
                         else { input.value = woOriginalData.po_number || ''; }
-                    }).catch(function(){ input.value = woOriginalData.po_number || ''; });
+                    }).catch(function () { input.value = woOriginalData.po_number || ''; });
                 };
 
                 // ── Probabilidad (click/drag on bar) ──
@@ -2852,9 +2852,14 @@
             var icon = isHP ? '<span style="color:#F59E0B;font-size:0.8rem;">&#9650;</span>' : (vencida ? '<span style="color:#FF3B30;font-size:0.8rem;">&#9888;</span>' : '');
             var oppCell;
             if (tarea.oportunidad_id) {
-                var oppLabel = tarea.oportunidad_nombre || 'Oportunidad';
+                var oppLabel = (tarea.oportunidad_nombre || 'Oportunidad');
                 if (oppLabel.length > 35) oppLabel = oppLabel.substring(0, 33) + '…';
-                oppCell = '<span style="color:#0052D4;font-size:0.78rem;cursor:pointer;" title="' + (tarea.oportunidad_nombre || '') + '" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ')">' + oppLabel + '</span>';
+                oppCell = '<span style="color:#0052D4;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#EFF6FF;padding:2px 8px;border-radius:12px;border:1px solid #BFDBFE;" title="Oportunidad: ' + (tarea.oportunidad_nombre || '') + '" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' + oppLabel + '</span>';
+            } else if (tarea.proyecto_id) {
+                var proyLabel = (tarea.proyecto_nombre || 'Proyecto');
+                if (proyLabel.length > 35) proyLabel = proyLabel.substring(0, 33) + '…';
+                var proyUrl = "/app/proyectos/ingenieria/";
+                oppCell = '<span style="color:#7C3AED;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#F5F3FF;padding:2px 8px;border-radius:12px;border:1px solid #DDD6FE;" title="Proyecto: ' + tarea.proyecto_nombre + '" onclick="event.stopPropagation();window.location.href=\'' + proyUrl + '\'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' + proyLabel + '</span>';
             } else {
                 oppCell = '<span class="crm-task-asignar-opp" data-task-id="' + tarea.id + '" style="color:#9CA3AF;font-size:0.78rem;cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation();crmTaskAbrirAsignarOpp(this,' + tarea.id + ')">Asignar...</span>';
             }
@@ -2887,11 +2892,11 @@
             var inp = document.getElementById('crmOppPickerInput');
             inp.focus();
             crmOppPickerSearch('');
-            inp.addEventListener('input', function() {
+            inp.addEventListener('input', function () {
                 clearTimeout(_crmOppPickerTimer);
-                _crmOppPickerTimer = setTimeout(function() { crmOppPickerSearch(inp.value); }, 250);
+                _crmOppPickerTimer = setTimeout(function () { crmOppPickerSearch(inp.value); }, 250);
             });
-            setTimeout(function() {
+            setTimeout(function () {
                 document.addEventListener('click', function _closePicker(e) {
                     if (!drop.contains(e.target)) { drop.remove(); _crmOppPickerTaskId = null; document.removeEventListener('click', _closePicker); }
                 });
@@ -2902,15 +2907,15 @@
             if (!list) return;
             list.innerHTML = '<div style="color:#9CA3AF;font-size:0.78rem;padding:6px;">Buscando...</div>';
             fetch('/app/api/buscar-oportunidades-proyecto/?q=' + encodeURIComponent(q))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
                     if (!list) return;
                     var opps = data.oportunidades || [];
                     if (!opps.length) { list.innerHTML = '<div style="color:#9CA3AF;font-size:0.78rem;padding:6px;">Sin resultados</div>'; return; }
-                    list.innerHTML = opps.map(function(o) {
+                    list.innerHTML = opps.map(function (o) {
                         var lbl = (o.titulo || o.oportunidad || '').substring(0, 40);
                         var cli = (o['cliente__nombre_empresa'] || o.cliente || '').substring(0, 25);
-                        return '<div style="padding:7px 8px;border-radius:6px;cursor:pointer;font-size:0.82rem;" onmouseenter="this.style.background=\'#F2F2F7\'" onmouseleave="this.style.background=\'\'" onclick="crmOppPickerSelect(' + o.id + ',\'' + lbl.replace(/'/g,'') + '\')">' +
+                        return '<div style="padding:7px 8px;border-radius:6px;cursor:pointer;font-size:0.82rem;" onmouseenter="this.style.background=\'#F2F2F7\'" onmouseleave="this.style.background=\'\'" onclick="crmOppPickerSelect(' + o.id + ',\'' + lbl.replace(/'/g, '') + '\')">' +
                             '<div style="font-weight:600;color:#1D1D1F;">' + lbl + '</div>' +
                             (cli ? '<div style="color:#8E8E93;font-size:0.72rem;">' + cli + '</div>' : '') +
                             '</div>';
@@ -2927,7 +2932,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
                 body: JSON.stringify({ oportunidad_id: oppId })
-            }).then(function(r) { return r.json(); }).then(function(res) {
+            }).then(function (r) { return r.json(); }).then(function (res) {
                 if (res.success) {
                     showToast('Oportunidad asignada', 'success');
                     cargarTareasCRM();
