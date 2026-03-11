@@ -161,7 +161,11 @@ class Command(BaseCommand):
             "filter": {},
         }
         if only_ids:
-            payload["filter"]["ID"] = only_ids
+            if len(only_ids) == 1:
+                payload["filter"]["ID"] = only_ids[0]
+            else:
+                # Sintaxis de Bitrix para filtrado con listas
+                payload["filter"]["@ID"] = only_ids
 
         try:
             groups = _get_all_pages("sonet_group.get", payload)
