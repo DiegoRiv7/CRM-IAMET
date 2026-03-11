@@ -97,7 +97,9 @@ class Command(BaseCommand):
                     post_message = str(c.get("POST_MESSAGE") or "").strip()
                     if not post_message:
                         continue
-                        
+                    author_id = str(c.get("AUTHOR_ID") or "")
+                    autor = user_map.get(author_id, default_user)
+                    
                     # Ignorar mensajes automáticos del sistema de Bitrix
                     system_prefixes = [
                         "Observadores agregados:",
@@ -111,9 +113,10 @@ class Command(BaseCommand):
                     if any(post_message.startswith(prefix) for prefix in system_prefixes):
                         continue
                         
-                    author_id = str(c.get("AUTHOR_ID") or "")
-                    autor = user_map.get(author_id, default_user)
-                    
+                    # Extra filtering for system assignments like "[USER=x]...[/USER], usted fue designado..."
+                    if ", usted fue design" in post_message or "usted fue designado" in post_message:
+                        continue
+                        
                     # Convertir [USER=X]Nombre[/USER] a @username local
                     def replace_mention(match):
                         user_id = match.group(1)
