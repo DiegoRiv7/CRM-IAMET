@@ -70,9 +70,16 @@ def _get_all_pages(endpoint, payload):
     return records
 
 def _map_status_tarea(bitrix_status):
+    # Bitrix Statuses:
+    # 1: New, 2: Pending, 3: In Progress, 4: Supposedly Completed, 5: Completed, 6: Deferred, 7: Declined
     mapping = {
-        "1": "pendiente", "2": "iniciada", "3": "completada",
-        "4": "en_progreso", "5": "cancelada", "6": "cancelada",
+        "1": "pendiente", 
+        "2": "pendiente", 
+        "3": "en_progreso",
+        "4": "en_progreso", 
+        "5": "completada", 
+        "6": "cancelada",
+        "7": "cancelada",
     }
     return mapping.get(str(bitrix_status), "pendiente")
 
