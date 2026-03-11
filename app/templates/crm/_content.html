@@ -152,9 +152,12 @@
             </colgroup>
             <thead class="bg-gray-50/80">
                 <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Opportunity{% else %}Oportunidad{% endif %}</th>
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Contact{% else %}Contacto{% endif %}</th>
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Area{% else %}Área{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en'
+                        %}Opportunity{% else %}Oportunidad{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en'
+                        %}Contact{% else %}Contacto{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Area{%
+                        else %}Área{% endif %}</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
@@ -177,29 +180,50 @@
                     data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}"
                     data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}"
                     data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
-                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
+                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{
+                            item.oportunidad }}</span>
                         <span
                             class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block"
-                            data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span>
+                            data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{
+                            item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span>
                     </td>
-                    <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18 }}{% else %}-{% endif %}</td>
+                    <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18
+                        }}{% else %}-{% endif %}</td>
                     <td class="px-2 py-4 text-gray-400 text-xs italic">{{ item.area|default:'-' }}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'PANDUIT' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'APC' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION'
+                        %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'GENETEC' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'AXIS' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo'
+                        %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'RUNRATE' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'PÓLIZA' or item.producto == 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'PÓLIZA' or item.producto == 'POLIZA'
+                        %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else
+                        %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and
+                        item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and
+                        item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and
+                        item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and
+                        item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{
+                            item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{%
+                        endif %}</td>
                     <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
                         ${{ item.monto|format_currency_es }}</td>
                 </tr>
@@ -230,15 +254,18 @@
                     data-contacto="{% if cot.created_by %}{{ cot.created_by.get_full_name|default:cot.created_by.username }}{% else %}—{% endif %}"
                     data-monto="{{ cot.total|stringformat:'f' }}">
                     <td class="px-2 py-4">{% if cot.oportunidad %}<span class="opp-name-link"
-                            data-oportunidad-id="{{ cot.oportunidad.id }}">{{ cot.oportunidad.oportunidad|truncatechars:35 }}</span>{% else %}—{% endif %}
+                            data-oportunidad-id="{{ cot.oportunidad.id }}">{{
+                            cot.oportunidad.oportunidad|truncatechars:35 }}</span>{% else %}—{% endif %}
                         <span
                             class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block"
-                            data-cliente-id="{{ cot.cliente.id|default:'' }}" data-tab="cotizado">{{ cot.cliente.nombre_empresa|default:'- Sin Cliente -'|truncatechars:35 }}</span>
+                            data-cliente-id="{{ cot.cliente.id|default:'' }}" data-tab="cotizado">{{
+                            cot.cliente.nombre_empresa|default:'- Sin Cliente -'|truncatechars:35 }}</span>
                     </td>
                     <td class="px-2 py-4"><a href="{% url 'view_cotizacion_pdf' cot.id %}" target="_blank"
                             class="px-2 py-1 bg-blue-50 rounded text-xs font-mono font-bold text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors cursor-pointer"
                             style="text-decoration:none;">COT-{{ cot.id }}</a></td>
-                    <td class="px-2 py-4 text-gray-500 text-xs">{% if cot.created_by %}{{ cot.created_by.get_full_name|default:cot.created_by.username }}{% else %}—{% endif %}</td>
+                    <td class="px-2 py-4 text-gray-500 text-xs">{% if cot.created_by %}{{
+                        cot.created_by.get_full_name|default:cot.created_by.username }}{% else %}—{% endif %}</td>
                     <td class="px-2 py-4 text-right text-gray-400 font-medium">${{ cot.subtotal|floatformat:0 }}
                     </td>
                     <td class="px-2 py-4 text-right font-black text-blue-600">${{ cot.total|floatformat:0 }}</td>
@@ -269,13 +296,17 @@
                     data-cliente="{% if op.cliente %}{{ op.cliente.nombre_empresa }}{% else %}- Sin Cliente -{% endif %}"
                     data-contacto="{% if op.contacto %}{{ op.contacto.nombre }}{% else %}-{% endif %}"
                     data-producto="{{ op.producto }}" data-monto="{{ op.monto|stringformat:'f' }}">
-                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ op.id }}">{{ op.oportunidad|truncatechars:35 }}</span>
+                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ op.id }}">{{
+                            op.oportunidad|truncatechars:35 }}</span>
                         <span
                             class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block"
-                            data-cliente-id="{% if op.cliente %}{{ op.cliente.id }}{% endif %}" data-tab="cobrado">{% if op.cliente %}{{ op.cliente.nombre_empresa|truncatechars:35 }}{% else %}—{% endif %}</span>
+                            data-cliente-id="{% if op.cliente %}{{ op.cliente.id }}{% endif %}" data-tab="cobrado">{% if
+                            op.cliente %}{{ op.cliente.nombre_empresa|truncatechars:35 }}{% else %}—{% endif %}</span>
                     </td>
-                    <td class="px-2 py-4"><span class="text-xs font-medium text-gray-600">{{ op.get_producto_display }}</span></td>
-                    <td class="px-2 py-4 text-gray-500 text-xs">{{ op.usuario.get_full_name|default:op.usuario.username }}</td>
+                    <td class="px-2 py-4"><span class="text-xs font-medium text-gray-600">{{ op.get_producto_display
+                            }}</span></td>
+                    <td class="px-2 py-4 text-gray-500 text-xs">{{ op.usuario.get_full_name|default:op.usuario.username
+                        }}</td>
                     <td class="px-2 py-4 text-center text-gray-400 text-xs">{{ op.fecha_creacion|date:"d M Y" }}
                     </td>
                     <td class="px-2 py-4 text-right font-black text-emerald-600">${{ op.monto|floatformat:0 }}</td>
@@ -318,25 +349,49 @@
                     data-monto="{{ item.facturado|stringformat:'f' }}">
                     <td class="px-2 py-4"><span
                             class="client-name-link font-bold text-gray-900 leading-tight cursor-pointer hover:text-blue-600 transition-colors"
-                            data-cliente-id="{{ item.cliente.id }}">{{ item.cliente.nombre_empresa|truncatechars:35 }}</span>
-                        <div class="text-[9px] text-gray-400 font-medium uppercase mt-1">{{ item.cliente.sector|default:'- Sin Segmento -'|truncatechars:35 }}</div>
+                            data-cliente-id="{{ item.cliente.id }}">{{ item.cliente.nombre_empresa|truncatechars:35
+                            }}</span>
+                        <div class="text-[9px] text-gray-400 font-medium uppercase mt-1">{{
+                            item.cliente.sector|default:'- Sin Segmento -'|truncatechars:35 }}</div>
                     </td>
                     <td class="px-2 py-4 text-gray-600">-</td>
                     <td class="px-2 py-4 text-gray-400 text-xs italic">-</td>
-                    <td class="px-2 py-4 text-right">{% if item.zebra > 0 %}<span class="text-blue-600 font-bold">${{ item.zebra|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.panduit > 0 %}<span class="text-blue-600 font-bold">${{ item.panduit|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.apc > 0 %}<span class="text-blue-600 font-bold">${{ item.apc|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.avigilon > 0 %}<span class="text-blue-600 font-bold">${{ item.avigilon|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.genetec > 0 %}<span class="text-blue-600 font-bold">${{ item.genetec|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.axis > 0 %}<span class="text-blue-600 font-bold">${{ item.axis|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.software > 0 %}<span class="text-blue-600 font-bold">${{ item.software|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.runrate > 0 %}<span class="text-blue-600 font-bold">${{ item.runrate|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.poliza > 0 %}<span class="text-blue-600 font-bold">${{ item.poliza|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.otros > 0 %}<span class="text-blue-600 font-bold">${{ item.otros|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.zebra > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.zebra|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.panduit > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.panduit|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.apc > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.apc|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif
+                        %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.avigilon > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.avigilon|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.genetec > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.genetec|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.axis > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.axis|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.software > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.software|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.runrate > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.runrate|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.poliza > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.poliza|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.otros > 0 %}<span class="text-blue-600 font-bold">${{
+                            item.otros|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{%
+                        endif %}</td>
                     <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
                         ${{ item.total|format_currency_es }}</td>
-                    <td class="px-2 py-4 text-right font-bold border-l border-gray-100 bg-gray-50/20">${{ item.meta_cliente|default:0|floatformat:0 }}</td>
-                    <td class="px-2 py-4 text-right font-bold bg-gray-50/20">${{ item.meta_restante|default:0|floatformat:0 }}</td>
+                    <td class="px-2 py-4 text-right font-bold border-l border-gray-100 bg-gray-50/20">${{
+                        item.meta_cliente|default:0|floatformat:0 }}</td>
+                    <td class="px-2 py-4 text-right font-bold bg-gray-50/20">${{
+                        item.meta_restante|default:0|floatformat:0 }}</td>
                     <td class="px-2 py-3 text-center"><a href="{% url 'crear_cotizacion_with_id' item.cliente.id %}"
                             class="inline-block px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all">Nuevo
                             Deal</a></td>
@@ -358,9 +413,11 @@
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-gray-400">{% if request.user.userprofile.language == 'en' %}Coming Soon{% else %}Próximamente{% endif %}</h3>
+            <h3 class="text-lg font-bold text-gray-400">{% if request.user.userprofile.language == 'en' %}Coming Soon{%
+                else %}Próximamente{% endif %}</h3>
             <p class="text-[11px] font-medium">{% if request.user.userprofile.language == 'en' %}This section will be
-                available in the next update.{% else %}Esta sección estará disponible en la siguiente actualización.{% endif %}</p>
+                available in the next update.{% else %}Esta sección estará disponible en la siguiente actualización.{%
+                endif %}</p>
         </div>
         {% endif %}
     </div>
@@ -391,8 +448,8 @@
 <!-- ═══ TAREAS SECTION ═══ -->
 <div class="tareas-section" id="tareasSection">
     <div class="tareas-tabs" id="tareasTabs">
-        <button class="tareas-tab active" data-filter="todas">Todas</button>
-        <button class="tareas-tab" data-filter="pendientes">Pendientes</button>
+        <button class="tareas-tab" data-filter="todas">Todas</button>
+        <button class="tareas-tab active" data-filter="pendientes">Pendientes</button>
         <button class="tareas-tab" data-filter="completadas">Completadas</button>
     </div>
     <div class="tareas-table-wrap">
@@ -697,7 +754,8 @@
             <div class="crm-create-task-timing">
                 <div><label>Fecha límite</label><input type="datetime-local" id="crmTaskDueDate"></div>
                 <div><label>Creado por</label>
-                    <div style="padding:8px 0;font-weight:500;color:#1D1D1F;">{{ user.get_full_name|default:user.username }}</div>
+                    <div style="padding:8px 0;font-weight:500;color:#1D1D1F;">{{
+                        user.get_full_name|default:user.username }}</div>
                 </div>
             </div>
             <input type="hidden" id="crmTaskOppId" value="">

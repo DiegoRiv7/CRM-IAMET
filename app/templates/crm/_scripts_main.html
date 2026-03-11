@@ -2647,7 +2647,7 @@
 
         window._crmTareasMode = false;
         var _crmAllTareas = [];
-        var _crmCurrentFilter = 'todas';
+        var _crmCurrentFilter = 'pendientes';
         var _crmCurrentTaskId = null;
         var _crmTimerInterval = null;
 
@@ -2663,6 +2663,7 @@
         try {
             if (btnTareas) {
                 btnTareas.addEventListener('click', function () {
+                    localStorage.setItem('crmView', 'tareas');
                     window._crmTareasMode = true;
                     if (crmContent) crmContent.style.display = 'none';
                     if (tareasSection) tareasSection.classList.add('active');
@@ -2680,6 +2681,7 @@
 
             if (btnCRM) {
                 btnCRM.addEventListener('click', function () {
+                    localStorage.setItem('crmView', 'crm');
                     window._crmTareasMode = false;
                     if (crmContent) crmContent.style.display = '';
                     if (tareasSection) tareasSection.classList.remove('active');
@@ -2780,6 +2782,12 @@
         // ── Renderizar tabla de tareas ──
 
         document.addEventListener('DOMContentLoaded', function () {
+            // Restore last view from localStorage
+            if (localStorage.getItem('crmView') === 'tareas') {
+                var btnTareas = document.getElementById('btnTareas');
+                if (btnTareas) btnTareas.click();
+            }
+
             // Refresh tasks every minute to check for new vencimientos
             setInterval(function () {
                 if (typeof cargarTareasCRM === 'function') cargarTareasCRM();
@@ -3414,8 +3422,6 @@
             document.body.style.overflow = '';
             _crmCurrentTaskId = null;
             if (_crmTimerInterval) { clearInterval(_crmTimerInterval); _crmTimerInterval = null; }
-            // Reload tasks to reflect any changes
-            if (window._crmTareasMode) cargarTareasCRM();
         }
 
         // Click outside to close
@@ -3458,7 +3464,13 @@
                             }).then(function () { if (typeof notifLoad === 'function') notifLoad(); });
                         } catch (ex) { }
 
-                        if (window._crmTareasMode) cargarTareasCRM();
+                        // Actualizar en modo silencioso sin recargar tabla
+                        if (_crmTaskLastData) _crmTaskLastData.estado = 'completada';
+                        var idx = _crmAllTareas.findIndex(function (t) { return t.id === _crmCurrentTaskId; });
+                        if (idx !== -1) {
+                            _crmAllTareas[idx].estado = 'completada';
+                            if (window._crmTareasMode) renderTareasCRM(_crmCurrentFilter);
+                        }
                     } else {
                         if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
                         showToast(data.error || 'Error al completar', 'error');

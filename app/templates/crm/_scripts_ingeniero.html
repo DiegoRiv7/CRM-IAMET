@@ -35,6 +35,7 @@
         ingenieroMostrarActividades();
         var btnTareas = document.getElementById('btnTareas');
         if (btnTareas) btnTareas.addEventListener('click', function () {
+            localStorage.setItem('crmView', 'tareas');
             setIngenieroNav('tareas');
             var b = document.getElementById('actividadesBoard'); if (b) b.style.display = 'none';
             var c = document.getElementById('crmContentSection'); if (c) c.style.display = 'none';
@@ -43,11 +44,16 @@
         ['tabCotizado', 'tabCobrado', 'tabFacturado', 'facturadoAmount', 'progressPct', 'islandFiltersSection', 'islandSepFilters'].forEach(function (id) {
             var el = document.getElementById(id); if (el) el.style.display = 'none';
         });
+
+        // Restore view
+        if (localStorage.getItem('crmView') === 'tareas') {
+            if (btnTareas) btnTareas.click();
+        }
     });
 
     // ═══ NAVEGACIÓN ═══
     function setIngenieroNav(a) { document.querySelectorAll('.island-nav .island-nav-btn').forEach(function (b) { b.classList.remove('active'); }); var m = { 'tablero': 'btnTablero', 'tareas': 'btnTareas' }; var e = document.getElementById(m[a]); if (e) e.classList.add('active'); }
-    function ingenieroMostrarActividades() { setIngenieroNav('tablero'); var b = document.getElementById('actividadesBoard'); var c = document.getElementById('crmContentSection'); var t = document.getElementById('tareasSection'); if (b) { b.style.display = 'flex'; b.style.flexDirection = 'column'; } if (c) c.style.display = 'none'; if (t) t.classList.remove('active'); dashRefreshData(); }
+    function ingenieroMostrarActividades() { localStorage.setItem('crmView', 'tablero'); setIngenieroNav('tablero'); var b = document.getElementById('actividadesBoard'); var c = document.getElementById('crmContentSection'); var t = document.getElementById('tareasSection'); if (b) { b.style.display = 'flex'; b.style.flexDirection = 'column'; } if (c) c.style.display = 'none'; if (t) t.classList.remove('active'); dashRefreshData(); }
     window.ingenieroMostrarActividades = ingenieroMostrarActividades;
 
     // ═══ CONTROL SEGMENTADO ═══
