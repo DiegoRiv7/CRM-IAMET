@@ -242,18 +242,34 @@ class Command(BaseCommand):
         accomplices_ids = t.get("accomplices") or t.get("ACCOMPLICES") or []
         auditors_ids = t.get("auditors") or t.get("AUDITORS") or []
 
+        has_bitrix_import = False
+
         creador = self.user_map.get(creador_id, default_user)
         if creador == default_user:
             self.stats["bitrix_import_creador"] += 1
-            if dry_run:
-                self.stdout.write(f"    ⚠️ Creador ID '{creador_id}' no encontrado en BD. Usando bitrix_import.")
-
+            has_bitrix_import = True
+            
         responsable = self.user_map.get(responsable_id, default_user)
         if responsable == default_user:
             self.stats["bitrix_import_responsable"] += 1
+            has_bitrix_import = True
+            
+        for uid in accomplices_ids:
+            if str(uid) not in self.user_map:
+                self.stats["bitrix_import_participantes"] += 1
+                has_bitrix_import = True
+                
+        for uid in auditors_ids:
+            if str(uid) not in self.user_map:
+                self.stats["bitrix_import_observadores"] += 1
+                has_bitrix_import = True
+
+        if has_bitrix_import:
+            self.stats["ignoradas"] += 1
             if dry_run:
-                self.stdout.write(f"    ⚠️ Responsable ID '{responsable_id}' no encontrado en BD. Usando bitrix_import.")
-        
+                self.stdout.write(f"  [DRY/OMITIDA] TAREA '{titulo[:40]}' - Tiene un usuario Bitrix fantasma/eliminado.")
+            return
+
         estado = _map_status_tarea(t.get("status") or t.get("STATUS") or "1")
         prioridad = _map_priority_tarea(t.get("priority") or t.get("PRIORITY") or "1")
 
@@ -278,16 +294,10 @@ class Command(BaseCommand):
         # Regla de Negocio: 
         # 1. Prioridad: Oportunidad. Si tiene ambos, se liga a oportunidad y se le quita el proyecto.
         # 2. Si no tiene oportunidad, se queda en proyecto.
-        # 3. Si no tiene NINGÚN vínculo válido (ni proy ni opp), no la traemos.
+        # 3. Si no tiene ninguna, LA GUARDAMOS IGUAL (tareas sueltas).
         
         if oportunidad:
             proyecto = None  # Se da prioridad absoluta a la oportunidad
-        
-        if not oportunidad and not proyecto:
-            self.stats["ignoradas"] += 1
-            if dry_run:
-                self.stdout.write(f"  [DRY/OMITIDA] TAREA '{titulo[:40]}' - Sin Oportunidad ni Proyecto local.")
-            return
 
         if not dry_run:
             tarea, created = Tarea.objects.update_or_create(
@@ -306,13 +316,11 @@ class Command(BaseCommand):
                 },
             )
             
-            # Participantes y Observadores
+            # Participantes y Observadores (ya sabemos que todos existen por la validación de has_bitrix_import)
             participantes = []
             for uid in accomplices_ids:
                 if str(uid) in self.user_map:
                     participantes.append(self.user_map[str(uid)])
-                else:
-                    self.stats["bitrix_import_participantes"] += 1
                     
             if participantes:
                 tarea.participantes.set(participantes)
@@ -321,8 +329,6 @@ class Command(BaseCommand):
             for uid in auditors_ids:
                 if str(uid) in self.user_map:
                     observadores.append(self.user_map[str(uid)])
-                else:
-                    self.stats["bitrix_import_observadores"] += 1
                     
             if observadores:
                 tarea.observadores.set(observadores)
@@ -357,17 +363,11 @@ class Command(BaseCommand):
             for uid in accomplices_ids:
                 if str(uid) in self.user_map:
                     part_names.append(self.user_map[str(uid)].username)
-                else:
-                    self.stats["bitrix_import_participantes"] += 1
-                    part_names.append("bitrix_import")
                     
             obs_names = []
             for uid in auditors_ids:
                 if str(uid) in self.user_map:
                     obs_names.append(self.user_map[str(uid)].username)
-                else:
-                    self.stats["bitrix_import_observadores"] += 1
-                    obs_names.append("bitrix_import")
 
             part_str = f" | Part: {','.join(part_names)}" if part_names else ""
             obs_str = f" | Obs: {','.join(obs_names)}" if obs_names else ""
