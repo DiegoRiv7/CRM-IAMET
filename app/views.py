@@ -7761,6 +7761,26 @@ def actualizar_probabilidad(request, id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
+
+@login_required
+def actualizar_po(request, id):
+    """API para actualizar el campo PO de una oportunidad."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    try:
+        po = request.POST.get('po_number', '').strip()
+        todo = TodoItem.objects.get(pk=id)
+        todo.po_number = po
+        todo.save(update_fields=['po_number'])
+        return JsonResponse({'ok': True, 'po_number': po})
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
 @csrf_exempt
 @login_required
 
@@ -11617,6 +11637,7 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
             'producto': todo.producto or '',
             'area': todo.area or '',
             'probabilidad_cierre': todo.probabilidad_cierre or 0,
+            'po_number': todo.po_number or '',
             'mes_cierre': todo.mes_cierre or '',
             'tipo_negociacion': todo.tipo_negociacion or 'runrate',
             'etapa_corta': todo.etapa_corta or '',

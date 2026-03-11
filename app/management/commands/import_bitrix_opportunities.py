@@ -150,6 +150,7 @@ class Command(BaseCommand):
                 area_bitrix_id = deal.get('UF_CRM_1752859525038')
                 mes_cierre_bitrix_id = deal.get('UF_CRM_1752859877756')
                 probabilidad_bitrix_id = deal.get('UF_CRM_1752855787179')
+                po_number = (deal.get('UF_CRM_1753472612145') or '').strip()
                 category_id = deal.get('CATEGORY_ID')
                 
                 self.stdout.write(f'  Bitrix raw product ID: {producto_bitrix_id}')
@@ -238,6 +239,7 @@ class Command(BaseCommand):
                         'bitrix_company_id': bitrix_company_id,
                         'bitrix_stage_id': deal.get('STAGE_ID'),
                         'contacto': contacto_obj,
+                        'po_number': po_number,
                     }
                 )
 

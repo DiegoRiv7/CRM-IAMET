@@ -222,6 +222,7 @@ urlpatterns = [
 
     # API para actualizar la probabilidad de una oportunidad
     path('api/oportunidad/<int:id>/probabilidad/', views.actualizar_probabilidad, name='actualizar_probabilidad'),
+    path('api/oportunidad/<int:id>/po/', views.actualizar_po, name='actualizar_po'),
     
     # API para editar información de oportunidad
     path('api/editar-oportunidad/<int:oportunidad_id>/', views.editar_oportunidad_api, name='editar_oportunidad_api'),

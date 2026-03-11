@@ -91,6 +91,17 @@
                                     <span class="wo-info-label">Area</span>
                                     <span class="wo-info-value medium" id="woArea">-</span>
                                 </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">PO</span>
+                                    <input type="text" id="woPoNumber"
+                                        placeholder="—"
+                                        style="background:none;border:none;border-bottom:1px solid transparent;
+                                               font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
+                                               width:100%;padding:0.1rem 0;cursor:pointer;outline:none;"
+                                        onfocus="this.style.borderBottomColor='#0052D4'"
+                                        onblur="woGuardarPO(this)"
+                                        onkeydown="if(event.key==='Enter'){this.blur()}" />
+                                </div>
                             </div>
                         </div>
 

@@ -311,7 +311,8 @@ class TodoItem(models.Model):
     bitrix_deal_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Oportunidad en Bitrix24")
     bitrix_company_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Compañía en Bitrix24")
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
-    
+    po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO")
+
     # Campos para seguimiento de facturación
     monto_facturacion = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name="Monto de Facturación")
     meta_oportunidad = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name="Meta (Oportunidad)")

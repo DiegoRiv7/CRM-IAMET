@@ -667,6 +667,7 @@
                 document.getElementById('woFechaCierre').textContent = mesNombre + ' ' + new Date().getFullYear();
                 document.getElementById('woProducto').textContent = d.producto || 'N/A';
                 document.getElementById('woArea').textContent = d.area || 'N/A';
+                document.getElementById('woPoNumber').value = d.po_number || '';
 
                 // Probability
                 var prob = d.probabilidad_cierre || 0;
@@ -940,6 +941,22 @@
                         var label = sel.options[sel.selectedIndex].text;
                         mesEl.textContent = label + ' ' + new Date().getFullYear();
                     });
+                };
+
+                // ── PO Number ──
+                window.woGuardarPO = function(input) {
+                    input.style.borderBottomColor = 'transparent';
+                    var val = input.value.trim();
+                    if (val === (woOriginalData.po_number || '')) return;
+                    var fd = new FormData();
+                    fd.append('po_number', val);
+                    fetch('/app/api/oportunidad/' + woCurrentId + '/po/', {
+                        method: 'POST', body: fd,
+                        headers: {'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''}
+                    }).then(function(r){ return r.json(); }).then(function(data){
+                        if (data.ok) { woOriginalData.po_number = val; }
+                        else { input.value = woOriginalData.po_number || ''; }
+                    }).catch(function(){ input.value = woOriginalData.po_number || ''; });
                 };
 
                 // ── Probabilidad (click/drag on bar) ──
