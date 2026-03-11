@@ -13,12 +13,12 @@ class Command(BaseCommand):
 
         # Todos los usuarios ACTIVOS de Bitrix24
         bitrix_users_data = [
-            {"ID": "1", "NAME": "Alvaro Rivera", "EMAIL": "alvaro@baja-net.com"},
+            {"ID": "1", "NAME": "Alvaro Rivera Torrijo", "EMAIL": "alvaro@baja-net.com", "DJANGO_USERNAME": "alvaro"},
             {"ID": "6", "NAME": "Julio Cesar Sanchez", "EMAIL": "julio@baja-net.com"},
             {"ID": "8", "NAME": "Jose Manuel Naguatt Perez", "EMAIL": "jose.naguatt@baja-net.com"},
             {"ID": "10", "NAME": "Diego Rivera Torrijo", "EMAIL": "diego@baja-net.com"},
             {"ID": "14", "NAME": "Roberto Lopez", "EMAIL": "roberto.lopez@baja-net.com"},
-            {"ID": "16", "NAME": "Eduardo Rivera", "EMAIL": "eduardo@baja-net.com"},
+            {"ID": "16", "NAME": "Eduardo Rivera Torrijo", "EMAIL": "eduardo@baja-net.com", "DJANGO_USERNAME": "lalo"},
             {"ID": "18", "NAME": "Eduardo Rivera Cordova", "EMAIL": "eduardo.rivera@baja-net.com"},
             {"ID": "24", "NAME": "Alejandra Naguatt", "EMAIL": "alejandra.naguatt@iamet.mx"},
             {"ID": "32", "NAME": "Alondra Santamaria Medina", "EMAIL": "alondra.santamaria@baja-net.com"},
@@ -61,32 +61,42 @@ class Command(BaseCommand):
                 except UserProfile.DoesNotExist:
                     # Buscar usuario existente que pueda corresponder a este usuario de Bitrix24
                     user_email = bitrix_user.get('EMAIL', '')
-                    
+                    django_username = bitrix_user.get('DJANGO_USERNAME', '')
+
                     # Generar username esperado basado en el nombre
                     names = user_name.split()
                     if len(names) >= 2:
                         username_base = f"{names[0].lower()}.{names[-1].lower()}"
                     else:
                         username_base = user_name.lower().replace(' ', '.')
-                    
+
                     # Limpiar caracteres especiales del username
                     username_base = ''.join(c for c in username_base if c.isalnum() or c == '.').replace('..', '.')[:30]
-                    
+
                     # Buscar usuario existente con username similar o email similar
                     user_obj = None
-                    
-                    # Primero buscar por username exacto
-                    try:
-                        user_obj = User.objects.get(username=username_base)
-                        self.stdout.write(f'  Encontrado usuario existente por username: {user_obj.username}')
-                    except User.DoesNotExist:
-                        # Buscar por email si está disponible
-                        if user_email:
-                            try:
-                                user_obj = User.objects.get(email=user_email)
-                                self.stdout.write(f'  Encontrado usuario existente por email: {user_obj.username}')
-                            except User.DoesNotExist:
-                                pass
+
+                    # Primero: usar mapeo explícito si está definido
+                    if django_username:
+                        try:
+                            user_obj = User.objects.get(username=django_username)
+                            self.stdout.write(f'  Encontrado usuario por mapeo explícito: {user_obj.username}')
+                        except User.DoesNotExist:
+                            self.stdout.write(f'  ⚠ DJANGO_USERNAME "{django_username}" no existe en Django')
+
+                    # Segundo: buscar por username exacto generado
+                    if not user_obj:
+                        try:
+                            user_obj = User.objects.get(username=username_base)
+                            self.stdout.write(f'  Encontrado usuario existente por username: {user_obj.username}')
+                        except User.DoesNotExist:
+                            # Buscar por email si está disponible
+                            if user_email:
+                                try:
+                                    user_obj = User.objects.get(email=user_email)
+                                    self.stdout.write(f'  Encontrado usuario existente por email: {user_obj.username}')
+                                except User.DoesNotExist:
+                                    pass
                     
                     # Si no se encontró usuario existente, buscar por patrones similares
                     if not user_obj:
