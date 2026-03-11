@@ -3028,7 +3028,8 @@
 
         function crmTaskRenderData(tarea) {
             crmTaskSetText('crm-task-titulo', tarea.titulo);
-            crmTaskSetText('crm-task-descripcion', tarea.descripcion || 'Sin descripción');
+            var descHtml = tarea.descripcion_html || (tarea.descripcion ? tarea.descripcion.replace(/\n/g, '<br>') : 'Sin descripción');
+            crmTaskSetHTML('crm-task-descripcion', descHtml);
 
             // Prioridad badge (solo mostrar si es alta)
             var prioBadge = document.getElementById('crm-task-prioridad-badge');
@@ -3148,6 +3149,11 @@
         function crmTaskSetText(id, text) {
             var el = document.getElementById(id);
             if (el) el.textContent = text || '';
+        }
+
+        function crmTaskSetHTML(id, html) {
+            var el = document.getElementById(id);
+            if (el) el.innerHTML = html || '';
         }
 
         function crmTaskGetInitials(name) {

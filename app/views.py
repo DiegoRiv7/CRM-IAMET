@@ -13078,6 +13078,7 @@ def api_tarea_detalle(request, tarea_id):
                 'id': tarea.id,
                 'titulo': tarea.titulo,
                 'descripcion': tarea.descripcion,
+                'descripcion_html': tarea.get_descripcion_html(),
                 'estado': tarea.estado,
                 'prioridad': tarea.prioridad,
                 'proyecto_nombre': tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto',

@@ -1947,21 +1947,31 @@ class TareaComentario(models.Model):
         return f"{self.usuario.username} - {self.tarea.titulo} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
     
     def get_contenido_con_menciones(self):
-        """Convierte las menciones @usuario en enlaces"""
+        """Convierte las menciones @usuario y [USER=XX] en enlaces HTML"""
         import re
-        contenido = self.contenido
+        contenido = self.contenido or ""
         
-        # Buscar patrones @usuario
+        def replace_bitrix_user(match):
+            b_id = match.group(1)
+            name = match.group(2)
+            try:
+                up = UserProfile.objects.filter(bitrix_user_id=b_id).first()
+                if up: return f'<span class="mencion" data-user-id="{up.user.id}">@{up.user.username}</span>'
+            except: pass
+            return f'<span class="mencion-bitrix">@{name}</span>'
+        
+        contenido = re.sub(r'\[USER=(\d+)\](.*?)\[/USER\]', replace_bitrix_user, contenido)
+        
         def reemplazar_mencion(match):
             username = match.group(1)
             try:
                 usuario = User.objects.get(username=username)
                 return f'<span class="mencion" data-user-id="{usuario.id}">@{username}</span>'
-            except User.DoesNotExist:
-                return match.group(0)
+            except User.DoesNotExist: return match.group(0)
         
         contenido = re.sub(r'@(\w+)', reemplazar_mencion, contenido)
-        return contenido
+        return contenido.replace('\n', '<br>')
+
     
     def extraer_menciones(self):
         """Extrae los usuarios mencionados del contenido"""
@@ -2185,7 +2195,41 @@ class Tarea(models.Model):
         ordering = ['-fecha_creacion']
     
     def __str__(self):
-        return f"{self.titulo} - {self.proyecto.nombre}"
+        return f"{self.titulo} - {self.proyecto.nombre if self.proyecto else 'Sin Proyecto'}"
+
+    def get_descripcion_html(self):
+        """Convierte la descripción (incluyendo tags de Bitrix) a HTML con menciones"""
+        import re
+        desc = self.descripcion or ""
+
+        # 1. Convertir [USER=XX]Nombre[/USER] (formato Bitrix)
+        def replace_bitrix_user(match):
+            b_id = match.group(1)
+            name = match.group(2)
+            try:
+                # Importación local para evitar circularity si fuera necesario, pero ya está en el mismo archivo
+                up = UserProfile.objects.filter(bitrix_user_id=b_id).first()
+                if up:
+                    return f'<span class="mencion" data-user-id="{up.user.id}">@{up.user.username}</span>'
+            except: pass
+            return f'<span class="mencion-bitrix">@{name}</span>'
+        
+        desc = re.sub(r'\[USER=(\d+)\](.*?)\[/USER\]', replace_bitrix_user, desc)
+
+        # 2. Convertir @username
+        def reemplazar_mencion(match):
+            username = match.group(1)
+            try:
+                usuario = User.objects.get(username=username)
+                return f'<span class="mencion" data-user-id="{usuario.id}">@{username}</span>'
+            except User.DoesNotExist:
+                return match.group(0)
+        
+        desc = re.sub(r'@(\w+)', reemplazar_mencion, desc)
+
+        # 3. Saltos de línea
+        desc = desc.replace('\n', '<br>')
+        return desc
     
     def get_prioridad_color(self):
         """Retorna el color asociado a la prioridad"""
