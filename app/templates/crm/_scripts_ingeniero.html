@@ -98,7 +98,7 @@
     function dashGetCurrentData() {
         if (_dashCurrentView === 'proyectos') return _dashProyectos.map(function (p) { return { id: p.id, key: p.key, tipo: 'proyecto', titulo: p.titulo, prioridad: p.prioridad, estado: dashNE(p.estado), fecha_limite: p.fecha_limite, subtitulo: '' }; });
         if (_dashCurrentView === 'actividades') return _dashAllItems.filter(function (t) { return t.tipo === 'tarea_opp'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; });
-        return _dashAllItems.filter(function (t) { return t.tipo === 'tarea'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; }).sort(function(a, b){ return (b.fecha_creacion||'') > (a.fecha_creacion||'') ? 1 : -1; });
+        return _dashAllItems.filter(function (t) { return t.tipo === 'tarea'; }).map(function (t) { return { id: t.id, key: t.key, tipo: t.tipo, titulo: t.titulo, prioridad: t.prioridad, estado: dashNE(t.estado), fecha_limite: t.fecha_limite, subtitulo: t.oportunidad || t.cliente || '' }; }).sort(function (a, b) { return (b.fecha_creacion || '') > (a.fecha_creacion || '') ? 1 : -1; });
     }
     function dashNE(e) { if (!e) return 'pendiente'; if (e === 'completada') return 'completada'; if (e === 'en_progreso' || e === 'iniciada') return 'en_progreso'; return 'pendiente'; }
 
@@ -114,8 +114,8 @@
             h += '<div class="dash-tr' + (sel ? ' dash-tr-selected' : '') + '" onclick="dashSelectItem(\'' + escH(it.key) + '\')" style="animation-delay:' + ix * 0.03 + 's;">';
             var subtituloHtml = it.subtitulo ? '<div style="font-size:0.7rem;color:#9CA3AF;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escH(trun(it.subtitulo, 30)) + '</div>' : '';
             h += '<div onclick="event.stopPropagation(); window.ingenieroAbrirTarea(\'' + escH(it.key) + '\', \'' + it.id + '\', \'' + it.tipo + '\')" style="cursor:pointer;overflow:hidden;">' +
-                 '<div style="font-weight:600;color:#007AFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;" title="' + escH(it.titulo) + '">' + escH(trun(it.titulo, 32)) + '</div>' +
-                 subtituloHtml + '</div>';
+                '<div style="font-weight:600;color:#007AFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;" title="' + escH(it.titulo) + '">' + escH(trun(it.titulo, 32)) + '</div>' +
+                subtituloHtml + '</div>';
             h += '<div style="display:flex;justify-content:center;">' + pr + '</div>';
             h += '<div style="display:flex;justify-content:center;"><span class="dash-badge ' + st.bc + '">' + st.l + '</span></div></div>';
         });
@@ -615,12 +615,14 @@
     function wpdTab(tab) {
         document.getElementById('wpdPanelTareas').style.display = tab === 'tareas' ? '' : 'none';
         document.getElementById('wpdPanelDrive').style.display = tab === 'drive' ? '' : 'none';
-        document.getElementById('wpdTabTareas').style.cssText = tab === 'tareas'
-            ? 'background:none;border:none;border-bottom:2px solid #0052D4;color:#0052D4;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;'
-            : 'background:none;border:none;border-bottom:2px solid transparent;color:#86868B;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;';
-        document.getElementById('wpdTabDrive').style.cssText = tab === 'drive'
-            ? 'background:none;border:none;border-bottom:2px solid #0052D4;color:#0052D4;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;'
-            : 'background:none;border:none;border-bottom:2px solid transparent;color:#86868B;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;';
+        document.getElementById('wpdPanelInfo').style.display = tab === 'info' ? '' : 'none';
+
+        var activeStyle = 'background:none;border:none;border-bottom:2px solid #0052D4;color:#0052D4;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;';
+        var inactiveStyle = 'background:none;border:none;border-bottom:2px solid transparent;color:#86868B;font-weight:600;font-size:0.82rem;padding:10px 14px 8px;cursor:pointer;';
+
+        document.getElementById('wpdTabTareas').style.cssText = tab === 'tareas' ? activeStyle : inactiveStyle;
+        document.getElementById('wpdTabDrive').style.cssText = tab === 'drive' ? activeStyle : inactiveStyle;
+        document.getElementById('wpdTabInfo').style.cssText = tab === 'info' ? activeStyle : inactiveStyle;
     }
     window.wpdTab = wpdTab;
 
@@ -631,13 +633,14 @@
         document.getElementById('wpd-desc').textContent = '';
         document.getElementById('wpdPanelTareas').innerHTML = '<div style="padding:20px;text-align:center;color:#86868B;font-size:0.85rem;">Cargando...</div>';
         document.getElementById('wpdPanelDrive').innerHTML = '';
+        document.getElementById('wpdPanelInfo').innerHTML = '';
         wpdTab('tareas');
         widget.style.display = 'flex';
         document.body.style.overflow = 'hidden';
 
         fetch('/app/api/ingeniero/proyecto/' + id + '/')
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
                 if (d.error) { document.getElementById('wpd-titulo').textContent = d.error; return; }
                 document.getElementById('wpd-titulo').textContent = d.titulo;
                 document.getElementById('wpd-desc').textContent = d.descripcion || '';
@@ -648,7 +651,7 @@
                 if (!d.tareas || !d.tareas.length) {
                     ht = '<div style="padding:20px;text-align:center;color:#86868B;font-size:0.85rem;">Sin tareas registradas</div>';
                 } else {
-                    d.tareas.forEach(function(t) {
+                    d.tareas.forEach(function (t) {
                         var col = estadoColor[t.estado] || '#86868B';
                         var completada = t.estado === 'completada';
                         var rowStyle = completada ? 'opacity:0.6;' : '';
@@ -696,7 +699,7 @@
                 function wpdFolderCard(c) {
                     var inner = '';
                     if (c.archivos && c.archivos.length) {
-                        c.archivos.forEach(function(a) { inner += wpdFileCard(a); });
+                        c.archivos.forEach(function (a) { inner += wpdFileCard(a); });
                     }
                     return '<div style="grid-column:1/-1;">' +
                         '<div style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem 1rem;margin-bottom:4px;">' +
@@ -711,17 +714,45 @@
                 var hd = '';
                 if ((d.archivos_raiz && d.archivos_raiz.length) || (d.carpetas && d.carpetas.length)) {
                     hd = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">';
-                    if (d.archivos_raiz) d.archivos_raiz.forEach(function(a) { hd += wpdFileCard(a); });
+                    if (d.archivos_raiz) d.archivos_raiz.forEach(function (a) { hd += wpdFileCard(a); });
                     hd += '</div>';
                     if (d.carpetas && d.carpetas.length) {
-                        d.carpetas.forEach(function(c) { hd += wpdFolderCard(c); });
+                        d.carpetas.forEach(function (c) { hd += wpdFolderCard(c); });
                     }
                 } else {
                     hd = '<div style="padding:40px 20px;text-align:center;color:#9CA3AF;font-size:0.85rem;"><svg width="40" height="40" fill="none" stroke="#E5E7EB" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>Sin archivos en el drive</div>';
                 }
                 document.getElementById('wpdPanelDrive').innerHTML = hd;
+
+                // ── Info General ──
+                var hi = '<div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:15px;">';
+                hi += '<h4 style="margin:0 0 15px;font-size:0.9rem;font-weight:700;color:#1D1D1F;">Detalles del Proyecto</h4>';
+
+                hi += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;">';
+                hi += '<div><div style="font-size:0.75rem;color:#86868B;font-weight:600;margin-bottom:4px;">Creador / Propietario</div>';
+                hi += '<div style="font-size:0.85rem;color:#1D1D1F;display:flex;align-items:center;gap:6px;">' + (d.creado_por ? '<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:#E5E7EB;border-radius:50%;font-size:0.6rem;font-weight:700;color:#4B5563;">' + escH(d.creado_por.substring(0, 2).toUpperCase()) + '</span> ' + escH(d.creado_por) : 'Desconocido') + '</div></div>';
+
+                hi += '<div><div style="font-size:0.75rem;color:#86868B;font-weight:600;margin-bottom:4px;">Fecha de Creación</div>';
+                hi += '<div style="font-size:0.85rem;color:#1D1D1F;">' + (d.fecha_creacion || 'No disponible') + '</div></div>';
+                hi += '</div>';
+
+                hi += '<h4 style="margin:20px 0 15px;font-size:0.9rem;font-weight:700;color:#1D1D1F;border-top:1px solid #F3F4F6;padding-top:15px;">Participantes (' + (d.miembros ? d.miembros.length : 0) + ')</h4>';
+                if (!d.miembros || !d.miembros.length) {
+                    hi += '<div style="color:#86868B;font-size:0.85rem;">No hay miembros registrados.</div>';
+                } else {
+                    hi += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                    d.miembros.forEach(function (m) {
+                        hi += '<div style="display:flex;align-items:center;gap:6px;background:#F9FAFB;border:1px solid #F3F4F6;border-radius:20px;padding:4px 12px 4px 4px;">';
+                        hi += '<span style="display:flex;align-items:center;justify-content:center;width:24px;height:24px;background:#0052D4;color:#fff;border-radius:50%;font-size:0.65rem;font-weight:700;">' + escH(m.iniciales) + '</span>';
+                        hi += '<span style="font-size:0.8rem;color:#374151;font-weight:500;">' + escH(m.nombre) + '</span>';
+                        hi += '</div>';
+                    });
+                    hi += '</div>';
+                }
+                hi += '</div>';
+                document.getElementById('wpdPanelInfo').innerHTML = hi;
             })
-            .catch(function(e) {
+            .catch(function (e) {
                 document.getElementById('wpd-titulo').textContent = 'Error al cargar';
                 console.error(e);
             });
@@ -733,8 +764,8 @@
         btn.disabled = true;
         btn.textContent = '...';
         fetch('/app/api/tareas/' + id + '/completar/', { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } })
-            .then(function(r) { return r.json(); })
-            .then(function(resp) {
+            .then(function (r) { return r.json(); })
+            .then(function (resp) {
                 if (resp.ok || resp.success) {
                     var row = btn.closest('div[style*="border-bottom"]');
                     if (row) {
@@ -754,7 +785,7 @@
                     alert(resp.error || 'Error al completar');
                 }
             })
-            .catch(function() { btn.disabled = false; btn.textContent = 'Completar'; });
+            .catch(function () { btn.disabled = false; btn.textContent = 'Completar'; });
     }
     window.wpdCompletarTarea = wpdCompletarTarea;
 

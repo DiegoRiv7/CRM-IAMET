@@ -1494,12 +1494,32 @@ def api_ingeniero_proyecto_detalle(request, proyecto_id):
         .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url', 'tamaño')
     )
 
+    creado_por = None
+    if proyecto.creado_por:
+        fn = proyecto.creado_por.first_name or ''
+        ln = proyecto.creado_por.last_name or ''
+        creado_por = (fn + ' ' + ln).strip() or proyecto.creado_por.username
+
+    miembros_data = []
+    for m in proyecto.miembros.all():
+        fn = m.first_name or ''
+        ln = m.last_name or ''
+        nombre = (fn + ' ' + ln).strip() or m.username
+        iniciales = ((fn[:1] if fn else '') + (ln[:1] if ln else '')).upper() or m.username[:2].upper()
+        miembros_data.append({
+            'nombre': nombre,
+            'iniciales': iniciales,
+            'username': m.username
+        })
+
     return JsonResponse({
         'id': proyecto.id,
         'titulo': proyecto.nombre,
         'descripcion': proyecto.descripcion or '',
         'estado': getattr(proyecto, 'estado', '') or '',
         'fecha_creacion': proyecto.fecha_creacion.strftime('%d/%m/%Y') if getattr(proyecto, 'fecha_creacion', None) else '',
+        'creado_por': creado_por,
+        'miembros': miembros_data,
         'tareas': tareas,
         'carpetas': carpetas,
         'archivos_raiz': archivos_raiz,
