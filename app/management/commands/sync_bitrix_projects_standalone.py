@@ -212,12 +212,13 @@ class Command(BaseCommand):
             else:
                 self.stats["proyectos_actualizados"] += 1
                 
-            # Sincronizar miembros del grupo si no es dry run
-            self._sync_group_members(bitrix_group_id, proyecto)
         else:
             proyecto = None
             exists = Proyecto.objects.filter(bitrix_group_id=bitrix_group_id).exists()
-            self.stdout.write(f"    [DRY] {'ACTUALIZAR' if exists else 'CREAR'} Proyecto")
+            self.stdout.write(f"    [DRY] {'ACTUALIZAR' if exists else 'CREAR'} Proyecto - Creador/Owner: {owner.username}")
+
+        # Siempre sincronizar miembros para reportar en el dry-run
+        self._sync_group_members(bitrix_group_id, proyecto, dry_run=dry_run)
 
         # Tareas
         if not skip_tasks:
@@ -228,7 +229,7 @@ class Command(BaseCommand):
             self._sync_drive(bitrix_group_id, proyecto, default_user, dry_run)
 
 
-    def _sync_group_members(self, bitrix_group_id, proyecto):
+    def _sync_group_members(self, bitrix_group_id, proyecto, dry_run=False):
         try:
             data = _call("sonet_group.user.get", {"ID": bitrix_group_id})
             members_data = data.get("result") or []
@@ -237,7 +238,12 @@ class Command(BaseCommand):
                 u_id = str(m.get("USER_ID"))
                 if u_id in self.user_map:
                     member_users.append(self.user_map[u_id])
-            if member_users:
+                    
+            if dry_run or getattr(self, "debug_drive", False):
+                nombres = ", ".join([u.username for u in member_users])
+                self.stdout.write(f"    [MIEMBROS] {len(member_users)} encontrados: {nombres}")
+                
+            if not dry_run and proyecto and member_users:
                 proyecto.miembros.set(member_users)
         except Exception as e:
             self.stdout.write(self.style.WARNING(f"    No se pudieron sincronizar miembros: {e}"))
