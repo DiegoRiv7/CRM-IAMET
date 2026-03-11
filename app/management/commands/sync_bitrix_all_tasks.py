@@ -120,6 +120,66 @@ class Command(BaseCommand):
         for up in UserProfile.objects.filter(bitrix_user_id__isnull=False):
             self.user_map[str(up.bitrix_user_id)] = up.user
             
+        # --- AUTO-SYNC DE USUARIOS DESDE BITRIX ---
+        self.stdout.write("Sincronizando y auto-descubriendo usuarios desde Bitrix API...")
+        try:
+            bitrix_users = _get_all_pages("user.get", {"ACTIVE": True})
+            for bu in bitrix_users:
+                b_id = str(bu.get("ID"))
+                if b_id in self.user_map:
+                    continue  # Ya lo tenemos
+                
+                b_email = bu.get("EMAIL", "")
+                b_name = f"{bu.get('NAME', '')} {bu.get('LAST_NAME', '')}".strip()
+                if not b_name: b_name = f"Bitrix_User_{b_id}"
+                
+                # Buscar por email o generar base
+                user_obj = None
+                if b_email:
+                    user_obj = User.objects.filter(email__iexact=b_email).first()
+                if not user_obj:
+                    base_nick = b_email.split('@')[0] if b_email else b_name.lower().replace(' ', '.')
+                    base_nick = "".join(c for c in base_nick if c.isalnum() or c == '.')[:25]
+                    if not base_nick: base_nick = f"bitrix_user_{b_id}"
+                    
+                    user_obj = User.objects.filter(username__iexact=base_nick).first()
+                    if not user_obj:
+                        uname = base_nick
+                        c = 1
+                        while User.objects.filter(username=uname).exists():
+                            uname = f"{base_nick}{c}"
+                            c += 1
+                        
+                        if not dry_run:
+                            user_obj = User.objects.create(
+                                username=uname,
+                                first_name=bu.get("NAME", "")[:30],
+                                last_name=bu.get("LAST_NAME", "")[:30],
+                                email=b_email,
+                                is_active=True
+                            )
+                            self.stdout.write(self.style.SUCCESS(f"  [API] Nuevo usuario local creado: {uname} (Bitrix ID: {b_id})"))
+                        else:
+                            # Falso en memoria para Dry Run
+                            user_obj = User(username=uname, first_name=bu.get("NAME", "")[:30], last_name=bu.get("LAST_NAME", "")[:30], email=b_email)
+                            self.stdout.write(self.style.WARNING(f"  [DRY] Se crearía usuario local: {uname} (Bitrix ID: {b_id})"))
+                
+                if user_obj:
+                    if not dry_run and user_obj.pk:
+                        profile, _ = UserProfile.objects.get_or_create(user=user_obj)
+                        if str(profile.bitrix_user_id) != b_id:
+                            profile.bitrix_user_id = b_id
+                            profile.save()
+                            self.stdout.write(self.style.SUCCESS(f"  [API] Perfil enlazado: {user_obj.username} -> Bitrix ID {b_id}"))
+                    elif dry_run:
+                        if user_obj.pk:
+                            self.stdout.write(self.style.WARNING(f"  [DRY] Se enlazaría Perfil de usuario existente: {user_obj.username} -> Bitrix ID {b_id}"))
+                    
+                    self.user_map[b_id] = user_obj
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Aviso: Falló auto-descubrimiento de usuarios Bitrix: {e}"))
+        # ------------------------------------------
+            
         # 2. Mapa de Proyectos (Bitrix Group ID -> Django Proyecto)
         self.proyecto_map = {}
         for p in Proyecto.objects.filter(bitrix_group_id__isnull=False):
