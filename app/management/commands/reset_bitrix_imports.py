@@ -10,9 +10,12 @@ Qué borra:
   - OportunidadProyecto (todos los vínculos proyecto↔oportunidad)
   - Tarea creadas por el usuario bitrix_import
   - Proyecto + CarpetaProyecto + ArchivoProyecto + ProyectoComentario creados por bitrix_import
+  - Usuario ficticio "bitrix_import"
+  - Limpia UserProfile.bitrix_user_id de todos los usuarios (para re-mapear limpio)
 
 NO borra:
   - Oportunidades (TodoItem), Clientes, Cotizaciones
+  - Usuarios reales (solo limpia su bitrix_user_id para re-sincronizar)
   - Tareas creadas manualmente por usuarios reales
   - MensajeOportunidad escritos manualmente por usuarios reales
   - Actividades creadas manualmente
@@ -29,6 +32,7 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 
 from app.models import (
+    UserProfile,
     Actividad, ArchivoOportunidad, ArchivoProyecto,
     CarpetaOportunidad, CarpetaProyecto, MensajeOportunidad,
     OportunidadProyecto, Proyecto, ProyectoComentario,
@@ -111,7 +115,15 @@ class Command(BaseCommand):
             n_tarea = 0
             self.stdout.write("  ⚠ Usuario bitrix_import no encontrado")
 
-        # 8. Proyectos de bitrix_import
+        # 8. UserProfile: limpiar bitrix_user_id
+        profiles_qs = UserProfile.objects.exclude(bitrix_user_id=None)
+        n_profiles = self._count("UserProfile.bitrix_user_id a limpiar", profiles_qs)
+
+        # 9. Usuario ficticio bitrix_import
+        bitrix_user_del = User.objects.filter(username="bitrix_import")
+        n_bitrix_user = self._count("Usuario 'bitrix_import' a eliminar", bitrix_user_del)
+
+        # 10. Proyectos de bitrix_import
         if bitrix_user:
             proy_qs = Proyecto.objects.filter(creado_por=bitrix_user)
             n_proy = self._count("Proyecto (creados por bitrix_import)", proy_qs)
@@ -130,7 +142,8 @@ class Command(BaseCommand):
             n_proy = n_arch_proy = n_carp_proy = n_com_proy = 0
 
         total = n_topp + n_act + n_msg + n_arch_opp + n_carp_opp + n_opp_proj + \
-                n_tarea + n_proy + n_arch_proy + n_carp_proy + n_com_proy
+                n_tarea + n_proy + n_arch_proy + n_carp_proy + n_com_proy + \
+                n_profiles + n_bitrix_user
         self.stdout.write(f"\n  {'TOTAL A ELIMINAR':<45}: {total:>6}\n")
 
         if dry_run:
@@ -193,6 +206,14 @@ class Command(BaseCommand):
                 self.stdout.write(f"  ✓ Tarea: {n} eliminadas")
 
             cur.execute("SET FOREIGN_KEY_CHECKS=1")
+
+        # Limpiar bitrix_user_id en UserProfile (fuera del bloque FK checks, es seguro)
+        n_prof_upd = profiles_qs.update(bitrix_user_id=None)
+        self.stdout.write(f"  ✓ UserProfile.bitrix_user_id limpiado: {n_prof_upd}")
+
+        # Borrar usuario ficticio bitrix_import
+        n_bu, _ = bitrix_user_del.delete()
+        self.stdout.write(f"  ✓ Usuario 'bitrix_import' eliminado: {n_bu}")
 
         self.stdout.write(self.style.SUCCESS("\n✅ Reset completado. Listo para reimport limpio."))
         self.stdout.write("\nOrden recomendado para reimport:")
