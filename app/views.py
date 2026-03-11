@@ -2749,12 +2749,17 @@ def api_tareas(request):
                     'creado_por', 'asignado_a', 'proyecto', 'oportunidad'
                 ).order_by('fecha_limite', '-fecha_creacion')
             else:
-                # Mostrar TODAS las tareas del usuario (sin importar el proyecto)
-                tareas = Tarea.objects.filter(
-                    Q(creado_por=request.user) |
-                    Q(asignado_a=request.user) |
-                    Q(participantes=request.user)
-                ).distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
+                # Mostrar TODAS las tareas
+                if request.user.is_superuser:
+                    # El admin ve todo el universo de tareas
+                    tareas = Tarea.objects.all().distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
+                else:
+                    # Usuario normal solo ve las suyas
+                    tareas = Tarea.objects.filter(
+                        Q(creado_por=request.user) |
+                        Q(asignado_a=request.user) |
+                        Q(participantes=request.user)
+                    ).distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
             
             tareas_data = []
             for tarea in tareas:
