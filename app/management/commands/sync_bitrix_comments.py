@@ -91,12 +91,40 @@ class Command(BaseCommand):
                     
                 stats["tareas_con_comentarios_procesadas"] += 1
                 
+                import re
+                
                 for c in comments_data:
                     post_message = str(c.get("POST_MESSAGE") or "").strip()
                     if not post_message:
                         continue
                         
+                    # Ignorar mensajes automáticos del sistema de Bitrix
+                    system_prefixes = [
+                        "Observadores agregados:",
+                        "Participantes agregados:",
+                        "El proyecto de la tarea cambió",
+                        "La fecha límite cambió",
+                        "Tarea cerrada.",
+                        "La tarea de ",
+                        "Lista de control "
+                    ]
+                    if any(post_message.startswith(prefix) for prefix in system_prefixes):
+                        continue
+                        
                     author_id = str(c.get("AUTHOR_ID") or "")
+                    autor = user_map.get(author_id, default_user)
+                    
+                    # Convertir [USER=X]Nombre[/USER] a @username local
+                    def replace_mention(match):
+                        user_id = match.group(1)
+                        fallback_name = match.group(2)
+                        usr = user_map.get(str(user_id))
+                        return f"@{usr.username}" if usr else f"@{fallback_name}"
+                        
+                    post_message = re.sub(r"\[USER=(\d+)\](.*?)\[/USER\]", replace_mention, post_message)
+                    
+                    # Convertir etiquetas de archivos
+                    post_message = re.sub(r"\[DISK FILE ID=[^\]]+\]", "[Archivo Adjunto en Bitrix]", post_message)
                     autor = user_map.get(author_id, default_user)
                     
                     post_date = parse_datetime(c.get("POST_DATE")) if c.get("POST_DATE") else timezone.now()
