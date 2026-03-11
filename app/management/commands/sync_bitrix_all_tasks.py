@@ -102,7 +102,14 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write(self.style.WARNING("MODO DRY-RUN — no se guardará nada"))
 
-        self.stats = {"tareas_creadas": 0, "tareas_actualizadas": 0, "errores": 0, "vinculadas_proyecto": 0}
+        self.stats = {
+            "tareas_creadas": 0,
+            "tareas_actualizadas": 0,
+            "errores": 0,
+            "vinculadas_proyecto": 0,
+            "vinculadas_oportunidad": 0,
+            "ignoradas": 0
+        }
         
         # 1. Mapa de Usuarios
         self.user_map = {}
@@ -196,6 +203,20 @@ class Command(BaseCommand):
                 if oportunidad:
                     break
 
+        # Regla de Negocio: 
+        # 1. Prioridad: Oportunidad. Si tiene ambos, se liga a oportunidad y se le quita el proyecto.
+        # 2. Si no tiene oportunidad, se queda en proyecto.
+        # 3. Si no tiene NINGÚN vínculo válido (ni proy ni opp), no la traemos.
+        
+        if oportunidad:
+            proyecto = None  # Se da prioridad absoluta a la oportunidad
+        
+        if not oportunidad and not proyecto:
+            self.stats["ignoradas"] += 1
+            if dry_run:
+                self.stdout.write(f"  [DRY/OMITIDA] TAREA '{titulo[:40]}' - Sin Oportunidad ni Proyecto local.")
+            return
+
         if not dry_run:
             tarea, created = Tarea.objects.update_or_create(
                 bitrix_task_id=bitrix_task_id,
@@ -230,7 +251,9 @@ class Command(BaseCommand):
             else:
                 self.stats["tareas_actualizadas"] += 1
                 
-            if proyecto:
+            if oportunidad:
+                self.stats["vinculadas_oportunidad"] += 1
+            elif proyecto:
                 self.stats["vinculadas_proyecto"] += 1
         else:
             vinculos = []
