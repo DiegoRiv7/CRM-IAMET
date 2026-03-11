@@ -124,9 +124,9 @@ class Command(BaseCommand):
             self.user_map[str(up.bitrix_user_id)] = up.user
             
         # --- AUTO-SYNC DE USUARIOS DESDE BITRIX ---
-        self.stdout.write("Sincronizando y auto-descubriendo usuarios desde Bitrix API (incluyendo inactivos)...")
+        self.stdout.write("Sincronizando y auto-descubriendo usuarios desde Bitrix API (SOLO ACTIVOS para descartar tareas de bajas)...")
         try:
-            bitrix_users = _get_all_pages("user.get", {})
+            bitrix_users = _get_all_pages("user.get", {"ACTIVE": True})
             for bu in bitrix_users:
                 b_id = str(bu.get("ID"))
                 if b_id in self.user_map:
