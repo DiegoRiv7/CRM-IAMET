@@ -2065,5 +2065,50 @@
             }).catch(console.error);
         };
 
+        window.woGuardarPO = function (input) {
+            if (!_woCurrentOppId) return;
+            var val = input.value.trim();
+            
+            // Visual feedback - saving
+            input.style.borderBottomColor = '#0052D4';
+            input.style.opacity = '0.7';
+
+            var formData = new FormData();
+            formData.append('po_number', val);
+
+            var csrf = '';
+            if (typeof getCsrf === 'function') {
+                csrf = getCsrf();
+            } else {
+                var match = document.cookie.match(/csrftoken=([^;]+)/);
+                csrf = match ? match[1] : '';
+            }
+
+            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/po/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+                body: formData
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                input.style.opacity = '1';
+                if (res.ok) {
+                    // Success visual feedback
+                    input.style.borderBottomColor = '#34C759';
+                    setTimeout(function() { input.style.borderBottomColor = 'transparent'; }, 1000);
+                    // Update table if needed
+                    if (typeof refreshCrmTable === 'function') refreshCrmTable();
+                } else {
+                    input.style.borderBottomColor = '#FF3B30';
+                    console.error('Error guardando PO:', res.error);
+                }
+            })
+            .catch(function (err) {
+                input.style.opacity = '1';
+                input.style.borderBottomColor = '#FF3B30';
+                console.error('Error red:', err);
+            });
+        };
+
     })();
 </script>

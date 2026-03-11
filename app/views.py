@@ -8042,6 +8042,7 @@ def crear_oportunidad_api(request):
         'producto': producto, # Use default or provided
         'comentarios': comentarios, # Use default or provided
         'bitrix_stage_id': bitrix_stage_id, # Use default or provided
+        'po_number': '', # Ensure PO is empty on creation
     }
 
     try:
@@ -11583,6 +11584,7 @@ def api_crear_oportunidad(request):
             etapa_corta=etapa_corta_init,
             etapa_completa=etapa_completa_init,
             etapa_color=etapa_color_init,
+            po_number='', # Ensure PO is empty on creation
         )
         todo.save()
 
