@@ -113,6 +113,7 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true", help="Muestra acciones sin guardar")
         parser.add_argument("--skip-tasks", action="store_true", help="No importa tareas")
         parser.add_argument("--skip-files", action="store_true", help="No importa archivos/carpetas")
+        parser.add_argument("--debug-drive", action="store_true", help="Muestra log detallado de lo que detecta en el Drive de Bitrix")
         parser.add_argument(
             "--group-ids", nargs="+", type=int,
             help="Importar solo estos IDs de grupo (para pruebas)"
@@ -124,6 +125,7 @@ class Command(BaseCommand):
             return
 
         dry_run = options["dry_run"]
+        self.debug_drive = options["debug_drive"]
         if dry_run:
             self.stdout.write(self.style.WARNING("MODO DRY-RUN — no se guardará nada"))
 
@@ -396,8 +398,11 @@ class Command(BaseCommand):
                 nueva_carpeta.carpeta_padre = carpeta_padre
                 nueva_carpeta.save()
             self.stats["carpetas"] += 1
+            if self.debug_drive:
+                self.stdout.write("  " * (depth + 2) + f"📁 [CREADA/ACT] {nombre}")
         else:
-            self.stdout.write("  " * (depth + 2) + f"[DRY] CARPETA {nombre}")
+            if self.debug_drive or dry_run:
+                self.stdout.write("  " * (depth + 2) + f"[DRY] CARPETA {nombre}")
 
         try:
             sub_data = _call("disk.folder.getchildren", {"id": item["ID"]})
@@ -436,5 +441,8 @@ class Command(BaseCommand):
             )
             if created:
                 self.stats["archivos"] += 1
+                if self.debug_drive:
+                    self.stdout.write(f"        📄 [CREADO] {nombre} ({tamaño} bytes)")
         else:
-            self.stdout.write(f"        [DRY] ARCHIVO {nombre} ({tamaño} bytes)")
+            if self.debug_drive or dry_run:
+                self.stdout.write(f"        [DRY] ARCHIVO {nombre} ({tamaño} bytes)")
