@@ -108,7 +108,11 @@ class Command(BaseCommand):
             "errores": 0,
             "vinculadas_proyecto": 0,
             "vinculadas_oportunidad": 0,
-            "ignoradas": 0
+            "ignoradas": 0,
+            "bitrix_import_creador": 0,
+            "bitrix_import_responsable": 0,
+            "bitrix_import_participantes": 0,
+            "bitrix_import_observadores": 0,
         }
         
         # 1. Mapa de Usuarios
@@ -173,14 +177,22 @@ class Command(BaseCommand):
         if t.get("closedDate") or t.get("CLOSED_DATE"):
             fecha_completada = parse_datetime(t.get("closedDate") or t.get("CLOSED_DATE"))
 
-        # Usuarios
         creador_id = str(t.get("createdBy") or t.get("CREATED_BY") or "")
         responsable_id = str(t.get("responsibleId") or t.get("RESPONSIBLE_ID") or "")
         accomplices_ids = t.get("accomplices") or t.get("ACCOMPLICES") or []
         auditors_ids = t.get("auditors") or t.get("AUDITORS") or []
 
         creador = self.user_map.get(creador_id, default_user)
+        if creador == default_user:
+            self.stats["bitrix_import_creador"] += 1
+            if dry_run:
+                self.stdout.write(f"    ⚠️ Creador ID '{creador_id}' no encontrado en BD. Usando bitrix_import.")
+
         responsable = self.user_map.get(responsable_id, default_user)
+        if responsable == default_user:
+            self.stats["bitrix_import_responsable"] += 1
+            if dry_run:
+                self.stdout.write(f"    ⚠️ Responsable ID '{responsable_id}' no encontrado en BD. Usando bitrix_import.")
         
         estado = _map_status_tarea(t.get("status") or t.get("STATUS") or "1")
         prioridad = _map_priority_tarea(t.get("priority") or t.get("PRIORITY") or "1")
@@ -235,11 +247,23 @@ class Command(BaseCommand):
             )
             
             # Participantes y Observadores
-            participantes = [self.user_map[str(uid)] for uid in accomplices_ids if str(uid) in self.user_map]
+            participantes = []
+            for uid in accomplices_ids:
+                if str(uid) in self.user_map:
+                    participantes.append(self.user_map[str(uid)])
+                else:
+                    self.stats["bitrix_import_participantes"] += 1
+                    
             if participantes:
                 tarea.participantes.set(participantes)
                 
-            observadores = [self.user_map[str(uid)] for uid in auditors_ids if str(uid) in self.user_map]
+            observadores = []
+            for uid in auditors_ids:
+                if str(uid) in self.user_map:
+                    observadores.append(self.user_map[str(uid)])
+                else:
+                    self.stats["bitrix_import_observadores"] += 1
+                    
             if observadores:
                 tarea.observadores.set(observadores)
 
@@ -269,8 +293,21 @@ class Command(BaseCommand):
             creator_name = creador.username
             resp_name = responsable.username
             
-            part_names = [self.user_map[str(uid)].username for uid in accomplices_ids if str(uid) in self.user_map]
-            obs_names = [self.user_map[str(uid)].username for uid in auditors_ids if str(uid) in self.user_map]
+            part_names = []
+            for uid in accomplices_ids:
+                if str(uid) in self.user_map:
+                    part_names.append(self.user_map[str(uid)].username)
+                else:
+                    self.stats["bitrix_import_participantes"] += 1
+                    part_names.append("bitrix_import")
+                    
+            obs_names = []
+            for uid in auditors_ids:
+                if str(uid) in self.user_map:
+                    obs_names.append(self.user_map[str(uid)].username)
+                else:
+                    self.stats["bitrix_import_observadores"] += 1
+                    obs_names.append("bitrix_import")
 
             part_str = f" | Part: {','.join(part_names)}" if part_names else ""
             obs_str = f" | Obs: {','.join(obs_names)}" if obs_names else ""
