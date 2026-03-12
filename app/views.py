@@ -13963,33 +13963,44 @@ def api_drive_oportunidad(request, opp_id):
             except CarpetaOportunidad.DoesNotExist:
                 pass
 
-        # Proyecto vinculado (solo en raíz)
-        proyecto_info = None
-        if not parent_id:
-            opp_proyecto = OportunidadProyecto.objects.filter(oportunidad=opp).first()
-            if opp_proyecto:
-                try:
-                    proyecto = Proyecto.objects.get(bitrix_group_id=int(opp_proyecto.bitrix_project_id))
-                    proyecto_info = {'id': proyecto.id, 'nombre': proyecto.nombre}
-                except (Proyecto.DoesNotExist, ValueError):
-                    pass
-
-        return JsonResponse({
-            'success': True,
-            'carpeta_actual': carpeta_actual,
-            'proyecto': proyecto_info,
-            'carpetas': [{'id': c.id, 'nombre': c.nombre,
+        carpetas_data = [{'id': c.id, 'nombre': c.nombre,
                           'carpeta_padre_id': c.carpeta_padre_id,
                           'fecha_creacion': c.fecha_creacion.isoformat(),
-                          'tipo': 'carpeta'} for c in carpetas],
-            'archivos': [{'id': a.id, 'nombre': a.nombre_original,
+                          'tipo': 'carpeta'} for c in carpetas]
+        archivos_data = [{'id': a.id, 'nombre': a.nombre_original,
                           'tipo_archivo': a.tipo_archivo,
                           'extension': a.extension,
                           'tamaño': a.tamaño,
                           'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
                           'es_bitrix': bool(not a.archivo and getattr(a, 'bitrix_file_id', None)),
                           'fecha_subida': a.fecha_subida.isoformat(),
-                          'tipo': 'archivo'} for a in archivos],
+                          'tipo': 'archivo'} for a in archivos]
+
+        # Mezclar contenido del proyecto vinculado en la raíz
+        if not parent_id:
+            opp_proyecto = OportunidadProyecto.objects.filter(oportunidad=opp).first()
+            if opp_proyecto:
+                try:
+                    proyecto_vinculado = Proyecto.objects.get(bitrix_group_id=int(opp_proyecto.bitrix_project_id))
+                    for c in CarpetaProyecto.objects.filter(proyecto=proyecto_vinculado, carpeta_padre__isnull=True).order_by('nombre'):
+                        carpetas_data.append({'id': c.id, 'nombre': c.nombre,
+                                              'fecha_creacion': c.fecha_creacion.isoformat(),
+                                              'tipo': 'carpeta_proyecto'})
+                    for a in ArchivoProyecto.objects.filter(proyecto=proyecto_vinculado, carpeta__isnull=True).order_by('nombre_original'):
+                        archivos_data.append({'id': a.id, 'nombre': a.nombre_original,
+                                              'tipo_archivo': a.tipo_archivo,
+                                              'extension': a.extension,
+                                              'tamaño': a.tamaño,
+                                              'url': a.bitrix_download_url or f'/app/api/proyecto/{proyecto_vinculado.id}/archivo/{a.id}/stream/',
+                                              'tipo': 'archivo_proyecto'})
+                except (Proyecto.DoesNotExist, ValueError):
+                    pass
+
+        return JsonResponse({
+            'success': True,
+            'carpeta_actual': carpeta_actual,
+            'carpetas': carpetas_data,
+            'archivos': archivos_data,
         })
 
     elif request.method == 'POST':

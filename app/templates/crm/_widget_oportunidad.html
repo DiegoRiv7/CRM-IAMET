@@ -710,6 +710,13 @@
             woDriveCargarDirectorio();
         };
 
+        window.woDriveEntrarProyectoCarpeta = function (id, nombre) {
+            _woDriveMode = 'proyecto';
+            _woDriveCurrentFolder = id;
+            _woDriveBreadcrumbs = [{id: id, nombre: nombre}];
+            woDriveCargarDirectorio();
+        };
+
         // ── Tareas inline (dentro del tab detalle) ──
         function woCargarTareasInline(oppId) {
             var container = document.getElementById('woTareasInlineList');
@@ -816,12 +823,16 @@
         };
 
         function woDriveRenderCarpeta(c, readOnly) {
-            var menu = readOnly ? '' :
+            var esProyecto = (c.tipo === 'carpeta_proyecto');
+            var onClickFn = esProyecto
+                ? 'woDriveEntrarProyectoCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\')'
+                : 'woDriveEntrarCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\')';
+            var menu = (readOnly || esProyecto) ? '' :
                 '<div style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;" onclick="event.stopPropagation(); woDriveMenu(\'carpeta\', ' + c.id + ', \'' + woEscape(c.nombre) + '\')">' +
                 '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>';
             return '<div style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
                 menu +
-                '<div onclick="woDriveEntrarCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\')" style="text-align:center;">' +
+                '<div onclick="' + onClickFn + '" style="text-align:center;">' +
                 '<svg width="42" height="42" fill="#FFCF3A" stroke="none" viewBox="0 0 24 24" style="margin:0.5rem auto;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
                 '<div style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(c.nombre) + '</div></div></div>';
         }
@@ -873,15 +884,9 @@
                 .then(function (data) {
                     document.getElementById('woDriveLoading').style.display = 'none';
 
-                    // Guardar proyecto vinculado la primera vez (raíz de opp)
-                    if (!esProyecto && !_woDriveCurrentFolder && data.proyecto) {
-                        _woDriveProyecto = data.proyecto;
-                    }
-
                     var carpetas = data.carpetas || [];
                     var archivos = data.archivos || [];
-                    var tieneProyectoCard = !esProyecto && !_woDriveCurrentFolder && _woDriveProyecto;
-                    var isEmpty = !carpetas.length && !archivos.length && !tieneProyectoCard;
+                    var isEmpty = !carpetas.length && !archivos.length;
 
                     if (isEmpty) {
                         document.getElementById('woDriveEmpty').style.display = 'block';
@@ -890,16 +895,6 @@
                         document.getElementById('woDriveGrid').style.display = 'grid';
                         var html = '';
 
-                        // Carpeta especial del proyecto vinculado (solo en raíz de opp)
-                        if (tieneProyectoCard) {
-                            html += '<div style="background:#EFF6FF;border:2px solid #BFDBFE;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onclick="woDriveEntrarProyecto()" onmouseenter="this.style.borderColor=\'#93C5FD\'" onmouseleave="this.style.borderColor=\'#BFDBFE\'">' +
-                                '<div style="position:absolute;top:0.4rem;left:0.5rem;font-size:0.6rem;background:#3B82F6;color:#fff;border-radius:4px;padding:1px 5px;font-weight:700;">Proyecto</div>' +
-                                '<div style="text-align:center;padding-top:0.3rem;">' +
-                                '<svg width="42" height="42" fill="#3B82F6" stroke="none" viewBox="0 0 24 24" style="margin:0.5rem auto;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
-                                '<div style="font-size:0.75rem;font-weight:700;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + woEscape(_woDriveProyecto.nombre) + '">' + woEscape(_woDriveProyecto.nombre) + '</div>' +
-                                '</div></div>';
-                        }
-
                         carpetas.forEach(function (c) { html += woDriveRenderCarpeta(c, esProyecto); });
                         archivos.forEach(function (a) { html += woDriveRenderArchivo(a, esProyecto); });
                         document.getElementById('woDriveGrid').innerHTML = html;
@@ -907,14 +902,6 @@
 
                     // Breadcrumbs
                     var bc = '<span onclick="woDriveIrACarpeta(null)" style="cursor:pointer;color:#0052D4;">Raíz</span>';
-                    if (esProyecto) {
-                        bc += ' <span style="margin:0 4px;color:#C7C7CC;">/</span> ';
-                        if (!_woDriveBreadcrumbs.length) {
-                            bc += '<span style="color:#1E40AF;font-weight:600;">' + woEscape(_woDriveProyecto.nombre) + '</span>';
-                        } else {
-                            bc += '<span onclick="woDriveIrACarpeta(null)" style="cursor:pointer;color:#0052D4;">' + woEscape(_woDriveProyecto.nombre) + '</span>';
-                        }
-                    }
                     _woDriveBreadcrumbs.forEach(function (b, i) {
                         var last = i === _woDriveBreadcrumbs.length - 1;
                         bc += ' <span style="margin:0 4px;color:#C7C7CC;">/</span> ';
