@@ -16,15 +16,24 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true',
                             help='Muestra qué cambiaría sin guardar')
+        parser.add_argument('--limit', type=int, default=0,
+                            help='Procesar solo los primeros N proyectos (0 = todos)')
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
+        limit = options['limit']
         if dry_run:
             self.stdout.write(self.style.WARNING('── DRY RUN ──\n'))
+        if limit:
+            self.stdout.write(self.style.WARNING(f'── LIMIT {limit} proyecto(s) ──\n'))
 
         cnt_ok = cnt_skip_ya = cnt_skip_no_proyecto = 0
 
-        for link in OportunidadProyecto.objects.select_related('oportunidad').all():
+        qs = OportunidadProyecto.objects.select_related('oportunidad').all()
+        if limit:
+            qs = qs[:limit]
+
+        for link in qs:
             try:
                 proyecto = Proyecto.objects.get(bitrix_group_id=int(link.bitrix_project_id))
             except (Proyecto.DoesNotExist, ValueError):
