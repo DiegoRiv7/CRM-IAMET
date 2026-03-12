@@ -151,6 +151,11 @@ class Command(BaseCommand):
         )
 
         # ── 3. Precalcular índices de oportunidades ───────────────────────────
+        # Opps que ya tienen al menos un proyecto vinculado → exigir sim >= 0.95
+        opps_ya_vinculadas = set(
+            OportunidadProyecto.objects.values_list('oportunidad_id', flat=True).distinct()
+        )
+
         # índice PO → lista de oportunidades
         po_index = {}
         # índice nombre normalizado → oportunidad
@@ -203,15 +208,20 @@ class Command(BaseCommand):
             norm_proy = _normalizar(nombre_proy)
             if norm_proy in nombre_index:
                 opp = nombre_index[norm_proy]
-                conf = 90
-                if not best or conf > best[0]:
-                    best = (conf, 'NOMBRE', opp, 'match exacto')
+                # Si la opp ya tiene proyecto vinculado, solo sugerir si es match exacto
+                if opp.id not in opps_ya_vinculadas or True:
+                    conf = 90
+                    if not best or conf > best[0]:
+                        best = (conf, 'NOMBRE', opp, 'match exacto')
             else:
                 # similitud bidireccional
                 mejor_sim = 0.0
                 mejor_opp = None
                 for norm_opp, opp in nombre_index.items():
                     sim = _similitud(nombre_proy, opp.oportunidad)
+                    # Si la opp ya tiene proyecto vinculado, exigir sim >= 0.95
+                    if opp.id in opps_ya_vinculadas and sim < 0.95:
+                        continue
                     if sim > mejor_sim:
                         mejor_sim = sim
                         mejor_opp = opp
