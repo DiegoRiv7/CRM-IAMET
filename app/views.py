@@ -13963,9 +13963,21 @@ def api_drive_oportunidad(request, opp_id):
             except CarpetaOportunidad.DoesNotExist:
                 pass
 
+        # Proyecto vinculado (solo en raíz)
+        proyecto_info = None
+        if not parent_id:
+            opp_proyecto = OportunidadProyecto.objects.filter(oportunidad=opp).first()
+            if opp_proyecto:
+                try:
+                    proyecto = Proyecto.objects.get(bitrix_group_id=int(opp_proyecto.bitrix_project_id))
+                    proyecto_info = {'id': proyecto.id, 'nombre': proyecto.nombre}
+                except (Proyecto.DoesNotExist, ValueError):
+                    pass
+
         return JsonResponse({
             'success': True,
             'carpeta_actual': carpeta_actual,
+            'proyecto': proyecto_info,
             'carpetas': [{'id': c.id, 'nombre': c.nombre,
                           'carpeta_padre_id': c.carpeta_padre_id,
                           'fecha_creacion': c.fecha_creacion.isoformat(),
