@@ -197,6 +197,10 @@ class Command(BaseCommand):
                     if sim >= 0.70:
                         conf = 90
                         criterio = 'PO+NOM'
+                    elif sim >= 0.50:
+                        # PO coincide exactamente y nombres parcialmente similares
+                        conf = 85
+                        criterio = 'PO+NOM'
                     else:
                         conf = 60
                         criterio = 'PO-multi'
