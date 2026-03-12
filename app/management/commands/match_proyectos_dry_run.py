@@ -31,6 +31,8 @@ _RE_PO = re.compile(
     r'(?:^|[\s\-/])(?:PO|P\.O\.?)\s*[-#]?\s*(\d{5,})',
     re.IGNORECASE,
 )
+# Números largos sin prefijo (6+ dígitos) que sirven como identificadores únicos
+_RE_NUM_ID = re.compile(r'(?<!\d)(\d{6,})(?!\d)')
 _RE_COT = re.compile(
     r'(?:COT|cot|cotizaci[oó]n)[-_\s#]*(\d{2,})',
     re.IGNORECASE,
@@ -38,8 +40,11 @@ _RE_COT = re.compile(
 
 
 def _po_numbers(text):
-    """Retorna set de strings PO encontrados en el texto."""
-    return {m.group(1) for m in _RE_PO.finditer(text or '')}
+    """Retorna set de strings de números identificadores encontrados en el texto.
+    Incluye POs con prefijo y números largos (6+ dígitos) sin prefijo."""
+    nums = {m.group(1) for m in _RE_PO.finditer(text or '')}
+    nums |= {m.group(1) for m in _RE_NUM_ID.finditer(text or '')}
+    return nums
 
 
 def _cot_ids(text):
