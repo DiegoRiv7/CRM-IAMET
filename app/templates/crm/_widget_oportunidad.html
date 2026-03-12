@@ -1530,14 +1530,20 @@
         };
 
         window.woVincularProyecto = function (proyectoId) {
-            if (!_woCurrentOppId) return;
+            if (!_woCurrentOppId) {
+                woDialogConfirm('Error', 'No hay oportunidad seleccionada (_woCurrentOppId vacío)', null, null, true);
+                return;
+            }
             var csrf = getCsrf ? getCsrf() : (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
             fetch('/app/api/oportunidad/' + _woCurrentOppId + '/proyectos/buscar/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
                 body: JSON.stringify({ proyecto_id: proyectoId }),
             })
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (!r.ok) return r.json().then(function(d){ throw new Error(d.error || 'HTTP ' + r.status); });
+                    return r.json();
+                })
                 .then(function (data) {
                     if (data.success) {
                         document.getElementById('woProyectosBuscarInput').value = '';
@@ -1547,9 +1553,13 @@
                         if (data.tareas_vinculadas > 0) {
                             woCargarTareasInline(_woCurrentOppId);
                         }
+                    } else {
+                        woDialogConfirm('Error al vincular', data.error || 'Respuesta inesperada del servidor', null, null, true);
                     }
                 })
-                .catch(console.error);
+                .catch(function(e) {
+                    woDialogConfirm('Error al vincular', e.message || 'Error de red', null, null, true);
+                });
         };
 
         // Hook: when detalle loads an opp, store its id and load inline tasks
