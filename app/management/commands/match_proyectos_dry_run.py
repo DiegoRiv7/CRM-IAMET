@@ -214,30 +214,51 @@ class Command(BaseCommand):
                 opp = cot_index.get(cid)
                 if opp:
                     fuente = 'drive' if cid in cot_ids_drive else 'tarea'
-                    conf = 80
+                    conf = 100  # cotización confirma el vínculo sin duda
                     if not best or conf > best[0]:
                         best = (conf, 'COT', opp, f'Cotizacion #{cid} ({fuente})')
 
             if best:
                 results.append((best[0], best[1], proy, best[2], best[3]))
 
-        # ── 5. Imprimir resultados ─────────────────────────────────────────────
+        # ── 5. Detectar proyectos que comparten oportunidad (misma PO) ────────
+        # Agrupar results por oportunidad_id para encontrar duplicados
+        from collections import defaultdict
+        opp_a_proyectos = defaultdict(list)  # opp_id → [(conf, criterio, proy, detalle)]
+        for conf, criterio, proy, opp, detalle in results:
+            opp_a_proyectos[opp.id].append((conf, criterio, proy, detalle))
+
+        # Construir mapa proy_id → nota de comparte
+        comparte_nota = {}
+        for opp_id, grupo in opp_a_proyectos.items():
+            if len(grupo) > 1:
+                for i, (conf, criterio, proy, detalle) in enumerate(grupo):
+                    otros = [
+                        f'[{g[2].bitrix_group_id}] {g[2].nombre[:25]}'
+                        for j, g in enumerate(grupo) if j != i
+                    ]
+                    comparte_nota[proy.id] = ' | comparte opp con: ' + ', '.join(otros)
+
+        # ── 6. Imprimir resultados ─────────────────────────────────────────────
         resultados_filtrados = [r for r in results if r[0] >= (min_conf or 0)]
         resultados_filtrados.sort(key=lambda x: -x[0])
 
+        n_comparte = len({proy.id for _, _, proy, _, _ in results if proy.id in comparte_nota})
+
         if resultados_filtrados:
             self.stdout.write(f'{"CONF":>5}  {"CRITERIO":<9}  {"PROYECTO (ID-Bitrix)":<55}  {"OPORTUNIDAD":<50}  DETALLE')
-            self.stdout.write('─' * 160)
+            self.stdout.write('─' * 170)
             for conf, criterio, proy, opp, detalle in resultados_filtrados:
                 color = self.style.SUCCESS if conf >= 85 else (
                     self.style.WARNING if conf >= 70 else self.style.ERROR)
+                nota = comparte_nota.get(proy.id, '')
                 self.stdout.write(color(
                     f'{conf:>4}%  [{criterio:<7}]  '
                     f'[{proy.bitrix_group_id}] {proy.nombre[:52]:<52}  '
-                    f'Opp #{opp.id:<5} {str(opp.oportunidad)[:47]:<47}  {detalle}'
+                    f'Opp #{opp.id:<5} {str(opp.oportunidad)[:47]:<47}  {detalle}{nota}'
                 ))
 
-        # ── 6. Resumen ────────────────────────────────────────────────────────
+        # ── 7. Resumen ────────────────────────────────────────────────────────
         total_proyectos = len(proyectos)
         total_match = len(results)
         gt90 = sum(1 for r in results if r[0] >= 90)
@@ -245,17 +266,20 @@ class Command(BaseCommand):
         lt80 = sum(1 for r in results if r[0] < 80)
         sin_match = total_proyectos - total_match
 
-        self.stdout.write(f'\n{"="*55}')
-        self.stdout.write(f'  Proyectos sin vincular evaluados : {total_proyectos}')
+        self.stdout.write(f'\n{"="*60}')
+        self.stdout.write(f'  Proyectos sin vincular evaluados  : {total_proyectos}')
         self.stdout.write(self.style.SUCCESS(
-            f'  Match >= 90% (alta confianza)    : {gt90}'))
+            f'  Match >= 90% (alta confianza)     : {gt90}'))
         self.stdout.write(self.style.WARNING(
-            f'  Match 80-89%                     : {entre80_89}'))
+            f'  Match 80-89%                      : {entre80_89}'))
         self.stdout.write(
-            f'  Match < 80%                      : {lt80}')
+            f'  Match < 80%                       : {lt80}')
         self.stdout.write(self.style.ERROR(
-            f'  Sin match encontrado             : {sin_match}'))
-        self.stdout.write(f'{"="*55}')
+            f'  Sin match encontrado              : {sin_match}'))
+        if n_comparte:
+            self.stdout.write(self.style.WARNING(
+                f'  Proyectos que comparten opp       : {n_comparte} (drives se fusionarán)'))
+        self.stdout.write(f'{"="*60}')
 
         # ── 7. Aplicar si se pidió ────────────────────────────────────────────
         if aplicar:
