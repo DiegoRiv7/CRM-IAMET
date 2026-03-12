@@ -259,7 +259,7 @@ class Command(BaseCommand):
             n = len(grupo)
             if n <= 1:
                 continue
-            es_ambiguo = n >= 4  # demasiados → match genérico, no confiable
+            es_ambiguo = n >= 3  # máximo 2 proyectos por opp → si hay 3+ es genérico
             for i, (conf, criterio, proy, detalle) in enumerate(grupo):
                 otros = [g[2] for j, g in enumerate(grupo) if j != i]
                 if len(otros) <= 2:
@@ -325,10 +325,10 @@ class Command(BaseCommand):
             f'  Sin match encontrado              : {sin_match}'))
         if n_comparte:
             self.stdout.write(self.style.WARNING(
-                f'  Comparten opp (2-3 proyectos)     : {n_comparte} (drives se fusionarán)'))
+                f'  Comparten opp (exactamente 2)     : {n_comparte} (drives se fusionarán)'))
         if n_ambiguo:
             self.stdout.write(self.style.ERROR(
-                f'  AMBIGUOS (opp genérica, 4+ proy.) : {n_ambiguo} (revisar manualmente)'))
+                f'  AMBIGUOS (opp genérica, 3+ proy.) : {n_ambiguo} (revisar manualmente)'))
         self.stdout.write(f'{"="*60}')
 
         # ── 7. Aplicar si se pidió ────────────────────────────────────────────
