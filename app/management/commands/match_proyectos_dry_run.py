@@ -247,29 +247,50 @@ class Command(BaseCommand):
             if best:
                 results.append((best[0], best[1], proy, best[2], best[3]))
 
-        # ── 5. Detectar proyectos que comparten oportunidad (misma PO) ────────
-        # Agrupar results por oportunidad_id para encontrar duplicados
+        # ── 5. Detectar proyectos que comparten oportunidad ──────────────────
         from collections import defaultdict
-        opp_a_proyectos = defaultdict(list)  # opp_id → [(conf, criterio, proy, detalle)]
+        opp_a_proyectos = defaultdict(list)
         for conf, criterio, proy, opp, detalle in results:
             opp_a_proyectos[opp.id].append((conf, criterio, proy, detalle))
 
-        # Construir mapa proy_id → nota de comparte
-        comparte_nota = {}
+        # Construir mapa proy_id → (nota, es_ambiguo)
+        comparte_info = {}  # proy_id → (nota_str, es_ambiguo)
         for opp_id, grupo in opp_a_proyectos.items():
-            if len(grupo) > 1:
-                for i, (conf, criterio, proy, detalle) in enumerate(grupo):
-                    otros = [
-                        f'[{g[2].bitrix_group_id}] {g[2].nombre[:25]}'
-                        for j, g in enumerate(grupo) if j != i
-                    ]
-                    comparte_nota[proy.id] = ' | comparte opp con: ' + ', '.join(otros)
+            n = len(grupo)
+            if n <= 1:
+                continue
+            es_ambiguo = n >= 4  # demasiados → match genérico, no confiable
+            for i, (conf, criterio, proy, detalle) in enumerate(grupo):
+                otros = [g[2] for j, g in enumerate(grupo) if j != i]
+                if len(otros) <= 2:
+                    nombres = ', '.join(f'[{o.bitrix_group_id}] {o.nombre[:20]}' for o in otros)
+                else:
+                    primeros = ', '.join(f'[{o.bitrix_group_id}] {o.nombre[:15]}' for o in otros[:2])
+                    nombres = f'{primeros} (y {len(otros)-2} más)'
+                if es_ambiguo:
+                    nota = f' | ⚠ AMBIGUO: opp genérica compartida con {n-1} proyectos'
+                else:
+                    nota = f' | comparte opp con: {nombres}'
+                comparte_info[proy.id] = (nota, es_ambiguo)
+
+        # Aplicar penalización de confianza a los ambiguos
+        results_final = []
+        for conf, criterio, proy, opp, detalle in results:
+            info = comparte_info.get(proy.id)
+            if info and info[1]:  # es_ambiguo
+                conf = min(conf, 55)
+                criterio = 'AMBIGUO'
+            results_final.append((conf, criterio, proy, opp, detalle))
+        results = results_final
 
         # ── 6. Imprimir resultados ─────────────────────────────────────────────
         resultados_filtrados = [r for r in results if r[0] >= (min_conf or 0)]
         resultados_filtrados.sort(key=lambda x: -x[0])
 
-        n_comparte = len({proy.id for _, _, proy, _, _ in results if proy.id in comparte_nota})
+        n_comparte = sum(1 for _, _, proy, _, _ in results
+                         if proy.id in comparte_info and not comparte_info[proy.id][1])
+        n_ambiguo = sum(1 for _, _, proy, _, _ in results
+                        if proy.id in comparte_info and comparte_info[proy.id][1])
 
         if resultados_filtrados:
             self.stdout.write(f'{"CONF":>5}  {"CRITERIO":<9}  {"PROYECTO (ID-Bitrix)":<55}  {"OPORTUNIDAD":<50}  DETALLE')
@@ -277,7 +298,7 @@ class Command(BaseCommand):
             for conf, criterio, proy, opp, detalle in resultados_filtrados:
                 color = self.style.SUCCESS if conf >= 85 else (
                     self.style.WARNING if conf >= 70 else self.style.ERROR)
-                nota = comparte_nota.get(proy.id, '')
+                nota = comparte_info.get(proy.id, ('', False))[0]
                 self.stdout.write(color(
                     f'{conf:>4}%  [{criterio:<7}]  '
                     f'[{proy.bitrix_group_id}] {proy.nombre[:52]:<52}  '
@@ -304,7 +325,10 @@ class Command(BaseCommand):
             f'  Sin match encontrado              : {sin_match}'))
         if n_comparte:
             self.stdout.write(self.style.WARNING(
-                f'  Proyectos que comparten opp       : {n_comparte} (drives se fusionarán)'))
+                f'  Comparten opp (2-3 proyectos)     : {n_comparte} (drives se fusionarán)'))
+        if n_ambiguo:
+            self.stdout.write(self.style.ERROR(
+                f'  AMBIGUOS (opp genérica, 4+ proy.) : {n_ambiguo} (revisar manualmente)'))
         self.stdout.write(f'{"="*60}')
 
         # ── 7. Aplicar si se pidió ────────────────────────────────────────────
