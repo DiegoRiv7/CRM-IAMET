@@ -103,17 +103,21 @@ class Command(BaseCommand):
                             help='Mostrar solo matches con confianza >= N (default: todos)')
         parser.add_argument('--aplicar', action='store_true',
                             help='APLICA los vínculos (solo los que superen --min-conf)')
+        parser.add_argument('--urgentes', action='store_true',
+                            help='Solo proyectos con tareas abiertas sin oportunidad vinculada')
 
     def handle(self, *args, **options):
         min_conf = options['min_conf']
         aplicar = options['aplicar']
+        solo_urgentes = options['urgentes']
 
         if aplicar:
             self.stdout.write(self.style.ERROR(
                 '⚠  MODO APLICAR — se guardarán los vínculos >= {}%\n'.format(min_conf or 0)
             ))
         else:
-            self.stdout.write(self.style.WARNING('── DRY RUN (sin cambios) ──\n'))
+            modo = 'URGENTES — proyectos con tareas abiertas sin opp' if solo_urgentes else 'DRY RUN (sin cambios)'
+            self.stdout.write(self.style.WARNING(f'── {modo} ──\n'))
 
         # ── 1. Construir conjunto de proyectos ya vinculados ──────────────────
         vinculados_ids = set()
@@ -127,6 +131,18 @@ class Command(BaseCommand):
         con_carpeta = set(CarpetaProyecto.objects.values_list('proyecto_id', flat=True).distinct())
         con_archivo = set(ArchivoProyecto.objects.values_list('proyecto_id', flat=True).distinct())
         con_drive_ids = con_carpeta | con_archivo
+
+        # Si --urgentes: restringir a proyectos con tareas abiertas sin opp
+        if solo_urgentes:
+            estados_abiertos = ('pendiente', 'iniciada', 'en_progreso')
+            proy_con_tarea_abierta = set(
+                Tarea.objects.filter(
+                    estado__in=estados_abiertos,
+                    oportunidad__isnull=True,
+                    proyecto__isnull=False,
+                ).values_list('proyecto_id', flat=True).distinct()
+            )
+            con_drive_ids = con_drive_ids & proy_con_tarea_abierta
 
         proyectos = list(
             Proyecto.objects.filter(id__in=con_drive_ids)
@@ -299,10 +315,17 @@ class Command(BaseCommand):
                 color = self.style.SUCCESS if conf >= 85 else (
                     self.style.WARNING if conf >= 70 else self.style.ERROR)
                 nota = comparte_info.get(proy.id, ('', False))[0]
+                tareas_info = ''
+                if solo_urgentes:
+                    n_tareas = Tarea.objects.filter(
+                        proyecto=proy, estado__in=('pendiente', 'iniciada', 'en_progreso'),
+                        oportunidad__isnull=True,
+                    ).count()
+                    tareas_info = f' [{n_tareas} tarea(s) abierta(s)]'
                 self.stdout.write(color(
                     f'{conf:>4}%  [{criterio:<7}]  '
                     f'[{proy.bitrix_group_id}] {proy.nombre[:52]:<52}  '
-                    f'Opp #{opp.id:<5} {str(opp.oportunidad)[:47]:<47}  {detalle}{nota}'
+                    f'Opp #{opp.id:<5} {str(opp.oportunidad)[:47]:<47}  {detalle}{nota}{tareas_info}'
                 ))
 
         # ── 7. Resumen ────────────────────────────────────────────────────────
