@@ -17,8 +17,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--lista', action='store_true',
                             help='Muestra el detalle de cada proyecto')
+        parser.add_argument('--desde', type=int, default=0,
+                            help='Solo proyectos creados en este año o después (ej. 2025)')
 
     def handle(self, *args, **options):
+        desde = options['desde']
+
         # Proyectos que ya tienen vínculo
         vinculados_ids = OportunidadProyecto.objects.values_list('bitrix_project_id', flat=True)
         vinculados_group_ids = set()
@@ -34,11 +38,12 @@ class Command(BaseCommand):
         con_drive_ids = set(con_carpeta) | set(con_archivo)
 
         # Filtrar los que NO están vinculados
-        proyectos_sin_vincular = Proyecto.objects.filter(
-            id__in=con_drive_ids
-        ).exclude(
+        qs = Proyecto.objects.filter(id__in=con_drive_ids).exclude(
             bitrix_group_id__in=vinculados_group_ids
-        ).order_by('nombre')
+        )
+        if desde:
+            qs = qs.filter(fecha_creacion__year__gte=desde)
+        proyectos_sin_vincular = qs.order_by('nombre')
 
         total = proyectos_sin_vincular.count()
         total_con_drive = len(con_drive_ids)
