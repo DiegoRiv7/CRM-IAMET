@@ -145,7 +145,7 @@ class Command(BaseCommand):
             con_drive_ids = con_drive_ids & proy_con_tarea_abierta
 
         proyectos = list(
-            Proyecto.objects.filter(id__in=con_drive_ids)
+            Proyecto.objects.filter(id__in=con_drive_ids, fecha_creacion__year__gte=2025)
             .exclude(bitrix_group_id__in=vinculados_ids)
             .order_by('nombre')
         )
