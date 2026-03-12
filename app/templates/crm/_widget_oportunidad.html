@@ -1512,13 +1512,21 @@
                     var h = '';
                     list.forEach(function (p) {
                         h += '<div style="display:flex;align-items:center;gap:0.5rem;padding:5px 0;border-bottom:1px solid #F9F9F9;">' +
-                            '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(p.nombre) + '</span>' +
-                            '<button type="button" onclick="woVincularProyecto(' + p.id + ')" style="background:#0052D4;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;">Vincular</button>' +
+                            '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + woEscape(p.nombre) + '">' + woEscape(p.nombre) + '</span>' +
+                            '<button type="button" onclick="woConfirmarVincularProyecto(' + p.id + ',\'' + woEscape(p.nombre).replace(/'/g,'&#39;') + '\')" style="background:#0052D4;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;">Vincular</button>' +
                             '</div>';
                     });
                     resultados.innerHTML = h;
                 })
                 .catch(function () { resultados.innerHTML = '<div style="font-size:0.78rem;color:#EF4444;">Error al buscar.</div>'; });
+        };
+
+        window.woConfirmarVincularProyecto = function (proyectoId, nombreProyecto) {
+            woDialogConfirm(
+                'Vincular proyecto',
+                'Se vinculará "' + nombreProyecto + '" a esta oportunidad.\nSu drive y tareas quedarán ligados automáticamente. ¿Confirmar?',
+                function () { woVincularProyecto(proyectoId); }
+            );
         };
 
         window.woVincularProyecto = function (proyectoId) {
@@ -1536,6 +1544,9 @@
                         document.getElementById('woProyectosBuscarResultados').innerHTML = '';
                         woCargarProyectos(_woCurrentOppId);
                         woActualizarResumenProyectos(_woCurrentOppId);
+                        if (data.tareas_vinculadas > 0) {
+                            woCargarTareasInline(_woCurrentOppId);
+                        }
                     }
                 })
                 .catch(console.error);

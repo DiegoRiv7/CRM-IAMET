@@ -16578,6 +16578,23 @@ def api_oportunidad_proyectos_buscar(request, opp_id):
                 'vinculado_por': request.user,
             },
         )
-        return JsonResponse({'success': True, 'link_id': lnk.id})
+
+        # Crear OportunidadProyecto para que el drive y las tareas funcionen
+        tareas_vinculadas = 0
+        if proyecto.bitrix_group_id:
+            from app.models import OportunidadProyecto, Tarea
+            OportunidadProyecto.objects.get_or_create(
+                bitrix_project_id=str(proyecto.bitrix_group_id),
+                oportunidad=opp,
+            )
+            tareas_vinculadas = Tarea.objects.filter(
+                proyecto=proyecto, oportunidad__isnull=True
+            ).update(oportunidad=opp)
+
+        return JsonResponse({
+            'success': True,
+            'link_id': lnk.id,
+            'tareas_vinculadas': tareas_vinculadas,
+        })
 
     return JsonResponse({'error': 'Metodo no permitido'}, status=405)
