@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -24,7 +22,7 @@ services:
         reservations:
           memory: 256m
     networks:
-      - nginx_default
+      - pruebas_net
 
   db:
     image: mysql:8.0
@@ -37,7 +35,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     networks:
-      - nginx_default
+      - pruebas_net
 
 volumes:
   db_pruebas:
@@ -45,5 +43,5 @@ volumes:
   static_pruebas:
 
 networks:
-  nginx_default:
-    external: true
+  pruebas_net:
+    driver: bridge
