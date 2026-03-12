@@ -66,21 +66,31 @@ def _normalizar(text):
     return re.sub(r'\s+', ' ', text).strip()
 
 
+_STOP = {'de', 'la', 'el', 'en', 'y', 'a', 'por', 'para', 'con', 'del',
+         'po', 'p', 'los', 'las', 'un', 'una', 'al', 'se', 'su', 'que'}
+
+
 def _similitud(a, b):
-    """Fracción de palabras de `a` que aparecen en `b` (simple, rápido)."""
-    palabras_a = set(_normalizar(a).split())
-    palabras_b = set(_normalizar(b).split())
-    if not palabras_a:
+    """Similitud bidireccional: toma el máximo de A→B y B→A (ignora stop words).
+    Además detecta si uno contiene al otro casi completo (substring semántico)."""
+    na, nb = _normalizar(a), _normalizar(b)
+
+    # substring check: si uno contiene al otro casi completo
+    if na and nb:
+        corto, largo = (na, nb) if len(na) <= len(nb) else (nb, na)
+        if corto in largo and len(corto) >= 8:
+            return 0.97  # prácticamente contenido
+
+    pa = set(na.split()) - _STOP
+    pb = set(nb.split()) - _STOP
+    if not pa or not pb:
         return 0.0
-    comunes = palabras_a & palabras_b
-    # Ignorar palabras muy cortas/genéricas
-    _stop = {'de', 'la', 'el', 'en', 'y', 'a', 'por', 'para', 'con', 'del',
-             'po', 'p', 'los', 'las', 'un', 'una', 'al'}
-    comunes -= _stop
-    palabras_a -= _stop
-    if not palabras_a:
-        return 0.0
-    return len(comunes) / len(palabras_a)
+    comunes = pa & pb
+    sim_ab = len(comunes) / len(pa)   # cuánto de A está en B
+    sim_ba = len(comunes) / len(pb)   # cuánto de B está en A
+    # Jaccard + máximo direccional para no penalizar nombres con palabras extra
+    jaccard = len(comunes) / len(pa | pb)
+    return max(sim_ab, sim_ba, jaccard)
 
 
 # ── command ───────────────────────────────────────────────────────────────────
@@ -177,11 +187,11 @@ class Command(BaseCommand):
             norm_proy = _normalizar(nombre_proy)
             if norm_proy in nombre_index:
                 opp = nombre_index[norm_proy]
-                conf = 85
+                conf = 90
                 if not best or conf > best[0]:
                     best = (conf, 'NOMBRE', opp, 'match exacto')
             else:
-                # similitud parcial
+                # similitud bidireccional
                 mejor_sim = 0.0
                 mejor_opp = None
                 for norm_opp, opp in nombre_index.items():
@@ -190,8 +200,9 @@ class Command(BaseCommand):
                         mejor_sim = sim
                         mejor_opp = opp
                 if mejor_sim >= 0.70:
-                    # escala lineal entre 70 y 85 según la similitud
-                    conf = 70 + int((mejor_sim - 0.70) / 0.30 * 15)
+                    # escala: 70%sim→72conf, 80%→80, 90%→87, 97%→93
+                    conf = int(72 + (mejor_sim - 0.70) / 0.30 * 21)
+                    conf = min(conf, 93)
                     if not best or conf > best[0]:
                         best = (conf, 'NOMBRE~', mejor_opp,
                                 f'similitud {int(mejor_sim*100)}%')
@@ -217,6 +228,21 @@ class Command(BaseCommand):
                     conf = 100  # cotización confirma el vínculo sin duda
                     if not best or conf > best[0]:
                         best = (conf, 'COT', opp, f'Cotizacion #{cid} ({fuente})')
+
+            # ── Bonus: responsable de opp == creador/miembro del proyecto ─────
+            if best and best[0] < 100:
+                opp_best = best[2]
+                bonus = 0
+                nota_bonus = ''
+                if opp_best.usuario_id == proy.creado_por_id:
+                    bonus = 7
+                    nota_bonus = ' +mismo_responsable'
+                elif proy.miembros.filter(id=opp_best.usuario_id).exists():
+                    bonus = 4
+                    nota_bonus = ' +responsable_es_miembro'
+                if bonus:
+                    nueva_conf = min(best[0] + bonus, 97)
+                    best = (nueva_conf, best[1], best[2], best[3] + nota_bonus)
 
             if best:
                 results.append((best[0], best[1], proy, best[2], best[3]))
