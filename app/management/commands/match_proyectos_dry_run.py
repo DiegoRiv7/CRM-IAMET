@@ -149,7 +149,7 @@ class Command(BaseCommand):
 
             nombre_proy = proy.nombre or ''
 
-            # ── Criterio 1: PO ────────────────────────────────────────────────
+            # ── Criterio 1: PO / número identificador ────────────────────────
             pos_proy = _po_numbers(nombre_proy)
             for po in pos_proy:
                 candidatos = po_index.get(po, [])
@@ -157,14 +157,21 @@ class Command(BaseCommand):
                     opp = candidatos[0]
                     conf = 95
                     if not best or conf > best[0]:
-                        best = (conf, 'PO', opp, f'PO {po}')
+                        best = (conf, 'PO', opp, f'num {po}')
                 elif len(candidatos) > 1:
-                    # múltiples oportunidades con el mismo PO → baja confianza
-                    opp = candidatos[0]
-                    conf = 60
+                    # múltiples candidatos: elegir el de mayor similitud de nombre
+                    mejor_opp = max(candidatos,
+                                    key=lambda o: _similitud(nombre_proy, o.oportunidad))
+                    sim = _similitud(nombre_proy, mejor_opp.oportunidad)
+                    if sim >= 0.70:
+                        conf = 90
+                        criterio = 'PO+NOM'
+                    else:
+                        conf = 60
+                        criterio = 'PO-multi'
                     if not best or conf > best[0]:
-                        best = (conf, 'PO-multi', opp,
-                                f'PO {po} ({len(candidatos)} opps)')
+                        best = (conf, criterio, mejor_opp,
+                                f'num {po} + sim {int(sim*100)}%')
 
             # ── Criterio 2: Nombre normalizado ───────────────────────────────
             norm_proy = _normalizar(nombre_proy)
@@ -183,7 +190,8 @@ class Command(BaseCommand):
                         mejor_sim = sim
                         mejor_opp = opp
                 if mejor_sim >= 0.70:
-                    conf = int(mejor_sim * 85)
+                    # escala lineal entre 70 y 85 según la similitud
+                    conf = 70 + int((mejor_sim - 0.70) / 0.30 * 15)
                     if not best or conf > best[0]:
                         best = (conf, 'NOMBRE~', mejor_opp,
                                 f'similitud {int(mejor_sim*100)}%')
