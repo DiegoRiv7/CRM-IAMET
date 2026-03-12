@@ -2866,7 +2866,7 @@
             } else if (tarea.proyecto_id) {
                 var proyLabel = (tarea.proyecto_nombre || 'Proyecto');
                 if (proyLabel.length > 35) proyLabel = proyLabel.substring(0, 33) + '…';
-                oppCell = '<span style="color:#7C3AED;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#F5F3FF;padding:2px 8px;border-radius:12px;border:1px solid #DDD6FE;" title="Proyecto: ' + tarea.proyecto_nombre + '" onclick="event.stopPropagation();openDetalleProyecto(' + tarea.proyecto_id + ')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' + proyLabel + '</span>';
+                oppCell = '<span style="color:#7C3AED;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#F5F3FF;padding:2px 8px;border-radius:12px;border:1px solid #DDD6FE;" title="Proyecto: ' + tarea.proyecto_nombre + '" onclick="event.stopPropagation();ingenieroAbrirProyecto(' + tarea.proyecto_id + ')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' + proyLabel + '</span>';
             } else {
                 oppCell = '<span class="crm-task-asignar-opp" data-task-id="' + tarea.id + '" style="color:#9CA3AF;font-size:0.78rem;cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation();crmTaskAbrirAsignarOpp(this,' + tarea.id + ')">Asignar...</span>';
             }
