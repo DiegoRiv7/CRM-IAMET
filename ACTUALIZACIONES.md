@@ -20,7 +20,7 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - El drive de oportunidades ahora acepta archivos de hasta 100MB (antes el límite era 2.5MB)
 - Se pueden subir planos DWG, videos, archivos pesados de ingeniería sin error
 
-### MEJORA — Archivos de proyectos
+### TÉCNICO — Archivos de proyectos migrados a servidor local
 - Los archivos descargados de Bitrix (10,075 archivos, ~9.7GB) ahora se sirven desde el servidor local
 - Ya no depende de que Bitrix esté activo para ver los archivos de proyectos
 
