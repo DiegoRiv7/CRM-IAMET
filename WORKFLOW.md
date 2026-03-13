@@ -59,8 +59,17 @@ git push crm-iamet pruebas
 # En servidor — aplicar cambios
 cd ~/crm-pruebas
 git pull origin pruebas
+
+# Si solo hay cambios en Python/templates (sin archivos estáticos nuevos):
+sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restart web
+
+# Si hay archivos CSS/JS nuevos en static/ (OBLIGATORIO correr collectstatic):
+sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec web python manage.py collectstatic --noinput
 sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restart web
 ```
+
+> **NOTA:** `docker compose restart` NO vuelve a ejecutar el entrypoint (que incluye collectstatic).
+> Cuando agregues archivos nuevos a `app/static/`, siempre corre collectstatic manualmente.
 
 ### Subir cambios a PRODUCCIÓN
 ```bash
