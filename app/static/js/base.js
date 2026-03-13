@@ -48,7 +48,7 @@ window.addEventListener('resize', () => {
 
     function showEmptyState() {
         var c = document.getElementById('spotlight-results');
-        if (c) c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg></div><div class="spotlight-empty-text">Busca oportunidades, cotizaciones o clientes</div><div class="spotlight-empty-hint">Por nombre, PO, número de factura o #cotización</div></div>';
+        if (c) c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-text">Busca oportunidades, cotizaciones o tareas</div><div class="spotlight-empty-hint">Por nombre, PO, número de factura o #cotización</div></div>';
     }
     function showLoadingState() {
         var c = document.getElementById('spotlight-results');
@@ -72,7 +72,7 @@ window.addEventListener('resize', () => {
         var c = document.getElementById('spotlight-results');
         if (!c) return;
         if (results.length === 0) {
-            c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg></div><div class="spotlight-empty-text">Sin resultados</div><div class="spotlight-empty-hint">Intenta con otro nombre, PO o número</div></div>';
+            c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-text">Sin resultados</div><div class="spotlight-empty-hint">Intenta con otro nombre, PO o número</div></div>';
             return;
         }
         // Group by type
