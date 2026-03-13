@@ -74,12 +74,13 @@ class Command(BaseCommand):
 
                 if po:
                     self.stdout.write(
-                        f'  [#{todo.id}] {todo.oportunidad[:40]!r} — PO: {po}'
+                        self.style.SUCCESS(f'  [#{todo.id}] {todo.oportunidad[:40]!r} — PO: {po}')
                     )
                     if not dry_run:
                         TodoItem.objects.filter(pk=todo.pk).update(po_number=po)
                     actualizadas += 1
                 else:
+                    self.stdout.write(f'  [#{todo.id}] {todo.oportunidad[:40]!r} — sin PO')
                     sin_po += 1
 
             except requests.exceptions.RequestException as e:
