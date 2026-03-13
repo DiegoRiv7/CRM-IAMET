@@ -3,6 +3,8 @@
 # ----------------------------------------------------------------------
 
 import base64
+from django.template.loader import render_to_string
+from weasyprint import HTML
 import json
 import logging
 import requests
