@@ -1,357 +1,227 @@
 from django.urls import path
-from django.views.generic import RedirectView, TemplateView # <--- ¡Añadido TemplateView aquí!
-from django.views.i18n import set_language as django_set_language
+from django.views.generic import TemplateView
 
 from . import views
 from .bitrix_integration import get_bitrix_companies_api
 
-# Importa las vistas desde el mismo directorio de la aplicación
 from . import views_exportar
 from . import views_mail
 
 urlpatterns = [
+    # ── Bitrix ───────────────────────────────────────────────────────────────
     path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
     path('bitrix/sync/', views.bitrix_sync_admin, name='bitrix-sync-admin'),
     path('bitrix/lost-opportunities/', views.bitrix_lost_opportunities, name='bitrix-lost-opportunities'),
-    # CRM Home (página principal)
-    path("home/", views.crm_home, name="home"),
-    path("", views.crm_home, name="root_home"),
-    path("bienvenida/", views.bienvenida, name="bienvenida"),
 
-    # Dashboard principal
-    path("dashboard/", views.dashboard, name="dashboard"),
-    path("dashboard/mes-actual/", views.oportunidades_mes_actual, name="oportunidades_mes_actual"),
-    
-    # Tareas y Proyectos (solo superusuarios)
-    path("tareas-proyectos/", views.tareas_proyectos, name="tareas_proyectos"),
-    path("proyectos-ingenieria/", views.proyectos_ingenieria, name="proyectos_ingenieria"),
-    path("proyecto/<int:proyecto_id>/", views.proyecto_detalle, name="proyecto_detalle"),
-    
-    # APIs para comentarios de proyecto
-    path("api/proyecto/<int:proyecto_id>/comentarios/", views.api_comentarios_proyecto, name="api_comentarios_proyecto"),
-    path("api/proyecto/<int:proyecto_id>/comentarios/agregar/", views.api_agregar_comentario_proyecto, name="api_agregar_comentario_proyecto"),
-    path("api/comentario-proyecto/<int:comentario_id>/editar/", views.api_editar_comentario_proyecto, name="api_editar_comentario_proyecto"),
-    path("api/comentario-proyecto/<int:comentario_id>/eliminar/", views.api_eliminar_comentario_proyecto, name="api_eliminar_comentario_proyecto"),
-    
-    # API para eliminar proyecto completo
-    path("api/eliminar-proyecto/<int:proyecto_id>/", views.api_eliminar_proyecto_completo, name="api_eliminar_proyecto_completo"),
-    
-    # APIs para comentarios de tareas
-    path("api/tarea/<int:tarea_id>/comentarios/", views.api_comentarios_tarea, name="api_comentarios_tarea"),
-    path("api/tarea/<int:tarea_id>/comentarios/agregar/", views.api_agregar_comentario_tarea, name="api_agregar_comentario_tarea"),
-    path("api/comentario-tarea/<int:comentario_id>/editar/", views.api_editar_comentario_tarea, name="api_editar_comentario_tarea"),
-    path("api/comentario-tarea/<int:comentario_id>/eliminar/", views.api_eliminar_comentario_tarea, name="api_eliminar_comentario_tarea"),
-    
-    # APIs para sistema de carpetas y archivos
-    path("api/proyecto/<int:proyecto_id>/carpetas/", views.api_carpetas_proyecto, name="api_carpetas_proyecto"),
-    path("api/proyecto/<int:proyecto_id>/carpeta/<int:carpeta_id>/", views.api_carpeta_detalle, name="api_carpeta_detalle"),
-    path("api/proyecto/<int:proyecto_id>/archivos/", views.api_archivos_proyecto, name="api_archivos_proyecto"),
-    path("api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/", views.api_archivo_detalle, name="api_archivo_detalle"),
-    path("api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/stream/", views.api_archivo_proyecto_stream, name="api_archivo_proyecto_stream"),
+    # ── CRM Home ─────────────────────────────────────────────────────────────
+    path('', views.crm_home, name='root_home'),
+    path('home/', views.crm_home, name='home'),
+    path('todos/', views.crm_home, name='todos'),  # alias histórico
 
-    # Drive de Oportunidades
-    path("api/oportunidad/<int:opp_id>/drive/", views.api_drive_oportunidad, name="api_drive_oportunidad"),
-    path("api/oportunidad/<int:opp_id>/drive/carpeta/<int:carpeta_id>/", views.api_drive_oportunidad_carpeta, name="api_drive_oportunidad_carpeta"),
-    path("api/oportunidad/<int:opp_id>/drive/archivos/", views.api_drive_oportunidad_archivo, name="api_drive_oportunidad_archivo"),
-    path("api/oportunidad/<int:opp_id>/drive/archivo/<int:archivo_id>/", views.api_drive_oportunidad_archivo_detalle, name="api_drive_oportunidad_archivo_detalle"),
-    path("api/oportunidad/<int:opp_id>/drive/archivo/<int:archivo_id>/stream/", views.api_drive_archivo_stream, name="api_drive_archivo_stream"),
-    # Proyecto <-> Oportunidad linking
-    path("api/oportunidad/<int:opp_id>/proyectos/", views.api_oportunidad_proyectos, name="api_oportunidad_proyectos"),
-    path("api/oportunidad/<int:opp_id>/proyectos/<int:link_id>/accion/", views.api_oportunidad_proyectos_accion, name="api_oportunidad_proyectos_accion"),
-    path("api/oportunidad/<int:opp_id>/proyectos/buscar/", views.api_oportunidad_proyectos_buscar, name="api_oportunidad_proyectos_buscar"),
-    path("api/oportunidad/<int:opp_id>/chat/", views.api_chat_oportunidad, name="api_chat_oportunidad"),
-    path("api/oportunidad/<int:opp_id>/chat/mensaje/<int:msg_id>/", views.api_chat_mensaje, name="api_chat_mensaje"),
-    path("api/oportunidad/<int:opp_id>/tareas/", views.api_tareas_oportunidad, name="api_tareas_oportunidad"),
-    path("api/oportunidad/<int:oportunidad_id>/productos/", views.api_oportunidad_productos, name="api_oportunidad_productos"),
-    path("api/oportunidad/<int:oportunidad_id>/productos/<int:producto_id>/", views.api_oportunidad_producto_delete, name="api_oportunidad_producto_delete"),
-    path("api/tarea-oportunidad/<int:tarea_id>/", views.api_tarea_oportunidad_detail, name="api_tarea_oportunidad_detail"),
-    path("api/todas-tareas-oportunidad/", views.api_todas_tareas_opp, name="api_todas_tareas_opp"),
-    path("api/tarea-opp/<int:tarea_id>/detalle/", views.api_tarea_opp_detalle, name="api_tarea_opp_detalle"),
-    path("api/tarea-opp/<int:tarea_id>/comentarios/", views.api_tarea_opp_comentarios, name="api_tarea_opp_comentarios"),
-    path("api/tarea-opp/<int:tarea_id>/comentarios/<int:comentario_id>/", views.api_tarea_opp_comentario_detail, name="api_tarea_opp_comentario_detail"),
-    
-    # API para configuración de proyecto
-    path("api/proyecto/<int:proyecto_id>/configuracion/", views.api_configuracion_proyecto, name="api_configuracion_proyecto"),
-    path("api/buscar-oportunidades-proyecto/", views.api_buscar_oportunidades_proyecto, name="api_buscar_oportunidades_proyecto"),
-    
-    
-    # APIs para Tareas y Proyectos
-    path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
-    path("api/tareas/", views.api_tareas, name="api_tareas"),
-    path("api/tarea/<int:tarea_id>/", views.api_tarea_detalle, name="api_tarea_detalle"),
-    path("api/tarea/<int:tarea_id>/actualizar/", views.api_actualizar_tarea_real, name="api_actualizar_tarea_real"),
-    path("api/tarea/<int:tarea_id>/toggle-timer/", views.api_toggle_task_timer, name="api_toggle_task_timer"),
-    path("api/tarea/<int:tarea_id>/completar/", views.api_completar_tarea, name="api_completar_tarea"),
-    path("api/tareas/actualizar-estado/", views.api_actualizar_estado_tarea, name="api_actualizar_estado_tarea"),
-    path("api/tareas/actualizar/", views.api_actualizar_tarea, name="api_actualizar_tarea"),
-    path("api/estadisticas-tareas-proyectos/", views.api_estadisticas_tareas_proyectos, name="api_estadisticas_tareas_proyectos"),
-    path("api/buscar-usuarios/", views.api_buscar_usuarios, name="api_buscar_usuarios"),
-    path("api/crear-proyecto/", views.api_crear_proyecto, name="api_crear_proyecto"),
-    path("api/crear-tarea/", views.api_crear_tarea, name="api_crear_tarea"),
+    # ── Oportunidades ────────────────────────────────────────────────────────
+    path('nueva-oportunidad/', views.nueva_oportunidad, name='nueva_oportunidad'),
+    path('ingresar-venta/', views.ingresar_venta_todoitem, name='ingresar_venta_todoitem'),
+    path('ingresar-venta-exitosa/', views.ingresar_venta_todoitem_exitosa, name='ingresar_venta_todoitem_exitosa'),
+    path('editar-venta/<int:pk>/', views.editar_venta_todoitem, name='editar_venta_todoitem'),
+    path('importar/', views.importar_oportunidades, name='importar_oportunidades'),
+    path('oportunidades-cliente/<int:cliente_id>/', views.oportunidades_por_cliente, name='oportunidades_por_cliente'),
+    path('oportunidades-perdidas/', views.oportunidades_perdidas_detail, name='oportunidades_perdidas_detail'),
+    path('producto-detalle/<str:producto_val>/', views.producto_dashboard_detail, name='producto_dashboard_detail'),
+    path('mes-detalle/<str:mes_val>/', views.mes_dashboard_detail, name='mes_dashboard_detail'),
+    path('reporte-clientes/', views.reporte_ventas_por_cliente, name='reporte_ventas_por_cliente'),
+    path('exportar/csv/', views.exportar_oportunidades_csv, name='exportar_oportunidades_csv'),
 
-    # URLs para Intercambio Navideño 🎄
-    path("intercambio-navidad/", views.intercambio_navidad, name="intercambio_navidad"),
-    path("api/realizar-sorteo-navidad/", views.realizar_sorteo_navidad, name="realizar_sorteo_navidad"),
-    path("api/agregar-participante-navidad/", views.agregar_participante_navidad, name="agregar_participante_navidad"),
-    path("api/eliminar-participante-navidad/", views.eliminar_participante_navidad, name="eliminar_participante_navidad"),
-    path("api/listar-participantes-navidad/", views.listar_participantes_navidad, name="listar_participantes_navidad"),
-    path("api/actualizar-evento-navidad/", views.actualizar_evento_navidad, name="actualizar_evento_navidad"),
-    path("api/estado-usuario-navidad/", views.estado_usuario_navidad, name="estado_usuario_navidad"),
-
-    # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
-    path("todos/", views.todos, name="todos"),
-
-    # API para obtener clientes por usuario
-    path('api/clients-for-user/', views.get_user_clients_api, name='clients_for_user_api'),
-    # API para buscar clientes por nombre
-    path('api/search-clientes/', views.search_clientes_api, name='search_clientes_api'),
-    # API para detalle de oportunidad (actualización de fila tras edición)
-    path('api/oportunidad/<int:id>/detalle/', views.oportunidad_detalle_api, name='oportunidad_detalle_api'),
-
-    # Rutas para ingresar nuevas oportunidades de venta
-    path("ingresar-venta/", views.ingresar_venta_todoitem, name="ingresar_venta_todoitem"),
-    path("ingresar-venta-exitosa/", views.ingresar_venta_todoitem_exitosa, name="ingresar_venta_todoitem_exitosa"),
-    
-    # Nueva funcionalidad de oportunidades optimizada
-    path("nueva-oportunidad/", views.nueva_oportunidad, name="nueva_oportunidad"),
-    path("api/crear-oportunidad/", views.api_crear_oportunidad, name="api_crear_oportunidad"),
-    path("api/buscar-clientes/", views.api_buscar_clientes, name="api_buscar_clientes"),
-    path("api/crm-table-data/", views.api_crm_table_data, name="api_crm_table_data"),
-    path("api/subir-facturacion/", views.api_subir_facturacion, name="api_subir_facturacion"),
-    path("api/cliente-oportunidades/<int:cliente_id>/", views.api_cliente_oportunidades, name="api_cliente_oportunidades"),
-    path("api/cliente-cotizaciones/<int:cliente_id>/", views.api_cliente_cotizaciones, name="api_cliente_cotizaciones"),
-    path("api/export-excel/", views.api_export_excel, name="api_export_excel"),
-    path("api/clientes/", views.api_clientes, name="api_clientes"),
-    # Admin panel APIs
-    path("api/admin/usuarios/", views.api_admin_usuarios, name="api_admin_usuarios"),
-    path("api/admin/usuarios/<int:user_id>/", views.api_admin_usuario_detalle, name="api_admin_usuario_detalle"),
-    path("api/admin/clientes/", views.api_admin_clientes, name="api_admin_clientes"),
-    path("api/admin/clientes/<int:cliente_id>/", views.api_admin_cliente_detalle, name="api_admin_cliente_detalle"),
-    path("api/admin/contactos/", views.api_admin_contactos, name="api_admin_contactos"),
-    path("api/admin/metas/", views.api_admin_metas, name="api_admin_metas"),
-    path("api/admin/permisos/<int:user_id>/", views.api_admin_permisos, name="api_admin_permisos"),
-    path("api/oportunidad-detalle-crm/<int:oportunidad_id>/", views.api_oportunidad_detalle_crm, name="api_oportunidad_detalle_crm"),
-    path("api/buscar-contactos/", views.api_buscar_contactos, name="api_buscar_contactos"),
-    
-    # APIs para CRM avanzado (solo superusuarios)
-    path("api/cambiar-estado-oportunidad/<int:oportunidad_id>/", views.cambiar_estado_oportunidad, name="cambiar_estado_oportunidad"),
-    path("api/agregar-comentario-oportunidad/<int:oportunidad_id>/", views.agregar_comentario_oportunidad, name="agregar_comentario_oportunidad"),
-    path("api/timeline-oportunidad/<int:oportunidad_id>/", views.timeline_oportunidad, name="timeline_oportunidad"),
-    path("api/editar-comentario-oportunidad/<int:comentario_id>/", views.editar_comentario_oportunidad, name="editar_comentario_oportunidad"),
-    path("api/eliminar-comentario-oportunidad/<int:comentario_id>/", views.eliminar_comentario_oportunidad, name="eliminar_comentario_oportunidad"),
-    path("api/descargar-archivo-oportunidad/<int:archivo_id>/", views.descargar_archivo_oportunidad, name="descargar_archivo_oportunidad"),
-    path("api/vista-previa-archivo-oportunidad/<int:archivo_id>/", views.vista_previa_archivo_oportunidad, name="vista_previa_archivo_oportunidad"),
-
-    # Rutas de autenticación (registro, login, logout, idioma)
-    path("register/", views.register, name="register"),
-    path("login/", views.user_login, name="user_login"),
-    path("logout/", views.user_logout, name="user_logout"),
-    path("api/solicitar-reset-password/", views.solicitar_reset_password, name="solicitar_reset_password"),
-    path("set-language/", views.set_language, name="set_language"),
-
-    # Ruta para editar o eliminar una oportunidad de venta específica
-    # <int:pk> captura el ID numérico de la oportunidad
-    path("editar-venta/<int:pk>/", views.editar_venta_todoitem, name="editar_venta_todoitem"),
-
-    # Ruta para el reporte de ventas por cliente
-    path("reporte-clientes/", views.reporte_ventas_por_cliente, name="reporte_ventas_por_cliente"),
-
-    # Ruta para ver las oportunidades de un cliente específico
-    # <int:cliente_id> captura el ID numérico del cliente
-    path("oportunidades-cliente/<int:cliente_id>/", views.oportunidades_por_cliente, name="oportunidades_por_cliente"),
-
-    # Ruta para el detalle del dashboard por producto
-    # <str:producto_val> captura el valor del producto (ej. "PRODUCTO_A")
-    path("producto-detalle/<str:producto_val>/", views.producto_dashboard_detail, name="producto_dashboard_detail"),
-
-    # Ruta para el detalle del dashboard por mes de cierre
-    # <str:mes_val> captura el valor del mes (ej. "07" para Julio)
-    path("mes-detalle/<str:mes_val>/", views.mes_dashboard_detail, name="mes_dashboard_detail"),
-    # Ruta para el detalle de oportunidades perdidas (0% probabilidad)
-    path("oportunidades-perdidas/", views.oportunidades_perdidas_detail, name="oportunidades_perdidas_detail"),
-
-    # Ruta para crear una cotización para un cliente específico
-    path('lanzador-widget/', views.bitrix_widget_launcher, name='bitrix_widget_launcher'),
-    path('bitrix-cotizador-redirect/', views.bitrix_cotizador_redirect, name='bitrix_cotizador_redirect'),
-    path('cliente/<int:cliente_id>/crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion_with_id'),
+    # ── Cotizaciones ─────────────────────────────────────────────────────────
+    path('cotizaciones/', views.cotizaciones_view, name='cotizaciones'),
+    path('cotizaciones/cliente/<int:cliente_id>/', views.cotizaciones_por_cliente_view, name='cotizaciones_por_cliente'),
+    path('cotizaciones/oportunidad/<int:oportunidad_id>/', views.cotizaciones_por_oportunidad_view, name='cotizaciones_por_oportunidad'),
     path('crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion'),
     path('crear-cotizacion/oportunidad/<int:oportunidad_id>/', views.crear_cotizacion_view, name='crear_cotizacion_with_opportunity'),
-
-    # NUEVA RUTA: Para generar el PDF de una cotización específica
-    # Esta es la ruta clave que faltaba para que el PDF se descargue.
-    # Recibe el ID de la cotización y lo pasa a la vista generate_cotizacion_pdf.
-    path('cotizacion/pdf/<int:cotizacion_id>/', views.generate_cotizacion_pdf, name='generate_cotizacion_pdf'),
-    
-    # RUTA NUEVA: Para descargar PDF y redirigir a cotizaciones por oportunidad
-    path('cotizacion/download-and-redirect/<int:cotizacion_id>/oportunidad/<int:oportunidad_id>/', views.download_and_redirect_cotizacion, name='download_and_redirect_cotizacion'),
-
-    # Ruta para visualizar el PDF de una cotización en el navegador
-    path('cotizacion/view/<int:cotizacion_id>/', views.view_cotizacion_pdf, name='view_cotizacion_pdf'),
-
-    # Ruta para editar (duplicar) una cotización
+    path('cliente/<int:cliente_id>/crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion_with_id'),
     path('cotizacion/<int:cotizacion_id>/editar/', views.editar_cotizacion_view, name='editar_cotizacion'),
-
-    path("usuario/", views.usuario_redirect_view, name="usuario"),
-
-    # Reporte de usuarios (solo para supervisores)
-    path('reporte-usuarios/', views.reporte_usuarios, name='reporte_usuarios'),
-    path('perfil-usuario/<int:usuario_id>/', views.perfil_usuario, name='perfil_usuario'),
-    path('estadisticas-usuarios/', views.estadisticas_usuarios, name='estadisticas_usuarios'),
-
-    # Ruta para la sección de cotizaciones (listado de clientes y cotizaciones)
-    path('cotizaciones/', views.cotizaciones_view, name='cotizaciones'),
-    
-    # Ruta para cotizaciones automáticas (solo superusuarios)
-    path('cotizaciones-automaticas/', views.cotizaciones_automaticas_view, name='cotizaciones_automaticas'),
-    
-    # Ruta para gestión de productos (solo superusuarios)
+    path('cotizacion/pdf/<int:cotizacion_id>/', views.generate_cotizacion_pdf, name='generate_cotizacion_pdf'),
+    path('cotizacion/view/<int:cotizacion_id>/', views.view_cotizacion_pdf, name='view_cotizacion_pdf'),
+    path('cotizacion/download-and-redirect/<int:cotizacion_id>/oportunidad/<int:oportunidad_id>/', views.download_and_redirect_cotizacion, name='download_and_redirect_cotizacion'),
     path('gestion-productos/', views.gestion_productos_view, name='gestion_productos'),
 
-    # Ruta para ver cotizaciones de un cliente específico
-    path('cotizaciones/cliente/<int:cliente_id>/', views.cotizaciones_por_cliente_view, name='cotizaciones_por_cliente'),
-    
-    # Ruta para ver cotizaciones de una oportunidad específica
-    path('cotizaciones/oportunidad/<int:oportunidad_id>/', views.cotizaciones_por_oportunidad_view, name='cotizaciones_por_oportunidad'),
+    # ── Drive / Archivos ─────────────────────────────────────────────────────
+    path('api/proyecto/<int:proyecto_id>/carpetas/', views.api_carpetas_proyecto, name='api_carpetas_proyecto'),
+    path('api/proyecto/<int:proyecto_id>/carpeta/<int:carpeta_id>/', views.api_carpeta_detalle, name='api_carpeta_detalle'),
+    path('api/proyecto/<int:proyecto_id>/archivos/', views.api_archivos_proyecto, name='api_archivos_proyecto'),
+    path('api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/', views.api_archivo_detalle, name='api_archivo_detalle'),
+    path('api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/stream/', views.api_archivo_proyecto_stream, name='api_archivo_proyecto_stream'),
+    path('api/oportunidad/<int:opp_id>/drive/', views.api_drive_oportunidad, name='api_drive_oportunidad'),
+    path('api/oportunidad/<int:opp_id>/drive/carpeta/<int:carpeta_id>/', views.api_drive_oportunidad_carpeta, name='api_drive_oportunidad_carpeta'),
+    path('api/oportunidad/<int:opp_id>/drive/archivos/', views.api_drive_oportunidad_archivo, name='api_drive_oportunidad_archivo'),
+    path('api/oportunidad/<int:opp_id>/drive/archivo/<int:archivo_id>/', views.api_drive_oportunidad_archivo_detalle, name='api_drive_oportunidad_archivo_detalle'),
+    path('api/oportunidad/<int:opp_id>/drive/archivo/<int:archivo_id>/stream/', views.api_drive_archivo_stream, name='api_drive_archivo_stream'),
 
-    # Exportar oportunidades (restaurado)
-    path("importar/", views.importar_oportunidades, name="importar_oportunidades"),
-
-    path('exportar/csv/', views.exportar_oportunidades_csv, name='exportar_oportunidades_csv'),
-    # Pantalla fullscreen de ventas por mes
-    path('dashboard/ventas_fullscreen/', views.ventas_fullscreen, name='ventas_fullscreen'),
-
-    # API para actualizar la probabilidad de una oportunidad
-    path('api/oportunidad/<int:id>/probabilidad/', views.actualizar_probabilidad, name='actualizar_probabilidad'),
-    path('api/oportunidad/<int:id>/po/', views.actualizar_po, name='actualizar_po'),
-    
-    # API para editar información de oportunidad
-    path('api/editar-oportunidad/<int:oportunidad_id>/', views.editar_oportunidad_api, name='editar_oportunidad_api'),
-    
-    # API para obtener lista de clientes
-    path('api/clientes/', views.clientes_api, name='clientes_api'),
-
-    # API para crear clientes desde el modal
-
-
-    path('api/bitrix-companies/', get_bitrix_companies_api, name='bitrix_companies_api'),
-    path('api/get-oportunidades-por-cliente/', views.get_oportunidades_por_cliente, name='get_oportunidades_por_cliente'),
-    path('api/bitrix-contacts/', views.get_bitrix_contacts_api, name='bitrix_contacts_api'),
-    path('api/crear-oportunidad/', views.crear_oportunidad_api, name='crear_oportunidad_api'),
- 
-   # path("", RedirectView.as_view(url='/dashboard/', permanent=False), name='root_redirect'),
-    # Ruta temporal para depuración del enlace de Bitrix
-    path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
-    path('incrementa/', views.incrementa_view, name='incrementa'),
-    path('incrementa/pdf/view/<int:quote_id>/', views.view_incrementa_pdf, name='view_incrementa_pdf'),
-    path('incrementa/pdf/download/<int:quote_id>/', views.download_incrementa_pdf, name='download_incrementa_pdf'),
-    
-    # Volumetría - Solo para ingenieros y superusuarios
-    path('volumetria/', views.volumetria, name='volumetria'),
-    # Crear volumetría desde oportunidad específica
-    path('crear-volumetria/oportunidad/<int:oportunidad_id>/', views.crear_volumetria_with_opportunity, name='crear_volumetria_with_opportunity'),
-    # API para generar PDF de volumetría
-    path('api/generar-pdf-volumetria/', views.generar_pdf_volumetria, name='generar_pdf_volumetria'),
-    # API para limpiar datos de oportunidad de volumetría
-    path('api/limpiar-datos-oportunidad-volumetria/', views.limpiar_datos_oportunidad_volumetria, name='limpiar_datos_oportunidad_volumetria'),
-    # API para crear cotización automática desde volumetría
-    path('api/crear-cotizacion-desde-volumetria/', views.crear_cotizacion_desde_volumetria, name='crear_cotizacion_desde_volumetria'),
-    path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
-    # API endpoint para detectar nuevas oportunidades locales (Crown Jewel Feature)
-    path('api/check-new-local-opportunities/', views.check_new_local_opportunities, name='check_new_local_opportunities'),
-    # API endpoint para detectar nuevas oportunidades directamente desde Bitrix24
-    path('api/check-new-bitrix-opportunities/', views.check_new_bitrix_opportunities, name='check_new_bitrix_opportunities'),
-    # API para obtener productos por marca (cotizaciones automáticas)
-    path('api/productos-por-marca/', views.get_productos_por_marca_api, name='get_productos_por_marca_api'),
-    # Test de cotizaciones automáticas (solo superusuarios)
-    path('api/test-cotizacion-automatica/', views.test_cotizacion_automatica, name='test_cotizacion_automatica'),
-    # API endpoint para sincronización manual de Bitrix (solo supervisores)
-    path('api/sync-bitrix-manual/', views.sync_bitrix_manual, name='sync_bitrix_manual'),
-    # API para obtener datos de sesión (usado por volumetría)
-    path('api/get-session-data/', views.get_session_data, name='get_session_data'),
-    # API para obtener oportunidades por cliente (usado por volumetría)
-    path('api/get-opportunities-by-client/<int:cliente_id>/', views.get_opportunities_by_client_api, name='get_opportunities_by_client_api'),
-    # API para obtener datos del cliente de una oportunidad (auto-detección en volumetría)
-    path('api/get-client-by-opportunity/<int:oportunidad_id>/', views.get_client_by_opportunity_api, name='get_client_by_opportunity_api'),
-    
-    # APIs para catálogo de productos de volumetría
-    path('api/buscar-producto-catalogo/', views.buscar_producto_catalogo, name='buscar_producto_catalogo'),
-    path('api/buscar-productos-catalogo/', views.buscar_productos_catalogo, name='buscar_productos_catalogo'),
-    # API para auto-completar productos en tabla de volumetría
-    path('api/buscar-producto-por-numero-parte/', views.buscar_producto_catalogo_api, name='buscar_producto_catalogo_api'),
-    path('api/agregar-producto-catalogo/', views.agregar_producto_catalogo, name='agregar_producto_catalogo'),
-    path('api/editar-producto-catalogo/<int:producto_id>/', views.editar_producto_catalogo, name='editar_producto_catalogo'),
-    path('api/eliminar-producto-catalogo/<int:producto_id>/', views.eliminar_producto_catalogo, name='eliminar_producto_catalogo'),
-    path('api/vista-previa-volumetria/', views.vista_previa_volumetria_api, name='vista_previa_volumetria_api'),
-    path('api/sugerencias-productos/', views.sugerencias_productos_api, name='sugerencias_productos_api'),
-    path('api/buscar-productos-por-numeros-parte/', views.buscar_productos_por_numeros_parte, name='buscar_productos_por_numeros_parte'),
-    path('api/get-marcas-catalogo/', views.get_marcas_catalogo, name='get_marcas_catalogo'),
-    
-    # Gestión de catálogo de volumetría (solo superusuarios)
-    path('gestion-catalogo-volumetria/', views.gestion_catalogo_volumetria, name='gestion_catalogo_volumetria'),
-    
-    # ===============================================
-    # NUEVAS RUTAS PARA SUBIDA MANUAL DE ARCHIVOS
-    # ===============================================
-    path('pending-uploads/', views.pending_file_uploads, name='pending_file_uploads'),
-    path('api/retry-upload/<int:upload_id>/', views.retry_file_upload, name='retry_file_upload'),
-    path('api/delete-upload/<int:upload_id>/', views.delete_pending_upload, name='delete_pending_upload'),
-    path('api/upload-status/', views.upload_status_api, name='upload_status_api'),
-    
-    
-    # ===============================================
-    # RUTAS PARA GESTIÓN DE VOLUMETRÍAS
-    # ===============================================
-    path('volumetria/pdf/view/<int:volumetria_id>/', views.view_volumetria_pdf, name='view_volumetria_pdf'),
-    path('volumetria/pdf/download/<int:volumetria_id>/', views.download_volumetria_pdf, name='download_volumetria_pdf'),
-    path('api/eliminar-volumetria/<int:volumetria_id>/', views.eliminar_volumetria, name='eliminar_volumetria'),
-    
-    # ===============================================
-    # API SPOTLIGHT - BÚSQUEDA UNIVERSAL
-    # ===============================================
-    path('api/spotlight-search/', views.spotlight_search_api, name='spotlight_search_api'),
-    
-    # ===============================================
-    # APIs DE NOTIFICACIONES
-    # ===============================================
-    path('api/obtener-notificaciones/', views.obtener_notificaciones_api, name='obtener_notificaciones_api'),
-    path('api/marcar-notificacion-leida/<int:notificacion_id>/', views.marcar_notificacion_leida_api, name='marcar_notificacion_leida_api'),
-    path('api/marcar-todas-notificaciones-leidas/', views.marcar_todas_notificaciones_leidas_api, name='marcar_todas_notificaciones_leidas_api'),
-    
-    # Nueva API para sistema de notificaciones de tareas
-    path('api/notificaciones/', views.api_notificaciones, name='api_notificaciones'),
-    
-    path('calendario/', views.calendario_view, name='calendario'),
-    path('api/actividades/', views.actividad_list_create, name='actividad_list_create'),
-    path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),
-    path('api/users/', views.user_list_api, name='user_list_api'),
-    path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
-    path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
-    
-    # Generador de avatares con IA
-    path('avatar-generator/', views.avatar_generator, name='avatar_generator'),
-    
-    # Configuración avanzada de usuario
-    path('configuracion-avanzada/', views.configuracion_avanzada, name='configuracion_avanzada'),
-    
-    # API para actualizar avatar de usuario
-    path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
-    
-    # Feed de actividad
-    path('feed/', views.feed, name='feed'),
-    
-    # API para sistema de privacidad de proyectos
+    # ── Proyectos (CRM-integrado) ─────────────────────────────────────────────
+    path('api/proyectos/', views.api_proyectos, name='api_proyectos'),
+    path('api/crear-proyecto/', views.api_crear_proyecto, name='api_crear_proyecto'),
+    path('api/proyecto/<int:proyecto_id>/configuracion/', views.api_configuracion_proyecto, name='api_configuracion_proyecto'),
+    path('api/proyecto/<int:proyecto_id>/comentarios/', views.api_comentarios_proyecto, name='api_comentarios_proyecto'),
+    path('api/proyecto/<int:proyecto_id>/comentarios/agregar/', views.api_agregar_comentario_proyecto, name='api_agregar_comentario_proyecto'),
+    path('api/comentario-proyecto/<int:comentario_id>/editar/', views.api_editar_comentario_proyecto, name='api_editar_comentario_proyecto'),
+    path('api/comentario-proyecto/<int:comentario_id>/eliminar/', views.api_eliminar_comentario_proyecto, name='api_eliminar_comentario_proyecto'),
+    path('api/eliminar-proyecto/<int:proyecto_id>/', views.api_eliminar_proyecto_completo, name='api_eliminar_proyecto_completo'),
+    path('api/buscar-oportunidades-proyecto/', views.api_buscar_oportunidades_proyecto, name='api_buscar_oportunidades_proyecto'),
+    path('api/oportunidad/<int:opp_id>/proyectos/', views.api_oportunidad_proyectos, name='api_oportunidad_proyectos'),
+    path('api/oportunidad/<int:opp_id>/proyectos/<int:link_id>/accion/', views.api_oportunidad_proyectos_accion, name='api_oportunidad_proyectos_accion'),
+    path('api/oportunidad/<int:opp_id>/proyectos/buscar/', views.api_oportunidad_proyectos_buscar, name='api_oportunidad_proyectos_buscar'),
     path('api/solicitar-acceso-proyecto/<int:proyecto_id>/', views.solicitar_acceso_proyecto, name='solicitar_acceso_proyecto'),
     path('api/responder-solicitud-proyecto/<int:solicitud_id>/', views.responder_solicitud_proyecto, name='responder_solicitud_proyecto'),
     path('api/solicitudes-proyecto/', views.obtener_solicitudes_proyecto, name='obtener_solicitudes_proyecto'),
 
-    # Muro Empresarial
+    # ── Tareas ────────────────────────────────────────────────────────────────
+    path('api/tareas/', views.api_tareas, name='api_tareas'),
+    path('api/crear-tarea/', views.api_crear_tarea, name='api_crear_tarea'),
+    path('api/tarea/<int:tarea_id>/', views.api_tarea_detalle, name='api_tarea_detalle'),
+    path('api/tarea/<int:tarea_id>/actualizar/', views.api_actualizar_tarea_real, name='api_actualizar_tarea_real'),
+    path('api/tarea/<int:tarea_id>/toggle-timer/', views.api_toggle_task_timer, name='api_toggle_task_timer'),
+    path('api/tarea/<int:tarea_id>/completar/', views.api_completar_tarea, name='api_completar_tarea'),
+    path('api/tareas/actualizar-estado/', views.api_actualizar_estado_tarea, name='api_actualizar_estado_tarea'),
+    path('api/tareas/actualizar/', views.api_actualizar_tarea, name='api_actualizar_tarea'),
+    path('api/estadisticas-tareas-proyectos/', views.api_estadisticas_tareas_proyectos, name='api_estadisticas_tareas_proyectos'),
+    path('api/buscar-usuarios/', views.api_buscar_usuarios, name='api_buscar_usuarios'),
+    path('api/oportunidad/<int:opp_id>/tareas/', views.api_tareas_oportunidad, name='api_tareas_oportunidad'),
+    path('api/tarea-oportunidad/<int:tarea_id>/', views.api_tarea_oportunidad_detail, name='api_tarea_oportunidad_detail'),
+    path('api/todas-tareas-oportunidad/', views.api_todas_tareas_opp, name='api_todas_tareas_opp'),
+    path('api/tarea-opp/<int:tarea_id>/detalle/', views.api_tarea_opp_detalle, name='api_tarea_opp_detalle'),
+    path('api/tarea-opp/<int:tarea_id>/comentarios/', views.api_tarea_opp_comentarios, name='api_tarea_opp_comentarios'),
+    path('api/tarea-opp/<int:tarea_id>/comentarios/<int:comentario_id>/', views.api_tarea_opp_comentario_detail, name='api_tarea_opp_comentario_detail'),
+    path('api/tarea/<int:tarea_id>/comentarios/', views.api_comentarios_tarea, name='api_comentarios_tarea'),
+    path('api/tarea/<int:tarea_id>/comentarios/agregar/', views.api_agregar_comentario_tarea, name='api_agregar_comentario_tarea'),
+    path('api/comentario-tarea/<int:comentario_id>/editar/', views.api_editar_comentario_tarea, name='api_editar_comentario_tarea'),
+    path('api/comentario-tarea/<int:comentario_id>/eliminar/', views.api_eliminar_comentario_tarea, name='api_eliminar_comentario_tarea'),
+
+    # ── APIs CRM ──────────────────────────────────────────────────────────────
+    path('api/crm-table-data/', views.api_crm_table_data, name='api_crm_table_data'),
+    path('api/subir-facturacion/', views.api_subir_facturacion, name='api_subir_facturacion'),
+    path('api/crear-oportunidad/', views.crear_oportunidad_api, name='crear_oportunidad_api'),
+    path('api/crear-oportunidad/', views.api_crear_oportunidad, name='api_crear_oportunidad'),
+    path('api/oportunidad/<int:id>/detalle/', views.oportunidad_detalle_api, name='oportunidad_detalle_api'),
+    path('api/oportunidad-detalle-crm/<int:oportunidad_id>/', views.api_oportunidad_detalle_crm, name='api_oportunidad_detalle_crm'),
+    path('api/editar-oportunidad/<int:oportunidad_id>/', views.editar_oportunidad_api, name='editar_oportunidad_api'),
+    path('api/oportunidad/<int:id>/probabilidad/', views.actualizar_probabilidad, name='actualizar_probabilidad'),
+    path('api/oportunidad/<int:id>/po/', views.actualizar_po, name='actualizar_po'),
+    path('api/oportunidad/<int:opp_id>/chat/', views.api_chat_oportunidad, name='api_chat_oportunidad'),
+    path('api/oportunidad/<int:opp_id>/chat/mensaje/<int:msg_id>/', views.api_chat_mensaje, name='api_chat_mensaje'),
+    path('api/oportunidad/<int:oportunidad_id>/productos/', views.api_oportunidad_productos, name='api_oportunidad_productos'),
+    path('api/oportunidad/<int:oportunidad_id>/productos/<int:producto_id>/', views.api_oportunidad_producto_delete, name='api_oportunidad_producto_delete'),
+    path('api/cliente-oportunidades/<int:cliente_id>/', views.api_cliente_oportunidades, name='api_cliente_oportunidades'),
+    path('api/cliente-cotizaciones/<int:cliente_id>/', views.api_cliente_cotizaciones, name='api_cliente_cotizaciones'),
+    path('api/cambiar-estado-oportunidad/<int:oportunidad_id>/', views.cambiar_estado_oportunidad, name='cambiar_estado_oportunidad'),
+    path('api/agregar-comentario-oportunidad/<int:oportunidad_id>/', views.agregar_comentario_oportunidad, name='agregar_comentario_oportunidad'),
+    path('api/timeline-oportunidad/<int:oportunidad_id>/', views.timeline_oportunidad, name='timeline_oportunidad'),
+    path('api/editar-comentario-oportunidad/<int:comentario_id>/', views.editar_comentario_oportunidad, name='editar_comentario_oportunidad'),
+    path('api/eliminar-comentario-oportunidad/<int:comentario_id>/', views.eliminar_comentario_oportunidad, name='eliminar_comentario_oportunidad'),
+    path('api/descargar-archivo-oportunidad/<int:archivo_id>/', views.descargar_archivo_oportunidad, name='descargar_archivo_oportunidad'),
+    path('api/vista-previa-archivo-oportunidad/<int:archivo_id>/', views.vista_previa_archivo_oportunidad, name='vista_previa_archivo_oportunidad'),
+    path('api/buscar-clientes/', views.api_buscar_clientes, name='api_buscar_clientes'),
+    path('api/buscar-contactos/', views.api_buscar_contactos, name='api_buscar_contactos'),
+
+    # ── APIs Clientes ─────────────────────────────────────────────────────────
+    path('api/clientes/', views.api_clientes, name='api_clientes'),
+    path('api/clientes/', views.clientes_api, name='clientes_api'),
+    path('api/clients-for-user/', views.get_user_clients_api, name='clients_for_user_api'),
+    path('api/search-clientes/', views.search_clientes_api, name='search_clientes_api'),
+    path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
+    path('api/get-oportunidades-por-cliente/', views.get_oportunidades_por_cliente, name='get_oportunidades_por_cliente'),
+    path('api/bitrix-companies/', get_bitrix_companies_api, name='bitrix_companies_api'),
+    path('api/bitrix-contacts/', views.get_bitrix_contacts_api, name='bitrix_contacts_api'),
+
+    # ── APIs Admin ────────────────────────────────────────────────────────────
+    path('api/admin/usuarios/', views.api_admin_usuarios, name='api_admin_usuarios'),
+    path('api/admin/usuarios/<int:user_id>/', views.api_admin_usuario_detalle, name='api_admin_usuario_detalle'),
+    path('api/admin/clientes/', views.api_admin_clientes, name='api_admin_clientes'),
+    path('api/admin/clientes/<int:cliente_id>/', views.api_admin_cliente_detalle, name='api_admin_cliente_detalle'),
+    path('api/admin/contactos/', views.api_admin_contactos, name='api_admin_contactos'),
+    path('api/admin/metas/', views.api_admin_metas, name='api_admin_metas'),
+    path('api/admin/permisos/<int:user_id>/', views.api_admin_permisos, name='api_admin_permisos'),
+
+    # ── APIs Ingeniero / Programación ─────────────────────────────────────────
+    path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),
+    path('api/ingeniero/proyectos/', views.api_ingeniero_proyectos, name='api_ingeniero_proyectos'),
+    path('api/ingeniero/proyecto/<int:proyecto_id>/', views.api_ingeniero_proyecto_detalle, name='api_ingeniero_proyecto_detalle'),
+    path('api/ingeniero/board/reorder/', views.api_ingeniero_board_reorder, name='api_ingeniero_board_reorder'),
+    path('api/ingeniero/dashboard-stats/', views.api_ingeniero_dashboard_stats, name='api_ingeniero_dashboard_stats'),
+    path('api/programacion/actividades/', views.api_programacion_actividades, name='api_programacion_actividades'),
+    path('api/programacion/actividad/<int:actividad_id>/', views.api_programacion_actividad_detail, name='api_programacion_actividad_detail'),
+    path('api/programacion/disponibilidad/', views.api_programacion_disponibilidad, name='api_programacion_disponibilidad'),
+    path('api/actividades/', views.actividad_list_create, name='actividad_list_create'),
+    path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),
+    path('api/users/', views.user_list_api, name='user_list_api'),
+    path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
+
+    # ── Jornadas / Asistencia ─────────────────────────────────────────────────
+    path('api/jornada/estado/', views.api_jornada_estado, name='api_jornada_estado'),
+    path('api/jornada/iniciar/', views.api_jornada_iniciar, name='api_jornada_iniciar'),
+    path('api/jornada/pausar/', views.api_jornada_pausar, name='api_jornada_pausar'),
+    path('api/jornada/terminar/', views.api_jornada_terminar, name='api_jornada_terminar'),
+    path('api/jornada/ayer/', views.api_jornada_ayer, name='api_jornada_ayer'),
+    path('api/empleados/jornadas/', views.api_empleados_jornadas, name='api_empleados_jornadas'),
+    path('api/verificar-empleado-mes/', views.api_verificar_empleado_mes, name='api_verificar_empleado_mes'),
+
+    # ── Cotizar Rápido ────────────────────────────────────────────────────────
+    path('api/cotizar-rapido/clientes/', views.api_clientes_rapido, name='api_clientes_rapido'),
+    path('api/cotizar-rapido/oportunidades/', views.api_oportunidades_rapido, name='api_oportunidades_rapido'),
+
+    # ── Muro Empresarial ──────────────────────────────────────────────────────
     path('api/muro/posts/', views.api_muro_posts, name='api_muro_posts'),
     path('api/muro/posts/<int:post_id>/', views.api_muro_post_detail, name='api_muro_post_detail'),
     path('api/muro/posts/<int:post_id>/like/', views.api_muro_like, name='api_muro_like'),
     path('api/muro/posts/<int:post_id>/comentarios/', views.api_muro_comentarios, name='api_muro_comentarios'),
     path('api/muro/comentarios/<int:comentario_id>/', views.api_muro_comentario_detail, name='api_muro_comentario_detail'),
 
-    # ── Mail Module ──────────────────────────────────────────────────────────
+    # ── Notificaciones ────────────────────────────────────────────────────────
+    path('api/notificaciones/', views.api_notificaciones, name='api_notificaciones'),
+    path('api/obtener-notificaciones/', views.obtener_notificaciones_api, name='obtener_notificaciones_api'),
+    path('api/marcar-notificacion-leida/<int:notificacion_id>/', views.marcar_notificacion_leida_api, name='marcar_notificacion_leida_api'),
+    path('api/marcar-todas-notificaciones-leidas/', views.marcar_todas_notificaciones_leidas_api, name='marcar_todas_notificaciones_leidas_api'),
+
+    # ── Spotlight Search ──────────────────────────────────────────────────────
+    path('api/spotlight-search/', views.spotlight_search_api, name='spotlight_search_api'),
+
+    # ── Export ────────────────────────────────────────────────────────────────
+    path('api/export-excel/', views.api_export_excel, name='api_export_excel'),
+
+    # ── Perfil de usuario ─────────────────────────────────────────────────────
+    path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
+    path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
+    path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
+
+    # ── Reportes / Admin panel ────────────────────────────────────────────────
+    path('reporte-usuarios/', views.reporte_usuarios, name='reporte_usuarios'),
+    path('perfil-usuario/<int:usuario_id>/', views.perfil_usuario, name='perfil_usuario'),
+    path('estadisticas-usuarios/', views.estadisticas_usuarios, name='estadisticas_usuarios'),
+    path('usuario/', views.usuario_redirect_view, name='usuario'),
+
+    # ── Bitrix widget / redirect ──────────────────────────────────────────────
+    path('lanzador-widget/', views.bitrix_widget_launcher, name='bitrix_widget_launcher'),
+    path('bitrix-cotizador-redirect/', views.bitrix_cotizador_redirect, name='bitrix_cotizador_redirect'),
+    path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
+    path('api/sync-bitrix-manual/', views.sync_bitrix_manual, name='sync_bitrix_manual'),
+    path('api/check-new-local-opportunities/', views.check_new_local_opportunities, name='check_new_local_opportunities'),
+    path('api/check-new-bitrix-opportunities/', views.check_new_bitrix_opportunities, name='check_new_bitrix_opportunities'),
+
+    # ── Intercambio Navideño ──────────────────────────────────────────────────
+    path('intercambio-navidad/', views.intercambio_navidad, name='intercambio_navidad'),
+    path('api/realizar-sorteo-navidad/', views.realizar_sorteo_navidad, name='realizar_sorteo_navidad'),
+    path('api/agregar-participante-navidad/', views.agregar_participante_navidad, name='agregar_participante_navidad'),
+    path('api/eliminar-participante-navidad/', views.eliminar_participante_navidad, name='eliminar_participante_navidad'),
+    path('api/listar-participantes-navidad/', views.listar_participantes_navidad, name='listar_participantes_navidad'),
+    path('api/actualizar-evento-navidad/', views.actualizar_evento_navidad, name='actualizar_evento_navidad'),
+    path('api/estado-usuario-navidad/', views.estado_usuario_navidad, name='estado_usuario_navidad'),
+
+    # ── Autenticación ─────────────────────────────────────────────────────────
+    path('register/', views.register, name='register'),
+    path('login/', views.user_login, name='user_login'),
+    path('logout/', views.user_logout, name='user_logout'),
+    path('api/solicitar-reset-password/', views.solicitar_reset_password, name='solicitar_reset_password'),
+    path('set-language/', views.set_language, name='set_language'),
+
+    # ── Mail ──────────────────────────────────────────────────────────────────
     path('mail/', views_mail.mail_home, name='mail_home'),
     path('api/mail/conexion/', views_mail.api_mail_conexion, name='api_mail_conexion'),
     path('api/mail/sincronizar/', views_mail.api_mail_sincronizar, name='api_mail_sincronizar'),
@@ -363,27 +233,4 @@ urlpatterns = [
     path('api/mail/crear-oportunidad/<int:correo_id>/', views_mail.api_mail_crear_oportunidad_desde_correo, name='api_mail_crear_oportunidad'),
     path('api/mail/adjunto/<int:adjunto_id>/', views_mail.api_mail_descargar_adjunto, name='api_mail_descargar_adjunto'),
     path('api/mail/check/', views_mail.api_mail_check_nuevos, name='api_mail_check_nuevos'),
-
-    # APIs de Asistencia y Eficiencia
-    path('api/jornada/estado/', views.api_jornada_estado, name='api_jornada_estado'),
-    path('api/jornada/iniciar/', views.api_jornada_iniciar, name='api_jornada_iniciar'),
-    path('api/jornada/pausar/', views.api_jornada_pausar, name='api_jornada_pausar'),
-    path('api/jornada/terminar/', views.api_jornada_terminar, name='api_jornada_terminar'),
-    path('api/empleados/jornadas/', views.api_empleados_jornadas, name='api_empleados_jornadas'),
-    path('api/cotizar-rapido/clientes/', views.api_clientes_rapido, name='api_clientes_rapido'),
-    path('api/cotizar-rapido/oportunidades/', views.api_oportunidades_rapido, name='api_oportunidades_rapido'),
-    path('api/jornada/ayer/', views.api_jornada_ayer, name='api_jornada_ayer'),
-    path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),
-    path('api/ingeniero/proyectos/', views.api_ingeniero_proyectos, name='api_ingeniero_proyectos'),
-    path('api/ingeniero/proyecto/<int:proyecto_id>/', views.api_ingeniero_proyecto_detalle, name='api_ingeniero_proyecto_detalle'),
-    path('api/ingeniero/board/reorder/', views.api_ingeniero_board_reorder, name='api_ingeniero_board_reorder'),
-    path('api/ingeniero/dashboard-stats/', views.api_ingeniero_dashboard_stats, name='api_ingeniero_dashboard_stats'),
-    path('api/programacion/actividades/', views.api_programacion_actividades, name='api_programacion_actividades'),
-    path('api/programacion/actividad/<int:actividad_id>/', views.api_programacion_actividad_detail, name='api_programacion_actividad_detail'),
-    path('api/programacion/disponibilidad/', views.api_programacion_disponibilidad, name='api_programacion_disponibilidad'),
-    path('api/verificar-empleado-mes/', views.api_verificar_empleado_mes, name='api_verificar_empleado_mes'),
-    
-    # APIs de Perfil y Cambios
-    path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
-    path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
 ]
