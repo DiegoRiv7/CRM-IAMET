@@ -101,9 +101,7 @@
         }
 
     });
-</script>
 
-<script>
     document.addEventListener('DOMContentLoaded', function () {
         const island = document.getElementById('mainIsland');
         const expandedContent = document.getElementById('islandExpandedContent');
@@ -4049,12 +4047,8 @@
         window.crmCommentConfirmCancel = crmCommentConfirmCancel;
 
     });
-</script>
 
-</div> <!-- end crm-content -->
-</div> <!-- end crm-page -->
 
-<script>
     document.addEventListener('DOMContentLoaded', function () {
         initDynamicIslandFilters();
     });
