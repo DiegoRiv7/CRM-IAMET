@@ -502,7 +502,8 @@ def api_drive_oportunidad(request, opp_id):
                     for c in CarpetaProyecto.objects.filter(proyecto=proyecto_vinculado, carpeta_padre__isnull=True).order_by('nombre'):
                         carpetas_data.append({'id': c.id, 'nombre': c.nombre,
                                               'fecha_creacion': c.fecha_creacion.isoformat(),
-                                              'tipo': 'carpeta_proyecto'})
+                                              'tipo': 'carpeta_proyecto',
+                                              'proyecto_id': proyecto_vinculado.id})
                     for a in ArchivoProyecto.objects.filter(proyecto=proyecto_vinculado, carpeta__isnull=True).order_by('nombre_original'):
                         archivos_data.append({'id': a.id, 'nombre': a.nombre_original,
                                               'tipo_archivo': a.tipo_archivo,

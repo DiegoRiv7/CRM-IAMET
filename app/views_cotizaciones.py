@@ -2,6 +2,7 @@
 # views_cotizaciones.py — Cotizaciones, PDFs, and client catalog.
 # ----------------------------------------------------------------------
 
+import base64
 import json
 import logging
 import requests

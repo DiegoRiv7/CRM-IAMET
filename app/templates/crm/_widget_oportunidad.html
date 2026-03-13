@@ -710,8 +710,10 @@
             woDriveCargarDirectorio();
         };
 
-        window.woDriveEntrarProyectoCarpeta = function (id, nombre) {
+        window.woDriveEntrarProyectoCarpeta = function (id, nombre, proyecto_id) {
+            if (!proyecto_id) return;
             _woDriveMode = 'proyecto';
+            _woDriveProyecto = { id: proyecto_id };
             _woDriveCurrentFolder = id;
             _woDriveBreadcrumbs = [{id: id, nombre: nombre}];
             woDriveCargarDirectorio();
@@ -825,7 +827,7 @@
         function woDriveRenderCarpeta(c, readOnly) {
             var esProyecto = (c.tipo === 'carpeta_proyecto');
             var onClickFn = esProyecto
-                ? 'woDriveEntrarProyectoCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\')'
+                ? 'woDriveEntrarProyectoCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\', ' + (c.proyecto_id || 'null') + ')'
                 : 'woDriveEntrarCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\')';
             var menu = (readOnly || esProyecto) ? '' :
                 '<div style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;" onclick="event.stopPropagation(); woDriveMenu(\'carpeta\', ' + c.id + ', \'' + woEscape(c.nombre) + '\')">' +
