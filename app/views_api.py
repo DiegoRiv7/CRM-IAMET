@@ -93,21 +93,24 @@ def spotlight_search_api(request):
         else:
             cotizacion_url = f'/app/cotizaciones/'
         
+        opp = cotizacion.oportunidad
+        opp_id = opp.id if opp else None
+        if opp_id:
+            anio_opp = opp.anio_cierre or opp.fecha_creacion.year
+            crm_opp_url = f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_opp={opp_id}'
+        else:
+            crm_opp_url = '/app/todos/?tab=crm'
         results.append({
             'type': 'cotizacion',
             'id': cotizacion.id,
+            'opp_id': opp_id,
             'title': cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}',
-            'subtitle': f'{cotizacion.cliente.nombre_empresa} • ${cotizacion.total:.2f} {cotizacion.moneda}',
+            'subtitle': f'{cotizacion.cliente.nombre_empresa} • #{cotizacion.id}',
             'description': f'Creada por {cotizacion.created_by.get_full_name() or cotizacion.created_by.username if cotizacion.created_by else "Usuario desconocido"}',
             'date': convert_to_tijuana_time(cotizacion.fecha_creacion).strftime('%d/%m/%Y'),
             'icon': 'document',
-            'url': cotizacion_url,
-            'priority': 1 if is_exact_match else 2,  # Para ordenamiento
-            'actions': [
-                {'name': 'Ver', 'action': 'view', 'color': 'green'},
-                {'name': 'Descargar', 'action': 'download', 'color': 'blue'}, 
-                {'name': 'Editar', 'action': 'edit', 'color': 'yellow'}
-            ]
+            'url': crm_opp_url,
+            'priority': 1 if is_exact_match else 2,
         })
     
     # Búsqueda de Oportunidades (TodoItem)
@@ -144,7 +147,29 @@ def spotlight_search_api(request):
             ]
         })
     
-    # Ordenar resultados por prioridad (1=exacto, 2=cotización, 3=oportunidad), luego por título
+    # Búsqueda de Tareas de Oportunidad
+    tareas = TareaOportunidad.objects.filter(
+        Q(titulo__icontains=query)
+    ).select_related('oportunidad', 'oportunidad__cliente')
+
+    if not is_supervisor(request.user):
+        tareas = tareas.filter(
+            Q(creado_por=request.user) | Q(oportunidad__usuario=request.user)
+        )
+
+    for tarea in tareas[:6]:
+        opp = tarea.oportunidad
+        anio_opp = opp.anio_cierre or opp.fecha_creacion.year
+        results.append({
+            'type': 'tarea',
+            'id': tarea.id,
+            'title': tarea.titulo,
+            'subtitle': f'{opp.oportunidad} • {opp.cliente.nombre_empresa if opp.cliente else ""}',
+            'url': f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_task={tarea.id}',
+            'priority': 4,
+        })
+
+    # Ordenar resultados por prioridad (1=exacto, 2=cotización, 3=oportunidad, 4=tarea), luego por título
     results.sort(key=lambda x: (x.get('priority', 3), x['title'].lower()))
     
     return JsonResponse({

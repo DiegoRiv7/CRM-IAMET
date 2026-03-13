@@ -118,14 +118,27 @@ window.addEventListener('resize', () => {
     window.selectResult = function (index) {
         var r = currentResults[index]; if (!r) return;
         closeSpotlight();
+        var enCRM = window.location.pathname === '/app/todos/';
 
         if (r.type === 'oportunidad' && r.id) {
-            var enCRM = window.location.pathname === '/app/todos/';
-            if (enCRM && typeof window.openDetalle === 'function') {
-                window.openDetalle(r.id);
-                return;
-            }
+            if (enCRM && typeof window.openDetalle === 'function') { window.openDetalle(r.id); return; }
             window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.id;
+            return;
+        }
+
+        if (r.type === 'cotizacion') {
+            if (r.opp_id) {
+                if (enCRM && typeof window.openDetalle === 'function') { window.openDetalle(r.opp_id); return; }
+                window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.opp_id;
+            } else {
+                window.location.href = '/app/todos/?tab=crm';
+            }
+            return;
+        }
+
+        if (r.type === 'tarea' && r.id) {
+            if (enCRM && typeof window.crmTaskVerDetalle === 'function') { window.crmTaskVerDetalle(r.id); return; }
+            window.location.href = '/app/todos/?tab=crm&open_task=' + r.id;
             return;
         }
 

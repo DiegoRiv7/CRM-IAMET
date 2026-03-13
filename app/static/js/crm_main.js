@@ -455,19 +455,31 @@
                 }
             } catch (e) { }
 
-            // Auto-abrir oportunidad desde parámetro ?open_opp=ID (viene del spotlight)
+            // Auto-abrir oportunidad/tarea desde parámetro URL (viene del spotlight)
             try {
                 var _urlParams = new URLSearchParams(window.location.search);
                 var _openOppId = _urlParams.get('open_opp');
+                var _openTaskId = _urlParams.get('open_task');
+                var _cleanParams = false;
                 if (_openOppId) {
                     var _openOppClean = parseInt(_openOppId, 10);
                     if (_openOppClean) {
                         setTimeout(function () { openDetalle(_openOppClean); }, 600);
-                        // Limpiar el parámetro de la URL sin recargar la página
                         _urlParams.delete('open_opp');
-                        var newUrl = window.location.pathname + (_urlParams.toString() ? '?' + _urlParams.toString() : '');
-                        window.history.replaceState({}, '', newUrl);
+                        _cleanParams = true;
                     }
+                }
+                if (_openTaskId) {
+                    var _openTaskClean = parseInt(_openTaskId, 10);
+                    if (_openTaskClean) {
+                        setTimeout(function () { if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(_openTaskClean); }, 600);
+                        _urlParams.delete('open_task');
+                        _cleanParams = true;
+                    }
+                }
+                if (_cleanParams) {
+                    var newUrl = window.location.pathname + (_urlParams.toString() ? '?' + _urlParams.toString() : '');
+                    window.history.replaceState({}, '', newUrl);
                 }
             } catch (e) { }
 

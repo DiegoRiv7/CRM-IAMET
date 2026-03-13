@@ -586,17 +586,6 @@ html[data-theme="perla"] div .apple-card:hover {
     color: #8A97AC
 }
 
-.spotlight-empty-icon {
-    margin-bottom: 10px;
-    opacity: 0.5
-}
-
-.spotlight-empty-icon svg {
-    width: 32px;
-    height: 32px;
-    stroke: #4A6FA5
-}
-
 .spotlight-empty-text {
     font-size: 14px;
     font-weight: 500;
@@ -713,35 +702,6 @@ html[data-theme="perla"] div .apple-card:hover {
     color: #C8D0DC;
     margin-left: 8px;
     flex-shrink: 0
-}
-
-/* ─── Footer keyboard hint ─── */
-.spotlight-footer {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 8px 20px;
-    border-top: 1px solid rgba(74, 111, 165, 0.1);
-    background: rgba(248, 249, 252, 0.8)
-}
-
-.spotlight-footer-hint {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    color: #8A97AC
-}
-
-.spotlight-kbd {
-    background: rgba(74, 111, 165, 0.1);
-    border: 1px solid rgba(74, 111, 165, 0.2);
-    color: #4A6FA5;
-    padding: 1px 6px;
-    border-radius: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: inherit
 }
 
 /* ─── Loading ─── */
