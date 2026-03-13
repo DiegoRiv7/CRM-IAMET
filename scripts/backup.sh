@@ -44,7 +44,11 @@ if [ "$(date '+%u')" = "7" ]; then
     log "Domingo detectado — iniciando backup de archivos media"
 
     MEDIA_FILE="$BACKUP_DIR/media_${FECHA}.tar.gz"
-    tar -czf "$MEDIA_FILE" -C "$(dirname $MEDIA_DIR)" "$(basename $MEDIA_DIR)" 2>/dev/null
+    # Respaldar desde el volumen Docker (donde realmente están los archivos)
+    sudo docker run --rm \
+        -v crm-iamet_media_files:/media_src:ro \
+        -v "$BACKUP_DIR":/backup \
+        alpine tar -czf "/backup/media_${FECHA}.tar.gz" -C /media_src .
 
     if [ $? -eq 0 ]; then
         SIZE=$(du -sh "$MEDIA_FILE" | cut -f1)

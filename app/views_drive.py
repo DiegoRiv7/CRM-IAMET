@@ -509,7 +509,7 @@ def api_drive_oportunidad(request, opp_id):
                                               'tipo_archivo': a.tipo_archivo,
                                               'extension': a.extension,
                                               'tamaño': a.tamaño,
-                                              'url': a.bitrix_download_url or f'/app/api/proyecto/{proyecto_vinculado.id}/archivo/{a.id}/stream/',
+                                              'url': f'/app/api/proyecto/{proyecto_vinculado.id}/archivo/{a.id}/stream/' if a.archivo else a.bitrix_download_url or '',
                                               'tipo': 'archivo_proyecto'})
                 except (Proyecto.DoesNotExist, ValueError):
                     pass
