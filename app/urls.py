@@ -20,8 +20,6 @@ urlpatterns = [
 
     # ── Oportunidades ────────────────────────────────────────────────────────
     path('nueva-oportunidad/', views.nueva_oportunidad, name='nueva_oportunidad'),
-    path('ingresar-venta/', views.ingresar_venta_todoitem, name='ingresar_venta_todoitem'),
-    path('ingresar-venta-exitosa/', views.ingresar_venta_todoitem_exitosa, name='ingresar_venta_todoitem_exitosa'),
     path('editar-venta/<int:pk>/', views.editar_venta_todoitem, name='editar_venta_todoitem'),
     path('importar/', views.importar_oportunidades, name='importar_oportunidades'),
     path('oportunidades-cliente/<int:cliente_id>/', views.oportunidades_por_cliente, name='oportunidades_por_cliente'),

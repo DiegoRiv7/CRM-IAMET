@@ -42,11 +42,41 @@ Lee CLEANUP_STATUS.md para el historial de limpieza.
 
 ## Pendiente después del merge a producción
 
-### 1. Actualizar backup script en servidor
-El `scripts/backup.sh` del repo fue corregido para respaldar el volumen Docker.
-Hay que copiarlo al servidor de producción:
+### 1. Garantizar backup del domingo — PASOS EXACTOS
+El script en el repo ya fue corregido. Hay que aplicarlo en el servidor ANTES del domingo.
+
 ```bash
+# En el servidor de producción:
+cd ~/crm-iamet
+git pull origin principal          # trae el backup.sh corregido
+
+# Copiar al script activo en cron:
 cp ~/crm-iamet/scripts/backup.sh ~/backup_crm.sh
+chmod +x ~/backup_crm.sh
+
+# Verificar que el cron lo tiene apuntado correctamente:
+crontab -l
+# Debe verse algo como: 0 10 * * * /home/iamet2026/backup_crm.sh
+
+# Probar en seco que el script puede ver el volumen Docker:
+sudo docker run --rm \
+    -v crm-iamet_media_files:/media_src:ro \
+    alpine du -sh /media_src
+# Debe mostrar ~9.7G — si muestra eso, el domingo el backup funcionará bien
+
+# Asegurarse que la variable MYSQL_ROOT_PASSWORD está disponible para el cron:
+cat ~/.backup_env
+# Debe tener: MYSQL_ROOT_PASSWORD=...
+```
+
+Si el domingo no corre o falla, correr manualmente:
+```bash
+source ~/.backup_env && ~/backup_crm.sh
+```
+Y verificar en:
+```bash
+ls -lh ~/backups/media_*.tar.gz
+cat ~/backups/backup.log | tail -20
 ```
 
 ### 2. Comentarios de tareas Bitrix
@@ -56,9 +86,9 @@ cp ~/crm-iamet/scripts/backup.sh ~/backup_crm.sh
 
 ### 3. Campo PO desde Bitrix
 - El campo PO ya existe en el modelo (`po_number` en `TodoItem`)
-- El widget ya lo guarda (fix aplicado)
-- Falta: sincronizarlo con el campo en Bitrix (nombre del campo en Bitrix API: pendiente confirmar)
-- El usuario no necesita Postman para esto
+- El widget ya lo guarda (fix aplicado en esta sesión)
+- Falta: sincronizarlo con el campo en Bitrix API
+- Nombre del campo en Bitrix: pendiente confirmar (revisar en configuración de campos de Bitrix o respuesta de API)
 - Hay que agregar el campo al sync de `bitrix_webhook_receiver` y/o comando manual
 
 ---
@@ -68,12 +98,50 @@ cp ~/crm-iamet/scripts/backup.sh ~/backup_crm.sh
 ### Archivos Bitrix descargados ✓
 - 10,075 / 10,076 archivos en volumen Docker `crm-iamet_media_files` (9.7GB)
 - 1 archivo falló con HTTP 403: `OCC-TIJ12634 VARILLA.pdf` (proyecto 3149) — irrecuperable
-- El código ya prioriza archivo local sobre URL Bitrix
+- El código ya prioriza archivo local sobre URL Bitrix — cuando Bitrix se desconecte, 10,075 archivos siguen disponibles desde el servidor
 
 ### Backup
 - BD: corre diario ~4am Tijuana (10am UTC), último: `db_2026-03-13_10-00.sql.gz` (5.6MB) ✓
-- Media: corre domingos — próximo domingo respaldará 9.7GB con script corregido
+- Media: corre domingos — script ya corregido, aplicar antes del domingo (ver pasos arriba)
 - Backups en: `~/backups/` en el servidor
+
+---
+
+## Resumen de mejoras realizadas en esta sesión
+
+### Limpieza de código (deuda técnica eliminada)
+| Qué | Antes | Después |
+|-----|-------|---------|
+| Archivos basura en `/proyecto/` | ~20 scripts temporales, HTMLs sueltos, archivos .aider | 0 |
+| management/commands muertos | 6 comandos one-time (link_proyectos, match, etc.) | Solo `descargar_archivos_bitrix` |
+| views.py | 16,591 líneas, monolítico | 35 líneas (re-exportador) |
+| Funciones muertas eliminadas | — | 48 funciones (~2,900 líneas) |
+| URLs muertas eliminadas | ~40 URLs (volumetria, incrementa, bienvenida, etc.) | 0 |
+
+### Refactorización views.py → módulos
+El archivo monolítico de 16,591 líneas se dividió en 8 módulos por dominio.
+`urls.py` no cambió — compatibilidad total vía re-export en `views.py`.
+
+### Bugs corregidos
+- Campo PO no guardaba (`woCurrentId` no existía → `currentOppId`)
+- Carpetas Bitrix en drive daban TypeError null al abrirse
+- Cotización daba NameError (imports inline faltantes en módulos nuevos)
+- Archivos de proyectos usaban URL Bitrix aunque tuvieran copia local
+
+---
+
+## Pendiente técnico — próximas sesiones
+
+### Limpieza pendiente
+- **JS mezclado con HTML**: `_scripts_main.html`, `_scripts_muro.html`, `_scripts_mail.html`, `_scripts_ingeniero.html` tienen miles de líneas de JavaScript incrustado en templates HTML. Lo correcto es moverlos a `/static/js/` como archivos `.js` separados. Beneficios: caché del navegador, separación de responsabilidades, más fácil de modificar sin romper el HTML.
+- **CSS mezclado**: `_styles.html` tiene 3,154 líneas de CSS. Debe ir a `/static/css/`.
+- **Funciones JS duplicadas o inconsistentes**: al haber mezclado el CRM nuevo con el cotizador viejo, hay variables JS con nombres distintos para lo mismo (ejemplo: `woCurrentId` vs `currentOppId`). Hay que auditar y unificar.
+- **views_utils.py muy grande**: algunos helpers podrían moverse a sus módulos respectivos si solo los usa uno.
+
+### Features pendientes
+- Comentarios de tareas Bitrix (últimos 5 meses) → management command
+- Campo PO sync con Bitrix API
+- Auditar que todas las páginas activas funcionan en producción post-merge
 
 ---
 
