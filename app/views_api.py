@@ -76,7 +76,9 @@ def spotlight_search_api(request):
         # Búsqueda regular por ID como string
         cotizaciones_query |= Q(id__icontains=query)
     
-    cotizaciones = Cotizacion.objects.filter(cotizaciones_query).select_related('cliente', 'created_by', 'oportunidad')
+    cotizaciones = Cotizacion.objects.filter(cotizaciones_query).filter(
+        oportunidad__isnull=False
+    ).select_related('cliente', 'created_by', 'oportunidad')
     
     # Filtrar por permisos de usuario
     if not is_supervisor(request.user):
