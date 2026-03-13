@@ -20,55 +20,16 @@
 
             <div class="island-sep"></div>
 
-            <!-- Navegación principal -->
-            <nav class="island-nav">
-                {% if tab_activo == 'facturado' and es_supervisor %}
-                <button type="button" class="island-nav-btn" id="btnUploadXls"
-                    style="background:#1D6F42;color:#fff;border-color:#1D6F42;">
-                    &#8593; Excel
-                </button>
-                <input type="file" id="xlsFileInput" accept=".xls,.xlsx" style="display:none">
-                {% else %}
-                <button type="button" class="island-nav-btn" id="btnNegociacion">
-                    {% if request.user.userprofile.language == 'en' %}OPPORTUNITY{% else %}OPORTUNIDAD{% endif %}
-                </button>
-                {% endif %}
-                <button type="button" class="island-nav-btn" id="btnCotizarRapido"
-                    onclick="cotizarRapidoAbrir()">COTIZAR</button>
-                <button type="button" class="island-nav-btn active" id="btnCRM">CRM</button>
-                <button type="button" class="island-nav-btn" id="btnTareas">
-                    {% if request.user.userprofile.language == 'en' %}TASKS{% else %}TAREAS{% endif %}
-                </button>
-                <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">
-                    {% if request.user.userprofile.language == 'en' %}WALL{% else %}MURO{% endif %}
-                </button>
-                <button type="button" class="island-nav-btn" id="btnCalendario" onclick="calendarioAbrir()">
-                    {% if request.user.userprofile.language == 'en' %}CALENDAR{% else %}CALENDARIO{% endif %}
-                </button>
-                <button type="button" class="island-nav-btn" id="btnNotificaciones"
-                    onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';">
-                    NOTIF.
-                </button>
-                <button type="button" class="island-nav-btn" id="btnMail" onclick="mailAbrir()">
-                    &#9993; {% if request.user.userprofile.language == 'en' %}MAIL{% else %}CORREO{% endif %}
-                </button>
-                <button type="button" class="island-nav-btn" id="btnAyuda"
-                    onclick="if(typeof openAyudaChat==='function')openAyudaChat();"
-                    style="color:#5856D6;border-color:#5856D6;">
-                    &#10067; AYUDA
-                </button>
-                {% if es_supervisor %}
-                <button type="button" class="island-nav-btn" id="btnAdminPanel" style="opacity:0.7;"
-                    onclick="var ao=document.getElementById('adminOverlay');if(ao){ao.classList.add('active');ao.classList.remove('closing');}">
-                    &#9881;
-                </button>
-                {% endif %}
-            </nav>
-
-            <div class="island-sep" id="islandSepFilters"></div>
-
-            <!-- Filtros: Mes, Año, Vendedores -->
+            <!-- Lupa + Filtros: Mes, Año, Vendedores -->
             <div style="display:flex;align-items:center;gap:6px;" id="islandFiltersSection">
+                <button type="button" class="island-nav-btn" id="btnSpotlight"
+                    onclick="if(typeof openSpotlight==='function')openSpotlight();"
+                    title="Buscar oportunidades, cotizaciones, PO..."
+                    style="padding:0 8px;font-size:0.85rem;">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </button>
                 <select class="island-select" id="mesFilter">
                     {% for code, name in mes_choices %}
                     <option value="{{ code }}" {% if code == mes_filter %}selected{% endif %}>{{ name }}</option>
@@ -104,13 +65,59 @@
                 {% endif %}
             </div>
 
+            <div class="island-sep" id="islandSepFilters"></div>
+
+            <!-- Navegación principal -->
+            <nav class="island-nav">
+                {% if tab_activo == 'facturado' and es_supervisor %}
+                <button type="button" class="island-nav-btn" id="btnUploadXls"
+                    style="background:#1D6F42;color:#fff;border-color:#1D6F42;">
+                    &#8593; Excel
+                </button>
+                <input type="file" id="xlsFileInput" accept=".xls,.xlsx" style="display:none">
+                {% else %}
+                <button type="button" class="island-nav-btn" id="btnNegociacion">
+                    {% if request.user.userprofile.language == 'en' %}OPPORTUNITY{% else %}OPORTUNIDAD{% endif %}
+                </button>
+                {% endif %}
+                <button type="button" class="island-nav-btn" id="btnCotizarRapido"
+                    onclick="cotizarRapidoAbrir()">COTIZAR</button>
+                <button type="button" class="island-nav-btn active" id="btnCRM">CRM</button>
+                <button type="button" class="island-nav-btn" id="btnTareas">
+                    {% if request.user.userprofile.language == 'en' %}TASKS{% else %}TAREAS{% endif %}
+                </button>
+                <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">
+                    {% if request.user.userprofile.language == 'en' %}WALL{% else %}MURO{% endif %}
+                </button>
+                <button type="button" class="island-nav-btn" id="btnCalendario" onclick="calendarioAbrir()">
+                    {% if request.user.userprofile.language == 'en' %}CALENDAR{% else %}CALENDARIO{% endif %}
+                </button>
+                <button type="button" class="island-nav-btn" id="btnMail" onclick="mailAbrir()">
+                    CORREO
+                </button>
+                <button type="button" class="island-nav-btn" id="btnNotificaciones"
+                    onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';"
+                    title="Notificaciones" style="padding:0 9px;font-size:1rem;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span id="notifBadge" style="display:none;position:absolute;top:2px;right:2px;width:7px;height:7px;background:#FF3B30;border-radius:50%;"></span>
+                </button>
+                {% if es_supervisor %}
+                <button type="button" class="island-nav-btn" id="btnAdminPanel" style="opacity:0.7;"
+                    onclick="var ao=document.getElementById('adminOverlay');if(ao){ao.classList.add('active');ao.classList.remove('closing');}">
+                    &#9881;
+                </button>
+                {% endif %}
+            </nav>
+
             <div class="island-sep"></div>
 
             <!-- Stats: Total + % progreso -->
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
                 <span
                     style="font-size:0.6rem;color:#8E8E93;font-weight:600;text-transform:uppercase;white-space:nowrap;">
-                    {% if request.user.userprofile.language == 'en' %}Total{% else %}Total{% endif %}
+                    Total
                 </span>
                 <span id="facturadoAmount" style="font-size:0.65rem;color:#1D1D1F;font-weight:700;">${{ total_facturado|floatformat:0 }}</span>
                 <span class="crm-stats-pct {% if progreso >= 100 %}green{% endif %}" id="progressPct">{{ progreso|floatformat:0 }}%</span>
@@ -135,7 +142,6 @@
                     el.style.color = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
                     el.style.display = 'inline';
                 }
-                // If no data: keep element hidden (display:none by default)
             })
             .catch(function () { });
     })();

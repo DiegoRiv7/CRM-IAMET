@@ -114,7 +114,8 @@ def spotlight_search_api(request):
     oportunidades = TodoItem.objects.filter(
         Q(oportunidad__icontains=query) |
         Q(cliente__nombre_empresa__icontains=query) |
-        Q(comentarios__icontains=query)
+        Q(comentarios__icontains=query) |
+        Q(po_number__icontains=query)
     ).select_related('cliente', 'usuario')
     
     # Filtrar por permisos de usuario
