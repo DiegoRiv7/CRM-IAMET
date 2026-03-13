@@ -91,10 +91,10 @@
                                     <span class="wo-info-label">Area</span>
                                     <span class="wo-info-value medium" id="woArea">-</span>
                                 </div>
-                                <div class="wo-info-item" style="display:flex;gap:12px;">
-                                    <div style="flex:1;min-width:0;">
+                                <div style="display:flex;gap:0;">
+                                    <div class="wo-info-item" style="flex:1;min-width:0;">
                                         <span class="wo-info-label">PO</span>
-                                        <input type="text" id="woPoNumber"
+                                        <input type="text" id="woPoNumber" maxlength="15"
                                             placeholder="—"
                                             style="background:none;border:none;border-bottom:1px solid transparent;
                                                    font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
@@ -103,9 +103,9 @@
                                             onblur="woGuardarPO(this)"
                                             onkeydown="if(event.key==='Enter'){this.blur()}" />
                                     </div>
-                                    <div style="flex:1;min-width:0;border-left:1px solid #E5E5EA;padding-left:12px;">
+                                    <div class="wo-info-item" style="flex:1;min-width:0;border-left:1px solid #E5E5EA;padding-left:12px;">
                                         <span class="wo-info-label">Factura</span>
-                                        <input type="text" id="woFacturaNumero"
+                                        <input type="text" id="woFacturaNumero" maxlength="7"
                                             placeholder="—"
                                             style="background:none;border:none;border-bottom:1px solid transparent;
                                                    font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
