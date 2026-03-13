@@ -232,6 +232,10 @@ STORAGES = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Límite de subida de archivos: 100MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600
+
 # Configuración de MEDIA para producción
 if not DEBUG:
     # En producción, usar la URL completa si es necesario

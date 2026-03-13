@@ -621,17 +621,23 @@ def api_drive_oportunidad_archivo(request, opp_id):
         }
         tipo = tipo_map.get(ext, 'otro')
 
-        a = ArchivoOportunidad.objects.create(
-            nombre_original=archivo_file.name,
-            archivo=archivo_file,
-            tipo_archivo=tipo,
-            tamaño=archivo_file.size,
-            oportunidad=opp,
-            carpeta=carpeta,
-            subido_por=request.user,
-            extension=ext,
-            mime_type=archivo_file.content_type or '',
-        )
+        try:
+            a = ArchivoOportunidad.objects.create(
+                nombre_original=archivo_file.name,
+                archivo=archivo_file,
+                tipo_archivo=tipo,
+                tamaño=archivo_file.size,
+                oportunidad=opp,
+                carpeta=carpeta,
+                subido_por=request.user,
+                extension=ext,
+                mime_type=archivo_file.content_type or '',
+            )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'error': f'Error al guardar archivo: {str(e)}'}, status=500)
+
         return JsonResponse({'success': True, 'archivo': {
             'id': a.id, 'nombre': a.nombre_original,
             'tipo_archivo': a.tipo_archivo, 'extension': a.extension,
