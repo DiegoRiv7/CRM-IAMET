@@ -219,7 +219,7 @@ def ventas_fullscreen(request):
     ventas_por_mes_list = [
         {'mes': m, 'monto': float(ventas_por_mes[m])} for m in meses
     ]
-    return render(request, 'ventas_fullscreen.html', {'ventas_por_mes_list': ventas_por_mes_list})
+    return redirect('/app/todos/')
 
 
 @login_required
@@ -237,12 +237,7 @@ def oportunidades_mes_actual(request):
     # Monto por cobrar: oportunidades con probabilidad entre 1 and 99%
     monto_por_cobrar = oportunidades.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).aggregate(suma=Sum('monto'))['suma'] or 0
 
-    return render(request, 'oportunidades_mes_actual.html', {
-        'oportunidades': oportunidades,
-        'mes_actual_nombre': mes_actual_nombre,
-        'meta_mensual': meta_mensual,
-        'monto_por_cobrar': monto_por_cobrar,
-    })
+    return redirect('/app/todos/')
 
 @login_required
 def crm_home(request):
@@ -2404,7 +2399,7 @@ def bienvenida(request):
         'ultimas_oportunidades': ultimas_oportunidades,
         'clima': clima,
     }
-    return render(request, 'bienvenida.html', context)
+    return redirect('/app/todos/')
 
 
 @login_required
@@ -2428,7 +2423,7 @@ def feed(request):
         'user_profile': user_profile,
     }
     
-    return render(request, 'feed.html', context)
+    return redirect('/app/todos/')
 
 
 @login_required
@@ -2449,7 +2444,7 @@ def tareas_proyectos(request):
         'page_title': 'Tareas y Proyectos'
     }
     
-    return render(request, 'tareas_proyectos.html', context)
+    return redirect('/app/todos/')
 
 def crear_datos_ejemplo_tareas(usuario):
     """
@@ -3388,9 +3383,7 @@ def proyectos_ingenieria(request):
             'total_miembros': p.miembros.count(),
         })
 
-    return render(request, 'proyectos_ingenieria.html', {
-        'proyectos': proyectos_data,
-        'total': len(proyectos_data),
+    return redirect('/app/todos/'),
     })
 
 
@@ -3454,7 +3447,7 @@ def proyecto_detalle(request, proyecto_id):
             'puede_solicitar_acceso': puede_solicitar_acceso
         }
         
-        return render(request, 'proyecto_detalle.html', context)
+        return redirect('/app/todos/')
         
     except Proyecto.DoesNotExist:
         return redirect('tareas_proyectos')
@@ -4044,7 +4037,7 @@ def dashboard(request):
         'promedio_oportunidad': promedio_oportunidad,
         'oportunidades_ano_actual': oportunidades_ano_actual,
     }
-    return render(request, "dashboard.html", context)
+    return redirect('/app/todos/')
 
 
 @login_required
@@ -4413,7 +4406,7 @@ def ingresar_venta_todoitem(request):
     return render(request, 'ingresar_venta.html', {'form': form})
 
 def ingresar_venta_todoitem_exitosa(request):
-    return render(request, 'ingresar_venta_exitosa.html')
+    return redirect('/app/todos/')
 
 # Vistas de autenticación
 def register(request):
@@ -4603,7 +4596,7 @@ def calendario_view(request):
     """
     Vista para mostrar el calendario de actividades.
     """
-    return render(request, 'calendario.html', {})
+    return redirect('/app/todos/')
 
 @login_required
 @csrf_exempt
@@ -5147,7 +5140,7 @@ def producto_dashboard_detail(request, producto_val):
         'oportunidades': oportunidades, # Pasar todas las oportunidades para listarlas
         'is_supervisor': is_supervisor(request.user), # Pasamos si el usuario es supervisor al contexto
     }
-    return render(request, 'producto_dashboard_detail.html', context)
+    return redirect('/app/todos/')
 
 
 @login_required
@@ -5193,7 +5186,7 @@ def mes_dashboard_detail(request, mes_val):
         'graph_data_json': graph_data_with_display, # Pasa los datos procesados con display_value
         'is_supervisor': is_supervisor(request.user),
     }
-    return render(request, 'mes_dashboard_detail.html', context)
+    return redirect('/app/todos/')
 
 
 @login_required
@@ -5217,7 +5210,7 @@ def oportunidades_perdidas_detail(request):
         'total_perdido_monto': total_perdido_monto,
         'is_supervisor': is_supervisor(request.user),
     }
-    return render(request, 'oportunidades_perdidas_detail.html', context)
+    return redirect('/app/todos/')
 
 
 # VISTA DEPRECADA - MANTENIDA POR REFERENCIA
@@ -7730,7 +7723,7 @@ def download_incrementa_pdf(request, quote_id):
 @login_required
 def incrementa_view(request):
     if not is_supervisor(request.user) and not request.user.groups.filter(name='Supervisores').exists():
-        return render(request, 'incrementa.html', {'coming_soon': True})
+        return redirect('/app/todos/')
 
     # Dummy data for Incrementa quotes (replace with API integration later)
     all_incrementa_quotes = [
@@ -7761,7 +7754,7 @@ def incrementa_view(request):
         'incrementa_quotes': incrementa_quotes,
         'search_query': search_query,
     }
-    return render(request, 'incrementa.html', context)
+    return redirect('/app/todos/')
 
 @login_required
 def actualizar_probabilidad(request, id):
@@ -8496,7 +8489,7 @@ def volumetria(request):
         'oportunidad_data': oportunidad_data
     }
     
-    return render(request, 'volumetria.html', context)
+    return redirect('/app/todos/')
 
 @login_required
 def crear_volumetria_with_opportunity(request, oportunidad_id):
@@ -9291,9 +9284,7 @@ def pending_file_uploads(request):
     else:
         uploads = PendingFileUpload.objects.none()
     
-    return render(request, 'pending_file_uploads.html', {
-        'uploads': uploads
-    })
+    return redirect('/app/todos/')
 
 @login_required
 def retry_file_upload(request, upload_id):
@@ -9723,7 +9714,7 @@ def cotizaciones_automaticas_view(request):
         'is_cotizaciones_automaticas': True,
     }
     
-    return render(request, 'cotizaciones_automaticas.html', context)
+    return redirect('/app/todos/')
 
 def parse_producto_inteligente(linea, marcas_validas):
     """
@@ -9855,7 +9846,7 @@ def avatar_generator(request):
             return JsonResponse({'error': str(e)}, status=500)
     
     # Si es GET, mostrar la página del generador
-    return render(request, 'avatar_generator.html')
+    return redirect('/app/todos/')
 
 @login_required
 def configuracion_avanzada(request):
@@ -9911,7 +9902,7 @@ def configuracion_avanzada(request):
     context = {
         'user_profile': user_profile,
     }
-    return render(request, 'personalizacion_avanzada.html', context)
+    return redirect('/app/todos/')
 
 
 def limpiar_y_corregir_texto(texto):
@@ -11052,7 +11043,7 @@ def gestion_catalogo_volumetria(request):
         'categorias': categorias,
     }
     
-    return render(request, 'gestion_catalogo_volumetria.html', context)
+    return redirect('/app/todos/')
 
 @login_required
 def eliminar_producto_catalogo(request, producto_id):
