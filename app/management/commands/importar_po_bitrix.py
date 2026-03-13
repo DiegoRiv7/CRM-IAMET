@@ -3,7 +3,9 @@ Comando de una sola vez: importa el campo PO desde Bitrix a TodoItem.po_number.
 
 Uso:
     python manage.py importar_po_bitrix
-    python manage.py importar_po_bitrix --dry-run   (solo muestra, no guarda)
+    python manage.py importar_po_bitrix --dry-run        (solo muestra, no guarda)
+    python manage.py importar_po_bitrix --limit 5        (solo los primeros 5)
+    python manage.py importar_po_bitrix --dry-run --limit 5
 """
 import time
 import requests
@@ -24,6 +26,12 @@ class Command(BaseCommand):
             action='store_true',
             help='Muestra qué se haría sin guardar nada',
         )
+        parser.add_argument(
+            '--limit',
+            type=int,
+            default=0,
+            help='Limita el número de oportunidades a procesar (0 = todas)',
+        )
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
@@ -42,8 +50,12 @@ class Command(BaseCommand):
             bitrix_deal_id=0
         ).only('id', 'oportunidad', 'bitrix_deal_id', 'po_number')
 
+        limit = options['limit']
+        if limit:
+            qs = qs[:limit]
+
         total = qs.count()
-        self.stdout.write(f'Oportunidades con bitrix_deal_id: {total}')
+        self.stdout.write(f'Oportunidades con bitrix_deal_id: {total}{f" (límite: {limit})" if limit else ""}')
 
         actualizadas = 0
         sin_po = 0
