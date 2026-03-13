@@ -950,7 +950,7 @@
                     if (val === (woOriginalData.po_number || '')) return;
                     var fd = new FormData();
                     fd.append('po_number', val);
-                    fetch('/app/api/oportunidad/' + woCurrentId + '/po/', {
+                    fetch('/app/api/oportunidad/' + currentOppId + '/po/', {
                         method: 'POST', body: fd,
                         headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
                     }).then(function (r) { return r.json(); }).then(function (data) {
