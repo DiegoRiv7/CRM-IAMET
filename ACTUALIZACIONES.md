@@ -5,7 +5,7 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 ---
 
-## [2026-03-13] — Refactorización y limpieza mayor
+## [2026-03-13] — Refactorización, limpieza mayor y correcciones
 
 ### TÉCNICO — Base de código profesionalizada
 - El código fuente fue reorganizado completamente para ser más rápido, estable y fácil de mantener
@@ -13,13 +13,12 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - El archivo principal de vistas (views.py, antes 16,591 líneas) dividido en 8 módulos por área funcional
 
 ### FIX — Campo PO (Purchase Order)
-- El campo PO en el detalle de oportunidades ahora guarda correctamente
+- El campo PO en el detalle de oportunidades ahora guarda correctamente la PO
+- Todas las oportunidades importadas de Bitrix ya cuentan con su PO original
 
-### FIX — Carpetas Bitrix en Drive
-- Al abrir carpetas de proyectos traídas de Bitrix ya no daba error
-
-### FIX — PDF de cotizaciones
-- Error al generar PDF de cotizaciones corregido
+### MEJORA — Subida de archivos al drive
+- El drive de oportunidades ahora acepta archivos de hasta 100MB (antes el límite era 2.5MB)
+- Se pueden subir planos DWG, videos, archivos pesados de ingeniería sin error
 
 ### MEJORA — Archivos de proyectos
 - Los archivos descargados de Bitrix (10,075 archivos, ~9.7GB) ahora se sirven desde el servidor local
