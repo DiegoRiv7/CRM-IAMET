@@ -3383,8 +3383,7 @@ def proyectos_ingenieria(request):
             'total_miembros': p.miembros.count(),
         })
 
-    return redirect('/app/todos/'),
-    })
+    return redirect('/app/todos/')
 
 
 def proyecto_detalle(request, proyecto_id):
