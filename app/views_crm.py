@@ -1885,17 +1885,23 @@ def actualizar_probabilidad(request, id):
 
 @login_required
 def actualizar_po(request, id):
-    """API para actualizar el campo PO de una oportunidad."""
+    """API para actualizar los campos PO y Factura de una oportunidad."""
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'No autenticado'}, status=401)
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     try:
-        po = request.POST.get('po_number', '').strip()
         todo = TodoItem.objects.get(pk=id)
-        todo.po_number = po
-        todo.save(update_fields=['po_number'])
-        return JsonResponse({'ok': True, 'po_number': po})
+        update_fields = []
+        if 'po_number' in request.POST:
+            todo.po_number = request.POST.get('po_number', '').strip()
+            update_fields.append('po_number')
+        if 'factura_numero' in request.POST:
+            todo.factura_numero = request.POST.get('factura_numero', '').strip()
+            update_fields.append('factura_numero')
+        if update_fields:
+            todo.save(update_fields=update_fields)
+        return JsonResponse({'ok': True, 'po_number': todo.po_number, 'factura_numero': todo.factura_numero})
     except TodoItem.DoesNotExist:
         return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
     except Exception as e:
@@ -2473,6 +2479,7 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
             'area': todo.area or '',
             'probabilidad_cierre': todo.probabilidad_cierre or 0,
             'po_number': todo.po_number or '',
+            'factura_numero': todo.factura_numero or '',
             'mes_cierre': todo.mes_cierre or '',
             'tipo_negociacion': todo.tipo_negociacion or 'runrate',
             'etapa_corta': todo.etapa_corta or '',

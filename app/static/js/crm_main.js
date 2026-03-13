@@ -665,6 +665,7 @@
                 document.getElementById('woProducto').textContent = d.producto || 'N/A';
                 document.getElementById('woArea').textContent = d.area || 'N/A';
                 document.getElementById('woPoNumber').value = d.po_number || '';
+                document.getElementById('woFacturaNumero').value = d.factura_numero || '';
 
                 // Probability
                 var prob = d.probabilidad_cierre || 0;
@@ -954,6 +955,22 @@
                         if (data.ok) { woOriginalData.po_number = val; }
                         else { input.value = woOriginalData.po_number || ''; }
                     }).catch(function () { input.value = woOriginalData.po_number || ''; });
+                };
+
+                // ── Factura ──
+                window.woGuardarFactura = function (input) {
+                    input.style.borderBottomColor = 'transparent';
+                    var val = input.value.trim();
+                    if (val === (woOriginalData.factura_numero || '')) return;
+                    var fd = new FormData();
+                    fd.append('factura_numero', val);
+                    fetch('/app/api/oportunidad/' + currentOppId + '/po/', {
+                        method: 'POST', body: fd,
+                        headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+                    }).then(function (r) { return r.json(); }).then(function (data) {
+                        if (data.ok) { woOriginalData.factura_numero = val; }
+                        else { input.value = woOriginalData.factura_numero || ''; }
+                    }).catch(function () { input.value = woOriginalData.factura_numero || ''; });
                 };
 
                 // ── Probabilidad (click/drag on bar) ──
