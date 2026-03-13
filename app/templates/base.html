@@ -118,21 +118,28 @@
         <div class="spotlight-container">
             <div class="spotlight-search-box">
                 <div class="spotlight-icon">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
                     </svg>
                 </div>
                 <input type="text" id="spotlight-input"
-                    placeholder="Buscar oportunidades, clientes, cotizaciones, tareas..." autocomplete="off"
+                    placeholder="Buscar por nombre, cliente, cotización, PO o factura..." autocomplete="off"
                     spellcheck="false" />
                 <div class="spotlight-shortcut">⌘K</div>
             </div>
             <div class="spotlight-results" id="spotlight-results">
                 <div class="spotlight-empty">
-                    <div class="spotlight-empty-icon">🔍</div>
-                    <div class="spotlight-empty-text">Busca por nombre, cliente o número (#181)</div>
+                    <div class="spotlight-empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="spotlight-empty-text">Busca oportunidades, cotizaciones o clientes</div>
+                    <div class="spotlight-empty-hint">Por nombre, PO, número de factura o #cotización</div>
                 </div>
+            </div>
+            <div class="spotlight-footer">
+                <span class="spotlight-footer-hint"><kbd class="spotlight-kbd">↑↓</kbd> navegar</span>
+                <span class="spotlight-footer-hint"><kbd class="spotlight-kbd">↵</kbd> abrir</span>
+                <span class="spotlight-footer-hint"><kbd class="spotlight-kbd">Esc</kbd> cerrar</span>
             </div>
         </div>
     </div>

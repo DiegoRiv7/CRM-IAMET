@@ -454,20 +454,18 @@ html[data-theme="perla"] div .apple-card:hover {
 }
 
 /* ═══ SHARED MODAL STYLES ═══ */
+/* ═══ SPOTLIGHT MODAL ═══ */
 .spotlight-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     z-index: 2000;
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding-top: 12vh;
+    padding-top: 10vh;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    transition: opacity 0.2s ease, visibility 0.2s ease
 }
 
 .spotlight-modal.active {
@@ -477,107 +475,148 @@ html[data-theme="perla"] div .apple-card:hover {
 
 .spotlight-backdrop {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px)
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px)
 }
 
 .spotlight-container {
     position: relative;
     width: 100%;
-    max-width: 640px;
+    max-width: 660px;
     margin: 0 20px;
-    background: rgba(28, 28, 30, 0.96) !important;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #fff !important;
-    border-radius: 20px;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35), 0 8px 16px rgba(0, 0, 0, 0.2);
+    background: rgba(252, 252, 254, 0.97);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(74, 111, 165, 0.18);
+    border-radius: 22px;
+    box-shadow: 0 32px 72px rgba(0, 0, 0, 0.22), 0 8px 20px rgba(74, 111, 165, 0.12), 0 0 0 0.5px rgba(255,255,255,0.8) inset;
     overflow: hidden;
-    transform: translateY(-20px) scale(0.97);
-    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    transform: translateY(-16px) scale(0.975);
+    transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94)
 }
 
 .spotlight-modal.active .spotlight-container {
     transform: translateY(0) scale(1)
 }
 
-/* ═══ SPOTLIGHT SEARCH STYLES ═══ */
+/* ─── Search bar ─── */
 .spotlight-search-box {
     display: flex;
     align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1)
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(74, 111, 165, 0.1);
+    background: rgba(255,255,255,0.6)
 }
 
 .spotlight-icon {
-    color: #98989D;
-    margin-right: 12px;
-    flex-shrink: 0
+    color: #4A6FA5;
+    margin-right: 13px;
+    flex-shrink: 0;
+    opacity: 0.85
 }
 
 .spotlight-shortcut {
-    background: rgba(255, 255, 255, 0.1);
-    color: #98989D;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
+    background: rgba(74, 111, 165, 0.1);
+    color: #4A6FA5;
+    padding: 3px 8px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
     margin-left: 12px;
-    flex-shrink: 0
+    flex-shrink: 0;
+    letter-spacing: 0.02em
 }
 
 #spotlight-input {
     flex: 1;
     border: none;
     outline: none;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 500;
     background: transparent;
-    color: #fff !important
+    color: #1C1C1E;
+    font-family: inherit
 }
 
 #spotlight-input::placeholder {
-    color: #98989D !important
+    color: #B0B8C8;
+    font-weight: 400
 }
 
 #ayuda-input {
     font-family: inherit
 }
 
+/* ─── Results container ─── */
 .spotlight-results {
-    max-height: 400px;
+    max-height: 420px;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px
 }
 
+.spotlight-results::-webkit-scrollbar {
+    width: 4px
+}
+.spotlight-results::-webkit-scrollbar-track {
+    background: transparent
+}
+.spotlight-results::-webkit-scrollbar-thumb {
+    background: rgba(74, 111, 165, 0.2);
+    border-radius: 2px
+}
+
+/* ─── Section headers ─── */
+.spotlight-section-header {
+    padding: 10px 20px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8A97AC;
+    background: rgba(248, 249, 252, 0.8)
+}
+
+/* ─── Empty / loading ─── */
 .spotlight-empty {
-    padding: 40px 20px;
+    padding: 44px 20px;
     text-align: center;
-    color: #98989D
+    color: #8A97AC
 }
 
 .spotlight-empty-icon {
-    font-size: 24px;
-    margin-bottom: 8px
+    margin-bottom: 10px;
+    opacity: 0.5
+}
+
+.spotlight-empty-icon svg {
+    width: 32px;
+    height: 32px;
+    stroke: #4A6FA5
 }
 
 .spotlight-empty-text {
-    font-size: 15px
+    font-size: 14px;
+    font-weight: 500;
+    color: #8A97AC
 }
 
+.spotlight-empty-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #B0B8C8
+}
+
+/* ─── Result items ─── */
 .spotlight-item {
     display: flex;
     align-items: center;
-    padding: 12px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 20px;
     cursor: pointer;
-    transition: background-color 0.15s ease
+    transition: background 0.12s ease;
+    border-bottom: 1px solid rgba(74, 111, 165, 0.06)
 }
 
 .spotlight-item:last-child {
@@ -586,65 +625,141 @@ html[data-theme="perla"] div .apple-card:hover {
 
 .spotlight-item:hover,
 .spotlight-item.selected {
-    background: rgba(0, 122, 255, 0.2)
+    background: rgba(74, 111, 165, 0.08)
+}
+
+.spotlight-item.selected .spotlight-item-title {
+    color: #0052D4
 }
 
 .spotlight-item-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 12px;
-    color: white;
-    font-size: 16px;
+    margin-right: 13px;
     flex-shrink: 0
 }
 
-.spotlight-item-icon.oportunidad { background: #FF9500 }
-.spotlight-item-icon.cotizacion { background: #007AFF }
-.spotlight-item-icon.cliente { background: #34C759 }
-.spotlight-item-icon.proyecto { background: #5856D6 }
-.spotlight-item-icon.tarea { background: #FF3B30 }
+.spotlight-item-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: #fff;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round
+}
+
+.spotlight-item-icon.oportunidad { background: linear-gradient(135deg, #FF9500, #FF6B00) }
+.spotlight-item-icon.cotizacion  { background: linear-gradient(135deg, #4A6FA5, #0052D4) }
+.spotlight-item-icon.cliente     { background: linear-gradient(135deg, #34C759, #30A84B) }
+.spotlight-item-icon.proyecto    { background: linear-gradient(135deg, #5856D6, #3634A3) }
+.spotlight-item-icon.tarea       { background: linear-gradient(135deg, #FF3B30, #C0392B) }
 
 .spotlight-item-content {
     flex: 1;
     min-width: 0
 }
 
+.spotlight-item-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px
+}
+
 .spotlight-item-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    margin-bottom: 2px;
-    color: #fff;
+    color: #1C1C1E;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0
 }
 
 .spotlight-item-subtitle {
-    font-size: 13px;
-    color: #98989D;
+    font-size: 12px;
+    color: #8A97AC;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis
 }
 
+.spotlight-badge {
+    flex-shrink: 0;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em
+}
+
+.spotlight-badge.po {
+    background: rgba(255, 149, 0, 0.12);
+    color: #C97000
+}
+
+.spotlight-badge.factura {
+    background: rgba(74, 111, 165, 0.12);
+    color: #0052D4
+}
+
+.spotlight-item-arrow {
+    color: #C8D0DC;
+    margin-left: 8px;
+    flex-shrink: 0
+}
+
+/* ─── Footer keyboard hint ─── */
+.spotlight-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 20px;
+    border-top: 1px solid rgba(74, 111, 165, 0.1);
+    background: rgba(248, 249, 252, 0.8)
+}
+
+.spotlight-footer-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #8A97AC
+}
+
+.spotlight-kbd {
+    background: rgba(74, 111, 165, 0.1);
+    border: 1px solid rgba(74, 111, 165, 0.2);
+    color: #4A6FA5;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit
+}
+
+/* ─── Loading ─── */
 .spotlight-loading {
-    padding: 20px;
+    padding: 32px 20px;
     text-align: center;
-    color: #98989D
+    color: #8A97AC;
+    font-size: 14px
 }
 
 .spotlight-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(142, 142, 147, 0.3);
-    border-top-color: #007AFF;
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(74, 111, 165, 0.15);
+    border-top-color: #4A6FA5;
     border-radius: 50%;
-    animation: spotlight-spin 1s linear infinite;
-    margin: 0 auto 8px
+    animation: spotlight-spin 0.8s linear infinite;
+    margin: 0 auto 10px
 }
 
 @keyframes spotlight-spin {

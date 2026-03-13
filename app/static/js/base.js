@@ -37,9 +37,18 @@ window.addEventListener('resize', () => {
     var selectedIndex = -1;
     var currentResults = [];
 
+    var ICONS = {
+        oportunidad: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        cotizacion:  '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+        cliente:     '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        proyecto:    '<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+        tarea:       '<svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
+    };
+    var LABELS = { oportunidad: 'Oportunidades', cotizacion: 'Cotizaciones', cliente: 'Clientes', proyecto: 'Proyectos', tarea: 'Tareas' };
+
     function showEmptyState() {
         var c = document.getElementById('spotlight-results');
-        if (c) c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-icon">🔍</div><div class="spotlight-empty-text">Busca por nombre, cliente o número (#181)</div></div>';
+        if (c) c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg></div><div class="spotlight-empty-text">Busca oportunidades, cotizaciones o clientes</div><div class="spotlight-empty-hint">Por nombre, PO, número de factura o #cotización</div></div>';
     }
     function showLoadingState() {
         var c = document.getElementById('spotlight-results');
@@ -62,11 +71,40 @@ window.addEventListener('resize', () => {
     function displayResults(results) {
         var c = document.getElementById('spotlight-results');
         if (!c) return;
-        if (results.length === 0) { c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-icon">❌</div><div class="spotlight-empty-text">No se encontraron resultados</div></div>'; return; }
-        c.innerHTML = results.map(function (r, i) {
-            var icon = r.type === 'cotizacion' ? '📄' : r.type === 'oportunidad' ? '⭐' : r.type === 'cliente' ? '👤' : r.type === 'proyecto' ? '📁' : r.type === 'tarea' ? '✅' : '📋';
-            return '<div class="spotlight-item" data-index="' + i + '" onclick="selectResult(' + i + ')"><div class="spotlight-item-icon ' + r.type + '">' + icon + '</div><div class="spotlight-item-content"><div class="spotlight-item-title">' + r.title + '</div><div class="spotlight-item-subtitle">' + r.subtitle + '</div></div></div>';
-        }).join('');
+        if (results.length === 0) {
+            c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg></div><div class="spotlight-empty-text">Sin resultados</div><div class="spotlight-empty-hint">Intenta con otro nombre, PO o número</div></div>';
+            return;
+        }
+        // Group by type
+        var groups = {};
+        var order = [];
+        results.forEach(function (r, i) {
+            r._idx = i;
+            if (!groups[r.type]) { groups[r.type] = []; order.push(r.type); }
+            groups[r.type].push(r);
+        });
+        var html = '';
+        order.forEach(function (type) {
+            html += '<div class="spotlight-section-header">' + (LABELS[type] || type) + '</div>';
+            groups[type].forEach(function (r) {
+                var icon = ICONS[r.type] || ICONS.cotizacion;
+                var badges = '';
+                if (r.po_number) badges += '<span class="spotlight-badge po">PO ' + r.po_number + '</span>';
+                if (r.factura_numero) badges += '<span class="spotlight-badge factura">Fac. ' + r.factura_numero + '</span>';
+                html += '<div class="spotlight-item" data-index="' + r._idx + '" onclick="selectResult(' + r._idx + ')">' +
+                    '<div class="spotlight-item-icon ' + r.type + '">' + icon + '</div>' +
+                    '<div class="spotlight-item-content">' +
+                        '<div class="spotlight-item-top">' +
+                            '<span class="spotlight-item-title">' + r.title + '</span>' +
+                            badges +
+                        '</div>' +
+                        '<div class="spotlight-item-subtitle">' + r.subtitle + '</div>' +
+                    '</div>' +
+                    '<svg class="spotlight-item-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
+                    '</div>';
+            });
+        });
+        c.innerHTML = html;
     }
     function navigateSpotlight(dir) {
         if (currentResults.length === 0) return;

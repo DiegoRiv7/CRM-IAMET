@@ -115,7 +115,8 @@ def spotlight_search_api(request):
         Q(oportunidad__icontains=query) |
         Q(cliente__nombre_empresa__icontains=query) |
         Q(comentarios__icontains=query) |
-        Q(po_number__icontains=query)
+        Q(po_number__icontains=query) |
+        Q(factura_numero__icontains=query)
     ).select_related('cliente', 'usuario')
     
     # Filtrar por permisos de usuario
@@ -133,6 +134,8 @@ def spotlight_search_api(request):
             'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • {oportunidad.etapa_corta or oportunidad.mes_cierre}',
             'description': f'Año {anio} • {oportunidad.get_area_display()} • ${oportunidad.monto:,.0f}',
             'date': convert_to_tijuana_time(oportunidad.fecha_creacion).strftime('%d/%m/%Y'),
+            'po_number': oportunidad.po_number or '',
+            'factura_numero': oportunidad.factura_numero or '',
             'icon': 'star',
             'url': crm_url,
             'priority': 3,
