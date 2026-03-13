@@ -37,6 +37,7 @@ from django.utils.html import json_script
 # Helper function to detect lost opportunities
 from django.views.decorators.clickjacking import xframe_options_exempt, xframe_options_sameorigin
 from .views_utils import *
+from .views_utils import _exportar_estadisticas_excel
 
 @login_required
 def api_admin_usuarios(request):

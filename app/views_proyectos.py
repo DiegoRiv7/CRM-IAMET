@@ -36,6 +36,7 @@ from django.utils.html import json_script
 
 # Helper function to detect lost opportunities
 from .views_utils import *
+from .views_utils import _serialize_tarea_opp
 
 @login_required
 def api_ingeniero_actividades(request):

@@ -37,6 +37,7 @@ from django.utils.html import json_script
 
 # Helper function to detect lost opportunities
 from .views_utils import *
+from .views_utils import _muro_post_dict
 
 @login_required
 def api_jornada_ayer(request):
