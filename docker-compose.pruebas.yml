@@ -5,7 +5,7 @@ services:
     volumes:
       - .:/app
       - media_pruebas:/app/media
-      - static_pruebas:/app/staticfiles
+      - ./staticfiles:/app/staticfiles
     ports:
       - "8001:8000"
     env_file:
@@ -40,7 +40,6 @@ services:
 volumes:
   db_pruebas:
   media_pruebas:
-  static_pruebas:
 
 networks:
   pruebas_net:
