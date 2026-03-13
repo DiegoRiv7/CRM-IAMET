@@ -1,95 +1,125 @@
 # Estado de Sesión — CRM IAMET
 
 ## LEER PRIMERO
-Lee WORKFLOW.md para entender los ambientes, ramas y comandos de deploy.
-Lee CLEANUP_STATUS.md para el historial de limpieza.
+Lee WORKFLOW.md para flujo de trabajo, ramas y comandos de deploy.
+Lee ESTRUCTURA.md para entender la arquitectura completa del proyecto.
 
 ---
 
-## Estado actual de la rama `pruebas`
+## Rama actual: `pruebas` — VERIFICADA, pendiente merge a `principal`
 
-### Commits recientes (todos en rama `pruebas`):
-1. Fix SyntaxError: `})` huérfano en views.py (línea 3387)
-2. Limpieza: scripts one-time, debug commands, archivos temporales
-3. Fase 1: eliminar 48 funciones muertas de views.py (~2,900 líneas eliminadas)
-   - urls.py reescrito y organizado por secciones
-   - `todos/` ahora apunta a `crm_home` (alias histórico)
-4. Fase 2: dividir views.py en módulos por dominio:
-   - `views_utils.py` — 26 helpers (851 líneas)
-   - `views_crm.py` — 37 vistas CRM (3,308 líneas)
-   - `views_cotizaciones.py` — 17 vistas cotizaciones (1,535 líneas)
-   - `views_drive.py` — 10 vistas drive (763 líneas)
-   - `views_proyectos.py` — 45 vistas proyectos/tareas (3,700 líneas)
-   - `views_admin.py` — 24 vistas admin/bitrix (1,889 líneas)
-   - `views_api.py` — 24 APIs muro/jornadas/chat (1,405 líneas)
-   - `views_auth.py` — 5 vistas autenticación (220 líneas)
-   - `views.py` — re-exportador thin (35 líneas)
-5. Fix PO: `woCurrentId` → `currentOppId` en `_scripts_main.html`
-6. Fix drive carpetas Bitrix: `_woDriveProyecto` era null al entrar carpeta proyecto
-7. Fix imports faltantes en todos los módulos (base64, render_to_string, weasyprint, openpyxl, rapidfuzz, math, random, urllib, StringIO)
-8. Fix prioridad archivos: locales primero, Bitrix como fallback
-9. Fix backup.sh: respaldar desde volumen Docker `crm-iamet_media_files`
+### Todo lo que está funcionando en pruebas:
+- CRM principal: tabla, filtros, tabs, búsqueda ✓
+- Widget oportunidad (abrir, editar, PO) ✓
+- Widget negociación (crear oportunidad) ✓
+- Cotizaciones (crear, PDF) ✓
+- Drive (carpetas locales y Bitrix) ✓
+- Muro empresarial ✓
+- Correo ✓
+- Admin panel ✓
+- Backup BD diario ✓
 
 ---
 
-## Lo que falta verificar en pruebas ANTES de mergear
-- [ ] Ver cotización (daba error `render_to_string` — ya corregido, falta probar)
-- [ ] Abrir carpetas Bitrix en drive de oportunidad (ya corregido)
-- [ ] Campo PO guarda correctamente (ya corregido)
-- [ ] Navegar CRM principal, mail, cotizaciones, drive, admin panel
+## Pendiente ANTES de mergear a producción
 
----
+### 1. Verificar en pruebas (hacer click en cada sección)
+- [ ] Abrir oportunidad desde tabla → widget detalle
+- [ ] Crear cotización desde oportunidad
+- [ ] Navegar drive de oportunidad y proyecto
+- [ ] Abrir correo, enviar prueba
+- [ ] Abrir muro, crear post
 
-## Pendiente después del merge a producción
-
-### 1. Garantizar backup del domingo — PASOS EXACTOS
-El script en el repo ya fue corregido. Hay que aplicarlo en el servidor ANTES del domingo.
-
+### 2. Al mergear a producción — comandos exactos
 ```bash
-# En el servidor de producción:
-cd ~/crm-iamet
-git pull origin principal          # trae el backup.sh corregido
+# En Mac:
+git checkout principal
+git merge pruebas
+git push crm-iamet principal
+git checkout pruebas
 
-# Copiar al script activo en cron:
+# En servidor producción:
+cd ~/crm-iamet
+git pull origin principal
+sudo docker compose exec web python manage.py collectstatic --noinput
+sudo docker compose restart web
+```
+
+### 3. Garantizar backup media del domingo — ANTES del domingo
+```bash
+# En servidor producción:
+cd ~/crm-iamet
+git pull origin principal
 cp ~/crm-iamet/scripts/backup.sh ~/backup_crm.sh
 chmod +x ~/backup_crm.sh
 
-# Verificar que el cron lo tiene apuntado correctamente:
+# Verificar volumen Docker accesible:
+sudo docker run --rm -v crm-iamet_media_files:/media_src:ro alpine du -sh /media_src
+# Debe mostrar ~9.7G
+
+# Verificar cron:
 crontab -l
-# Debe verse algo como: 0 10 * * * /home/iamet2026/backup_crm.sh
-
-# Probar en seco que el script puede ver el volumen Docker:
-sudo docker run --rm \
-    -v crm-iamet_media_files:/media_src:ro \
-    alpine du -sh /media_src
-# Debe mostrar ~9.7G — si muestra eso, el domingo el backup funcionará bien
-
-# Asegurarse que la variable MYSQL_ROOT_PASSWORD está disponible para el cron:
-cat ~/.backup_env
-# Debe tener: MYSQL_ROOT_PASSWORD=...
+# Debe verse: 0 10 * * * /home/iamet2026/backup_crm.sh
 ```
 
-Si el domingo no corre o falla, correr manualmente:
-```bash
-source ~/.backup_env && ~/backup_crm.sh
-```
-Y verificar en:
-```bash
-ls -lh ~/backups/media_*.tar.gz
-cat ~/backups/backup.log | tail -20
-```
+---
+
+## Pendiente técnico — próximas sesiones
+
+### 1. `base.html` — JS inline
+El archivo base tiene JavaScript inline (~300 líneas). No es crítico pero
+debería moverse a `static/js/base.js` siguiendo el mismo patrón que hicimos
+con los demás archivos.
 
 ### 2. Comentarios de tareas Bitrix
-- Existía un comando pero metía los comentarios en la descripción de la tarea
-- Hay que crear/corregir el management command para que vayan a `TareaComentario`
-- Los últimos 5 meses solamente
+- Crear/corregir management command para importar comentarios de tareas
+- Los comentarios deben ir a `TareaComentario` (NO a la descripción de tarea)
+- Solo los últimos 5 meses
+- Comando: `python manage.py importar_comentarios_bitrix`
 
-### 3. Campo PO desde Bitrix
-- El campo PO ya existe en el modelo (`po_number` en `TodoItem`)
-- El widget ya lo guarda (fix aplicado en esta sesión)
-- Falta: sincronizarlo con el campo en Bitrix API
-- Nombre del campo en Bitrix: pendiente confirmar (revisar en configuración de campos de Bitrix o respuesta de API)
-- Hay que agregar el campo al sync de `bitrix_webhook_receiver` y/o comando manual
+### 3. Campo PO sincronizar con Bitrix API
+- El campo `po_number` en `TodoItem` ya existe y el widget lo guarda
+- Falta sincronizar con el campo en Bitrix (nombre del campo: pendiente confirmar)
+- Agregar al `bitrix_webhook_receiver` y/o comando manual
+
+### 4. "Found another file" warnings en collectstatic
+Warnings benignos — ocurren porque `app` está en STATICFILES_DIRS Y en
+INSTALLED_APPS. No causan problemas pero se pueden eliminar quitando
+`app/static` de STATICFILES_DIRS (Django lo encuentra igual via AppDirectoriesFinder).
+
+---
+
+## Resumen de cambios realizados (sesiones anteriores + hoy)
+
+### Sesión anterior — Refactorización views.py
+| Qué | Antes | Después |
+|-----|-------|---------|
+| views.py | 16,591 líneas monolítico | 35 líneas (re-exportador) |
+| Módulos nuevos | — | 8 módulos por dominio |
+| Funciones muertas | 48 funciones sin uso | Eliminadas |
+| URLs muertas | ~40 URLs | Eliminadas |
+| Archivos basura en /proyecto/ | ~20 scripts/HTMLs sueltos | 0 |
+
+### Hoy — Separación CSS/JS a archivos estáticos
+| Archivo | Antes | Después |
+|---------|-------|---------|
+| `_styles.html` | 4,206 líneas CSS inline | `static/css/crm.css` — 2 líneas en template |
+| `_scripts_main.html` | 4,577 líneas JS inline | `static/js/crm_main.js` — 13 líneas en template |
+| `_scripts_mail.html` | 577 líneas JS inline | `static/js/crm_mail.js` — 2 líneas en template |
+| `_scripts_muro.html` | 289 líneas JS inline | `static/js/crm_muro.js` — 8 líneas en template |
+| `_scripts_ingeniero.html` | 801 líneas JS inline | `static/js/crm_ingeniero.js` — 8 líneas en template |
+
+### Bugs corregidos hoy
+- Static files 404: nginx apuntaba a host, staticfiles estaban en volumen Docker nombrado → fix: bind mount `./staticfiles:/app/staticfiles`
+- `_muro_post_dict`, `_exportar_estadisticas_excel`, `_serialize_tarea_opp` no importaban (funciones `_privadas` no se exportan con `import *`) → fix: imports explícitos
+- `datetime` y `ZoneInfo` faltaban en `views_api.py`
+- Tags `<script>` y `</div>` HTML quedaron dentro de `crm_main.js` → eliminados
+- CSS en `<body>` en lugar de `<head>` → movido a `{% block extra_head %}`
+- `personalizacion.css` y `oportunidad_detail.css` solo existían en volumen Docker → recuperados y agregados al repo
+
+### Archivos eliminados hoy
+- `app/templates/prettier_error.txt`, `script3_debug*.txt`, `list_blocks.js`, `script4_final_check.js`
+- Función legacy `ingresar_venta_todoitem` (template inexistente, no usada)
 
 ---
 
@@ -97,51 +127,19 @@ cat ~/backups/backup.log | tail -20
 
 ### Archivos Bitrix descargados ✓
 - 10,075 / 10,076 archivos en volumen Docker `crm-iamet_media_files` (9.7GB)
-- 1 archivo falló con HTTP 403: `OCC-TIJ12634 VARILLA.pdf` (proyecto 3149) — irrecuperable
-- El código ya prioriza archivo local sobre URL Bitrix — cuando Bitrix se desconecte, 10,075 archivos siguen disponibles desde el servidor
+- 1 archivo falló HTTP 403: `OCC-TIJ12634 VARILLA.pdf` (proyecto 3149) — irrecuperable
+- Código prioriza archivo local sobre URL Bitrix
 
 ### Backup
-- BD: corre diario ~4am Tijuana (10am UTC), último: `db_2026-03-13_10-00.sql.gz` (5.6MB) ✓
-- Media: corre domingos — script ya corregido, aplicar antes del domingo (ver pasos arriba)
-- Backups en: `~/backups/` en el servidor
+- BD: corre diario ~4am Tijuana (10am UTC)
+- Media: corre domingos — script corregido en repo, aplicar en servidor antes del domingo
+- Backups en: `~/backups/` en servidor producción
 
----
-
-## Resumen de mejoras realizadas en esta sesión
-
-### Limpieza de código (deuda técnica eliminada)
-| Qué | Antes | Después |
-|-----|-------|---------|
-| Archivos basura en `/proyecto/` | ~20 scripts temporales, HTMLs sueltos, archivos .aider | 0 |
-| management/commands muertos | 6 comandos one-time (link_proyectos, match, etc.) | Solo `descargar_archivos_bitrix` |
-| views.py | 16,591 líneas, monolítico | 35 líneas (re-exportador) |
-| Funciones muertas eliminadas | — | 48 funciones (~2,900 líneas) |
-| URLs muertas eliminadas | ~40 URLs (volumetria, incrementa, bienvenida, etc.) | 0 |
-
-### Refactorización views.py → módulos
-El archivo monolítico de 16,591 líneas se dividió en 8 módulos por dominio.
-`urls.py` no cambió — compatibilidad total vía re-export en `views.py`.
-
-### Bugs corregidos
-- Campo PO no guardaba (`woCurrentId` no existía → `currentOppId`)
-- Carpetas Bitrix en drive daban TypeError null al abrirse
-- Cotización daba NameError (imports inline faltantes en módulos nuevos)
-- Archivos de proyectos usaban URL Bitrix aunque tuvieran copia local
-
----
-
-## Pendiente técnico — próximas sesiones
-
-### Limpieza pendiente
-- **JS mezclado con HTML**: `_scripts_main.html`, `_scripts_muro.html`, `_scripts_mail.html`, `_scripts_ingeniero.html` tienen miles de líneas de JavaScript incrustado en templates HTML. Lo correcto es moverlos a `/static/js/` como archivos `.js` separados. Beneficios: caché del navegador, separación de responsabilidades, más fácil de modificar sin romper el HTML.
-- **CSS mezclado**: `_styles.html` tiene 3,154 líneas de CSS. Debe ir a `/static/css/`.
-- **Funciones JS duplicadas o inconsistentes**: al haber mezclado el CRM nuevo con el cotizador viejo, hay variables JS con nombres distintos para lo mismo (ejemplo: `woCurrentId` vs `currentOppId`). Hay que auditar y unificar.
-- **views_utils.py muy grande**: algunos helpers podrían moverse a sus módulos respectivos si solo los usa uno.
-
-### Features pendientes
-- Comentarios de tareas Bitrix (últimos 5 meses) → management command
-- Campo PO sync con Bitrix API
-- Auditar que todas las páginas activas funcionan en producción post-merge
+### Static files — cómo funciona en producción
+- Código fuente: `app/static/`
+- Colectados: `~/crm-iamet/staticfiles/` (bind mount `./staticfiles:/app/staticfiles`)
+- Servidos por: nginx `alias /home/iamet2026/crm-iamet/staticfiles/;`
+- Al agregar archivos nuevos a static: siempre correr `collectstatic` antes de restart
 
 ---
 
