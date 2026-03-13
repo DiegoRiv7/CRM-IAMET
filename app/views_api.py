@@ -147,25 +147,24 @@ def spotlight_search_api(request):
             ]
         })
     
-    # Búsqueda de Tareas de Oportunidad
-    tareas = TareaOportunidad.objects.filter(
+    # Búsqueda de Tareas
+    tareas = Tarea.objects.filter(
         Q(titulo__icontains=query)
-    ).select_related('oportunidad', 'oportunidad__cliente')
+    ).select_related('proyecto', 'creado_por', 'asignado_a')
 
     if not is_supervisor(request.user):
         tareas = tareas.filter(
-            Q(creado_por=request.user) | Q(oportunidad__usuario=request.user)
+            Q(creado_por=request.user) | Q(asignado_a=request.user)
         )
 
     for tarea in tareas[:6]:
-        opp = tarea.oportunidad
-        anio_opp = opp.anio_cierre or opp.fecha_creacion.year
+        proyecto_nombre = tarea.proyecto.nombre if tarea.proyecto else ''
         results.append({
             'type': 'tarea',
             'id': tarea.id,
             'title': tarea.titulo,
-            'subtitle': f'{opp.oportunidad} • {opp.cliente.nombre_empresa if opp.cliente else ""}',
-            'url': f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_task={tarea.id}',
+            'subtitle': proyecto_nombre or tarea.get_estado_display(),
+            'url': f'/app/todos/?tab=crm&open_task={tarea.id}',
             'priority': 4,
         })
 
