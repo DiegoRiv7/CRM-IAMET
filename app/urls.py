@@ -104,6 +104,7 @@ urlpatterns = [
     path('api/oportunidad/<int:id>/po/', views.actualizar_po, name='actualizar_po'),
     path('api/oportunidad/<int:opp_id>/chat/', views.api_chat_oportunidad, name='api_chat_oportunidad'),
     path('api/oportunidad/<int:opp_id>/chat/mensaje/<int:msg_id>/', views.api_chat_mensaje, name='api_chat_mensaje'),
+    path('api/chat-media/<int:msg_id>/', views.api_chat_media_file, name='api_chat_media_file'),
     path('api/oportunidad/<int:oportunidad_id>/productos/', views.api_oportunidad_productos, name='api_oportunidad_productos'),
     path('api/oportunidad/<int:oportunidad_id>/productos/<int:producto_id>/', views.api_oportunidad_producto_delete, name='api_oportunidad_producto_delete'),
     path('api/cliente-oportunidades/<int:cliente_id>/', views.api_cliente_oportunidades, name='api_cliente_oportunidades'),

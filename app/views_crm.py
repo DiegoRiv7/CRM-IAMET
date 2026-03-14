@@ -2378,11 +2378,10 @@ def api_crear_oportunidad(request):
         except Exception:
             monto = Decimal('0')
 
-        # Buscar o crear cliente
-        cliente, _ = Cliente.objects.get_or_create(
-            nombre_empresa__iexact=cliente_nombre,
-            defaults={'nombre_empresa': cliente_nombre, 'asignado_a': request.user}
-        )
+        # Buscar o crear cliente (filter evita error si hay duplicados por case)
+        cliente = Cliente.objects.filter(nombre_empresa__iexact=cliente_nombre).order_by('id').first()
+        if not cliente:
+            cliente = Cliente.objects.create(nombre_empresa=cliente_nombre, asignado_a=request.user)
 
         # Buscar o crear contacto
         contacto = None

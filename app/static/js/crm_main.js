@@ -3163,14 +3163,18 @@
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             fetch('/app/api/tarea/' + tareaId + '/')
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(function (tarea) {
+                    if (tarea.error) { showToast(tarea.error, 'error'); return; }
                     crmTaskRenderData(tarea);
                     crmTaskCargarComentarios(tareaId);
                 })
                 .catch(function (err) {
                     console.error('Error cargando tarea:', err);
-                    alert('Error al cargar detalles de la tarea');
+                    showToast('Error al cargar la tarea', 'error');
                 });
         }
 

@@ -420,7 +420,7 @@ def api_chat_oportunidad(request, opp_id):
         return {
             'id': m.id,
             'texto': texto,
-            'imagen_url': m.imagen.url if m.imagen else None,
+            'imagen_url': f'/app/api/chat-media/{m.id}/' if m.imagen else None,
             'imagen_nombre': m.imagen.name.split('/')[-1] if m.imagen else None,
             'editado': m.editado,
             'reply_to': reply,
@@ -532,6 +532,26 @@ def api_chat_mensaje(request, opp_id, msg_id):
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_chat_media_file(request, msg_id):
+    """Sirve el archivo adjunto de un mensaje de chat directamente desde Django.
+    Bypassa el location /media/ de nginx (que apunta a un volumen Docker inaccesible)."""
+    from .models import MensajeOportunidad
+    from django.http import FileResponse, Http404
+    msg = get_object_or_404(MensajeOportunidad, id=msg_id)
+    if not msg.imagen:
+        raise Http404
+    try:
+        f = msg.imagen.open('rb')
+    except Exception:
+        raise Http404
+    content_type, _ = mimetypes.guess_type(msg.imagen.name)
+    response = FileResponse(f, content_type=content_type or 'application/octet-stream')
+    filename = msg.imagen.name.split('/')[-1]
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
 
 
 @login_required

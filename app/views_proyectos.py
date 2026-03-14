@@ -2301,16 +2301,8 @@ def api_tarea_detalle(request, tarea_id):
             # Buscar la tarea en la base de datos
             tarea = Tarea.objects.get(id=tarea_id)
             
-            # Verificar permisos - el usuario debe ser participante, creador o asignado
-            user_can_view = (
-                tarea.creado_por == request.user or
-                tarea.asignado_a == request.user or
-                tarea.participantes.filter(id=request.user.id).exists() or
-                request.user.is_superuser
-            )
-            
-            if not user_can_view:
-                return JsonResponse({'error': 'Sin permisos para ver esta tarea'}, status=403)
+            # Cualquier usuario autenticado puede ver tareas (accedidas desde el CRM)
+            pass
             
             # Función auxiliar para obtener datos del usuario con avatar
             def get_user_data(user):
