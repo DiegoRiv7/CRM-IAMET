@@ -393,12 +393,15 @@
             }
         }
 
-        // Marcar como leída
-        try {
-            var csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
-            fetch('/app/api/marcar-notificacion-leida/' + id + '/', { method: 'POST', headers: { 'X-CSRFToken': csrf } });
-            if (nRel) { nRel.leida = true; notifOUpdateCounts(); }
-        } catch (e) {}
+        // Para mensajes de chat: NO marcar como leída al clic, solo al responder
+        var esMensajeChat = tipo === 'oportunidad_mensaje';
+        if (!esMensajeChat) {
+            try {
+                var csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+                fetch('/app/api/marcar-notificacion-leida/' + id + '/', { method: 'POST', headers: { 'X-CSRFToken': csrf } });
+                if (nRel) { nRel.leida = true; notifOUpdateCounts(); }
+            } catch (e) {}
+        }
 
         // Cerrar WIDGET de notificaciones
         document.getElementById('widgetNotificaciones').classList.remove('active');
@@ -409,15 +412,20 @@
         var tiposTareaOpp = ['tarea_opp_asignada', 'tarea_opp_comentario'];
 
         if (tiposActividad.includes(tipo) && typeof window.calendarioAbrir === 'function') {
-            // Abrir calendario para actividades por vencer/vencidas
             window.calendarioAbrir();
         } else if (tiposTareaOpp.includes(tipo) && actId) {
-            // TareaOportunidad → abrir detalle de oportunidad y luego la tarea
             if (oppId && typeof window.openDetalle === 'function') {
                 window.openDetalle(oppId);
             }
+        } else if (esMensajeChat && oppId && typeof window.openDetalle === 'function') {
+            // Mensaje de chat → abrir oportunidad + abrir panel de conversación
+            window.openDetalle(oppId);
+            setTimeout(function () {
+                if (typeof window.woAbrirGestorConversacion === 'function') {
+                    window.woAbrirGestorConversacion();
+                }
+            }, 600);
         } else if (tiposConv.includes(tipo) && oppId && typeof window.openDetalle === 'function') {
-            // Menciones y mensajes → abrir oportunidad (la conversación está ahí)
             window.openDetalle(oppId);
         } else if (isTarea && tareaId && typeof window.crmTaskVerDetalle === 'function') {
             window.crmTaskVerDetalle(tareaId);

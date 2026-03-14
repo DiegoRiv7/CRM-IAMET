@@ -383,7 +383,7 @@
                 </svg>
             </button>
 
-            <input type="file" id="woConvFotoInput" accept="*" multiple style="display:none;"
+            <input type="file" id="woConvFotoInput" accept="*/*" multiple style="display:none;"
                 onchange="woConvSendMedia(this.files)">
             <button onclick="document.getElementById('woConvFotoInput').click()"
                 style="width:36px;height:36px;border-radius:50%;background:#F2F2F7;border:1px solid #E5E5EA;display:flex;align-items:center;justify-content:center;color:#86868B;cursor:pointer;flex-shrink:0;"
@@ -663,7 +663,10 @@
         };
 
         window.woAbrirGestorConversacion = function () {
-            alert('Conversación en ventana próximamente...');
+            var w = document.getElementById('widgetOppConversacion');
+            if (!w || !_woCurrentOppId) return;
+            w.style.display = 'flex';
+            woCargarNotas(_woCurrentOppId);
         };
 
         window.woDriveIrACarpeta = function (id, bcIndex) {
@@ -708,7 +711,7 @@
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.8rem;">Cargando...</div>';
 
-            fetch('/app/api/oportunidad/' + oppId + '/tareas/')
+            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var tareas = data.tareas || data.results || [];
@@ -736,7 +739,7 @@
                         var dot = done ? '#34C759' : (venc ? '#FF3B30' : '#FF9500');
                         var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
                         var rowBg = done ? 'background:rgba(52,199,89,0.06);' : (venc ? 'background:rgba(255,59,48,0.07);' : '');
-                        return '<div class="wo-tarea-inline-item" style="' + rowBg + '" onclick="if(typeof woVerActividad===\'function\')woVerActividad(' + t.id + ')">' +
+                        return '<div class="wo-tarea-inline-item" style="' + rowBg + '" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')">' +
                             '<span style="width:6px;height:6px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
                             '<span style="flex:1;font-size:0.78rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (t.titulo || 'Sin título') + '</span>' +
                             '<span style="font-size:0.7rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' +
@@ -758,7 +761,7 @@
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;">Cargando tareas...</div>';
 
-            fetch('/app/api/oportunidad/' + oppId + '/tareas/')
+            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var tareas = data.tareas || data.results || [];
@@ -784,7 +787,7 @@
                         var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < nowO;
                         var rowBg = done ? 'background:rgba(52,199,89,0.07);' : (venc ? 'background:rgba(255,59,48,0.07);' : '');
                         var tituloStyle = done ? 'text-decoration:line-through;color:#9CA3AF;' : (venc ? 'color:#FF3B30;' : '');
-                        return '<div class="wo-tarea-item" style="' + rowBg + '" onclick="if(typeof woVerActividad===\'function\')woVerActividad(' + t.id + ')">' +
+                        return '<div class="wo-tarea-item" style="' + rowBg + '" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')">' +
                             '<div class="wo-tarea-check ' + (done ? 'done' : '') + '" style="' + (venc ? 'border-color:#FF3B30;' : '') + '"></div>' +
                             '<div class="wo-tarea-info">' +
                             '<div class="wo-tarea-titulo" style="' + tituloStyle + '">' + (t.titulo || 'Sin título') + '</div>' +
@@ -1081,7 +1084,7 @@
                             var ext = (m.imagen_nombre || '').split('.').pop().toLowerCase();
                             var esImagen = ['jpg','jpeg','png','gif','webp','bmp','svg'].indexOf(ext) !== -1;
                             if (esImagen) {
-                                imgHtml = '<img src="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" />';
+                                imgHtml = '<img src="' + woEscape(m.imagen_url) + '" data-filename="' + woEscape(m.imagen_nombre || 'Imagen') + '" data-url="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" onerror="woImgFallback(this)" />';
                             } else {
                                 imgHtml = '<a href="' + woEscape(m.imagen_url) + '" target="_blank" style="display:flex;align-items:center;gap:0.4rem;background:rgba(0,0,0,0.06);border-radius:10px;padding:6px 10px;font-size:0.8rem;font-weight:600;color:#0052D4;text-decoration:none;margin-bottom:0.4rem;">' +
                                     '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>' +
@@ -1324,12 +1327,12 @@
             } else if (e.key === 'Escape') { dd.style.display = 'none'; }
         };
 
-        function woMentionHighlight(idx) {
+        window.woMentionHighlight = function (idx) {
             _woMentionIdx = idx;
             document.querySelectorAll('#woMentionDropdown .wo-mention-item').forEach(function (el, i) {
                 el.style.background = i === idx ? '#F2F2F7' : '';
             });
-        }
+        };
 
         window.woMentionSelect = function (username) {
             var ta = document.getElementById('woConvInputText');
@@ -1462,6 +1465,17 @@
         function woEscape(str) {
             return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
+
+        window.woImgFallback = function (img) {
+            var url = img.getAttribute('data-url') || img.src;
+            var name = img.getAttribute('data-filename') || 'Imagen';
+            var a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.style.cssText = 'display:flex;align-items:center;gap:0.4rem;background:rgba(0,0,0,0.06);border-radius:10px;padding:6px 10px;font-size:0.8rem;font-weight:600;color:#0052D4;text-decoration:none;margin-bottom:0.4rem;';
+            a.textContent = '📎 ' + name;
+            img.parentNode.replaceChild(a, img);
+        };
 
         // ── DIALOG LOGIC ──
         window._woTempCallbacks = {};

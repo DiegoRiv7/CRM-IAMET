@@ -1145,7 +1145,11 @@
             // (Auto-save removed — widget is now read-only display)
 
             function closeDetalleWidget(forceClose) {
-                if (!forceClose && currentOppId) {
+                // Solo aplica la verificación si el usuario actual es el responsable de la oportunidad
+                var esResponsable = woOriginalData && woOriginalData.usuario_id &&
+                    String(woOriginalData.usuario_id) === String(_CRM_CONFIG.userId);
+
+                if (!forceClose && currentOppId && esResponsable) {
                     // Verificar si la oportunidad tiene al menos una actividad pendiente
                     fetch('/app/api/oportunidad/' + currentOppId + '/tareas/')
                         .then(function (r) { return r.json(); })
@@ -1158,11 +1162,9 @@
                                     return;
                                 }
                             }
-                            // Si tiene actividades pendientes, cerrar normalmente
                             _doCloseDetalle();
                         })
                         .catch(function () {
-                            // En caso de error de red, permitir cerrar
                             _doCloseDetalle();
                         });
                 } else {

@@ -457,10 +457,12 @@ def api_chat_oportunidad(request, opp_id):
             reply_to=reply_obj,
         )
 
+        remitente_nombre = request.user.get_full_name() or request.user.username
+        preview = texto[:100] + ('…' if len(texto) > 100 else '') if texto else '📎 Archivo adjunto'
+
         # Notificar al dueño de la oportunidad si es distinto al que envió
+        notificados = set()
         if opp.usuario and opp.usuario != request.user:
-            remitente_nombre = request.user.get_full_name() or request.user.username
-            preview = texto[:100] + ('…' if len(texto) > 100 else '') if texto else '📎 Archivo adjunto'
             crear_notificacion(
                 usuario_destinatario=opp.usuario,
                 tipo='oportunidad_mensaje',
@@ -469,6 +471,29 @@ def api_chat_oportunidad(request, opp_id):
                 oportunidad=opp,
                 usuario_remitente=request.user,
             )
+            notificados.add(opp.usuario_id)
+
+        # Notificar a usuarios etiquetados con @username
+        if texto:
+            import re
+            from django.contrib.auth.models import User as _User
+            menciones = re.findall(r'@([\w.]+)', texto)
+            for username in set(menciones):
+                try:
+                    mencionado = _User.objects.get(username=username)
+                except _User.DoesNotExist:
+                    continue
+                if mencionado == request.user or mencionado.id in notificados:
+                    continue
+                crear_notificacion(
+                    usuario_destinatario=mencionado,
+                    tipo='oportunidad_mensaje',
+                    titulo=f'Te mencionaron en: {opp.oportunidad}',
+                    mensaje=f'{remitente_nombre}: {preview}',
+                    oportunidad=opp,
+                    usuario_remitente=request.user,
+                )
+                notificados.add(mencionado.id)
 
         return JsonResponse({'success': True, 'mensaje': serializar(m)})
 

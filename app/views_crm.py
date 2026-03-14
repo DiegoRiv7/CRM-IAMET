@@ -520,15 +520,22 @@ def api_crm_table_data(request):
         items = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
         rows = []
         for item in items:
-            # Revisar si tiene actividades vencidas (fecha_limite pasada y no completada)
-            tareas = item.tareas_oportunidad.all()
+            # Revisar si tiene actividades/tareas vencidas (fecha_limite pasada y no completada)
             tiene_vencida = False
             tiene_pendiente = False
-            for t in tareas:
+            # TareaOportunidad (actividades CRM)
+            for t in item.tareas_oportunidad.all():
                 if t.estado != 'completada':
                     tiene_pendiente = True
                     if t.fecha_limite and t.fecha_limite < _now:
                         tiene_vencida = True
+            # Tarea (tareas de ingeniería vinculadas)
+            if not tiene_vencida:
+                ESTADOS_ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
+                for t in item.tareas_generales.filter(estado__in=ESTADOS_ACTIVOS):
+                    if t.fecha_limite and t.fecha_limite < _now:
+                        tiene_vencida = True
+                        break
             es_bitrix = item.tipo_negociacion == 'bitrix_proyecto'
             rows.append({
                 'id': item.id,

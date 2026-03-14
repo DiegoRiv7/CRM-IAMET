@@ -3,36 +3,19 @@
 Registro de todas las actualizaciones, mejoras y correcciones del sistema.
 Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
----
 
-## [2026-03-13] — Widget de oportunidad: mejoras y correcciones
-
-### FIX — Tareas en el widget de oportunidad no abrían al hacer clic
-- Al hacer clic en una tarea dentro del widget de oportunidad, ahora abre correctamente el detalle de esa tarea en el panel lateral
-- Las listas de tareas inline y del tab "Tareas" ahora muestran actividades del tipo correcto (TareaOportunidad)
-- El modal de detalle de tarea ahora aparece sobre el widget de oportunidad (z-index corregido)
-
-### NUEVO — Tarjeta "Actividad Programada" (reemplaza Proyectos Vinculados)
-- Se eliminó la sección "Proyectos Vinculados" del widget de oportunidad
-- En su lugar ahora aparece una tarjeta que muestra la siguiente actividad pendiente (la más próxima)
-- Muestra nombre, fecha y si está vencida (en rojo)
-- Haciendo clic se abre el detalle de la actividad para verla o completarla
-- Si no hay actividad programada, muestra "Sin actividad programada"
-
-### MEJORA — Chat: adjuntar cualquier tipo de archivo
-- El botón de adjuntar en el chat de oportunidad ya no se limita a imágenes
-- Se pueden subir PDFs, documentos Word, Excel, planos DWG, videos, etc.
-- Se pueden seleccionar varios archivos a la vez; se envían como mensajes separados
-- Los archivos no-imagen se muestran como enlace descargable; las imágenes siguen mostrándose como imagen
-- El icono del botón cambió de fotografía a clip para indicar que acepta cualquier archivo
-
----
 
 ## [2026-03-13] — Refactorización, limpieza mayor y correcciones
 
 ### NUEVO — Buscador global
 - Ahora en la barra de arriba viene una lupa para buscar cualquier oportunidad, se puede buscar por nombre, PO, factura y permite buscar cotizaciones por número de cotización.
 - Permite buscar tareas por nombre de la tarea.
+
+### NUEVO — Tarjeta "Actividad Programada" 
+- Ahora aparece una tarjeta que muestra la siguiente actividad pendiente (la más próxima)
+- Muestra nombre, fecha y si está vencida (en rojo)
+- Haciendo clic se abre el detalle de la actividad para verla o completarla
+- Si no hay actividad programada, muestra "Sin actividad programada"
 
 ### NUEVO — Campo PO (Purchase Order)
 - El campo PO en el detalle de oportunidades ahora guarda correctamente la PO
@@ -45,6 +28,23 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 ### MEJORA — Subida de archivos al drive
 - El drive de oportunidades ahora acepta archivos de hasta 100MB (antes el límite era 2.5MB)
 - Se pueden subir planos DWG, videos, archivos pesados de ingeniería sin error
+
+### MEJORA — Tabla de oportunidades
+- Ahora las oportunidades con actividades o tareas vencidas se muestran en rojo y en lo mas alto de la tabla
+- El widget de la oportunidad no se puede cerrar si no tiene una actividad activa
+
+### MEJORA — Chat: adjuntar cualquier tipo de archivo y etiquetar
+- El botón de adjuntar en el chat de oportunidad ya no se limita a imágenes
+- Se pueden subir PDFs, documentos Word, Excel, planos DWG, videos, etc.
+- Se pueden seleccionar varios archivos a la vez; se envían como mensajes separados
+- Los archivos no-imagen se muestran como enlace descargable; las imágenes siguen mostrándose como imagen
+- El icono del botón cambió de fotografía a clip para indicar que acepta cualquier archivo
+- Ahora se puede etiquetar a usuarios en el chat con @nombre
+
+
+### FIX — Tareas en el widget de oportunidad no abrían al hacer clic
+- Al hacer clic en una tarea dentro del widget de oportunidad, ahora abre correctamente el detalle de esa tarea en el panel lateral
+- Antes llamaba al widget de tareas de proyectos de ingeniería por error
 
 ### TÉCNICO — Archivos de proyectos migrados a servidor local
 - Los archivos descargados de Bitrix (10,075 archivos, ~9.7GB) ahora se sirven desde el servidor local
@@ -64,7 +64,7 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 - Comentarios de tareas Bitrix visibles en el sistema
 - Sincronización del campo PO con Bitrix
-- Mejoras visuales pendientes
+- Mejoras visuales pendientes 
 
 ---
 
