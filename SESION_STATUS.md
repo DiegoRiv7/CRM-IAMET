@@ -6,35 +6,65 @@ Lee ESTRUCTURA.md para entender la arquitectura completa del proyecto.
 
 ---
 
-## Rama actual: `pruebas` — en desarrollo activo, pendiente merge a `principal`
+## Rama actual: `pruebas` — commit `d522cfb` subido, pendiente verificar en servidor
 
 ---
 
-## Lo que se completó esta sesión
+## Último commit — `d522cfb` — Bug fixes chat/notificaciones/tareas/oportunidades
 
-### Base de código limpia y profesional ✓
-- `base.html` 1,420 líneas → 197 líneas (CSS/JS a archivos estáticos)
-- Todo el CSS/JS separado en `app/static/` — ver ESTRUCTURA.md
+- **400 en crear negociación**: URL duplicada en `urls.py` tapaba al handler correcto (`api_crear_oportunidad`)
+- **Oportunidades en rojo**: `views_crm` ahora revisa `tareas_generales` (Tarea) además de `tareas_oportunidad` (TareaOportunidad) para detectar vencidas
+- **@mention en chat**: backend parsea `@username` y crea notificaciones a los mencionados
+- **Notificación tipo `oportunidad_mensaje`**: no se marca leída al click, solo cuando el usuario responde
+- **Notificación abre el chat**: al click abre el widget de la oportunidad + panel de conversación
+- **`woMentionHighlight is not defined`**: cambiado a `window.woMentionHighlight` para que funcionen inline handlers
+- **Tareas abren con widget correcto**: revertido a `crmTaskVerDetalle` (no `woVerActividad`)
+- **Archivos en chat**: `accept="*/*"` en input; `woImgFallback()` degrada imagen 404 a link de descarga
+- **Cerrar oportunidad sin actividad**: solo bloquea al responsable (`usuario_id`), no a todos
 
-### Campo PO + Factura en oportunidades ✓
-- Comando: `python manage.py importar_po_bitrix` — importa ambos campos desde Bitrix
-  - PO: campo Bitrix `UF_CRM_1753472612145`
-  - Factura: campo Bitrix `UF_CRM_1753897001662`
-  - Soporta `--dry-run` y `--limit N`
-- Widget de oportunidad: zona PO dividida en dos mitades (PO izquierda | Factura derecha)
-- Búsqueda spotlight también busca por PO
-- Migraciones: `0086_todoitem_po_number`, `0086_todoitem_factura_numero`, `0087_merge_...`
+---
 
-### Dynamic Island — cambios de UI ✓
-- Lupa de búsqueda global visible junto a los filtros
-- Filtros (mes/año/vendedores) movidos a la izquierda
-- Notificaciones: ícono campana
-- Correo: solo texto "CORREO", sin ícono
-- Botón AYUDA eliminado
+## Pasos para aplicar en servidor de pruebas
 
-### Drive de oportunidades ✓
-- Límite subido de 2.5MB a 100MB
-- Acepta DWG, videos y archivos pesados de ingeniería
+```bash
+cd ~/crm-pruebas
+git pull origin pruebas
+
+# Migración 0088 (ImageField → FileField en MensajeOportunidad):
+sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec web python manage.py migrate
+
+# JS modificado → collectstatic obligatorio:
+sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec web python manage.py collectstatic --noinput
+sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restart web
+```
+
+---
+
+## Pendiente verificar en pruebas
+
+1. Crear nueva negociación — debe funcionar sin 400
+2. Oportunidad con tarea vencida — debe aparecer en rojo y hasta arriba en la tabla
+3. @mention en chat — usuario mencionado debe recibir notificación
+4. Notificación de chat — al click debe abrir la oportunidad y el panel de conversación; no desaparecer hasta que el usuario responda
+5. Cerrar oportunidad sin actividad — debe bloquearse solo si el usuario logueado es el responsable
+6. Subir archivo en chat — debe mostrarse como link o imagen correctamente (no rectángulo vacío)
+7. Tareas en widget de oportunidad — al hacer click deben abrir el modal de tarea completo (no el mini widget de actividad)
+
+---
+
+## Problema pendiente: Media 404 en pruebas
+
+Los archivos subidos en el chat dan 404 porque nginx en pruebas apunta a:
+```
+location /media/ { alias /home/iamet2026/crm-pruebas/media/; }
+```
+Pero el volumen Docker `media_pruebas` es un volumen nombrado — nginx del host no puede acceder.
+
+**Solución**: En `docker-compose.pruebas.yml` cambiar `media_pruebas` de volumen nombrado a bind mount:
+```yaml
+- /home/iamet2026/crm-pruebas/media:/app/media
+```
+Luego copiar los archivos existentes del volumen al nuevo path y recargar nginx.
 
 ---
 
@@ -50,49 +80,22 @@ Lee ESTRUCTURA.md para entender la arquitectura completa del proyecto.
 
 ## Pasos para pasar a producción (cuando pruebas esté verificado)
 
-### Paso 1 — Merge en Mac
 ```bash
+# En Mac
 git checkout principal
 git merge pruebas
 git push crm-iamet principal
 git checkout pruebas
-```
 
-### Paso 2 — En servidor de producción
-```bash
+# En servidor producción
 cd ~/crm-iamet
 git pull origin principal
-```
-
-### Paso 3 — Migraciones (HAY campos nuevos: po_number y factura_numero)
-```bash
 sudo docker compose exec web python manage.py migrate
-```
-> Esto agrega `po_number` y `factura_numero` a la tabla de oportunidades.
-> Las migraciones que va a aplicar: `0086_todoitem_po_number`, `0086_todoitem_factura_numero`, `0087_merge_...`
-
-### Paso 4 — Estáticos (HAY archivos JS/CSS nuevos desde la última vez)
-```bash
 sudo docker compose exec web bash -c "rm -rf /app/staticfiles/* && python manage.py collectstatic --noinput"
-```
-> Se usa `rm -rf` primero para evitar que queden versiones viejas cacheadas.
-
-### Paso 5 — Reiniciar
-```bash
 sudo docker compose restart web
 ```
 
-### Paso 6 — Importar PO y Factura desde Bitrix (comando de una sola vez)
-```bash
-sudo docker compose exec web python manage.py importar_po_bitrix
-```
-> Son ~1,197 oportunidades con bitrix_deal_id. Tarda ~4 minutos (0.2s por oportunidad).
-> Puedes dejarlo correr con `screen` si quieres:
-> ```bash
-> screen -S importar
-> sudo docker compose exec web python manage.py importar_po_bitrix
-> # Ctrl+A, D para dejar en background
-> ```
+> Migraciones a aplicar en producción: `0088_mensajeoportunidad_imagen_filefield`
 
 ---
 
