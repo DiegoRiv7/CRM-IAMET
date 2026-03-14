@@ -421,6 +421,7 @@ def api_chat_oportunidad(request, opp_id):
             'id': m.id,
             'texto': texto,
             'imagen_url': m.imagen.url if m.imagen else None,
+            'imagen_nombre': m.imagen.name.split('/')[-1] if m.imagen else None,
             'editado': m.editado,
             'reply_to': reply,
             'fecha': m.fecha.strftime('%d/%m/%Y %H:%M'),
@@ -459,7 +460,7 @@ def api_chat_oportunidad(request, opp_id):
         # Notificar al dueño de la oportunidad si es distinto al que envió
         if opp.usuario and opp.usuario != request.user:
             remitente_nombre = request.user.get_full_name() or request.user.username
-            preview = texto[:100] + ('…' if len(texto) > 100 else '') if texto else '📷 Imagen'
+            preview = texto[:100] + ('…' if len(texto) > 100 else '') if texto else '📎 Archivo adjunto'
             crear_notificacion(
                 usuario_destinatario=opp.usuario,
                 tipo='oportunidad_mensaje',

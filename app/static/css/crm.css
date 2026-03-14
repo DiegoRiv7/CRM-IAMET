@@ -1107,6 +1107,15 @@
         border: 1px solid #DBEAFE;
     }
 
+    #woActividadRecienteCard {
+        transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    #woActividadRecienteCard:hover {
+        background: #F0F4FF;
+        box-shadow: 0 2px 8px rgba(0,82,212,0.08);
+    }
+
     /* Info grid */
     .wo-info-grid {
         display: grid;
@@ -2445,11 +2454,12 @@
         left: 0;
         width: 100vw;
         height: 100vh;
+        /* Higher than .widget-overlay (10000) so it shows above the opp widget */
         background: rgba(0, 0, 0, 0.4);
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 10000;
+        z-index: 10200;
         padding: 1rem;
         backdrop-filter: blur(4px);
     }

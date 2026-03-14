@@ -186,43 +186,14 @@
                                 </div>
                             </div>
 
-                            <!-- Proyectos vinculados mini-card -->
-                            <div class="wo-card" style="padding:0.85rem 1rem;">
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
-                                    <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">PROYECTOS VINCULADOS</span>
-                                    <button type="button" onclick="woToggleProyectosPanel()"
-                                        style="background:none;border:none;cursor:pointer;color:#0052D4;font-size:0.75rem;font-weight:600;padding:0;">
-                                        Ver / gestionar
-                                    </button>
+                            <!-- Actividad más reciente -->
+                            <div class="wo-card" id="woActividadRecienteCard" style="padding:0.85rem 1rem;cursor:pointer;" onclick="woAbrirActividadReciente()">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                                    <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">ACTIVIDAD PROGRAMADA</span>
+                                    <svg width="14" height="14" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
                                 </div>
-                                <div id="woProyectosResumen" style="font-size:0.8rem;color:#86868B;">Cargando...</div>
-                            </div>
-
-                            <!-- Panel expandible de Proyectos -->
-                            <div id="woProyectosPanel" style="display:none;">
-                                <div class="wo-card" style="padding:1rem;">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;">
-                                        <span style="font-size:0.85rem;font-weight:700;color:#1D1D1F;">Proyectos</span>
-                                        <button type="button" onclick="woToggleProyectosPanel()"
-                                            style="background:none;border:none;cursor:pointer;color:#86868B;font-size:1.1rem;line-height:1;">&times;</button>
-                                    </div>
-                                    <div id="woProyectosContainer">
-                                        <div style="text-align:center;padding:24px;color:#9CA3AF;font-size:0.85rem;">Cargando...</div>
-                                    </div>
-                                    <!-- Busqueda manual -->
-                                    <div style="margin-top:1rem;border-top:1px solid #F2F2F7;padding-top:0.85rem;">
-                                        <div style="font-size:0.75rem;font-weight:600;color:#3C3C43;margin-bottom:0.4rem;">Vincular proyecto manualmente</div>
-                                        <div style="display:flex;gap:0.5rem;">
-                                            <input type="text" id="woProyectosBuscarInput" placeholder="Buscar por nombre..."
-                                                style="flex:1;border:1px solid #E5E5EA;border-radius:8px;padding:6px 10px;font-size:0.8rem;outline:none;"
-                                                onkeydown="if(event.key==='Enter')woBuscarProyecto()">
-                                            <button type="button" onclick="woBuscarProyecto()"
-                                                style="background:#0052D4;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:0.8rem;font-weight:600;cursor:pointer;">
-                                                Buscar
-                                            </button>
-                                        </div>
-                                        <div id="woProyectosBuscarResultados" style="margin-top:0.5rem;"></div>
-                                    </div>
+                                <div id="woActividadRecienteBody" style="display:flex;align-items:center;gap:0.5rem;">
+                                    <div style="font-size:0.82rem;color:#9CA3AF;">Cargando...</div>
                                 </div>
                             </div>
 
@@ -412,14 +383,13 @@
                 </svg>
             </button>
 
-            <input type="file" id="woConvFotoInput" accept="image/*" style="display:none;"
+            <input type="file" id="woConvFotoInput" accept="*" multiple style="display:none;"
                 onchange="woConvSendMedia(this.files)">
             <button onclick="document.getElementById('woConvFotoInput').click()"
                 style="width:36px;height:36px;border-radius:50%;background:#F2F2F7;border:1px solid #E5E5EA;display:flex;align-items:center;justify-content:center;color:#86868B;cursor:pointer;flex-shrink:0;"
-                title="Subir Foto">
+                title="Adjuntar archivo">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
                 </svg>
             </button>
             <div style="flex:1;position:relative;">
@@ -738,7 +708,7 @@
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.8rem;">Cargando...</div>';
 
-            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
+            fetch('/app/api/oportunidad/' + oppId + '/tareas/')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var tareas = data.tareas || data.results || [];
@@ -766,7 +736,7 @@
                         var dot = done ? '#34C759' : (venc ? '#FF3B30' : '#FF9500');
                         var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
                         var rowBg = done ? 'background:rgba(52,199,89,0.06);' : (venc ? 'background:rgba(255,59,48,0.07);' : '');
-                        return '<div class="wo-tarea-inline-item" style="' + rowBg + '" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')">' +
+                        return '<div class="wo-tarea-inline-item" style="' + rowBg + '" onclick="if(typeof woVerActividad===\'function\')woVerActividad(' + t.id + ')">' +
                             '<span style="width:6px;height:6px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
                             '<span style="flex:1;font-size:0.78rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (t.titulo || 'Sin título') + '</span>' +
                             '<span style="font-size:0.7rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' +
@@ -788,7 +758,7 @@
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;">Cargando tareas...</div>';
 
-            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
+            fetch('/app/api/oportunidad/' + oppId + '/tareas/')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var tareas = data.tareas || data.results || [];
@@ -814,7 +784,7 @@
                         var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < nowO;
                         var rowBg = done ? 'background:rgba(52,199,89,0.07);' : (venc ? 'background:rgba(255,59,48,0.07);' : '');
                         var tituloStyle = done ? 'text-decoration:line-through;color:#9CA3AF;' : (venc ? 'color:#FF3B30;' : '');
-                        return '<div class="wo-tarea-item" style="' + rowBg + '" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')">' +
+                        return '<div class="wo-tarea-item" style="' + rowBg + '" onclick="if(typeof woVerActividad===\'function\')woVerActividad(' + t.id + ')">' +
                             '<div class="wo-tarea-check ' + (done ? 'done' : '') + '" style="' + (venc ? 'border-color:#FF3B30;' : '') + '"></div>' +
                             '<div class="wo-tarea-info">' +
                             '<div class="wo-tarea-titulo" style="' + tituloStyle + '">' + (t.titulo || 'Sin título') + '</div>' +
@@ -1108,7 +1078,15 @@
 
                         var imgHtml = '';
                         if (m.imagen_url) {
-                            imgHtml = '<img src="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" />';
+                            var ext = (m.imagen_nombre || '').split('.').pop().toLowerCase();
+                            var esImagen = ['jpg','jpeg','png','gif','webp','bmp','svg'].indexOf(ext) !== -1;
+                            if (esImagen) {
+                                imgHtml = '<img src="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" />';
+                            } else {
+                                imgHtml = '<a href="' + woEscape(m.imagen_url) + '" target="_blank" style="display:flex;align-items:center;gap:0.4rem;background:rgba(0,0,0,0.06);border-radius:10px;padding:6px 10px;font-size:0.8rem;font-weight:600;color:#0052D4;text-decoration:none;margin-bottom:0.4rem;">' +
+                                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>' +
+                                    woEscape(m.imagen_nombre || 'Archivo') + '</a>';
+                            }
                         }
 
                         html += '<div style="display:flex;flex-direction:column;align-items:' + align + ';margin-bottom:0.2rem;">';
@@ -1369,33 +1347,48 @@
         window.woConvSendMessage = function (filesObj) {
             var input = document.getElementById('woConvInputText');
             var txt = input.value.trim();
-            var hasFiles = filesObj && filesObj.length > 0;
+            var files = filesObj && filesObj.length > 0 ? Array.from(filesObj) : [];
 
-            if (!txt && !hasFiles) return;
-
-            var fd = new FormData();
-            if (txt) fd.append('texto', txt);
-            if (hasFiles) fd.append('imagen', filesObj[0]);
-            if (_woConvReplyToId) fd.append('reply_to_id', _woConvReplyToId);
+            if (!txt && !files.length) return;
 
             input.value = '';
             woConvCancelReply();
 
-            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCsrf() },
-                body: fd
-            }).then(function () {
-                // Marcar notificaciones de esta oportunidad como leidas (al contestar)
+            var csrf = getCsrf();
+            var oppId = _woCurrentOppId;
+            var replyId = _woConvReplyToId;
+
+            function sendOne(archivo, texto, replyTo) {
+                var fd = new FormData();
+                if (texto) fd.append('texto', texto);
+                if (archivo) fd.append('imagen', archivo);
+                if (replyTo) fd.append('reply_to_id', replyTo);
+                return fetch('/app/api/oportunidad/' + oppId + '/chat/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf },
+                    body: fd
+                });
+            }
+
+            // First request: text + first file (or text alone)
+            var chain = sendOne(files[0] || null, txt, replyId);
+
+            // Subsequent files: each as a separate message
+            for (var i = 1; i < files.length; i++) {
+                (function (f) {
+                    chain = chain.then(function () { return sendOne(f, '', null); });
+                })(files[i]);
+            }
+
+            chain.then(function () {
                 try {
                     fetch('/app/api/marcar-todas-notificaciones-leidas/', {
                         method: 'POST',
-                        headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 'oportunidad_id': _woCurrentOppId })
+                        headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 'oportunidad_id': oppId })
                     }).then(function () { if (typeof notifLoad === 'function') notifLoad(); });
                 } catch (ex) { }
-
-                woCargarNotas(_woCurrentOppId);
+                woCargarNotas(oppId);
             }).catch(console.error);
         };
 
@@ -1406,191 +1399,64 @@
             }
         };
 
-        // ── Proyectos vinculados ──
+        // ── Actividad más reciente ──
+        var _woActividadRecienteId = null;
 
-        window.woToggleProyectosPanel = function () {
-            var panel = document.getElementById('woProyectosPanel');
-            if (!panel) return;
-            var visible = panel.style.display !== 'none';
-            panel.style.display = visible ? 'none' : 'block';
-            if (!visible && _woCurrentOppId) {
-                woCargarProyectos(_woCurrentOppId);
-            }
-        };
+        function woCargarActividadReciente(oppId) {
+            var body = document.getElementById('woActividadRecienteBody');
+            if (!body) return;
+            _woActividadRecienteId = null;
+            body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;">Cargando...</div>';
 
-        window.woCargarProyectos = function (oppId) {
-            var container = document.getElementById('woProyectosContainer');
-            if (!container) return;
-            container.innerHTML = '<div style="text-align:center;padding:24px;color:#9CA3AF;font-size:0.85rem;">Cargando...</div>';
-            fetch('/app/api/oportunidad/' + oppId + '/proyectos/')
-                .then(function (r) { return r.json(); })
-                .then(function (data) { woRenderProyectos(data, oppId); })
-                .catch(function () {
-                    container.innerHTML = '<div style="color:#EF4444;padding:16px;">Error al cargar proyectos</div>';
-                });
-        };
-
-        function woActualizarResumenProyectos(oppId) {
-            var resumen = document.getElementById('woProyectosResumen');
-            if (!resumen || !oppId) return;
-            fetch('/app/api/oportunidad/' + oppId + '/proyectos/')
+            fetch('/app/api/oportunidad/' + oppId + '/tareas/')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    var nc = (data.confirmados || []).length;
-                    var ns = (data.sugerencias || []).length;
-                    if (nc === 0 && ns === 0) {
-                        resumen.textContent = 'Sin proyectos vinculados';
-                    } else if (nc > 0) {
-                        resumen.textContent = nc + ' proyecto' + (nc > 1 ? 's' : '') + ' vinculado' + (nc > 1 ? 's' : '') + (ns > 0 ? ' · ' + ns + ' sugerencia' + (ns > 1 ? 's' : '') : '');
-                    } else {
-                        resumen.textContent = ns + ' sugerencia' + (ns > 1 ? 's' : '') + ' pendiente' + (ns > 1 ? 's' : '');
-                    }
-                })
-                .catch(function () { resumen.textContent = '-'; });
-        }
-
-        function woRenderProyectos(data, oppId) {
-            var container = document.getElementById('woProyectosContainer');
-            if (!container) return;
-            var confirmados = data.confirmados || [];
-            var sugerencias = data.sugerencias || [];
-            var html = '';
-
-            if (confirmados.length > 0) {
-                html += '<div style="font-size:0.72rem;font-weight:700;color:#6B7280;letter-spacing:0.06em;margin-bottom:0.4rem;">VINCULADOS</div>';
-                confirmados.forEach(function (p) {
-                    html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:7px 0;border-bottom:1px solid #F2F2F7;">' +
-                        '<span style="background:#D1FAE5;color:#065F46;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:12px;flex-shrink:0;">✓</span>' +
-                        '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + woEscape(p.nombre) + '">' + woEscape(p.nombre) + '</span>' +
-                        (p.bitrix_group_id ? '<button type="button" onclick="ingenieroAbrirProyecto(' + p.id + ')" style="background:none;border:1px solid #0052D4;color:#0052D4;border-radius:6px;padding:3px 8px;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;">Ver Drive</button>' : '') +
-                        '</div>';
-                });
-            }
-
-            if (sugerencias.length > 0) {
-                html += '<div style="font-size:0.72rem;font-weight:700;color:#6B7280;letter-spacing:0.06em;margin-top:' + (confirmados.length > 0 ? '0.75rem' : '0') + ';margin-bottom:0.4rem;">SUGERENCIAS</div>';
-                sugerencias.forEach(function (p) {
-                    var sc = Math.round(p.score);
-                    var badgeBg, badgeColor;
-                    if (sc >= 85) { badgeBg = '#D1FAE5'; badgeColor = '#065F46'; }
-                    else if (sc >= 70) { badgeBg = '#FEF3C7'; badgeColor = '#92400E'; }
-                    else { badgeBg = '#FFEDD5'; badgeColor = '#9A3412'; }
-                    html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:7px 0;border-bottom:1px solid #F2F2F7;">' +
-                        '<span style="background:' + badgeBg + ';color:' + badgeColor + ';font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:12px;flex-shrink:0;">' + sc + '%</span>' +
-                        '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + woEscape(p.nombre) + '">' + woEscape(p.nombre) + '</span>' +
-                        '<button type="button" onclick="woAccionLink(' + oppId + ',' + p.link_id + ',\'confirmar\')" title="Confirmar" style="background:none;border:1px solid #34C759;color:#34C759;border-radius:6px;padding:3px 7px;font-size:0.75rem;font-weight:700;cursor:pointer;flex-shrink:0;">&#10003;</button>' +
-                        '<button type="button" onclick="woAccionLink(' + oppId + ',' + p.link_id + ',\'rechazar\')" title="Rechazar" style="background:none;border:1px solid #FF3B30;color:#FF3B30;border-radius:6px;padding:3px 7px;font-size:0.75rem;font-weight:700;cursor:pointer;flex-shrink:0;">&#10007;</button>' +
-                        '</div>';
-                });
-            }
-
-            if (confirmados.length === 0 && sugerencias.length === 0) {
-                html = '<div style="text-align:center;padding:20px;color:#9CA3AF;font-size:0.82rem;">Sin proyectos vinculados ni sugerencias.<br>Usa el buscador de abajo para vincular un proyecto.</div>';
-            }
-
-            container.innerHTML = html;
-        }
-
-        window.woAccionLink = function (oppId, linkId, accion) {
-            var csrf = getCsrf ? getCsrf() : (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
-            fetch('/app/api/oportunidad/' + oppId + '/proyectos/' + linkId + '/accion/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify({ accion: accion }),
-            })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (data.success) {
-                        woCargarProyectos(oppId);
-                        woActualizarResumenProyectos(oppId);
-                    }
-                })
-                .catch(console.error);
-        };
-
-        window.woBuscarProyecto = function () {
-            var q = (document.getElementById('woProyectosBuscarInput') || {}).value || '';
-            q = q.trim();
-            var resultados = document.getElementById('woProyectosBuscarResultados');
-            if (!resultados) return;
-            if (!q) { resultados.innerHTML = ''; return; }
-            if (!_woCurrentOppId) return;
-            resultados.innerHTML = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Buscando...</div>';
-            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/proyectos/buscar/?q=' + encodeURIComponent(q))
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    var list = data.results || [];
-                    if (list.length === 0) {
-                        resultados.innerHTML = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin resultados.</div>';
+                    var tareas = data.tareas || data.results || [];
+                    var pendientes = tareas.filter(function (t) { return t.estado !== 'completada'; });
+                    if (!pendientes.length) {
+                        body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic;">Sin actividad programada</div>';
                         return;
                     }
-                    var h = '';
-                    list.forEach(function (p) {
-                        h += '<div style="display:flex;align-items:center;gap:0.5rem;padding:5px 0;border-bottom:1px solid #F9F9F9;">' +
-                            '<span style="flex:1;font-size:0.8rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + woEscape(p.nombre) + '">' + woEscape(p.nombre) + '</span>' +
-                            '<button type="button" onclick="woConfirmarVincularProyecto(' + p.id + ',\'' + woEscape(p.nombre).replace(/'/g,'&#39;') + '\')" style="background:#0052D4;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;">Vincular</button>' +
-                            '</div>';
+                    // Order by fecha_limite ascending, pick earliest
+                    pendientes.sort(function (a, b) {
+                        var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                        var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                        return aT - bT;
                     });
-                    resultados.innerHTML = h;
+                    var t = pendientes[0];
+                    _woActividadRecienteId = t.id;
+                    var now = new Date();
+                    var venc = t.fecha_limite && new Date(t.fecha_limite) < now;
+                    var color = venc ? '#FF3B30' : '#1D1D1F';
+                    var fechaStr = t.fecha_limite
+                        ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                        : 'Sin fecha';
+                    body.innerHTML =
+                        '<span style="width:8px;height:8px;border-radius:50%;background:' + (venc ? '#FF3B30' : '#FF9500') + ';flex-shrink:0;display:inline-block;"></span>' +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-size:0.82rem;font-weight:600;color:' + color + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(t.titulo || 'Sin título') + '</div>' +
+                            '<div style="font-size:0.72rem;color:' + (venc ? '#FF3B30' : '#86868B') + ';">' + fechaStr + (venc ? ' · Vencida' : '') + '</div>' +
+                        '</div>';
                 })
-                .catch(function () { resultados.innerHTML = '<div style="font-size:0.78rem;color:#EF4444;">Error al buscar.</div>'; });
-        };
-
-        window.woConfirmarVincularProyecto = function (proyectoId, nombreProyecto) {
-            woDialogConfirm(
-                'Vincular proyecto',
-                'Se vinculará "' + nombreProyecto + '" a esta oportunidad.\nSu drive y tareas quedarán ligados automáticamente. ¿Confirmar?',
-                null,
-                function () { woVincularProyecto(proyectoId); }
-            );
-        };
-
-        window.woVincularProyecto = function (proyectoId) {
-            if (!_woCurrentOppId) {
-                woDialogConfirm('Error', 'No hay oportunidad seleccionada (_woCurrentOppId vacío)', null, null, true);
-                return;
-            }
-            var csrf = getCsrf ? getCsrf() : (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
-            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/proyectos/buscar/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify({ proyecto_id: proyectoId }),
-            })
-                .then(function (r) {
-                    if (!r.ok) return r.json().then(function(d){ throw new Error(d.error || 'HTTP ' + r.status); });
-                    return r.json();
-                })
-                .then(function (data) {
-                    if (data.success) {
-                        document.getElementById('woProyectosBuscarInput').value = '';
-                        document.getElementById('woProyectosBuscarResultados').innerHTML = '';
-                        woCargarProyectos(_woCurrentOppId);
-                        woActualizarResumenProyectos(_woCurrentOppId);
-                        if (data.tareas_vinculadas > 0) {
-                            woCargarTareasInline(_woCurrentOppId);
-                        }
-                    } else {
-                        woDialogConfirm('Error al vincular', data.error || 'Respuesta inesperada del servidor', null, null, true);
-                    }
-                })
-                .catch(function(e) {
-                    woDialogConfirm('Error al vincular', e.message || 'Error de red', null, null, true);
+                .catch(function () {
+                    body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;">-</div>';
                 });
+        }
+
+        window.woAbrirActividadReciente = function () {
+            if (_woActividadRecienteId && typeof woVerActividad === 'function') {
+                woVerActividad(_woActividadRecienteId);
+            } else if (typeof woAbrirWidgetCrearActividad === 'function') {
+                woAbrirWidgetCrearActividad();
+            }
         };
 
-        // Hook: when detalle loads an opp, store its id and load inline tasks
+        // Hook: when detalle loads an opp, store its id and load inline tasks + actividad reciente
         var origWoSetCurrentOppId = window.woSetCurrentOppId;
         window.woSetCurrentOppId = function (id) {
             _woCurrentOppId = id;
             woCargarTareasInline(id);
-            woActualizarResumenProyectos(id);
-            // Reset proyectos panel state
-            var panel = document.getElementById('woProyectosPanel');
-            if (panel) panel.style.display = 'none';
-            var buscarInput = document.getElementById('woProyectosBuscarInput');
-            if (buscarInput) buscarInput.value = '';
-            var buscarRes = document.getElementById('woProyectosBuscarResultados');
-            if (buscarRes) buscarRes.innerHTML = '';
+            woCargarActividadReciente(id);
         };
 
         function woEscape(str) {
