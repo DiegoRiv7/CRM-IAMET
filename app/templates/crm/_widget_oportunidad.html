@@ -332,7 +332,13 @@
 <!-- ═══ WIDGET: CONVERSACION ═══ -->
 <div class="widget-overlay" id="widgetOppConversacion" style="z-index:10010;display:none;">
     <div class="widget-card widget-card-md"
-        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;">
+        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;position:relative;">
+        <!-- Drop overlay -->
+        <div id="woConvDropZone" style="display:none;position:absolute;inset:0;background:rgba(0,82,212,0.06);border:3px dashed #0052D4;border-radius:12px;z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none;">
+            <svg width="52" height="52" fill="none" stroke="#0052D4" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            <div style="font-size:1rem;font-weight:700;color:#0052D4;">Suelta los archivos aquí</div>
+            <div style="font-size:0.82rem;color:#4f6ef7;">Se enviarán en la conversación</div>
+        </div>
         <div class="wo-header"
             style="border-bottom:1px solid #E5E5EA;background:#fff;padding:1.1rem 1.5rem;flex-shrink:0;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -1086,9 +1092,32 @@
                             if (esImagen) {
                                 imgHtml = '<img src="' + woEscape(m.imagen_url) + '" data-filename="' + woEscape(m.imagen_nombre || 'Imagen') + '" data-url="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" onerror="woImgFallback(this)" />';
                             } else {
-                                imgHtml = '<a href="' + woEscape(m.imagen_url) + '" target="_blank" style="display:flex;align-items:center;gap:0.4rem;background:rgba(0,0,0,0.06);border-radius:10px;padding:6px 10px;font-size:0.8rem;font-weight:600;color:#0052D4;text-decoration:none;margin-bottom:0.4rem;">' +
-                                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>' +
-                                    woEscape(m.imagen_nombre || 'Archivo') + '</a>';
+                                var _fname = m.imagen_nombre || 'Archivo';
+                                var _fext = _fname.split('.').pop().toLowerCase();
+                                var _typeLabel, _typeColor, _typeBg;
+                                if (_fext === 'pdf') { _typeLabel = 'PDF'; _typeColor = '#EF4444'; _typeBg = '#FEF2F2'; }
+                                else if (_fext === 'doc' || _fext === 'docx') { _typeLabel = 'DOC'; _typeColor = '#2563EB'; _typeBg = '#EFF6FF'; }
+                                else if (_fext === 'xls' || _fext === 'xlsx') { _typeLabel = 'XLS'; _typeColor = '#16A34A'; _typeBg = '#F0FDF4'; }
+                                else if (_fext === 'ppt' || _fext === 'pptx') { _typeLabel = 'PPT'; _typeColor = '#EA580C'; _typeBg = '#FFF7ED'; }
+                                else if (_fext === 'zip' || _fext === 'rar' || _fext === '7z') { _typeLabel = 'ZIP'; _typeColor = '#9333EA'; _typeBg = '#FAF5FF'; }
+                                else if (_fext === 'mp4' || _fext === 'mov' || _fext === 'avi' || _fext === 'mkv') { _typeLabel = 'VID'; _typeColor = '#0891B2'; _typeBg = '#ECFEFF'; }
+                                else if (_fext === 'dwg' || _fext === 'dxf') { _typeLabel = 'CAD'; _typeColor = '#B45309'; _typeBg = '#FFFBEB'; }
+                                else { _typeLabel = (_fext.length <= 4 ? _fext.toUpperCase() : 'FILE'); _typeColor = '#6B7280'; _typeBg = '#F3F4F6'; }
+                                var _cardBg = isMine ? 'rgba(255,255,255,0.14)' : '#fff';
+                                var _cardBorder = isMine ? 'rgba(255,255,255,0.25)' : '#E5E7EB';
+                                var _nameColor = isMine ? '#fff' : '#1D1D1F';
+                                var _subColor = isMine ? 'rgba(255,255,255,0.65)' : '#9CA3AF';
+                                var _arrowColor = isMine ? 'rgba(255,255,255,0.7)' : '#9CA3AF';
+                                imgHtml = '<a href="' + woEscape(m.imagen_url) + '" target="_blank" style="display:flex;align-items:center;gap:12px;background:' + _cardBg + ';border:1px solid ' + _cardBorder + ';border-radius:14px;padding:10px 14px;text-decoration:none;margin-bottom:4px;max-width:280px;transition:opacity .15s;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">' +
+                                    '<div style="width:42px;height:42px;border-radius:10px;background:' + _typeBg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<span style="font-size:0.58rem;font-weight:800;color:' + _typeColor + ';letter-spacing:0.04em;">' + _typeLabel + '</span>' +
+                                    '</div>' +
+                                    '<div style="min-width:0;flex:1;">' +
+                                    '<div style="font-size:0.83rem;font-weight:600;color:' + _nameColor + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">' + woEscape(_fname) + '</div>' +
+                                    '<div style="font-size:0.72rem;color:' + _subColor + ';margin-top:2px;">Toca para abrir</div>' +
+                                    '</div>' +
+                                    '<svg width="15" height="15" fill="none" stroke="' + _arrowColor + '" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
+                                    '</a>';
                             }
                         }
 
@@ -1401,6 +1430,41 @@
                 document.getElementById('woConvFotoInput').value = '';
             }
         };
+
+        // ── Drag-drop en conversación ──
+        (function () {
+            var convPanel = document.getElementById('widgetOppConversacion');
+            var dropZone = document.getElementById('woConvDropZone');
+            if (!convPanel || !dropZone) return;
+            var _dragCount = 0;
+
+            function _hasFiles(e) {
+                return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1;
+            }
+
+            convPanel.addEventListener('dragenter', function (e) {
+                if (!_hasFiles(e)) return;
+                e.preventDefault();
+                _dragCount++;
+                dropZone.style.display = 'flex';
+            });
+            convPanel.addEventListener('dragover', function (e) {
+                if (_hasFiles(e)) e.preventDefault();
+            });
+            convPanel.addEventListener('dragleave', function (e) {
+                _dragCount--;
+                if (_dragCount <= 0) { _dragCount = 0; dropZone.style.display = 'none'; }
+            });
+            convPanel.addEventListener('drop', function (e) {
+                e.preventDefault();
+                _dragCount = 0;
+                dropZone.style.display = 'none';
+                var files = e.dataTransfer.files;
+                if (files && files.length && _woCurrentOppId) {
+                    woConvSendMessage(files);
+                }
+            });
+        })();
 
         // ── Actividad más reciente ──
         var _woActividadRecienteId = null;
