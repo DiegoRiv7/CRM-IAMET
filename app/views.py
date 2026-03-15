@@ -32,4 +32,5 @@ from .views_tarea_comentarios import (
     api_agregar_comentario_tarea,
     api_editar_comentario_tarea,
     api_eliminar_comentario_tarea,
+    api_tarea_archivo,
 )

@@ -87,7 +87,7 @@ def api_comentarios_tarea(request, tarea_id):
                     {
                         'id': archivo.id,
                         'nombre_original': archivo.nombre_original,
-                        'url': archivo.archivo.url,
+                        'url': f'/app/api/tarea-archivo/{archivo.id}/',
                         'tamaño': archivo.tamaño,
                         'tipo_contenido': archivo.tipo_contenido
                     } for archivo in comentario.archivos.all()
@@ -155,7 +155,7 @@ def api_agregar_comentario_tarea(request, tarea_id):
                 archivos_data.append({
                     'id': archivo.id,
                     'nombre_original': archivo.nombre_original,
-                    'url': archivo.archivo.url,
+                    'url': f'/app/api/tarea-archivo/{archivo.id}/',
                     'tamaño': archivo.tamaño,
                     'tipo_contenido': archivo.tipo_contenido
                 })
@@ -295,8 +295,35 @@ def api_eliminar_comentario_tarea(request, comentario_id):
             return JsonResponse({'error': 'Sin permisos para eliminar este comentario'}, status=403)
         
         comentario.delete()
-        
+
         return JsonResponse({'success': True, 'message': 'Comentario eliminado correctamente'})
-        
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+def api_tarea_archivo(request, archivo_id):
+    """Sirve archivos adjuntos de comentarios de tarea directamente desde Django (bypassa nginx media)."""
+    import mimetypes
+    from django.http import FileResponse, Http404
+    from .models import TareaArchivo
+    archivo = get_object_or_404(TareaArchivo, id=archivo_id)
+    tarea = archivo.comentario.tarea
+    user_can_view = (
+        request.user == tarea.creado_por or
+        request.user == tarea.asignado_a or
+        request.user in tarea.participantes.all() or
+        request.user in tarea.observadores.all() or
+        request.user.is_superuser
+    )
+    if not user_can_view:
+        raise Http404
+    try:
+        f = archivo.archivo.open('rb')
+    except Exception:
+        raise Http404
+    content_type, _ = mimetypes.guess_type(archivo.nombre_original or '')
+    response = FileResponse(f, content_type=content_type or 'application/octet-stream')
+    filename = archivo.nombre_original or archivo.archivo.name.split('/')[-1]
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response

@@ -92,6 +92,7 @@ urlpatterns = [
     path('api/tarea/<int:tarea_id>/comentarios/agregar/', views.api_agregar_comentario_tarea, name='api_agregar_comentario_tarea'),
     path('api/comentario-tarea/<int:comentario_id>/editar/', views.api_editar_comentario_tarea, name='api_editar_comentario_tarea'),
     path('api/comentario-tarea/<int:comentario_id>/eliminar/', views.api_eliminar_comentario_tarea, name='api_eliminar_comentario_tarea'),
+    path('api/tarea-archivo/<int:archivo_id>/', views.api_tarea_archivo, name='api_tarea_archivo'),
 
     # ── APIs CRM ──────────────────────────────────────────────────────────────
     path('api/crm-table-data/', views.api_crm_table_data, name='api_crm_table_data'),

@@ -3290,6 +3290,22 @@
                     descEl2.onclick = crmTaskEditarDescripcion;
                 }
             }
+
+            // Permitir al responsable (no creador, no su) cambiar la fecha_limite via su propio modal
+            var _curIdFl = _CRM_CONFIG.userId;
+            var _isSuFl = _CRM_CONFIG.isSuperuser;
+            var _creadorIdFl = tarea.creado_por_data ? tarea.creado_por_data.id : null;
+            var _respIdFl = tarea.responsable_data ? tarea.responsable_data.id : null;
+            var _esSoloRespFl = !_isSuFl && _curIdFl !== _creadorIdFl && _curIdFl === _respIdFl;
+            if (_esSoloRespFl) {
+                var fechaElResp = document.getElementById('crm-task-fecha-limite');
+                if (fechaElResp && fechaElResp.tagName === 'SPAN') {
+                    fechaElResp.style.cursor = 'pointer';
+                    fechaElResp.style.textDecoration = 'underline dotted';
+                    fechaElResp.title = 'Clic para solicitar cambio de fecha';
+                    fechaElResp.onclick = function () { crmTaskResponsableModalFecha(tarea.fecha_limite); };
+                }
+            }
         }
 
         function crmTaskEditarDescripcion() {
@@ -3527,6 +3543,78 @@
             }
         }
 
+        function crmTaskResponsableModalFecha(currentIso) {
+            var dlgId = 'crmRespFechaDialog';
+            var existing = document.getElementById(dlgId);
+            if (existing) existing.remove();
+
+            // Pre-fill with current date
+            var currentLocal = '';
+            if (currentIso) {
+                try {
+                    var d = new Date(currentIso);
+                    currentLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                } catch (e) {}
+            }
+
+            var dlg = document.createElement('div');
+            dlg.id = dlgId;
+            dlg.style.cssText = 'position:fixed;inset:0;z-index:10500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);';
+            dlg.innerHTML = [
+                '<div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.22);">',
+                '<h3 style="margin:0 0 16px;font-size:1rem;font-weight:700;color:#1a1a2e;">Cambiar fecha límite</h3>',
+                '<label style="display:block;font-size:0.82rem;font-weight:600;color:#555;margin-bottom:6px;">Nueva fecha y hora</label>',
+                '<input type="datetime-local" id="crmRespFechaInput" style="width:100%;border:1.5px solid #E0E0E0;border-radius:8px;padding:8px 10px;font-size:0.9rem;outline:none;box-sizing:border-box;margin-bottom:18px;" value="' + currentLocal + '">',
+                '<p style="margin:0 0 10px;font-size:.85rem;font-weight:600;color:#333;">¿Por qué cambias la fecha límite?</p>',
+                '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px;">',
+                '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px;border:1.5px solid #e0e0e0;border-radius:8px;" class="crm-razon-label">',
+                '<input type="radio" name="crmRespRazon" value="responsable" style="margin-top:2px;accent-color:#4f6ef7;">',
+                '<span style="font-size:.85rem;color:#333;"><strong>No logré terminar a tiempo</strong><br><span style="color:#888;font-size:.8rem;">El responsable no pudo completar la tarea dentro del plazo.</span></span></label>',
+                '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px;border:1.5px solid #e0e0e0;border-radius:8px;" class="crm-razon-label">',
+                '<input type="radio" name="crmRespRazon" value="creador" style="margin-top:2px;accent-color:#4f6ef7;">',
+                '<span style="font-size:.85rem;color:#333;"><strong>El creador dio poco tiempo</strong><br><span style="color:#888;font-size:.8rem;">No se consideró la carga de trabajo o se asignó un plazo muy corto.</span></span></label>',
+                '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px;border:1.5px solid #e0e0e0;border-radius:8px;" class="crm-razon-label">',
+                '<input type="radio" name="crmRespRazon" value="externo" style="margin-top:2px;accent-color:#4f6ef7;">',
+                '<span style="font-size:.85rem;color:#333;"><strong>Factor externo</strong><br><span style="color:#888;font-size:.8rem;">El cliente, proveedor u otro factor ajeno causó el retraso.</span></span></label>',
+                '</div>',
+                '<div style="display:flex;gap:10px;justify-content:flex-end;">',
+                '<button id="crmRespFechaCancel" style="padding:8px 18px;border:1.5px solid #ddd;border-radius:7px;background:#fff;cursor:pointer;font-size:.88rem;color:#555;">Cancelar</button>',
+                '<button id="crmRespFechaConfirm" style="padding:8px 20px;border:none;border-radius:7px;background:#4f6ef7;color:#fff;cursor:pointer;font-size:.88rem;font-weight:600;">Guardar cambio</button>',
+                '</div></div>'
+            ].join('');
+
+            document.body.appendChild(dlg);
+
+            // Highlight selected radio
+            dlg.querySelectorAll('input[name="crmRespRazon"]').forEach(function (inp) {
+                inp.addEventListener('change', function () {
+                    dlg.querySelectorAll('.crm-razon-label').forEach(function (l) { l.style.borderColor = '#e0e0e0'; });
+                    if (inp.checked) inp.closest('.crm-razon-label').style.borderColor = '#4f6ef7';
+                });
+            });
+
+            // Date input focus style
+            var fechaInp = document.getElementById('crmRespFechaInput');
+            if (fechaInp) {
+                fechaInp.addEventListener('focus', function () { this.style.borderColor = '#4f6ef7'; });
+                fechaInp.addEventListener('blur', function () { this.style.borderColor = '#E0E0E0'; });
+            }
+
+            document.getElementById('crmRespFechaCancel').onclick = function () { dlg.remove(); };
+            dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.remove(); });
+
+            document.getElementById('crmRespFechaConfirm').onclick = function () {
+                var fechaInp2 = document.getElementById('crmRespFechaInput');
+                var sel = dlg.querySelector('input[name="crmRespRazon"]:checked');
+                if (!fechaInp2 || !fechaInp2.value) { showToast('Selecciona la nueva fecha y hora', 'error'); return; }
+                if (!sel) { showToast('Selecciona una razón para continuar', 'error'); return; }
+                dlg.remove();
+                // Set edits and call save directly
+                _crmTaskEdits.fecha_limite = fechaInp2.value;
+                _crmTaskDoGuardar(sel.value);
+            };
+        }
+
         function crmTaskCancelarEdicion() {
             crmTaskHideSaveBar();
             // Restaurar desde los datos en memoria sin fetch
@@ -3607,7 +3695,7 @@
         function crmTaskAbrirOportunidad() {
             if (!_crmTaskCurrentOppId) return;
             // Elevar el overlay de oportunidad por encima del modal de tarea
-            var dl = document.getElementById('detalleOverlay');
+            var dl = document.getElementById('widgetDetalle');
             if (dl) dl.style.zIndex = '10300';
             if (typeof openDetalle === 'function') openDetalle(_crmTaskCurrentOppId);
         }
@@ -4313,6 +4401,7 @@
         window.crmCommentEditar = crmCommentEditar;
         window.crmCommentEliminar = crmCommentEliminar;
         window.crmCommentConfirmCancel = crmCommentConfirmCancel;
+        window.crmTaskResponsableModalFecha = crmTaskResponsableModalFecha;
 
     });
 

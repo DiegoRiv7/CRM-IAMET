@@ -219,7 +219,8 @@
 
     const TIPOS_TAREA = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida',
         'tarea_opp_asignada', 'tarea_opp_comentario', 'actividad_por_vencer', 'actividad_vencida',
-        'comentario_oportunidad', 'oportunidad_mensaje', 'programacion_proyecto'];
+        'comentario_oportunidad', 'oportunidad_mensaje', 'programacion_proyecto',
+        'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada'];
     const TIPOS_MURO = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'];
     const TIPOS_USUARIO = ['rendimiento_bajo', 'solicitud_cambio_perfil'];
 
@@ -303,7 +304,8 @@
         const icons = {
             'tarea_participante': '✅', 'tarea_observador': '👁️', 'tarea_asignada': '📌', 'tarea_por_vencer': '⏳', 'tarea_vencida': '⚠️',
             'tarea_opp_asignada': '✅', 'tarea_opp_comentario': '💬', 'comentario_oportunidad': '💼', 'oportunidad_mensaje': '💬', 'actividad_por_vencer': '⏳', 'actividad_vencida': '⚠️',
-            'muro_post': '📢', 'muro_mencion': '@', 'mencion': '@', 'respuesta': '↩️', 'rendimiento_bajo': '👤', 'solicitud_cambio_perfil': '✍️'
+            'muro_post': '📢', 'muro_mencion': '@', 'mencion': '@', 'respuesta': '↩️', 'rendimiento_bajo': '👤', 'solicitud_cambio_perfil': '✍️',
+            'tarea_mencion': '@', 'tarea_comentario': '💬', 'tarea_reprogramada': '📅'
         };
 
         container.innerHTML = filtered.map(n => {
