@@ -1186,10 +1186,8 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
-                if (_crmTableDirty) {
-                    _crmTableDirty = false;
-                    refreshCrmTable();
-                }
+                _crmTableDirty = false;
+                refreshCrmTable();
             }
 
             function _showMissingActivityWarning() {

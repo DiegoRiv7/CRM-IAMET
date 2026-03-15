@@ -1677,9 +1677,9 @@
                     woDialogConfirm('Error', 'La hora de fin debe ser posterior a la de inicio', null, null, true);
                     return;
                 }
-                // Enviar como hora local de Tijuana (UTC-8) para evitar desfase de zona horaria
-                cal_inicio = f_date + 'T' + t_ini + ':00-08:00';
-                cal_fin = f_date + 'T' + t_fin + ':00-08:00';
+                // Enviar sin offset: el backend localiza con America/Tijuana (maneja DST correctamente)
+                cal_inicio = f_date + 'T' + t_ini + ':00';
+                cal_fin = f_date + 'T' + t_fin + ':00';
             } else if (!f_date) {
                 woDialogConfirm('Error', 'La fecha es obligatoria', null, null, true);
                 return;
