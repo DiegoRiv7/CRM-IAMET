@@ -220,9 +220,9 @@
     const TIPOS_TAREA = ['tarea_participante', 'tarea_observador', 'tarea_asignada', 'tarea_por_vencer', 'tarea_vencida',
         'tarea_opp_asignada', 'tarea_opp_comentario', 'actividad_por_vencer', 'actividad_vencida',
         'comentario_oportunidad', 'oportunidad_mensaje', 'programacion_proyecto',
-        'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada'];
+        'tarea_mencion', 'tarea_comentario'];
     const TIPOS_MURO = ['muro_post', 'muro_mencion', 'mencion', 'respuesta'];
-    const TIPOS_USUARIO = ['rendimiento_bajo', 'solicitud_cambio_perfil'];
+    const TIPOS_USUARIO = ['rendimiento_bajo', 'solicitud_cambio_perfil', 'tarea_reprogramada'];
 
     function notifOUpdateCounts() {
         let counts = { tareas: 0, muro: 0, all: 0 };
@@ -429,6 +429,8 @@
             }, 600);
         } else if (tiposConv.includes(tipo) && oppId && typeof window.openDetalle === 'function') {
             window.openDetalle(oppId);
+        } else if (tipo === 'tarea_reprogramada' && tareaId && typeof window.crmTaskVerDetalle === 'function') {
+            window.crmTaskVerDetalle(tareaId);
         } else if (isTarea && tareaId && typeof window.crmTaskVerDetalle === 'function') {
             window.crmTaskVerDetalle(tareaId);
         } else if (isMuro && typeof window.muroAbrir === 'function') {
