@@ -6,21 +6,68 @@ Lee ESTRUCTURA.md para entender la arquitectura completa del proyecto.
 
 ---
 
-## Rama actual: `pruebas` — commit `d522cfb` subido, pendiente verificar en servidor
+## Rama actual: `pruebas` — sesión activa 14 de marzo 2026
 
 ---
 
-## Último commit — `d522cfb` — Bug fixes chat/notificaciones/tareas/oportunidades
+## Último commit aplicado en pruebas: `eb73fd8`
 
-- **400 en crear negociación**: URL duplicada en `urls.py` tapaba al handler correcto (`api_crear_oportunidad`)
-- **Oportunidades en rojo**: `views_crm` ahora revisa `tareas_generales` (Tarea) además de `tareas_oportunidad` (TareaOportunidad) para detectar vencidas
-- **@mention en chat**: backend parsea `@username` y crea notificaciones a los mencionados
-- **Notificación tipo `oportunidad_mensaje`**: no se marca leída al click, solo cuando el usuario responde
-- **Notificación abre el chat**: al click abre el widget de la oportunidad + panel de conversación
-- **`woMentionHighlight is not defined`**: cambiado a `window.woMentionHighlight` para que funcionen inline handlers
-- **Tareas abren con widget correcto**: revertido a `crmTaskVerDetalle` (no `woVerActividad`)
-- **Archivos en chat**: `accept="*/*"` en input; `woImgFallback()` degrada imagen 404 a link de descarga
-- **Cerrar oportunidad sin actividad**: solo bloquea al responsable (`usuario_id`), no a todos
+Bugs corregidos en esta sesión (commits d522cfb → eb73fd8):
+- Fix 400 crear negociación (URL duplicada en urls.py)
+- Fix búsqueda tabla (cliente__nombre → cliente__nombre_empresa)
+- Fix opp desaparece al recargar (history.replaceState al crear)
+- Fix 403 archivos chat (nuevo endpoint /api/chat-media/<id>/ sirve desde Django)
+- Fix cliente duplicado al crear opp (get_or_create → filter().first())
+- Fix tarea sin título (api_tarea_detalle bloqueaba por permisos)
+- Fix @mention backend, notificaciones, woAbrirGestorConversacion
+- Fix woMentionHighlight en window, tareas abren con crmTaskVerDetalle
+- Fix closeDetalleWidget pasa MouseEvent como forceClose → bypass del check
+- Fix woCargarTareasInline expuesta en window para refresh tras crear tarea
+- Fix orden tabla: más recientes primero, vencidas siempre arriba
+
+---
+
+## Bugs pendientes de corregir (próxima sesión)
+
+### 1. Actividad agendada no se refleja en widget sin recargar
+- Al agendar una actividad desde el widget de creación (woCrearActividad), el
+  card "ACTIVIDAD PROGRAMADA" no se actualiza automáticamente.
+- Fix: después del POST exitoso en el handler de crear actividad, llamar
+  `woCargarActividadReciente(_woCurrentOppId)` para refrescar el card.
+- También verificar que `window.woCargarActividadReciente` esté expuesta en window.
+- Archivo: `_widget_oportunidad.html` — buscar el submit de la actividad y agregar el refresh.
+
+### 2. Hora del calendario 1 hora adelantada — zona horaria Tijuana
+- El servidor usa UTC, la app muestra 1 hora de diferencia vs Tijuana (UTC-8 o UTC-7 en verano).
+- Fix en settings.py: `TIME_ZONE = 'America/Tijuana'` (ya debe estar, verificar).
+- Fix en frontend: al crear actividades y tareas, enviar la hora local del usuario
+  o convertir correctamente. El problema puede estar en cómo se guarda la fecha_inicio
+  de TareaOportunidad.
+- Revisar `api_crear_actividad` / `api_tareas_oportunidad POST` en views_proyectos.py
+  para ver cómo parsea las fechas. Usar `timezone.make_aware(dt, timezone.get_current_timezone())`
+  en lugar de asumir UTC.
+
+### 3. Actividad creada muestra "Sin fecha" en widget
+- La actividad se guarda con fecha pero el card la muestra "Sin fecha límite".
+- Revisar `woCargarActividadReciente` en `_widget_oportunidad.html` — qué campo usa para
+  mostrar la fecha (`fecha_inicio`, `fecha_limite`, `fecha`).
+- Revisar qué devuelve la API `/app/api/oportunidad/<id>/tareas/` (TareaOportunidad).
+
+### 4. Opp con tarea vencida no sale roja en tabla (aún)
+- El fix de DateField vs datetime se aplicó pero puede necesitar verificar en pruebas.
+- La Tarea "prueba de rojo" tiene fecha_limite = 14 mar. Con el fix `t.fecha_limite <= _today`
+  debería aparecer roja. Si sigue sin funcionar, verificar que el pull y collectstatic
+  se aplicaron correctamente.
+- También verificar que `fecha_ts` esté en el dict de rows (línea ~550 views_crm.py).
+
+### 5. Opp no aparece en filtro "Marzo" — aparece solo en "Todos"
+- La opp "mas pruebas para probar" fue creada cuando el widget negociación tenía
+  mes_cierre = "todos" o un mes incorrecto.
+- En `api_crear_oportunidad`: `mes_cierre = data.get('mes_cierre', mes_actual)` y
+  `anio_cierre = now_dt.year`. Si el form `wfMesCierre` envía "todos", la opp queda
+  con mes_cierre="todos" y no aparece en filtro de marzo.
+- Fix: en `api_crear_oportunidad`, si `mes_cierre == 'todos'` o vacío, usar `mes_actual`.
+- Archivo: `app/views_crm.py` línea ~2424.
 
 ---
 
@@ -29,52 +76,9 @@ Lee ESTRUCTURA.md para entender la arquitectura completa del proyecto.
 ```bash
 cd ~/crm-pruebas
 git pull origin pruebas
-
-# Migración 0088 (ImageField → FileField en MensajeOportunidad):
-sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec web python manage.py migrate
-
-# JS modificado → collectstatic obligatorio:
 sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec web python manage.py collectstatic --noinput
 sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restart web
 ```
-
----
-
-## Pendiente verificar en pruebas
-
-1. Crear nueva negociación — debe funcionar sin 400
-2. Oportunidad con tarea vencida — debe aparecer en rojo y hasta arriba en la tabla
-3. @mention en chat — usuario mencionado debe recibir notificación
-4. Notificación de chat — al click debe abrir la oportunidad y el panel de conversación; no desaparecer hasta que el usuario responda
-5. Cerrar oportunidad sin actividad — debe bloquearse solo si el usuario logueado es el responsable
-6. Subir archivo en chat — debe mostrarse como link o imagen correctamente (no rectángulo vacío)
-7. Tareas en widget de oportunidad — al hacer click deben abrir el modal de tarea completo (no el mini widget de actividad)
-
----
-
-## Problema pendiente: Media 404 en pruebas
-
-Los archivos subidos en el chat dan 404 porque nginx en pruebas apunta a:
-```
-location /media/ { alias /home/iamet2026/crm-pruebas/media/; }
-```
-Pero el volumen Docker `media_pruebas` es un volumen nombrado — nginx del host no puede acceder.
-
-**Solución**: En `docker-compose.pruebas.yml` cambiar `media_pruebas` de volumen nombrado a bind mount:
-```yaml
-- /home/iamet2026/crm-pruebas/media:/app/media
-```
-Luego copiar los archivos existentes del volumen al nuevo path y recargar nginx.
-
----
-
-## Pendiente próxima sesión
-
-### 1. Comentarios de tareas Bitrix
-- Crear management command `importar_comentarios_bitrix`
-- Los comentarios deben ir a `TareaComentario` (NO a la descripción de tarea)
-- Solo los últimos 5 meses
-- Similar al patrón de `importar_po_bitrix`
 
 ---
 
@@ -95,7 +99,27 @@ sudo docker compose exec web bash -c "rm -rf /app/staticfiles/* && python manage
 sudo docker compose restart web
 ```
 
-> Migraciones a aplicar en producción: `0088_mensajeoportunidad_imagen_filefield`
+> Migración pendiente: `0088_mensajeoportunidad_imagen_filefield`
+
+---
+
+## Contexto de modelos clave
+- `TareaOportunidad` — actividades CRM del widget (DateTimeField para fecha_limite)
+  endpoint: `/app/api/oportunidad/<id>/tareas/` (GET/POST)
+  opened via: `woVerActividad(id)`
+- `Tarea` — tareas de ingeniería (DateField para fecha_limite)
+  endpoint: `/app/api/tareas/?oportunidad_id=X`
+  opened via: `crmTaskVerDetalle(id)`
+- `MensajeOportunidad` — chat de la oportunidad, campo `imagen` es FileField (migración 0088)
+
+## Archivos clave modificados esta sesión
+- `app/urls.py` — eliminada URL duplicada crear-oportunidad, añadido /api/chat-media/<id>/
+- `app/views_crm.py` — fix búsqueda, fix orden tabla, fix DateField comparación
+- `app/views_api.py` — @mention backend, endpoint chat-media
+- `app/views_proyectos.py` — removido check de permisos restrictivo en api_tarea_detalle
+- `app/static/js/crm_main.js` — múltiples fixes (closeDetalleWidget, refreshCrmTable, etc.)
+- `app/templates/crm/_widget_oportunidad.html` — woMentionHighlight, woCargarTareasInline en window
+- `app/templates/crm/_widget_notificaciones.html` — oportunidad_mensaje no se marca leída al click
 
 ---
 
