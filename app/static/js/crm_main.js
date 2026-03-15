@@ -1186,6 +1186,8 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
+                // Restaurar z-index del overlay (puede haberse elevado al abrir desde tarea)
+                detalleOverlay.style.zIndex = '';
                 _crmTableDirty = false;
                 refreshCrmTable();
             }
@@ -2821,18 +2823,18 @@
 
         // ── Renderizar tabla de tareas ──
 
-        document.addEventListener('DOMContentLoaded', function () {
-            // Restore last view from localStorage
+        // Restaurar tab desde localStorage (diferido para que todo esté inicializado)
+        setTimeout(function () {
             if (localStorage.getItem('crmView') === 'tareas') {
-                var btnTareas = document.getElementById('btnTareas');
-                if (btnTareas) btnTareas.click();
+                var btnTareasRestore = document.getElementById('btnTareas');
+                if (btnTareasRestore) btnTareasRestore.click();
             }
+        }, 0);
 
-            // Refresh tasks every minute to check for new vencimientos
-            setInterval(function () {
-                if (typeof cargarTareasCRM === 'function') cargarTareasCRM();
-            }, 60000);
-        });
+        // Refresh tasks every minute to check for new vencimientos
+        setInterval(function () {
+            if (typeof cargarTareasCRM === 'function' && window._crmTareasMode) cargarTareasCRM();
+        }, 60000);
 
         function renderTareasCRM(filtro) {
             var tbody = document.getElementById('tareasTableBody');
@@ -3426,8 +3428,7 @@
                 .then(function (r) { return r.json(); }).then(function (d) { if (d.success) { crmTaskVerDetalle(_crmCurrentTaskId); } else { showToast(d.error || 'Error', 'error'); } });
         }
 
-        function crmTaskGuardar() {
-            if (!Object.keys(_crmTaskEdits).length) { crmTaskHideSaveBar(); return; }
+        function _crmTaskDoGuardar(razon) {
             var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
             var payload = {};
             if (_crmTaskEdits.titulo) payload.titulo = _crmTaskEdits.titulo;
@@ -3435,6 +3436,7 @@
             if ('fecha_limite' in _crmTaskEdits) payload.fecha_limite = _crmTaskEdits.fecha_limite;
             if ('asignado_a' in _crmTaskEdits) payload.asignado_a = _crmTaskEdits.asignado_a;
             if ('cliente_id' in _crmTaskEdits) payload.cliente_id = _crmTaskEdits.cliente_id;
+            if (razon) payload.razon_reprogramacion = razon;
             fetch('/app/api/tarea/' + _crmCurrentTaskId + '/actualizar/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' }, body: JSON.stringify(payload) })
                 .then(function (r) { return r.json(); }).then(function (d) {
                     if (d.success) {
@@ -3460,6 +3462,71 @@
                 }).catch(function () { showToast('Error de conexion', 'error'); });
         }
 
+        function crmTaskGuardar() {
+            if (!_crmCurrentTaskId) return;
+            if (Object.keys(_crmTaskEdits).length === 0) return;
+
+            // Si el responsable (no creador, no superuser) cambia la fecha_limite, pedir razón
+            var curId = _CRM_CONFIG.userId;
+            var isSu = _CRM_CONFIG.isSuperuser;
+            var creadorId = _crmTaskLastData && _crmTaskLastData.creado_por_data ? _crmTaskLastData.creado_por_data.id : null;
+            var responsableId = _crmTaskLastData && _crmTaskLastData.responsable_data ? _crmTaskLastData.responsable_data.id : null;
+            var esSoloResponsable = !isSu && curId !== creadorId && curId === responsableId;
+
+            if ('fecha_limite' in _crmTaskEdits && esSoloResponsable) {
+                // Mostrar dialog de razón
+                var dlgId = 'crmReprogramDialog';
+                var existing = document.getElementById(dlgId);
+                if (existing) existing.remove();
+
+                var dlg = document.createElement('div');
+                dlg.id = dlgId;
+                dlg.style.cssText = 'position:fixed;inset:0;z-index:10500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);';
+                dlg.innerHTML = [
+                    '<div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.22);">',
+                    '<h3 style="margin:0 0 8px;font-size:1rem;font-weight:700;color:#1a1a2e;">¿Por qué cambias la fecha límite?</h3>',
+                    '<p style="margin:0 0 20px;font-size:.85rem;color:#666;">Selecciona la razón del cambio de fecha.</p>',
+                    '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">',
+                    '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;border:1.5px solid #e0e0e0;border-radius:8px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'#4f6ef7\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'#e0e0e0\'">',
+                    '<input type="radio" name="crmReprogramRazon" value="responsable" style="margin-top:2px;accent-color:#4f6ef7;">',
+                    '<span style="font-size:.88rem;color:#333;"><strong>No logré terminar a tiempo</strong><br><span style="color:#888;font-size:.82rem;">El responsable no pudo completar la tarea dentro del plazo.</span></span></label>',
+                    '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;border:1.5px solid #e0e0e0;border-radius:8px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'#4f6ef7\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'#e0e0e0\'">',
+                    '<input type="radio" name="crmReprogramRazon" value="creador" style="margin-top:2px;accent-color:#4f6ef7;">',
+                    '<span style="font-size:.88rem;color:#333;"><strong>El creador dio poco tiempo</strong><br><span style="color:#888;font-size:.82rem;">No se consideró la carga de trabajo o se asignó un plazo muy corto.</span></span></label>',
+                    '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;border:1.5px solid #e0e0e0;border-radius:8px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'#4f6ef7\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'#e0e0e0\'">',
+                    '<input type="radio" name="crmReprogramRazon" value="externo" style="margin-top:2px;accent-color:#4f6ef7;">',
+                    '<span style="font-size:.88rem;color:#333;"><strong>Factor externo</strong><br><span style="color:#888;font-size:.82rem;">El cliente, proveedor u otro factor ajeno causó el retraso.</span></span></label>',
+                    '</div>',
+                    '<div style="display:flex;gap:10px;justify-content:flex-end;">',
+                    '<button id="crmReprogramCancel" style="padding:8px 18px;border:1.5px solid #ddd;border-radius:7px;background:#fff;cursor:pointer;font-size:.88rem;color:#555;">Cancelar</button>',
+                    '<button id="crmReprogramConfirm" style="padding:8px 20px;border:none;border-radius:7px;background:#4f6ef7;color:#fff;cursor:pointer;font-size:.88rem;font-weight:600;">Confirmar cambio</button>',
+                    '</div></div>'
+                ].join('');
+
+                document.body.appendChild(dlg);
+
+                document.getElementById('crmReprogramCancel').onclick = function () { dlg.remove(); };
+                dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.remove(); });
+
+                document.getElementById('crmReprogramConfirm').onclick = function () {
+                    var sel = dlg.querySelector('input[name="crmReprogramRazon"]:checked');
+                    if (!sel) { showToast('Selecciona una razón para continuar', 'error'); return; }
+                    dlg.remove();
+                    _crmTaskDoGuardar(sel.value);
+                };
+
+                // Highlight selected radio label
+                dlg.querySelectorAll('input[name="crmReprogramRazon"]').forEach(function (inp) {
+                    inp.addEventListener('change', function () {
+                        dlg.querySelectorAll('label').forEach(function (l) { l.style.borderColor = '#e0e0e0'; });
+                        if (inp.checked) inp.closest('label').style.borderColor = '#4f6ef7';
+                    });
+                });
+            } else {
+                _crmTaskDoGuardar(null);
+            }
+        }
+
         function crmTaskCancelarEdicion() {
             crmTaskHideSaveBar();
             // Restaurar desde los datos en memoria sin fetch
@@ -3472,6 +3539,10 @@
             document.body.style.overflow = '';
             _crmCurrentTaskId = null;
             if (_crmTimerInterval) { clearInterval(_crmTimerInterval); _crmTimerInterval = null; }
+            // Limpiar archivos pendientes del comentario
+            _crmCommentFiles = [];
+            _crmFilesRender();
+            _crmMentionClose();
         }
 
         // Click outside to close
@@ -3532,13 +3603,13 @@
                 });
         }
 
-        // ── Abrir oportunidad desde tarea ──
+        // ── Abrir oportunidad desde tarea (sin cerrar el modal de tarea) ──
         function crmTaskAbrirOportunidad() {
             if (!_crmTaskCurrentOppId) return;
-            crmTaskCerrarModal();
-            setTimeout(function () {
-                if (typeof openDetalle === 'function') openDetalle(_crmTaskCurrentOppId);
-            }, 200);
+            // Elevar el overlay de oportunidad por encima del modal de tarea
+            var dl = document.getElementById('detalleOverlay');
+            if (dl) dl.style.zIndex = '10300';
+            if (typeof openDetalle === 'function') openDetalle(_crmTaskCurrentOppId);
         }
 
         // ── Abrir drive desde tarea ──
@@ -3579,6 +3650,18 @@
                                 '<button onclick="crmCommentEliminar(' + c.id + ')" style="display:block;width:100%;text-align:left;padding:8px 14px;background:none;border:none;cursor:pointer;font-size:0.83rem;color:#EF4444;">Eliminar</button>' +
                                 '</div></div>'
                                 : '';
+                            var archivosHtml = '';
+                            if (c.archivos && c.archivos.length) {
+                                archivosHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">' +
+                                    c.archivos.map(function (a) {
+                                        var isImg = a.tipo_contenido && a.tipo_contenido.startsWith('image/');
+                                        if (isImg) {
+                                            return '<a href="' + a.url + '" target="_blank" style="display:block;border-radius:6px;overflow:hidden;max-width:160px;">' +
+                                                '<img src="' + a.url + '" style="max-width:160px;max-height:120px;object-fit:cover;display:block;border-radius:6px;border:1px solid #E5E5EA;"></a>';
+                                        }
+                                        return '<a href="' + a.url + '" target="_blank" style="display:flex;align-items:center;gap:5px;background:#F3F4F6;border:1px solid #E5E5EA;border-radius:6px;padding:4px 8px;font-size:0.78rem;color:#374151;text-decoration:none;">&#128196; ' + (a.nombre_original || 'archivo') + '</a>';
+                                    }).join('') + '</div>';
+                            }
                             return '<div data-comment-id="' + c.id + '" style="display:flex;gap:0.75rem;padding:0.75rem;background:#F9FAFB;border-radius:10px;border:1px solid #F3F4F6;">' +
                                 '<div class="crm-task-avatar" style="background:#0052D4;width:32px;height:32px;font-size:0.65rem;flex-shrink:0;">' + avatarHtml + '</div>' +
                                 '<div style="flex:1;min-width:0;">' +
@@ -3588,6 +3671,7 @@
                                 '<span style="font-size:0.7rem;color:#9CA3AF;">' + (fecha ? formatearFechaCRM(fecha) : '') + '</span>' +
                                 menuHtml + '</div></div>' +
                                 '<div class="crm-comment-content" style="font-size:0.85rem;color:#374151;line-height:1.5;">' + (c.contenido_con_menciones || c.contenido || '') + '</div>' +
+                                archivosHtml +
                                 '</div></div>';
                         }).join('');
                         // Close menus on outside click
@@ -3710,6 +3794,127 @@
             inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') crmTaskVerDetalle(_crmCurrentTaskId); });
         }
 
+        // ── Comment files (drag-drop + select) ──
+        var _crmCommentFiles = [];
+
+        function _crmFilesRender() {
+            var preview = document.getElementById('crm-task-files-preview');
+            if (!preview) return;
+            preview.innerHTML = '';
+            _crmCommentFiles.forEach(function (f, i) {
+                var isImg = f.type.startsWith('image/');
+                var chip = document.createElement('div');
+                chip.style.cssText = 'display:flex;align-items:center;gap:5px;background:#F3F4F6;border:1px solid #E5E5EA;border-radius:6px;padding:4px 8px;font-size:0.78rem;color:#374151;max-width:200px;';
+                var icon = isImg ? '&#128247;' : '&#128196;';
+                var name = f.name.length > 20 ? f.name.slice(0, 17) + '...' : f.name;
+                chip.innerHTML = icon + ' <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</span>';
+                var rm = document.createElement('button');
+                rm.innerHTML = '&times;';
+                rm.style.cssText = 'background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:1rem;line-height:1;padding:0 2px;';
+                rm.onclick = (function (idx) { return function () { _crmCommentFiles.splice(idx, 1); _crmFilesRender(); }; })(i);
+                chip.appendChild(rm);
+                preview.appendChild(chip);
+            });
+        }
+
+        function _crmFilesAdd(files) {
+            for (var i = 0; i < files.length; i++) { _crmCommentFiles.push(files[i]); }
+            _crmFilesRender();
+        }
+
+        var dropZone = document.getElementById('crm-task-drop-zone');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.style.background = '#EEF2FF'; dropZone.style.borderColor = '#4f6ef7'; });
+            dropZone.addEventListener('dragleave', function () { dropZone.style.background = ''; dropZone.style.borderColor = '#D1D5DB'; });
+            dropZone.addEventListener('drop', function (e) { e.preventDefault(); dropZone.style.background = ''; dropZone.style.borderColor = '#D1D5DB'; _crmFilesAdd(e.dataTransfer.files); });
+        }
+        var fileInput = document.getElementById('crm-task-file-input');
+        if (fileInput) { fileInput.addEventListener('change', function () { _crmFilesAdd(this.files); this.value = ''; }); }
+
+        // Also allow drop on textarea
+        var commentInput = document.getElementById('crm-task-comment-input');
+        if (commentInput) {
+            commentInput.addEventListener('dragover', function (e) { e.preventDefault(); });
+            commentInput.addEventListener('drop', function (e) {
+                if (e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); _crmFilesAdd(e.dataTransfer.files); }
+            });
+        }
+
+        // ── @mention autocomplete ──
+        var _mentionQuery = null;
+        var _mentionStart = -1;
+
+        function _crmMentionClose() {
+            var dd = document.getElementById('crm-mention-dropdown');
+            if (dd) dd.style.display = 'none';
+            _mentionQuery = null; _mentionStart = -1;
+        }
+
+        if (commentInput) {
+            commentInput.addEventListener('keydown', function (e) {
+                var dd = document.getElementById('crm-mention-dropdown');
+                if (dd && dd.style.display !== 'none') {
+                    var items = dd.querySelectorAll('[data-mention-item]');
+                    var focused = dd.querySelector('[data-mention-item].focused');
+                    var idx = Array.prototype.indexOf.call(items, focused);
+                    if (e.key === 'ArrowDown') { e.preventDefault(); if (focused) focused.classList.remove('focused'); var next = items[idx + 1] || items[0]; if (next) next.classList.add('focused'); return; }
+                    if (e.key === 'ArrowUp') { e.preventDefault(); if (focused) focused.classList.remove('focused'); var prev = items[idx - 1] || items[items.length - 1]; if (prev) prev.classList.add('focused'); return; }
+                    if (e.key === 'Enter' || e.key === 'Tab') { var sel = focused || items[0]; if (sel) { e.preventDefault(); sel.click(); } return; }
+                    if (e.key === 'Escape') { _crmMentionClose(); return; }
+                }
+            });
+
+            commentInput.addEventListener('input', function () {
+                var val = this.value;
+                var pos = this.selectionStart;
+                // Find @ before cursor
+                var atIdx = -1;
+                for (var i = pos - 1; i >= 0; i--) {
+                    if (val[i] === '@') { atIdx = i; break; }
+                    if (val[i] === ' ' || val[i] === '\n') break;
+                }
+                if (atIdx === -1) { _crmMentionClose(); return; }
+                var q = val.slice(atIdx + 1, pos);
+                if (q === _mentionQuery) return;
+                _mentionQuery = q;
+                _mentionStart = atIdx;
+                var dd = document.getElementById('crm-mention-dropdown');
+                if (!dd) return;
+                fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(q))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        var usuarios = data.usuarios || data.results || [];
+                        if (!usuarios.length) { dd.style.display = 'none'; return; }
+                        dd.innerHTML = '';
+                        usuarios.slice(0, 8).forEach(function (u) {
+                            var nombre = u.nombre || u.full_name || u.username || '';
+                            var username = u.username || '';
+                            var item = document.createElement('div');
+                            item.setAttribute('data-mention-item', '1');
+                            item.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;gap:8px;';
+                            item.innerHTML = '<span style="font-weight:600;color:#1D1D1F;">' + nombre + '</span><span style="color:#9CA3AF;font-size:0.78rem;">@' + username + '</span>';
+                            item.addEventListener('mouseenter', function () { dd.querySelectorAll('[data-mention-item]').forEach(function (x) { x.classList.remove('focused'); }); item.classList.add('focused'); item.style.background = '#F3F4F6'; });
+                            item.addEventListener('mouseleave', function () { item.style.background = ''; });
+                            item.addEventListener('click', function () {
+                                var before = commentInput.value.slice(0, _mentionStart);
+                                var after = commentInput.value.slice(commentInput.selectionStart);
+                                commentInput.value = before + '@' + username + ' ' + after;
+                                var newPos = (_mentionStart + username.length + 2);
+                                commentInput.setSelectionRange(newPos, newPos);
+                                _crmMentionClose();
+                                commentInput.focus();
+                            });
+                            dd.appendChild(item);
+                        });
+                        dd.style.display = 'block';
+                    }).catch(function () { dd.style.display = 'none'; });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('#crm-mention-dropdown') && e.target !== commentInput) _crmMentionClose();
+            });
+        }
+
         // Submit comment
         var commentForm = document.getElementById('crm-task-comment-form');
         if (commentForm) {
@@ -3717,13 +3922,20 @@
                 e.preventDefault();
                 var input = document.getElementById('crm-task-comment-input');
                 var contenido = input ? input.value.trim() : '';
-                if (!contenido || !_crmCurrentTaskId) return;
+                if (!contenido && _crmCommentFiles.length === 0) return;
+                if (!_crmCurrentTaskId) return;
 
                 var formData = new FormData();
-                formData.append('contenido', contenido);
+                if (contenido) formData.append('contenido', contenido);
+                else formData.append('contenido', '(archivo adjunto)');
+
+                _crmCommentFiles.forEach(function (f, i) { formData.append('archivo_' + i, f); });
 
                 var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
                 if (csrfEl) formData.append('csrfmiddlewaretoken', csrfEl.value);
+
+                var submitBtn = document.getElementById('crm-task-btn-enviar');
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
 
                 fetch('/app/api/tarea/' + _crmCurrentTaskId + '/comentarios/agregar/', {
                     method: 'POST',
@@ -3733,11 +3945,15 @@
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         if (data.success) {
-                            input.value = '';
+                            if (input) input.value = '';
+                            _crmCommentFiles = [];
+                            _crmFilesRender();
                             crmTaskCargarComentarios(_crmCurrentTaskId);
-                        }
+                            if (typeof notifLoad === 'function') notifLoad();
+                        } else { showToast(data.error || 'Error al enviar', 'error'); }
                     })
-                    .catch(function (err) { console.error('Error enviando comentario:', err); });
+                    .catch(function (err) { console.error('Error enviando comentario:', err); showToast('Error de conexión', 'error'); })
+                    .finally(function () { if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Enviar'; } });
             });
         }
 

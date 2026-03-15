@@ -10,9 +10,19 @@ Lee ESTRUCTURA.md para entender la arquitectura completa del proyecto.
 
 ---
 
-## Último commit aplicado en pruebas: `eb73fd8`
+## Último commit pusheado a pruebas: `6248399`
 
-Bugs corregidos en esta sesión (commits d522cfb → eb73fd8):
+Bugs corregidos en esta sesión (commits eb73fd8 → 6248399):
+- Fix tarea vencida no muestra rojo: `Tarea.fecha_limite` es DateTimeField (no DateField),
+  comparar `datetime <= date` lanzaba TypeError. Fix: strip tzinfo y comparar contra `_now_naive`.
+- Fix tabla vacía al cerrar widget: `refreshCrmTable()` ahora siempre se llama al cerrar
+  el widget de oportunidad, sin depender de `_crmTableDirty`.
+- Fix hora 1 hora adelantada: frontend enviaba `-08:00` hardcoded pero Tijuana está en UTC-7
+  durante verano (DST desde 8 mar). Ahora envía hora sin offset, backend localiza con
+  `America/Tijuana` (maneja DST correctamente).
+- Fix opps con `mes_cierre='todos'`: 5 opps corregidas a '03' via Django shell en servidor pruebas.
+
+Bugs corregidos en sesión anterior (commits d522cfb → eb73fd8):
 - Fix 400 crear negociación (URL duplicada en urls.py)
 - Fix búsqueda tabla (cliente__nombre → cliente__nombre_empresa)
 - Fix opp desaparece al recargar (history.replaceState al crear)
@@ -27,47 +37,19 @@ Bugs corregidos en esta sesión (commits d522cfb → eb73fd8):
 
 ---
 
-## Bugs pendientes de corregir (próxima sesión)
+## Bugs pendientes de verificar / corregir
 
-### 1. Actividad agendada no se refleja en widget sin recargar
-- Al agendar una actividad desde el widget de creación (woCrearActividad), el
-  card "ACTIVIDAD PROGRAMADA" no se actualiza automáticamente.
-- Fix: después del POST exitoso en el handler de crear actividad, llamar
-  `woCargarActividadReciente(_woCurrentOppId)` para refrescar el card.
-- También verificar que `window.woCargarActividadReciente` esté expuesta en window.
-- Archivo: `_widget_oportunidad.html` — buscar el submit de la actividad y agregar el refresh.
+### 1. Verificar fix tabla vacía en pruebas
+- Después del push `6248399`, verificar que al crear una opp y cerrar el widget
+  la tabla muestre los datos correctos sin necesidad de recargar la página.
 
-### 2. Hora del calendario 1 hora adelantada — zona horaria Tijuana
-- El servidor usa UTC, la app muestra 1 hora de diferencia vs Tijuana (UTC-8 o UTC-7 en verano).
-- Fix en settings.py: `TIME_ZONE = 'America/Tijuana'` (ya debe estar, verificar).
-- Fix en frontend: al crear actividades y tareas, enviar la hora local del usuario
-  o convertir correctamente. El problema puede estar en cómo se guarda la fecha_inicio
-  de TareaOportunidad.
-- Revisar `api_crear_actividad` / `api_tareas_oportunidad POST` en views_proyectos.py
-  para ver cómo parsea las fechas. Usar `timezone.make_aware(dt, timezone.get_current_timezone())`
-  en lugar de asumir UTC.
+### 2. Verificar fix hora en calendario
+- Crear una actividad de 6pm a 7pm y verificar que el calendario la muestre correctamente
+  (antes se mostraba 7pm-8pm por el offset UTC-8 hardcoded).
 
-### 3. Actividad creada muestra "Sin fecha" en widget
-- La actividad se guarda con fecha pero el card la muestra "Sin fecha límite".
-- Revisar `woCargarActividadReciente` en `_widget_oportunidad.html` — qué campo usa para
-  mostrar la fecha (`fecha_inicio`, `fecha_limite`, `fecha`).
-- Revisar qué devuelve la API `/app/api/oportunidad/<id>/tareas/` (TareaOportunidad).
-
-### 4. Opp con tarea vencida no sale roja en tabla (aún)
-- El fix de DateField vs datetime se aplicó pero puede necesitar verificar en pruebas.
-- La Tarea "prueba de rojo" tiene fecha_limite = 14 mar. Con el fix `t.fecha_limite <= _today`
-  debería aparecer roja. Si sigue sin funcionar, verificar que el pull y collectstatic
-  se aplicaron correctamente.
-- También verificar que `fecha_ts` esté en el dict de rows (línea ~550 views_crm.py).
-
-### 5. Opp no aparece en filtro "Marzo" — aparece solo en "Todos"
-- La opp "mas pruebas para probar" fue creada cuando el widget negociación tenía
-  mes_cierre = "todos" o un mes incorrecto.
-- En `api_crear_oportunidad`: `mes_cierre = data.get('mes_cierre', mes_actual)` y
-  `anio_cierre = now_dt.year`. Si el form `wfMesCierre` envía "todos", la opp queda
-  con mes_cierre="todos" y no aparece en filtro de marzo.
-- Fix: en `api_crear_oportunidad`, si `mes_cierre == 'todos'` o vacío, usar `mes_actual`.
-- Archivo: `app/views_crm.py` línea ~2424.
+### 3. Verificar fix opps rojas con tarea vencida
+- La opp con tarea vencida debería aparecer roja y arriba de la tabla.
+- Si no funciona, verificar que el estado de la Tarea sea 'pendiente', 'iniciada' o 'en_progreso'.
 
 ---
 
@@ -107,19 +89,20 @@ sudo docker compose restart web
 - `TareaOportunidad` — actividades CRM del widget (DateTimeField para fecha_limite)
   endpoint: `/app/api/oportunidad/<id>/tareas/` (GET/POST)
   opened via: `woVerActividad(id)`
-- `Tarea` — tareas de ingeniería (DateField para fecha_limite)
+- `Tarea` — tareas de ingeniería (DateTimeField para fecha_limite — OJO, NO DateField)
   endpoint: `/app/api/tareas/?oportunidad_id=X`
   opened via: `crmTaskVerDetalle(id)`
 - `MensajeOportunidad` — chat de la oportunidad, campo `imagen` es FileField (migración 0088)
 
-## Archivos clave modificados esta sesión
+## Archivos clave modificados (ambas sesiones)
 - `app/urls.py` — eliminada URL duplicada crear-oportunidad, añadido /api/chat-media/<id>/
-- `app/views_crm.py` — fix búsqueda, fix orden tabla, fix DateField comparación
+- `app/views_crm.py` — fix búsqueda, fix orden tabla, fix DateTimeField comparación, fix mes_cierre
 - `app/views_api.py` — @mention backend, endpoint chat-media
-- `app/views_proyectos.py` — removido check de permisos restrictivo en api_tarea_detalle
-- `app/static/js/crm_main.js` — múltiples fixes (closeDetalleWidget, refreshCrmTable, etc.)
-- `app/templates/crm/_widget_oportunidad.html` — woMentionHighlight, woCargarTareasInline en window
+- `app/views_proyectos.py` — removido check de permisos restrictivo, fix timezone actividades
+- `app/static/js/crm_main.js` — closeDetalleWidget, refreshCrmTable siempre al cerrar widget
+- `app/templates/crm/_widget_oportunidad.html` — fix hora DST (sin offset hardcoded)
 - `app/templates/crm/_widget_notificaciones.html` — oportunidad_mensaje no se marca leída al click
+- `cartera_clientes/settings.py` — TIME_ZONE = 'America/Tijuana'
 
 ---
 

@@ -996,11 +996,12 @@ def api_tareas(request):
                     # El admin ve todo el universo de tareas
                     tareas = Tarea.objects.all().distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
                 else:
-                    # Usuario normal solo ve las suyas
+                    # Usuario normal solo ve las suyas (incluyendo como observador)
                     tareas = Tarea.objects.filter(
                         Q(creado_por=request.user) |
                         Q(asignado_a=request.user) |
-                        Q(participantes=request.user)
+                        Q(participantes=request.user) |
+                        Q(observadores=request.user)
                     ).distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
             
             tareas_data = []
@@ -3084,12 +3085,24 @@ def api_actualizar_tarea_real(request, tarea_id):
         # Obtener la tarea de la base de datos
         tarea = get_object_or_404(Tarea, id=tarea_id)
         
-        # Verificar permisos - solo el creador o superusuario puede editar campos principales
-        if tarea.creado_por != request.user and not request.user.is_superuser:
-            return JsonResponse({'error': 'Sin permisos para editar esta tarea'}, status=403)
-        
         # Obtener datos del request
         data = json.loads(request.body)
+
+        es_responsable = tarea.asignado_a == request.user
+        es_creador = tarea.creado_por == request.user
+
+        # El responsable solo puede cambiar fecha_limite (con razón obligatoria)
+        # El creador y superusuario pueden editar todo
+        campos_permitidos_responsable = {'fecha_limite', 'razon_reprogramacion'}
+        campos_enviados = set(data.keys())
+        if not es_creador and not request.user.is_superuser:
+            if not es_responsable:
+                return JsonResponse({'error': 'Sin permisos para editar esta tarea'}, status=403)
+            # Es responsable — solo puede tocar fecha_limite
+            if not campos_enviados.issubset(campos_permitidos_responsable):
+                return JsonResponse({'error': 'El responsable solo puede cambiar la fecha límite'}, status=403)
+            if 'fecha_limite' in data and not data.get('razon_reprogramacion'):
+                return JsonResponse({'error': 'Debes indicar la razón del cambio de fecha'}, status=400)
         
         # Actualizar campos si están presentes en la petición
         if 'nombre' in data or 'titulo' in data:
@@ -3152,10 +3165,36 @@ def api_actualizar_tarea_real(request, tarea_id):
 
         # Guardar cambios
         tarea.save()
-        
+
+        # Notificar a admins/supervisores si el responsable reprogramó la fecha
+        razon_reprogramacion = data.get('razon_reprogramacion')
+        if razon_reprogramacion and 'fecha_limite' in data and es_responsable:
+            RAZONES = {
+                'responsable': 'El responsable no logró terminar a tiempo',
+                'creador': 'El creador dio poco tiempo o no consideró la carga de trabajo',
+                'externo': 'Factor externo (cliente o proveedor)',
+            }
+            razon_texto = RAZONES.get(razon_reprogramacion, razon_reprogramacion)
+            nueva_fecha = tarea.fecha_limite.strftime('%d/%m/%Y %H:%M') if tarea.fecha_limite else 'sin fecha'
+            responsable_nombre = request.user.get_full_name() or request.user.username
+            from django.contrib.auth.models import User as AuthUser
+            from .models import Notificacion
+            admins = AuthUser.objects.filter(is_superuser=True)
+            for admin in admins:
+                if admin != request.user:
+                    Notificacion.objects.create(
+                        usuario_destinatario=admin,
+                        usuario_remitente=request.user,
+                        tipo='tarea_reprogramada',
+                        titulo=f'Tarea reprogramada: {tarea.titulo}',
+                        mensaje=f'{responsable_nombre} cambió la fecha límite a {nueva_fecha}. Razón: {razon_texto}',
+                        tarea_id=tarea.id,
+                        tarea_titulo=tarea.titulo,
+                    )
+
         # Log para debugging
         print(f"✅ Tarea {tarea_id} actualizada: {tarea.titulo}")
-        
+
         # Devolver datos actualizados
         return JsonResponse({
             'success': True,

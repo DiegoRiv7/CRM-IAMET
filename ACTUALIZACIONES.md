@@ -25,6 +25,10 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - El campo factura en el detalle de oportunidades ahora guarda correctamente la factura
 - Todas las oportunidades importadas de Bitrix ya cuentan con su número de factura original
 
+### NUEVO — tareas
+- Ahora el responsable de la tarea puede editar la fecha limite de la tarea, si la cambia se le notifica al admin del cambio.
+- Ahora se puede etiquetar y subir documentos a los comentarios de las tareas.
+
 ### MEJORA — Subida de archivos al drive
 - El drive de oportunidades ahora acepta archivos de hasta 100MB (antes el límite era 2.5MB)
 - Se pueden subir planos DWG, videos, archivos pesados de ingeniería sin error
@@ -41,10 +45,10 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - El icono del botón cambió de fotografía a clip para indicar que acepta cualquier archivo
 - Ahora se puede etiquetar a usuarios en el chat con @nombre
 
+### FIX - recargar la pagina
+- Cuando se recarga la pagina ya no regresa a la seccion de CRM, se queda en la seccion que se estaba viendo
 
-### FIX — Tareas en el widget de oportunidad no abrían al hacer clic
-- Al hacer clic en una tarea dentro del widget de oportunidad, ahora abre correctamente el detalle de esa tarea en el panel lateral
-- Antes llamaba al widget de tareas de proyectos de ingeniería por error
+
 
 ### TÉCNICO — Archivos de proyectos migrados a servidor local
 - Los archivos descargados de Bitrix (10,075 archivos, ~9.7GB) ahora se sirven desde el servidor local
