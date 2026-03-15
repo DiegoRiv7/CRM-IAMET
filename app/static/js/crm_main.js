@@ -340,6 +340,11 @@
                                 showToast(data.message, 'success');
                                 // Cambiar a mes=todos para que la nueva oportunidad sea visible
                                 currentMes = 'todos';
+                                var _p = new URLSearchParams(window.location.search);
+                                _p.set('mes', 'todos');
+                                history.replaceState(null, '', window.location.pathname + '?' + _p.toString());
+                                var mf = document.getElementById('mesFilter');
+                                if (mf) mf.value = 'todos';
                                 refreshCrmTable();
                                 // Abrir el widget de la nueva oportunidad directamente
                                 if (data.id) {
@@ -1545,6 +1550,12 @@
                             tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:2rem;color:#9CA3AF;">Sin resultados para "' + q + '"</td></tr>';
                         } else {
                             tbody.innerHTML = data.rows.map(buildCrmRow).join('');
+                        }
+                        if (data.footer) {
+                            var fl = document.getElementById('footerLeft');
+                            var fr = document.getElementById('footerRight');
+                            if (fl) fl.textContent = data.footer.left;
+                            if (fr) fr.textContent = data.footer.right;
                         }
                     });
                 }, 350);

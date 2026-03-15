@@ -464,7 +464,7 @@ def api_crm_table_data(request):
     if q_search:
         # Búsqueda global: ignora mes/año, busca en nombre de oportunidad y cliente
         base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-            Q(oportunidad__icontains=q_search) | Q(cliente__nombre__icontains=q_search)
+            Q(oportunidad__icontains=q_search) | Q(cliente__nombre_empresa__icontains=q_search)
         )
     elif usando_periodo:
         base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
