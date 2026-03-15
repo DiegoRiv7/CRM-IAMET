@@ -3221,8 +3221,10 @@ def api_tareas_oportunidad(request, opp_id):
                 if cal_fin and cal_fin.tzinfo is None:
                     cal_fin = cal_fin.replace(tzinfo=TIJUANA_TZ)
 
-            # Si no hay fecha_limite explícita, usar cal_inicio como referencia
-            if fecha_limite is None and cal_ini is not None:
+            # Si no hay fecha_limite explícita, usar cal_fin (hora de cierre de la actividad)
+            if fecha_limite is None and cal_fin is not None:
+                fecha_limite = cal_fin
+            elif fecha_limite is None and cal_ini is not None:
                 fecha_limite = cal_ini
 
             tarea = TareaOportunidad.objects.create(

@@ -1493,6 +1493,9 @@
             });
         }
 
+        // Refrescar tabla al cargar para aplicar colores (rojo, etc.) via JS
+        refreshCrmTable();
+
         // Track if a cotización was created to refresh on close
         var cotizacionCreated = false;
 
