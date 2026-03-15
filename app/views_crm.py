@@ -534,13 +534,15 @@ def api_crm_table_data(request):
                         fl = t.fecha_limite.replace(tzinfo=None) if hasattr(t.fecha_limite, 'tzinfo') else t.fecha_limite
                         if fl <= _now_naive:
                             tiene_vencida = True
-            # Tarea.fecha_limite es DateField (date, no datetime)
+            # Tarea.fecha_limite es DateTimeField (igual que TareaOportunidad)
             if not tiene_vencida:
                 ESTADOS_ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
                 for t in item.tareas_generales.filter(estado__in=ESTADOS_ACTIVOS):
-                    if t.fecha_limite and t.fecha_limite <= _today:
-                        tiene_vencida = True
-                        break
+                    if t.fecha_limite:
+                        fl2 = t.fecha_limite.replace(tzinfo=None) if hasattr(t.fecha_limite, 'tzinfo') else t.fecha_limite
+                        if fl2 <= _now_naive:
+                            tiene_vencida = True
+                            break
             es_bitrix = item.tipo_negociacion == 'bitrix_proyecto'
             rows.append({
                 'id': item.id,
