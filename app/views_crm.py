@@ -517,23 +517,28 @@ def api_crm_table_data(request):
     if tab_activo == 'crm':
         from django.utils import timezone as _tz
         _now = _tz.now()
+        _now_naive = _now.replace(tzinfo=None)
+        _today = _now.date()
+        _umbral = _now + __import__('datetime').timedelta(minutes=10)
         items = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
         rows = []
         for item in items:
-            # Revisar si tiene actividades/tareas vencidas (fecha_limite pasada y no completada)
+            # Revisar si tiene actividades/tareas vencidas (o por vencer en <10min)
             tiene_vencida = False
             tiene_pendiente = False
-            # TareaOportunidad (actividades CRM)
+            # TareaOportunidad.fecha_limite es DateTimeField (puede ser naive o aware)
             for t in item.tareas_oportunidad.all():
                 if t.estado != 'completada':
                     tiene_pendiente = True
-                    if t.fecha_limite and t.fecha_limite < _now:
-                        tiene_vencida = True
-            # Tarea (tareas de ingeniería vinculadas)
+                    if t.fecha_limite:
+                        fl = t.fecha_limite.replace(tzinfo=None) if hasattr(t.fecha_limite, 'tzinfo') else t.fecha_limite
+                        if fl <= _now_naive:
+                            tiene_vencida = True
+            # Tarea.fecha_limite es DateField (date, no datetime)
             if not tiene_vencida:
                 ESTADOS_ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
                 for t in item.tareas_generales.filter(estado__in=ESTADOS_ACTIVOS):
-                    if t.fecha_limite and t.fecha_limite < _now:
+                    if t.fecha_limite and t.fecha_limite <= _today:
                         tiene_vencida = True
                         break
             es_bitrix = item.tipo_negociacion == 'bitrix_proyecto'
@@ -553,8 +558,8 @@ def api_crm_table_data(request):
                 'sin_actividad_pendiente': not tiene_pendiente,
                 'tipo_negociacion': item.tipo_negociacion or 'runrate',
             })
-        # Ordenar: primero las que tienen actividad vencida
-        rows.sort(key=lambda x: (not x['tiene_actividad_vencida'], x.get('fecha_iso', '')), reverse=False)
+        # Ordenar: vencidas primero, luego por fecha_actualizacion más reciente
+        rows.sort(key=lambda x: (not x['tiene_actividad_vencida'], -x.get('fecha_ts', 0)))
         # Stats
         total_general = base_qs.aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
         num_clientes = base_qs.values('cliente').distinct().count()

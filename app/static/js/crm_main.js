@@ -1227,7 +1227,7 @@
                 });
             }
 
-            detalleClose.addEventListener('click', closeDetalleWidget);
+            detalleClose.addEventListener('click', function () { closeDetalleWidget(); });
             detalleOverlay.addEventListener('click', function (e) {
                 if (e.target === detalleOverlay) closeDetalleWidget();
             });
@@ -4041,8 +4041,11 @@
                         cargarTareasCRM();
                         showToast('Tarea creada exitosamente', 'success');
                         if (typeof dashRefreshData === 'function') { dashRefreshData(); }
-                        if (oppId && typeof woCargarTareasInline === 'function') {
-                            woCargarTareasInline(oppId);
+                        if (oppId && typeof window.woCargarTareasInline === 'function') {
+                            window.woCargarTareasInline(oppId);
+                        }
+                        if (oppId && typeof refreshCrmTable === 'function') {
+                            refreshCrmTable();
                         }
                         // Añadir al calendario como evento naranja si tiene fecha_limite
                         if (dueDate && typeof _globalCalendar !== 'undefined' && _globalCalendar) {
@@ -4065,6 +4068,8 @@
                 });
         }
 
+
+        window.refreshCrmTable = refreshCrmTable;
 
         // Expose to global scope for inline onclick handlers
         window.crmTaskVerDetalle = crmTaskVerDetalle;

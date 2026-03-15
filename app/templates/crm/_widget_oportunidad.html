@@ -706,7 +706,7 @@
         };
 
         // ── Tareas inline (dentro del tab detalle) ──
-        function woCargarTareasInline(oppId) {
+        window.woCargarTareasInline = function woCargarTareasInline(oppId) {
             var container = document.getElementById('woTareasInlineList');
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.8rem;">Cargando...</div>';
