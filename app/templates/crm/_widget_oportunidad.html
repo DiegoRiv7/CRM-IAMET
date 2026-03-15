@@ -1446,6 +1446,8 @@
                 });
         }
 
+        window.woCargarActividadReciente = woCargarActividadReciente;
+
         window.woAbrirActividadReciente = function () {
             if (_woActividadRecienteId && typeof woVerActividad === 'function') {
                 woVerActividad(_woActividadRecienteId);
@@ -1675,8 +1677,9 @@
                     woDialogConfirm('Error', 'La hora de fin debe ser posterior a la de inicio', null, null, true);
                     return;
                 }
-                cal_inicio = f_date + 'T' + t_ini + ':00';
-                cal_fin = f_date + 'T' + t_fin + ':00';
+                // Enviar como hora local de Tijuana (UTC-8) para evitar desfase de zona horaria
+                cal_inicio = f_date + 'T' + t_ini + ':00-08:00';
+                cal_fin = f_date + 'T' + t_fin + ':00-08:00';
             } else if (!f_date) {
                 woDialogConfirm('Error', 'La fecha es obligatoria', null, null, true);
                 return;
@@ -1732,6 +1735,7 @@
                     if (typeof woCargarTareasInline === 'function') {
                         woCargarTareasInline(_woCurrentOppId);
                     }
+                    woCargarActividadReciente(_woCurrentOppId);
                     if (typeof calGlobalRefetch === 'function') {
                         calGlobalRefetch();
                     }

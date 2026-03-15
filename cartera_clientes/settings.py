@@ -191,7 +191,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Configuración de internacionalización
 LANGUAGE_CODE = 'es-mx'
-TIME_ZONE = 'America/Mexico_City'
+TIME_ZONE = 'America/Tijuana'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True

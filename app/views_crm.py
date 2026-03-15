@@ -2418,6 +2418,11 @@ def api_crear_oportunidad(request):
         now_dt = dt_create.now()
         mes_actual = str(now_dt.month).zfill(2)
 
+        raw_mes = data.get('mes_cierre', '').strip()
+        if not raw_mes or raw_mes == 'todos':
+            raw_mes = mes_actual
+        mes_cierre_val = raw_mes
+
         todo = TodoItem(
             usuario=request.user,
             oportunidad=oportunidad_nombre,
@@ -2425,7 +2430,7 @@ def api_crear_oportunidad(request):
             contacto=contacto,
             monto=monto,
             probabilidad_cierre=int(data.get('probabilidad_cierre', 25)),
-            mes_cierre=data.get('mes_cierre', mes_actual),
+            mes_cierre=mes_cierre_val,
             anio_cierre=now_dt.year,
             area=data.get('area', 'SISTEMAS'),
             producto=data.get('producto', 'SOFTWARE'),

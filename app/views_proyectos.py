@@ -3196,11 +3196,34 @@ def api_tareas_oportunidad(request, opp_id):
             if not titulo:
                 return JsonResponse({'success': False, 'error': 'Título requerido'}, status=400)
 
+            from django.utils.dateparse import parse_datetime
+            from zoneinfo import ZoneInfo
+            TIJUANA_TZ = ZoneInfo('America/Tijuana')
+
             fecha_limite = None
             raw_fecha = data.get('fecha_limite')
             if raw_fecha:
-                from django.utils.dateparse import parse_datetime
                 fecha_limite = parse_datetime(raw_fecha)
+                if fecha_limite and fecha_limite.tzinfo is None:
+                    fecha_limite = fecha_limite.replace(tzinfo=TIJUANA_TZ)
+
+            # Crear actividad en el calendario (roja por defecto)
+            from django.utils.dateparse import parse_datetime as _pdt
+            cal_inicio_raw = data.get('cal_inicio')
+            cal_fin_raw = data.get('cal_fin')
+            cal_ini = None
+            cal_fin = None
+            if cal_inicio_raw and cal_fin_raw:
+                cal_ini = _pdt(cal_inicio_raw)
+                cal_fin = _pdt(cal_fin_raw)
+                if cal_ini and cal_ini.tzinfo is None:
+                    cal_ini = cal_ini.replace(tzinfo=TIJUANA_TZ)
+                if cal_fin and cal_fin.tzinfo is None:
+                    cal_fin = cal_fin.replace(tzinfo=TIJUANA_TZ)
+
+            # Si no hay fecha_limite explícita, usar cal_inicio como referencia
+            if fecha_limite is None and cal_ini is not None:
+                fecha_limite = cal_ini
 
             tarea = TareaOportunidad.objects.create(
                 oportunidad=opp,
@@ -3216,26 +3239,19 @@ def api_tareas_oportunidad(request, opp_id):
             if data.get('observadores'):
                 tarea.observadores.set(data['observadores'])
 
-            # Crear actividad en el calendario (roja por defecto)
-            from django.utils.dateparse import parse_datetime as _pdt
-            cal_inicio_raw = data.get('cal_inicio')
-            cal_fin_raw = data.get('cal_fin')
-            if cal_inicio_raw and cal_fin_raw:
-                cal_ini = _pdt(cal_inicio_raw)
-                cal_fin = _pdt(cal_fin_raw)
-                if cal_ini and cal_fin:
-                    actividad = Actividad.objects.create(
-                        titulo=tarea.titulo,
-                        tipo_actividad='tarea',
-                        descripcion=tarea.descripcion or '',
-                        fecha_inicio=cal_ini,
-                        fecha_fin=cal_fin,
-                        creado_por=request.user,
-                        color='#0052D4',  # azul
-                        oportunidad=opp,
-                    )
-                    tarea.actividad_calendario = actividad
-                    tarea.save(update_fields=['actividad_calendario'])
+            if cal_ini and cal_fin:
+                actividad = Actividad.objects.create(
+                    titulo=tarea.titulo,
+                    tipo_actividad='tarea',
+                    descripcion=tarea.descripcion or '',
+                    fecha_inicio=cal_ini,
+                    fecha_fin=cal_fin,
+                    creado_por=request.user,
+                    color='#0052D4',  # azul
+                    oportunidad=opp,
+                )
+                tarea.actividad_calendario = actividad
+                tarea.save(update_fields=['actividad_calendario'])
 
             # Notificar al responsable si es distinto al creador
             if tarea.responsable and tarea.responsable != request.user:
