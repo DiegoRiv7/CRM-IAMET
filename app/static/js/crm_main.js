@@ -1422,14 +1422,31 @@
                     '</tr>';
             }
 
+            function fmtK(strVal) {
+                var n = parseFloat(String(strVal).replace(/,/g, ''));
+                if (isNaN(n) || n === 0) return '$0';
+                if (Math.abs(n) >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+                if (Math.abs(n) >= 1000) return '$' + Math.round(n / 1000) + 'K';
+                return '$' + Math.round(n);
+            }
+
             function buildClientesMiniRow(r) {
-                var vendedor = r.vendedor ? '<div style="font-size:0.68rem;color:#9CA3AF;font-weight:500;margin-top:1px;">' + r.vendedor + '</div>' : '';
-                var faltanteStyle = (parseFloat((r.faltante || '0').replace(/,/g, '')) > 0) ? 'color:#F97316;font-weight:700;' : 'color:#22C55E;font-weight:700;';
+                var total = parseFloat((r.total || '0').replace(/,/g, ''));
+                var meta = parseFloat((r.meta || '0').replace(/,/g, ''));
+                var faltante = parseFloat((r.faltante || '0').replace(/,/g, ''));
+                var vendedor = r.vendedor ? '<div class="clientes-mini-vendedor">' + r.vendedor + '</div>' : '';
+                var faltanteStyle = faltante > 0 ? 'color:#F97316;font-weight:700;' : 'color:#22C55E;font-weight:700;';
+                var barHtml = '';
+                if (meta > 0) {
+                    var pct = Math.min(total / meta * 100, 100);
+                    var barColor = pct >= 100 ? '#22C55E' : pct >= 75 ? '#3B82F6' : pct >= 40 ? '#F97316' : '#EF4444';
+                    barHtml = '<div class="clientes-mini-bar"><div class="clientes-mini-bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + barColor + ';"></div></div>';
+                }
                 return '<tr class="crm-data-row">' +
-                    '<td class="px-2 py-2"><span class="client-name-link font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" style="font-size:0.73rem;line-height:1.3;display:block;" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + vendedor + '</td>' +
-                    '<td class="px-2 py-2 text-right font-bold border-l border-gray-100" style="font-size:0.73rem;">$' + r.meta + '</td>' +
-                    '<td class="px-2 py-2 text-right" style="font-size:0.73rem;' + faltanteStyle + '">$' + r.faltante + '</td>' +
-                    '<td class="px-2 py-2 text-right font-black text-gray-900 border-l border-gray-100" style="font-size:0.73rem;">$' + r.total + '</td>' +
+                    '<td class="px-2 py-2"><span class="client-name-link cursor-pointer" style="font-size:0.73rem;font-weight:700;line-height:1.3;display:block;color:#1D1D1F;" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + barHtml + vendedor + '</td>' +
+                    '<td class="px-2 py-2 text-right" style="font-size:0.72rem;color:#9CA3AF;font-weight:600;">$' + r.meta + '</td>' +
+                    '<td class="px-2 py-2 text-right" style="font-size:0.72rem;' + faltanteStyle + '">$' + r.faltante + '</td>' +
+                    '<td class="px-2 py-2 text-right font-black" style="font-size:0.72rem;color:#1D1D1F;">$' + r.total + '</td>' +
                     '</tr>';
             }
 
@@ -1494,6 +1511,18 @@
             }
         }
 
+        function updatePanelHeaderStats(vista, data, activeCount) {
+            var el = document.getElementById('clientes-hdr-stats-' + vista);
+            if (!el) return;
+            var totalNum = parseFloat((data.total_facturado || '0').replace(/,/g, ''));
+            var pct = data.progreso || 0;
+            var pctColor = pct >= 100 ? '#22C55E' : pct >= 60 ? '#3B82F6' : '#F97316';
+            el.innerHTML =
+                '<span style="font-size:0.68rem;font-weight:700;color:#374151;">' + fmtK(totalNum) + '</span>' +
+                '<span style="font-size:0.62rem;font-weight:800;color:' + pctColor + ';margin-left:5px;">' + pct + '%</span>' +
+                '<span style="font-size:0.60rem;color:#9CA3AF;margin-left:6px;">' + activeCount + ' activos</span>';
+        }
+
         function renderClientesPanel(vista) {
             var data = _clientesPanelData[vista];
             if (!data) return;
@@ -1502,17 +1531,24 @@
             var tbody = document.getElementById('clientesTbody-' + vista);
             if (!tbody) return;
             if (thead) thead.innerHTML = isExpanded ? _CLIENTES_THEAD_FULL : _CLIENTES_THEAD_MINI;
+            var rows = data.rows || [];
+            // En mini: solo clientes con actividad (total > 0)
+            var visibleRows = isExpanded ? rows : rows.filter(function (r) {
+                return parseFloat((r.total || '0').replace(/,/g, '')) > 0;
+            });
             var cols = isExpanded ? 14 : 4;
-            if (!data.rows || data.rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Sin datos.</td></tr>';
-                return;
+            if (visibleRows.length === 0) {
+                var msg = rows.length > 0 ? 'Sin actividad este periodo.' : 'Sin datos.';
+                tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-10 text-gray-400 italic" style="font-size:0.8rem;">' + msg + '</td></tr>';
+            } else {
+                var html = '';
+                for (var i = 0; i < visibleRows.length; i++) {
+                    html += isExpanded ? buildClientesFullRow(visibleRows[i]) : buildClientesMiniRow(visibleRows[i]);
+                }
+                tbody.innerHTML = html;
+                bindTableEvents();
             }
-            var html = '';
-            for (var i = 0; i < data.rows.length; i++) {
-                html += isExpanded ? buildClientesFullRow(data.rows[i]) : buildClientesMiniRow(data.rows[i]);
-            }
-            tbody.innerHTML = html;
-            bindTableEvents();
+            updatePanelHeaderStats(vista, data, visibleRows.length);
         }
 
         function loadClientesPanel(vista) {

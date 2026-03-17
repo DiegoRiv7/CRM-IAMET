@@ -207,9 +207,10 @@
         {% elif tab_activo == 'clientes' %}
         <div class="clientes-paneles" id="clientesPaneles">
             <!-- Panel Facturado -->
-            <div class="clientes-panel" id="clientes-panel-facturado">
+            <div class="clientes-panel clientes-panel--facturado" id="clientes-panel-facturado">
                 <div class="clientes-panel-hdr">
                     <span class="clientes-panel-title" style="color:#1D6F42;">Facturado</span>
+                    <span class="clientes-panel-summary" id="clientes-hdr-stats-facturado"></span>
                     <button type="button" class="clientes-panel-expand" id="clientes-expand-facturado"
                         onclick="clientesPanelToggle('facturado')" title="Expandir">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
@@ -223,9 +224,10 @@
                 </div>
             </div>
             <!-- Panel Cobrado -->
-            <div class="clientes-panel" id="clientes-panel-cobrado">
+            <div class="clientes-panel clientes-panel--cobrado" id="clientes-panel-cobrado">
                 <div class="clientes-panel-hdr">
                     <span class="clientes-panel-title" style="color:#0052D4;">Cobrado</span>
+                    <span class="clientes-panel-summary" id="clientes-hdr-stats-cobrado"></span>
                     <button type="button" class="clientes-panel-expand" id="clientes-expand-cobrado"
                         onclick="clientesPanelToggle('cobrado')" title="Expandir">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
@@ -239,9 +241,10 @@
                 </div>
             </div>
             <!-- Panel Oportunidades -->
-            <div class="clientes-panel" id="clientes-panel-oportunidades">
+            <div class="clientes-panel clientes-panel--oportunidades" id="clientes-panel-oportunidades">
                 <div class="clientes-panel-hdr">
                     <span class="clientes-panel-title" style="color:#5856D6;">Oportunidades</span>
+                    <span class="clientes-panel-summary" id="clientes-hdr-stats-oportunidades"></span>
                     <button type="button" class="clientes-panel-expand" id="clientes-expand-oportunidades"
                         onclick="clientesPanelToggle('oportunidades')" title="Expandir">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
@@ -255,9 +258,10 @@
                 </div>
             </div>
             <!-- Panel Cotizado -->
-            <div class="clientes-panel" id="clientes-panel-cotizado">
+            <div class="clientes-panel clientes-panel--cotizado" id="clientes-panel-cotizado">
                 <div class="clientes-panel-hdr">
                     <span class="clientes-panel-title" style="color:#FF9500;">Cotizado</span>
+                    <span class="clientes-panel-summary" id="clientes-hdr-stats-cotizado"></span>
                     <button type="button" class="clientes-panel-expand" id="clientes-expand-cotizado"
                         onclick="clientesPanelToggle('cotizado')" title="Expandir">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>

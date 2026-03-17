@@ -4224,39 +4224,56 @@
 .clientes-paneles {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    padding: 8px;
+    gap: 10px;
+    padding: 10px;
 }
 .clientes-panel {
     border: 1px solid #E5E7EB;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     background: #fff;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+    transition: box-shadow .2s;
 }
+.clientes-panel:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.09), 0 6px 20px rgba(0,0,0,0.06);
+}
+.clientes-panel--facturado  { border-top: 3px solid #1D6F42; }
+.clientes-panel--cobrado    { border-top: 3px solid #0052D4; }
+.clientes-panel--oportunidades { border-top: 3px solid #5856D6; }
+.clientes-panel--cotizado   { border-top: 3px solid #FF9500; }
 .clientes-panel-hdr {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 7px 10px;
-    background: #F9FAFB;
-    border-bottom: 1px solid #E5E7EB;
+    gap: 6px;
+    padding: 9px 12px;
+    background: #FAFAFA;
+    border-bottom: 1px solid #F0F0F0;
     flex-shrink: 0;
 }
 .clientes-panel-title {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
+    flex-shrink: 0;
+}
+.clientes-panel-summary {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
 }
 .clientes-panel-expand {
     border: none;
     background: none;
     cursor: pointer;
-    color: #9CA3AF;
-    padding: 3px;
-    border-radius: 4px;
+    color: #C7C7CC;
+    padding: 4px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -4270,13 +4287,37 @@
     overflow-x: auto;
     overflow-y: auto;
     flex: 1;
-    max-height: calc(100vh - 185px);
+    max-height: calc(100vh - 190px);
 }
 .clientes-mini-table {
     table-layout: fixed;
     width: 100%;
 }
-.clientes-mini-table td:first-child,
-.clientes-mini-table th:first-child {
-    width: 44%;
+.clientes-mini-table th:first-child,
+.clientes-mini-table td:first-child {
+    width: 46%;
+}
+.clientes-mini-table tr.crm-data-row:hover td {
+    background: #F8FAFF;
+}
+.clientes-mini-bar {
+    height: 2px;
+    background: #F0F0F0;
+    border-radius: 2px;
+    margin: 3px 0 2px;
+    overflow: hidden;
+}
+.clientes-mini-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .4s ease;
+}
+.clientes-mini-vendedor {
+    font-size: 0.63rem;
+    color: #B0B0B8;
+    font-weight: 500;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
