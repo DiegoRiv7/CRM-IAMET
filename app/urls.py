@@ -179,6 +179,10 @@ urlpatterns = [
     path('api/marcar-notificacion-leida/<int:notificacion_id>/', views.marcar_notificacion_leida_api, name='marcar_notificacion_leida_api'),
     path('api/marcar-todas-notificaciones-leidas/', views.marcar_todas_notificaciones_leidas_api, name='marcar_todas_notificaciones_leidas_api'),
 
+    # ── Novedades ─────────────────────────────────────────────────────────────
+    path('novedades/', views.novedades_view, name='novedades'),
+    path('api/novedades/toggle-widget/', views.api_toggle_novedades_widget, name='api_toggle_novedades_widget'),
+
     # ── Spotlight Search ──────────────────────────────────────────────────────
     path('api/spotlight-search/', views.spotlight_search_api, name='spotlight_search_api'),
 

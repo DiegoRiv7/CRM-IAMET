@@ -1,0 +1,507 @@
+{% extends "base.html" %}
+{% block title %}Novedades — CRM IAMET{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Novedades Page — Apple Tips style ── */
+.nov-page {
+    min-height: 100vh;
+    background: var(--bg-primary, #000);
+    color: var(--text-primary, #f5f5f7);
+    font-family: -apple-system, 'Inter', 'SF Pro Display', BlinkMacSystemFont, sans-serif;
+    padding: 0;
+}
+
+.nov-hero {
+    text-align: center;
+    padding: 64px 24px 40px;
+    position: relative;
+}
+
+.nov-hero-eyebrow {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #007AFF;
+    margin-bottom: 12px;
+}
+
+.nov-hero-title {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #fff 30%, #8E8E93 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nov-hero-sub {
+    font-size: 1rem;
+    color: #8E8E93;
+    font-weight: 500;
+    max-width: 460px;
+    margin: 0 auto 28px;
+    line-height: 1.6;
+}
+
+.nov-version-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,122,255,0.12);
+    border: 1px solid rgba(0,122,255,0.25);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #007AFF;
+    letter-spacing: 0.04em;
+}
+
+/* Admin toggle button */
+.nov-admin-bar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 48px;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.nov-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 22px;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.nov-toggle-btn.active-state {
+    background: #34C759;
+    color: #fff;
+}
+
+.nov-toggle-btn.inactive-state {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+.nov-toggle-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.nov-toggle-btn:active {
+    transform: scale(0.97);
+}
+
+.nov-toggle-hint {
+    font-size: 0.72rem;
+    color: #8E8E93;
+    max-width: 340px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* Grid de novedades */
+.nov-grid {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+    display: grid;
+    gap: 16px;
+}
+
+/* Card individual */
+.nov-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 26px 28px;
+    transition: background 0.2s, transform 0.2s;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.nov-card:hover {
+    background: rgba(255,255,255,0.08);
+    transform: translateY(-2px);
+}
+
+.nov-card-icon {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.nov-card-icon.nuevo  { background: rgba(0,122,255,0.18); }
+.nov-card-icon.mejora { background: rgba(52,199,89,0.18); }
+.nov-card-icon.fix    { background: rgba(255,149,0,0.18); }
+
+.nov-card-body { flex: 1; }
+
+.nov-card-tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin-bottom: 8px;
+}
+
+.nov-card-tag.nuevo  { background: rgba(0,122,255,0.18); color: #4A9EFF; }
+.nov-card-tag.mejora { background: rgba(52,199,89,0.18);  color: #30D158; }
+.nov-card-tag.fix    { background: rgba(255,149,0,0.18);  color: #FF9F0A; }
+
+.nov-card-title {
+    font-size: 1.0rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+    color: #f5f5f7;
+}
+
+.nov-card-desc {
+    font-size: 0.88rem;
+    color: #8E8E93;
+    line-height: 1.65;
+}
+
+.nov-card-desc li {
+    margin-bottom: 4px;
+    padding-left: 0;
+}
+
+.nov-card-desc ul {
+    margin: 6px 0 0 0;
+    padding-left: 18px;
+}
+
+/* Section header */
+.nov-section-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #48484a;
+    margin: 32px 0 12px;
+    padding: 0 4px;
+}
+
+/* Back button */
+.nov-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #007AFF;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    transition: opacity 0.15s;
+}
+.nov-back-btn:hover { opacity: 0.75; }
+
+/* Light theme compat */
+html[data-theme="white"] .nov-page,
+html[data-theme="perla"] .nov-page,
+html[data-theme="pink"] .nov-page,
+html[data-theme="coffee"] .nov-page {
+    background: #f2f2f7;
+    color: #1c1c1e;
+}
+
+html[data-theme="white"] .nov-hero-title,
+html[data-theme="perla"] .nov-hero-title,
+html[data-theme="pink"] .nov-hero-title,
+html[data-theme="coffee"] .nov-hero-title {
+    background: linear-gradient(135deg, #1c1c1e 30%, #6e6e73 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+html.light-theme .nov-card {
+    background: #fff;
+    border-color: rgba(0,0,0,0.07);
+}
+
+html.light-theme .nov-card:hover { background: #f9f9fb; }
+html.light-theme .nov-section-header { color: #aeaeb2; }
+html.light-theme .nov-card-title { color: #1c1c1e; }
+html.light-theme .nov-toggle-btn.inactive-state {
+    background: rgba(0,0,0,0.06);
+    color: #1c1c1e;
+    border-color: rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="nov-page" style="margin:-32px -16px;padding-top:0;">
+
+    <!-- Hero -->
+    <div class="nov-hero">
+        <a href="/app/todos/" class="nov-back-btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Volver al CRM
+        </a>
+        <div class="nov-hero-eyebrow">CRM IAMET</div>
+        <h1 class="nov-hero-title">Novedades</h1>
+        <p class="nov-hero-sub">Todo lo nuevo, mejorado y corregido en la ultima actualizacion del sistema.</p>
+        <div class="nov-version-chip">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Actualizacion 2026-03-13
+        </div>
+    </div>
+
+    {% if es_supervisor %}
+    <div class="nov-admin-bar">
+        <button
+            id="toggleWidgetBtn"
+            class="nov-toggle-btn {% if widget_activo %}active-state{% else %}inactive-state{% endif %}"
+            onclick="toggleNovedadesWidget()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span id="toggleBtnLabel">
+                {% if widget_activo %}Widget activo — desactivar{% else %}Activar widget para usuarios{% endif %}
+            </span>
+        </button>
+        <div class="nov-toggle-hint" id="toggleHint">
+            {% if widget_activo %}
+                Los usuarios veran el widget de novedades al recargar la pagina.
+            {% else %}
+                Al activar, la proxima vez que los usuarios recarguen el CRM les aparecera un aviso con las principales novedades.
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contenido -->
+    <div class="nov-grid">
+
+        <div class="nov-section-header">Nuevo en esta version</div>
+
+        <!-- Buscador global -->
+        <div class="nov-card">
+            <div class="nov-card-icon nuevo">
+                <svg width="22" height="22" fill="none" stroke="#4A9EFF" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag nuevo">Nuevo</span>
+                <div class="nov-card-title">Buscador global</div>
+                <div class="nov-card-desc">
+                    Ahora en la barra superior hay una lupa para buscar cualquier cosa en el sistema.
+                    <ul>
+                        <li>Busca oportunidades por nombre, PO o numero de factura</li>
+                        <li>Busca cotizaciones por su numero</li>
+                        <li>Busca tareas por nombre</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta actividad programada -->
+        <div class="nov-card">
+            <div class="nov-card-icon nuevo">
+                <svg width="22" height="22" fill="none" stroke="#4A9EFF" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag nuevo">Nuevo</span>
+                <div class="nov-card-title">Tarjeta "Actividad Programada"</div>
+                <div class="nov-card-desc">
+                    Una tarjeta siempre visible que muestra tu proxima actividad pendiente.
+                    <ul>
+                        <li>Muestra nombre, fecha y si esta vencida (en rojo)</li>
+                        <li>Haz clic para abrir el detalle y completarla</li>
+                        <li>Si no hay actividad muestra "Sin actividad programada"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campo PO -->
+        <div class="nov-card">
+            <div class="nov-card-icon nuevo">
+                <svg width="22" height="22" fill="none" stroke="#4A9EFF" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag nuevo">Nuevo</span>
+                <div class="nov-card-title">Campo PO</div>
+                <div class="nov-card-desc">
+                    El campo PO en el detalle de oportunidades ahora guarda correctamente.
+                    Todas las oportunidades importadas de Bitrix ya tienen su PO original.
+                    Ademas puedes buscar oportunidades por su numero de PO desde el buscador global.
+                </div>
+            </div>
+        </div>
+
+        <!-- Campo Factura -->
+        <div class="nov-card">
+            <div class="nov-card-icon nuevo">
+                <svg width="22" height="22" fill="none" stroke="#4A9EFF" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag nuevo">Nuevo</span>
+                <div class="nov-card-title">Campo Factura</div>
+                <div class="nov-card-desc">
+                    El campo factura en el detalle de oportunidades ahora guarda correctamente.
+                    Las oportunidades importadas de Bitrix ya incluyen su numero de factura original.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tareas: fecha y adjuntos -->
+        <div class="nov-card">
+            <div class="nov-card-icon nuevo">
+                <svg width="22" height="22" fill="none" stroke="#4A9EFF" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag nuevo">Nuevo</span>
+                <div class="nov-card-title">Mejoras en Tareas</div>
+                <div class="nov-card-desc">
+                    <ul>
+                        <li>El responsable puede editar la fecha limite de su tarea (el admin recibe notificacion)</li>
+                        <li>Ahora se puede etiquetar usuarios y subir documentos en los comentarios de tareas</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="nov-section-header">Mejoras</div>
+
+        <!-- Drive -->
+        <div class="nov-card">
+            <div class="nov-card-icon mejora">
+                <svg width="22" height="22" fill="none" stroke="#30D158" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag mejora">Mejora</span>
+                <div class="nov-card-title">Subida de archivos al Drive</div>
+                <div class="nov-card-desc">
+                    El drive de oportunidades ahora acepta archivos de hasta <strong>100 MB</strong> (antes era 2.5 MB).
+                    Planos DWG, videos y archivos pesados de ingenieria ya no dan error.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de oportunidades -->
+        <div class="nov-card">
+            <div class="nov-card-icon mejora">
+                <svg width="22" height="22" fill="none" stroke="#30D158" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag mejora">Mejora</span>
+                <div class="nov-card-title">Tabla de Oportunidades</div>
+                <div class="nov-card-desc">
+                    <ul>
+                        <li>Las oportunidades con actividades o tareas vencidas se muestran en rojo y al tope de la tabla</li>
+                        <li>El widget de una oportunidad no se puede cerrar si no tiene una actividad activa</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="nov-card">
+            <div class="nov-card-icon mejora">
+                <svg width="22" height="22" fill="none" stroke="#30D158" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag mejora">Mejora</span>
+                <div class="nov-card-title">Chat: cualquier archivo y etiquetas</div>
+                <div class="nov-card-desc">
+                    <ul>
+                        <li>Ya no se limita a imagenes: sube PDFs, Word, Excel, planos DWG, videos</li>
+                        <li>Selecciona varios archivos a la vez; se envian como mensajes separados</li>
+                        <li>Los archivos no-imagen se muestran como enlace descargable</li>
+                        <li>Etiqueta usuarios en el chat con <strong>@nombre</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="nov-section-header">Correcciones</div>
+
+        <!-- Fix: recargar pagina -->
+        <div class="nov-card">
+            <div class="nov-card-icon fix">
+                <svg width="22" height="22" fill="none" stroke="#FF9F0A" stroke-width="2" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+            </div>
+            <div class="nov-card-body">
+                <span class="nov-card-tag fix">Fix</span>
+                <div class="nov-card-title">Recargar la pagina</div>
+                <div class="nov-card-desc">
+                    Al recargar la pagina ya no regresa a la seccion CRM por defecto.
+                    Ahora el sistema recuerda en que seccion (tareas, muro, calendario...) estabas y regresa ahi.
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /nov-grid -->
+</div>
+
+<script>
+(function () {
+    var widgetActivo = {{ widget_activo|yesno:"true,false" }};
+
+    function toggleNovedadesWidget() {
+        var nuevo = !widgetActivo;
+        fetch('/app/api/novedades/toggle-widget/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ activo: nuevo })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            widgetActivo = d.activo;
+            var btn = document.getElementById('toggleWidgetBtn');
+            var lbl = document.getElementById('toggleBtnLabel');
+            var hint = document.getElementById('toggleHint');
+            if (!btn) return;
+            if (d.activo) {
+                btn.className = 'nov-toggle-btn active-state';
+                lbl.textContent = 'Widget activo \u2014 desactivar';
+                hint.textContent = 'Los usuarios veran el widget de novedades al recargar la pagina.';
+            } else {
+                btn.className = 'nov-toggle-btn inactive-state';
+                lbl.textContent = 'Activar widget para usuarios';
+                hint.textContent = 'Al activar, la proxima vez que los usuarios recarguen el CRM les aparecera un aviso con las principales novedades.';
+            }
+        })
+        .catch(function () { alert('Error al cambiar el estado del widget.'); });
+    }
+
+    function getCookie(name) {
+        var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return v ? v[2] : null;
+    }
+
+    window.toggleNovedadesWidget = toggleNovedadesWidget;
+})();
+</script>
+{% endblock %}

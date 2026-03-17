@@ -3297,3 +3297,20 @@ class ProyectoOportunidadLink(models.Model):
 
     def __str__(self):
         return f"{self.proyecto.nombre} <-> {self.oportunidad.oportunidad} ({self.score:.0f}%)"
+
+
+class NovedadesConfig(models.Model):
+    """Configuración singleton para el widget de novedades."""
+    widget_activo = models.BooleanField(default=False)
+    version = models.CharField(max_length=30, default='2026-03-13')
+
+    class Meta:
+        verbose_name = 'Configuración de Novedades'
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return f"Novedades v{self.version} — {'Activo' if self.widget_activo else 'Inactivo'}"

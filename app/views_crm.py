@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -419,6 +419,7 @@ def crm_home(request):
         'es_ingeniero': es_ingeniero,
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
+        'novedades_config': NovedadesConfig.get(),
     }
     return render(request, 'crm_home.html', context)
 
@@ -3233,3 +3234,29 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
     except Exception as e:
         print(f"❌ Error en vista previa de archivo: {e}")
         return HttpResponse(f'Error al abrir archivo: {str(e)}', status=500)
+
+
+# ── Novedades ──────────────────────────────────────────────────────────────
+
+@login_required
+def novedades_view(request):
+    """Página de novedades estilo Apple Tips."""
+    config = NovedadesConfig.get()
+    return render(request, 'novedades.html', {
+        'es_supervisor': is_supervisor(request.user),
+        'widget_activo': config.widget_activo,
+        'version': config.version,
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_toggle_novedades_widget(request):
+    """Activa o desactiva el widget de novedades (solo supervisores)."""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No permitido'}, status=403)
+    data = json.loads(request.body)
+    config = NovedadesConfig.get()
+    config.widget_activo = bool(data.get('activo', False))
+    config.save()
+    return JsonResponse({'ok': True, 'activo': config.widget_activo})
