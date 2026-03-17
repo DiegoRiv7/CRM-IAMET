@@ -436,16 +436,17 @@
                     },
                     selectable: true,
                     select: function(info) {
-                        // Pre-fill form with selected time slot
                         var start = info.start;
-                        var end = info.end;
                         var pad = function(n) { return String(n).padStart(2,'0'); };
                         document.getElementById('calFormActNombre').value = '';
                         document.getElementById('calFormActFecha').value = start.getFullYear()+'-'+pad(start.getMonth()+1)+'-'+pad(start.getDate());
-                        document.getElementById('calFormActInicio').value = pad(start.getHours())+':'+pad(start.getMinutes());
-                        // Cap end at 18:00
-                        var endH = end.getHours(), endM = end.getMinutes();
-                        if (endH > 18 || (endH === 18 && endM > 0)) { endH = 18; endM = 0; }
+                        // Si es clic en vista mes, getHours()=0 — usar hora actual
+                        var now = new Date();
+                        var startH = start.getHours(), startM = start.getMinutes();
+                        if (startH === 0 && startM === 0) { startH = now.getHours(); startM = now.getMinutes(); }
+                        document.getElementById('calFormActInicio').value = pad(startH)+':'+pad(startM);
+                        var endH = startH + 1, endM = startM;
+                        if (endH >= 24) endH = 23;
                         document.getElementById('calFormActFin').value = pad(endH)+':'+pad(endM);
                         document.getElementById('calFormActDesc').value = '';
                         _calParticipantesSel = [];
@@ -591,14 +592,13 @@
     window.calGlobalAbrirCrearActividad = function () {
         document.getElementById('calFormActNombre').value = '';
         var d = new Date();
-        document.getElementById('calFormActFecha').value = d.toISOString().split('T')[0];
-        var inicioTime = d.toTimeString().substring(0, 5);
-        if (inicioTime > '18:00') inicioTime = '18:00';
-        document.getElementById('calFormActInicio').value = inicioTime;
-        d.setHours(d.getHours() + 1);
-        var finTime = d.toTimeString().substring(0, 5);
-        if (finTime > '18:00') finTime = '18:00';
-        document.getElementById('calFormActFin').value = finTime;
+        var pad = function(n) { return String(n).padStart(2,'0'); };
+        document.getElementById('calFormActFecha').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+        var startH = d.getHours(), startM = d.getMinutes();
+        document.getElementById('calFormActInicio').value = pad(startH)+':'+pad(startM);
+        var endH = startH + 1, endM = startM;
+        if (endH >= 24) endH = 23;
+        document.getElementById('calFormActFin').value = pad(endH)+':'+pad(endM);
         document.getElementById('calFormActDesc').value = '';
         _calParticipantesSel = [];
         calRenderParticipantes();
