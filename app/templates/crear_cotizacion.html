@@ -1866,7 +1866,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     const montoValue = parseFloat(montoInput.value.replace(/[^0-9.-]+/g,""));
                     formData.set('monto', montoValue);
 
-                    const response = await fetch('{% url "crear_oportunidad_api" %}', {
+                    const response = await fetch('{% url "api_crear_oportunidad" %}', {
                         method: 'POST',
                         body: formData,
                         headers: {
