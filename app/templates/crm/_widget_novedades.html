@@ -430,8 +430,8 @@
 
 <script>
 (function () {
-    var VERSION = '{{ novedades_config.version }}';
-    var KEY = 'crm_novedades_visto_' + VERSION;
+    // La clave incluye activation_count: cambia cada vez que el admin activa → widget vuelve a aparecer
+    var KEY = 'crm_novedades_visto_{{ novedades_config.version }}_{{ novedades_config.activation_count }}';
 
     function wnMostrar() {
         var el = document.getElementById('wn-overlay');

@@ -3,148 +3,157 @@
 
 {% block extra_head %}
 <style>
-/* ═══ Novedades Page — CRM IAMET aesthetic ═══ */
+/* ── Escapar el container de base.html ── */
+.main-content.container,
+.main-content {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+body { background: #F5F5F7 !important; }
+
+/* ════════════════════════════════════════
+   NOVEDADES PAGE — Apple iOS style
+   ════════════════════════════════════════ */
 .nov-page {
-    background: #F5F5F7;
-    min-height: calc(100vh - 32px);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
     color: #1D1D1F;
-    padding-bottom: 80px;
-    margin: -32px -16px;
-    padding-top: 0;
+    background: #F5F5F7;
+    min-height: 100vh;
 }
 
-/* ── Hero ── */
+/* ── HERO ─────────────────────────────── */
 .nov-hero {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(160deg, #0052D4 0%, #007AFF 50%, #5856D6 100%);
-    padding: 56px 24px 60px;
+    background: linear-gradient(150deg, #0A4FD4 0%, #1A6BFF 40%, #5856D6 100%);
+    padding: 52px 24px 68px;
     text-align: center;
     color: #fff;
 }
-
 .nov-hero-bg {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    overflow: hidden;
-}
-.nov-hero-blob {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.07);
 }
 .nov-hero-dots {
     position: absolute;
     inset: 0;
-    opacity: 0.08;
-    background-image: radial-gradient(circle, #fff 1px, transparent 1px);
-    background-size: 24px 24px;
+    opacity: 0.07;
+    background-image: radial-gradient(circle, #fff 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
 }
-
+.nov-hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+}
 .nov-back {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    color: rgba(255,255,255,0.8);
+    color: rgba(255,255,255,0.75);
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: 600;
-    margin-bottom: 28px;
+    margin-bottom: 32px;
     position: relative;
     z-index: 1;
     transition: color 0.15s;
 }
 .nov-back:hover { color: #fff; }
-
 .nov-hero-icon {
-    width: 72px;
-    height: 72px;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(10px);
-    border: 1.5px solid rgba(255,255,255,0.3);
-    border-radius: 20px;
+    width: 80px; height: 80px;
+    background: rgba(255,255,255,0.16);
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255,255,255,0.28);
+    border-radius: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 18px;
     position: relative;
     z-index: 1;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.2);
 }
-
 .nov-hero-eyebrow {
     font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.7);
-    margin-bottom: 8px;
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 10px;
     position: relative;
     z-index: 1;
 }
-
 .nov-hero-title {
-    font-size: clamp(2.0rem, 4.5vw, 3rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-    margin: 0 0 10px;
+    font-size: clamp(2.8rem, 6vw, 4.2rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    margin: 0 0 14px;
     position: relative;
     z-index: 1;
 }
-
 .nov-hero-sub {
-    font-size: 0.95rem;
-    color: rgba(255,255,255,0.78);
-    max-width: 440px;
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.75);
+    max-width: 480px;
     margin: 0 auto;
-    line-height: 1.6;
+    line-height: 1.65;
     position: relative;
     z-index: 1;
 }
-
 .nov-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.25);
+    gap: 7px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.22);
     border-radius: 20px;
-    padding: 5px 14px;
-    font-size: 0.72rem;
+    padding: 6px 16px;
+    font-size: 0.74rem;
     font-weight: 600;
-    color: rgba(255,255,255,0.9);
-    margin-top: 16px;
+    color: rgba(255,255,255,0.88);
+    margin-top: 20px;
     position: relative;
     z-index: 1;
 }
 
-/* ── Admin bar ── */
+/* ── ADMIN BAR ────────────────────────── */
 .nov-admin-bar {
     background: #fff;
     border-bottom: 1px solid #E5E5EA;
-    padding: 16px 28px;
+    padding: 14px 40px;
     display: flex;
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
 }
-
 .nov-admin-label {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #6E6E73;
     flex: 1;
-    min-width: 200px;
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
-
+.nov-toggle-status {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-weight: 700;
+}
+.nov-toggle-status.on  { background: rgba(52,199,89,0.12);  color: #1E9E40; }
+.nov-toggle-status.off { background: rgba(142,142,147,0.1); color: #6E6E73; }
 .nov-toggle-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 20px;
+    padding: 10px 22px;
     border-radius: 50px;
     border: none;
     font-size: 0.82rem;
@@ -154,216 +163,211 @@
     font-family: inherit;
     white-space: nowrap;
 }
-.nov-toggle-btn.activo   { background: #34C759; color: #fff; box-shadow: 0 4px 12px rgba(52,199,89,0.3); }
+.nov-toggle-btn.activo   { background: #34C759; color: #fff; box-shadow: 0 4px 14px rgba(52,199,89,0.3); }
 .nov-toggle-btn.inactivo { background: #F5F5F7; color: #1D1D1F; border: 1px solid #D1D1D6; }
-.nov-toggle-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-.nov-toggle-btn:active { transform: scale(0.97); }
-
-.nov-toggle-status {
-    font-size: 0.78rem;
-    padding: 5px 12px;
-    border-radius: 50px;
-    font-weight: 600;
+.nov-toggle-btn:hover    { opacity: 0.88; transform: translateY(-1px); }
+.nov-toggle-btn:active   { transform: scale(0.97); }
+.nov-hint {
+    font-size: 0.74rem;
+    color: #8E8E93;
+    max-width: 260px;
+    line-height: 1.5;
 }
-.nov-toggle-status.on  { background: rgba(52,199,89,0.1);  color: #1E9E40; }
-.nov-toggle-status.off { background: rgba(142,142,147,0.1); color: #6E6E73; }
 
-/* ── Content ── */
-.nov-content {
-    max-width: 780px;
+/* ── SECTION DIVIDER ──────────────────── */
+.nov-section-header {
+    background: #F5F5F7;
+    padding: 56px 0 0;
+}
+.nov-section-header-inner {
+    max-width: 1120px;
     margin: 0 auto;
-    padding: 40px 20px 0;
+    padding: 0 40px 28px;
+    border-bottom: 1px solid #D2D2D7;
 }
-
-/* Section header */
-.nov-section {
-    margin-bottom: 28px;
-}
-
-.nov-section-title {
-    font-size: 1.3rem;
+.nov-section-overline {
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: -0.02em;
-    color: #1D1D1F;
-    margin-bottom: 4px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #007AFF;
+    margin-bottom: 6px;
 }
-.nov-section-count {
-    font-size: 0.78rem;
+.nov-section-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #1D1D1F;
+    margin: 0 0 4px;
+}
+.nov-section-sub {
+    font-size: 0.9rem;
     color: #8E8E93;
     font-weight: 500;
-    margin-bottom: 14px;
 }
 
-/* Cards */
-.nov-cards {
+/* ── FEATURE CARDS ────────────────────── */
+.nov-cards-wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 28px 40px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
 .nov-card {
     background: #fff;
-    border-radius: 18px;
+    border-radius: 20px;
     border: 1px solid rgba(0,0,0,0.06);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     overflow: hidden;
-    transition: box-shadow 0.2s, transform 0.2s;
-    animation: novCardIn 0.4s ease both;
+    transition: box-shadow 0.25s, transform 0.25s;
+    display: flex;
+    animation: novIn 0.45s ease both;
 }
 .nov-card:hover {
-    box-shadow: 0 6px 24px rgba(0,0,0,0.09);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10);
     transform: translateY(-2px);
 }
-
-@keyframes novCardIn {
-    from { opacity: 0; transform: translateY(14px); }
+@keyframes novIn {
+    from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-.nov-card:nth-child(1) { animation-delay: 0.05s; }
-.nov-card:nth-child(2) { animation-delay: 0.10s; }
-.nov-card:nth-child(3) { animation-delay: 0.15s; }
-.nov-card:nth-child(4) { animation-delay: 0.20s; }
-.nov-card:nth-child(5) { animation-delay: 0.25s; }
+.nov-card:nth-child(1) { animation-delay: 0.06s; }
+.nov-card:nth-child(2) { animation-delay: 0.12s; }
+.nov-card:nth-child(3) { animation-delay: 0.18s; }
+.nov-card:nth-child(4) { animation-delay: 0.24s; }
+.nov-card:nth-child(5) { animation-delay: 0.30s; }
 
-.nov-card-inner {
-    display: flex;
-    gap: 0;
-    align-items: stretch;
-}
-
-/* Left accent bar */
-.nov-card-bar {
-    width: 4px;
-    flex-shrink: 0;
-    border-radius: 0;
-}
+/* Accent bar */
+.nov-card-bar { width: 5px; flex-shrink: 0; }
 .nov-card-bar.nuevo  { background: #007AFF; }
 .nov-card-bar.mejora { background: #34C759; }
 .nov-card-bar.fix    { background: #FF9500; }
 
+/* Main content */
 .nov-card-main {
     flex: 1;
-    padding: 20px 20px 20px 18px;
+    padding: 28px 28px 28px 26px;
     display: flex;
-    gap: 16px;
+    gap: 20px;
     align-items: flex-start;
 }
 
-/* Icon bubble */
-.nov-card-icon {
-    width: 44px;
-    height: 44px;
+.nov-card-icon-wrap {
+    width: 52px; height: 52px;
     flex-shrink: 0;
-    border-radius: 12px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.nov-card-icon.nuevo  { background: rgba(0,122,255,0.1); }
-.nov-card-icon.mejora { background: rgba(52,199,89,0.1); }
-.nov-card-icon.fix    { background: rgba(255,149,0,0.1); }
+.nov-card-icon-wrap.nuevo  { background: rgba(0,122,255,0.10); }
+.nov-card-icon-wrap.mejora { background: rgba(52,199,89,0.10); }
+.nov-card-icon-wrap.fix    { background: rgba(255,149,0,0.10); }
 
 .nov-card-body { flex: 1; }
 
 .nov-card-tag {
     display: inline-block;
-    font-size: 0.6rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
     border-radius: 5px;
-    padding: 2px 7px;
-    margin-bottom: 6px;
+    padding: 2px 8px;
+    margin-bottom: 8px;
 }
-.nov-card-tag.nuevo  { background: rgba(0,122,255,0.1);  color: #007AFF; }
-.nov-card-tag.mejora { background: rgba(52,199,89,0.12); color: #1E9E40; }
-.nov-card-tag.fix    { background: rgba(255,149,0,0.12); color: #C07000; }
+.nov-card-tag.nuevo  { background: rgba(0,122,255,0.10);  color: #007AFF; }
+.nov-card-tag.mejora { background: rgba(52,199,89,0.12);  color: #1E9E40; }
+.nov-card-tag.fix    { background: rgba(255,149,0,0.12);  color: #B86B00; }
 
 .nov-card-title {
-    font-size: 0.97rem;
+    font-size: 1.15rem;
     font-weight: 700;
+    letter-spacing: -0.02em;
     color: #1D1D1F;
-    margin-bottom: 5px;
-    letter-spacing: -0.01em;
+    margin-bottom: 8px;
 }
-
 .nov-card-desc {
-    font-size: 0.83rem;
+    font-size: 0.88rem;
     color: #6E6E73;
-    line-height: 1.65;
+    line-height: 1.7;
 }
 .nov-card-desc ul {
-    margin: 5px 0 0;
-    padding-left: 16px;
+    margin: 6px 0 0;
+    padding-left: 18px;
 }
-.nov-card-desc li { margin-bottom: 3px; }
+.nov-card-desc li { margin-bottom: 4px; }
 
-/* Preview panel (right side) */
+/* Preview panel */
 .nov-card-preview {
-    width: 120px;
+    width: 148px;
     flex-shrink: 0;
     background: #F5F5F7;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 16px;
     border-left: 1px solid rgba(0,0,0,0.05);
 }
 
-/* ── Divider entre secciones ── */
-.nov-divider {
-    height: 1px;
-    background: #E5E5EA;
-    margin: 32px 0;
+/* ── COMING SOON ──────────────────────── */
+.nov-coming-wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 40px 64px;
 }
-
-/* ── Coming soon ── */
-.nov-coming-soon {
+.nov-coming {
     background: #fff;
     border-radius: 18px;
     border: 1px solid rgba(0,0,0,0.06);
-    padding: 24px 22px;
+    padding: 26px 28px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    animation: novCardIn 0.4s 0.35s ease both;
+    gap: 18px;
+    animation: novIn 0.45s 0.4s ease both;
 }
 .nov-coming-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 48px; height: 48px;
+    border-radius: 13px;
     background: rgba(142,142,147,0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
-.nov-coming-title { font-size: 0.9rem; font-weight: 700; color: #1D1D1F; margin-bottom: 3px; }
-.nov-coming-list  { font-size: 0.78rem; color: #8E8E93; line-height: 1.6; }
+.nov-coming-title { font-size: 1rem; font-weight: 700; color: #1D1D1F; margin-bottom: 4px; }
+.nov-coming-list  { font-size: 0.83rem; color: #8E8E93; line-height: 1.65; }
+
+/* ── BOTTOM SPACER ────────────────────── */
+.nov-footer-spacer {
+    height: 72px;
+    background: #F5F5F7;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="nov-page">
 
-    <!-- Hero -->
+    <!-- ── HERO ── -->
     <div class="nov-hero">
         <div class="nov-hero-bg">
             <div class="nov-hero-dots"></div>
-            <div class="nov-hero-blob" style="width:320px;height:320px;top:-100px;right:-80px;"></div>
-            <div class="nov-hero-blob" style="width:200px;height:200px;bottom:-80px;left:-40px;"></div>
+            <div class="nov-hero-blob" style="width:360px;height:360px;top:-120px;right:-80px;"></div>
+            <div class="nov-hero-blob" style="width:240px;height:240px;bottom:-100px;left:-50px;"></div>
+            <div class="nov-hero-blob" style="width:160px;height:160px;top:40px;left:15%;opacity:.5;"></div>
         </div>
-
         <div style="position:relative;z-index:1;">
             <a href="/app/todos/" class="nov-back">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
                 Volver al CRM
             </a>
         </div>
-
         <div class="nov-hero-icon">
-            <svg width="34" height="34" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round" viewBox="0 0 24 24">
+            <svg width="38" height="38" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round" viewBox="0 0 24 24">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
         </div>
@@ -371,35 +375,31 @@
         <h1 class="nov-hero-title">Novedades</h1>
         <p class="nov-hero-sub">Todo lo nuevo, mejorado y corregido en la ultima actualizacion del sistema.</p>
         <div class="nov-chip">
-            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             Actualizacion — Marzo 2026
         </div>
     </div>
 
     {% if es_supervisor %}
-    <!-- Admin bar -->
+    <!-- ── ADMIN BAR ── -->
     <div class="nov-admin-bar">
-        <div style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap;">
-            <svg width="16" height="16" fill="none" stroke="#8E8E93" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            <span class="nov-admin-label">
-                Widget de bienvenida para usuarios —
-                <span id="novWidgetStatus" class="nov-toggle-status {% if widget_activo %}on{% else %}off{% endif %}">
-                    {% if widget_activo %}Activo{% else %}Inactivo{% endif %}
-                </span>
+        <div class="nov-admin-label">
+            <svg width="15" height="15" fill="none" stroke="#8E8E93" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Widget de bienvenida para usuarios &mdash;
+            <span id="novWidgetStatus" class="nov-toggle-status {% if novedades_config.widget_activo %}on{% else %}off{% endif %}">
+                {% if novedades_config.widget_activo %}Activo{% else %}Inactivo{% endif %}
             </span>
         </div>
         <button id="novToggleBtn"
-            class="nov-toggle-btn {% if widget_activo %}activo{% else %}inactivo{% endif %}"
+            class="nov-toggle-btn {% if novedades_config.widget_activo %}activo{% else %}inactivo{% endif %}"
             onclick="novToggleWidget()">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             <span id="novToggleBtnLabel">
-                {% if widget_activo %}Desactivar widget{% else %}Activar widget para usuarios{% endif %}
+                {% if novedades_config.widget_activo %}Desactivar widget{% else %}Activar widget para usuarios{% endif %}
             </span>
         </button>
-        <div style="font-size:0.72rem;color:#8E8E93;max-width:240px;line-height:1.5;" id="novToggleHint">
-            {% if widget_activo %}
+        <div class="nov-hint" id="novToggleHint">
+            {% if novedades_config.widget_activo %}
                 Los usuarios veran el popup al recargar el CRM.
             {% else %}
                 Al activar, aparecera un popup con las novedades la proxima vez que los usuarios carguen el CRM.
@@ -408,459 +408,475 @@
     </div>
     {% endif %}
 
-    <!-- Content -->
-    <div class="nov-content">
-
-        <!-- NUEVO -->
-        <div class="nov-section">
-            <div class="nov-section-title">Nuevo</div>
-            <div class="nov-section-count">5 funciones nuevas en esta version</div>
-            <div class="nov-cards">
-
-                <!-- Buscador global -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar nuevo"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon nuevo">
-                                <svg width="22" height="22" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
-                                    <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag nuevo">Nuevo</span>
-                                <div class="nov-card-title">Buscador global</div>
-                                <div class="nov-card-desc">
-                                    Ahora en la barra superior hay una lupa para buscar cualquier cosa en el sistema.
-                                    <ul>
-                                        <li>Busca oportunidades por nombre, PO o numero de factura</li>
-                                        <li>Busca cotizaciones por su numero</li>
-                                        <li>Busca tareas por nombre</li>
-                                        <li>Acceso rapido con el atajo <strong>⌘K</strong></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Preview: Spotlight mockup -->
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="4" width="92" height="72" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <!-- Search bar -->
-                                <rect x="12" y="14" width="76" height="14" rx="7" fill="#F2F2F7"/>
-                                <circle cx="22" cy="21" r="4.5" fill="none" stroke="#007AFF" stroke-width="1.8"/>
-                                <line x1="25.2" y1="24.2" x2="28" y2="27" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round"/>
-                                <rect x="30" y="19" width="28" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <rect x="72" y="18.5" width="14" height="5" rx="2.5" fill="#E5E5EA"/>
-                                <text x="74" y="22.5" font-size="4.5" fill="#8E8E93" font-family="sans-serif">⌘K</text>
-                                <!-- Results -->
-                                <rect x="12" y="33" width="8" height="8" rx="3" fill="rgba(0,122,255,0.15)"/>
-                                <rect x="24" y="34.5" width="36" height="3" rx="1.5" fill="#1D1D1F" opacity=".8"/>
-                                <rect x="24" y="39" width="22" height="2.5" rx="1.25" fill="#C7C7CC"/>
-                                <line x1="12" y1="47" x2="88" y2="47" stroke="#F2F2F7" stroke-width="1"/>
-                                <rect x="12" y="51" width="8" height="8" rx="3" fill="rgba(52,199,89,0.15)"/>
-                                <rect x="24" y="52.5" width="28" height="3" rx="1.5" fill="#1D1D1F" opacity=".7"/>
-                                <rect x="24" y="57" width="18" height="2.5" rx="1.25" fill="#C7C7CC"/>
-                                <line x1="12" y1="65" x2="88" y2="65" stroke="#F2F2F7" stroke-width="1"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tarjeta actividad programada -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar nuevo"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon nuevo">
-                                <svg width="22" height="22" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
-                                    <rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag nuevo">Nuevo</span>
-                                <div class="nov-card-title">Tarjeta "Actividad Programada"</div>
-                                <div class="nov-card-desc">
-                                    Una tarjeta siempre visible que muestra tu proxima actividad pendiente.
-                                    <ul>
-                                        <li>Muestra nombre, fecha, y si esta vencida aparece en rojo</li>
-                                        <li>Haz clic para abrir el detalle y completarla</li>
-                                        <li>Si no hay actividades muestra "Sin actividad programada"</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <!-- Card background -->
-                                <rect x="4" y="10" width="92" height="60" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <!-- Top label -->
-                                <rect x="14" y="18" width="30" height="4" rx="2" fill="#E5E5EA"/>
-                                <!-- Title -->
-                                <rect x="14" y="26" width="55" height="5" rx="2.5" fill="#1D1D1F" opacity=".85"/>
-                                <!-- Date chip -->
-                                <rect x="14" y="35" width="38" height="5" rx="2.5" fill="rgba(88,86,214,0.12)"/>
-                                <rect x="16" y="36.5" width="3" height="3" rx="1" fill="#5856D6"/>
-                                <rect x="21" y="37" width="28" height="2" rx="1" fill="#5856D6" opacity=".7"/>
-                                <!-- Vencida badge -->
-                                <rect x="56" y="35" width="30" height="5" rx="2.5" fill="rgba(255,59,48,0.1)"/>
-                                <rect x="60" y="36.5" width="22" height="2" rx="1" fill="#FF3B30" opacity=".8"/>
-                                <!-- CTA button -->
-                                <rect x="14" y="54" width="72" height="10" rx="5" fill="#007AFF" opacity=".9"/>
-                                <rect x="35" y="57" width="30" height="3" rx="1.5" fill="#fff" opacity=".9"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Campo PO -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar nuevo"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon nuevo">
-                                <svg width="22" height="22" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <polyline points="14 2 14 8 20 8"/>
-                                    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag nuevo">Nuevo</span>
-                                <div class="nov-card-title">Campo PO</div>
-                                <div class="nov-card-desc">
-                                    El campo PO en el detalle de oportunidades ahora guarda correctamente.
-                                    Todas las oportunidades importadas de Bitrix ya tienen su PO original.
-                                    Puedes buscarlo desde el buscador global.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="8" width="92" height="64" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <rect x="12" y="18" width="22" height="3.5" rx="1.75" fill="#C7C7CC"/>
-                                <rect x="12" y="25" width="76" height="9" rx="4.5" fill="#F2F2F7" stroke="#D1D1D6" stroke-width=".8"/>
-                                <rect x="16" y="27.5" width="30" height="4" rx="2" fill="#1D1D1F" opacity=".6"/>
-                                <rect x="12" y="40" width="22" height="3.5" rx="1.75" fill="#C7C7CC"/>
-                                <rect x="12" y="47" width="76" height="9" rx="4.5" fill="#F2F2F7" stroke="#007AFF" stroke-width="1"/>
-                                <rect x="16" y="49.5" width="22" height="4" rx="2" fill="#007AFF" opacity=".7"/>
-                                <text x="16" y="53" font-size="4.5" fill="#007AFF" font-family="sans-serif" font-weight="bold">PO-2026-001</text>
-                                <rect x="12" y="62" width="40" height="6" rx="3" fill="#007AFF" opacity=".85"/>
-                                <rect x="18" y="64" width="28" height="2.5" rx="1.25" fill="#fff" opacity=".9"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Campo Factura -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar nuevo"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon nuevo">
-                                <svg width="22" height="22" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
-                                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag nuevo">Nuevo</span>
-                                <div class="nov-card-title">Campo Factura</div>
-                                <div class="nov-card-desc">
-                                    El campo factura en el detalle de oportunidades ahora guarda correctamente.
-                                    Las oportunidades importadas de Bitrix ya incluyen su numero de factura original.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="8" y="12" width="84" height="56" rx="10" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <rect x="16" y="20" width="30" height="3" rx="1.5" fill="#1D1D1F" opacity=".8"/>
-                                <rect x="16" y="26" width="68" height="1" stroke="#E5E5EA" stroke-width="1"/>
-                                <rect x="16" y="30" width="20" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <rect x="44" y="30" width="40" height="3" rx="1.5" fill="#1D1D1F" opacity=".6"/>
-                                <rect x="16" y="37" width="20" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <rect x="44" y="37" width="32" height="3" rx="1.5" fill="#34C759" opacity=".8"/>
-                                <rect x="16" y="44" width="20" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <rect x="44" y="44" width="36" height="3" rx="1.5" fill="#007AFF" opacity=".8"/>
-                                <rect x="16" y="54" width="26" height="7" rx="3.5" fill="#F2F2F7" stroke="#D1D1D6" stroke-width=".8"/>
-                                <rect x="50" y="54" width="34" height="7" rx="3.5" fill="#007AFF" opacity=".9"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tareas mejoradas -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar nuevo"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon nuevo">
-                                <svg width="22" height="22" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
-                                    <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag nuevo">Nuevo</span>
-                                <div class="nov-card-title">Mejoras en Tareas</div>
-                                <div class="nov-card-desc">
-                                    <ul>
-                                        <li>El responsable puede editar la fecha limite de su tarea (el admin recibe notificacion del cambio)</li>
-                                        <li>Se pueden etiquetar usuarios y subir documentos en los comentarios de tareas</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="8" width="92" height="64" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <!-- Task items -->
-                                <rect x="12" y="16" width="8" height="8" rx="2" fill="rgba(0,122,255,0.12)" stroke="#007AFF" stroke-width="1"/>
-                                <rect x="24" y="17.5" width="42" height="3" rx="1.5" fill="#1D1D1F" opacity=".8"/>
-                                <rect x="24" y="23" width="28" height="2.5" rx="1.25" fill="#C7C7CC"/>
-                                <line x1="12" y1="32" x2="88" y2="32" stroke="#F2F2F7" stroke-width="1"/>
-                                <rect x="12" y="36" width="8" height="8" rx="2" fill="rgba(52,199,89,0.12)" stroke="#34C759" stroke-width="1"/>
-                                <path d="M14 40 L16 42 L19 38" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                                <rect x="24" y="37.5" width="36" height="3" rx="1.5" fill="#1D1D1F" opacity=".5"/>
-                                <rect x="24" y="43" width="20" height="2.5" rx="1.25" fill="#C7C7CC"/>
-                                <!-- Comment with @mention -->
-                                <rect x="12" y="54" width="76" height="12" rx="6" fill="#F2F2F7"/>
-                                <text x="17" y="62" font-size="5" fill="#007AFF" font-family="sans-serif" font-weight="bold">@carlos</text>
-                                <rect x="52" y="57.5" width="28" height="5" rx="2.5" fill="#E5E5EA"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-            </div><!-- /nov-cards NUEVO -->
+    <!-- ════════════════════════════════
+         SECCIÓN CRM
+         ════════════════════════════════ -->
+    <div class="nov-section-header">
+        <div class="nov-section-header-inner">
+            <div class="nov-section-overline">CRM</div>
+            <div class="nov-section-title">Oportunidades y CRM</div>
+            <div class="nov-section-sub">7 cambios en el modulo principal</div>
         </div>
+    </div>
 
-        <div class="nov-divider"></div>
+    <div class="nov-cards-wrap">
 
-        <!-- MEJORAS -->
-        <div class="nov-section">
-            <div class="nov-section-title">Mejoras</div>
-            <div class="nov-section-count">3 funciones mejoradas</div>
-            <div class="nov-cards">
-
-                <!-- Drive -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar mejora"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon mejora">
-                                <svg width="22" height="22" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                    <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag mejora">Mejora</span>
-                                <div class="nov-card-title">Subida de archivos — hasta 100 MB</div>
-                                <div class="nov-card-desc">
-                                    El drive de oportunidades ahora acepta archivos de hasta <strong>100 MB</strong> (antes era 2.5 MB).
-                                    Planos DWG, videos y archivos pesados de ingenieria ya no dan error.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="10" width="92" height="60" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <!-- Upload area -->
-                                <rect x="12" y="18" width="76" height="36" rx="8" fill="#F9F9FB" stroke="#D1D1D6" stroke-width="1" stroke-dasharray="4 2"/>
-                                <circle cx="50" cy="30" r="8" fill="rgba(52,199,89,0.12)"/>
-                                <path d="M50 26 L50 34 M46 30 L50 26 L54 30" stroke="#34C759" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                                <rect x="30" y="42" width="40" height="5" rx="2.5" fill="#E5E5EA"/>
-                                <rect x="38" y="43.5" width="24" height="2" rx="1" fill="#C7C7CC"/>
-                                <!-- Size badge -->
-                                <rect x="28" y="58" width="44" height="7" rx="3.5" fill="rgba(52,199,89,0.12)" stroke="#34C759" stroke-width=".8"/>
-                                <text x="35" y="63" font-size="5.5" fill="#1E9E40" font-family="sans-serif" font-weight="bold">max 100 MB</text>
-                            </svg>
-                        </div>
+        <!-- Buscador global -->
+        <div class="nov-card">
+            <div class="nov-card-bar nuevo"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap nuevo">
+                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag nuevo">Nuevo</span>
+                    <div class="nov-card-title">Buscador global</div>
+                    <div class="nov-card-desc">
+                        Ahora en la barra superior hay una lupa para buscar cualquier cosa en el sistema.
+                        <ul>
+                            <li>Busca oportunidades por nombre, PO o numero de factura</li>
+                            <li>Busca cotizaciones por su numero</li>
+                            <li>Busca tareas por nombre</li>
+                            <li>Acceso rapido con el atajo <strong>⌘K</strong></li>
+                        </ul>
                     </div>
                 </div>
-
-                <!-- Tabla oportunidades -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar mejora"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon mejora">
-                                <svg width="22" height="22" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24">
-                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                    <path d="M3 9h18M9 21V9"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag mejora">Mejora</span>
-                                <div class="nov-card-title">Tabla de Oportunidades</div>
-                                <div class="nov-card-desc">
-                                    <ul>
-                                        <li>Oportunidades con actividades o tareas vencidas se muestran en rojo y al inicio de la tabla</li>
-                                        <li>El widget de una oportunidad no se puede cerrar si no tiene una actividad activa</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="8" width="92" height="64" rx="10" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <!-- Header -->
-                                <rect x="4" y="8" width="92" height="12" rx="10" fill="#F5F5F7"/>
-                                <rect x="4" y="14" width="92" height="6" fill="#F5F5F7"/>
-                                <rect x="12" y="11" width="16" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <rect x="36" y="11" width="12" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <rect x="56" y="11" width="12" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <!-- Row 1 — vencida -->
-                                <rect x="4" y="20" width="92" height="12" fill="rgba(255,59,48,0.07)"/>
-                                <rect x="12" y="23.5" width="3" height="5" rx="1.5" fill="#FF3B30"/>
-                                <rect x="18" y="24" width="22" height="3" rx="1.5" fill="#FF3B30" opacity=".6"/>
-                                <rect x="48" y="24" width="14" height="3" rx="1.5" fill="#FF3B30" opacity=".4"/>
-                                <!-- Row 2 -->
-                                <rect x="4" y="32" width="92" height="12" fill="#fff"/>
-                                <rect x="12" y="35.5" width="22" height="3" rx="1.5" fill="#1D1D1F" opacity=".6"/>
-                                <rect x="48" y="35.5" width="14" height="3" rx="1.5" fill="#1D1D1F" opacity=".35"/>
-                                <!-- Row 3 -->
-                                <rect x="4" y="44" width="92" height="12" fill="#F9F9FB"/>
-                                <rect x="12" y="47.5" width="18" height="3" rx="1.5" fill="#1D1D1F" opacity=".5"/>
-                                <rect x="48" y="47.5" width="10" height="3" rx="1.5" fill="#1D1D1F" opacity=".25"/>
-                                <!-- Row 4 -->
-                                <rect x="4" y="56" width="92" height="12" fill="#fff"/>
-                                <rect x="12" y="59.5" width="24" height="3" rx="1.5" fill="#1D1D1F" opacity=".45"/>
-                                <rect x="48" y="59.5" width="16" height="3" rx="1.5" fill="#1D1D1F" opacity=".2"/>
-                                <!-- Lines -->
-                                <line x1="4" y1="32" x2="96" y2="32" stroke="#F2F2F7" stroke-width="1"/>
-                                <line x1="4" y1="44" x2="96" y2="44" stroke="#F2F2F7" stroke-width="1"/>
-                                <line x1="4" y1="56" x2="96" y2="56" stroke="#F2F2F7" stroke-width="1"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chat -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar mejora"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon mejora">
-                                <svg width="22" height="22" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag mejora">Mejora</span>
-                                <div class="nov-card-title">Chat: cualquier archivo y etiquetas @</div>
-                                <div class="nov-card-desc">
-                                    <ul>
-                                        <li>Ya no se limita a imagenes: sube PDFs, Word, Excel, DWG, videos</li>
-                                        <li>Selecciona varios archivos a la vez; se envian como mensajes separados</li>
-                                        <li>Etiqueta usuarios en el chat con <strong>@nombre</strong></li>
-                                        <li>Archivos no-imagen se muestran como enlace descargable</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="6" width="92" height="68" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <!-- Messages -->
-                                <rect x="10" y="14" width="50" height="10" rx="5" fill="#F2F2F7"/>
-                                <rect x="14" y="17" width="28" height="4" rx="2" fill="#D1D1D6"/>
-                                <rect x="40" y="28" width="50" height="10" rx="5" fill="rgba(0,122,255,0.12)"/>
-                                <rect x="44" y="31" width="38" height="4" rx="2" fill="#007AFF" opacity=".5"/>
-                                <!-- @mention -->
-                                <rect x="10" y="42" width="60" height="10" rx="5" fill="#F2F2F7"/>
-                                <text x="14" y="49" font-size="5.5" fill="#007AFF" font-family="sans-serif" font-weight="bold">@carlos</text>
-                                <rect x="43" y="44.5" width="22" height="3" rx="1.5" fill="#D1D1D6"/>
-                                <!-- File attachment -->
-                                <rect x="10" y="56" width="48" height="12" rx="6" fill="#F5F5F7" stroke="#E5E5EA" stroke-width="1"/>
-                                <rect x="17" y="59.5" width="6" height="5" rx="1.5" fill="rgba(255,59,48,0.3)"/>
-                                <rect x="27" y="60" width="22" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <rect x="27" y="64.5" width="14" height="2" rx="1" fill="#E5E5EA"/>
-                                <!-- Input -->
-                                <rect x="10" y="68" width="68" height="1" fill="#F2F2F7"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-            </div><!-- /nov-cards MEJORAS -->
-        </div>
-
-        <div class="nov-divider"></div>
-
-        <!-- FIX -->
-        <div class="nov-section">
-            <div class="nov-section-title">Correcciones</div>
-            <div class="nov-section-count">1 correccion en esta version</div>
-            <div class="nov-cards">
-
-                <!-- Fix: recargar pagina -->
-                <div class="nov-card">
-                    <div class="nov-card-inner">
-                        <div class="nov-card-bar fix"></div>
-                        <div class="nov-card-main">
-                            <div class="nov-card-icon fix">
-                                <svg width="22" height="22" fill="none" stroke="#C07000" stroke-width="2" viewBox="0 0 24 24">
-                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
-                                </svg>
-                            </div>
-                            <div class="nov-card-body">
-                                <span class="nov-card-tag fix">Fix</span>
-                                <div class="nov-card-title">Recargar la pagina ya no regresa al CRM</div>
-                                <div class="nov-card-desc">
-                                    Al recargar la pagina ya no regresa automaticamente a la seccion CRM por defecto.
-                                    Ahora el sistema recuerda en que seccion estabas (tareas, muro, calendario, correo...)
-                                    y regresa ahi despues de recargar.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="nov-card-preview">
-                            <svg viewBox="0 0 100 80" width="100" height="80" xmlns="http://www.w3.org/2000/svg">
-                                <!-- Browser chrome mock -->
-                                <rect x="4" y="8" width="92" height="64" rx="10" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                                <rect x="4" y="8" width="92" height="14" rx="10" fill="#F5F5F7"/>
-                                <rect x="4" y="15" width="92" height="7" fill="#F5F5F7"/>
-                                <!-- Tab bar -->
-                                <rect x="12" y="12" width="24" height="6" rx="3" fill="#007AFF" opacity=".15"/>
-                                <rect x="14" y="13.5" width="16" height="3" rx="1.5" fill="#007AFF" opacity=".8"/>
-                                <rect x="40" y="12" width="20" height="6" rx="3" fill="transparent"/>
-                                <rect x="42" y="13.5" width="12" height="3" rx="1.5" fill="#C7C7CC"/>
-                                <!-- Page content indicator -->
-                                <rect x="12" y="30" width="36" height="4" rx="2" fill="#1D1D1F" opacity=".8"/>
-                                <!-- Arrow showing "stays here" -->
-                                <circle cx="72" cy="46" r="12" fill="rgba(52,199,89,0.1)" stroke="#34C759" stroke-width="1"/>
-                                <path d="M72 40 L72 46 M68 43 L72 47 L76 43" stroke="#34C759" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                                <rect x="28" y="62" width="44" height="4" rx="2" fill="#E5E5EA"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="4" width="112" height="88" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="12" y="14" width="96" height="16" rx="8" fill="#F2F2F7"/>
+                    <circle cx="24" cy="22" r="5.5" fill="none" stroke="#007AFF" stroke-width="2"/>
+                    <line x1="28" y1="26" x2="32" y2="30" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
+                    <rect x="34" y="19.5" width="34" height="5" rx="2.5" fill="#C7C7CC"/>
+                    <rect x="90" y="19" width="16" height="6" rx="3" fill="#E5E5EA"/>
+                    <text x="92" y="23.5" font-size="5" fill="#8E8E93" font-family="sans-serif">⌘K</text>
+                    <rect x="12" y="36" width="10" height="10" rx="3" fill="rgba(0,122,255,0.14)"/>
+                    <rect x="26" y="38" width="50" height="4" rx="2" fill="#1D1D1F" opacity=".75"/>
+                    <rect x="26" y="44" width="32" height="3" rx="1.5" fill="#C7C7CC"/>
+                    <line x1="12" y1="52" x2="108" y2="52" stroke="#F2F2F7" stroke-width="1"/>
+                    <rect x="12" y="57" width="10" height="10" rx="3" fill="rgba(52,199,89,0.14)"/>
+                    <rect x="26" y="59" width="42" height="4" rx="2" fill="#1D1D1F" opacity=".65"/>
+                    <rect x="26" y="65" width="24" height="3" rx="1.5" fill="#C7C7CC"/>
+                    <line x1="12" y1="73" x2="108" y2="73" stroke="#F2F2F7" stroke-width="1"/>
+                    <rect x="12" y="78" width="10" height="10" rx="3" fill="rgba(255,149,0,0.14)"/>
+                    <rect x="26" y="80" width="36" height="4" rx="2" fill="#1D1D1F" opacity=".55"/>
+                </svg>
             </div>
         </div>
 
-        <div class="nov-divider"></div>
+        <!-- Actividad programada -->
+        <div class="nov-card">
+            <div class="nov-card-bar nuevo"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap nuevo">
+                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag nuevo">Nuevo</span>
+                    <div class="nov-card-title">Tarjeta "Actividad Programada"</div>
+                    <div class="nov-card-desc">
+                        Una tarjeta siempre visible que muestra tu proxima actividad pendiente.
+                        <ul>
+                            <li>Muestra nombre, fecha, y si esta vencida aparece en rojo</li>
+                            <li>Haz clic para abrir el detalle y completarla directamente</li>
+                            <li>Si no hay actividades muestra "Sin actividad programada"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="12" width="112" height="72" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="14" y="20" width="36" height="5" rx="2.5" fill="#E5E5EA"/>
+                    <rect x="14" y="30" width="68" height="7" rx="3.5" fill="#1D1D1F" opacity=".8"/>
+                    <rect x="14" y="42" width="46" height="7" rx="3.5" fill="rgba(88,86,214,0.14)"/>
+                    <rect x="18" y="44" width="4" height="3" rx="1" fill="#5856D6"/>
+                    <rect x="25" y="44.5" width="30" height="3" rx="1.5" fill="#5856D6" opacity=".65"/>
+                    <rect x="64" y="42" width="38" height="7" rx="3.5" fill="rgba(255,59,48,0.1)"/>
+                    <rect x="68" y="44" width="26" height="3" rx="1.5" fill="#FF3B30" opacity=".75"/>
+                    <rect x="14" y="66" width="92" height="12" rx="6" fill="#007AFF" opacity=".9"/>
+                    <rect x="36" y="69.5" width="48" height="5" rx="2.5" fill="#fff" opacity=".9"/>
+                </svg>
+            </div>
+        </div>
 
-        <!-- Proximas -->
-        <div class="nov-coming-soon">
+        <!-- Campo PO -->
+        <div class="nov-card">
+            <div class="nov-card-bar nuevo"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap nuevo">
+                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag nuevo">Nuevo</span>
+                    <div class="nov-card-title">Campo PO</div>
+                    <div class="nov-card-desc">
+                        El campo PO en el detalle de oportunidades ahora guarda correctamente.
+                        Todas las oportunidades importadas de Bitrix ya tienen su PO original.
+                        Puedes buscarlo desde el buscador global.
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="8" width="112" height="80" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="14" y="18" width="28" height="4.5" rx="2.25" fill="#C7C7CC"/>
+                    <rect x="14" y="26" width="92" height="11" rx="5.5" fill="#F2F2F7" stroke="#D1D1D6" stroke-width="1"/>
+                    <rect x="19" y="29" width="38" height="5" rx="2.5" fill="#007AFF" opacity=".7"/>
+                    <rect x="14" y="44" width="28" height="4.5" rx="2.25" fill="#C7C7CC"/>
+                    <rect x="14" y="52" width="92" height="11" rx="5.5" fill="#F2F2F7" stroke="#007AFF" stroke-width="1.2"/>
+                    <text x="19" y="60" font-size="6" fill="#007AFF" font-family="-apple-system, sans-serif" font-weight="600">PO-2026-0142</text>
+                    <rect x="14" y="70" width="48" height="10" rx="5" fill="#007AFF" opacity=".9"/>
+                    <rect x="20" y="73" width="36" height="4" rx="2" fill="#fff" opacity=".9"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Campo Factura -->
+        <div class="nov-card">
+            <div class="nov-card-bar nuevo"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap nuevo">
+                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag nuevo">Nuevo</span>
+                    <div class="nov-card-title">Campo Factura</div>
+                    <div class="nov-card-desc">
+                        El campo factura en el detalle de oportunidades ahora guarda correctamente.
+                        Las oportunidades importadas de Bitrix ya incluyen su numero de factura original.
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8" y="10" width="104" height="76" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="18" y="20" width="38" height="5" rx="2.5" fill="#1D1D1F" opacity=".8"/>
+                    <line x1="18" y1="30" x2="102" y2="30" stroke="#E5E5EA" stroke-width="1"/>
+                    <rect x="18" y="36" width="24" height="4" rx="2" fill="#C7C7CC"/>
+                    <rect x="54" y="36" width="48" height="4" rx="2" fill="#1D1D1F" opacity=".6"/>
+                    <rect x="18" y="45" width="24" height="4" rx="2" fill="#C7C7CC"/>
+                    <rect x="54" y="45" width="40" height="4" rx="2" fill="#34C759" opacity=".8"/>
+                    <rect x="18" y="54" width="24" height="4" rx="2" fill="#C7C7CC"/>
+                    <rect x="54" y="54" width="44" height="4" rx="2" fill="#007AFF" opacity=".8"/>
+                    <rect x="18" y="68" width="32" height="10" rx="5" fill="#F2F2F7" stroke="#D1D1D6" stroke-width="1"/>
+                    <rect x="58" y="68" width="44" height="10" rx="5" fill="#007AFF" opacity=".9"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Tabla oportunidades -->
+        <div class="nov-card">
+            <div class="nov-card-bar mejora"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap mejora">
+                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag mejora">Mejora</span>
+                    <div class="nov-card-title">Tabla de Oportunidades</div>
+                    <div class="nov-card-desc">
+                        <ul>
+                            <li>Las oportunidades con actividades o tareas vencidas se muestran en rojo y al inicio de la tabla</li>
+                            <li>El widget de una oportunidad no se puede cerrar si no tiene una actividad activa</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="8" width="112" height="80" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="4" y="8" width="112" height="16" rx="12" fill="#F5F5F7"/>
+                    <rect x="4" y="17" width="112" height="7" fill="#F5F5F7"/>
+                    <rect x="12" y="13" width="20" height="4" rx="2" fill="#C7C7CC"/>
+                    <rect x="44" y="13" width="14" height="4" rx="2" fill="#C7C7CC"/>
+                    <rect x="68" y="13" width="14" height="4" rx="2" fill="#C7C7CC"/>
+                    <!-- Vencida row -->
+                    <rect x="4" y="24" width="112" height="14" fill="rgba(255,59,48,0.07)"/>
+                    <rect x="12" y="28" width="4" height="6" rx="2" fill="#FF3B30"/>
+                    <rect x="20" y="29" width="28" height="4" rx="2" fill="#FF3B30" opacity=".55"/>
+                    <rect x="60" y="29" width="16" height="4" rx="2" fill="#FF3B30" opacity=".35"/>
+                    <!-- Normal rows -->
+                    <rect x="4" y="38" width="112" height="14" fill="#fff"/>
+                    <rect x="12" y="42" width="26" height="4" rx="2" fill="#1D1D1F" opacity=".55"/>
+                    <rect x="60" y="42" width="16" height="4" rx="2" fill="#1D1D1F" opacity=".3"/>
+                    <rect x="4" y="52" width="112" height="14" fill="#F9F9FB"/>
+                    <rect x="12" y="56" width="20" height="4" rx="2" fill="#1D1D1F" opacity=".45"/>
+                    <rect x="60" y="56" width="12" height="4" rx="2" fill="#1D1D1F" opacity=".22"/>
+                    <rect x="4" y="66" width="112" height="14" fill="#fff"/>
+                    <rect x="12" y="70" width="30" height="4" rx="2" fill="#1D1D1F" opacity=".38"/>
+                    <rect x="60" y="70" width="18" height="4" rx="2" fill="#1D1D1F" opacity=".18"/>
+                    <line x1="4" y1="38" x2="116" y2="38" stroke="#F2F2F7" stroke-width="1"/>
+                    <line x1="4" y1="52" x2="116" y2="52" stroke="#F2F2F7" stroke-width="1"/>
+                    <line x1="4" y1="66" x2="116" y2="66" stroke="#F2F2F7" stroke-width="1"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Drive 100MB -->
+        <div class="nov-card">
+            <div class="nov-card-bar mejora"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap mejora">
+                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag mejora">Mejora</span>
+                    <div class="nov-card-title">Drive — hasta 100 MB por archivo</div>
+                    <div class="nov-card-desc">
+                        El drive de oportunidades ahora acepta archivos de hasta <strong>100 MB</strong> (antes era 2.5 MB).
+                        Planos DWG, videos y archivos pesados de ingenieria ya no dan error al subir.
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="10" width="112" height="76" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="14" y="20" width="92" height="44" rx="9" fill="#F9F9FB" stroke="#D1D1D6" stroke-width="1" stroke-dasharray="5 3"/>
+                    <circle cx="60" cy="34" r="10" fill="rgba(52,199,89,0.12)"/>
+                    <path d="M60 28 L60 40 M55 33 L60 28 L65 33" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <rect x="36" y="50" width="48" height="6" rx="3" fill="#E5E5EA"/>
+                    <rect x="42" y="51.5" width="36" height="3" rx="1.5" fill="#C7C7CC"/>
+                    <rect x="30" y="72" width="60" height="10" rx="5" fill="rgba(52,199,89,0.12)" stroke="#34C759" stroke-width="1"/>
+                    <text x="38" y="79" font-size="6.5" fill="#1E9E40" font-family="-apple-system, sans-serif" font-weight="700">max 100 MB</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="nov-card">
+            <div class="nov-card-bar mejora"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap mejora">
+                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag mejora">Mejora</span>
+                    <div class="nov-card-title">Chat: cualquier archivo y etiquetas @</div>
+                    <div class="nov-card-desc">
+                        <ul>
+                            <li>Ya no se limita a imagenes: sube PDFs, Word, Excel, DWG, videos</li>
+                            <li>Selecciona varios archivos a la vez; se envian como mensajes separados</li>
+                            <li>Etiqueta companeros en el chat con <strong>@nombre</strong></li>
+                            <li>Los archivos no-imagen se muestran como enlace descargable</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="6" width="112" height="84" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="12" y="14" width="62" height="12" rx="6" fill="#F2F2F7"/>
+                    <rect x="17" y="17.5" width="36" height="5" rx="2.5" fill="#D1D1D6"/>
+                    <rect x="46" y="30" width="62" height="12" rx="6" fill="rgba(0,122,255,0.12)"/>
+                    <rect x="51" y="33.5" width="48" height="5" rx="2.5" fill="#007AFF" opacity=".5"/>
+                    <rect x="12" y="46" width="72" height="12" rx="6" fill="#F2F2F7"/>
+                    <text x="17" y="54.5" font-size="6.5" fill="#007AFF" font-family="-apple-system, sans-serif" font-weight="700">@carlos</text>
+                    <rect x="55" y="49" width="24" height="5" rx="2.5" fill="#D1D1D6"/>
+                    <rect x="12" y="62" width="58" height="14" rx="7" fill="#F5F5F7" stroke="#E5E5EA" stroke-width="1"/>
+                    <rect x="19" y="66" width="8" height="6" rx="2" fill="rgba(255,59,48,0.3)"/>
+                    <rect x="31" y="67" width="28" height="4" rx="2" fill="#C7C7CC"/>
+                    <rect x="31" y="72.5" width="18" height="2.5" rx="1.25" fill="#E5E5EA"/>
+                    <rect x="12" y="80" width="96" height="1" fill="#F2F2F7"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Fix: recargar -->
+        <div class="nov-card">
+            <div class="nov-card-bar fix"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap fix">
+                    <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag fix">Fix</span>
+                    <div class="nov-card-title">Recargar la pagina ya no regresa al inicio</div>
+                    <div class="nov-card-desc">
+                        Al recargar la pagina ya no regresa automaticamente a la seccion CRM por defecto.
+                        Ahora el sistema recuerda en que seccion estabas (tareas, muro, calendario, correo...)
+                        y regresa ahi despues de recargar.
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="8" width="112" height="80" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <rect x="4" y="8" width="112" height="18" rx="13" fill="#F5F5F7"/>
+                    <rect x="4" y="19" width="112" height="7" fill="#F5F5F7"/>
+                    <!-- Tabs -->
+                    <rect x="12" y="13" width="28" height="8" rx="4" fill="#007AFF" opacity=".15"/>
+                    <rect x="14" y="15" width="22" height="4" rx="2" fill="#007AFF" opacity=".8"/>
+                    <rect x="46" y="13" width="20" height="8" rx="4"/>
+                    <rect x="48" y="15" width="14" height="4" rx="2" fill="#C7C7CC"/>
+                    <rect x="72" y="13" width="20" height="8" rx="4"/>
+                    <rect x="74" y="15" width="14" height="4" rx="2" fill="#C7C7CC"/>
+                    <!-- Content -->
+                    <rect x="12" y="32" width="44" height="6" rx="3" fill="#1D1D1F" opacity=".75"/>
+                    <rect x="12" y="42" width="70" height="4" rx="2" fill="#E5E5EA"/>
+                    <rect x="12" y="50" width="56" height="4" rx="2" fill="#E5E5EA"/>
+                    <!-- Arrow indicator -->
+                    <circle cx="90" cy="62" r="14" fill="rgba(52,199,89,0.1)" stroke="#34C759" stroke-width="1.2"/>
+                    <path d="M90 55 L90 64 M85 60 L90 65 L95 60" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </div>
+        </div>
+
+    </div><!-- /nov-cards-wrap CRM -->
+
+    <!-- ════════════════════════════════
+         SECCIÓN TAREAS
+         ════════════════════════════════ -->
+    <div class="nov-section-header" style="padding-top: 24px;">
+        <div class="nov-section-header-inner">
+            <div class="nov-section-overline" style="color:#5856D6;">Tareas</div>
+            <div class="nov-section-title">Modulo de Tareas</div>
+            <div class="nov-section-sub">2 mejoras en tareas y comentarios</div>
+        </div>
+    </div>
+
+    <div class="nov-cards-wrap">
+
+        <!-- Responsable edita fecha -->
+        <div class="nov-card">
+            <div class="nov-card-bar nuevo" style="background:#5856D6;"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap nuevo" style="background:rgba(88,86,214,0.10);">
+                    <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag nuevo" style="background:rgba(88,86,214,0.10);color:#5856D6;">Nuevo</span>
+                    <div class="nov-card-title">El responsable puede editar la fecha limite</div>
+                    <div class="nov-card-desc">
+                        Ahora el responsable de una tarea puede editar su propia fecha limite directamente desde la vista de tareas.
+                        <ul>
+                            <li>Al cambiar la fecha, el administrador recibe una notificacion automatica del cambio</li>
+                            <li>El administrador puede ver quien cambio la fecha y cuando</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="8" width="112" height="80" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <!-- Task card -->
+                    <rect x="12" y="16" width="96" height="28" rx="8" fill="#F5F5F7"/>
+                    <rect x="18" y="20" width="10" height="10" rx="3" fill="rgba(88,86,214,0.15)" stroke="#5856D6" stroke-width="1.2"/>
+                    <rect x="32" y="21.5" width="44" height="4" rx="2" fill="#1D1D1F" opacity=".75"/>
+                    <rect x="32" y="28.5" width="28" height="3.5" rx="1.75" fill="#C7C7CC"/>
+                    <!-- Date edit highlight -->
+                    <rect x="12" y="50" width="96" height="14" rx="7" fill="rgba(88,86,214,0.08)" stroke="#5856D6" stroke-width="1"/>
+                    <rect x="18" y="55" width="4" height="4" rx="1" fill="#5856D6"/>
+                    <rect x="26" y="55.5" width="42" height="3" rx="1.5" fill="#5856D6" opacity=".65"/>
+                    <rect x="82" y="53" width="22" height="8" rx="4" fill="#5856D6" opacity=".12"/>
+                    <rect x="85" y="55.5" width="16" height="3" rx="1.5" fill="#5856D6" opacity=".7"/>
+                    <!-- Notification badge -->
+                    <circle cx="100" cy="20" r="8" fill="rgba(255,149,0,0.12)"/>
+                    <rect x="96" y="18" width="8" height="4" rx="1" fill="#FF9500" opacity=".6"/>
+                    <rect x="98" y="23" width="4" height="1.5" rx=".75" fill="#FF9500" opacity=".6"/>
+                    <rect x="12" y="72" width="96" height="8" rx="4" fill="#F2F2F7"/>
+                    <rect x="18" y="74.5" width="60" height="3" rx="1.5" fill="#D1D1D6"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Adjuntos y etiquetas en comentarios -->
+        <div class="nov-card">
+            <div class="nov-card-bar nuevo" style="background:#5856D6;"></div>
+            <div class="nov-card-main">
+                <div class="nov-card-icon-wrap nuevo" style="background:rgba(88,86,214,0.10);">
+                    <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        <path d="M15 10a3 3 0 1 1-6 0"/>
+                    </svg>
+                </div>
+                <div class="nov-card-body">
+                    <span class="nov-card-tag nuevo" style="background:rgba(88,86,214,0.10);color:#5856D6;">Nuevo</span>
+                    <div class="nov-card-title">Adjuntos y etiquetas en comentarios de tareas</div>
+                    <div class="nov-card-desc">
+                        Los comentarios de las tareas ahora soportan funciones avanzadas.
+                        <ul>
+                            <li>Se pueden etiquetar usuarios con <strong>@nombre</strong> en los comentarios</li>
+                            <li>Se pueden subir y adjuntar documentos directamente en los comentarios</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="nov-card-preview">
+                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="6" width="112" height="84" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                    <!-- Comment thread -->
+                    <circle cx="18" cy="22" r="7" fill="rgba(88,86,214,0.2)"/>
+                    <rect x="18" y="19" width="6" height="6" rx="3" fill="#5856D6" opacity=".5"/>
+                    <rect x="30" y="14" width="76" height="16" rx="8" fill="#F2F2F7"/>
+                    <rect x="36" y="18" width="50" height="4" rx="2" fill="#D1D1D6"/>
+                    <rect x="36" y="24" width="36" height="3.5" rx="1.75" fill="#E5E5EA"/>
+                    <!-- @mention comment -->
+                    <circle cx="18" cy="48" r="7" fill="rgba(52,199,89,0.2)"/>
+                    <rect x="30" y="40" width="80" height="16" rx="8" fill="rgba(88,86,214,0.07)"/>
+                    <text x="35" y="50.5" font-size="7" fill="#5856D6" font-family="-apple-system, sans-serif" font-weight="700">@laura</text>
+                    <rect x="67" y="44" width="36" height="4" rx="2" fill="#5856D6" opacity=".4"/>
+                    <!-- Attachment -->
+                    <rect x="30" y="60" width="60" height="14" rx="7" fill="#F5F5F7" stroke="#E5E5EA" stroke-width="1"/>
+                    <rect x="37" y="64" width="8" height="6" rx="2" fill="rgba(255,59,48,0.35)"/>
+                    <rect x="49" y="65" width="28" height="3.5" rx="1.75" fill="#C7C7CC"/>
+                    <rect x="49" y="70" width="18" height="2.5" rx="1.25" fill="#E5E5EA"/>
+                    <!-- Input bar -->
+                    <rect x="12" y="80" width="96" height="6" rx="3" fill="#F2F2F7"/>
+                </svg>
+            </div>
+        </div>
+
+    </div><!-- /nov-cards-wrap TAREAS -->
+
+    <!-- Proximamente -->
+    <div class="nov-coming-wrap">
+        <div class="nov-coming">
             <div class="nov-coming-icon">
-                <svg width="22" height="22" fill="none" stroke="#8E8E93" stroke-width="2" viewBox="0 0 24 24">
+                <svg width="24" height="24" fill="none" stroke="#8E8E93" stroke-width="2" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                 </svg>
             </div>
             <div>
                 <div class="nov-coming-title">Proximamente</div>
                 <div class="nov-coming-list">
-                    Comentarios de tareas Bitrix &nbsp;·&nbsp; Sincronizacion del campo PO con Bitrix &nbsp;·&nbsp; Mejoras visuales pendientes
+                    Comentarios de tareas Bitrix visibles en el sistema &nbsp;&middot;&nbsp;
+                    Sincronizacion del campo PO con Bitrix &nbsp;&middot;&nbsp;
+                    Mejoras visuales pendientes
                 </div>
             </div>
         </div>
+    </div>
 
-    </div><!-- /nov-content -->
+    <div class="nov-footer-spacer"></div>
 </div><!-- /nov-page -->
 
 <script>
 (function () {
-    var widgetActivo = {{ widget_activo|yesno:"true,false" }};
+    var widgetActivo = {{ novedades_config.widget_activo|yesno:"true,false" }};
 
     function getCookie(name) {
         var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
@@ -868,7 +884,6 @@
     }
 
     window.novToggleWidget = function () {
-        var nuevo = !widgetActivo;
         var btn = document.getElementById('novToggleBtn');
         var lbl = document.getElementById('novToggleBtnLabel');
         var hint = document.getElementById('novToggleHint');
@@ -878,14 +893,13 @@
         fetch('/app/api/novedades/toggle-widget/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ activo: nuevo })
+            body: JSON.stringify({ activo: !widgetActivo })
         })
         .then(function (r) { return r.json(); })
         .then(function (d) {
             widgetActivo = d.activo;
             if (!btn) return;
-            btn.disabled = false;
-            btn.style.opacity = '1';
+            btn.disabled = false; btn.style.opacity = '1';
             if (d.activo) {
                 btn.className = 'nov-toggle-btn activo';
                 lbl.textContent = 'Desactivar widget';

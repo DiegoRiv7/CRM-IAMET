@@ -3244,8 +3244,7 @@ def novedades_view(request):
     config = NovedadesConfig.get()
     return render(request, 'novedades.html', {
         'es_supervisor': is_supervisor(request.user),
-        'widget_activo': config.widget_activo,
-        'version': config.version,
+        'novedades_config': config,
     })
 
 
@@ -3257,6 +3256,13 @@ def api_toggle_novedades_widget(request):
         return JsonResponse({'error': 'No permitido'}, status=403)
     data = json.loads(request.body)
     config = NovedadesConfig.get()
-    config.widget_activo = bool(data.get('activo', False))
+    activando = bool(data.get('activo', False))
+    config.widget_activo = activando
+    if activando:
+        config.activation_count += 1  # Nueva clave localStorage → todos vuelven a ver el widget
     config.save()
-    return JsonResponse({'ok': True, 'activo': config.widget_activo})
+    return JsonResponse({
+        'ok': True,
+        'activo': config.widget_activo,
+        'activation_count': config.activation_count,
+    })
