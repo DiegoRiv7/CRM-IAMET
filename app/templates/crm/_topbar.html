@@ -120,9 +120,9 @@
 
             <!-- Stats: Total + % progreso -->
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                <span
+                <span id="topbarTotalLabel"
                     style="font-size:0.6rem;color:#8E8E93;font-weight:600;text-transform:uppercase;white-space:nowrap;">
-                    Total
+                    {% if tab_activo == 'crm' %}Oportunidades{% else %}Total{% endif %}
                 </span>
                 <span id="facturadoAmount" style="font-size:0.65rem;color:#1D1D1F;font-weight:700;">${{ total_facturado|floatformat:0 }}</span>
                 <span class="crm-stats-pct {% if progreso >= 100 %}green{% endif %}" id="progressPct">{{ progreso|floatformat:0 }}%</span>

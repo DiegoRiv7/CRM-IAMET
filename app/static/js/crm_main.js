@@ -1469,7 +1469,7 @@
                     document.getElementById('footerLeft').textContent = data.footer.left;
                     document.getElementById('footerRight').textContent = data.footer.right;
 
-                    // Update vendor card stats if available
+                    // Update topbar stats
                     if (data.total_facturado !== undefined) {
                         var fa = document.getElementById('facturadoAmount');
                         if (fa) fa.textContent = '$' + data.total_facturado;
@@ -1482,7 +1482,15 @@
                         var pf = document.getElementById('progressFill');
                         if (pf) pf.style.width = data.progreso + '%';
                         var pct = document.getElementById('progressPct');
-                        if (pct) pct.textContent = data.progreso + '%';
+                        if (pct) {
+                            pct.textContent = data.progreso + '%';
+                            if (data.progreso >= 100) pct.classList.add('green');
+                            else pct.classList.remove('green');
+                        }
+                    }
+                    if (data.vista_label !== undefined) {
+                        var lbl = document.getElementById('topbarTotalLabel');
+                        if (lbl) lbl.textContent = data.vista_label;
                     }
 
                     // Re-bind event listeners on new rows

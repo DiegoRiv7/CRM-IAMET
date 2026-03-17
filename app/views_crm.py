@@ -497,6 +497,15 @@ def api_crm_table_data(request):
         meta_field_api = 'meta_cotizado'
     elif tab_activo == 'cobrado':
         meta_field_api = 'meta_cobrado'
+    elif tab_activo == 'clientes':
+        _vista_cl = request.GET.get('vista', 'facturado')
+        if _vista_cl == 'cobrado':
+            meta_field_api = 'meta_cobrado'
+        elif _vista_cl == 'oportunidades':
+            meta_field_api = 'meta_oportunidades'
+        elif _vista_cl == 'cotizado':
+            meta_field_api = 'meta_cotizado'
+        # else: facturado → meta_mensual (default)
 
     if es_supervisor:
         if vendedores_ids:
@@ -576,6 +585,7 @@ def api_crm_table_data(request):
             },
             'total_facturado': format_money(total_general),
             'widget_label': 'Total Oportunidades',
+            'vista_label': 'Oportunidades',
             'meta': format_money(api_meta),
             'progreso': api_progreso,
             'widget_left_stat': f'{num_deals} Oportunidades Creadas',
