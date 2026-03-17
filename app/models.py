@@ -221,12 +221,15 @@ class Cliente(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
 
-    # Meta mensual de facturación por cliente (establecida por el admin)
+    # Metas mensuales por tipo (establecidas por el admin)
     meta_mensual = models.DecimalField(
         max_digits=14, decimal_places=2, default=0,
-        verbose_name="Meta Mensual",
+        verbose_name="Meta Facturado",
         help_text="Meta de facturación mensual para este cliente"
     )
+    meta_cobrado = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name="Meta Cobrado")
+    meta_oportunidades = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name="Meta Oportunidades")
+    meta_cotizado = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name="Meta Cotizado")
 
     def __str__(self):
         """

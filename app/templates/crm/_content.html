@@ -10,17 +10,9 @@
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
                 </a>
-                <a href="?tab=cotizado&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    class="crm-tab {% if tab_activo == 'cotizado' %}active{% endif %}">
-                    {% if request.user.userprofile.language == 'en' %}Quoted{% else %}Cotizado{% endif %}
-                </a>
-                <a href="?tab=cobrado&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    class="crm-tab {% if tab_activo == 'cobrado' %}active{% endif %}">
-                    {% if request.user.userprofile.language == 'en' %}Collected{% else %}Cobrado{% endif %}
-                </a>
-                <a href="?tab=facturado&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    class="crm-tab {% if tab_activo == 'facturado' %}active{% endif %}">
-                    {% if request.user.userprofile.language == 'en' %}Invoiced{% else %}Facturado{% endif %}
+                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    class="crm-tab {% if tab_activo == 'clientes' %}active{% endif %}">
+                    Clientes
                 </a>
             </div>
             <div class="crm-bar-right">
@@ -116,7 +108,16 @@
                         <button type="button" class="crm-filter-clear" id="btnClearFilters">Limpiar</button>
                     </div>
                 </div>
-                <button type="button" class="crm-filter-toggle" id="btnToggleFilterPanel" title="Filtros">
+                <!-- Vista selector para tab Clientes -->
+                <select id="clientesVistaSel" onchange="crmClientesVistaCambiar(this.value)"
+                    style="{% if tab_activo != 'clientes' %}display:none;{% endif %}border:1px solid #E5E7EB;border-radius:8px;padding:5px 10px;font-size:0.82rem;font-weight:600;color:#1A1A2E;background:#fff;cursor:pointer;outline:none;">
+                    <option value="facturado">Facturado</option>
+                    <option value="cobrado">Cobrado</option>
+                    <option value="oportunidades">Oportunidades</option>
+                    <option value="cotizado">Cotizado</option>
+                </select>
+                <button type="button" class="crm-filter-toggle" id="btnToggleFilterPanel" title="Filtros"
+                    style="{% if tab_activo == 'clientes' %}display:none;{% endif %}">
                     <svg width="16" height="16" fill="none" stroke="#3C3C43" stroke-width="2" viewBox="0 0 24 24">
                         <line x1="4" y1="6" x2="20" y2="6" />
                         <line x1="8" y1="12" x2="20" y2="12" />
@@ -211,142 +212,45 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% elif tab_activo == 'cotizado' %}
+        {% elif tab_activo == 'clientes' %}
         <table class="w-full crm-table">
+            <colgroup>
+                <col style="width:18%"><!-- Cliente -->
+                <col style="width:6%"> <!-- Zebra -->
+                <col style="width:6%"> <!-- Panduit -->
+                <col style="width:6%"> <!-- APC -->
+                <col style="width:6%"> <!-- Avig -->
+                <col style="width:6%"> <!-- Genet -->
+                <col style="width:6%"> <!-- Axis -->
+                <col style="width:6%"> <!-- Soft -->
+                <col style="width:6%"> <!-- RR -->
+                <col style="width:6%"> <!-- Pol -->
+                <col style="width:6%"> <!-- Otros -->
+                <col style="width:8%"> <!-- Meta -->
+                <col style="width:8%"> <!-- Faltante -->
+                <col style="width:6%"> <!-- Total -->
+            </colgroup>
             <thead class="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
                 <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th class="px-2 py-4 text-left font-black">Oportunidad</th>
-                    <th class="px-2 py-4 text-left font-black"># Cotización</th>
-                    <th class="px-2 py-4 text-left font-black">Usuario</th>
-                    <th class="px-2 py-4 text-right font-black">Monto sin IVA</th>
-                    <th class="px-2 py-4 text-right font-black text-blue-500">Monto con IVA</th>
+                    <th class="px-2 py-3 text-left font-black">Cliente</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Avig.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Genet.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Pol.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>
+                    <th class="py-3 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th>
+                    <th class="py-3 pr-2 text-right font-black text-orange-500">Faltante</th>
+                    <th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>
                 </tr>
             </thead>
             <!-- prettier-ignore -->
-            <tbody id="cotizadoTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
-                {% for cot in tabla_data %}
-                <tr class="crm-data-row" data-opp-id="{% if cot.oportunidad %}{{ cot.oportunidad.id }}{% endif %}"
-                    data-cliente="{{ cot.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
-                    data-contacto="{% if cot.created_by %}{{ cot.created_by.get_full_name|default:cot.created_by.username }}{% else %}—{% endif %}"
-                    data-monto="{{ cot.total|stringformat:'f' }}">
-                    <td class="px-2 py-4">{% if cot.oportunidad %}<span class="opp-name-link"
-                            data-oportunidad-id="{{ cot.oportunidad.id }}">{{ cot.oportunidad.oportunidad|truncatechars:35 }}</span>{% else %}—{% endif %}
-                        <span
-                            class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block"
-                            data-cliente-id="{{ cot.cliente.id|default:'' }}" data-tab="cotizado">{{ cot.cliente.nombre_empresa|default:'- Sin Cliente -'|truncatechars:35 }}</span>
-                    </td>
-                    <td class="px-2 py-4"><a href="{% url 'view_cotizacion_pdf' cot.id %}" target="_blank"
-                            class="px-2 py-1 bg-blue-50 rounded text-xs font-mono font-bold text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors cursor-pointer"
-                            style="text-decoration:none;">COT-{{ cot.id }}</a></td>
-                    <td class="px-2 py-4 text-gray-500 text-xs">{% if cot.created_by %}{{ cot.created_by.get_full_name|default:cot.created_by.username }}{% else %}—{% endif %}</td>
-                    <td class="px-2 py-4 text-right text-gray-400 font-medium">${{ cot.subtotal|floatformat:0 }}
-                    </td>
-                    <td class="px-2 py-4 text-right font-black text-blue-600">${{ cot.total|floatformat:0 }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center py-20 text-gray-400 italic">No hay cotizaciones para este
-                        periodo.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% elif tab_activo == 'cobrado' %}
-        <table class="w-full crm-table">
-            <thead class="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
-                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th class="px-2 py-4 text-left font-black">Oportunidad</th>
-                    <th class="px-2 py-4 text-left font-black">Producto</th>
-                    <th class="px-2 py-4 text-left font-black">Vendedor</th>
-                    <th class="px-2 py-4 text-center font-black">Fecha</th>
-                    <th class="px-2 py-4 text-right font-black text-emerald-500">Monto Cobrado</th>
-                </tr>
-            </thead>
-            <!-- prettier-ignore -->
-            <tbody id="cobradoTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
-                {% for op in tabla_data %}
-                <tr class="crm-data-row" data-opp-id="{{ op.id }}"
-                    data-cliente="{% if op.cliente %}{{ op.cliente.nombre_empresa }}{% else %}- Sin Cliente -{% endif %}"
-                    data-contacto="{% if op.contacto %}{{ op.contacto.nombre }}{% else %}-{% endif %}"
-                    data-producto="{{ op.producto }}" data-monto="{{ op.monto|stringformat:'f' }}">
-                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ op.id }}">{{ op.oportunidad|truncatechars:35 }}</span>
-                        <span
-                            class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block"
-                            data-cliente-id="{% if op.cliente %}{{ op.cliente.id }}{% endif %}" data-tab="cobrado">{% if op.cliente %}{{ op.cliente.nombre_empresa|truncatechars:35 }}{% else %}—{% endif %}</span>
-                    </td>
-                    <td class="px-2 py-4"><span class="text-xs font-medium text-gray-600">{{ op.get_producto_display }}</span></td>
-                    <td class="px-2 py-4 text-gray-500 text-xs">{{ op.usuario.get_full_name|default:op.usuario.username }}</td>
-                    <td class="px-2 py-4 text-center text-gray-400 text-xs">{{ op.fecha_creacion|date:"d M Y" }}
-                    </td>
-                    <td class="px-2 py-4 text-right font-black text-emerald-600">${{ op.monto|floatformat:0 }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center py-20 text-gray-400 italic">No hay cobros registrados en este
-                        periodo.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% elif tab_activo == 'facturado' %}
-        <table class="w-full crm-table">
-            <thead class="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
-                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th class="px-2 py-4 text-left font-black" style="max-width: 140px;">Cliente</th>
-                    <th class="px-2 py-4 text-left font-black">Contacto</th>
-                    <th class="px-2 py-4 text-left font-black">Área</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Zebra</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Panduit</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">APC</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Avig.</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Genet.</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Axis</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Soft.</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">RR</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Pol.</th>
-                    <th class="px-2 py-4 text-left font-black text-blue-500">Otros</th>
-                    <th class="px-2 py-4 text-left font-black text-gray-800 border-l border-gray-100">Total</th>
-                    <th class="px-2 py-4 text-right font-black border-l border-gray-100">Meta</th>
-                    <th class="px-2 py-4 text-right font-black">Fact.</th>
-                    <th class="px-2 py-4 text-center font-black">Acciones</th>
-                </tr>
-            </thead>
-            <!-- prettier-ignore -->
-            <tbody id="facturadoTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
-                {% for item in tabla_data %}
-                <tr class="crm-data-row" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
-                    data-monto="{{ item.facturado|stringformat:'f' }}">
-                    <td class="px-2 py-4"><span
-                            class="client-name-link font-bold text-gray-900 leading-tight cursor-pointer hover:text-blue-600 transition-colors"
-                            data-cliente-id="{{ item.cliente.id }}">{{ item.cliente.nombre_empresa|truncatechars:35 }}</span>
-                        <div class="text-[9px] text-gray-400 font-medium uppercase mt-1">{{ item.cliente.sector|default:'- Sin Segmento -'|truncatechars:35 }}</div>
-                    </td>
-                    <td class="px-2 py-4 text-gray-600">-</td>
-                    <td class="px-2 py-4 text-gray-400 text-xs italic">-</td>
-                    <td class="px-2 py-4 text-right">{% if item.zebra > 0 %}<span class="text-blue-600 font-bold">${{ item.zebra|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.panduit > 0 %}<span class="text-blue-600 font-bold">${{ item.panduit|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.apc > 0 %}<span class="text-blue-600 font-bold">${{ item.apc|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.avigilon > 0 %}<span class="text-blue-600 font-bold">${{ item.avigilon|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.genetec > 0 %}<span class="text-blue-600 font-bold">${{ item.genetec|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.axis > 0 %}<span class="text-blue-600 font-bold">${{ item.axis|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.software > 0 %}<span class="text-blue-600 font-bold">${{ item.software|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.runrate > 0 %}<span class="text-blue-600 font-bold">${{ item.runrate|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.poliza > 0 %}<span class="text-blue-600 font-bold">${{ item.poliza|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.otros > 0 %}<span class="text-blue-600 font-bold">${{ item.otros|format_currency_es }}</span>{% else %}<span class="text-gray-200">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
-                        ${{ item.total|format_currency_es }}</td>
-                    <td class="px-2 py-4 text-right font-bold border-l border-gray-100 bg-gray-50/20">${{ item.meta_cliente|default:0|floatformat:0 }}</td>
-                    <td class="px-2 py-4 text-right font-bold bg-gray-50/20">${{ item.meta_restante|default:0|floatformat:0 }}</td>
-                    <td class="px-2 py-3 text-center"><a href="{% url 'crear_cotizacion_with_id' item.cliente.id %}"
-                            class="inline-block px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all">Nuevo
-                            Deal</a></td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="17" class="text-center py-20 text-gray-400 italic">No hay clientes con datos para
-                        este periodo.</td>
-                </tr>
-                {% endfor %}
+            <tbody id="clientesTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                <tr><td colspan="14" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>
             </tbody>
         </table>
 
@@ -374,12 +278,10 @@
             {% endif %}
         </div>
         <div class="footer-right" id="footerRight">
-            {% if tab_activo == 'cotizado' %}
-            Total cotizado: ${{ total_cotizado|floatformat:0 }}
-            {% elif tab_activo == 'cobrado' %}
-            Total cobrado: ${{ total_cobrado|floatformat:0 }}
-            {% elif tab_activo == 'facturado' %}
-            Total facturado: ${{ total_facturado|floatformat:0 }}
+            {% if tab_activo == 'crm' %}
+            Total: ${{ total_general|floatformat:0 }}
+            {% elif tab_activo == 'clientes' %}
+            Total: ${{ total_facturado|floatformat:0 }}
             {% else %}
             Total: ${{ total_general|floatformat:0 }}
             {% endif %}

@@ -1292,6 +1292,7 @@
 
             // ── Refresh table via API (sin recargar página) ──
             var currentTab = _CRM_CONFIG.tabActivo;
+            var _clientesVista = 'facturado';
             var currentMes = _CRM_CONFIG.mesFiltro;
             var currentAnio = _CRM_CONFIG.anioFiltro;
 
@@ -1395,6 +1396,24 @@
                     '</tr>';
             }
 
+            function buildClientesRow(r) {
+                var cols = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza', 'otros'];
+                var prodCells = '';
+                cols.forEach(function (c) {
+                    var val = r[c] || '0';
+                    prodCells += '<td class="px-2 py-4 text-right">' + (val !== '0' ? '<span class="text-blue-600 font-bold">$' + val + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
+                });
+                var vendedor = r.vendedor ? '<div class="text-[9px] text-gray-400 font-medium mt-0.5">' + r.vendedor + '</div>' : '';
+                var faltanteStyle = (parseFloat((r.faltante || '0').replace(/,/g, '')) > 0) ? 'color:#F97316;font-weight:700;' : 'color:#22C55E;font-weight:700;';
+                return '<tr class="crm-data-row">' +
+                    '<td class="px-2 py-4"><span class="client-name-link font-bold text-gray-900 leading-tight cursor-pointer hover:text-blue-600 transition-colors" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + vendedor + '</td>' +
+                    prodCells +
+                    '<td class="px-2 py-4 text-right font-bold border-l border-gray-100 bg-gray-50/20">$' + r.meta + '</td>' +
+                    '<td class="px-2 py-4 text-right bg-gray-50/20" style="' + faltanteStyle + '">$' + r.faltante + '</td>' +
+                    '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.total + '</td>' +
+                    '</tr>';
+            }
+
             function buildCotizadoRow(r) {
                 var oppCell = r.oportunidad
                     ? '<span class="opp-name-link" data-oportunidad-id="' + r.oportunidad_id + '">' + r.oportunidad + '</span>'
@@ -1422,27 +1441,24 @@
         function refreshCrmTable() {
             var vendedores = getVendedoresParam();
             var url = '/app/api/crm-table-data/?tab=' + currentTab + '&mes=' + currentMes + '&anio=' + currentAnio;
+            if (currentTab === 'clientes') url += '&vista=' + _clientesVista;
             if (vendedores) url += '&vendedores=' + vendedores;
             fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var tbody = null;
-                    if (currentTab === 'cotizado') tbody = document.getElementById('cotizadoTbody');
-                    else if (currentTab === 'cobrado') tbody = document.getElementById('cobradoTbody');
-                    else if (currentTab === 'facturado') tbody = document.getElementById('facturadoTbody');
+                    if (currentTab === 'clientes') tbody = document.getElementById('clientesTbody');
                     else tbody = document.getElementById('crmTbody');
 
                     if (!tbody) return;
 
                     if (data.rows.length === 0) {
-                        var cols = currentTab === 'cotizado' ? 5 : currentTab === 'cobrado' ? 5 : currentTab === 'facturado' ? 17 : 14;
+                        var cols = currentTab === 'clientes' ? 14 : 14;
                         tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-20 text-gray-400 italic">No hay datos disponibles para este periodo.</td></tr>';
                     } else {
                         var html = '';
                         for (var i = 0; i < data.rows.length; i++) {
-                            if (currentTab === 'cotizado') html += buildCotizadoRow(data.rows[i]);
-                            else if (currentTab === 'facturado') html += buildFacturadoRow(data.rows[i]);
-                            else if (currentTab === 'cobrado') html += buildCobradoRow(data.rows[i]);
+                            if (currentTab === 'clientes') html += buildClientesRow(data.rows[i]);
                             else html += buildCrmRow(data.rows[i]);
                         }
                         tbody.innerHTML = html;
@@ -2272,14 +2288,17 @@
             filtersOverlay.addEventListener('click', closeFiltersPanel);
         }
 
+        window.crmClientesVistaCambiar = function (vista) {
+            _clientesVista = vista;
+            refreshCrmTable();
+        };
+
         // ─── POPULATE ISLAND FILTER DROPDOWNS FROM TABLE DATA (Excel-like) ───
         function populateIslandFilters() {
             var activeTab = _CRM_CONFIG.tabActivo;
             var tbody = null;
             if (activeTab === 'crm') tbody = document.getElementById('crmTbody');
-            else if (activeTab === 'cotizado') tbody = document.getElementById('cotizadoTbody');
-            else if (activeTab === 'cobrado') tbody = document.getElementById('cobradoTbody');
-            else if (activeTab === 'facturado') tbody = document.getElementById('facturadoTbody');
+            else if (activeTab === 'clientes') return; // clientes tab has no filter dropdowns
 
             if (!tbody) return;
 
@@ -2461,12 +2480,8 @@
 
             if (activeTab === 'crm') {
                 tbody = document.getElementById('crmTbody');
-            } else if (activeTab === 'cotizado') {
-                tbody = document.getElementById('cotizadoTbody');
-            } else if (activeTab === 'cobrado') {
-                tbody = document.getElementById('cobradoTbody');
-            } else if (activeTab === 'facturado') {
-                tbody = document.getElementById('facturadoTbody');
+            } else if (activeTab === 'clientes') {
+                return; // clientes tab no uses inline filters
             }
 
             if (!tbody) return;
@@ -2609,7 +2624,7 @@
                 }
 
                 var activeTab = _CRM_CONFIG.tabActivo;
-                var tabNames = { crm: 'Oportunidades', cotizado: 'Cotizado', cobrado: 'Cobrado', facturado: 'Facturado' };
+                var tabNames = { crm: 'Oportunidades', clientes: 'Clientes' };
                 var tabName = tabNames[activeTab] || activeTab;
 
                 var mes = _CRM_CONFIG.mesFiltro;
@@ -2643,7 +2658,7 @@
                 ];
 
                 // Hoja 2: Datos de la tabla
-                var tbodyId = { crm: 'crmTbody', cotizado: 'cotizadoTbody', cobrado: 'cobradoTbody', facturado: 'facturadoTbody' }[activeTab];
+                var tbodyId = { crm: 'crmTbody', clientes: 'clientesTbody' }[activeTab];
                 var tbody = document.getElementById(tbodyId);
                 var tableData = [];
 
@@ -4414,9 +4429,7 @@
         // Identify active table body
         var activeTbody = null;
         if (document.getElementById('crmTbody')) activeTbody = document.getElementById('crmTbody');
-        else if (document.getElementById('cotizadoTbody')) activeTbody = document.getElementById('cotizadoTbody');
-        else if (document.getElementById('cobradoTbody')) activeTbody = document.getElementById('cobradoTbody');
-        else if (document.getElementById('facturadoTbody')) activeTbody = document.getElementById('facturadoTbody');
+        else if (document.getElementById('clientesTbody')) activeTbody = document.getElementById('clientesTbody');
 
         if (!activeTbody) return;
 

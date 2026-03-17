@@ -381,12 +381,9 @@ def crm_home(request):
     if tab_activo == 'crm':
         widget_label = 'Total Oportunidades'
         widget_metric = total_general
-    elif tab_activo == 'cotizado':
-        widget_label = 'Total Cotizado'
-        widget_metric = total_cotizado
-    elif tab_activo == 'cobrado':
-        widget_label = 'Total Cobrado'
-        widget_metric = total_cobrado
+    elif tab_activo == 'clientes':
+        widget_label = 'Total Facturado'
+        widget_metric = total_facturado
 
     # Recalculate progress based on the correct metric vs correct meta (sin cap para mostrar > 100%)
     progreso = int((widget_metric / meta * 100)) if meta > 0 else 0
@@ -770,6 +767,163 @@ def api_crm_table_data(request):
             'meta': format_money(api_meta),
             'progreso': api_progreso_fact,
             'widget_left_stat': f'{num_clientes_fact} Clientes',
+        })
+
+    elif tab_activo == 'clientes':
+        vista = request.GET.get('vista', 'facturado')
+        _dec_field = models.DecimalField(max_digits=14, decimal_places=2)
+        _zero = Value(Decimal('0'), output_field=_dec_field)
+
+        if es_supervisor:
+            clientes_qs = Cliente.objects.select_related('asignado_a').filter(asignado_a_id__in=vendedores_ids) if vendedores_ids else Cliente.objects.select_related('asignado_a').all()
+        else:
+            clientes_qs = Cliente.objects.select_related('asignado_a').filter(asignado_a=user)
+
+        def _prod_annotate(qs, monto_field):
+            return qs.values('cliente').annotate(
+                zebra=Coalesce(Sum(monto_field, filter=Q(producto='ZEBRA')), _zero),
+                panduit=Coalesce(Sum(monto_field, filter=Q(producto='PANDUIT')), _zero),
+                apc=Coalesce(Sum(monto_field, filter=Q(producto='APC')), _zero),
+                avigilon=Coalesce(Sum(monto_field, filter=Q(producto='AVIGILON') | Q(producto='AVIGILION')), _zero),
+                genetec=Coalesce(Sum(monto_field, filter=Q(producto='GENETEC')), _zero),
+                axis=Coalesce(Sum(monto_field, filter=Q(producto='AXIS')), _zero),
+                software=Coalesce(Sum(monto_field, filter=Q(producto='SOFTWARE') | Q(producto='Desarrollo')), _zero),
+                runrate=Coalesce(Sum(monto_field, filter=Q(producto='RUNRATE')), _zero),
+                poliza=Coalesce(Sum(monto_field, filter=Q(producto='PÓLIZA') | Q(producto='POLIZA')), _zero),
+                total_prod=Coalesce(Sum(monto_field), _zero),
+            )
+
+        if vista == 'facturado':
+            # Total desde ArchivoFacturacion
+            facturado_por_cliente_obj = {}
+            try:
+                if usando_periodo:
+                    from datetime import date as _date
+                    cur = _date.fromisoformat(desde_filter).replace(day=1)
+                    end = _date.fromisoformat(hasta_filter).replace(day=1)
+                    while cur <= end:
+                        try:
+                            af = ArchivoFacturacion.objects.get(mes=cur.strftime('%m'), anio=cur.year)
+                            for c_name, val in af.datos_json.get('datos', {}).items():
+                                facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+                        except ArchivoFacturacion.DoesNotExist:
+                            pass
+                        cur = cur.replace(month=cur.month % 12 + 1, day=1) if cur.month < 12 else cur.replace(year=cur.year + 1, month=1, day=1)
+                elif mes_filter == 'todos':
+                    for af in ArchivoFacturacion.objects.filter(anio=anio_int):
+                        for c_name, val in af.datos_json.get('datos', {}).items():
+                            facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+                else:
+                    af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
+                    for c_name, val in af.datos_json.get('datos', {}).items():
+                        facturado_por_cliente_obj[c_name] = Decimal(str(val))
+            except ArchivoFacturacion.DoesNotExist:
+                pass
+            total_by_id = {}
+            for name, monto in facturado_por_cliente_obj.items():
+                c_obj = Cliente.objects.filter(nombre_empresa__icontains=name).first()
+                if c_obj:
+                    total_by_id[c_obj.id] = total_by_id.get(c_obj.id, Decimal('0')) + monto
+            prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs.filter(monto_facturacion__gt=0), 'monto_facturacion')}
+            meta_field_c = 'meta_mensual'
+            vista_label = 'Facturado'
+
+        elif vista == 'cobrado':
+            cobrado_qs = base_qs.filter(probabilidad_cierre=100)
+            total_by_id = {item['cliente']: item['t'] for item in cobrado_qs.values('cliente').annotate(t=Coalesce(Sum('monto'), _zero)) if item['cliente']}
+            prod_dict = {item['cliente']: item for item in _prod_annotate(cobrado_qs, 'monto')}
+            meta_field_c = 'meta_cobrado'
+            vista_label = 'Cobrado'
+
+        elif vista == 'oportunidades':
+            total_by_id = {item['cliente']: item['t'] for item in base_qs.values('cliente').annotate(t=Coalesce(Sum('monto'), _zero)) if item['cliente']}
+            prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs, 'monto')}
+            meta_field_c = 'meta_oportunidades'
+            vista_label = 'Oportunidades'
+
+        elif vista == 'cotizado':
+            opp_ids = base_qs.values_list('id', flat=True)
+            if usando_periodo:
+                cot_qs = Cotizacion.objects.select_related('cliente', 'oportunidad').filter(
+                    Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__date__gte=desde_filter, fecha_creacion__date__lte=hasta_filter)
+                )
+            else:
+                cot_qs = Cotizacion.objects.select_related('cliente', 'oportunidad').filter(
+                    Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+                )
+            total_by_id = {}
+            prod_dict_raw = {}
+            PRODS = ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA']
+            PROD_KEYS = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza']
+            for cot in cot_qs:
+                if not cot.cliente_id:
+                    continue
+                cid = cot.cliente_id
+                t = cot.total or Decimal('0')
+                total_by_id[cid] = total_by_id.get(cid, Decimal('0')) + t
+                prod = (cot.oportunidad.producto if cot.oportunidad else '') or ''
+                prod_upper = prod.upper()
+                if cid not in prod_dict_raw:
+                    prod_dict_raw[cid] = {k: Decimal('0') for k in PROD_KEYS + ['total_prod']}
+                prod_dict_raw[cid]['total_prod'] += t
+                if 'ZEBRA' in prod_upper: prod_dict_raw[cid]['zebra'] += t
+                elif 'PANDUIT' in prod_upper: prod_dict_raw[cid]['panduit'] += t
+                elif prod_upper == 'APC': prod_dict_raw[cid]['apc'] += t
+                elif 'AVIGILON' in prod_upper or 'AVIGILION' in prod_upper: prod_dict_raw[cid]['avigilon'] += t
+                elif 'GENETEC' in prod_upper: prod_dict_raw[cid]['genetec'] += t
+                elif 'AXIS' in prod_upper: prod_dict_raw[cid]['axis'] += t
+                elif 'SOFTWARE' in prod_upper or 'DESARROLLO' in prod_upper: prod_dict_raw[cid]['software'] += t
+                elif 'RUNRATE' in prod_upper: prod_dict_raw[cid]['runrate'] += t
+                elif 'PÓLIZA' in prod_upper or 'POLIZA' in prod_upper: prod_dict_raw[cid]['poliza'] += t
+            prod_dict = prod_dict_raw
+            meta_field_c = 'meta_cotizado'
+            vista_label = 'Cotizado'
+        else:
+            return JsonResponse({'tab': 'clientes', 'rows': [], 'footer': {'left': '', 'right': ''}, 'vista': vista})
+
+        rows = []
+        total_acum = Decimal('0')
+        for c in clientes_qs.order_by('nombre_empresa'):
+            p = prod_dict.get(c.id, {})
+            total_c = total_by_id.get(c.id, Decimal('0'))
+            meta_c = getattr(c, meta_field_c, Decimal('0')) or Decimal('0')
+            faltante = meta_c - total_c
+            vendedor_name = (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a else ''
+            rows.append({
+                'cliente_id': c.id,
+                'cliente': c.nombre_empresa[:35],
+                'vendedor': vendedor_name,
+                'zebra': format_money(p.get('zebra', 0)),
+                'panduit': format_money(p.get('panduit', 0)),
+                'apc': format_money(p.get('apc', 0)),
+                'avigilon': format_money(p.get('avigilon', 0)),
+                'genetec': format_money(p.get('genetec', 0)),
+                'axis': format_money(p.get('axis', 0)),
+                'software': format_money(p.get('software', 0)),
+                'runrate': format_money(p.get('runrate', 0)),
+                'poliza': format_money(p.get('poliza', 0)),
+                'otros': format_money((p.get('total_prod', Decimal('0')) or Decimal('0')) - sum((p.get(k, Decimal('0')) or Decimal('0')) for k in ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza'])),
+                'total': format_money(total_c),
+                'meta': format_money(meta_c),
+                'faltante': format_money(faltante),
+            })
+            total_acum += total_c
+
+        num_clientes_c = clientes_qs.count()
+        return JsonResponse({
+            'tab': 'clientes',
+            'vista': vista,
+            'vista_label': vista_label,
+            'rows': rows,
+            'footer': {
+                'left': f'{num_clientes_c} clientes',
+                'right': f'Total {vista_label}: ${format_money(total_acum)}',
+            },
+            'total_facturado': format_money(total_acum),
+            'widget_label': f'Total {vista_label}',
+            'meta': format_money(api_meta),
+            'progreso': int((total_acum / api_meta * 100)) if api_meta > 0 else 0,
+            'widget_left_stat': f'{num_clientes_c} Clientes',
         })
 
     return JsonResponse({'tab': tab_activo, 'rows': [], 'footer': {'left': '', 'right': ''}})

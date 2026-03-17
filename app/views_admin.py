@@ -165,6 +165,9 @@ def api_admin_clientes(request):
                 'telefono': c.telefono or '',
                 'email': c.email or '',
                 'meta_mensual': str(c.meta_mensual or 0),
+                'meta_cobrado': str(c.meta_cobrado or 0),
+                'meta_oportunidades': str(c.meta_oportunidades or 0),
+                'meta_cotizado': str(c.meta_cotizado or 0),
             })
         return JsonResponse({'clientes': data})
 
@@ -198,11 +201,12 @@ def api_admin_cliente_detalle(request, cliente_id):
                 cliente.asignado_a = None
         if 'categoria' in data:
             cliente.categoria = data['categoria']
-        if 'meta_mensual' in data:
-            try:
-                cliente.meta_mensual = Decimal(str(data['meta_mensual']))
-            except Exception:
-                pass
+        for campo in ('meta_mensual', 'meta_cobrado', 'meta_oportunidades', 'meta_cotizado'):
+            if campo in data:
+                try:
+                    setattr(cliente, campo, Decimal(str(data[campo])))
+                except Exception:
+                    pass
         cliente.save()
 
         return JsonResponse({'success': True})
