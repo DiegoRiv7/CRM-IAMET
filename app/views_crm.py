@@ -744,6 +744,8 @@ def api_crm_table_data(request):
             p = prod_dict.get(c.id, {})
             fact = fact_by_id.get(c.id, Decimal('0'))
             meta_c = c.meta_mensual or Decimal('0')
+            if mes_filter == 'todos' and not usando_periodo:
+                meta_c = meta_c * 12
             rows.append({
                 'cliente_id': c.id,
                 'cliente': c.nombre_empresa[:35],
@@ -897,6 +899,8 @@ def api_crm_table_data(request):
             p = prod_dict.get(c.id, {})
             total_c = total_by_id.get(c.id, Decimal('0'))
             meta_c = getattr(c, meta_field_c, Decimal('0')) or Decimal('0')
+            if mes_filter == 'todos' and not usando_periodo:
+                meta_c = meta_c * 12
             faltante = meta_c - total_c
             vendedor_name = (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a else ''
             rows.append({
