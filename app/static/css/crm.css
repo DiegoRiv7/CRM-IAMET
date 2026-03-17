@@ -3264,6 +3264,12 @@
         overflow: hidden;
     }
 
+    .muro-post-anuncio {
+        border: 2px solid #0052D4;
+        box-shadow: 0 4px 20px rgba(0, 82, 212, 0.15);
+        background: linear-gradient(180deg, #F0F6FF 0%, #fff 60px);
+    }
+
     .muro-post-menu {
         position: absolute;
         top: calc(100% + 4px);

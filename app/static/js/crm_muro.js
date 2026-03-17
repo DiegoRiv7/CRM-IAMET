@@ -58,7 +58,7 @@
 
     function muroCrearPostEl(p) {
         var div = document.createElement('div');
-        div.className = 'muro-post-card';
+        div.className = 'muro-post-card' + (p.es_anuncio ? ' muro-post-anuncio' : '');
         div.id = 'muro-post-' + p.id;
 
         var isSystem = p.autor_nombre === 'IAMET';
