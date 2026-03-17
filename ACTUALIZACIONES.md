@@ -17,7 +17,7 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - Haciendo clic se abre el detalle de la actividad para verla o completarla
 - Si no hay actividad programada, muestra "Sin actividad programada"
 
-### NUEVO — Campo PO (Purchase Order)
+### NUEVO — Campo PO 
 - El campo PO en el detalle de oportunidades ahora guarda correctamente la PO
 - Todas las oportunidades importadas de Bitrix ya cuentan con su PO original
 
