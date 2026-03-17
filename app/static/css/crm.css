@@ -4219,3 +4219,64 @@
         border-radius: 4px;
         font-style: italic;
     }
+
+/* ═══ CLIENTES 4-PANEL LAYOUT ═══ */
+.clientes-paneles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 8px;
+}
+.clientes-panel {
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+}
+.clientes-panel-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    background: #F9FAFB;
+    border-bottom: 1px solid #E5E7EB;
+    flex-shrink: 0;
+}
+.clientes-panel-title {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.clientes-panel-expand {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #9CA3AF;
+    padding: 3px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    transition: color .15s, background .15s;
+}
+.clientes-panel-expand:hover {
+    color: #4B5563;
+    background: #F3F4F6;
+}
+.clientes-panel-body {
+    overflow-x: auto;
+    overflow-y: auto;
+    flex: 1;
+    max-height: calc(100vh - 185px);
+}
+.clientes-mini-table {
+    table-layout: fixed;
+    width: 100%;
+}
+.clientes-mini-table td:first-child,
+.clientes-mini-table th:first-child {
+    width: 44%;
+}

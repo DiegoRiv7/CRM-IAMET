@@ -1292,7 +1292,33 @@
 
             // ── Refresh table via API (sin recargar página) ──
             var currentTab = _CRM_CONFIG.tabActivo;
-            var _clientesVista = 'facturado';
+            var _clientesPanelData = {};
+            var _clientesExpanded = null;
+            var _CLIENTES_VISTAS = ['facturado', 'cobrado', 'oportunidades', 'cotizado'];
+            var _CLIENTES_THEAD_MINI =
+                '<tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">' +
+                '<th class="px-2 py-2 text-left font-black">Cliente</th>' +
+                '<th class="py-2 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th>' +
+                '<th class="py-2 pr-2 text-right font-black text-orange-500">Faltante</th>' +
+                '<th class="py-2 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>' +
+                '</tr>';
+            var _CLIENTES_THEAD_FULL =
+                '<tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">' +
+                '<th class="px-2 py-3 text-left font-black">Cliente</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Avig.</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Genet.</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Pol.</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-orange-500">Faltante</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>' +
+                '</tr>';
             var currentMes = _CRM_CONFIG.mesFiltro;
             var currentAnio = _CRM_CONFIG.anioFiltro;
 
@@ -1396,7 +1422,18 @@
                     '</tr>';
             }
 
-            function buildClientesRow(r) {
+            function buildClientesMiniRow(r) {
+                var vendedor = r.vendedor ? '<div style="font-size:0.68rem;color:#9CA3AF;font-weight:500;margin-top:1px;">' + r.vendedor + '</div>' : '';
+                var faltanteStyle = (parseFloat((r.faltante || '0').replace(/,/g, '')) > 0) ? 'color:#F97316;font-weight:700;' : 'color:#22C55E;font-weight:700;';
+                return '<tr class="crm-data-row">' +
+                    '<td class="px-2 py-2"><span class="client-name-link font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" style="font-size:0.73rem;line-height:1.3;display:block;" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + vendedor + '</td>' +
+                    '<td class="px-2 py-2 text-right font-bold border-l border-gray-100" style="font-size:0.73rem;">$' + r.meta + '</td>' +
+                    '<td class="px-2 py-2 text-right" style="font-size:0.73rem;' + faltanteStyle + '">$' + r.faltante + '</td>' +
+                    '<td class="px-2 py-2 text-right font-black text-gray-900 border-l border-gray-100" style="font-size:0.73rem;">$' + r.total + '</td>' +
+                    '</tr>';
+            }
+
+            function buildClientesFullRow(r) {
                 var cols = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza', 'otros'];
                 var prodCells = '';
                 cols.forEach(function (c) {
@@ -1438,38 +1475,99 @@
             return ids.join(',');
         }
 
+        function updateTopbarFromClientesPanel(data) {
+            if (data.total_facturado !== undefined) {
+                var fa = document.getElementById('facturadoAmount');
+                if (fa) fa.textContent = '$' + data.total_facturado;
+            }
+            if (data.progreso !== undefined) {
+                var pct = document.getElementById('progressPct');
+                if (pct) {
+                    pct.textContent = data.progreso + '%';
+                    if (data.progreso >= 100) pct.classList.add('green');
+                    else pct.classList.remove('green');
+                }
+            }
+            if (data.vista_label !== undefined) {
+                var lbl = document.getElementById('topbarTotalLabel');
+                if (lbl) lbl.textContent = data.vista_label;
+            }
+        }
+
+        function renderClientesPanel(vista) {
+            var data = _clientesPanelData[vista];
+            if (!data) return;
+            var isExpanded = (_clientesExpanded === vista);
+            var thead = document.getElementById('clientesThead-' + vista);
+            var tbody = document.getElementById('clientesTbody-' + vista);
+            if (!tbody) return;
+            if (thead) thead.innerHTML = isExpanded ? _CLIENTES_THEAD_FULL : _CLIENTES_THEAD_MINI;
+            var cols = isExpanded ? 14 : 4;
+            if (!data.rows || data.rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Sin datos.</td></tr>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < data.rows.length; i++) {
+                html += isExpanded ? buildClientesFullRow(data.rows[i]) : buildClientesMiniRow(data.rows[i]);
+            }
+            tbody.innerHTML = html;
+            bindTableEvents();
+        }
+
+        function loadClientesPanel(vista) {
+            var vendedores = getVendedoresParam();
+            var url = '/app/api/crm-table-data/?tab=clientes&mes=' + currentMes + '&anio=' + currentAnio + '&vista=' + vista;
+            if (vendedores) url += '&vendedores=' + vendedores;
+            var cols = (_clientesExpanded === vista) ? 14 : 4;
+            var tbody = document.getElementById('clientesTbody-' + vista);
+            if (tbody) tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Cargando...</td></tr>';
+            fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    _clientesPanelData[vista] = data;
+                    renderClientesPanel(vista);
+                    if (_clientesExpanded === vista || (_clientesExpanded === null && vista === 'facturado')) {
+                        updateTopbarFromClientesPanel(data);
+                        document.getElementById('footerLeft').textContent = data.footer.left;
+                        document.getElementById('footerRight').textContent = data.footer.right;
+                    }
+                })
+                .catch(function (err) { console.error('Error loading clientes panel ' + vista, err); });
+        }
+
+        function loadAllClientesPanels() {
+            _CLIENTES_VISTAS.forEach(function (v) { loadClientesPanel(v); });
+        }
+
         function refreshCrmTable() {
+            if (currentTab === 'clientes') {
+                loadAllClientesPanels();
+                return;
+            }
             var vendedores = getVendedoresParam();
             var url = '/app/api/crm-table-data/?tab=' + currentTab + '&mes=' + currentMes + '&anio=' + currentAnio;
-            if (currentTab === 'clientes') url += '&vista=' + _clientesVista;
             if (vendedores) url += '&vendedores=' + vendedores;
             fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    var tbody = null;
-                    if (currentTab === 'clientes') tbody = document.getElementById('clientesTbody');
-                    else tbody = document.getElementById('crmTbody');
-
+                    var tbody = document.getElementById('crmTbody');
                     if (!tbody) return;
 
                     if (data.rows.length === 0) {
-                        var cols = currentTab === 'clientes' ? 14 : 14;
-                        tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-20 text-gray-400 italic">No hay datos disponibles para este periodo.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="14" class="text-center py-20 text-gray-400 italic">No hay datos disponibles para este periodo.</td></tr>';
                     } else {
                         var html = '';
                         for (var i = 0; i < data.rows.length; i++) {
-                            if (currentTab === 'clientes') html += buildClientesRow(data.rows[i]);
-                            else html += buildCrmRow(data.rows[i]);
+                            html += buildCrmRow(data.rows[i]);
                         }
                         tbody.innerHTML = html;
                         if (typeof populateEtapaDatalist === 'function') populateEtapaDatalist();
                     }
 
-                    // Update footer
                     document.getElementById('footerLeft').textContent = data.footer.left;
                     document.getElementById('footerRight').textContent = data.footer.right;
 
-                    // Update topbar stats
                     if (data.total_facturado !== undefined) {
                         var fa = document.getElementById('facturadoAmount');
                         if (fa) fa.textContent = '$' + data.total_facturado;
@@ -1493,9 +1591,7 @@
                         if (lbl) lbl.textContent = data.vista_label;
                     }
 
-                    // Re-bind event listeners on new rows
                     bindTableEvents();
-                    // Re-populate filter dropdowns with fresh data
                     populateIslandFilters();
                 })
                 .catch(function (err) { console.error('Error refreshing table:', err); });
@@ -2296,9 +2392,45 @@
             filtersOverlay.addEventListener('click', closeFiltersPanel);
         }
 
-        window.crmClientesVistaCambiar = function (vista) {
-            _clientesVista = vista;
-            refreshCrmTable();
+        var _SVG_EXPAND = '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>';
+        var _SVG_COLLAPSE = '<path d="M4 14h6v6M20 10h-6V4M3 21l7-7M21 3l-7 7"/>';
+
+        window.clientesPanelToggle = function (vista) {
+            var paneles = document.getElementById('clientesPaneles');
+            if (!paneles) return;
+            if (_clientesExpanded === vista) {
+                // Collapse back to 4-panel view
+                _clientesExpanded = null;
+                paneles.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                _CLIENTES_VISTAS.forEach(function (v) {
+                    var p = document.getElementById('clientes-panel-' + v);
+                    if (p) p.style.display = '';
+                    var btn = document.getElementById('clientes-expand-' + v);
+                    if (btn) btn.querySelector('svg').innerHTML = _SVG_EXPAND;
+                });
+                _CLIENTES_VISTAS.forEach(renderClientesPanel);
+                if (_clientesPanelData.facturado) {
+                    updateTopbarFromClientesPanel(_clientesPanelData.facturado);
+                    document.getElementById('footerLeft').textContent = _clientesPanelData.facturado.footer.left;
+                    document.getElementById('footerRight').textContent = _clientesPanelData.facturado.footer.right;
+                }
+            } else {
+                // Expand this panel
+                _clientesExpanded = vista;
+                paneles.style.gridTemplateColumns = '1fr';
+                _CLIENTES_VISTAS.forEach(function (v) {
+                    var p = document.getElementById('clientes-panel-' + v);
+                    if (p) p.style.display = (v === vista) ? '' : 'none';
+                });
+                var expandBtn = document.getElementById('clientes-expand-' + vista);
+                if (expandBtn) expandBtn.querySelector('svg').innerHTML = _SVG_COLLAPSE;
+                renderClientesPanel(vista);
+                if (_clientesPanelData[vista]) {
+                    updateTopbarFromClientesPanel(_clientesPanelData[vista]);
+                    document.getElementById('footerLeft').textContent = _clientesPanelData[vista].footer.left;
+                    document.getElementById('footerRight').textContent = _clientesPanelData[vista].footer.right;
+                }
+            }
         };
 
         // ─── POPULATE ISLAND FILTER DROPDOWNS FROM TABLE DATA (Excel-like) ───
@@ -2666,7 +2798,9 @@
                 ];
 
                 // Hoja 2: Datos de la tabla
-                var tbodyId = { crm: 'crmTbody', clientes: 'clientesTbody' }[activeTab];
+                var tbodyId = activeTab === 'clientes'
+                    ? ('clientesTbody-' + (_clientesExpanded || 'facturado'))
+                    : 'crmTbody';
                 var tbody = document.getElementById(tbodyId);
                 var tableData = [];
 
