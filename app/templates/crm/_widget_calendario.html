@@ -267,18 +267,6 @@
                     style="width: 100%; padding: 0.8rem; border: 1px solid #D1D1D6; border-radius: 10px; font-size: 0.95rem; outline: none; resize: none;"
                     placeholder="Cualquier apunte adicional..."></textarea>
             </div>
-            <div>
-                <label style="display:block;font-size:0.75rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">COLOR</label>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;" id="calColorPicker">
-                    <button type="button" onclick="calSelColor('#0052D4',this)" style="width:28px;height:28px;border-radius:50%;background:#0052D4;border:3px solid transparent;cursor:pointer;" title="Azul"></button>
-                    <button type="button" onclick="calSelColor('#34C759',this)" style="width:28px;height:28px;border-radius:50%;background:#34C759;border:3px solid transparent;cursor:pointer;" title="Verde"></button>
-                    <button type="button" onclick="calSelColor('#FF9500',this)" style="width:28px;height:28px;border-radius:50%;background:#FF9500;border:3px solid transparent;cursor:pointer;" title="Naranja"></button>
-                    <button type="button" onclick="calSelColor('#FF3B30',this)" style="width:28px;height:28px;border-radius:50%;background:#FF3B30;border:3px solid transparent;cursor:pointer;" title="Rojo"></button>
-                    <button type="button" onclick="calSelColor('#AF52DE',this)" style="width:28px;height:28px;border-radius:50%;background:#AF52DE;border:3px solid transparent;cursor:pointer;" title="Morado"></button>
-                    <button type="button" onclick="calSelColor('#FF2D55',this)" style="width:28px;height:28px;border-radius:50%;background:#FF2D55;border:3px solid transparent;cursor:pointer;" title="Rosa"></button>
-                    <button type="button" onclick="calSelColor('#1D1D1F',this)" style="width:28px;height:28px;border-radius:50%;background:#1D1D1F;border:3px solid transparent;cursor:pointer;" title="Negro"></button>
-                </div>
-            </div>
             <div style="position: relative;">
                 <label
                     style="display: block; font-size: 0.75rem; color: #86868B; margin-bottom: 0.4rem; font-weight: 600;">PARTICIPANTES</label>
@@ -462,6 +450,7 @@
                         document.getElementById('calFormActDesc').value = '';
                         _calParticipantesSel = [];
                         calRenderParticipantes();
+                        _calSelectedColor = '#1D1D1F';
                         window._calEditandoId = null;
                         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
                         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
@@ -613,9 +602,7 @@
         document.getElementById('calFormActDesc').value = '';
         _calParticipantesSel = [];
         calRenderParticipantes();
-        _calSelectedColor = '#0052D4';
-        var firstBtn = document.querySelector('#calColorPicker button');
-        if (firstBtn) calSelColor('#0052D4', firstBtn);
+        _calSelectedColor = '#1D1D1F';
         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
     };
 
