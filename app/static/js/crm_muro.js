@@ -256,30 +256,49 @@
     window.muroTogglePostMenu = function (e, pId) { e.stopPropagation(); var m = $m('muro-menu-' + pId); var vis = m.style.display === 'block'; document.querySelectorAll('.muro-post-menu').forEach(x => x.style.display = 'none'); if (!vis) m.style.display = 'block'; };
 
     window.muroEliminarPost = function (pId) {
-        if (confirm('¿Eliminar esta publicación?')) {
+        var widget = document.getElementById('muroWidgetEliminar');
+        widget.style.display = 'flex';
+        var btn = document.getElementById('muroWidgetEliminarBtn');
+        btn.onclick = function () {
             fetch('/app/api/muro/posts/' + pId + '/', {
                 method: 'DELETE',
                 headers: { 'X-CSRFToken': getCsrf() }
             }).then(r => r.json()).then(d => {
+                widget.style.display = 'none';
                 if (d.success) muroCargar();
             });
-        }
+        };
+    };
+
+    window.muroWidgetEliminarCerrar = function () {
+        document.getElementById('muroWidgetEliminar').style.display = 'none';
     };
 
     window.muroEditarPost = function (pId) {
-        var preId = 'muro-contenido-' + pId;
-        var el = $m(preId);
-        var cur = el.innerText;
-        var newT = prompt('Editar publicación:', cur);
-        if (newT && newT !== cur) {
-            fetch('/app/api/muro/posts/' + pId + '/', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
-                body: JSON.stringify({ contenido: newT })
-            }).then(r => r.json()).then(d => {
-                if (d.success) muroCargar();
-            });
-        }
+        var cur = ($m('muro-contenido-' + pId) || {}).innerText || '';
+        var widget = document.getElementById('muroWidgetEditar');
+        document.getElementById('muroWidgetEditarTexto').value = cur;
+        widget.style.display = 'flex';
+        var btn = document.getElementById('muroWidgetEditarBtn');
+        btn.onclick = function () {
+            var newT = document.getElementById('muroWidgetEditarTexto').value;
+            if (newT && newT !== cur) {
+                fetch('/app/api/muro/posts/' + pId + '/', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+                    body: JSON.stringify({ contenido: newT })
+                }).then(r => r.json()).then(d => {
+                    widget.style.display = 'none';
+                    if (d.success) muroCargar();
+                });
+            } else {
+                widget.style.display = 'none';
+            }
+        };
+    };
+
+    window.muroWidgetEditarCerrar = function () {
+        document.getElementById('muroWidgetEditar').style.display = 'none';
     };
 
     document.addEventListener('click', () => document.querySelectorAll('.muro-post-menu').forEach(x => x.style.display = 'none'));

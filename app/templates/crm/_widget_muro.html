@@ -106,3 +106,36 @@
         </div>
     </div>
 </div>
+
+<!-- ═══ MURO: CONFIRMAR ELIMINACIÓN ═══ -->
+<div id="muroWidgetEliminar" style="display:none;position:fixed;inset:0;z-index:10500;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:18px;padding:2rem;width:360px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.22);display:flex;flex-direction:column;gap:1.25rem;">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+            <div style="width:42px;height:42px;border-radius:50%;background:#FFF0F0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" fill="none" stroke="#FF3B30" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </div>
+            <div>
+                <div style="font-weight:700;font-size:1rem;color:#1D1D1F;">Eliminar publicación</div>
+                <div style="font-size:0.82rem;color:#86868B;margin-top:2px;">Esta acción no se puede deshacer.</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+            <button onclick="muroWidgetEliminarCerrar()" style="padding:0.65rem 1.2rem;background:#F2F2F7;border:none;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;color:#1D1D1F;">Cancelar</button>
+            <button id="muroWidgetEliminarBtn" style="padding:0.65rem 1.2rem;background:#FF3B30;border:none;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;color:#fff;">Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MURO: EDITAR PUBLICACIÓN ═══ -->
+<div id="muroWidgetEditar" style="display:none;position:fixed;inset:0;z-index:10500;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:18px;padding:2rem;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.22);display:flex;flex-direction:column;gap:1.25rem;">
+        <div style="font-weight:700;font-size:1rem;color:#1D1D1F;">✏️ Editar publicación</div>
+        <textarea id="muroWidgetEditarTexto" rows="5"
+            style="width:100%;padding:0.85rem;border:1.5px solid #D1D1D6;border-radius:12px;font-size:0.95rem;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;"
+            placeholder="Escribe tu publicación..."></textarea>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+            <button onclick="muroWidgetEditarCerrar()" style="padding:0.65rem 1.2rem;background:#F2F2F7;border:none;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;color:#1D1D1F;">Cancelar</button>
+            <button id="muroWidgetEditarBtn" style="padding:0.65rem 1.2rem;background:#0052D4;border:none;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;color:#fff;">Guardar</button>
+        </div>
+    </div>
+</div>
