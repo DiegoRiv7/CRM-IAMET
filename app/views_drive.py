@@ -424,34 +424,89 @@ def api_archivo_detalle(request, proyecto_id, archivo_id):
 def api_archivo_proyecto_stream(request, proyecto_id, archivo_id):
     """
     Descarga/previsualización en tiempo real para archivos de proyecto.
+    - Archivo local → FileResponse directo.
+    - Solo bitrix_file_id → pide URL fresca a Bitrix y hace stream al cliente.
+    Parámetro opcional: ?dl=1 para forzar descarga, sin él intenta inline.
     """
-    from django.http import FileResponse
+    import urllib.parse
+    from django.http import StreamingHttpResponse, FileResponse
+
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     archivo = get_object_or_404(ArchivoProyecto, id=archivo_id, proyecto=proyecto)
 
+    # Caso 1: archivo físico local
     if archivo.archivo:
         try:
             content_type, _ = mimetypes.guess_type(archivo.nombre_original)
             if not content_type:
                 content_type = 'application/octet-stream'
-            
+
             response = FileResponse(
                 archivo.archivo.open('rb'),
                 content_type=content_type
             )
-            
+
             nombre_encoded = urllib.parse.quote(archivo.nombre_original)
             if request.GET.get('dl') == '1':
                 response['Content-Disposition'] = f"attachment; filename*=UTF-8''{nombre_encoded}"
             else:
                 response['Content-Disposition'] = f"inline; filename*=UTF-8''{nombre_encoded}"
-                
+
             return response
         except Exception as e:
             print(f"Error streaming local project file: {e}")
-            pass
+            pass  # fallback a Bitrix
 
-    return JsonResponse({'error': 'Archivo no disponible'}, status=404)
+    # Caso 2: archivo en Bitrix (streaming sin guardar)
+    if not archivo.bitrix_file_id:
+        return JsonResponse({'error': 'Archivo no disponible'}, status=404)
+
+    bitrix_webhook = os.getenv(
+        "BITRIX_PROJECTS_WEBHOOK_URL",
+        "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json"
+    )
+    base = bitrix_webhook.rsplit("/", 1)[0] + "/"
+
+    download_url = ""
+    try:
+        r = requests.post(base + "disk.file.get.json",
+                          json={"id": archivo.bitrix_file_id}, timeout=15)
+        r.raise_for_status()
+        result = r.json().get("result") or {}
+        download_url = result.get("DOWNLOAD_URL") or result.get("downloadUrl") or ""
+    except Exception:
+        download_url = archivo.bitrix_download_url  # fallback a URL guardada
+
+    if not download_url:
+        return JsonResponse({'error': 'No se pudo obtener URL del archivo en Bitrix'}, status=502)
+
+    try:
+        bitrix_resp = requests.get(download_url, stream=True, timeout=60)
+        bitrix_resp.raise_for_status()
+
+        content_type = bitrix_resp.headers.get("Content-Type", "")
+        if not content_type or content_type == 'application/octet-stream':
+            guessed_type, _ = mimetypes.guess_type(archivo.nombre_original)
+            if guessed_type:
+                content_type = guessed_type
+            else:
+                content_type = 'application/octet-stream'
+
+        nombre_encoded = urllib.parse.quote(archivo.nombre_original)
+        disposition = "attachment" if request.GET.get('dl') == '1' else "inline"
+
+        streaming = StreamingHttpResponse(
+            bitrix_resp.iter_content(chunk_size=32768),
+            content_type=content_type,
+        )
+        streaming["Content-Disposition"] = f"{disposition}; filename*=UTF-8''{nombre_encoded}"
+        size = bitrix_resp.headers.get("Content-Length") or (archivo.tamaño if archivo.tamaño else None)
+        if size:
+            streaming["Content-Length"] = str(size)
+        return streaming
+
+    except Exception as e:
+        return JsonResponse({'error': f'Error al obtener archivo: {str(e)}'}, status=502)
 
 
 @csrf_exempt

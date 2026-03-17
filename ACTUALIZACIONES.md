@@ -5,6 +5,13 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 
 
+## [2026-03-17] — Correcciones
+
+### FIX — Archivos de proyectos no abrían en el Drive
+- Los archivos subidos desde Bitrix que ya estaban descargados localmente mostraban "Archivo no disponible" al intentar abrirlos.
+- Causa: faltaba importar `urllib.parse` en la función de streaming, el error se tragaba silenciosamente y devolvía 404.
+- Ahora los archivos locales abren correctamente. Además, si algún archivo no tuviera copia local, se obtiene directo de Bitrix como fallback.
+
 ## [2026-03-13] — Refactorización, limpieza mayor y correcciones
 
 ### NUEVO — Buscador global
@@ -62,15 +69,24 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 ### TÉCNICO — Backup media corregido
 - El script de respaldo semanal de archivos ahora respalda correctamente el volumen Docker donde están los archivos reales
 
----
+## [2026-03-17] — 
 
-## [Próxima actualización] — En preparación
+### NUEVO - Sección de novedades 
+- Se incluyo una sección de novedades donde se registran todas las novedades, mejoras y fixes de la ultima actualización del sistema.
+- Esta sección icluye filtros para que los usuarios vean solo las novedades que les importen mas.
 
-- Comentarios de tareas Bitrix visibles en el sistema
-- Sincronización del campo PO con Bitrix
-- Mejoras visuales pendientes 
+### FIX - muro
+- Ya se pueden enviar fotos en los mensajes del muro.
 
----
+### FIX - calendario
+- Ya se pueden agendar actividades desde el calendario sin error.
+- La hora de inicio se estipula en la hora en la que se quizo crear la actividad y la hora de cierre una hora después.
+
+### FIX - drive 
+- Se arreglo que el mensaje para editar algo dentro del drive o eliminar algo, salía atras del widget del drive y no se veía.
+
+### TÉCNICO - cambios a producción 
+- Se subieron los cambios que se habían trabajado en pruebas a producción.
 
 ## Cómo usar este archivo
 
