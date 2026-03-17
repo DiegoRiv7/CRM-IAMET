@@ -27,7 +27,7 @@ from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, Opor
 from django.db.models import Sum, Count, F, Q, Case, When, Value
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from decimal import Decimal
