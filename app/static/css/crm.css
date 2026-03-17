@@ -4220,100 +4220,59 @@
         font-style: italic;
     }
 
-/* ═══ CLIENTES 4-PANEL LAYOUT ═══ */
-.clientes-paneles {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 10px;
+/* ═══ CLIENTES TABLA COMBINADA ═══ */
+.clientes-combined-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
-.clientes-panel {
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-    transition: box-shadow .2s;
-}
-.clientes-panel:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.09), 0 6px 20px rgba(0,0,0,0.06);
-}
-.clientes-panel--facturado  { border-top: 3px solid #1D6F42; }
-.clientes-panel--cobrado    { border-top: 3px solid #0052D4; }
-.clientes-panel--oportunidades { border-top: 3px solid #5856D6; }
-.clientes-panel--cotizado   { border-top: 3px solid #FF9500; }
-.clientes-panel-hdr {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 12px;
+.clientes-group-row th {
     background: #FAFAFA;
-    border-bottom: 1px solid #F0F0F0;
-    flex-shrink: 0;
+    border-bottom: none;
+    padding: 0;
 }
-.clientes-panel-title {
-    font-size: 0.66rem;
-    font-weight: 800;
+.clientes-group-blank {
+    background: #FAFAFA;
+    padding: 10px 12px !important;
+    font-size: 0.60rem !important;
+    font-weight: 600 !important;
+    color: #9CA3AF !important;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    flex-shrink: 0;
+    letter-spacing: 0.05em;
+    border-right: 1px solid #F0F0F0;
+    vertical-align: middle;
+    white-space: nowrap;
 }
-.clientes-panel-summary {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-width: 0;
-}
-.clientes-panel-expand {
-    border: none;
-    background: none;
+.clientes-group-header {
+    text-align: center;
+    padding: 8px 6px !important;
     cursor: pointer;
-    color: #C7C7CC;
-    padding: 4px;
-    border-radius: 6px;
-    display: flex;
+    background: #FAFAFA;
+    transition: background .15s;
+    border-right: 1px solid #F0F0F0;
+}
+.clientes-group-header:hover { background: #F3F4F6; }
+.clientes-group-pill {
+    display: inline-flex;
     align-items: center;
-    flex-shrink: 0;
-    transition: color .15s, background .15s;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: opacity .15s;
+    cursor: pointer;
+    white-space: nowrap;
 }
-.clientes-panel-expand:hover {
-    color: #4B5563;
-    background: #F3F4F6;
-}
-.clientes-panel-body {
-    overflow-x: auto;
-    overflow-y: auto;
-    flex: 1;
-    max-height: calc(100vh - 190px);
-}
-.clientes-mini-table {
-    table-layout: fixed;
-    width: 100%;
-}
-.clientes-mini-table th:first-child,
-.clientes-mini-table td:first-child {
-    width: 46%;
-}
-.clientes-mini-table tr.crm-data-row:hover td {
-    background: #F8FAFF;
-}
-.clientes-mini-bar {
-    height: 2px;
-    background: #F0F0F0;
-    border-radius: 2px;
-    margin: 3px 0 2px;
-    overflow: hidden;
-}
-.clientes-mini-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width .4s ease;
+.clientes-group-header:hover .clientes-group-pill { opacity: 0.8; }
+.clientes-combined-table td:first-child,
+.clientes-combined-table th.clientes-group-blank {
+    min-width: 160px;
+    max-width: 220px;
 }
 .clientes-mini-vendedor {
-    font-size: 0.63rem;
+    font-size: 0.62rem;
     color: #B0B0B8;
     font-weight: 500;
     margin-top: 1px;

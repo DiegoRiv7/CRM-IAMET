@@ -1511,70 +1511,144 @@
             }
         }
 
-        function updatePanelHeaderStats(vista, data, activeCount) {
-            var el = document.getElementById('clientes-hdr-stats-' + vista);
-            if (!el) return;
-            var totalNum = parseFloat((data.total_facturado || '0').replace(/,/g, ''));
-            var pct = data.progreso || 0;
-            var pctColor = pct >= 100 ? '#22C55E' : pct >= 60 ? '#3B82F6' : '#F97316';
-            el.innerHTML =
-                '<span style="font-size:0.68rem;font-weight:700;color:#374151;">' + fmtK(totalNum) + '</span>' +
-                '<span style="font-size:0.62rem;font-weight:800;color:' + pctColor + ';margin-left:5px;">' + pct + '%</span>' +
-                '<span style="font-size:0.60rem;color:#9CA3AF;margin-left:6px;">' + activeCount + ' activos</span>';
+        var _clientesCombinedLoading = 0;
+
+        function mergeClientesData() {
+            var map = {};
+            var order = [];
+            var prefixMap = { facturado: 'fact', cobrado: 'cob', oportunidades: 'opp', cotizado: 'cot' };
+            // Collect all unique clients (preserve facturado order as base)
+            _CLIENTES_VISTAS.forEach(function (v) {
+                var rows = (_clientesPanelData[v] || {}).rows || [];
+                rows.forEach(function (r) {
+                    if (!map[r.cliente_id]) {
+                        map[r.cliente_id] = { cliente_id: r.cliente_id, cliente: r.cliente, vendedor: r.vendedor || '' };
+                        order.push(r.cliente_id);
+                    }
+                });
+            });
+            // Fill per-vista values
+            _CLIENTES_VISTAS.forEach(function (v) {
+                var p = prefixMap[v];
+                var rows = (_clientesPanelData[v] || {}).rows || [];
+                var byId = {};
+                rows.forEach(function (r) { byId[r.cliente_id] = r; });
+                order.forEach(function (cid) {
+                    var r = byId[cid];
+                    map[cid][p + '_meta']     = r ? (r.meta     || '0') : '0';
+                    map[cid][p + '_faltante'] = r ? (r.faltante || '0') : '0';
+                    map[cid][p + '_total']    = r ? (r.total    || '0') : '0';
+                });
+            });
+            return order.map(function (cid) { return map[cid]; });
         }
 
-        function renderClientesPanel(vista) {
-            var data = _clientesPanelData[vista];
-            if (!data) return;
-            var isExpanded = (_clientesExpanded === vista);
-            var thead = document.getElementById('clientesThead-' + vista);
-            var tbody = document.getElementById('clientesTbody-' + vista);
-            if (!tbody) return;
-            if (thead) thead.innerHTML = isExpanded ? _CLIENTES_THEAD_FULL : _CLIENTES_THEAD_MINI;
-            var rows = data.rows || [];
-            // En mini: solo clientes con actividad (total > 0)
-            var visibleRows = isExpanded ? rows : rows.filter(function (r) {
-                return parseFloat((r.total || '0').replace(/,/g, '')) > 0;
-            });
-            var cols = isExpanded ? 14 : 4;
-            if (visibleRows.length === 0) {
-                var msg = rows.length > 0 ? 'Sin actividad este periodo.' : 'Sin datos.';
-                tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-10 text-gray-400 italic" style="font-size:0.8rem;">' + msg + '</td></tr>';
-            } else {
-                var html = '';
-                for (var i = 0; i < visibleRows.length; i++) {
-                    html += isExpanded ? buildClientesFullRow(visibleRows[i]) : buildClientesMiniRow(visibleRows[i]);
-                }
-                tbody.innerHTML = html;
-                bindTableEvents();
+        function buildClientesCombinedRow(r) {
+            var vendedor = r.vendedor ? '<div class="clientes-mini-vendedor">' + r.vendedor + '</div>' : '';
+            function numCell(val, extraStyle) {
+                var n = parseFloat((val || '0').replace(/,/g, ''));
+                if (n === 0) return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;"><span class="money-zero">$0</span></td>';
+                return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;' + (extraStyle || '') + '">$' + val + '</td>';
             }
-            updatePanelHeaderStats(vista, data, visibleRows.length);
+            function faltCell(val, borderLeft) {
+                var n = parseFloat((val || '0').replace(/,/g, ''));
+                var s = (borderLeft ? 'border-left:2px solid ' + borderLeft + ';' : '');
+                if (n === 0) return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;' + s + '"><span class="money-zero">$0</span></td>';
+                var color = n > 0 ? 'color:#F97316;font-weight:700;' : 'color:#22C55E;font-weight:700;';
+                return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;' + s + color + '">$' + val + '</td>';
+            }
+            function totCell(val) {
+                var n = parseFloat((val || '0').replace(/,/g, ''));
+                if (n === 0) return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;"><span class="money-zero">$0</span></td>';
+                return '<td class="px-2 py-3 text-right font-black" style="font-size:0.71rem;color:#1D1D1F;">$' + val + '</td>';
+            }
+            return '<tr class="crm-data-row">' +
+                '<td class="px-3 py-3"><span class="client-name-link font-bold cursor-pointer" style="font-size:0.75rem;color:#1D1D1F;display:block;" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + vendedor + '</td>' +
+                faltCell(r.fact_meta, 'rgba(29,111,66,0.18)') + numCell(r.fact_faltante) + totCell(r.fact_total) +
+                faltCell(r.cob_meta, 'rgba(0,82,212,0.18)')  + numCell(r.cob_faltante)  + totCell(r.cob_total)  +
+                faltCell(r.opp_meta, 'rgba(88,86,214,0.18)') + numCell(r.opp_faltante)  + totCell(r.opp_total)  +
+                faltCell(r.cot_meta, 'rgba(255,149,0,0.18)') + numCell(r.cot_faltante)  + totCell(r.cot_total)  +
+                '</tr>';
+        }
+
+        function renderClientesCombinedTable() {
+            var tbody = document.getElementById('clientesCombinedTbody');
+            if (!tbody) return;
+            var merged = mergeClientesData();
+            if (merged.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="13" class="text-center py-20 text-gray-400 italic">Sin datos para este periodo.</td></tr>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < merged.length; i++) { html += buildClientesCombinedRow(merged[i]); }
+            tbody.innerHTML = html;
+            bindTableEvents();
+            // Topbar: mostrar datos de facturado por defecto
+            if (_clientesPanelData.facturado) {
+                updateTopbarFromClientesPanel(_clientesPanelData.facturado);
+                document.getElementById('footerLeft').textContent = _clientesPanelData.facturado.footer.left;
+                document.getElementById('footerRight').textContent = _clientesPanelData.facturado.footer.right;
+            }
         }
 
         function loadClientesPanel(vista) {
             var vendedores = getVendedoresParam();
             var url = '/app/api/crm-table-data/?tab=clientes&mes=' + currentMes + '&anio=' + currentAnio + '&vista=' + vista;
             if (vendedores) url += '&vendedores=' + vendedores;
-            var cols = (_clientesExpanded === vista) ? 14 : 4;
-            var tbody = document.getElementById('clientesTbody-' + vista);
-            if (tbody) tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Cargando...</td></tr>';
             fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     _clientesPanelData[vista] = data;
-                    renderClientesPanel(vista);
-                    if (_clientesExpanded === vista || (_clientesExpanded === null && vista === 'facturado')) {
-                        updateTopbarFromClientesPanel(data);
-                        document.getElementById('footerLeft').textContent = data.footer.left;
-                        document.getElementById('footerRight').textContent = data.footer.right;
-                    }
+                    _clientesCombinedLoading--;
+                    if (_clientesCombinedLoading <= 0) renderClientesCombinedTable();
                 })
-                .catch(function (err) { console.error('Error loading clientes panel ' + vista, err); });
+                .catch(function (err) {
+                    console.error('Error loading clientes ' + vista, err);
+                    _clientesCombinedLoading--;
+                    if (_clientesCombinedLoading <= 0) renderClientesCombinedTable();
+                });
         }
 
         function loadAllClientesPanels() {
+            _clientesCombinedLoading = _CLIENTES_VISTAS.length;
+            var tbody = document.getElementById('clientesCombinedTbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>';
             _CLIENTES_VISTAS.forEach(function (v) { loadClientesPanel(v); });
         }
+
+        window.clientesVistaAbrir = function (vista) {
+            var data = _clientesPanelData[vista];
+            var overlay = document.getElementById('clientesDetalleOverlay');
+            if (!overlay) return;
+            var labels = { facturado: 'Facturado', cobrado: 'Cobrado', oportunidades: 'Oportunidades', cotizado: 'Cotizado' };
+            var titulo = document.getElementById('clientesDetalleTitulo');
+            var statsEl = document.getElementById('clientesDetalleStats');
+            var thead = document.getElementById('clientesDetalleThead');
+            var tbody = document.getElementById('clientesDetalleTbody');
+            if (titulo) titulo.textContent = labels[vista] + ' — Desglose por Marcas';
+            if (thead) thead.innerHTML = _CLIENTES_THEAD_FULL;
+            if (!data || !data.rows || data.rows.length === 0) {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="14" class="text-center py-20 text-gray-400 italic">Sin datos.</td></tr>';
+            } else {
+                var html = '';
+                for (var i = 0; i < data.rows.length; i++) { html += buildClientesFullRow(data.rows[i]); }
+                if (tbody) tbody.innerHTML = html;
+            }
+            if (statsEl && data) statsEl.textContent = 'Total: $' + (data.total_facturado || '0') + '  ·  ' + (data.progreso || 0) + '% de meta';
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            if (typeof bindTableEvents === 'function') bindTableEvents();
+            // Actualizar topbar con esta vista
+            if (data) updateTopbarFromClientesPanel(data);
+        };
+
+        window.clientesVistaDetalleCerrar = function () {
+            var overlay = document.getElementById('clientesDetalleOverlay');
+            if (overlay) overlay.style.display = 'none';
+            document.body.style.overflow = '';
+            // Volver topbar a facturado
+            if (_clientesPanelData.facturado) updateTopbarFromClientesPanel(_clientesPanelData.facturado);
+        };
 
         function refreshCrmTable() {
             if (currentTab === 'clientes') {
@@ -2428,46 +2502,6 @@
             filtersOverlay.addEventListener('click', closeFiltersPanel);
         }
 
-        var _SVG_EXPAND = '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>';
-        var _SVG_COLLAPSE = '<path d="M4 14h6v6M20 10h-6V4M3 21l7-7M21 3l-7 7"/>';
-
-        window.clientesPanelToggle = function (vista) {
-            var paneles = document.getElementById('clientesPaneles');
-            if (!paneles) return;
-            if (_clientesExpanded === vista) {
-                // Collapse back to 4-panel view
-                _clientesExpanded = null;
-                paneles.style.gridTemplateColumns = 'repeat(4, 1fr)';
-                _CLIENTES_VISTAS.forEach(function (v) {
-                    var p = document.getElementById('clientes-panel-' + v);
-                    if (p) p.style.display = '';
-                    var btn = document.getElementById('clientes-expand-' + v);
-                    if (btn) btn.querySelector('svg').innerHTML = _SVG_EXPAND;
-                });
-                _CLIENTES_VISTAS.forEach(renderClientesPanel);
-                if (_clientesPanelData.facturado) {
-                    updateTopbarFromClientesPanel(_clientesPanelData.facturado);
-                    document.getElementById('footerLeft').textContent = _clientesPanelData.facturado.footer.left;
-                    document.getElementById('footerRight').textContent = _clientesPanelData.facturado.footer.right;
-                }
-            } else {
-                // Expand this panel
-                _clientesExpanded = vista;
-                paneles.style.gridTemplateColumns = '1fr';
-                _CLIENTES_VISTAS.forEach(function (v) {
-                    var p = document.getElementById('clientes-panel-' + v);
-                    if (p) p.style.display = (v === vista) ? '' : 'none';
-                });
-                var expandBtn = document.getElementById('clientes-expand-' + vista);
-                if (expandBtn) expandBtn.querySelector('svg').innerHTML = _SVG_COLLAPSE;
-                renderClientesPanel(vista);
-                if (_clientesPanelData[vista]) {
-                    updateTopbarFromClientesPanel(_clientesPanelData[vista]);
-                    document.getElementById('footerLeft').textContent = _clientesPanelData[vista].footer.left;
-                    document.getElementById('footerRight').textContent = _clientesPanelData[vista].footer.right;
-                }
-            }
-        };
 
         // ─── POPULATE ISLAND FILTER DROPDOWNS FROM TABLE DATA (Excel-like) ───
         function populateIslandFilters() {

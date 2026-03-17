@@ -205,72 +205,75 @@
             </tbody>
         </table>
         {% elif tab_activo == 'clientes' %}
-        <div class="clientes-paneles" id="clientesPaneles">
-            <!-- Panel Facturado -->
-            <div class="clientes-panel clientes-panel--facturado" id="clientes-panel-facturado">
-                <div class="clientes-panel-hdr">
-                    <span class="clientes-panel-title" style="color:#1D6F42;">Facturado</span>
-                    <span class="clientes-panel-summary" id="clientes-hdr-stats-facturado"></span>
-                    <button type="button" class="clientes-panel-expand" id="clientes-expand-facturado"
-                        onclick="clientesPanelToggle('facturado')" title="Expandir">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        <div style="overflow-x:auto;">
+        <table class="crm-table clientes-combined-table" style="table-layout:auto;min-width:900px;">
+            <thead>
+                <!-- Fila 1: grupos clicables -->
+                <tr class="clientes-group-row">
+                    <th class="clientes-group-blank" rowspan="2">Detalles del cliente</th>
+                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('facturado')" style="--gc:#1D6F42;">
+                        <span class="clientes-group-pill" style="color:#1D6F42;background:rgba(29,111,66,0.09);">
+                            Facturado
+                            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-left:4px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                        </span>
+                    </th>
+                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('cobrado')" style="--gc:#0052D4;">
+                        <span class="clientes-group-pill" style="color:#0052D4;background:rgba(0,82,212,0.09);">
+                            Cobrado
+                            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-left:4px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                        </span>
+                    </th>
+                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('oportunidades')" style="--gc:#5856D6;">
+                        <span class="clientes-group-pill" style="color:#5856D6;background:rgba(88,86,214,0.09);">
+                            Oportunidades
+                            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-left:4px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                        </span>
+                    </th>
+                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('cotizado')" style="--gc:#FF9500;">
+                        <span class="clientes-group-pill" style="color:#FF9500;background:rgba(255,149,0,0.09);">
+                            Cotizado
+                            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-left:4px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                        </span>
+                    </th>
+                </tr>
+                <!-- Fila 2: subcolumnas -->
+                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <th class="py-2 pr-2 text-right font-black" style="border-left:2px solid rgba(29,111,66,0.2);">Meta</th>
+                    <th class="py-2 pr-2 text-right font-black text-orange-400">Faltante</th>
+                    <th class="py-2 pr-2 text-right font-black text-gray-800">Total</th>
+                    <th class="py-2 pr-2 text-right font-black" style="border-left:2px solid rgba(0,82,212,0.2);">Meta</th>
+                    <th class="py-2 pr-2 text-right font-black text-orange-400">Faltante</th>
+                    <th class="py-2 pr-2 text-right font-black text-gray-800">Total</th>
+                    <th class="py-2 pr-2 text-right font-black" style="border-left:2px solid rgba(88,86,214,0.2);">Meta</th>
+                    <th class="py-2 pr-2 text-right font-black text-orange-400">Faltante</th>
+                    <th class="py-2 pr-2 text-right font-black text-gray-800">Total</th>
+                    <th class="py-2 pr-2 text-right font-black" style="border-left:2px solid rgba(255,149,0,0.2);">Meta</th>
+                    <th class="py-2 pr-2 text-right font-black text-orange-400">Faltante</th>
+                    <th class="py-2 pr-2 text-right font-black text-gray-800">Total</th>
+                </tr>
+            </thead>
+            <tbody id="clientesCombinedTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                <tr><td colspan="13" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <!-- Overlay detalle de vista -->
+        <div id="clientesDetalleOverlay" style="display:none;position:fixed;inset:0;z-index:10200;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:16px;width:96%;max-width:1380px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.25);overflow:hidden;">
+                <div style="display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid #F0F0F0;flex-shrink:0;gap:10px;">
+                    <span id="clientesDetalleTitulo" style="font-size:0.88rem;font-weight:800;color:#1D1D1F;flex:1;"></span>
+                    <span id="clientesDetalleStats" style="font-size:0.78rem;color:#6B7280;"></span>
+                    <button type="button" onclick="clientesVistaDetalleCerrar()" style="border:none;background:none;cursor:pointer;color:#8E8E93;padding:4px;border-radius:8px;display:flex;align-items:center;" title="Cerrar">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
-                <div class="clientes-panel-body">
-                    <table class="crm-table clientes-mini-table">
-                        <thead id="clientesThead-facturado"><tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100"><th class="px-2 py-2 text-left font-black">Cliente</th><th class="py-2 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th><th class="py-2 pr-2 text-right font-black text-orange-500">Faltante</th><th class="py-2 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th></tr></thead>
-                        <tbody id="clientesTbody-facturado" class="text-[11px] divide-y divide-gray-100 bg-white"><tr><td colspan="4" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Cargando...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-            <!-- Panel Cobrado -->
-            <div class="clientes-panel clientes-panel--cobrado" id="clientes-panel-cobrado">
-                <div class="clientes-panel-hdr">
-                    <span class="clientes-panel-title" style="color:#0052D4;">Cobrado</span>
-                    <span class="clientes-panel-summary" id="clientes-hdr-stats-cobrado"></span>
-                    <button type="button" class="clientes-panel-expand" id="clientes-expand-cobrado"
-                        onclick="clientesPanelToggle('cobrado')" title="Expandir">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                    </button>
-                </div>
-                <div class="clientes-panel-body">
-                    <table class="crm-table clientes-mini-table">
-                        <thead id="clientesThead-cobrado"><tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100"><th class="px-2 py-2 text-left font-black">Cliente</th><th class="py-2 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th><th class="py-2 pr-2 text-right font-black text-orange-500">Faltante</th><th class="py-2 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th></tr></thead>
-                        <tbody id="clientesTbody-cobrado" class="text-[11px] divide-y divide-gray-100 bg-white"><tr><td colspan="4" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Cargando...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-            <!-- Panel Oportunidades -->
-            <div class="clientes-panel clientes-panel--oportunidades" id="clientes-panel-oportunidades">
-                <div class="clientes-panel-hdr">
-                    <span class="clientes-panel-title" style="color:#5856D6;">Oportunidades</span>
-                    <span class="clientes-panel-summary" id="clientes-hdr-stats-oportunidades"></span>
-                    <button type="button" class="clientes-panel-expand" id="clientes-expand-oportunidades"
-                        onclick="clientesPanelToggle('oportunidades')" title="Expandir">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                    </button>
-                </div>
-                <div class="clientes-panel-body">
-                    <table class="crm-table clientes-mini-table">
-                        <thead id="clientesThead-oportunidades"><tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100"><th class="px-2 py-2 text-left font-black">Cliente</th><th class="py-2 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th><th class="py-2 pr-2 text-right font-black text-orange-500">Faltante</th><th class="py-2 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th></tr></thead>
-                        <tbody id="clientesTbody-oportunidades" class="text-[11px] divide-y divide-gray-100 bg-white"><tr><td colspan="4" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Cargando...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-            <!-- Panel Cotizado -->
-            <div class="clientes-panel clientes-panel--cotizado" id="clientes-panel-cotizado">
-                <div class="clientes-panel-hdr">
-                    <span class="clientes-panel-title" style="color:#FF9500;">Cotizado</span>
-                    <span class="clientes-panel-summary" id="clientes-hdr-stats-cotizado"></span>
-                    <button type="button" class="clientes-panel-expand" id="clientes-expand-cotizado"
-                        onclick="clientesPanelToggle('cotizado')" title="Expandir">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                    </button>
-                </div>
-                <div class="clientes-panel-body">
-                    <table class="crm-table clientes-mini-table">
-                        <thead id="clientesThead-cotizado"><tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100"><th class="px-2 py-2 text-left font-black">Cliente</th><th class="py-2 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th><th class="py-2 pr-2 text-right font-black text-orange-500">Faltante</th><th class="py-2 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th></tr></thead>
-                        <tbody id="clientesTbody-cotizado" class="text-[11px] divide-y divide-gray-100 bg-white"><tr><td colspan="4" class="text-center py-8 text-gray-400 italic" style="font-size:0.8rem;">Cargando...</td></tr></tbody>
+                <div style="overflow:auto;flex:1;">
+                    <table class="crm-table" style="width:100%;table-layout:fixed;">
+                        <thead id="clientesDetalleThead"></thead>
+                        <tbody id="clientesDetalleTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                            <tr><td colspan="14" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
