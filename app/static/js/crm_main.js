@@ -1517,7 +1517,6 @@
             var map = {};
             var order = [];
             var prefixMap = { facturado: 'fact', cobrado: 'cob', oportunidades: 'opp', cotizado: 'cot' };
-            // Collect all unique clients (preserve facturado order as base)
             _CLIENTES_VISTAS.forEach(function (v) {
                 var rows = (_clientesPanelData[v] || {}).rows || [];
                 rows.forEach(function (r) {
@@ -1527,7 +1526,6 @@
                     }
                 });
             });
-            // Fill per-vista values
             _CLIENTES_VISTAS.forEach(function (v) {
                 var p = prefixMap[v];
                 var rows = (_clientesPanelData[v] || {}).rows || [];
@@ -1535,41 +1533,88 @@
                 rows.forEach(function (r) { byId[r.cliente_id] = r; });
                 order.forEach(function (cid) {
                     var r = byId[cid];
-                    map[cid][p + '_meta']     = r ? (r.meta     || '0') : '0';
-                    map[cid][p + '_faltante'] = r ? (r.faltante || '0') : '0';
-                    map[cid][p + '_total']    = r ? (r.total    || '0') : '0';
+                    map[cid][p + '_meta']     = r ? (r.meta        || '0') : '0';
+                    map[cid][p + '_faltante'] = r ? (r.faltante    || '0') : '0';
+                    map[cid][p + '_total']    = r ? (r.total       || '0') : '0';
+                    if (v === 'oportunidades') {
+                        map[cid]['opp_prev'] = r ? (r.prev_total || '0') : '0';
+                    }
                 });
+            });
+            // Compute total pipeline per client
+            order.forEach(function (cid) {
+                var m = map[cid];
+                var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
+                m._pipeline = fN(m.fact_total) + fN(m.cob_total) + fN(m.opp_total) + fN(m.cot_total);
             });
             return order.map(function (cid) { return map[cid]; });
         }
 
         var _DASH = '<span class="clientes-dash">—</span>';
 
-        function buildClientesCombinedRow(r) {
-            var vendedor = r.vendedor ? '<div class="clientes-mini-vendedor">' + r.vendedor + '</div>' : '';
-            function metaTd(val, bStyle) {
-                var n = parseFloat((val || '0').replace(/,/g, ''));
-                return n === 0
-                    ? '<td class="clientes-td" style="text-align:right;' + (bStyle||'') + '">' + _DASH + '</td>'
-                    : '<td class="clientes-td" style="text-align:right;' + (bStyle||'') + '"><span style="color:#A0A9B8;font-size:0.70rem;font-weight:600;">$' + val + '</span></td>';
+        function buildClientesCombinedRow(r, rank, maxPipeline) {
+            var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
+            var max = maxPipeline || 1;
+
+            // Rank
+            var rankHtml = rank <= 3
+                ? '<span class="ck-trophy">' + (rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉') + '</span>'
+                : '<span class="ck-rank-num">' + rank + '</span>';
+
+            // Health score
+            var pipeline = r._pipeline || 0;
+            var cobN = fN(r.cob_total);
+            var health = pipeline > 0
+                ? (cobN / pipeline >= 0.30 ? 'green' : cobN / pipeline >= 0.10 ? 'yellow' : 'red')
+                : 'gray';
+
+            // Trend badge (opp vs prev month)
+            var trendHtml = '';
+            var oppN = fN(r.opp_total), prevN = fN(r.opp_prev || '0');
+            if (prevN > 0 && oppN !== prevN) {
+                var pct = Math.round((oppN - prevN) / prevN * 100);
+                trendHtml = '<span class="ck-trend-badge ck-trend--' + (pct >= 0 ? 'up' : 'down') + '">' +
+                    (pct >= 0 ? '↑' : '↓') + ' ' + Math.abs(pct) + '%</span>';
             }
-            function faltTd(val) {
-                var n = parseFloat((val || '0').replace(/,/g, ''));
-                if (n === 0) return '<td class="clientes-td" style="text-align:right;">' + _DASH + '</td>';
-                var color = n > 0 ? '#F97316' : '#22C55E';
-                return '<td class="clientes-td" style="text-align:right;color:' + color + ';font-weight:700;font-size:0.71rem;">$' + val + '</td>';
+
+            // Metric cell with bar
+            function metricTd(val, metricClass, barClass) {
+                var n = fN(val);
+                if (n === 0) return '<td class="ck-td ck-td--metric"><span class="ck-dash">—</span></td>';
+                var pct = Math.min(100, (n / max * 100)).toFixed(1);
+                return '<td class="ck-td ck-td--metric">' +
+                    '<div class="ck-metric-val ' + metricClass + '">$' + val + '</div>' +
+                    '<div class="ck-bar-track"><div class="ck-bar ' + barClass + '" data-pct="' + pct + '" style="width:0"></div></div>' +
+                    '</td>';
             }
-            function totTd(val) {
-                var n = parseFloat((val || '0').replace(/,/g, ''));
-                if (n === 0) return '<td class="clientes-td" style="text-align:right;">' + _DASH + '</td>';
-                return '<td class="clientes-td" style="text-align:right;font-weight:800;font-size:0.72rem;color:#111827;">$' + val + '</td>';
+
+            // Total pipeline cell (hero)
+            var totalTd;
+            if (pipeline === 0) {
+                totalTd = '<td class="ck-td ck-td--total"><span class="ck-dash">—</span></td>';
+            } else {
+                var pipelineFmt = pipeline.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                var pct = Math.min(100, (pipeline / max * 100)).toFixed(1);
+                totalTd = '<td class="ck-td ck-td--total">' +
+                    '<div class="ck-total-val">$' + pipelineFmt + '</div>' +
+                    '<div class="ck-bar-track ck-bar-track--total"><div class="ck-bar ck-bar--total" data-pct="' + pct + '" style="width:0"></div></div>' +
+                    '</td>';
             }
-            return '<tr class="clientes-combined-row">' +
-                '<td class="clientes-td-cliente"><span class="client-name-link" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + vendedor + '</td>' +
-                metaTd(r.fact_meta,'border-left:2px solid rgba(29,111,66,0.15);') + faltTd(r.fact_faltante) + totTd(r.fact_total) +
-                metaTd(r.cob_meta, 'border-left:2px solid rgba(0,82,212,0.15);')  + faltTd(r.cob_faltante)  + totTd(r.cob_total)  +
-                metaTd(r.opp_meta, 'border-left:2px solid rgba(88,86,214,0.15);') + faltTd(r.opp_faltante)  + totTd(r.opp_total)  +
-                metaTd(r.cot_meta, 'border-left:2px solid rgba(255,149,0,0.15);') + faltTd(r.cot_faltante)  + totTd(r.cot_total)  +
+
+            return '<tr class="ck-row">' +
+                '<td class="ck-td ck-td--rank">' + rankHtml + '</td>' +
+                '<td class="ck-td ck-td--cliente">' +
+                    '<div class="ck-client-row">' +
+                    '<span class="ck-health-dot ck-health--' + health + '"></span>' +
+                    '<div style="min-width:0;flex:1;">' +
+                    '<div class="ck-client-name" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</div>' +
+                    '<div class="ck-client-meta">' + (r.vendedor || '') + (trendHtml ? ' ' + trendHtml : '') + '</div>' +
+                    '</div></div></td>' +
+                metricTd(r.fact_total, 'ck-metric--fact', 'ck-bar--fact') +
+                metricTd(r.cob_total,  'ck-metric--cob',  'ck-bar--cob')  +
+                metricTd(r.opp_total,  'ck-metric--opp',  'ck-bar--opp')  +
+                metricTd(r.cot_total,  'ck-metric--cot',  'ck-bar--cot')  +
+                totalTd +
                 '</tr>';
         }
 
@@ -1577,15 +1622,93 @@
             var tbody = document.getElementById('clientesCombinedTbody');
             if (!tbody) return;
             var merged = mergeClientesData();
+
             if (merged.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="13" class="text-center py-20 text-gray-400 italic">Sin datos para este periodo.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;font-size:0.82rem;color:#9CA3AF;font-style:italic;">Sin datos para este periodo.</td></tr>';
+                var kpiRow = document.getElementById('ckKpiRow');
+                if (kpiRow) kpiRow.style.display = 'none';
                 return;
             }
+
+            // Sort by pipeline descending
+            merged.sort(function (a, b) { return b._pipeline - a._pipeline; });
+            var maxPipeline = merged[0]._pipeline || 1;
+
+            // KPI totals
+            var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
+            var totFact = 0, totCob = 0, totOpp = 0, totCot = 0, totPrevOpp = 0;
+            merged.forEach(function (r) {
+                totFact    += fN(r.fact_total);
+                totCob     += fN(r.cob_total);
+                totOpp     += fN(r.opp_total);
+                totCot     += fN(r.cot_total);
+                totPrevOpp += fN(r.opp_prev || '0');
+            });
+            var fmtKpi = function(n) { return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+
+            // Update KPI cards
+            var el = function(id) { return document.getElementById(id); };
+            if (el('ckKpiFact')) el('ckKpiFact').textContent = fmtKpi(totFact);
+            if (el('ckKpiCob'))  el('ckKpiCob').textContent  = fmtKpi(totCob);
+            if (el('ckKpiOpp'))  el('ckKpiOpp').textContent  = fmtKpi(totOpp);
+            if (el('ckKpiCot'))  el('ckKpiCot').textContent  = fmtKpi(totCot);
+
+            // Trend for oportunidades (vs prev month)
+            var trendOppEl = el('ckTrendOpp');
+            if (trendOppEl && totPrevOpp > 0 && totOpp !== totPrevOpp) {
+                var pctOpp = Math.round((totOpp - totPrevOpp) / totPrevOpp * 100);
+                var upOpp = pctOpp >= 0;
+                trendOppEl.innerHTML = '<span style="color:' + (upOpp ? '#16A34A' : '#DC2626') + ';font-weight:700;">' +
+                    (upOpp ? '↑' : '↓') + ' ' + Math.abs(pctOpp) + '% vs mes ant.</span>';
+            }
+
+            // Show KPI row and insight bar
+            var kpiRow = el('ckKpiRow');
+            var insightBar = el('ckInsightBar');
+            if (kpiRow) kpiRow.style.display = 'grid';
+            if (insightBar) insightBar.style.display = 'flex';
+
+            // Insight: top client
+            var insightTop = el('ckInsightTop');
+            if (insightTop && merged[0]) {
+                var topPipelineFmt = merged[0]._pipeline.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                insightTop.innerHTML = '🏆 Top cliente: <strong>' + merged[0].cliente + '</strong> ($' + topPipelineFmt + ')';
+            }
+
+            // Insight: client with high pipeline but low cobrado ratio
+            var insightRisk = el('ckInsightRisk');
+            if (insightRisk) {
+                var riskClient = null, worstRatio = 1;
+                merged.forEach(function (r) {
+                    if (r._pipeline < 5000) return;
+                    var ratio = r._pipeline > 0 ? fN(r.cob_total) / r._pipeline : 0;
+                    if (ratio < worstRatio) { worstRatio = ratio; riskClient = r; }
+                });
+                if (riskClient && worstRatio < 0.15) {
+                    insightRisk.innerHTML = '⚠️ Bajo cobro: <strong>' + riskClient.cliente + '</strong> (' + Math.round(worstRatio * 100) + '% cobrado)';
+                } else {
+                    insightRisk.textContent = '';
+                    var sepEl = insightBar ? insightBar.querySelector('.ck-insight-sep') : null;
+                    if (sepEl) sepEl.style.display = 'none';
+                }
+            }
+
+            // Build rows
             var html = '';
-            for (var i = 0; i < merged.length; i++) { html += buildClientesCombinedRow(merged[i]); }
+            for (var i = 0; i < merged.length; i++) {
+                html += buildClientesCombinedRow(merged[i], i + 1, maxPipeline);
+            }
             tbody.innerHTML = html;
+
+            // Animate bars (defer to allow paint)
+            setTimeout(function () {
+                tbody.querySelectorAll('.ck-bar[data-pct]').forEach(function (bar) {
+                    bar.style.width = bar.getAttribute('data-pct') + '%';
+                });
+            }, 40);
+
             bindTableEvents();
-            // Topbar: mostrar datos de facturado por defecto
+
             if (_clientesPanelData.facturado) {
                 updateTopbarFromClientesPanel(_clientesPanelData.facturado);
                 document.getElementById('footerLeft').textContent = _clientesPanelData.facturado.footer.left;

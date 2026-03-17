@@ -4334,3 +4334,218 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CLIENTES DASHBOARD — KPI CARDS + PIPELINE TABLE
+   ═══════════════════════════════════════════════════════════ */
+
+.ck-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 14px 14px 10px;
+}
+.ck-kpi-card {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 14px;
+    padding: 14px 16px 12px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.ck-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+}
+.ck-kpi-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 8px;
+}
+.ck-kpi-icon { opacity: 0.5; }
+.ck-kpi--fact .ck-kpi-icon { color: #6B7280; }
+.ck-kpi--cob  .ck-kpi-icon { color: #16A34A; }
+.ck-kpi--opp  .ck-kpi-icon { color: #2563EB; }
+.ck-kpi--cot  .ck-kpi-icon { color: #D97706; }
+.ck-kpi-label {
+    font-size: 0.59rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #9CA3AF;
+}
+.ck-kpi--cob .ck-kpi-label { color: #16A34A; }
+.ck-kpi--opp .ck-kpi-label { color: #2563EB; }
+.ck-kpi--cot .ck-kpi-label { color: #D97706; }
+.ck-kpi-value {
+    font-size: 1.30rem;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+.ck-kpi-value--cob { color: #16A34A; }
+.ck-kpi-value--opp { color: #2563EB; }
+.ck-kpi-value--cot { color: #D97706; }
+.ck-kpi-sub {
+    font-size: 0.62rem;
+    color: #9CA3AF;
+    margin-top: 5px;
+}
+.ck-kpi-trend {
+    font-size: 0.62rem;
+    margin-top: 5px;
+    min-height: 16px;
+    color: #9CA3AF;
+}
+
+/* Insight bar */
+.ck-insight-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px;
+    background: linear-gradient(to right, rgba(37,99,235,0.04), transparent);
+    border-top: 1px solid rgba(0,0,0,0.045);
+    border-bottom: 1px solid rgba(0,0,0,0.045);
+    font-size: 0.67rem;
+}
+.ck-insight-text { color: #374151; }
+.ck-insight-text strong { color: #111827; font-weight: 700; }
+.ck-insight-sep { color: #D1D5DB; }
+
+/* Pipeline table */
+.ck-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.72rem;
+}
+.ck-thead { position: sticky; top: 0; z-index: 20; }
+.ck-th {
+    padding: 8px 10px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: #9CA3AF;
+    background: rgba(249,250,251,0.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    white-space: nowrap;
+    text-align: left;
+}
+.ck-th--rank { text-align: center; }
+.ck-th--total { text-align: right; padding-right: 18px; font-weight: 800; color: #374151; font-size: 0.59rem; }
+.ck-th--fact, .ck-th--cob, .ck-th--opp, .ck-th--cot { cursor: pointer; }
+.ck-th--fact:hover { color: #6B7280; }
+.ck-th--cob:hover  { color: #16A34A; }
+.ck-th--opp:hover  { color: #2563EB; }
+.ck-th--cot:hover  { color: #D97706; }
+
+/* Focus mode */
+.ck-table:hover .ck-row { opacity: 0.48; }
+.ck-table:hover .ck-row:hover { opacity: 1; }
+.ck-row { transition: opacity 0.14s; cursor: default; }
+.ck-row:hover .ck-td,
+.ck-row:hover .ck-td--rank,
+.ck-row:hover .ck-td--cliente,
+.ck-row:hover .ck-td--total {
+    background: linear-gradient(to right, rgba(37,99,235,0.025), transparent);
+}
+
+.ck-td {
+    padding: 10px 10px 10px 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.042);
+    vertical-align: middle;
+    transition: background 0.12s;
+}
+.ck-td--rank    { text-align: center; padding: 10px 4px; }
+.ck-td--cliente { padding: 10px 8px 10px 12px; }
+.ck-td--total   { text-align: right; padding-right: 18px; }
+
+/* Rank */
+.ck-rank-num { font-size: 0.62rem; font-weight: 700; color: #D1D5DB; }
+.ck-trophy   { font-size: 0.95rem; line-height: 1; }
+
+/* Client cell */
+.ck-client-row { display: flex; align-items: flex-start; gap: 8px; }
+.ck-health-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+}
+.ck-health--green  { background: #22C55E; }
+.ck-health--yellow { background: #F59E0B; }
+.ck-health--red    { background: #EF4444; }
+.ck-health--gray   { background: #D1D5DB; }
+.ck-client-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    max-width: 100%;
+}
+.ck-client-name:hover { color: #2563EB; text-decoration: underline; }
+.ck-client-meta {
+    font-size: 0.60rem;
+    color: #9CA3AF;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+.ck-trend-badge {
+    font-size: 0.57rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 999px;
+}
+.ck-trend--up   { color: #16A34A; background: rgba(22,163,74,0.08); }
+.ck-trend--down { color: #DC2626; background: rgba(220,38,38,0.08); }
+
+/* Metric cells */
+.ck-dash { color: #E5E7EB; font-size: 0.80rem; }
+.ck-metric-val {
+    font-size: 0.70rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+    white-space: nowrap;
+}
+.ck-metric--fact { color: #6B7280; }
+.ck-metric--cob  { color: #16A34A; }
+.ck-metric--opp  { color: #2563EB; }
+.ck-metric--cot  { color: #D97706; }
+
+/* Bars */
+.ck-bar-track {
+    height: 3px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.ck-bar-track--total { height: 4px; }
+.ck-bar {
+    height: 100%;
+    border-radius: 999px;
+    width: 0;
+    transition: width 0.65s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ck-bar--fact  { background: #9CA3AF; }
+.ck-bar--cob   { background: linear-gradient(to right, #4ADE80, #16A34A); }
+.ck-bar--opp   { background: linear-gradient(to right, #60A5FA, #2563EB); }
+.ck-bar--cot   { background: linear-gradient(to right, #FCD34D, #D97706); }
+.ck-bar--total { background: linear-gradient(to right, #818CF8, #1D1D1F); }
+
+/* Total pipeline cell (hero) */
+.ck-total-val {
+    font-size: 0.80rem;
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    text-align: right;
+}

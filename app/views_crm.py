@@ -805,6 +805,7 @@ def api_crm_table_data(request):
                 total_prod=Coalesce(Sum(monto_field), _zero),
             )
 
+        _prev_by_id_cl = {}  # previous month totals per client (oportunidades only)
         if vista == 'facturado':
             # Total desde ArchivoFacturacion
             facturado_por_cliente_obj = {}
@@ -852,6 +853,25 @@ def api_crm_table_data(request):
             prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs, 'monto')}
             meta_field_c = 'meta_oportunidades'
             vista_label = 'Oportunidades'
+            # Previous month totals per client (for trend badge)
+            _prev_by_id_cl = {}
+            if mes_filter not in ('todos',) and not usando_periodo and not q_search:
+                try:
+                    _pm = int(mes_filter)
+                    _prev_mes = str(_pm - 1 if _pm > 1 else 12).zfill(2)
+                    _prev_anio = anio_int if _pm > 1 else anio_int - 1
+                    _prev_qs = TodoItem.objects.filter(anio_cierre=_prev_anio, mes_cierre=_prev_mes)
+                    if not es_supervisor:
+                        _prev_qs = _prev_qs.filter(usuario=user)
+                    elif vendedores_ids:
+                        _prev_qs = _prev_qs.filter(usuario_id__in=vendedores_ids)
+                    _prev_by_id_cl = {
+                        item['cliente']: item['t']
+                        for item in _prev_qs.values('cliente').annotate(t=Coalesce(Sum('monto'), _zero))
+                        if item['cliente']
+                    }
+                except (ValueError, TypeError):
+                    pass
 
         elif vista == 'cotizado':
             opp_ids = base_qs.values_list('id', flat=True)
@@ -920,6 +940,7 @@ def api_crm_table_data(request):
                 'total': format_money(total_c),
                 'meta': format_money(meta_c),
                 'faltante': format_money(faltante),
+                'prev_total': format_money(_prev_by_id_cl.get(c.id, Decimal('0'))),
             })
             total_acum += total_c
 

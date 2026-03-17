@@ -205,55 +205,73 @@
             </tbody>
         </table>
         {% elif tab_activo == 'clientes' %}
-        <table class="clientes-combined-table" style="width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;">
+        <!-- KPI Cards -->
+        <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
+            <div class="ck-kpi-card ck-kpi--fact">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span class="ck-kpi-label">FACTURADO</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiFact">—</div>
+                <div class="ck-kpi-sub">Acumulado del periodo</div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--cob">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span class="ck-kpi-label">COBRADO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--cob" id="ckKpiCob">—</div>
+                <div class="ck-kpi-trend" id="ckTrendCob">Acumulado del periodo</div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--opp">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    <span class="ck-kpi-label">OPORTUNIDADES</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--opp" id="ckKpiOpp">—</div>
+                <div class="ck-kpi-trend" id="ckTrendOpp">—</div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--cot">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    <span class="ck-kpi-label">COTIZADO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--cot" id="ckKpiCot">—</div>
+                <div class="ck-kpi-sub">Pendiente de cierre</div>
+            </div>
+        </div>
+
+        <!-- Insight Bar -->
+        <div id="ckInsightBar" class="ck-insight-bar" style="display:none;">
+            <span id="ckInsightTop" class="ck-insight-text">—</span>
+            <span class="ck-insight-sep">·</span>
+            <span id="ckInsightRisk" class="ck-insight-text"></span>
+        </div>
+
+        <!-- Pipeline table -->
+        <table class="ck-table">
             <colgroup>
-                <col style="width:16%">
-                <col style="width:6.5%"><col style="width:7.5%"><col style="width:7%">
-                <col style="width:6.5%"><col style="width:7.5%"><col style="width:7%">
-                <col style="width:6.5%"><col style="width:7.5%"><col style="width:7%">
-                <col style="width:6.5%"><col style="width:7.5%"><col style="width:7%">
+                <col style="width:4%">
+                <col style="width:22%">
+                <col style="width:13%">
+                <col style="width:13%">
+                <col style="width:13%">
+                <col style="width:13%">
+                <col style="width:22%">
             </colgroup>
-            <thead class="clientes-thead">
-                <tr class="clientes-group-row">
-                    <th class="clientes-group-blank" rowspan="2">Detalles del cliente</th>
-                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('facturado')">
-                        <span class="clientes-group-pill" style="color:#1D6F42;background:rgba(29,111,66,0.08);box-shadow:inset 0 0 0 1px rgba(29,111,66,0.22);">
-                            Facturado <svg width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                        </span>
-                    </th>
-                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('cobrado')">
-                        <span class="clientes-group-pill" style="color:#0052D4;background:rgba(0,82,212,0.08);box-shadow:inset 0 0 0 1px rgba(0,82,212,0.22);">
-                            Cobrado <svg width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                        </span>
-                    </th>
-                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('oportunidades')">
-                        <span class="clientes-group-pill" style="color:#5856D6;background:rgba(88,86,214,0.08);box-shadow:inset 0 0 0 1px rgba(88,86,214,0.22);">
-                            Oportunidades <svg width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                        </span>
-                    </th>
-                    <th colspan="3" class="clientes-group-header" onclick="clientesVistaAbrir('cotizado')">
-                        <span class="clientes-group-pill" style="color:#C97400;background:rgba(255,149,0,0.08);box-shadow:inset 0 0 0 1px rgba(255,149,0,0.28);">
-                            Cotizado <svg width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                        </span>
-                    </th>
-                </tr>
-                <tr class="clientes-subheader-row">
-                    <th class="clientes-subcol clientes-subcol--meta" style="border-left:2px solid rgba(29,111,66,0.18);">Meta</th>
-                    <th class="clientes-subcol clientes-subcol--falt">Faltante</th>
-                    <th class="clientes-subcol clientes-subcol--total">Total</th>
-                    <th class="clientes-subcol clientes-subcol--meta" style="border-left:2px solid rgba(0,82,212,0.18);">Meta</th>
-                    <th class="clientes-subcol clientes-subcol--falt">Faltante</th>
-                    <th class="clientes-subcol clientes-subcol--total">Total</th>
-                    <th class="clientes-subcol clientes-subcol--meta" style="border-left:2px solid rgba(88,86,214,0.18);">Meta</th>
-                    <th class="clientes-subcol clientes-subcol--falt">Faltante</th>
-                    <th class="clientes-subcol clientes-subcol--total">Total</th>
-                    <th class="clientes-subcol clientes-subcol--meta" style="border-left:2px solid rgba(255,149,0,0.18);">Meta</th>
-                    <th class="clientes-subcol clientes-subcol--falt">Faltante</th>
-                    <th class="clientes-subcol clientes-subcol--total">Total</th>
+            <thead class="ck-thead">
+                <tr>
+                    <th class="ck-th ck-th--rank">#</th>
+                    <th class="ck-th ck-th--cliente">CLIENTE</th>
+                    <th class="ck-th ck-th--fact" onclick="clientesVistaAbrir('facturado')" title="Ver detalle por marcas">FACTURADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
+                    <th class="ck-th ck-th--cob" onclick="clientesVistaAbrir('cobrado')" title="Ver detalle por marcas">COBRADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
+                    <th class="ck-th ck-th--opp" onclick="clientesVistaAbrir('oportunidades')" title="Ver detalle por marcas">OPORTUNIDADES <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
+                    <th class="ck-th ck-th--cot" onclick="clientesVistaAbrir('cotizado')" title="Ver detalle por marcas">COTIZADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
+                    <th class="ck-th ck-th--total">TOTAL PIPELINE</th>
                 </tr>
             </thead>
             <tbody id="clientesCombinedTbody">
-                <tr><td colspan="13" class="text-center py-20 text-gray-400 italic" style="font-size:0.82rem;">Cargando...</td></tr>
+                <tr><td colspan="7" style="text-align:center;padding:40px;font-size:0.82rem;color:#9CA3AF;font-style:italic;">Cargando...</td></tr>
             </tbody>
         </table>
 
