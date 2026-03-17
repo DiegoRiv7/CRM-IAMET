@@ -1543,31 +1543,33 @@
             return order.map(function (cid) { return map[cid]; });
         }
 
+        var _DASH = '<span class="clientes-dash">—</span>';
+
         function buildClientesCombinedRow(r) {
             var vendedor = r.vendedor ? '<div class="clientes-mini-vendedor">' + r.vendedor + '</div>' : '';
-            function numCell(val, extraStyle) {
+            function metaTd(val, bStyle) {
                 var n = parseFloat((val || '0').replace(/,/g, ''));
-                if (n === 0) return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;"><span class="money-zero">$0</span></td>';
-                return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;' + (extraStyle || '') + '">$' + val + '</td>';
+                return n === 0
+                    ? '<td class="clientes-td" style="text-align:right;' + (bStyle||'') + '">' + _DASH + '</td>'
+                    : '<td class="clientes-td" style="text-align:right;' + (bStyle||'') + '"><span style="color:#A0A9B8;font-size:0.70rem;font-weight:600;">$' + val + '</span></td>';
             }
-            function faltCell(val, borderLeft) {
+            function faltTd(val) {
                 var n = parseFloat((val || '0').replace(/,/g, ''));
-                var s = (borderLeft ? 'border-left:2px solid ' + borderLeft + ';' : '');
-                if (n === 0) return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;' + s + '"><span class="money-zero">$0</span></td>';
-                var color = n > 0 ? 'color:#F97316;font-weight:700;' : 'color:#22C55E;font-weight:700;';
-                return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;' + s + color + '">$' + val + '</td>';
+                if (n === 0) return '<td class="clientes-td" style="text-align:right;">' + _DASH + '</td>';
+                var color = n > 0 ? '#F97316' : '#22C55E';
+                return '<td class="clientes-td" style="text-align:right;color:' + color + ';font-weight:700;font-size:0.71rem;">$' + val + '</td>';
             }
-            function totCell(val) {
+            function totTd(val) {
                 var n = parseFloat((val || '0').replace(/,/g, ''));
-                if (n === 0) return '<td class="px-2 py-3 text-right" style="font-size:0.71rem;"><span class="money-zero">$0</span></td>';
-                return '<td class="px-2 py-3 text-right font-black" style="font-size:0.71rem;color:#1D1D1F;">$' + val + '</td>';
+                if (n === 0) return '<td class="clientes-td" style="text-align:right;">' + _DASH + '</td>';
+                return '<td class="clientes-td" style="text-align:right;font-weight:800;font-size:0.72rem;color:#111827;">$' + val + '</td>';
             }
-            return '<tr class="crm-data-row">' +
-                '<td class="px-3 py-3"><span class="client-name-link font-bold cursor-pointer" style="font-size:0.75rem;color:#1D1D1F;display:block;" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + vendedor + '</td>' +
-                faltCell(r.fact_meta, 'rgba(29,111,66,0.18)') + numCell(r.fact_faltante) + totCell(r.fact_total) +
-                faltCell(r.cob_meta, 'rgba(0,82,212,0.18)')  + numCell(r.cob_faltante)  + totCell(r.cob_total)  +
-                faltCell(r.opp_meta, 'rgba(88,86,214,0.18)') + numCell(r.opp_faltante)  + totCell(r.opp_total)  +
-                faltCell(r.cot_meta, 'rgba(255,149,0,0.18)') + numCell(r.cot_faltante)  + totCell(r.cot_total)  +
+            return '<tr class="clientes-combined-row">' +
+                '<td class="clientes-td-cliente"><span class="client-name-link" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span>' + vendedor + '</td>' +
+                metaTd(r.fact_meta,'border-left:2px solid rgba(29,111,66,0.15);') + faltTd(r.fact_faltante) + totTd(r.fact_total) +
+                metaTd(r.cob_meta, 'border-left:2px solid rgba(0,82,212,0.15);')  + faltTd(r.cob_faltante)  + totTd(r.cob_total)  +
+                metaTd(r.opp_meta, 'border-left:2px solid rgba(88,86,214,0.15);') + faltTd(r.opp_faltante)  + totTd(r.opp_total)  +
+                metaTd(r.cot_meta, 'border-left:2px solid rgba(255,149,0,0.15);') + faltTd(r.cot_faltante)  + totTd(r.cot_total)  +
                 '</tr>';
         }
 

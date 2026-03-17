@@ -4220,63 +4220,117 @@
         font-style: italic;
     }
 
-/* ═══ CLIENTES TABLA COMBINADA ═══ */
-.clientes-combined-table thead {
+/* ═══ CLIENTES TABLA COMBINADA — LIQUID GLASS ═══ */
+.clientes-combined-table { background: #fff; font-size: 0.71rem; }
+.clientes-thead {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 20;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 .clientes-group-row th {
-    background: #FAFAFA;
+    background: rgba(248,249,251,0.93);
     border-bottom: none;
     padding: 0;
 }
 .clientes-group-blank {
-    background: #FAFAFA;
-    padding: 10px 12px !important;
-    font-size: 0.60rem !important;
-    font-weight: 600 !important;
-    color: #9CA3AF !important;
+    padding: 10px 14px !important;
+    font-size: 0.58rem !important;
+    font-weight: 700 !important;
+    color: #B8BFD0 !important;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-right: 1px solid #F0F0F0;
+    letter-spacing: 0.07em;
     vertical-align: middle;
-    white-space: nowrap;
+    text-align: left;
+    background: rgba(248,249,251,0.93);
 }
 .clientes-group-header {
     text-align: center;
-    padding: 8px 6px !important;
+    padding: 9px 4px 7px !important;
     cursor: pointer;
-    background: #FAFAFA;
-    transition: background .15s;
-    border-right: 1px solid #F0F0F0;
+    background: rgba(248,249,251,0.93);
+    transition: background .12s;
 }
-.clientes-group-header:hover { background: #F3F4F6; }
+.clientes-group-header:hover { background: rgba(241,243,248,0.98); }
 .clientes-group-pill {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 5px 12px 5px 13px;
     border-radius: 20px;
-    font-size: 0.67rem;
+    font-size: 0.63rem;
     font-weight: 800;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    transition: opacity .15s;
-    cursor: pointer;
+    white-space: nowrap;
+    transition: transform .12s, box-shadow .12s;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+.clientes-group-header:hover .clientes-group-pill {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.clientes-group-header:active .clientes-group-pill {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.07);
+}
+.clientes-subheader-row th {
+    background: rgba(248,249,251,0.96);
+    border-bottom: 1px solid rgba(0,0,0,0.055);
+}
+.clientes-subcol {
+    padding: 5px 10px 5px 4px !important;
+    font-size: 0.59rem !important;
+    font-weight: 700 !important;
+    color: #BDC4D2 !important;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
     white-space: nowrap;
 }
-.clientes-group-header:hover .clientes-group-pill { opacity: 0.8; }
-.clientes-combined-table td:first-child,
-.clientes-combined-table th.clientes-group-blank {
-    min-width: 160px;
-    max-width: 220px;
+.clientes-subcol--total { color: #9BA5B7 !important; }
+/* Rows */
+.clientes-combined-row { transition: background .08s; }
+.clientes-combined-row:nth-child(even) .clientes-td,
+.clientes-combined-row:nth-child(even) .clientes-td-cliente { background: rgba(0,0,0,0.013); }
+.clientes-combined-row:hover .clientes-td,
+.clientes-combined-row:hover .clientes-td-cliente { background: rgba(59,130,246,0.04); }
+.clientes-td {
+    padding: 9px 10px 9px 4px;
+    border-bottom: 1px solid rgba(0,0,0,0.042);
+    vertical-align: middle;
 }
-.clientes-mini-vendedor {
-    font-size: 0.62rem;
-    color: #B0B0B8;
-    font-weight: 500;
-    margin-top: 1px;
+.clientes-td-cliente {
+    padding: 10px 8px 10px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.042);
+    overflow: hidden;
+    vertical-align: middle;
+}
+.clientes-td-cliente .client-name-link {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #1A1A2E;
+    display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    cursor: pointer;
+    transition: color .12s;
+}
+.clientes-td-cliente .client-name-link:hover { color: #0052D4; }
+.clientes-dash {
+    color: #DDE1EC;
+    font-size: 0.82rem;
+}
+.clientes-mini-vendedor {
+    font-size: 0.60rem;
+    color: #C5CBD8;
+    font-weight: 500;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
