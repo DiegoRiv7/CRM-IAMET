@@ -806,6 +806,18 @@ def api_crm_table_data(request):
             )
 
         _prev_by_id_cl = {}  # previous month totals per client (oportunidades only)
+        _prev_sum = Decimal('0')  # previous month global total for this vista
+
+        # Helper: compute prev month params
+        def _get_prev_params():
+            if mes_filter in ('todos',) or usando_periodo or q_search:
+                return None, None
+            try:
+                pm = int(mes_filter)
+                return str(pm - 1 if pm > 1 else 12).zfill(2), anio_int if pm > 1 else anio_int - 1
+            except (ValueError, TypeError):
+                return None, None
+
         if vista == 'facturado':
             # Total desde ArchivoFacturacion
             facturado_por_cliente_obj = {}
@@ -840,6 +852,14 @@ def api_crm_table_data(request):
             prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs.filter(monto_facturacion__gt=0), 'monto_facturacion')}
             meta_field_c = 'meta_mensual'
             vista_label = 'Facturado'
+            # Prev month facturado sum
+            _pm, _pa = _get_prev_params()
+            if _pm:
+                try:
+                    _paf = ArchivoFacturacion.objects.get(mes=_pm, anio=_pa)
+                    _prev_sum = sum(Decimal(str(v)) for v in _paf.datos_json.get('datos', {}).values())
+                except ArchivoFacturacion.DoesNotExist:
+                    pass
 
         elif vista == 'cobrado':
             cobrado_qs = base_qs.filter(probabilidad_cierre=100)
@@ -847,6 +867,18 @@ def api_crm_table_data(request):
             prod_dict = {item['cliente']: item for item in _prod_annotate(cobrado_qs, 'monto')}
             meta_field_c = 'meta_cobrado'
             vista_label = 'Cobrado'
+            # Prev month cobrado sum
+            _pm, _pa = _get_prev_params()
+            if _pm:
+                try:
+                    _prev_cob_qs = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm, probabilidad_cierre=100)
+                    if not es_supervisor:
+                        _prev_cob_qs = _prev_cob_qs.filter(usuario=user)
+                    elif vendedores_ids:
+                        _prev_cob_qs = _prev_cob_qs.filter(usuario_id__in=vendedores_ids)
+                    _prev_sum = _prev_cob_qs.aggregate(t=Coalesce(Sum('monto'), _zero))['t'] or _zero
+                except Exception:
+                    pass
 
         elif vista == 'oportunidades':
             total_by_id = {item['cliente']: item['t'] for item in base_qs.values('cliente').annotate(t=Coalesce(Sum('monto'), _zero)) if item['cliente']}
@@ -872,6 +904,7 @@ def api_crm_table_data(request):
                     }
                 except (ValueError, TypeError):
                     pass
+            _prev_sum = sum(_prev_by_id_cl.values()) if _prev_by_id_cl else Decimal('0')
 
         elif vista == 'cotizado':
             opp_ids = base_qs.values_list('id', flat=True)
@@ -910,6 +943,22 @@ def api_crm_table_data(request):
             prod_dict = prod_dict_raw
             meta_field_c = 'meta_cotizado'
             vista_label = 'Cotizado'
+            # Prev month cotizado sum
+            _pm, _pa = _get_prev_params()
+            if _pm:
+                try:
+                    _prev_opp_ids = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm)
+                    if not es_supervisor:
+                        _prev_opp_ids = _prev_opp_ids.filter(usuario=user)
+                    elif vendedores_ids:
+                        _prev_opp_ids = _prev_opp_ids.filter(usuario_id__in=vendedores_ids)
+                    _prev_cot_qs = Cotizacion.objects.filter(
+                        Q(oportunidad_id__in=_prev_opp_ids) |
+                        Q(oportunidad__isnull=True, fecha_creacion__year=_pa, fecha_creacion__month=int(_pm))
+                    )
+                    _prev_sum = _prev_cot_qs.aggregate(t=Coalesce(Sum('total'), _zero))['t'] or _zero
+                except Exception:
+                    pass
         else:
             return JsonResponse({'tab': 'clientes', 'rows': [], 'footer': {'left': '', 'right': ''}, 'vista': vista})
 
@@ -959,6 +1008,7 @@ def api_crm_table_data(request):
             'meta': format_money(api_meta),
             'progreso': int((total_acum / api_meta * 100)) if api_meta > 0 else 0,
             'widget_left_stat': f'{num_clientes_c} Clientes',
+            'prev_sum': format_money(_prev_sum),
         })
 
     return JsonResponse({'tab': tab_activo, 'rows': [], 'footer': {'left': '', 'right': ''}})

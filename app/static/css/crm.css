@@ -4445,14 +4445,14 @@
 .ck-th--cot:hover  { color: #D97706; }
 
 /* Focus mode */
-.ck-table:hover .ck-row { opacity: 0.48; }
-.ck-table:hover .ck-row:hover { opacity: 1; }
-.ck-row { transition: opacity 0.14s; cursor: default; }
+.ck-row { cursor: default; }
 .ck-row:hover .ck-td,
 .ck-row:hover .ck-td--rank,
 .ck-row:hover .ck-td--cliente,
-.ck-row:hover .ck-td--total {
-    background: linear-gradient(to right, rgba(37,99,235,0.025), transparent);
+.ck-row:hover .ck-td--metas {
+    background: #F5F7FB;
+    box-shadow: 0 2px 8px -3px rgba(59,130,246,0.14), 0 -1px 0 rgba(59,130,246,0.06);
+    transition: background 0.12s, box-shadow 0.12s;
 }
 
 .ck-td {

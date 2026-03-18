@@ -1512,6 +1512,7 @@
         }
 
         var _clientesCombinedLoading = 0;
+        var _ckGlobalMetas = { fact: 0, cob: 0, opp: 0, cot: 0 };
 
         function mergeClientesData() {
             var map = {};
@@ -1590,8 +1591,10 @@
             }
 
             // Metas column — 4 mini progress rows
-            function miniMeta(label, val, metaVal, barClass) {
-                var n = fN(val), m = fN(metaVal);
+            // Uses per-client meta; falls back to global meta when 0
+            function miniMeta(label, val, metaVal, globalMeta, barClass) {
+                var n = fN(val);
+                var m = fN(metaVal) || globalMeta || 0;
                 if (m === 0) return '';
                 var pct = Math.min(100, (n / m * 100));
                 var pctFmt = pct.toFixed(0) + '%';
@@ -1606,10 +1609,10 @@
             }
 
             var metasTd = '<td class="ck-td ck-td--metas">' +
-                miniMeta('F', r.fact_total, r.fact_meta, 'ck-bar--fact') +
-                miniMeta('C', r.cob_total,  r.cob_meta,  'ck-bar--cob')  +
-                miniMeta('O', r.opp_total,  r.opp_meta,  'ck-bar--opp')  +
-                miniMeta('Co', r.cot_total, r.cot_meta,  'ck-bar--cot')  +
+                miniMeta('F',  r.fact_total, r.fact_meta, _ckGlobalMetas.fact, 'ck-bar--fact') +
+                miniMeta('C',  r.cob_total,  r.cob_meta,  _ckGlobalMetas.cob,  'ck-bar--cob')  +
+                miniMeta('O',  r.opp_total,  r.opp_meta,  _ckGlobalMetas.opp,  'ck-bar--opp')  +
+                miniMeta('Co', r.cot_total,  r.cot_meta,  _ckGlobalMetas.cot,  'ck-bar--cot')  +
                 '</td>';
 
             return '<tr class="ck-row">' +
@@ -1664,74 +1667,48 @@
 
             // Helper: set KPI card content
             var el = function(id) { return document.getElementById(id); };
-            function setKpi(ids, val, meta, progId, pctId, metaTextId, sparkId, prevVal) {
-                if (el(ids))      el(ids).textContent      = fmtKpi(val);
+            // Get prev_sum from each panel API response
+            var prevFact = fN((_clientesPanelData.facturado    || {}).prev_sum || '0');
+            var prevCob  = fN((_clientesPanelData.cobrado      || {}).prev_sum || '0');
+            var prevCot  = fN((_clientesPanelData.cotizado     || {}).prev_sum || '0');
+            // For opp, use the sum already computed from per-client data
+            var prevOpp  = totPrevOpp;
+
+            // Also get global metas from panel meta fields (for METAS column fallback)
+            _ckGlobalMetas.fact = fN((_clientesPanelData.facturado    || {}).meta || '0');
+            _ckGlobalMetas.cob  = fN((_clientesPanelData.cobrado      || {}).meta || '0');
+            _ckGlobalMetas.opp  = fN((_clientesPanelData.oportunidades|| {}).meta || '0');
+            _ckGlobalMetas.cot  = fN((_clientesPanelData.cotizado     || {}).meta || '0');
+
+            function setKpi(valId, val, meta, progId, pctId, metaTextId, trendId, prevVal) {
+                if (el(valId))      el(valId).textContent      = fmtKpi(val);
                 var pct = fmtPct(val, meta);
-                if (el(pctId))    el(pctId).textContent    = pct + '%';
+                if (el(pctId))      el(pctId).textContent      = pct + '%';
                 if (el(metaTextId)) el(metaTextId).textContent = 'de ' + fmtKpi(meta) + ' meta';
-                // Animate progress bar
                 setTimeout(function() {
                     var fill = el(progId);
                     if (fill) fill.style.width = Math.min(100, pct) + '%';
                 }, 50);
-                // Sparkline: prev vs actual (2 barras verticales)
-                var sparkEl = el(sparkId);
-                if (sparkEl && prevVal !== undefined && prevVal > 0) {
-                    var maxSpark = Math.max(val, prevVal) || 1;
-                    var hPrev = Math.round(prevVal / maxSpark * 100);
-                    var hCurr = Math.round(val      / maxSpark * 100);
-                    sparkEl.innerHTML =
-                        '<div class="ck-spark-col"><div class="ck-spark-bar ck-spark--prev" style="height:' + hPrev + '%"></div><div class="ck-spark-lbl">ant</div></div>' +
-                        '<div class="ck-spark-col"><div class="ck-spark-bar ck-spark--curr" style="height:' + hCurr + '%"></div><div class="ck-spark-lbl">act</div></div>';
-                } else if (sparkEl) {
-                    sparkEl.innerHTML = '';
+                // Trend vs prev month
+                var trendEl = el(trendId);
+                if (trendEl && prevVal > 0 && val !== prevVal) {
+                    var tPct = Math.round((val - prevVal) / prevVal * 100);
+                    var up = tPct >= 0;
+                    trendEl.innerHTML = '<span style="color:' + (up ? '#16A34A' : '#DC2626') + ';font-weight:700;font-size:0.60rem;">' +
+                        (up ? '↑' : '↓') + ' ' + Math.abs(tPct) + '% vs mes ant.</span>';
+                } else if (trendEl) {
+                    trendEl.innerHTML = '';
                 }
             }
 
-            setKpi('ckKpiFact', totFact, metaFact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckSparkFact', undefined);
-            setKpi('ckKpiCob',  totCob,  metaCob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckSparkCob',  undefined);
-            setKpi('ckKpiOpp',  totOpp,  metaOpp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckSparkOpp',  totPrevOpp);
-            setKpi('ckKpiCot',  totCot,  metaCot,  'ckProgCot',  'ckPctCot',  'ckMetaCot',  'ckSparkCot',  undefined);
+            setKpi('ckKpiFact', totFact, metaFact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckTrendFact', prevFact);
+            setKpi('ckKpiCob',  totCob,  metaCob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckTrendCob',  prevCob);
+            setKpi('ckKpiOpp',  totOpp,  metaOpp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckTrendOpp',  prevOpp);
+            setKpi('ckKpiCot',  totCot,  metaCot,  'ckProgCot',  'ckPctCot',  'ckMetaCot',  'ckTrendCot',  prevCot);
 
-            // Trend text for oportunidades
-            var trendOppEl = el('ckTrendOpp');
-            if (trendOppEl && totPrevOpp > 0 && totOpp !== totPrevOpp) {
-                var pctOpp = Math.round((totOpp - totPrevOpp) / totPrevOpp * 100);
-                var upOpp = pctOpp >= 0;
-                trendOppEl.innerHTML = '<span style="color:' + (upOpp ? '#16A34A' : '#DC2626') + ';font-weight:700;font-size:0.60rem;">' +
-                    (upOpp ? '↑' : '↓') + ' ' + Math.abs(pctOpp) + '% vs mes ant.</span>';
-            }
-
-            // Show KPI row and insight bar
+            // Show KPI row
             var kpiRow = el('ckKpiRow');
-            var insightBar = el('ckInsightBar');
             if (kpiRow) kpiRow.style.display = 'grid';
-            if (insightBar) insightBar.style.display = 'flex';
-
-            // Insight: top client
-            var insightTop = el('ckInsightTop');
-            if (insightTop && merged[0]) {
-                var topPipelineFmt = merged[0]._pipeline.toLocaleString('en-US', { maximumFractionDigits: 0 });
-                insightTop.innerHTML = '🏆 Top cliente: <strong>' + merged[0].cliente + '</strong> ($' + topPipelineFmt + ')';
-            }
-
-            // Insight: client with high pipeline but low cobrado ratio
-            var insightRisk = el('ckInsightRisk');
-            if (insightRisk) {
-                var riskClient = null, worstRatio = 1;
-                merged.forEach(function (r) {
-                    if (r._pipeline < 5000) return;
-                    var ratio = r._pipeline > 0 ? fN(r.cob_total) / r._pipeline : 0;
-                    if (ratio < worstRatio) { worstRatio = ratio; riskClient = r; }
-                });
-                if (riskClient && worstRatio < 0.15) {
-                    insightRisk.innerHTML = '⚠️ Bajo cobro: <strong>' + riskClient.cliente + '</strong> (' + Math.round(worstRatio * 100) + '% cobrado)';
-                } else {
-                    insightRisk.textContent = '';
-                    var sepEl = insightBar ? insightBar.querySelector('.ck-insight-sep') : null;
-                    if (sepEl) sepEl.style.display = 'none';
-                }
-            }
 
             // Build rows
             var html = '';
