@@ -2101,17 +2101,17 @@
     .wn-add-btn {
         display: flex;
         align-items: center;
-        gap: 3px;
-        padding: 2px 8px;
-        border-radius: 6px;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
         border: 1px solid rgba(0,122,255,0.25);
         background: rgba(0,122,255,0.06);
         color: #007AFF;
-        font-size: 0.65rem;
-        font-weight: 600;
         cursor: pointer;
         transition: all 0.15s;
-        line-height: 1.4;
+        flex-shrink: 0;
+        padding: 0;
     }
     .wn-add-btn:hover { background: rgba(0,122,255,0.13); border-color: rgba(0,122,255,0.4); }
 
