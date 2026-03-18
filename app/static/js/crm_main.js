@@ -4748,18 +4748,21 @@
 
     function cotizarRapidoCerrar() {
         var overlay = document.getElementById('widgetCotizarRapido');
-        if (overlay) overlay.classList.remove('active');
+        if (overlay) {
+            overlay.classList.add('closing');
+            setTimeout(function () { overlay.classList.remove('active', 'closing'); }, 220);
+        }
         document.body.style.overflow = '';
         var inp = document.getElementById('crClienteInput');
         if (inp) inp.value = '';
         var cid = document.getElementById('crClienteId');
         if (cid) cid.value = '';
         var dd = document.getElementById('crClienteDropdown');
-        if (dd) dd.style.display = 'none';
+        if (dd) { dd.innerHTML = ''; dd.classList.remove('open'); }
         var secCl = document.getElementById('crNuevoClienteSection');
         if (secCl) secCl.style.display = 'none';
         var oppSel = document.getElementById('crOppSelect');
-        if (oppSel) { oppSel.innerHTML = '<option value="">— seleccionar —</option>'; oppSel.disabled = true; }
+        if (oppSel) { oppSel.innerHTML = '<option value="">— seleccionar oportunidad —</option>'; oppSel.disabled = true; }
         var sec = document.getElementById('crNuevaOppSection');
         if (sec) sec.style.display = 'none';
         var goBtn = document.getElementById('crGoBtn');
@@ -4786,18 +4789,17 @@
         var goBtn = document.getElementById('crGoBtn');
         if (goBtn) { goBtn.disabled = true; goBtn.style.opacity = '0.5'; goBtn.style.cursor = 'not-allowed'; }
         if (!dd) return;
-        if (!q) { dd.style.display = 'none'; return; }
+        if (!q) { dd.innerHTML = ''; dd.classList.remove('open'); return; }
         var filtered = _crClientes.filter(function (c) { return c.nombre.toLowerCase().indexOf(q) >= 0; }).slice(0, 12);
         if (filtered.length === 0) {
-            dd.innerHTML = '<div style="padding:10px 12px;color:#8E8E93;font-size:0.78rem;">Sin resultados</div>';
+            dd.innerHTML = '<div class="wf-ac-item" style="color:#8E8E93;cursor:default;">Sin resultados</div>';
         } else {
             dd.innerHTML = filtered.map(function (c) {
-                return '<div style="padding:8px 12px;cursor:pointer;font-size:0.8rem;" '
-                    + 'onmousedown="crSelectCliente(' + c.id + ',\'' + c.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">'
+                return '<div class="wf-ac-item" onmousedown="crSelectCliente(' + c.id + ',\'' + c.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">'
                     + c.nombre + '</div>';
             }).join('');
         }
-        dd.style.display = '';
+        dd.classList.add('open');
     }
     window.crFiltrarClientes = crFiltrarClientes;
 
@@ -4807,7 +4809,7 @@
         var dd = document.getElementById('crClienteDropdown');
         if (inp) inp.value = nombre;
         if (cid) cid.value = id;
-        if (dd) dd.style.display = 'none';
+        if (dd) { dd.innerHTML = ''; dd.classList.remove('open'); }
         var oppSel = document.getElementById('crOppSelect');
         if (oppSel) {
             oppSel.disabled = false;
@@ -4839,7 +4841,15 @@
     function crToggleNuevoCliente() {
         var sec = document.getElementById('crNuevoClienteSection');
         if (!sec) return;
-        sec.style.display = sec.style.display === 'none' ? '' : 'none';
+        var isOpen = sec.style.display !== 'none';
+        sec.style.display = isOpen ? 'none' : '';
+        if (isOpen) {
+            var inp = document.getElementById('crNuevoClienteNombre');
+            if (inp) inp.value = '';
+        } else {
+            var inp = document.getElementById('crNuevoClienteNombre');
+            if (inp) setTimeout(function () { inp.focus(); }, 50);
+        }
     }
     window.crToggleNuevoCliente = crToggleNuevoCliente;
 
@@ -4873,7 +4883,15 @@
     function crToggleNuevaOpp() {
         var sec = document.getElementById('crNuevaOppSection');
         if (!sec) return;
-        sec.style.display = sec.style.display === 'none' ? '' : 'none';
+        var isOpen = sec.style.display !== 'none';
+        sec.style.display = isOpen ? 'none' : '';
+        if (isOpen) {
+            var inp = document.getElementById('crNuevaOppNombre');
+            if (inp) inp.value = '';
+        } else {
+            var inp = document.getElementById('crNuevaOppNombre');
+            if (inp) setTimeout(function () { inp.focus(); }, 50);
+        }
     }
     window.crToggleNuevaOpp = crToggleNuevaOpp;
 
@@ -4928,6 +4946,6 @@
         var dd = document.getElementById('crClienteDropdown');
         var inp = document.getElementById('crClienteInput');
         if (dd && inp && !inp.contains(e.target) && !dd.contains(e.target)) {
-            dd.style.display = 'none';
+            dd.innerHTML = ''; dd.classList.remove('active');
         }
     });

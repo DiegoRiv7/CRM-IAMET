@@ -5,6 +5,15 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 
 
+## [2026-03-18] — Widget Cotizar Rápido
+
+### MEJORA — Rediseño widget "Cotizar Rápido" — liquid glass
+- El widget de cotización rápida ahora tiene el mismo diseño liquid glass que el widget de nueva oportunidad.
+- Botones "+" para crear cliente u oportunidad directamente desde el formulario, sin salir del widget.
+- Al dar "Ir a Cotizar", se abre el cotizador con la oportunidad ya seleccionada (sin redirección a otra página).
+
+---
+
 ## [2026-03-17] — Correcciones
 
 ### FIX — Archivos de proyectos no abrían en el Drive
@@ -69,7 +78,7 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 ### TÉCNICO — Backup media corregido
 - El script de respaldo semanal de archivos ahora respalda correctamente el volumen Docker donde están los archivos reales
 
-## [2026-03-17] — 
+## [2026-03-17] — actualizaciones
 
 ### NUEVO - Sección clientes en CRM
 - Se combino las secciones de cotizado, cobrado y facturado para hacer una sola sección 
@@ -95,6 +104,13 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 ### TÉCNICO - cambios a producción 
 - Se subieron los cambios que se habían trabajado en pruebas a producción.
+
+## [2026-03-18] — actualizaciones
+
+### MEJORA - formulario de negociación
+- Se mejoro el formulario para que tenga mejor UX, el nombre de la oportunidad ahora es el primer campo que se llena
+- Se pueden crear clientes nuevos y contactos nuevos directo del formulario 
+- Se mejoro el diseño del formulario.
 
 ## Cómo usar este archivo
 

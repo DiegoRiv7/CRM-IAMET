@@ -1,73 +1,82 @@
 <!-- ═══ WIDGET COTIZAR RÁPIDO ═══ -->
-<div class="widget-overlay" id="widgetCotizarRapido"
+<div class="widget-overlay wn-overlay" id="widgetCotizarRapido"
     onclick="if(event.target===this){cotizarRapidoCerrar();}">
-    <div style="width:420px;max-width:95vw;background:#fff;border-radius:20px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.2);border:1px solid rgba(0,0,0,0.05);">
+    <div class="wn-card">
 
         <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-            <h2 style="margin:0;font-size:0.95rem;font-weight:700;color:#1D1D1F;">Cotizar Rápido</h2>
-            <button onclick="cotizarRapidoCerrar()"
-                style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#8E8E93;padding:4px 8px;border-radius:8px;line-height:1;">&times;</button>
+        <div class="wn-header">
+            <div class="wn-header-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div>
+                <div class="wn-title">Cotizar Rápido</div>
+                <div class="wn-subtitle">Selecciona cliente y oportunidad para cotizar</div>
+            </div>
+            <button type="button" class="wn-close" onclick="cotizarRapidoCerrar()">&times;</button>
         </div>
 
-        <!-- Cliente (busqueda por texto) -->
-        <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Cliente</label>
-            <div style="display:flex;gap:6px;align-items:flex-start;">
-                <div style="flex:1;position:relative;">
-                    <input type="text" id="crClienteInput" placeholder="Buscar cliente..."
-                        autocomplete="off" oninput="crFiltrarClientes()"
-                        style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.8rem;color:#1D1D1F;background:#F9F9F9;outline:none;">
+        <!-- Body -->
+        <div class="wn-body">
+
+            <!-- Cliente -->
+            <div class="wn-field">
+                <div class="wn-label-row">
+                    <label class="wn-label">Cliente</label>
+                    <button type="button" class="wn-add-btn" onclick="crToggleNuevoCliente()" title="Crear nuevo cliente">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                </div>
+                <div style="position:relative;">
+                    <input type="text" class="wn-input wf-input" id="crClienteInput"
+                        placeholder="Buscar cliente..." autocomplete="off" oninput="crFiltrarClientes()">
                     <input type="hidden" id="crClienteId" value="">
-                    <div id="crClienteDropdown"
-                        style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #E5E5EA;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:10000;max-height:200px;overflow-y:auto;">
+                    <div class="wf-autocomplete" id="crClienteDropdown"></div>
+                </div>
+                <!-- Mini-form nuevo cliente -->
+                <div class="wn-mini-form" id="crNuevoClienteSection" style="display:none;">
+                    <div class="wn-mini-title">Nuevo cliente</div>
+                    <input type="text" class="wn-input wn-mini-input" id="crNuevoClienteNombre" placeholder="Nombre de la empresa">
+                    <div class="wn-mini-actions">
+                        <button type="button" class="wn-mini-cancel" onclick="crToggleNuevoCliente()">Cancelar</button>
+                        <button type="button" class="wn-mini-save" onclick="crCrearCliente()">Guardar cliente</button>
                     </div>
                 </div>
-                <button onclick="crToggleNuevoCliente()" title="Nuevo cliente"
-                    style="flex-shrink:0;background:#F0EFFE;border:none;border-radius:8px;padding:8px 12px;font-size:1rem;cursor:pointer;color:#5856D6;font-weight:700;line-height:1;">+</button>
             </div>
-        </div>
 
-        <!-- Nuevo cliente inline -->
-        <div id="crNuevoClienteSection" style="display:none;margin-top:-8px;margin-bottom:14px;background:#F9F9FB;border-radius:10px;padding:10px 12px;border:1px solid #E5E5EA;">
-            <label style="display:block;font-size:0.65rem;font-weight:700;color:#8E8E93;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em;">Nombre del nuevo cliente</label>
-            <div style="display:flex;gap:6px;">
-                <input type="text" id="crNuevoClienteNombre" placeholder="Ej. Empresa XYZ S.A. de C.V."
-                    style="flex:1;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.78rem;color:#1D1D1F;background:#fff;outline:none;">
-                <button onclick="crCrearCliente()"
-                    style="background:#5856D6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">Crear</button>
-            </div>
-        </div>
+            <!-- Divider -->
+            <div class="wn-divider"></div>
 
-        <!-- Oportunidad -->
-        <div style="margin-bottom:6px;">
-            <label style="display:block;font-size:0.68rem;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Oportunidad</label>
-            <div style="display:flex;gap:6px;align-items:center;">
-                <select id="crOppSelect" onchange="crOppChanged()" disabled
-                    style="flex:1;padding:8px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.8rem;color:#1D1D1F;background:#F9F9F9;outline:none;">
-                    <option value="">— seleccionar —</option>
+            <!-- Oportunidad -->
+            <div class="wn-field">
+                <div class="wn-label-row">
+                    <label class="wn-label">Oportunidad</label>
+                    <button type="button" class="wn-add-btn" onclick="crToggleNuevaOpp()" title="Nueva oportunidad">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                </div>
+                <select class="wn-input wn-select" id="crOppSelect" onchange="crOppChanged()" disabled>
+                    <option value="">— seleccionar oportunidad —</option>
                 </select>
-                <button onclick="crToggleNuevaOpp()" title="Nueva oportunidad"
-                    style="background:#F0EFFE;border:none;border-radius:8px;padding:8px 12px;font-size:1rem;cursor:pointer;color:#5856D6;font-weight:700;line-height:1;">+</button>
+                <!-- Mini-form nueva oportunidad -->
+                <div class="wn-mini-form" id="crNuevaOppSection" style="display:none;">
+                    <div class="wn-mini-title">Nueva oportunidad</div>
+                    <input type="text" class="wn-input wn-mini-input" id="crNuevaOppNombre" placeholder="Ej. Proyecto Cableado 2026">
+                    <div class="wn-mini-actions">
+                        <button type="button" class="wn-mini-cancel" onclick="crToggleNuevaOpp()">Cancelar</button>
+                        <button type="button" class="wn-mini-save" onclick="crCrearOpp()">Guardar oportunidad</button>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Nueva oportunidad inline -->
-        <div id="crNuevaOppSection" style="display:none;margin-top:8px;margin-bottom:14px;background:#F9F9FB;border-radius:10px;padding:10px 12px;border:1px solid #E5E5EA;">
-            <label style="display:block;font-size:0.65rem;font-weight:700;color:#8E8E93;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em;">Nombre de nueva oportunidad</label>
-            <div style="display:flex;gap:6px;">
-                <input type="text" id="crNuevaOppNombre" placeholder="Ej. Proyecto Cableado 2026"
-                    style="flex:1;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.78rem;color:#1D1D1F;background:#fff;outline:none;">
-                <button onclick="crCrearOpp()"
-                    style="background:#5856D6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">Crear</button>
+            <!-- Actions -->
+            <div class="wn-actions">
+                <button type="button" class="wn-btn wn-btn--cancel" onclick="cotizarRapidoCerrar()">Cancelar</button>
+                <button type="button" class="wn-btn wn-btn--submit" id="crGoBtn" onclick="cotizarRapidoIr()" disabled style="opacity:0.5;cursor:not-allowed;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Ir a Cotizar
+                </button>
             </div>
+
         </div>
-
-        <!-- Ir a Cotizar -->
-        <button id="crGoBtn" onclick="cotizarRapidoIr()" disabled
-            style="width:100%;margin-top:12px;padding:11px;background:#007AFF;color:#fff;border:none;border-radius:10px;font-size:0.85rem;font-weight:700;cursor:not-allowed;opacity:0.5;">
-            Ir a Cotizar
-        </button>
-
     </div>
 </div>
