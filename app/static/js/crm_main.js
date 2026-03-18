@@ -1577,43 +1577,21 @@
                     (pct >= 0 ? '↑' : '↓') + ' ' + Math.abs(pct) + '%</span>';
             }
 
-            // Metric cell — value only, no bar
+            // Metric cell — value + progress bar vs meta + meta label
             function metricTd(val, metaVal, metricClass, barClass) {
-                var n = fN(val);
-                if (n === 0) return '<td class="ck-td ck-td--metric"><span class="ck-dash">—</span></td>';
-                return '<td class="ck-td ck-td--metric">' +
-                    '<div class="ck-metric-val ' + metricClass + '">$' + val + '</div>' +
-                    '</td>';
-            }
-
-            // Metas column — 4 mini progress rows, always shown
-            function miniMeta(label, val, metaVal, barClass) {
-                var n = fN(val);
-                var m = fN(metaVal);
-                var pctFmt, color, barHtml;
-                if (m === 0) {
-                    pctFmt = '—';
-                    color = '#D1D5DB';
-                    barHtml = '<div class="ck-bar-track ck-bar-track--mini"></div>';
-                } else {
-                    var pct = Math.min(100, (n / m * 100));
-                    pctFmt = pct.toFixed(0) + '%';
-                    color = pct >= 100 ? '#16A34A' : pct >= 70 ? '#2563EB' : pct >= 40 ? '#D97706' : '#EF4444';
-                    barHtml = '<div class="ck-bar-track ck-bar-track--mini"><div class="ck-bar ' + barClass + '" data-pct="' + pct.toFixed(1) + '" style="width:0"></div></div>';
+                var n = fN(val), m = fN(metaVal);
+                if (n === 0 && m === 0) return '<td class="ck-td ck-td--metric"><span class="ck-dash">—</span></td>';
+                var inner = '<div class="ck-metric-val ' + metricClass + '">$' + (n > 0 ? val : '0') + '</div>';
+                if (m > 0) {
+                    var pct = Math.min(120, n / m * 100);
+                    var over = n >= m;
+                    inner += '<div class="ck-bar-track">' +
+                        '<div class="ck-bar ' + barClass + (over ? ' ck-bar--over' : '') + '" data-pct="' + Math.min(100, pct).toFixed(1) + '" style="width:0"></div>' +
+                        '</div>' +
+                        '<div class="ck-metric-meta">Meta: $' + metaVal + '</div>';
                 }
-                return '<div class="ck-mini-meta-row">' +
-                    '<span class="ck-mini-meta-lbl">' + label + '</span>' +
-                    barHtml +
-                    '<span class="ck-mini-meta-pct" style="color:' + color + '">' + pctFmt + '</span>' +
-                    '</div>';
+                return '<td class="ck-td ck-td--metric">' + inner + '</td>';
             }
-
-            var metasTd = '<td class="ck-td ck-td--metas">' +
-                miniMeta('F',  r.fact_total, r.fact_meta, 'ck-bar--fact') +
-                miniMeta('C',  r.cob_total,  r.cob_meta,  'ck-bar--cob')  +
-                miniMeta('O',  r.opp_total,  r.opp_meta,  'ck-bar--opp')  +
-                miniMeta('Co', r.cot_total,  r.cot_meta,  'ck-bar--cot')  +
-                '</td>';
 
             return '<tr class="ck-row">' +
                 '<td class="ck-td ck-td--rank">' + rankHtml + '</td>' +
@@ -1628,7 +1606,6 @@
                 metricTd(r.cob_total,  r.cob_meta,  'ck-metric--cob',  'ck-bar--cob')  +
                 metricTd(r.opp_total,  r.opp_meta,  'ck-metric--opp',  'ck-bar--opp')  +
                 metricTd(r.cot_total,  r.cot_meta,  'ck-metric--cot',  'ck-bar--cot')  +
-                metasTd +
                 '</tr>';
         }
 
@@ -1638,7 +1615,7 @@
             var merged = mergeClientesData();
 
             if (merged.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;font-size:0.82rem;color:#9CA3AF;font-style:italic;">Sin datos para este periodo.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;font-size:0.82rem;color:#9CA3AF;font-style:italic;">Sin datos para este periodo.</td></tr>';
                 var kpiRow = document.getElementById('ckKpiRow');
                 if (kpiRow) kpiRow.style.display = 'none';
                 return;

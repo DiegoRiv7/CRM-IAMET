@@ -4512,13 +4512,19 @@
 .ck-metric-val {
     font-size: 0.70rem;
     font-weight: 600;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     white-space: nowrap;
 }
 .ck-metric--fact { color: #6B7280; }
 .ck-metric--cob  { color: #16A34A; }
 .ck-metric--opp  { color: #2563EB; }
 .ck-metric--cot  { color: #D97706; }
+.ck-metric-meta {
+    font-size: 0.60rem;
+    color: #9CA3AF;
+    margin-top: 2px;
+    white-space: nowrap;
+}
 
 /* Bars */
 .ck-bar-track {
