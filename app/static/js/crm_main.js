@@ -1552,16 +1552,15 @@
 
         var _DASH = '<span class="clientes-dash">—</span>';
 
-        function buildClientesCombinedRow(r, rank, maxPipeline) {
+        function buildClientesCombinedRow(r, rank) {
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
-            var max = maxPipeline || 1;
 
             // Rank
             var rankHtml = rank <= 3
                 ? '<span class="ck-trophy">' + (rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉') + '</span>'
                 : '<span class="ck-rank-num">' + rank + '</span>';
 
-            // Health score
+            // Health score (cobrado vs pipeline)
             var pipeline = r._pipeline || 0;
             var cobN = fN(r.cob_total);
             var health = pipeline > 0
@@ -1577,29 +1576,41 @@
                     (pct >= 0 ? '↑' : '↓') + ' ' + Math.abs(pct) + '%</span>';
             }
 
-            // Metric cell with bar
-            function metricTd(val, metricClass, barClass) {
-                var n = fN(val);
+            // Metric cell — bar = progress vs client's own META
+            function metricTd(val, metaVal, metricClass, barClass) {
+                var n = fN(val), m = fN(metaVal);
                 if (n === 0) return '<td class="ck-td ck-td--metric"><span class="ck-dash">—</span></td>';
-                var pct = Math.min(100, (n / max * 100)).toFixed(1);
+                var pct = m > 0 ? Math.min(120, (n / m * 100)).toFixed(1) : '0';
+                var over = m > 0 && n >= m;
                 return '<td class="ck-td ck-td--metric">' +
                     '<div class="ck-metric-val ' + metricClass + '">$' + val + '</div>' +
-                    '<div class="ck-bar-track"><div class="ck-bar ' + barClass + '" data-pct="' + pct + '" style="width:0"></div></div>' +
-                    '</td>';
+                    '<div class="ck-bar-track">' +
+                    '<div class="ck-bar ' + barClass + (over ? ' ck-bar--over' : '') + '" data-pct="' + Math.min(100, pct) + '" style="width:0"></div>' +
+                    '</div></td>';
             }
 
-            // Total pipeline cell (hero)
-            var totalTd;
-            if (pipeline === 0) {
-                totalTd = '<td class="ck-td ck-td--total"><span class="ck-dash">—</span></td>';
-            } else {
-                var pipelineFmt = pipeline.toLocaleString('en-US', { maximumFractionDigits: 0 });
-                var pct = Math.min(100, (pipeline / max * 100)).toFixed(1);
-                totalTd = '<td class="ck-td ck-td--total">' +
-                    '<div class="ck-total-val">$' + pipelineFmt + '</div>' +
-                    '<div class="ck-bar-track ck-bar-track--total"><div class="ck-bar ck-bar--total" data-pct="' + pct + '" style="width:0"></div></div>' +
-                    '</td>';
+            // Metas column — 4 mini progress rows
+            function miniMeta(label, val, metaVal, barClass) {
+                var n = fN(val), m = fN(metaVal);
+                if (m === 0) return '';
+                var pct = Math.min(100, (n / m * 100));
+                var pctFmt = pct.toFixed(0) + '%';
+                var color = pct >= 100 ? '#16A34A' : pct >= 70 ? '#2563EB' : pct >= 40 ? '#D97706' : '#EF4444';
+                return '<div class="ck-mini-meta-row">' +
+                    '<span class="ck-mini-meta-lbl">' + label + '</span>' +
+                    '<div class="ck-bar-track ck-bar-track--mini">' +
+                    '<div class="ck-bar ' + barClass + '" data-pct="' + pct.toFixed(1) + '" style="width:0"></div>' +
+                    '</div>' +
+                    '<span class="ck-mini-meta-pct" style="color:' + color + '">' + pctFmt + '</span>' +
+                    '</div>';
             }
+
+            var metasTd = '<td class="ck-td ck-td--metas">' +
+                miniMeta('F', r.fact_total, r.fact_meta, 'ck-bar--fact') +
+                miniMeta('C', r.cob_total,  r.cob_meta,  'ck-bar--cob')  +
+                miniMeta('O', r.opp_total,  r.opp_meta,  'ck-bar--opp')  +
+                miniMeta('Co', r.cot_total, r.cot_meta,  'ck-bar--cot')  +
+                '</td>';
 
             return '<tr class="ck-row">' +
                 '<td class="ck-td ck-td--rank">' + rankHtml + '</td>' +
@@ -1610,11 +1621,11 @@
                     '<div class="ck-client-name" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</div>' +
                     '<div class="ck-client-meta">' + (r.vendedor || '') + (trendHtml ? ' ' + trendHtml : '') + '</div>' +
                     '</div></div></td>' +
-                metricTd(r.fact_total, 'ck-metric--fact', 'ck-bar--fact') +
-                metricTd(r.cob_total,  'ck-metric--cob',  'ck-bar--cob')  +
-                metricTd(r.opp_total,  'ck-metric--opp',  'ck-bar--opp')  +
-                metricTd(r.cot_total,  'ck-metric--cot',  'ck-bar--cot')  +
-                totalTd +
+                metricTd(r.fact_total, r.fact_meta, 'ck-metric--fact', 'ck-bar--fact') +
+                metricTd(r.cob_total,  r.cob_meta,  'ck-metric--cob',  'ck-bar--cob')  +
+                metricTd(r.opp_total,  r.opp_meta,  'ck-metric--opp',  'ck-bar--opp')  +
+                metricTd(r.cot_total,  r.cot_meta,  'ck-metric--cot',  'ck-bar--cot')  +
+                metasTd +
                 '</tr>';
         }
 
@@ -1632,33 +1643,62 @@
 
             // Sort by pipeline descending
             merged.sort(function (a, b) { return b._pipeline - a._pipeline; });
-            var maxPipeline = merged[0]._pipeline || 1;
 
-            // KPI totals
+            // KPI totals + metas (sumadas de cada cliente)
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
             var totFact = 0, totCob = 0, totOpp = 0, totCot = 0, totPrevOpp = 0;
+            var metaFact = 0, metaCob = 0, metaOpp = 0, metaCot = 0;
             merged.forEach(function (r) {
                 totFact    += fN(r.fact_total);
                 totCob     += fN(r.cob_total);
                 totOpp     += fN(r.opp_total);
                 totCot     += fN(r.cot_total);
                 totPrevOpp += fN(r.opp_prev || '0');
+                metaFact   += fN(r.fact_meta);
+                metaCob    += fN(r.cob_meta);
+                metaOpp    += fN(r.opp_meta);
+                metaCot    += fN(r.cot_meta);
             });
             var fmtKpi = function(n) { return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+            var fmtPct = function(val, meta) { return meta > 0 ? Math.round(val / meta * 100) : 0; };
 
-            // Update KPI cards
+            // Helper: set KPI card content
             var el = function(id) { return document.getElementById(id); };
-            if (el('ckKpiFact')) el('ckKpiFact').textContent = fmtKpi(totFact);
-            if (el('ckKpiCob'))  el('ckKpiCob').textContent  = fmtKpi(totCob);
-            if (el('ckKpiOpp'))  el('ckKpiOpp').textContent  = fmtKpi(totOpp);
-            if (el('ckKpiCot'))  el('ckKpiCot').textContent  = fmtKpi(totCot);
+            function setKpi(ids, val, meta, progId, pctId, metaTextId, sparkId, prevVal) {
+                if (el(ids))      el(ids).textContent      = fmtKpi(val);
+                var pct = fmtPct(val, meta);
+                if (el(pctId))    el(pctId).textContent    = pct + '%';
+                if (el(metaTextId)) el(metaTextId).textContent = 'de ' + fmtKpi(meta) + ' meta';
+                // Animate progress bar
+                setTimeout(function() {
+                    var fill = el(progId);
+                    if (fill) fill.style.width = Math.min(100, pct) + '%';
+                }, 50);
+                // Sparkline: prev vs actual (2 barras verticales)
+                var sparkEl = el(sparkId);
+                if (sparkEl && prevVal !== undefined && prevVal > 0) {
+                    var maxSpark = Math.max(val, prevVal) || 1;
+                    var hPrev = Math.round(prevVal / maxSpark * 100);
+                    var hCurr = Math.round(val      / maxSpark * 100);
+                    sparkEl.innerHTML =
+                        '<div class="ck-spark-col"><div class="ck-spark-bar ck-spark--prev" style="height:' + hPrev + '%"></div><div class="ck-spark-lbl">ant</div></div>' +
+                        '<div class="ck-spark-col"><div class="ck-spark-bar ck-spark--curr" style="height:' + hCurr + '%"></div><div class="ck-spark-lbl">act</div></div>';
+                } else if (sparkEl) {
+                    sparkEl.innerHTML = '';
+                }
+            }
 
-            // Trend for oportunidades (vs prev month)
+            setKpi('ckKpiFact', totFact, metaFact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckSparkFact', undefined);
+            setKpi('ckKpiCob',  totCob,  metaCob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckSparkCob',  undefined);
+            setKpi('ckKpiOpp',  totOpp,  metaOpp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckSparkOpp',  totPrevOpp);
+            setKpi('ckKpiCot',  totCot,  metaCot,  'ckProgCot',  'ckPctCot',  'ckMetaCot',  'ckSparkCot',  undefined);
+
+            // Trend text for oportunidades
             var trendOppEl = el('ckTrendOpp');
             if (trendOppEl && totPrevOpp > 0 && totOpp !== totPrevOpp) {
                 var pctOpp = Math.round((totOpp - totPrevOpp) / totPrevOpp * 100);
                 var upOpp = pctOpp >= 0;
-                trendOppEl.innerHTML = '<span style="color:' + (upOpp ? '#16A34A' : '#DC2626') + ';font-weight:700;">' +
+                trendOppEl.innerHTML = '<span style="color:' + (upOpp ? '#16A34A' : '#DC2626') + ';font-weight:700;font-size:0.60rem;">' +
                     (upOpp ? '↑' : '↓') + ' ' + Math.abs(pctOpp) + '% vs mes ant.</span>';
             }
 
@@ -1696,7 +1736,7 @@
             // Build rows
             var html = '';
             for (var i = 0; i < merged.length; i++) {
-                html += buildClientesCombinedRow(merged[i], i + 1, maxPipeline);
+                html += buildClientesCombinedRow(merged[i], i + 1);
             }
             tbody.innerHTML = html;
 

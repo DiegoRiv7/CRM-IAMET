@@ -209,35 +209,64 @@
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
             <div class="ck-kpi-card ck-kpi--fact">
                 <div class="ck-kpi-header">
-                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                     <span class="ck-kpi-label">FACTURADO</span>
+                    <span class="ck-kpi-pct-badge" id="ckPctFact"></span>
                 </div>
-                <div class="ck-kpi-value" id="ckKpiFact">—</div>
-                <div class="ck-kpi-sub">Acumulado del periodo</div>
+                <div class="ck-kpi-row-main">
+                    <div>
+                        <div class="ck-kpi-value" id="ckKpiFact">—</div>
+                        <div class="ck-kpi-of-meta" id="ckMetaFact">de — meta</div>
+                    </div>
+                    <div class="ck-spark" id="ckSparkFact"></div>
+                </div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--fact" id="ckProgFact" style="width:0%"></div></div>
             </div>
             <div class="ck-kpi-card ck-kpi--cob">
                 <div class="ck-kpi-header">
-                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     <span class="ck-kpi-label">COBRADO</span>
+                    <span class="ck-kpi-pct-badge ck-pct--cob" id="ckPctCob"></span>
                 </div>
-                <div class="ck-kpi-value ck-kpi-value--cob" id="ckKpiCob">—</div>
-                <div class="ck-kpi-trend" id="ckTrendCob">Acumulado del periodo</div>
+                <div class="ck-kpi-row-main">
+                    <div>
+                        <div class="ck-kpi-value ck-kpi-value--cob" id="ckKpiCob">—</div>
+                        <div class="ck-kpi-of-meta" id="ckMetaCob">de — meta</div>
+                    </div>
+                    <div class="ck-spark" id="ckSparkCob"></div>
+                </div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--cob" id="ckProgCob" style="width:0%"></div></div>
             </div>
             <div class="ck-kpi-card ck-kpi--opp">
                 <div class="ck-kpi-header">
-                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                     <span class="ck-kpi-label">OPORTUNIDADES</span>
+                    <span class="ck-kpi-pct-badge ck-pct--opp" id="ckPctOpp"></span>
                 </div>
-                <div class="ck-kpi-value ck-kpi-value--opp" id="ckKpiOpp">—</div>
-                <div class="ck-kpi-trend" id="ckTrendOpp">—</div>
+                <div class="ck-kpi-row-main">
+                    <div>
+                        <div class="ck-kpi-value ck-kpi-value--opp" id="ckKpiOpp">—</div>
+                        <div class="ck-kpi-of-meta" id="ckMetaOpp">de — meta</div>
+                    </div>
+                    <div class="ck-spark" id="ckSparkOpp"></div>
+                </div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--opp" id="ckProgOpp" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendOpp"></div>
             </div>
             <div class="ck-kpi-card ck-kpi--cot">
                 <div class="ck-kpi-header">
-                    <svg class="ck-kpi-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                     <span class="ck-kpi-label">COTIZADO</span>
+                    <span class="ck-kpi-pct-badge ck-pct--cot" id="ckPctCot"></span>
                 </div>
-                <div class="ck-kpi-value ck-kpi-value--cot" id="ckKpiCot">—</div>
-                <div class="ck-kpi-sub">Pendiente de cierre</div>
+                <div class="ck-kpi-row-main">
+                    <div>
+                        <div class="ck-kpi-value ck-kpi-value--cot" id="ckKpiCot">—</div>
+                        <div class="ck-kpi-of-meta" id="ckMetaCot">de — meta</div>
+                    </div>
+                    <div class="ck-spark" id="ckSparkCot"></div>
+                </div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--cot" id="ckProgCot" style="width:0%"></div></div>
             </div>
         </div>
 
@@ -267,7 +296,7 @@
                     <th class="ck-th ck-th--cob" onclick="clientesVistaAbrir('cobrado')" title="Ver detalle por marcas">COBRADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
                     <th class="ck-th ck-th--opp" onclick="clientesVistaAbrir('oportunidades')" title="Ver detalle por marcas">OPORTUNIDADES <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
                     <th class="ck-th ck-th--cot" onclick="clientesVistaAbrir('cotizado')" title="Ver detalle por marcas">COTIZADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
-                    <th class="ck-th ck-th--total">TOTAL PIPELINE</th>
+                    <th class="ck-th ck-th--total">METAS</th>
                 </tr>
             </thead>
             <tbody id="clientesCombinedTbody">

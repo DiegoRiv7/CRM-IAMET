@@ -4549,3 +4549,104 @@
     margin-bottom: 4px;
     text-align: right;
 }
+
+/* ── KPI card additions ── */
+.ck-kpi-pct-badge {
+    margin-left: auto;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #6B7280;
+    background: rgba(0,0,0,0.05);
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+.ck-pct--cob { color: #16A34A; background: rgba(22,163,74,0.09); }
+.ck-pct--opp { color: #2563EB; background: rgba(37,99,235,0.09); }
+.ck-pct--cot { color: #D97706; background: rgba(217,119,6,0.09); }
+
+.ck-kpi-row-main {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ck-kpi-of-meta {
+    font-size: 0.60rem;
+    color: #9CA3AF;
+    margin-top: 3px;
+}
+.ck-kpi-prog-track {
+    height: 3px;
+    background: rgba(0,0,0,0.07);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+.ck-kpi-prog-fill {
+    height: 100%;
+    border-radius: 999px;
+    width: 0;
+    transition: width 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ck-prog--fact { background: #9CA3AF; }
+.ck-prog--cob  { background: linear-gradient(to right, #4ADE80, #16A34A); }
+.ck-prog--opp  { background: linear-gradient(to right, #60A5FA, #2563EB); }
+.ck-prog--cot  { background: linear-gradient(to right, #FCD34D, #D97706); }
+
+/* Sparkline 2-bar mini chart */
+.ck-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 32px;
+    flex-shrink: 0;
+}
+.ck-spark-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    height: 100%;
+}
+.ck-spark-bar {
+    width: 7px;
+    border-radius: 3px 3px 0 0;
+    min-height: 3px;
+    transition: height 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ck-spark--prev { background: #E5E7EB; }
+.ck-spark--curr { background: #6366F1; }
+.ck-spark-lbl { font-size: 0.48rem; color: #C4C9D4; font-weight: 600; }
+
+/* Bar overachievement */
+.ck-bar--over { background: linear-gradient(to right, #4ADE80, #16A34A) !important; }
+
+/* Metas column */
+.ck-td--metas { padding: 8px 14px 8px 8px; }
+.ck-mini-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 4px;
+}
+.ck-mini-meta-row:last-child { margin-bottom: 0; }
+.ck-mini-meta-lbl {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: #9CA3AF;
+    width: 14px;
+    flex-shrink: 0;
+    text-align: right;
+}
+.ck-bar-track--mini {
+    height: 4px;
+    flex: 1;
+}
+.ck-mini-meta-pct {
+    font-size: 0.58rem;
+    font-weight: 700;
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+}
