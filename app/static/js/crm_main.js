@@ -1274,6 +1274,7 @@
                 cotizadorOverlay.classList.remove('closing');
                 cotizadorIframe.src = '/app/crear-cotizacion/oportunidad/' + oppId + '/?widget_mode=1';
             }
+            window.openCotizador = openCotizador;
 
             window.openEditCotizacion = function (cotId) {
                 // Cierra el widget de detalle si está abierto
