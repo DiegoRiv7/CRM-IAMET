@@ -1,63 +1,86 @@
     <!-- ═══ WIDGET: NUEVA NEGOCIACIÓN ═══ -->
-    <div class="widget-overlay" id="widgetNegociacion" style="z-index:10300;"
-        onclick="if(event.target===this){this.classList.add('closing');var self=this;setTimeout(function(){self.classList.remove('active','closing');},200);}">
-        <div class="widget-card">
-            <div class="widget-header">
-                <h3>Nueva Negociacion</h3>
-                <button type="button" class="widget-close" id="widgetClose"
-                    onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},200);">&times;</button>
+    <div class="widget-overlay wn-overlay" id="widgetNegociacion" style="z-index:10300;"
+        onclick="if(event.target===this){this.classList.add('closing');var self=this;setTimeout(function(){self.classList.remove('active','closing');},220);}">
+        <div class="wn-card">
+
+            <!-- Header -->
+            <div class="wn-header">
+                <div class="wn-header-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="wn-title">Nueva Oportunidad</div>
+                    <div class="wn-subtitle">Ingresa los datos para registrar la negociación</div>
+                </div>
+                <button type="button" class="wn-close" id="widgetClose"
+                    onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">&times;</button>
             </div>
-            <div class="widget-body">
+
+            <!-- Body -->
+            <div class="wn-body">
                 <form id="formNegociacion" autocomplete="off">
                     {% csrf_token %}
 
-                    <div class="wf-group">
-                        <label class="wf-label">Cliente</label>
-                        <input type="text" class="wf-input" id="wfCliente" placeholder="Buscar o crear cliente..."
-                            required>
-                        <div class="wf-autocomplete" id="wfClienteAC"></div>
+                    <!-- Nombre -->
+                    <div class="wn-field">
+                        <label class="wn-label">Nombre de la oportunidad</label>
+                        <input type="text" class="wn-input" id="wfOportunidad"
+                            placeholder="Ej: Implementación de sistema RFID..." required>
                     </div>
 
-                    <div class="wf-group">
-                        <label class="wf-label">Contacto</label>
-                        <input type="text" class="wf-input" id="wfContacto" placeholder="Nombre del contacto...">
+                    <!-- Contacto -->
+                    <div class="wn-field">
+                        <label class="wn-label">Contacto</label>
+                        <input type="text" class="wn-input wf-input" id="wfContacto" placeholder="Nombre del contacto...">
                         <div class="wf-autocomplete" id="wfContactoAC"></div>
                     </div>
 
-                    <div class="wf-group">
-                        <label class="wf-label">Nombre de la Oportunidad</label>
-                        <input type="text" class="wf-input" id="wfOportunidad"
-                            placeholder="Ej: Implementacion de sistema..." required>
+                    <!-- Cliente -->
+                    <div class="wn-field">
+                        <label class="wn-label">Cliente</label>
+                        <input type="text" class="wn-input wf-input" id="wfCliente" placeholder="Buscar o crear cliente..." required>
+                        <div class="wf-autocomplete" id="wfClienteAC"></div>
                     </div>
 
-                    <div class="wf-row">
-                        <div class="wf-group">
-                            <label class="wf-label">Monto Estimado</label>
-                            <input type="number" class="wf-input" id="wfMonto" placeholder="0.00" step="0.01" min="0"
-                                required>
+                    <!-- Divider -->
+                    <div class="wn-divider"></div>
+
+                    <!-- Monto + Probabilidad -->
+                    <div class="wn-row">
+                        <div class="wn-field">
+                            <label class="wn-label">Monto estimado</label>
+                            <div class="wn-input-prefix">
+                                <span class="wn-prefix">$</span>
+                                <input type="number" class="wn-input wn-input--prefixed" id="wfMonto" placeholder="0.00" step="0.01" min="0" required>
+                            </div>
                         </div>
-                        <div class="wf-group">
-                            <label class="wf-label">Probabilidad (%)</label>
-                            <input type="number" class="wf-input" id="wfProbabilidad" value="25" min="5" max="100"
-                                step="5">
+                        <div class="wn-field">
+                            <label class="wn-label">Probabilidad</label>
+                            <div class="wn-input-prefix">
+                                <input type="number" class="wn-input wn-input--suffixed" id="wfProbabilidad" value="25" min="5" max="100" step="5">
+                                <span class="wn-suffix">%</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="wf-row">
-                        <div class="wf-group">
-                            <label class="wf-label">Area</label>
-                            <select class="wf-select" id="wfArea">
+                    <!-- Área + Producto -->
+                    <div class="wn-row">
+                        <div class="wn-field">
+                            <label class="wn-label">Área</label>
+                            <select class="wn-input wn-select" id="wfArea">
                                 <option value="SISTEMAS">Sistemas</option>
                                 <option value="Recursos Humanos">Recursos Humanos</option>
                                 <option value="Compras">Compras</option>
                                 <option value="Seguridad">Seguridad</option>
                                 <option value="Mantenimiento">Mantenimiento</option>
-                                <option value="Almacén">Almacen</option>
+                                <option value="Almacén">Almacén</option>
                             </select>
                         </div>
-                        <div class="wf-group">
-                            <label class="wf-label">Producto</label>
-                            <select class="wf-select" id="wfProducto">
+                        <div class="wn-field">
+                            <label class="wn-label">Producto</label>
+                            <select class="wn-input wn-select" id="wfProducto">
                                 <option value="ZEBRA">Zebra</option>
                                 <option value="PANDUIT">Panduit</option>
                                 <option value="APC">APC</option>
@@ -66,41 +89,47 @@
                                 <option value="AXIS">Axis</option>
                                 <option value="SOFTWARE" selected>Software</option>
                                 <option value="RUNRATE">Runrate</option>
-                                <option value="PÓLIZA">Poliza</option>
+                                <option value="PÓLIZA">Póliza</option>
                                 <option value="CISCO">Cisco</option>
                                 <option value="SERVICIO">Servicio</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="wf-row">
-                        <div class="wf-group">
-                            <label class="wf-label">Mes de Cierre</label>
-                            <select class="wf-select" id="wfMesCierre">
+                    <!-- Mes cierre + Tipo -->
+                    <div class="wn-row">
+                        <div class="wn-field">
+                            <label class="wn-label">Mes de cierre</label>
+                            <select class="wn-input wn-select" id="wfMesCierre">
                                 {% for code, name in mes_choices %}
                                 <option value="{{ code }}">{{ name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="wf-group">
-                            <label class="wf-label">Tipo</label>
-                            <select class="wf-select" id="wfTipo">
+                        <div class="wn-field">
+                            <label class="wn-label">Tipo</label>
+                            <select class="wn-input wn-select" id="wfTipo">
                                 <option value="runrate">Runrate</option>
                                 <option value="proyecto">Proyecto</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="wf-group">
-                        <label class="wf-label">Comentarios</label>
-                        <textarea class="wf-textarea" id="wfComentarios" placeholder="Informacion adicional..."
-                            rows="2"></textarea>
+                    <!-- Comentarios -->
+                    <div class="wn-field">
+                        <label class="wn-label">Comentarios <span class="wn-optional">opcional</span></label>
+                        <textarea class="wn-input wn-textarea" id="wfComentarios"
+                            placeholder="Contexto adicional, notas, próximos pasos..." rows="2"></textarea>
                     </div>
 
-                    <div class="widget-actions">
-                        <button type="button" class="wf-btn wf-btn-cancel" id="wfCancel"
-                            onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},200);">Cancelar</button>
-                        <button type="submit" class="wf-btn wf-btn-submit" id="wfSubmit">Crear Negociacion</button>
+                    <!-- Actions -->
+                    <div class="wn-actions">
+                        <button type="button" class="wn-btn wn-btn--cancel" id="wfCancel"
+                            onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">Cancelar</button>
+                        <button type="submit" class="wn-btn wn-btn--submit" id="wfSubmit">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M12 5v14M5 12h14"/></svg>
+                            Crear oportunidad
+                        </button>
                     </div>
                 </form>
             </div>
