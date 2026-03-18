@@ -978,6 +978,10 @@ def api_tareas(request):
         proyecto_id = request.GET.get('proyecto_id')
         
         oportunidad_id = request.GET.get('oportunidad_id')
+        is_paginated = False
+        total = None
+        page = 1
+        total_pages = 1
         try:
             if proyecto_id:
                 # Filtrar por proyecto específico
@@ -1015,11 +1019,25 @@ def api_tareas(request):
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
 
-                # Filtro de estado desde el cliente
+                # Filtro de estado
                 if estado_filter == 'pendientes':
                     tareas = tareas.exclude(estado='completada')
                 elif estado_filter == 'completadas':
                     tareas = tareas.filter(estado='completada')
+
+                # Paginación para completadas y todas (no para pendientes)
+                is_paginated = estado_filter in ('completadas', 'todas', '')
+                if is_paginated:
+                    q_search = request.GET.get('q', '').strip()
+                    if q_search:
+                        tareas = tareas.filter(titulo__icontains=q_search)
+                    per_page = 50
+                    page = max(1, int(request.GET.get('page', 1)))
+                    total = tareas.count()
+                    total_pages = max(1, (total + per_page - 1) // per_page)
+                    page = min(page, total_pages)
+                    offset = (page - 1) * per_page
+                    tareas = tareas[offset:offset + per_page]
             
             tareas_data = []
             for tarea in tareas:
@@ -1057,7 +1075,11 @@ def api_tareas(request):
             
             return JsonResponse({
                 'success': True,
-                'tareas': tareas_data
+                'tareas': tareas_data,
+                'paginated': is_paginated,
+                'total': total if total is not None else len(tareas_data),
+                'page': page,
+                'total_pages': total_pages,
             })
             
         except Proyecto.DoesNotExist:

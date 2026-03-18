@@ -2716,6 +2716,43 @@
         text-align: right;
     }
 
+    .tareas-paginacion {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .tareas-pag-info {
+        font-size: 0.78rem;
+        color: #6B7280;
+        flex: 1;
+        text-align: center;
+    }
+
+    .tareas-pag-btn {
+        padding: 6px 14px;
+        border: 1.5px solid #E5E7EB;
+        border-radius: 8px;
+        background: white;
+        color: #374151;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+
+    .tareas-pag-btn:hover:not(:disabled) {
+        background: #F3F4F6;
+        border-color: #D1D5DB;
+    }
+
+    .tareas-pag-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
     .tareas-empty {
         text-align: center;
         padding: 4rem 2rem;

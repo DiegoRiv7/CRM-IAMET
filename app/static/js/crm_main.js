@@ -2699,7 +2699,11 @@
         window._crmTareasMode = false;
         var _crmAllTareas = [];
         var _crmCurrentFilter = 'pendientes';
-        var _crmTareasCache = {};  // cache por estado: { pendientes: [...], completadas: [...], todas: [...] }
+        var _crmTareasCache = {};  // cache por estado (solo pendientes)
+        var _crmPage = 1;
+        var _crmTotalPages = 1;
+        var _crmTotalTareas = 0;
+        var _crmPaginatedSearch = '';
         var _crmCurrentTaskId = null;
         var _crmTimerInterval = null;
 
@@ -2810,46 +2814,82 @@
             if (current && respSet[current]) sel.value = current;
         }
 
-        function cargarTareasCRM(forzarEstado) {
+        function cargarTareasCRM(forzarEstado, pagina) {
             var estado = forzarEstado || _crmCurrentFilter;
-            // Usa caché si ya se cargó este estado
-            if (_crmTareasCache[estado]) {
+            var esPaginado = estado === 'completadas' || estado === 'todas';
+
+            // Solo pendientes usa caché
+            if (!esPaginado && _crmTareasCache[estado]) {
                 _crmAllTareas = _crmTareasCache[estado];
                 _actualizarDropdownResponsables(_crmAllTareas);
                 renderTareasCRM(_crmCurrentFilter);
+                _renderPaginacion(false);
                 return;
             }
-            var tbody = document.getElementById('tareasTableBody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#9CA3AF;">Cargando tareas...</td></tr>';
 
-            var url = '/app/api/tareas/';
-            if (estado === 'pendientes' || estado === 'completadas') {
-                url += '?estado=' + estado;
+            var tbody = document.getElementById('tareasTableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:3rem;color:#9CA3AF;">Cargando tareas...</td></tr>';
+
+            var params = [];
+            if (estado === 'pendientes' || estado === 'completadas') params.push('estado=' + estado);
+            if (esPaginado) {
+                var p = pagina || _crmPage;
+                params.push('page=' + p);
+                if (_crmPaginatedSearch) params.push('q=' + encodeURIComponent(_crmPaginatedSearch));
             }
+            var url = '/app/api/tareas/' + (params.length ? '?' + params.join('&') : '');
+
             fetch(url)
                 .then(function (r) {
-                    if (!r.ok) {
-                        console.error('[Tareas] API status:', r.status);
-                        return r.json().then(function (d) { throw new Error(d.error || 'Error ' + r.status); });
-                    }
+                    if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error ' + r.status); });
                     return r.json();
                 })
                 .then(function (data) {
                     if (data.success && Array.isArray(data.tareas)) {
-                        _crmTareasCache[estado] = data.tareas;
-                        _crmAllTareas = data.tareas;
-                        _actualizarDropdownResponsables(data.tareas);
-                        renderTareasCRM(_crmCurrentFilter);
+                        if (esPaginado) {
+                            _crmPage = data.page || 1;
+                            _crmTotalPages = data.total_pages || 1;
+                            _crmTotalTareas = data.total || data.tareas.length;
+                            _crmAllTareas = data.tareas;
+                            renderTareasCRM(_crmCurrentFilter, true);
+                            _renderPaginacion(true);
+                        } else {
+                            _crmTareasCache[estado] = data.tareas;
+                            _crmAllTareas = data.tareas;
+                            _actualizarDropdownResponsables(data.tareas);
+                            renderTareasCRM(_crmCurrentFilter);
+                            _renderPaginacion(false);
+                        }
                     } else {
-                        console.error('[Tareas] Respuesta inesperada:', data);
-                        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="tareas-empty">No se pudieron cargar las tareas.</td></tr>';
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">No se pudieron cargar las tareas.</td></tr>';
                     }
                 })
                 .catch(function (err) {
-                    console.error('[Tareas] Error cargando tareas:', err);
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="tareas-empty">Error: ' + err.message + '</td></tr>';
+                    console.error('[Tareas] Error:', err);
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">Error: ' + err.message + '</td></tr>';
                 });
         }
+
+        function _renderPaginacion(activa) {
+            var footer = document.getElementById('tareasFooter');
+            if (!footer) return;
+            if (!activa || _crmTotalPages <= 1) { footer.innerHTML = ''; return; }
+            var desde = (_crmPage - 1) * 50 + 1;
+            var hasta = Math.min(_crmPage * 50, _crmTotalTareas);
+            footer.innerHTML =
+                '<div class="tareas-paginacion">' +
+                '<button class="tareas-pag-btn" id="tareasPagPrev" ' + (_crmPage <= 1 ? 'disabled' : '') + ' onclick="crmTareasPagAnterior()">&#8592; Anterior</button>' +
+                '<span class="tareas-pag-info">Página <strong>' + _crmPage + '</strong> de <strong>' + _crmTotalPages + '</strong> &nbsp;·&nbsp; ' + desde + '–' + hasta + ' de ' + _crmTotalTareas + '</span>' +
+                '<button class="tareas-pag-btn" id="tareasPagNext" ' + (_crmPage >= _crmTotalPages ? 'disabled' : '') + ' onclick="crmTareasPagSiguiente()">Siguiente &#8594;</button>' +
+                '</div>';
+        }
+
+        window.crmTareasPagAnterior = function () {
+            if (_crmPage > 1) { _crmPage--; cargarTareasCRM(_crmCurrentFilter, _crmPage); }
+        };
+        window.crmTareasPagSiguiente = function () {
+            if (_crmPage < _crmTotalPages) { _crmPage++; cargarTareasCRM(_crmCurrentFilter, _crmPage); }
+        };
 
         // ── Renderizar tabla de tareas ──
 
@@ -2866,10 +2906,18 @@
             if (typeof recargarTareasCRM === 'function' && window._crmTareasMode) recargarTareasCRM();
         }, 60000);
 
-        function renderTareasCRM(filtro) {
+        function renderTareasCRM(filtro, esPaginado) {
             var tbody = document.getElementById('tareasTableBody');
             var countEl = document.getElementById('tareasCount');
             if (!tbody) return;
+
+            // En modo paginado el servidor ya filtró y ordenó — no procesar aquí
+            if (esPaginado) {
+                var totalStr = _crmTotalTareas + ' tarea' + (_crmTotalTareas !== 1 ? 's' : '') + ' en total';
+                if (countEl) countEl.innerHTML = '<strong>' + _crmAllTareas.length + '</strong> en esta página &nbsp;·&nbsp; ' + totalStr;
+                tbody.innerHTML = _crmAllTareas.map(function (t) { return createTaskRowCRM(t); }).join('');
+                return;
+            }
 
             var tareas = _crmAllTareas.slice();
             if (filtro === 'pendientes') {
@@ -3048,7 +3096,9 @@
                 tareasTabs.querySelectorAll('.tareas-tab').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
                 _crmCurrentFilter = btn.getAttribute('data-filter');
-                cargarTareasCRM(_crmCurrentFilter);
+                _crmPage = 1;
+                _crmPaginatedSearch = '';
+                cargarTareasCRM(_crmCurrentFilter, 1);
             });
         }
 
@@ -3085,9 +3135,20 @@
 
         // ── Búsqueda ──
         var tareasSearch = document.getElementById('tareasSearchInput');
+        var _tareasSearchTimer = null;
         if (tareasSearch) {
             tareasSearch.addEventListener('input', function () {
-                renderTareasCRM(_crmCurrentFilter);
+                var esPaginado = _crmCurrentFilter === 'completadas' || _crmCurrentFilter === 'todas';
+                if (esPaginado) {
+                    clearTimeout(_tareasSearchTimer);
+                    _tareasSearchTimer = setTimeout(function () {
+                        _crmPaginatedSearch = tareasSearch.value.trim();
+                        _crmPage = 1;
+                        cargarTareasCRM(_crmCurrentFilter, 1);
+                    }, 350);
+                } else {
+                    renderTareasCRM(_crmCurrentFilter);
+                }
             });
         }
 
