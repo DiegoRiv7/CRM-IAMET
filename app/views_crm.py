@@ -3559,7 +3559,7 @@ def api_quick_crear_contacto(request):
     contacto = Contacto.objects.create(
         nombre=nombre,
         apellido=data.get('apellido', '').strip(),
-        empresa=empresa,
+        cliente=empresa,
     )
     return JsonResponse({
         'success': True,
