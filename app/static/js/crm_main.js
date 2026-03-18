@@ -173,7 +173,9 @@
                 overlay.classList.add('active');
                 overlay.classList.remove('closing');
                 var wfCliente = document.getElementById('wfCliente');
-                if (wfCliente) wfCliente.focus();
+                var wfOportunidad = document.getElementById('wfOportunidad');
+                if (wfOportunidad) wfOportunidad.focus();
+                else if (wfCliente) wfCliente.focus();
             }
             function closeWidget() {
                 if (!overlay) return;
