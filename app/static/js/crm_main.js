@@ -1577,42 +1577,42 @@
                     (pct >= 0 ? '↑' : '↓') + ' ' + Math.abs(pct) + '%</span>';
             }
 
-            // Metric cell — bar = progress vs client's own META
+            // Metric cell — value only, no bar
             function metricTd(val, metaVal, metricClass, barClass) {
-                var n = fN(val), m = fN(metaVal);
+                var n = fN(val);
                 if (n === 0) return '<td class="ck-td ck-td--metric"><span class="ck-dash">—</span></td>';
-                var pct = m > 0 ? Math.min(120, (n / m * 100)).toFixed(1) : '0';
-                var over = m > 0 && n >= m;
                 return '<td class="ck-td ck-td--metric">' +
                     '<div class="ck-metric-val ' + metricClass + '">$' + val + '</div>' +
-                    '<div class="ck-bar-track">' +
-                    '<div class="ck-bar ' + barClass + (over ? ' ck-bar--over' : '') + '" data-pct="' + Math.min(100, pct) + '" style="width:0"></div>' +
-                    '</div></td>';
+                    '</td>';
             }
 
-            // Metas column — 4 mini progress rows
-            // Uses per-client meta; falls back to global meta when 0
-            function miniMeta(label, val, metaVal, globalMeta, barClass) {
+            // Metas column — 4 mini progress rows, always shown
+            function miniMeta(label, val, metaVal, barClass) {
                 var n = fN(val);
-                var m = fN(metaVal) || globalMeta || 0;
-                if (m === 0) return '';
-                var pct = Math.min(100, (n / m * 100));
-                var pctFmt = pct.toFixed(0) + '%';
-                var color = pct >= 100 ? '#16A34A' : pct >= 70 ? '#2563EB' : pct >= 40 ? '#D97706' : '#EF4444';
+                var m = fN(metaVal);
+                var pctFmt, color, barHtml;
+                if (m === 0) {
+                    pctFmt = '—';
+                    color = '#D1D5DB';
+                    barHtml = '<div class="ck-bar-track ck-bar-track--mini"></div>';
+                } else {
+                    var pct = Math.min(100, (n / m * 100));
+                    pctFmt = pct.toFixed(0) + '%';
+                    color = pct >= 100 ? '#16A34A' : pct >= 70 ? '#2563EB' : pct >= 40 ? '#D97706' : '#EF4444';
+                    barHtml = '<div class="ck-bar-track ck-bar-track--mini"><div class="ck-bar ' + barClass + '" data-pct="' + pct.toFixed(1) + '" style="width:0"></div></div>';
+                }
                 return '<div class="ck-mini-meta-row">' +
                     '<span class="ck-mini-meta-lbl">' + label + '</span>' +
-                    '<div class="ck-bar-track ck-bar-track--mini">' +
-                    '<div class="ck-bar ' + barClass + '" data-pct="' + pct.toFixed(1) + '" style="width:0"></div>' +
-                    '</div>' +
+                    barHtml +
                     '<span class="ck-mini-meta-pct" style="color:' + color + '">' + pctFmt + '</span>' +
                     '</div>';
             }
 
             var metasTd = '<td class="ck-td ck-td--metas">' +
-                miniMeta('F',  r.fact_total, r.fact_meta, _ckGlobalMetas.fact, 'ck-bar--fact') +
-                miniMeta('C',  r.cob_total,  r.cob_meta,  _ckGlobalMetas.cob,  'ck-bar--cob')  +
-                miniMeta('O',  r.opp_total,  r.opp_meta,  _ckGlobalMetas.opp,  'ck-bar--opp')  +
-                miniMeta('Co', r.cot_total,  r.cot_meta,  _ckGlobalMetas.cot,  'ck-bar--cot')  +
+                miniMeta('F',  r.fact_total, r.fact_meta, 'ck-bar--fact') +
+                miniMeta('C',  r.cob_total,  r.cob_meta,  'ck-bar--cob')  +
+                miniMeta('O',  r.opp_total,  r.opp_meta,  'ck-bar--opp')  +
+                miniMeta('Co', r.cot_total,  r.cot_meta,  'ck-bar--cot')  +
                 '</td>';
 
             return '<tr class="ck-row">' +
@@ -1701,10 +1701,10 @@
                 }
             }
 
-            setKpi('ckKpiFact', totFact, metaFact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckTrendFact', prevFact);
-            setKpi('ckKpiCob',  totCob,  metaCob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckTrendCob',  prevCob);
-            setKpi('ckKpiOpp',  totOpp,  metaOpp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckTrendOpp',  prevOpp);
-            setKpi('ckKpiCot',  totCot,  metaCot,  'ckProgCot',  'ckPctCot',  'ckMetaCot',  'ckTrendCot',  prevCot);
+            setKpi('ckKpiFact', totFact, metaFact || _ckGlobalMetas.fact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckTrendFact', prevFact);
+            setKpi('ckKpiCob',  totCob,  metaCob  || _ckGlobalMetas.cob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckTrendCob',  prevCob);
+            setKpi('ckKpiOpp',  totOpp,  metaOpp  || _ckGlobalMetas.opp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckTrendOpp',  prevOpp);
+            setKpi('ckKpiCot',  totCot,  metaCot  || _ckGlobalMetas.cot,  'ckProgCot',  'ckPctCot',  'ckMetaCot',  'ckTrendCot',  prevCot);
 
             // Show KPI row
             var kpiRow = el('ckKpiRow');
