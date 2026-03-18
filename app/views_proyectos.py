@@ -992,17 +992,34 @@ def api_tareas(request):
                 ).order_by('fecha_limite', '-fecha_creacion')
             else:
                 # Mostrar TODAS las tareas
+                estado_filter = request.GET.get('estado', '')  # 'pendientes' | 'completadas' | ''
+
                 if request.user.is_superuser:
-                    # El admin ve todo el universo de tareas
-                    tareas = Tarea.objects.all().distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
+                    tareas = Tarea.objects.select_related(
+                        'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
+                    ).order_by('-fecha_creacion')
                 else:
-                    # Usuario normal solo ve las suyas (incluyendo como observador)
+                    # Separar queries: FK directas (rápidas) + M2M por IDs (evita JOIN+DISTINCT lento)
+                    ids_participando = set(
+                        request.user.tareas_participando.values_list('id', flat=True)
+                    )
+                    ids_observando = set(
+                        request.user.tareas_observando.values_list('id', flat=True)
+                    )
+                    ids_m2m = ids_participando | ids_observando
                     tareas = Tarea.objects.filter(
                         Q(creado_por=request.user) |
                         Q(asignado_a=request.user) |
-                        Q(participantes=request.user) |
-                        Q(observadores=request.user)
-                    ).distinct().select_related('creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente').order_by('-fecha_creacion')
+                        Q(id__in=ids_m2m)
+                    ).select_related(
+                        'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
+                    ).order_by('-fecha_creacion')
+
+                # Filtro de estado desde el cliente
+                if estado_filter == 'pendientes':
+                    tareas = tareas.exclude(estado='completada')
+                elif estado_filter == 'completadas':
+                    tareas = tareas.filter(estado='completada')
             
             tareas_data = []
             for tarea in tareas:
