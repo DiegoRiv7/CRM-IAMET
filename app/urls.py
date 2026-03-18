@@ -119,6 +119,8 @@ urlpatterns = [
     path('api/vista-previa-archivo-oportunidad/<int:archivo_id>/', views.vista_previa_archivo_oportunidad, name='vista_previa_archivo_oportunidad'),
     path('api/buscar-clientes/', views.api_buscar_clientes, name='api_buscar_clientes'),
     path('api/buscar-contactos/', views.api_buscar_contactos, name='api_buscar_contactos'),
+    path('api/quick-crear-cliente/', views.api_quick_crear_cliente, name='api_quick_crear_cliente'),
+    path('api/quick-crear-contacto/', views.api_quick_crear_contacto, name='api_quick_crear_contacto'),
 
     # ── APIs Clientes ─────────────────────────────────────────────────────────
     path('api/clientes/', views.api_clientes, name='api_clientes'),

@@ -221,6 +221,7 @@
             var clienteInput = document.getElementById('wfCliente');
             var clienteAC = document.getElementById('wfClienteAC');
             var selectedClienteId = null;
+            window._wfSelectedClienteId = null;  // shared with _widget_negociacion.html inline script
             var acTimeout = null;
 
             if (clienteInput) {
@@ -244,6 +245,7 @@
                                         div.addEventListener('click', function () {
                                             clienteInput.value = c.nombre;
                                             selectedClienteId = c.id;
+                                            window._wfSelectedClienteId = c.id;
                                             clienteAC.classList.remove('open');
                                         });
                                         clienteAC.appendChild(div);
@@ -254,6 +256,14 @@
                                 }
                             });
                     }, 250);
+                });
+            }
+
+            // Sync selectedClienteId when cliente is created via "+" button
+            if (clienteInput) {
+                clienteInput.addEventListener('wn:cliente-set', function(e) {
+                    selectedClienteId = e.detail.id;
+                    window._wfSelectedClienteId = e.detail.id;
                 });
             }
 

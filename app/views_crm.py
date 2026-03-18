@@ -3505,3 +3505,64 @@ def api_toggle_novedades_widget(request):
         'activo': config.widget_activo,
         'activation_count': config.activation_count,
     })
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_quick_crear_cliente(request):
+    """Crea un cliente rápido desde el formulario de nueva oportunidad."""
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    nombre = data.get('nombre_empresa', '').strip()
+    if not nombre:
+        return JsonResponse({'error': 'Nombre de empresa requerido'}, status=400)
+
+    cliente, created = Cliente.objects.get_or_create(
+        nombre_empresa__iexact=nombre,
+        defaults={
+            'nombre_empresa': nombre,
+            'asignado_a': request.user,
+        }
+    )
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'id': cliente.id,
+        'nombre': cliente.nombre_empresa,
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_quick_crear_contacto(request):
+    """Crea un contacto rápido desde el formulario de nueva oportunidad."""
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    nombre = data.get('nombre', '').strip()
+    if not nombre:
+        return JsonResponse({'error': 'Nombre requerido'}, status=400)
+
+    empresa_id = data.get('empresa_id')
+    empresa = None
+    if empresa_id:
+        try:
+            empresa = Cliente.objects.get(id=empresa_id)
+        except Cliente.DoesNotExist:
+            pass
+
+    contacto = Contacto.objects.create(
+        nombre=nombre,
+        apellido=data.get('apellido', '').strip(),
+        empresa=empresa,
+    )
+    return JsonResponse({
+        'success': True,
+        'id': contacto.id,
+        'nombre_completo': f"{contacto.nombre} {contacto.apellido}".strip(),
+    })

@@ -2091,6 +2091,30 @@
         grid-template-columns: 1fr 1fr;
         gap: 12px;
     }
+    .wn-label-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 5px;
+    }
+    .wn-label-row .wn-label { margin-bottom: 0; }
+    .wn-add-btn {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(0,122,255,0.25);
+        background: rgba(0,122,255,0.06);
+        color: #007AFF;
+        font-size: 0.65rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        line-height: 1.4;
+    }
+    .wn-add-btn:hover { background: rgba(0,122,255,0.13); border-color: rgba(0,122,255,0.4); }
+
     .wn-label {
         display: block;
         font-size: 0.70rem;
@@ -2100,6 +2124,65 @@
         letter-spacing: 0.04em;
         margin-bottom: 5px;
     }
+
+    /* Mini-form crear cliente/contacto inline */
+    .wn-mini-form {
+        margin-top: 8px;
+        padding: 12px;
+        background: rgba(0,122,255,0.04);
+        border: 1px solid rgba(0,122,255,0.15);
+        border-radius: 12px;
+        animation: wnMiniIn 0.18s ease forwards;
+    }
+    @keyframes wnMiniIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .wn-mini-title {
+        font-size: 0.70rem;
+        font-weight: 700;
+        color: #007AFF;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .wn-mini-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .wn-mini-input { margin-bottom: 8px; font-size: 0.80rem; }
+    .wn-mini-row .wn-mini-input { margin-bottom: 0; }
+    .wn-mini-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+    .wn-mini-cancel {
+        padding: 5px 12px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(0,0,0,0.06);
+        color: #636366;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .wn-mini-cancel:hover { background: rgba(0,0,0,0.10); }
+    .wn-mini-save {
+        padding: 5px 14px;
+        border-radius: 8px;
+        border: none;
+        background: #007AFF;
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .wn-mini-save:hover { background: #0A84FF; }
+    .wn-mini-save:disabled { opacity: 0.5; cursor: not-allowed; }
     .wn-optional {
         font-weight: 400;
         text-transform: none;

@@ -6,9 +6,7 @@
             <!-- Header -->
             <div class="wn-header">
                 <div class="wn-header-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                 </div>
                 <div>
                     <div class="wn-title">Nueva Oportunidad</div>
@@ -30,18 +28,51 @@
                             placeholder="Ej: Implementación de sistema RFID..." required>
                     </div>
 
-                    <!-- Contacto -->
-                    <div class="wn-field">
-                        <label class="wn-label">Contacto</label>
-                        <input type="text" class="wn-input wf-input" id="wfContacto" placeholder="Nombre del contacto...">
-                        <div class="wf-autocomplete" id="wfContactoAC"></div>
-                    </div>
-
                     <!-- Cliente -->
                     <div class="wn-field">
-                        <label class="wn-label">Cliente</label>
-                        <input type="text" class="wn-input wf-input" id="wfCliente" placeholder="Buscar o crear cliente..." required>
+                        <div class="wn-label-row">
+                            <label class="wn-label">Cliente</label>
+                            <button type="button" class="wn-add-btn" id="wnAddClienteBtn" title="Crear nuevo cliente">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Nuevo
+                            </button>
+                        </div>
+                        <input type="text" class="wn-input wf-input" id="wfCliente" placeholder="Buscar o escribir cliente..." required>
                         <div class="wf-autocomplete" id="wfClienteAC"></div>
+                        <!-- Mini-form crear cliente -->
+                        <div class="wn-mini-form" id="wnMiniCliente" style="display:none;">
+                            <div class="wn-mini-title">Nuevo cliente</div>
+                            <input type="text" class="wn-input wn-mini-input" id="wfNuevoClienteNombre" placeholder="Nombre de la empresa">
+                            <div class="wn-mini-actions">
+                                <button type="button" class="wn-mini-cancel" id="wfNuevoClienteCancel">Cancelar</button>
+                                <button type="button" class="wn-mini-save" id="wfNuevoClienteGuardar">Guardar cliente</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contacto -->
+                    <div class="wn-field">
+                        <div class="wn-label-row">
+                            <label class="wn-label">Contacto</label>
+                            <button type="button" class="wn-add-btn" id="wnAddContactoBtn" title="Crear nuevo contacto">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Nuevo
+                            </button>
+                        </div>
+                        <input type="text" class="wn-input wf-input" id="wfContacto" placeholder="Nombre del contacto...">
+                        <div class="wf-autocomplete" id="wfContactoAC"></div>
+                        <!-- Mini-form crear contacto -->
+                        <div class="wn-mini-form" id="wnMiniContacto" style="display:none;">
+                            <div class="wn-mini-title">Nuevo contacto</div>
+                            <div class="wn-mini-row">
+                                <input type="text" class="wn-input wn-mini-input" id="wfNuevoContactoNombre" placeholder="Nombre">
+                                <input type="text" class="wn-input wn-mini-input" id="wfNuevoContactoApellido" placeholder="Apellido">
+                            </div>
+                            <div class="wn-mini-actions">
+                                <button type="button" class="wn-mini-cancel" id="wfNuevoContactoCancel">Cancelar</button>
+                                <button type="button" class="wn-mini-save" id="wfNuevoContactoGuardar">Guardar contacto</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Divider -->
@@ -135,3 +166,81 @@
             </div>
         </div>
     </div>
+
+    <script>
+    (function() {
+        var csrf = function() { return document.querySelector('[name=csrfmiddlewaretoken]').value; };
+
+        // ── Botón + Cliente ──
+        document.getElementById('wnAddClienteBtn').addEventListener('click', function() {
+            var mini = document.getElementById('wnMiniCliente');
+            mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
+            if (mini.style.display === 'block') document.getElementById('wfNuevoClienteNombre').focus();
+        });
+        document.getElementById('wfNuevoClienteCancel').addEventListener('click', function() {
+            document.getElementById('wnMiniCliente').style.display = 'none';
+            document.getElementById('wfNuevoClienteNombre').value = '';
+        });
+        document.getElementById('wfNuevoClienteGuardar').addEventListener('click', function() {
+            var nombre = document.getElementById('wfNuevoClienteNombre').value.trim();
+            if (!nombre) { document.getElementById('wfNuevoClienteNombre').focus(); return; }
+            var btn = this;
+            btn.disabled = true; btn.textContent = 'Guardando...';
+            fetch('/app/api/quick-crear-cliente/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ nombre_empresa: nombre })
+            }).then(function(r) { return r.json(); }).then(function(res) {
+                if (res.success) {
+                    document.getElementById('wfCliente').value = res.nombre;
+                    // Set selectedClienteId used by contacto autocomplete
+                    if (typeof window._wfSelectedClienteId !== 'undefined') window._wfSelectedClienteId = res.id;
+                    document.getElementById('wfCliente').dispatchEvent(new CustomEvent('wn:cliente-set', { detail: { id: res.id, nombre: res.nombre } }));
+                    document.getElementById('wnMiniCliente').style.display = 'none';
+                    document.getElementById('wfNuevoClienteNombre').value = '';
+                } else {
+                    alert(res.error || 'Error al crear cliente');
+                }
+                btn.disabled = false; btn.textContent = 'Guardar cliente';
+            }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar cliente'; });
+        });
+
+        // ── Botón + Contacto ──
+        document.getElementById('wnAddContactoBtn').addEventListener('click', function() {
+            var mini = document.getElementById('wnMiniContacto');
+            mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
+            if (mini.style.display === 'block') document.getElementById('wfNuevoContactoNombre').focus();
+        });
+        document.getElementById('wfNuevoContactoCancel').addEventListener('click', function() {
+            document.getElementById('wnMiniContacto').style.display = 'none';
+            document.getElementById('wfNuevoContactoNombre').value = '';
+            document.getElementById('wfNuevoContactoApellido').value = '';
+        });
+        document.getElementById('wfNuevoContactoGuardar').addEventListener('click', function() {
+            var nombre = document.getElementById('wfNuevoContactoNombre').value.trim();
+            if (!nombre) { document.getElementById('wfNuevoContactoNombre').focus(); return; }
+            var btn = this;
+            btn.disabled = true; btn.textContent = 'Guardando...';
+            var empresaId = typeof window._wfSelectedClienteId !== 'undefined' ? window._wfSelectedClienteId : null;
+            fetch('/app/api/quick-crear-contacto/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    apellido: document.getElementById('wfNuevoContactoApellido').value.trim(),
+                    empresa_id: empresaId
+                })
+            }).then(function(r) { return r.json(); }).then(function(res) {
+                if (res.success) {
+                    document.getElementById('wfContacto').value = res.nombre_completo;
+                    document.getElementById('wnMiniContacto').style.display = 'none';
+                    document.getElementById('wfNuevoContactoNombre').value = '';
+                    document.getElementById('wfNuevoContactoApellido').value = '';
+                } else {
+                    alert(res.error || 'Error al crear contacto');
+                }
+                btn.disabled = false; btn.textContent = 'Guardar contacto';
+            }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar contacto'; });
+        });
+    })();
+    </script>
