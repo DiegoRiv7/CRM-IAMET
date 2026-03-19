@@ -359,12 +359,13 @@
                         var ev = arg.event;
                         var stored = _globalEvents.find(function (x) { return String(x.id) === String(ev.id); });
                         var ep = stored ? (stored.extendedProps || {}) : {};
-                        var esTarea = ep.tipo_actividad === 'tarea';
+                        // Solo id='tarea-X' son tareas reales (naranjas); actividades con opportunity=azul, sin opp=gris
+                        var esTarea = String(ev.id).indexOf('tarea-') === 0;
                         var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
                         var title = woEscape(ev.title);
-                        var color   = hasOpp ? '#0052D4' : esTarea ? '#FF9500' : '#3A3A3C';
-                        var bgTint  = hasOpp ? 'rgba(0,82,212,0.07)' : esTarea ? 'rgba(255,149,0,0.09)' : 'rgba(29,29,31,0.06)';
-                        var borderC = hasOpp ? 'rgba(0,82,212,0.25)' : esTarea ? 'rgba(255,149,0,0.3)' : 'rgba(29,29,31,0.16)';
+                        var color   = esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C';
+                        var bgTint  = esTarea ? 'rgba(255,149,0,0.09)' : hasOpp ? 'rgba(0,82,212,0.07)' : 'rgba(29,29,31,0.06)';
+                        var borderC = esTarea ? 'rgba(255,149,0,0.3)' : hasOpp ? 'rgba(0,82,212,0.25)' : 'rgba(29,29,31,0.16)';
                         return { html:
                             '<div style="display:flex;align-items:center;gap:5px;padding:2px 7px 2px 6px;border-radius:5px;background:'+bgTint+';border:1px solid '+borderC+';width:100%;overflow:hidden;box-sizing:border-box;">' +
                             '<div style="width:5px;height:5px;border-radius:50%;background:'+color+';flex-shrink:0;"></div>' +
@@ -625,7 +626,8 @@
             var evH = Math.max((duration/60)*CAL_HOUR_H, 36);
 
             var ep = ev.extendedProps||{};
-            var esTarea = ep.tipo_actividad==='tarea';
+            // Solo id='tarea-X' son tareas reales (naranjas)
+            var esTarea = String(ev.id).indexOf('tarea-') === 0;
             var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
             var monto = (hasOpp && ep.opportunity.monto) ? ep.opportunity.monto : 0;
 
@@ -896,8 +898,8 @@
 
         // ── Stats del día de referencia ──
         var refEvts = filtered.filter(function(ev){ return ev.start && ev.start.substring(0,10)===refStr; });
-        var tareas = refEvts.filter(function(ev){ return (ev.extendedProps||{}).tipo_actividad==='tarea'; });
-        var actividades = refEvts.filter(function(ev){ return (ev.extendedProps||{}).tipo_actividad!=='tarea'; });
+        var tareas = refEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') === 0; });
+        var actividades = refEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') !== 0; });
 
         var tareasNEl=document.getElementById('calSideTareasN');
         var oppsNEl=document.getElementById('calSideOppsN');
