@@ -401,6 +401,9 @@
     </div>
 </div>
 
+<!-- Aplica estado inicial antes del primer paint para evitar flash -->
+<script>(function(){if(localStorage.getItem('crmView')==='tareas'){var c=document.getElementById('crmContentSection');var t=document.getElementById('tareasSection');if(c)c.style.display='none';if(t)t.classList.add('active');}})();</script>
+
 <!-- ═══ MODAL DETALLE TAREA ═══ -->
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal">
     <div class="crm-task-modal">
