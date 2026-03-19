@@ -24,7 +24,7 @@ from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfil
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
-from django.db.models import Sum, Count, F, Q, Case, When, Value, Prefetch
+from django.db.models import Sum, Count, F, Q, Case, When, Value
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date, timedelta
@@ -523,36 +523,37 @@ def api_crm_table_data(request):
 
     if tab_activo == 'crm':
         from django.utils import timezone as _tz
+        from django.db.models import OuterRef, Exists as _Exists
         _now = _tz.now()
         _now_naive = _now.replace(tzinfo=None)
         _ESTADOS_ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
-        items = base_qs.select_related('cliente', 'contacto', 'usuario').prefetch_related(
-            'tareas_oportunidad',
-            Prefetch(
-                'tareas_generales',
-                queryset=Tarea.objects.filter(estado__in=_ESTADOS_ACTIVOS).only('id', 'estado', 'fecha_limite'),
-                to_attr='_tareas_gen_activas',
-            ),
+
+        # EXISTS subqueries — MySQL evalúa con short-circuit, 0 queries adicionales por fila
+        _vencida_opp_sq = TareaOportunidad.objects.filter(
+            oportunidad=OuterRef('pk'),
+            estado__in=['pendiente', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lte=_now,
+        )
+        _vencida_tarea_sq = Tarea.objects.filter(
+            oportunidad=OuterRef('pk'),
+            estado__in=_ESTADOS_ACTIVOS,
+            fecha_limite__isnull=False,
+            fecha_limite__lte=_now,
+        )
+        _pendiente_opp_sq = TareaOportunidad.objects.filter(
+            oportunidad=OuterRef('pk'),
+        ).exclude(estado='completada')
+
+        items = base_qs.select_related('cliente', 'contacto', 'usuario').annotate(
+            _tiene_vencida=_Exists(_vencida_opp_sq) | _Exists(_vencida_tarea_sq),
+            _tiene_pendiente=_Exists(_pendiente_opp_sq),
         ).order_by('-fecha_actualizacion')
+
         rows = []
         for item in items:
-            # Revisar si tiene actividades/tareas vencidas — usa prefetch (sin queries adicionales)
-            tiene_vencida = False
-            tiene_pendiente = False
-            for t in item.tareas_oportunidad.all():
-                if t.estado != 'completada':
-                    tiene_pendiente = True
-                    if t.fecha_limite:
-                        fl = t.fecha_limite.replace(tzinfo=None) if hasattr(t.fecha_limite, 'tzinfo') else t.fecha_limite
-                        if fl <= _now_naive:
-                            tiene_vencida = True
-            if not tiene_vencida:
-                for t in item._tareas_gen_activas:
-                    if t.fecha_limite:
-                        fl2 = t.fecha_limite.replace(tzinfo=None) if hasattr(t.fecha_limite, 'tzinfo') else t.fecha_limite
-                        if fl2 <= _now_naive:
-                            tiene_vencida = True
-                            break
+            tiene_vencida = item._tiene_vencida
+            tiene_pendiente = item._tiene_pendiente
             es_bitrix = item.tipo_negociacion == 'bitrix_proyecto'
             rows.append({
                 'id': item.id,
