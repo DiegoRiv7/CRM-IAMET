@@ -2893,12 +2893,12 @@
 
         // ── Renderizar tabla de tareas ──
 
-        // Restaurar tab desde localStorage (el HTML ya aplicó display antes del paint)
+        // Restaurar tab desde localStorage (HTML + topbar ya aplicaron estilos antes del paint)
         if (localStorage.getItem('crmView') === 'tareas') {
             window._crmTareasMode = true;
             if (islandFilters) islandFilters.style.display = 'none';
             if (islandSep) islandSep.style.display = 'none';
-            document.querySelectorAll('.crm-topbar-nav button, .crm-topbar-nav a').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
             if (typeof btnNeg !== 'undefined' && btnNeg) btnNeg.textContent = 'Crear';
