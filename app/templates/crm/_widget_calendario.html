@@ -614,12 +614,15 @@
             html += '<div class="cal-now-line" style="top:'+nowTop+'px;"></div>';
         }
 
-        // ── Column-split layout para actividades (Google Calendar style) ──
+        // ── Column-split layout (ancho en píxeles reales) ──
         var nowMs = now.getTime();
+        // Ancho disponible para eventos: contenedor - etiquetas hora (64px) - margen derecho (8px)
+        var areaW = Math.max((container.offsetWidth || 800) - 72, 200);
+
         var taskEvts = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') === 0; });
         var actEvts  = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') !== 0; });
 
-        // Asigna col y numCols a cada actividad
+        // Asignar columna a cada actividad (greedy: primera columna libre)
         var actItems = actEvts.map(function(ev){
             var sD = new Date(ev.start);
             var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
@@ -633,7 +636,7 @@
             }
             if (!placed){ it.col=colEnds.length; colEnds.push(it.eMs); }
         });
-        // numCols de cada evento = índice máximo de columna entre sus solapados + 1
+        // numCols = max columna usada entre todos los eventos que se solapan con este
         actItems.forEach(function(it){
             var maxC = it.col;
             actItems.forEach(function(other){
@@ -642,7 +645,7 @@
             it.numCols = maxC + 1;
         });
 
-        // Renderizar actividades con columnas
+        // Renderizar actividades
         actItems.forEach(function(item){
             var ev = item.ev;
             var ep = ev.extendedProps||{};
@@ -666,12 +669,12 @@
             var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
             var endFmt   = pad(endD.getHours())+':'+pad(endD.getMinutes());
 
-            // Posicionamiento en columnas con CSS calc
-            var n = item.numCols, c = item.col, gap = n>1?3:0;
-            var leftCalc  = c===0 ? '64px'
-                : 'calc(64px + '+c+' * (100% - 72px) / '+n+' + '+gap+'px)';
-            var rightCalc = c===n-1 ? '8px'
-                : 'calc(8px + '+(n-c-1)+' * (100% - 72px) / '+n+' + '+gap+'px)';
+            // Posición en píxeles exactos
+            var n = item.numCols, c = item.col;
+            var gap = n > 1 ? 3 : 0;
+            var colW = Math.floor((areaW - gap*(n-1)) / n);
+            var leftPx = 64 + c * (colW + gap);
+            var widthPx = colW;
 
             var badgeHTML = '';
             if (monto>0){
@@ -683,7 +686,7 @@
             else if (isOvAct) statusHTML='<div class="cal-day-evt-status" style="background:rgba(255,59,48,0.1);color:#FF3B30;">Vencido</div>';
             var shadowStyle = isNow ? 'box-shadow:0 0 0 2px #34C759,0 4px 12px rgba(52,199,89,0.2);' : '';
 
-            html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftCalc+';right:'+rightCalc+';background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+'"' +
+            html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+'"' +
                 ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
                 '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">'+
                 '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>'+
@@ -692,7 +695,7 @@
                 statusHTML+'</div>';
         });
 
-        // Renderizar tareas como marcador compacto en su hora límite
+        // Renderizar tareas como marcador compacto en la hora límite
         taskEvts.forEach(function(ev){
             var startD = new Date(ev.start);
             var startMins = startD.getHours()*60+startD.getMinutes();
