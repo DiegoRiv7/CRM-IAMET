@@ -170,42 +170,6 @@
                     width: 100%; overflow: hidden; padding: 0 !important;
                 }
 
-                /* ── Vista Semana/Día: bloque nativo de FC con color, styled limpio ── */
-                #fullCalendarRoot .fc-timegrid-event {
-                    border: none !important;
-                    border-radius: 8px !important;
-                    box-shadow: 0 1px 6px rgba(0,0,0,0.18) !important;
-                    overflow: hidden !important;
-                    margin: 0 2px !important;
-                }
-                /* Texto blanco sobre fondo coloreado */
-                #fullCalendarRoot .fc-timegrid-event .fc-event-title {
-                    color: #fff !important;
-                    font-weight: 600 !important;
-                    font-size: 0.82rem !important;
-                }
-                #fullCalendarRoot .fc-timegrid-event .fc-event-time {
-                    color: rgba(255,255,255,0.82) !important;
-                    font-size: 0.72rem !important;
-                    font-weight: 500 !important;
-                }
-                /* Acento izquierdo blanco */
-                #fullCalendarRoot .fc-timegrid-event .fc-event-main {
-                    border-left: 3px solid rgba(255,255,255,0.35) !important;
-                    padding: 3px 6px !important;
-                }
-
-                /* ── Vista Lista: texto oscuro legible ── */
-                #fullCalendarRoot .fc-list-event-dot { border-width: 7px !important; }
-                #fullCalendarRoot .fc-list-event td { border-bottom: 1px solid rgba(0,0,0,0.05) !important; }
-                #fullCalendarRoot .fc-list-event:hover td { background: rgba(0,0,0,0.025) !important; }
-                #fullCalendarRoot .fc-list-event-time { font-size: 0.8rem !important; color: #86868B !important; font-weight: 500 !important; }
-                #fullCalendarRoot .fc-list-event-title a { color: #1D1D1F !important; font-weight: 600 !important; font-size: 0.9rem !important; text-decoration: none !important; }
-                #fullCalendarRoot .fc-list-day-cushion { background: rgba(0,0,0,0.02) !important; font-weight: 700 !important; font-size: 0.82rem !important; }
-
-                /* ── Slots de hora ── */
-                #fullCalendarRoot .fc-timegrid-slot { height: 2em !important; }
-                #fullCalendarRoot .fc-timegrid-slot-label { font-size: 0.78rem !important; color: #86868B !important; padding: 2px 6px !important; }
 
                 /* Ocultar bordes de la celda de la cabecera */
                 #fullCalendarRoot th {
@@ -390,46 +354,28 @@
 
         if (!_globalCalendar) {
             var calEl = document.getElementById('fullCalendarRoot');
-            // Restaurar última vista guardada (default: lista)
-            var savedView = 'listWeek';
-            try { savedView = sessionStorage.getItem('_crm_cal_view') || 'listWeek'; } catch (e) { }
-
             if (typeof FullCalendar !== 'undefined') {
                 _globalCalendar = new FullCalendar.Calendar(calEl, {
-                    initialView: savedView,
+                    initialView: 'dayGridMonth',
                     initialDate: new Date(),
                     locale: 'es',
                     firstDay: 1,
                     height: '100%',
-                    slotMinTime: '08:00:00',
-                    slotMaxTime: '18:30:00',
-                    allDaySlot: false,
                     expandRows: true,
                     headerToolbar: {
                         left: 'prev,next today',
                         center: 'title',
-                        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                        right: ''
                     },
-                    buttonText: {
-                        today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Lista'
-                    },
-                    // Vista lista: "jueves 27 de febrero" en la cabecera izquierda; sin fecha a la derecha
-                    listDayFormat: { weekday: 'long', day: 'numeric', month: 'long' },
-                    listDaySideFormat: false,
+                    buttonText: { today: 'Hoy' },
                     eventInteractive: true,
-                    // Vista mes usa puntitos; semana/día usa bloque con color
                     views: {
-                        dayGridMonth: { eventDisplay: 'list-item' },
-                        timeGridWeek: { eventDisplay: 'block' },
-                        timeGridDay: { eventDisplay: 'block' }
+                        dayGridMonth: { eventDisplay: 'list-item' }
                     },
-                    viewDidMount: function (viewInfo) {
-                        try { sessionStorage.setItem('_crm_cal_view', viewInfo.view.type); } catch (e) { }
+                    viewDidMount: function () {
                         setTimeout(calUpdateKPIs, 50);
                     },
                     eventContent: function (arg) {
-                        // Solo personalizar vista Mes — las demás usan rendering nativo de FC
-                        // para que los click handlers funcionen siempre
                         if (arg.view.type !== 'dayGridMonth') return null;
                         var ev = arg.event;
                         var stored = _globalEvents.find(function (x) { return String(x.id) === String(ev.id); });
@@ -446,37 +392,6 @@
                             '<div style="font-size:0.77rem;font-weight:600;color:' + color + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">' + title + '</div>' +
                             '</div>'
                         };
-                    },
-                    eventDidMount: function (info) {
-                        var vt = info.view.type;
-                        var el = info.el;
-
-                        if (vt === 'timeGridWeek' || vt === 'timeGridDay') {
-                            // Forma el bloque limpio directamente sobre el elemento de FC
-                            el.style.border = 'none';
-                            el.style.borderRadius = '8px';
-                            el.style.overflow = 'hidden';
-                            el.style.boxShadow = '0 1px 8px rgba(0,0,0,0.18)';
-                            // Acento izquierdo
-                            var mainEl = el.querySelector('.fc-event-main');
-                            if (mainEl) {
-                                mainEl.style.borderLeft = '3px solid rgba(255,255,255,0.35)';
-                                mainEl.style.paddingLeft = '6px';
-                            }
-                            // Texto blanco — override directo (CSS no gana contra inline de FC)
-                            var titleEl = el.querySelector('.fc-event-title');
-                            if (titleEl) { titleEl.style.color = '#ffffff'; titleEl.style.fontWeight = '600'; titleEl.style.fontSize = '0.82rem'; }
-                            var timeEl = el.querySelector('.fc-event-time');
-                            if (timeEl) { timeEl.style.color = 'rgba(255,255,255,0.8)'; timeEl.style.fontSize = '0.72rem'; timeEl.style.fontWeight = '500'; }
-                        }
-
-                        if (vt === 'listWeek') {
-                            // Lista: título legible en oscuro
-                            var linkEl = el.querySelector('.fc-list-event-title a') || el.querySelector('.fc-list-event-title');
-                            if (linkEl) { linkEl.style.color = '#1D1D1F'; linkEl.style.fontWeight = '600'; linkEl.style.fontSize = '0.9rem'; linkEl.style.textDecoration = 'none'; }
-                            var timeCell = el.querySelector('.fc-list-event-time');
-                            if (timeCell) { timeCell.style.color = '#86868B'; timeCell.style.fontSize = '0.8rem'; }
-                        }
                     },
                     editable: true,
                     eventDrop: function (info) {
