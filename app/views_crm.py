@@ -24,7 +24,7 @@ from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfil
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
-from django.db.models import Sum, Count, F, Q, Case, When, Value
+from django.db.models import Sum, Count, F, Q, Case, When, Value, Prefetch
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date, timedelta
@@ -525,15 +525,20 @@ def api_crm_table_data(request):
         from django.utils import timezone as _tz
         _now = _tz.now()
         _now_naive = _now.replace(tzinfo=None)
-        _today = _now.date()
-        _umbral = _now + __import__('datetime').timedelta(minutes=10)
-        items = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
+        _ESTADOS_ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
+        items = base_qs.select_related('cliente', 'contacto', 'usuario').prefetch_related(
+            'tareas_oportunidad',
+            Prefetch(
+                'tareas_generales',
+                queryset=Tarea.objects.filter(estado__in=_ESTADOS_ACTIVOS).only('id', 'estado', 'fecha_limite'),
+                to_attr='_tareas_gen_activas',
+            ),
+        ).order_by('-fecha_actualizacion')
         rows = []
         for item in items:
-            # Revisar si tiene actividades/tareas vencidas (o por vencer en <10min)
+            # Revisar si tiene actividades/tareas vencidas — usa prefetch (sin queries adicionales)
             tiene_vencida = False
             tiene_pendiente = False
-            # TareaOportunidad.fecha_limite es DateTimeField (puede ser naive o aware)
             for t in item.tareas_oportunidad.all():
                 if t.estado != 'completada':
                     tiene_pendiente = True
@@ -541,10 +546,8 @@ def api_crm_table_data(request):
                         fl = t.fecha_limite.replace(tzinfo=None) if hasattr(t.fecha_limite, 'tzinfo') else t.fecha_limite
                         if fl <= _now_naive:
                             tiene_vencida = True
-            # Tarea.fecha_limite es DateTimeField (igual que TareaOportunidad)
             if not tiene_vencida:
-                ESTADOS_ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
-                for t in item.tareas_generales.filter(estado__in=ESTADOS_ACTIVOS):
+                for t in item._tareas_gen_activas:
                     if t.fecha_limite:
                         fl2 = t.fecha_limite.replace(tzinfo=None) if hasattr(t.fecha_limite, 'tzinfo') else t.fecha_limite
                         if fl2 <= _now_naive:
