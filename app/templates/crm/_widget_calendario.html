@@ -750,19 +750,31 @@
         var btnListo = document.getElementById('calDetailBtnListo');
         var btnReprogram = document.getElementById('calDetailBtnReprogram');
         if (esTarea) {
+            // Tarea: solo "Abrir Tarea" naranja, sin botón izquierdo
+            btnReprogram.style.display = 'none';
             btnListo.textContent = 'Abrir Tarea';
             btnListo.style.background = '#FF9500';
+            btnListo.style.color = '#fff';
             btnListo.dataset.tid = rawTareaId ? String(rawTareaId) : '';
+            btnListo.onclick = function(){ calDetailVerCompleto(); };
             btnListo.onmouseover = function(){ this.style.background='#CC7600'; };
             btnListo.onmouseout = function(){ this.style.background='#FF9500'; };
-            btnReprogram.style.display = 'none';
         } else {
-            btnListo.textContent = 'Ver Detalle';
+            // Actividad: izquierda "Ver Detalle" gris, derecha "Completar" verde
+            btnReprogram.style.display = '';
+            btnReprogram.textContent = 'Ver Detalle';
+            btnReprogram.style.background = '#F2F2F7';
+            btnReprogram.style.color = '#1D1D1F';
+            btnReprogram.onclick = function(){ woVerActividadGenerica(window._calCurrentActividadId); };
+            btnReprogram.onmouseover = function(){ this.style.background='#E5E5EA'; };
+            btnReprogram.onmouseout = function(){ this.style.background='#F2F2F7'; };
+            btnListo.textContent = 'Completar';
             btnListo.style.background = '#34C759';
+            btnListo.style.color = '#fff';
             btnListo.dataset.tid = '';
+            btnListo.onclick = function(){ calDetailCompletar(); };
             btnListo.onmouseover = function(){ this.style.background='#2DBD4E'; };
             btnListo.onmouseout = function(){ this.style.background='#34C759'; };
-            btnReprogram.style.display = '';
         }
 
         document.getElementById('calPanelOverview').style.display = 'none';
@@ -841,6 +853,26 @@
         } else {
             console.warn('[CAL]   sin tId ni actividadId — nada que abrir');
         }
+    };
+
+    window.calDetailCompletar = function () {
+        var id = window._calCurrentActividadId;
+        if (!id) return;
+        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
+        var btn = document.getElementById('calDetailBtnListo');
+        if (btn) { btn.textContent = '...'; btn.disabled = true; }
+        fetch('/app/api/actividades/' + id + '/', { method: 'DELETE', headers: { 'X-CSRFToken': csrf } })
+            .then(function (r) {
+                if (r.ok || r.status === 204) {
+                    calHidePanelDetail();
+                    calGlobalRefetch();
+                } else {
+                    if (btn) { btn.textContent = 'Completar'; btn.disabled = false; }
+                }
+            })
+            .catch(function () {
+                if (btn) { btn.textContent = 'Completar'; btn.disabled = false; }
+            });
     };
 
     /* ─── SIDE PANEL UPDATE ─── */
