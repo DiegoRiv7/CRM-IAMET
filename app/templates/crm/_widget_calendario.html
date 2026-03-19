@@ -695,7 +695,9 @@
         var evt = _globalEvents.find(function(ev){ return String(ev.id)===String(id); });
         if (!evt) return;
         var ep = evt.extendedProps || {};
-        var esTarea = ep.tipo_actividad === 'tarea';
+        // Solo es "tarea real" (Tarea model) si el id tiene formato 'tarea-X'
+        // Las actividades con tipo_actividad='tarea' son actividades normales sin tarea_id
+        var esTarea = String(evt.id).indexOf('tarea-') === 0;
         var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
         var startD = new Date(evt.start);
         var endD = evt.end ? new Date(evt.end) : new Date(startD.getTime()+60*60*1000);
@@ -735,16 +737,13 @@
 
         window._calCurrentActividadId = esTarea ? null : id;
         window._calCurrentOppId = hasOpp ? ep.opportunity.id : null;
-        // tarea_id puede venir en extendedProps o extraerlo del id del evento ('tarea-123')
+        // Para tareas reales (id='tarea-X') extraer el ID numérico del evento
         var rawTareaId = null;
         if (esTarea) {
-            rawTareaId = ep.tarea_id || null;
-            if (!rawTareaId && String(evt.id).indexOf('tarea-') === 0) {
-                rawTareaId = parseInt(String(evt.id).replace('tarea-', '')) || null;
-            }
+            rawTareaId = ep.tarea_id || parseInt(String(evt.id).replace('tarea-', '')) || null;
         }
         window._calCurrentTareaId = rawTareaId;
-        console.log('[CAL] calShowEventDetail id='+id+' esTarea='+esTarea+' ep.tarea_id='+ep.tarea_id+' rawTareaId='+rawTareaId+' extendedProps=', ep);
+        console.log('[CAL] calShowEventDetail id='+id+' esTarea='+esTarea+' rawTareaId='+rawTareaId);
 
         var btnListo = document.getElementById('calDetailBtnListo');
         var btnReprogram = document.getElementById('calDetailBtnReprogram');
@@ -769,15 +768,15 @@
         det.style.display = 'flex';
 
         // Fetch descripción fresca
-        if (!esTarea) {
+        if (esTarea && rawTareaId) {
+            fetch('/app/api/tarea/'+rawTareaId+'/')
+                .then(function(r){ return r.ok?r.json():null; })
+                .then(function(d){ if(!d) return; var f=d.descripcion||d.description||''; descEl.textContent=f||'Sin descripción.'; })
+                .catch(function(){});
+        } else if (!esTarea) {
             fetch('/app/api/actividades/'+id+'/')
                 .then(function(r){ return r.ok?r.json():null; })
                 .then(function(d){ if(!d) return; var f=d.description||d.descripcion||''; descEl.textContent=f||'Sin descripción.'; evt.description=f; })
-                .catch(function(){});
-        } else if (ep.tarea_id) {
-            fetch('/app/api/tarea/'+ep.tarea_id+'/')
-                .then(function(r){ return r.ok?r.json():null; })
-                .then(function(d){ if(!d) return; var f=d.descripcion||d.description||''; descEl.textContent=f||'Sin descripción.'; })
                 .catch(function(){});
         }
     };
