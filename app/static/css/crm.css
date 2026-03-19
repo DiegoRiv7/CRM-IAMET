@@ -3189,7 +3189,7 @@
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 10001;
+        z-index: 10210;
         padding: 1rem;
         backdrop-filter: blur(4px);
     }
