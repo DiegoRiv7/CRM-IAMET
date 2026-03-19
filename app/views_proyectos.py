@@ -999,7 +999,7 @@ def api_tareas(request):
                 estado_filter = request.GET.get('estado', '')  # 'pendientes' | 'completadas' | ''
 
                 if request.user.is_superuser:
-                    tareas = Tarea.objects.select_related(
+                    tareas = Tarea.objects.defer('descripcion').select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
                 else:
@@ -1015,7 +1015,7 @@ def api_tareas(request):
                         Q(creado_por=request.user) |
                         Q(asignado_a=request.user) |
                         Q(id__in=ids_m2m)
-                    ).select_related(
+                    ).defer('descripcion').select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
 

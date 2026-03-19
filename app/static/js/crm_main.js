@@ -2830,6 +2830,8 @@
             }
 
             var tbody = document.getElementById('tareasTableBody');
+            var countEl = document.getElementById('tareasCount');
+            if (countEl) countEl.innerHTML = '&nbsp;';
             if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:3rem;color:#9CA3AF;">Cargando tareas...</td></tr>';
 
             var params = [];
