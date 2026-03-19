@@ -569,6 +569,11 @@
     function calRenderDayView(date) {
         var container = document.getElementById('calDayTimeline');
         if (!container) return;
+        // Si el contenedor aún no tiene ancho (reflow pendiente tras display:flex), esperar un frame
+        if (!container.offsetWidth) {
+            requestAnimationFrame(function(){ calRenderDayView(date); });
+            return;
+        }
 
         var pad = function(n){return String(n).padStart(2,'0');};
         var dateStr = date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate());
