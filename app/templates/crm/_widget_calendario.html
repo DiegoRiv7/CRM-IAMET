@@ -614,74 +614,102 @@
             html += '<div class="cal-now-line" style="top:'+nowTop+'px;"></div>';
         }
 
-        // Events
-        dayEvts.forEach(function(ev) {
-            if (!ev.start) return;
+        // ── Column-split layout para actividades (Google Calendar style) ──
+        var nowMs = now.getTime();
+        var taskEvts = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') === 0; });
+        var actEvts  = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') !== 0; });
+
+        // Asigna col y numCols a cada actividad
+        var actItems = actEvts.map(function(ev){
+            var sD = new Date(ev.start);
+            var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
+            return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1 };
+        });
+        var colEnds = [];
+        actItems.forEach(function(it){
+            var placed = false;
+            for (var c=0; c<colEnds.length; c++){
+                if (it.sMs >= colEnds[c]){ it.col=c; colEnds[c]=it.eMs; placed=true; break; }
+            }
+            if (!placed){ it.col=colEnds.length; colEnds.push(it.eMs); }
+        });
+        // numCols de cada evento = índice máximo de columna entre sus solapados + 1
+        actItems.forEach(function(it){
+            var maxC = it.col;
+            actItems.forEach(function(other){
+                if (it.sMs < other.eMs && it.eMs > other.sMs) maxC = Math.max(maxC, other.col);
+            });
+            it.numCols = maxC + 1;
+        });
+
+        // Renderizar actividades con columnas
+        actItems.forEach(function(item){
+            var ev = item.ev;
+            var ep = ev.extendedProps||{};
+            var hasOpp = ep.opportunity && ep.opportunity.id;
+            var monto = hasOpp && ep.opportunity.monto ? ep.opportunity.monto : 0;
             var startD = new Date(ev.start);
-            var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+60*60*1000);
+            var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
+            var startMins = startD.getHours()*60+startD.getMinutes();
+            var endMins = endD.getHours()*60+endD.getMinutes();
+            var evTop = (startMins/60)*CAL_HOUR_H;
+            var evH = Math.max(((Math.max(endMins-startMins,45))/60)*CAL_HOUR_H, 36);
+            var safeId = String(ev.id).replace(/'/g,'');
+
+            var bg = hasOpp ? '#EEF3FF' : '#F2F2F7';
+            var borderColor = hasOpp ? '#0052D4' : '#8E8E93';
+            var textColor = hasOpp ? '#0041A8' : '#3A3A3C';
+            var mutedColor = hasOpp ? 'rgba(0,65,168,0.6)' : 'rgba(58,58,60,0.6)';
+
+            var isNow = isToday && nowMs>=startD.getTime() && nowMs<=endD.getTime();
+            var isOvAct = isToday && nowMs>endD.getTime();
+            var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
+            var endFmt   = pad(endD.getHours())+':'+pad(endD.getMinutes());
+
+            // Posicionamiento en columnas con CSS calc
+            var n = item.numCols, c = item.col, gap = n>1?3:0;
+            var leftCalc  = c===0 ? '64px'
+                : 'calc(64px + '+c+' * (100% - 72px) / '+n+' + '+gap+'px)';
+            var rightCalc = c===n-1 ? '8px'
+                : 'calc(8px + '+(n-c-1)+' * (100% - 72px) / '+n+' + '+gap+'px)';
+
+            var badgeHTML = '';
+            if (monto>0){
+                var mFmt=monto>=1000000?(monto/1000000).toFixed(1)+'M':monto>=1000?Math.round(monto/1000)+'K':String(Math.round(monto));
+                badgeHTML='<div class="cal-day-evt-badge" style="background:'+borderColor+';">$ '+mFmt+'</div>';
+            }
+            var statusHTML = '';
+            if (isNow) statusHTML='<div class="cal-day-evt-status" style="background:rgba(52,199,89,0.15);color:#34C759;">En curso</div>';
+            else if (isOvAct) statusHTML='<div class="cal-day-evt-status" style="background:rgba(255,59,48,0.1);color:#FF3B30;">Vencido</div>';
+            var shadowStyle = isNow ? 'box-shadow:0 0 0 2px #34C759,0 4px 12px rgba(52,199,89,0.2);' : '';
+
+            html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftCalc+';right:'+rightCalc+';background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+'"' +
+                ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">'+
+                '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>'+
+                badgeHTML+'</div>'+
+                '<div class="cal-day-evt-time" style="color:'+mutedColor+';">'+startFmt+' – '+endFmt+'</div>'+
+                statusHTML+'</div>';
+        });
+
+        // Renderizar tareas como marcador compacto en su hora límite
+        taskEvts.forEach(function(ev){
+            var startD = new Date(ev.start);
             var startMins = startD.getHours()*60+startD.getMinutes();
             var evTop = (startMins/60)*CAL_HOUR_H;
             var safeId = String(ev.id).replace(/'/g,'');
-
-            var ep = ev.extendedProps||{};
-            // Solo id='tarea-X' son tareas reales
-            var esTarea = String(ev.id).indexOf('tarea-') === 0;
-            var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
-
-            var nowMs = now.getTime();
             var isOverdue = isToday && nowMs > startD.getTime();
-
-            if (esTarea) {
-                // Tareas: marcador compacto en la hora límite (sin bloque alto)
-                var tColor = isOverdue ? '#FF3B30' : '#FF9500';
-                var tBg = isOverdue ? 'rgba(255,59,48,0.08)' : 'rgba(255,149,0,0.1)';
-                var statusTxt = isOverdue ? 'Vencida' : 'Pendiente';
-                var statusColor = isOverdue ? '#FF3B30' : '#FF9500';
-                var deadlineFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
-                html += '<div style="position:absolute;top:'+(evTop-14)+'px;left:64px;right:8px;height:28px;display:flex;align-items:center;gap:8px;cursor:pointer;z-index:5;padding:0 10px;border-radius:7px;background:'+tBg+';border:1px solid '+tColor+'20;"' +
-                    ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
-                    '<div style="width:8px;height:8px;border-radius:50%;background:'+tColor+';flex-shrink:0;"></div>'+
-                    '<div style="font-size:0.78rem;font-weight:700;color:'+tColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+woEscape(ev.title)+'</div>'+
-                    '<div style="font-size:0.7rem;font-weight:600;color:'+statusColor+';white-space:nowrap;">'+deadlineFmt+' · '+statusTxt+'</div>'+
-                    '</div>';
-                // Línea de deadline
-                html += '<div style="position:absolute;top:'+evTop+'px;left:56px;right:0;height:2px;background:'+tColor+';opacity:0.35;z-index:4;pointer-events:none;"></div>';
-            } else {
-                // Actividades: bloque normal con duración
-                var monto = hasOpp && ep.opportunity.monto ? ep.opportunity.monto : 0;
-                var endMins = endD.getHours()*60+endD.getMinutes();
-                var duration = Math.max(endMins-startMins, 45);
-                var evH = Math.max((duration/60)*CAL_HOUR_H, 36);
-
-                var bg, borderColor, textColor, mutedColor;
-                if (hasOpp)   { bg='#EEF3FF'; borderColor='#0052D4'; textColor='#0041A8'; mutedColor='rgba(0,65,168,0.6)'; }
-                else          { bg='#F2F2F7'; borderColor='#8E8E93'; textColor='#3A3A3C'; mutedColor='rgba(58,58,60,0.6)'; }
-
-                var isNow = isToday && nowMs>=startD.getTime() && nowMs<=endD.getTime();
-                var isOvAct = isToday && nowMs>endD.getTime();
-                var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
-                var endFmt = pad(endD.getHours())+':'+pad(endD.getMinutes());
-
-                var badgeHTML = '';
-                if (monto > 0) {
-                    var mFmt = monto>=1000000?(monto/1000000).toFixed(1)+'M':monto>=1000?Math.round(monto/1000)+'K':String(Math.round(monto));
-                    badgeHTML = '<div class="cal-day-evt-badge" style="background:'+borderColor+';">$ '+mFmt+'</div>';
-                }
-                var statusHTML = '';
-                if (isNow) statusHTML = '<div class="cal-day-evt-status" style="background:rgba(52,199,89,0.15);color:#34C759;">En curso</div>';
-                else if (isOvAct) statusHTML = '<div class="cal-day-evt-status" style="background:rgba(255,59,48,0.1);color:#FF3B30;">Vencido</div>';
-                var shadowStyle = isNow ? 'box-shadow:0 0 0 2px #34C759,0 4px 12px rgba(52,199,89,0.2);' : '';
-
-                html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+'"' +
-                    ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
-                    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">'+
-                    '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>'+
-                    badgeHTML+
-                    '</div>'+
-                    '<div class="cal-day-evt-time" style="color:'+mutedColor+';">'+startFmt+' - '+endFmt+'</div>'+
-                    statusHTML+
-                    '</div>';
-            }
+            var tColor = isOverdue ? '#FF3B30' : '#FF9500';
+            var tBg = isOverdue ? 'rgba(255,59,48,0.08)' : 'rgba(255,149,0,0.1)';
+            var statusTxt = isOverdue ? 'Vencida' : 'Pendiente';
+            var deadlineFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
+            html += '<div style="position:absolute;top:'+(evTop-14)+'px;left:64px;right:8px;height:28px;display:flex;align-items:center;gap:8px;cursor:pointer;z-index:6;padding:0 10px;border-radius:7px;background:'+tBg+';border:1px dashed '+tColor+';"' +
+                ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                '<div style="width:8px;height:8px;border-radius:50%;background:'+tColor+';flex-shrink:0;"></div>'+
+                '<div style="font-size:0.78rem;font-weight:700;color:'+tColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+woEscape(ev.title)+'</div>'+
+                '<div style="font-size:0.7rem;font-weight:600;color:'+tColor+';white-space:nowrap;">'+deadlineFmt+' · '+statusTxt+'</div>'+
+                '</div>';
+            html += '<div style="position:absolute;top:'+evTop+'px;left:56px;right:0;height:2px;background:'+tColor+';opacity:0.3;z-index:4;pointer-events:none;"></div>';
         });
 
         html += '</div>';
