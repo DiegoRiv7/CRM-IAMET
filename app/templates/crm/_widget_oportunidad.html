@@ -560,7 +560,7 @@
                     Relacionado A</div>
                 <button id="woVerActRelacionado"
                     style="background:rgba(0,82,212,0.1);color:#0052D4;border:none;padding:0.6rem 1rem;border-radius:8px;font-weight:600;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;"
-                    onclick="document.getElementById('widgetOppVerActividad').style.display='none'">
+                    onclick="document.getElementById('widgetOppVerActividad').style.display='none'; if(window._calCurrentOppId && typeof window.openDetalle==='function') window.openDetalle(window._calCurrentOppId);">
                     <span>Oportunidad</span>
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M9 5l7 7-7 7" />

@@ -614,19 +614,17 @@
         var e = evt.extendedProps;
         var esTarea = !!e.esTarea;
         window._calCurrentActividadId = esTarea ? null : id;
+        window._calCurrentOppId = (e.opportunity && e.opportunity.id) ? e.opportunity.id : null;
 
         var verPop = document.getElementById('woVerActNombre');
-        if (!verPop) {
-            console.error('El widget de detalle no está disponible.');
-            return;
-        }
+        if (!verPop) return;
 
         verPop.textContent = evt.title || 'Actividad';
 
         var d1 = new Date(evt.start);
-        var d2 = new Date(evt.end);
+        var d2 = evt.end ? new Date(evt.end) : d1;
         var fEl = document.getElementById('woVerActFecha');
-        if (fEl) fEl.textContent = d1.toLocaleDateString() + ' ' + d1.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + d2.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (fEl) fEl.textContent = d1.toLocaleDateString() + ' ' + d1.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + (evt.end ? ' - ' + d2.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
 
         var creadorNombre = '';
         if (e.creado_por && typeof e.creado_por === 'object') {
@@ -637,10 +635,27 @@
         var creadorEl = document.getElementById('woVerActCreador');
         if (creadorEl) creadorEl.textContent = creadorNombre;
 
+        // Descripción: mostrar datos cacheados primero; si es actividad real, enriquecer con API
+        var descEl = document.getElementById('woVerActDesc');
         var descText = evt.description || '';
         var descHtml = descText ? descText.replace(/\n/g, '<br>') : '<span style="color:#AEAEB2;font-style:italic;">No hay descripción.</span>';
-        var descEl = document.getElementById('woVerActDesc');
         if (descEl) descEl.innerHTML = descHtml;
+
+        // Si es actividad (no tarea), fetch para obtener descripción actualizada
+        if (!esTarea) {
+            fetch('/app/api/actividades/' + id + '/')
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d) return;
+                    if (descEl) {
+                        var fresh = d.description || d.descripcion || '';
+                        descEl.innerHTML = fresh ? fresh.replace(/\n/g, '<br>') : '<span style="color:#AEAEB2;font-style:italic;">No hay descripción.</span>';
+                    }
+                    // Actualizar descripción en caché
+                    evt.description = d.description || d.descripcion || '';
+                })
+                .catch(function () {});
+        }
 
         var pc = document.getElementById('woVerActParticipantes');
         if (pc) {
@@ -664,7 +679,6 @@
             }
         }
 
-        // Mostrar/ocultar botones según tipo
         var btnCompletar = document.getElementById('woVerActBtnCompletar');
         var btnEditar = document.getElementById('woVerActBtnEditar');
         var btnEliminar = document.getElementById('woVerActBtnEliminar');
