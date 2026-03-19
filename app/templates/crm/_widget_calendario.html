@@ -788,28 +788,48 @@
         var btnListo = document.getElementById('calDetailBtnListo');
         var tId = window._calCurrentTareaId || (btnListo && btnListo.dataset.tid ? parseInt(btnListo.dataset.tid) || null : null);
         var id = window._calCurrentActividadId;
+
+        console.log('[CAL] calDetailVerCompleto llamado');
+        console.log('[CAL]   _calCurrentTareaId =', window._calCurrentTareaId);
+        console.log('[CAL]   btnListo.dataset.tid =', btnListo ? btnListo.dataset.tid : 'btn no encontrado');
+        console.log('[CAL]   tId resuelto =', tId);
+        console.log('[CAL]   _calCurrentActividadId =', id);
+        console.log('[CAL]   typeof window.crmTaskVerDetalle =', typeof window.crmTaskVerDetalle);
+
         if (tId) {
             if (typeof window.crmTaskVerDetalle === 'function') {
+                console.log('[CAL]   → llamando crmTaskVerDetalle(' + tId + ')');
                 window.crmTaskVerDetalle(tId);
             } else {
-                // fallback directo al modal de tareas
+                console.log('[CAL]   crmTaskVerDetalle NO disponible, intentando fallback modal directo');
                 var modal = document.getElementById('crmTaskDetailModal');
+                console.log('[CAL]   crmTaskDetailModal =', modal);
                 if (modal) {
+                    console.log('[CAL]   → abriendo modal directo');
                     modal.classList.add('active');
                     var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
                     fetch('/app/api/tarea/' + tId + '/', { headers: { 'X-CSRFToken': csrf } })
                         .then(function(r){ return r.ok ? r.json() : null; })
                         .then(function(data) {
+                            console.log('[CAL]   tarea data =', data);
                             if (!data) return;
                             var el = function(id){ return document.getElementById(id); };
                             if (el('crmTaskModalTitulo')) el('crmTaskModalTitulo').textContent = data.titulo || '—';
                             if (el('crmTaskModalDesc')) el('crmTaskModalDesc').textContent = data.descripcion || 'Sin descripción.';
                             if (el('crmTaskModalEstado')) el('crmTaskModalEstado').textContent = data.estado || '—';
-                        }).catch(function(){});
+                        }).catch(function(err){ console.error('[CAL] fetch tarea error:', err); });
+                } else {
+                    console.warn('[CAL]   crmTaskDetailModal tampoco encontrado en el DOM');
+                    // listar todos los overlays disponibles
+                    var overlays = document.querySelectorAll('.widget-overlay, [id*="task"], [id*="Task"], [id*="tarea"], [id*="Tarea"]');
+                    console.log('[CAL]   overlays/modales relacionados encontrados:', Array.from(overlays).map(function(el){ return el.id; }));
                 }
             }
         } else if (id) {
+            console.log('[CAL]   → es actividad, llamando woVerActividadGenerica(' + id + ')');
             woVerActividadGenerica(id);
+        } else {
+            console.warn('[CAL]   sin tId ni actividadId — nada que abrir');
         }
     };
 
