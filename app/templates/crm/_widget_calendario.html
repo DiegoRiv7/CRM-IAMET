@@ -680,11 +680,6 @@
             var leftPx = 64 + c * (colW + gap);
             var widthPx = colW;
 
-            var badgeHTML = '';
-            if (monto>0){
-                var mFmt=monto>=1000000?(monto/1000000).toFixed(1)+'M':monto>=1000?Math.round(monto/1000)+'K':String(Math.round(monto));
-                badgeHTML='<div class="cal-day-evt-badge" style="background:'+borderColor+';">$'+mFmt+'</div>';
-            }
             var statusHTML = '';
             if (isNow) statusHTML='<div class="cal-day-evt-status" style="background:rgba(52,199,89,0.15);color:#34C759;">En curso</div>';
             else if (isOvAct) statusHTML='<div class="cal-day-evt-status" style="background:rgba(255,59,48,0.1);color:#FF3B30;">Vencido</div>';
@@ -692,11 +687,18 @@
                 ? 'box-shadow:0 0 0 2px #34C759,0 4px 16px rgba(52,199,89,0.18);'
                 : 'box-shadow:0 1px 4px rgba(0,0,0,0.07),0 2px 8px rgba(0,0,0,0.04);';
 
+            // Título: si tiene oportunidad, al hacer clic abre el widget de oportunidad
+            var oppId = hasOpp ? ep.opportunity.id : null;
+            var titleHTML;
+            if (oppId) {
+                titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';text-decoration:underline;text-decoration-color:'+borderColor+'44;text-underline-offset:2px;cursor:pointer;" onclick="event.stopPropagation();if(typeof window.abrirOportunidad===\'function\')window.abrirOportunidad('+oppId+');">'+woEscape(ev.title)+'</div>';
+            } else {
+                titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
+            }
+
             html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+'"' +
                 ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
-                '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">'+
-                '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>'+
-                badgeHTML+'</div>'+
+                titleHTML+
                 '<div class="cal-day-evt-time" style="color:'+mutedColor+';">'+startFmt+' – '+endFmt+'</div>'+
                 statusHTML+'</div>';
         });
@@ -719,18 +721,20 @@
             var safeId = String(ev.id).replace(/'/g,'');
             var isOverdue = isToday && nowMs > startD.getTime();
             var tColor = isOverdue ? '#FF3B30' : '#FF9500';
-            var tBg = isOverdue ? 'rgba(255,59,48,0.09)' : 'rgba(255,149,0,0.1)';
-            var tBorder = isOverdue ? 'rgba(255,59,48,0.35)' : 'rgba(255,149,0,0.4)';
+            var tBg = isOverdue ? 'linear-gradient(135deg,rgba(255,59,48,0.1) 0%,rgba(255,59,48,0.06) 100%)' : 'linear-gradient(135deg,rgba(255,149,0,0.13) 0%,rgba(255,149,0,0.07) 100%)';
+            var tBorder = isOverdue ? 'rgba(255,59,48,0.4)' : 'rgba(255,149,0,0.5)';
             var statusTxt = isOverdue ? 'Vencida' : 'Pendiente';
             var deadlineFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
             // Línea deadline sutil — solo en el carril de tareas
-            html += '<div style="position:absolute;top:'+evTop+'px;left:'+(taskLaneLeft-4)+'px;right:0;height:1px;background:'+tColor+';opacity:0.25;z-index:4;pointer-events:none;"></div>';
-            // Pill de tarea
-            html += '<div style="position:absolute;top:'+(evTop-16)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;height:32px;display:flex;align-items:center;gap:7px;cursor:pointer;z-index:6;padding:0 10px 0 9px;border-radius:9px;background:'+tBg+';border:1px solid '+tBorder+';box-shadow:0 1px 4px rgba(0,0,0,0.06);"' +
+            html += '<div style="position:absolute;top:'+evTop+'px;left:'+(taskLaneLeft-4)+'px;right:0;height:1px;background:'+tColor+';opacity:0.3;z-index:4;pointer-events:none;"></div>';
+            // Bloque de tarea (más alto, como una tarjeta)
+            html += '<div style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);"' +
                 ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
-                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="'+tColor+'" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>'+
-                '<div style="font-size:0.75rem;font-weight:700;color:'+tColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;line-height:1.2;">'+woEscape(ev.title)+'</div>'+
-                '<div style="font-size:0.68rem;font-weight:600;color:'+tColor+';opacity:0.8;white-space:nowrap;">'+deadlineFmt+'</div>'+
+                '<div style="display:flex;align-items:center;gap:5px;">'+
+                '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+tColor+'" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>'+
+                '<div style="font-size:0.77rem;font-weight:700;color:'+tColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">'+woEscape(ev.title)+'</div>'+
+                '</div>'+
+                '<div style="font-size:0.68rem;font-weight:600;color:'+tColor+';opacity:0.75;padding-left:15px;">'+deadlineFmt+' · '+statusTxt+'</div>'+
                 '</div>';
         });
 
