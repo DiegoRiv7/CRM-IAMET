@@ -2741,8 +2741,6 @@
                     window._crmTareasMode = false;
                     if (crmContent) crmContent.style.display = '';
                     if (tareasSection) tareasSection.classList.remove('active');
-                    if (islandFilters) islandFilters.style.display = 'flex';
-                    if (islandSep) islandSep.style.display = '';
 
                     document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
                     btnCRM.classList.add('active');
@@ -2900,8 +2898,6 @@
         // Restaurar tab desde localStorage (HTML + topbar ya aplicaron estilos antes del paint)
         if (localStorage.getItem('crmView') === 'tareas') {
             window._crmTareasMode = true;
-            if (islandFilters) islandFilters.style.display = 'none';
-            if (islandSep) islandSep.style.display = 'none';
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
