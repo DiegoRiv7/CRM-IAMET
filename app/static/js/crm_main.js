@@ -2741,7 +2741,7 @@
                     window._crmTareasMode = false;
                     if (crmContent) crmContent.style.display = '';
                     if (tareasSection) tareasSection.classList.remove('active');
-                    if (islandFilters) islandFilters.style.display = '';
+                    if (islandFilters) islandFilters.style.display = 'flex';
                     if (islandSep) islandSep.style.display = '';
 
                     document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
