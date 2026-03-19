@@ -5,14 +5,19 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 
 
-## [2026-03-18] — Widget Cotizar Rápido
+## [2026-03-19] — Calendario
 
-### MEJORA — Rediseño widget "Cotizar Rápido" — liquid glass
-- El widget de cotización rápida ahora tiene el mismo diseño liquid glass que el widget de nueva oportunidad.
-- Botones "+" para crear cliente u oportunidad directamente desde el formulario, sin salir del widget.
-- Al dar "Ir a Cotizar", se abre el cotizador con la oportunidad ya seleccionada (sin redirección a otra página).
+### MEJORA — Vista diaria del calendario
+- Las tareas ya no se muestran como bloques largos: aparecen como marcadores compactos alineados a la derecha del timeline, sin tapar las actividades.
+- Las actividades que se solapan en horario se dividen en columnas (2, 3, 4...) al estilo Google Calendar para que todas sean visibles.
+- Los colores son consistentes: azul para actividades con oportunidad, naranja para tareas, gris/negro para actividades sin oportunidad.
 
----
+### MEJORA — Panel derecho del calendario
+- Las actividades muestran dos botones: "Ver Detalle" (gris) y "Completar" (verde) — ya no hace falta abrir el widget para marcarlas como completadas.
+- Las tareas muestran solo "Abrir Tarea" (naranja) que abre directamente el widget de tarea.
+
+### FIX — Widgets que abrían detrás del widget de oportunidad
+- "Nueva Actividad" y "Nueva Tarea" ya no se abrían detrás del detalle de oportunidad. Corregido el orden de capas (z-index).
 
 ## [2026-03-17] — Correcciones
 
@@ -111,6 +116,26 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - Se mejoro el formulario para que tenga mejor UX, el nombre de la oportunidad ahora es el primer campo que se llena
 - Se pueden crear clientes nuevos y contactos nuevos directo del formulario 
 - Se mejoro el diseño del formulario.
+
+### MEJORA - cotización rápida
+- Se mejoro el diseño del widget
+- Cuando se le da a crear cotización despliega el fomulario para crear la cotización rapida con los campos de oportunidad y cliente ya llenados.
+
+### MEJORA - Optimización de tareas
+- Se ajusto la lógica en como el sistema mostraba las tareas activas para evitar que tarde en cargar esa sección.
+- Se reliazo un sistema de paginación para las tareas completadas y la sección de todas las tareas para evitar tiempos de carga largos
+
+
+## [2026-03-19] — actualizaciones
+
+### MEJORA - Calendario
+- El diseño del calendario se mejoro, tambien ahora se pueden arrastrar las actividades para reagendarlas
+- Se hizo el widget del calendario mas grande para que el mes se viera completo sin tener que hacer scroll.
+- Ahora el calendario muestra 3 cuadros que indican la cantidad de actividades y tareas del mes y tambien la efectividad dle usaurios al completar sus tareas y actividades.
+
+### FIX - Calendario
+- Se arreglo que las tareas no aparecían
+- Tambien se arreglo que la descripcion y oportunidades de algunas actividades no salian el el widget de la actividad
 
 ## Cómo usar este archivo
 
