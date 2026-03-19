@@ -2104,7 +2104,7 @@ def actividad_list_create(request):
                 participants_data = [{'id': p.id, 'text': p.get_full_name() or p.username} for p in actividad.participantes.all()]
                 opportunity_data = None
                 if actividad.oportunidad:
-                    opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+                    opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad, 'monto': float(actividad.oportunidad.monto or 0)}
                 # Clampar eventos multi-día a 1h para que no crucen semanas en el calendario
                 fin_display = actividad.fecha_fin
                 if (fin_display - actividad.fecha_inicio).days >= 1:
@@ -2158,7 +2158,7 @@ def actividad_list_create(request):
         
             opportunity_data = None
             if actividad.oportunidad:
-                opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+                opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad, 'monto': float(actividad.oportunidad.monto or 0)}
 
             return JsonResponse({
                 'id': actividad.id,
