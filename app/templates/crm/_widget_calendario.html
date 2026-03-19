@@ -109,11 +109,11 @@
 
                 <!-- ── OVERVIEW STATE ── -->
                 <div id="calPanelOverview">
-                    <div style="font-size:1rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.01em;">Tu día de un vistazo</div>
+                    <div id="calPanelOverviewTitle" style="font-size:1rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.01em;">Tu mes de un vistazo</div>
 
                     <!-- Efectividad card (dark) -->
                     <div style="background:#1D1D1F;border-radius:16px;padding:1.1rem 1.2rem;">
-                        <div style="font-size:0.68rem;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Efectividad Hoy</div>
+                        <div id="calSideEfectLabel" style="font-size:0.68rem;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Efectividad del Mes</div>
                         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;">
                             <div id="calSidePct" style="font-size:2.2rem;font-weight:700;color:#fff;line-height:1;">—%</div>
                             <div id="calSideLisots" style="background:rgba(52,199,89,0.2);color:#34C759;font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:20px;">— listos</div>
@@ -128,7 +128,7 @@
                         </div>
                         <div style="background:#EEF3FF;border:1px solid rgba(0,82,212,0.15);border-radius:12px;padding:0.85rem 1rem;">
                             <div id="calSideOppsN" style="font-size:1.55rem;font-weight:700;color:#0052D4;line-height:1.1;">0</div>
-                            <div style="font-size:0.7rem;color:#86868B;font-weight:600;margin-top:4px;line-height:1.3;">Oportunidades<br>Activas</div>
+                            <div style="font-size:0.7rem;color:#86868B;font-weight:600;margin-top:4px;line-height:1.3;">Actividades<br>del Día</div>
                         </div>
                     </div>
 
@@ -138,10 +138,10 @@
                             <svg width="10" height="10" fill="#FF9500" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                             Siguiente en agenda
                         </div>
-                        <div style="border-left:3px solid #0052D4;padding:7px 0 7px 12px;margin-top:8px;">
+                        <div id="calSideNextContainer" style="border-left:3px solid #0052D4;padding:7px 0 7px 12px;margin-top:8px;transition:border-color 0.3s;">
                             <div id="calSideNextTitle" style="font-weight:700;font-size:0.87rem;color:#1D1D1F;line-height:1.3;">—</div>
                             <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
-                                <svg width="11" height="11" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <svg id="calSideNextIcon" width="11" height="11" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                 <span id="calSideNextTime" style="font-size:0.75rem;color:#86868B;font-weight:500;">—</span>
                             </div>
                         </div>
@@ -151,6 +151,14 @@
                     <div>
                         <div class="cal-section-label">Tareas de hoy</div>
                         <div id="calSideTareasList" style="display:flex;flex-direction:column;margin-top:8px;">
+                            <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
+                        </div>
+                    </div>
+
+                    <!-- Actividades de hoy -->
+                    <div>
+                        <div class="cal-section-label">Actividades de hoy</div>
+                        <div id="calSideActividadesList" style="display:flex;flex-direction:column;margin-top:8px;">
                             <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
                         </div>
                     </div>
@@ -782,7 +790,10 @@
     function calUpdateSidePanel() {
         var now = new Date();
         var pad = function(n){return String(n).padStart(2,'0');};
-        var todayStr = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+
+        // Fecha de referencia para estadísticas del día: vista día → día navegado, mes → hoy
+        var refDate = (_calViewMode === 'day') ? _calCurrentDay : now;
+        var refStr = refDate.getFullYear()+'-'+pad(refDate.getMonth()+1)+'-'+pad(refDate.getDate());
 
         var allEvts = window._calAllEvents || _globalEvents;
         var sel = document.getElementById('calUserFilter');
@@ -796,47 +807,88 @@
             return isP||isC;
         });
 
-        var todayEvts = filtered.filter(function(ev){ return ev.start && ev.start.substring(0,10)===todayStr; });
-        var tareas = todayEvts.filter(function(ev){ return (ev.extendedProps||{}).tipo_actividad==='tarea'; });
-        var oppsActivas = todayEvts.filter(function(ev){ var ep=ev.extendedProps||{}; return ep.tipo_actividad!=='tarea' && ep.opportunity && ep.opportunity.id; });
-        var ejecutadas = todayEvts.filter(function(ev){
+        // ── Efectividad: mes o día según vista ──
+        var efecEvts, efecLabel;
+        if (_calViewMode === 'month' && _globalCalendar && _globalCalendar.view) {
+            var vs = _globalCalendar.view.activeStart;
+            var ve = _globalCalendar.view.activeEnd;
+            efecEvts = filtered.filter(function(ev){ if(!ev.start) return false; var s=new Date(ev.start); return s>=vs && s<ve; });
+            efecLabel = 'Efectividad del Mes';
+        } else {
+            efecEvts = filtered.filter(function(ev){ return ev.start && ev.start.substring(0,10)===refStr; });
+            efecLabel = 'Efectividad del Día';
+        }
+        var ejecutadas = efecEvts.filter(function(ev){
             var endD=ev.end?new Date(ev.end):new Date(new Date(ev.start).getTime()+60*60*1000);
             return endD<now;
         });
-        var total = todayEvts.length;
+        var total = efecEvts.length;
         var efectPct = total>0 ? Math.round((ejecutadas.length/total)*100) : 100;
 
+        var panelTitle=document.getElementById('calPanelOverviewTitle');
+        if (panelTitle) panelTitle.textContent = _calViewMode==='day' ? 'Tu día de un vistazo' : 'Tu mes de un vistazo';
+        var efectLabelEl=document.getElementById('calSideEfectLabel');
         var pctEl=document.getElementById('calSidePct');
         var listosEl=document.getElementById('calSideLisots');
-        var tareasNEl=document.getElementById('calSideTareasN');
-        var oppsNEl=document.getElementById('calSideOppsN');
-
+        if (efectLabelEl) efectLabelEl.textContent = efecLabel;
         if (pctEl) pctEl.textContent = efectPct+'%';
         if (listosEl) {
             listosEl.textContent = ejecutadas.length+'/'+total+' listos';
             var lColor = efectPct>=80?'#34C759':efectPct>=50?'#FF9500':'#FF3B30';
             var lBg = efectPct>=80?'rgba(52,199,89,0.2)':efectPct>=50?'rgba(255,149,0,0.2)':'rgba(255,59,48,0.15)';
-            listosEl.style.color = lColor;
-            listosEl.style.background = lBg;
+            listosEl.style.color = lColor; listosEl.style.background = lBg;
         }
-        if (tareasNEl) tareasNEl.textContent = tareas.length;
-        if (oppsNEl) oppsNEl.textContent = oppsActivas.length;
 
-        // Siguiente en agenda
-        var upcoming = todayEvts.filter(function(ev){ return new Date(ev.start)>now; })
+        // ── Stats del día de referencia ──
+        var refEvts = filtered.filter(function(ev){ return ev.start && ev.start.substring(0,10)===refStr; });
+        var tareas = refEvts.filter(function(ev){ return (ev.extendedProps||{}).tipo_actividad==='tarea'; });
+        var actividades = refEvts.filter(function(ev){ return (ev.extendedProps||{}).tipo_actividad!=='tarea'; });
+
+        var tareasNEl=document.getElementById('calSideTareasN');
+        var oppsNEl=document.getElementById('calSideOppsN');
+        if (tareasNEl) tareasNEl.textContent = tareas.length;
+        if (oppsNEl) oppsNEl.textContent = actividades.length;
+
+        // ── Siguiente en agenda: evento en curso ahora o el próximo ──
+        // Para vista mes usamos hoy; para vista día usamos el día navegado
+        var agendaEvts = refEvts;
+        var inProgress = agendaEvts.filter(function(ev){
+            if (!ev.start) return false;
+            var s=new Date(ev.start);
+            var e=ev.end?new Date(ev.end):new Date(s.getTime()+60*60*1000);
+            return now>=s && now<=e;
+        });
+        var upcoming = agendaEvts.filter(function(ev){ return ev.start && new Date(ev.start)>now; })
             .sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
+
+        var nextEvent = inProgress.length>0 ? inProgress[0] : (upcoming.length>0 ? upcoming[0] : null);
+        var isNowHappening = inProgress.length>0;
+
         var nextTitleEl=document.getElementById('calSideNextTitle');
         var nextTimeEl=document.getElementById('calSideNextTime');
-        if (upcoming.length>0) {
-            var nxt=upcoming[0];
-            if (nextTitleEl) nextTitleEl.textContent = nxt.title;
-            if (nextTimeEl) nextTimeEl.textContent = calFmt12(new Date(nxt.start));
+        var nextContainer=document.getElementById('calSideNextContainer');
+        var nextIcon=document.getElementById('calSideNextIcon');
+
+        if (nextEvent) {
+            if (nextTitleEl) nextTitleEl.textContent = nextEvent.title;
+            var tStart=calFmt12(new Date(nextEvent.start));
+            var tEnd=nextEvent.end?calFmt12(new Date(nextEvent.end)):'';
+            var timeLabel=(tEnd?tStart+' – '+tEnd:tStart);
+            if (isNowHappening) timeLabel = 'En curso · '+timeLabel;
+            if (nextTimeEl) {
+                nextTimeEl.textContent = timeLabel;
+                nextTimeEl.style.color = isNowHappening ? '#34C759' : '#86868B';
+                nextTimeEl.style.fontWeight = isNowHappening ? '700' : '500';
+            }
+            if (nextContainer) nextContainer.style.borderLeftColor = isNowHappening ? '#34C759' : '#0052D4';
+            if (nextIcon) nextIcon.setAttribute('stroke', isNowHappening ? '#34C759' : '#86868B');
         } else {
             if (nextTitleEl) nextTitleEl.textContent = 'Sin eventos próximos';
-            if (nextTimeEl) nextTimeEl.textContent = '—';
+            if (nextTimeEl) { nextTimeEl.textContent = '—'; nextTimeEl.style.color='#86868B'; nextTimeEl.style.fontWeight='500'; }
+            if (nextContainer) nextContainer.style.borderLeftColor = '#0052D4';
         }
 
-        // Tareas de hoy
+        // ── Tareas de hoy ──
         var tareasListEl = document.getElementById('calSideTareasList');
         if (tareasListEl) {
             if (tareas.length===0) {
@@ -849,10 +901,35 @@
                     var textStyle=isOverdue?'text-decoration:line-through;color:#AEAEB2;':'color:#1D1D1F;';
                     return '<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.05);">' +
                         '<div style="width:16px;height:16px;border-radius:4px;border:2px solid '+(isOverdue?'#D1D1D6':'#FF9500')+';flex-shrink:0;margin-top:2px;"></div>'+
-                        '<div>'+
-                        '<div style="font-size:0.82rem;font-weight:600;'+textStyle+'line-height:1.3;">'+woEscape(t.title)+'</div>'+
-                        '<div style="font-size:0.72rem;color:#86868B;">'+timeFmt+'</div>'+
-                        '</div></div>';
+                        '<div><div style="font-size:0.82rem;font-weight:600;'+textStyle+'line-height:1.3;">'+woEscape(t.title)+'</div>'+
+                        '<div style="font-size:0.72rem;color:#86868B;">'+timeFmt+'</div></div></div>';
+                }).join('');
+            }
+        }
+
+        // ── Actividades de hoy ──
+        var actListEl = document.getElementById('calSideActividadesList');
+        if (actListEl) {
+            if (actividades.length===0) {
+                actListEl.innerHTML = '<div style="color:#86868B;font-size:0.82rem;font-style:italic;padding:4px 0;">Sin actividades para hoy</div>';
+            } else {
+                actListEl.innerHTML = actividades.map(function(a){
+                    var aD=new Date(a.start);
+                    var timeFmt=calFmt12(aD);
+                    var ep=a.extendedProps||{};
+                    var hasOpp=ep.opportunity&&ep.opportunity.id;
+                    var dotColor=hasOpp?'#0052D4':'#8E8E93';
+                    var aEnd=a.end?new Date(a.end):new Date(aD.getTime()+60*60*1000);
+                    var isNowA=now>=aD&&now<=aEnd;
+                    var isOverA=aEnd<now;
+                    var textStyle=isOverA?'color:#AEAEB2;':'color:#1D1D1F;';
+                    var timeFmtFull=calFmt12(aD)+(a.end?' – '+calFmt12(aEnd):'');
+                    return '<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.05);cursor:pointer;" onclick="calShowEventDetail(\''+String(a.id).replace(/'/g,'')+'\')">'+
+                        '<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0;margin-top:5px;"'+(isNowA?' style="box-shadow:0 0 0 2px rgba(0,82,212,0.3);"':'')+' ></div>'+
+                        '<div style="min-width:0;flex:1;">'+
+                        '<div style="font-size:0.82rem;font-weight:600;'+textStyle+'line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+woEscape(a.title)+'</div>'+
+                        '<div style="font-size:0.72rem;color:'+(isNowA?'#34C759':'#86868B')+';font-weight:'+(isNowA?'700':'400')+';">'+
+                        (isNowA?'En curso · ':'')+timeFmtFull+'</div></div></div>';
                 }).join('');
             }
         }
