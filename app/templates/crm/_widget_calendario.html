@@ -1,11 +1,11 @@
-<!-- ═══ WIDGET: CALENDARIO OVERLAY MASTER (DISEÑO PREMIUM APPLE) ═══ -->
+<!-- ═══ WIDGET: CALENDARIO OVERLAY MASTER ═══ -->
 <div class="widget-overlay" id="widgetCalendarioMaster" style="z-index: 10005; display: none;">
     <div class="widget-card widget-card-xxl"
-        style="width: 95vw; height: 95vh; max-width: 1600px; background: #ffffff; border-radius: 20px; display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,0.2); border: 1px solid rgba(0,0,0,0.05); overflow: hidden;">
+        style="width: 98vw; height: 97vh; max-width: none; background: rgba(255,255,255,0.92); backdrop-filter: blur(64px) saturate(200%); -webkit-backdrop-filter: blur(64px) saturate(200%); border-radius: 24px; display: flex; flex-direction: column; box-shadow: 0 2px 0 rgba(255,255,255,0.95) inset, 0 32px 64px rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.85); overflow: hidden;">
 
-        <!-- Header minimalista -->
+        <!-- Header -->
         <div
-            style="padding: 1.5rem 2rem; background: #ffffff; border-bottom: 1px solid #F2F2F7; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            style="padding: 1.1rem 1.8rem; background: transparent; border-bottom: 1px solid rgba(0,0,0,0.07); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <div style="font-size: 1.75rem; font-weight: 700; color: #1D1D1F; letter-spacing: -0.03em;">Calendario
                 </div>
@@ -13,7 +13,7 @@
                 <div style="display:flex;align-items:center;gap:8px;margin-left:12px;">
                     <span style="font-size:0.72rem;font-weight:600;color:#86868B;">Ver calendario de:</span>
                     <select id="calUserFilter" onchange="calFilterByUser(this.value)"
-                        style="padding:7px 12px;border:1px solid #E5E5EA;border-radius:10px;font-size:0.85rem;font-weight:600;color:#1D1D1F;outline:none;cursor:pointer;background:#F9FAFB;font-family:inherit;min-width:180px;">
+                        style="padding:7px 12px;border:1.5px solid rgba(0,0,0,0.1);border-radius:10px;font-size:0.85rem;font-weight:600;color:#1D1D1F;outline:none;cursor:pointer;background:rgba(255,255,255,0.6);font-family:inherit;min-width:160px;">
                         <option value="all">👥 Todos</option>
                     </select>
                 </div>
@@ -35,17 +35,17 @@
             </div>
         </div>
 
-        <!-- Body con estilos súper limpios inyectados para FullCalendar -->
+        <!-- Body calendario -->
         <div
-            style="flex: 1; padding: 1.5rem 2rem; background: #ffffff; overflow: hidden; display: flex; flex-direction: column;">
+            style="flex: 1; padding: 0.8rem 1.5rem 1rem; background: transparent; overflow: hidden; display: flex; flex-direction: column;">
             <style>
-                /* FullCalendar Apple-like Customization */
+                /* FullCalendar Customization */
                 #fullCalendarRoot {
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                    --fc-border-color: #F2F2F7;
-                    --fc-page-bg-color: #ffffff;
-                    --fc-neutral-bg-color: #F9FAFB;
-                    --fc-today-bg-color: rgba(0, 82, 212, 0.04);
+                    --fc-border-color: rgba(0,0,0,0.07);
+                    --fc-page-bg-color: transparent;
+                    --fc-neutral-bg-color: rgba(255,255,255,0.4);
+                    --fc-today-bg-color: rgba(0, 82, 212, 0.05);
                 }
 
                 /* Eliminar todo borde exterior del calendario */
@@ -493,13 +493,15 @@
             var tareasData = results[1];
             var tareas = tareasData.tareas || tareasData.results || [];
             _globalEvents = actividades.map(function (e) {
+                // Azul si tiene oportunidad, negro si no
+                var evtColor = e.opportunity ? '#0052D4' : '#1D1D1F';
                 return {
                     id: e.id,
                     title: e.title,
                     start: e.start,
                     end: e.end,
                     description: e.description,
-                    color: e.color || '#0052D4',
+                    color: evtColor,
                     extendedProps: {
                         participants: e.participants,
                         opportunity: e.opportunity,
@@ -508,15 +510,22 @@
                     }
                 };
             });
-            // Añadir tareas con fecha_limite como eventos naranjas
+            // Tareas como eventos naranjas — incluye IDs para filtrar por usuario
             tareas.forEach(function (t) {
                 if (!t.fecha_limite) return;
+                var tParticipants = [];
+                if (t.asignado_a_id) tParticipants.push({ id: t.asignado_a_id });
                 _globalEvents.push({
                     id: 'tarea-' + t.id,
                     title: t.titulo,
                     start: t.fecha_limite,
                     color: '#FF9500',
-                    extendedProps: { tipo_actividad: 'tarea', tarea_id: t.id }
+                    extendedProps: {
+                        tipo_actividad: 'tarea',
+                        tarea_id: t.id,
+                        participants: tParticipants,
+                        creado_por: { id: t.creado_por_id }
+                    }
                 });
             });
             // Store raw for filtering
@@ -543,7 +552,7 @@
             users.forEach(function (u) {
                 var opt = document.createElement('option');
                 opt.value = String(u.id);
-                opt.textContent = u.nombre + ' (' + u.rol + ')';
+                opt.textContent = u.nombre;
                 sel.appendChild(opt);
             });
             // Set default to current user
