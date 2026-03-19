@@ -188,8 +188,8 @@
                         <button id="calDetailOppBtn" style="background:#EEF3FF;border:1px solid rgba(0,82,212,0.18);border-radius:8px;padding:6px 12px;font-size:0.81rem;font-weight:600;color:#0052D4;cursor:pointer;text-align:left;width:100%;margin-top:6px;font-family:inherit;">—</button>
                     </div>
                     <div style="flex:1;">
-                        <div class="cal-section-label">Notas</div>
-                        <div id="calDetailDesc" style="font-size:0.81rem;color:#3A3A3C;line-height:1.55;margin-top:6px;font-style:italic;">—</div>
+                        <div class="cal-section-label">Descripción</div>
+                        <div id="calDetailDesc" style="font-size:0.81rem;color:#3A3A3C;line-height:1.55;margin-top:6px;">—</div>
                     </div>
                     <div style="display:flex;gap:8px;padding-top:0.75rem;border-top:1px solid rgba(0,0,0,0.06);margin-top:auto;">
                         <button id="calDetailBtnReprogram" onclick="calDetailReprogramar()" style="flex:1;background:#F2F2F7;border:none;border-radius:10px;padding:0.65rem;font-size:0.83rem;font-weight:700;color:#1D1D1F;cursor:pointer;font-family:inherit;transition:background 0.15s;" onmouseover="this.style.background='#E5E5EA'" onmouseout="this.style.background='#F2F2F7'">Reprogramar</button>
@@ -731,7 +731,7 @@
         } else { oppRow.style.display = 'none'; }
 
         var descEl = document.getElementById('calDetailDesc');
-        descEl.textContent = evt.description || 'Sin notas.';
+        descEl.textContent = evt.description || 'Sin descripción.';
 
         window._calCurrentActividadId = esTarea ? null : id;
         window._calCurrentOppId = hasOpp ? ep.opportunity.id : null;
@@ -757,10 +757,16 @@
         var det = document.getElementById('calPanelDetail');
         det.style.display = 'flex';
 
+        // Fetch descripción fresca
         if (!esTarea) {
             fetch('/app/api/actividades/'+id+'/')
                 .then(function(r){ return r.ok?r.json():null; })
-                .then(function(d){ if(!d) return; var f=d.description||d.descripcion||''; descEl.textContent=f||'Sin notas.'; evt.description=f; })
+                .then(function(d){ if(!d) return; var f=d.description||d.descripcion||''; descEl.textContent=f||'Sin descripción.'; evt.description=f; })
+                .catch(function(){});
+        } else if (ep.tarea_id) {
+            fetch('/app/api/tarea/'+ep.tarea_id+'/')
+                .then(function(r){ return r.ok?r.json():null; })
+                .then(function(d){ if(!d) return; var f=d.descripcion||d.description||''; descEl.textContent=f||'Sin descripción.'; })
                 .catch(function(){});
         }
     };
@@ -779,8 +785,11 @@
     window.calDetailVerCompleto = function () {
         var tId = window._calCurrentTareaId;
         var id = window._calCurrentActividadId;
-        if (tId && typeof window.crmTaskVerDetalle === 'function') {
-            window.crmTaskVerDetalle(tId);
+        if (tId) {
+            // Abrir widget tarea encima del calendario (no cerrar el panel)
+            if (typeof window.crmTaskVerDetalle === 'function') {
+                window.crmTaskVerDetalle(tId);
+            }
         } else if (id) {
             woVerActividadGenerica(id);
         }
@@ -849,16 +858,15 @@
         if (tareasNEl) tareasNEl.textContent = tareas.length;
         if (oppsNEl) oppsNEl.textContent = actividades.length;
 
-        // ── Siguiente en agenda: evento en curso ahora o el próximo ──
-        // Para vista mes usamos hoy; para vista día usamos el día navegado
-        var agendaEvts = refEvts;
-        var inProgress = agendaEvts.filter(function(ev){
+        // ── Siguiente en agenda: evento en curso ahora o el próximo (busca en todos, no solo hoy) ──
+        var nowMs = now.getTime();
+        var inProgress = filtered.filter(function(ev){
             if (!ev.start) return false;
-            var s=new Date(ev.start);
-            var e=ev.end?new Date(ev.end):new Date(s.getTime()+60*60*1000);
-            return now>=s && now<=e;
+            var s=new Date(ev.start).getTime();
+            var e=ev.end?new Date(ev.end).getTime():s+60*60*1000;
+            return nowMs>=s && nowMs<=e;
         });
-        var upcoming = agendaEvts.filter(function(ev){ return ev.start && new Date(ev.start)>now; })
+        var upcoming = filtered.filter(function(ev){ return ev.start && new Date(ev.start).getTime()>nowMs; })
             .sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
 
         var nextEvent = inProgress.length>0 ? inProgress[0] : (upcoming.length>0 ? upcoming[0] : null);
