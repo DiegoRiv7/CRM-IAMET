@@ -735,14 +735,23 @@
 
         window._calCurrentActividadId = esTarea ? null : id;
         window._calCurrentOppId = hasOpp ? ep.opportunity.id : null;
-        window._calCurrentTareaId = esTarea ? ep.tarea_id : null;
+        // tarea_id puede venir en extendedProps o extraerlo del id del evento ('tarea-123')
+        var rawTareaId = null;
+        if (esTarea) {
+            rawTareaId = ep.tarea_id || null;
+            if (!rawTareaId && String(evt.id).indexOf('tarea-') === 0) {
+                rawTareaId = parseInt(String(evt.id).replace('tarea-', '')) || null;
+            }
+        }
+        window._calCurrentTareaId = rawTareaId;
+        console.log('[CAL] calShowEventDetail id='+id+' esTarea='+esTarea+' ep.tarea_id='+ep.tarea_id+' rawTareaId='+rawTareaId+' extendedProps=', ep);
 
         var btnListo = document.getElementById('calDetailBtnListo');
         var btnReprogram = document.getElementById('calDetailBtnReprogram');
         if (esTarea) {
             btnListo.textContent = 'Abrir Tarea';
             btnListo.style.background = '#FF9500';
-            btnListo.dataset.tid = ep.tarea_id ? String(ep.tarea_id) : '';
+            btnListo.dataset.tid = rawTareaId ? String(rawTareaId) : '';
             btnListo.onmouseover = function(){ this.style.background='#CC7600'; };
             btnListo.onmouseout = function(){ this.style.background='#FF9500'; };
             btnReprogram.style.display = 'none';
