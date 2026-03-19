@@ -691,7 +691,7 @@
             var oppId = hasOpp ? ep.opportunity.id : null;
             var titleHTML;
             if (oppId) {
-                titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';text-decoration:underline;text-decoration-color:'+borderColor+'44;text-underline-offset:2px;cursor:pointer;" onclick="event.stopPropagation();if(typeof window.abrirOportunidad===\'function\')window.abrirOportunidad('+oppId+');">'+woEscape(ev.title)+'</div>';
+                titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';text-decoration:underline;text-decoration-color:'+borderColor+'44;text-underline-offset:2px;cursor:pointer;" onclick="event.stopPropagation();if(typeof window.openDetalle===\'function\')window.openDetalle('+oppId+');">'+woEscape(ev.title)+'</div>';
             } else {
                 titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
             }
@@ -803,7 +803,7 @@
         if (hasOpp && ep.opportunity.text) {
             oppRow.style.display = 'block';
             oppBtn.textContent = ep.opportunity.text;
-            (function(oid){ oppBtn.onclick = function(){ if(typeof window.abrirOportunidad==='function') window.abrirOportunidad(oid); }; })(ep.opportunity.id);
+            (function(oid){ oppBtn.onclick = function(){ if(typeof window.openDetalle==='function') window.openDetalle(oid); }; })(ep.opportunity.id);
         } else { oppRow.style.display = 'none'; }
 
         var descEl = document.getElementById('calDetailDesc');
