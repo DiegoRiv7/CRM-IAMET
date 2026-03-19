@@ -622,10 +622,12 @@
         // ── Column-split layout (ancho en píxeles reales) ──
         var nowMs = now.getTime();
         // Ancho disponible para eventos: contenedor - etiquetas hora (64px) - margen derecho (8px)
-        var areaW = Math.max((container.offsetWidth || 800) - 72, 200);
+        var areaW = Math.max(container.offsetWidth - 72, 200);
+        console.log('[CAL-DAY] container.offsetWidth='+container.offsetWidth+' areaW='+areaW+' dayEvts='+dayEvts.length);
 
         var taskEvts = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') === 0; });
         var actEvts  = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') !== 0; });
+        console.log('[CAL-DAY] actividades='+actEvts.length+' tareas='+taskEvts.length);
 
         // Asignar columna a cada actividad (greedy: primera columna libre)
         var actItems = actEvts.map(function(ev){
@@ -648,6 +650,13 @@
                 if (it.sMs < other.eMs && it.eMs > other.sMs) maxC = Math.max(maxC, other.col);
             });
             it.numCols = maxC + 1;
+        });
+        actItems.forEach(function(it){
+            var n = it.numCols, c = it.col;
+            var colW = Math.floor((areaW - (n>1?3*(n-1):0)) / n);
+            var leftPx = 64 + c*(colW+(n>1?3:0));
+            console.log('[CAL-DAY] evt="'+it.ev.title+'" start='+it.ev.start+' end='+it.ev.end
+                +' col='+c+'/'+n+' leftPx='+leftPx+' widthPx='+colW);
         });
 
         // Renderizar actividades
