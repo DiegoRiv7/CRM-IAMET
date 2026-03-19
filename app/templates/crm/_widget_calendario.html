@@ -447,6 +447,37 @@
                             '</div>'
                         };
                     },
+                    eventDidMount: function (info) {
+                        var vt = info.view.type;
+                        var el = info.el;
+
+                        if (vt === 'timeGridWeek' || vt === 'timeGridDay') {
+                            // Forma el bloque limpio directamente sobre el elemento de FC
+                            el.style.border = 'none';
+                            el.style.borderRadius = '8px';
+                            el.style.overflow = 'hidden';
+                            el.style.boxShadow = '0 1px 8px rgba(0,0,0,0.18)';
+                            // Acento izquierdo
+                            var mainEl = el.querySelector('.fc-event-main');
+                            if (mainEl) {
+                                mainEl.style.borderLeft = '3px solid rgba(255,255,255,0.35)';
+                                mainEl.style.paddingLeft = '6px';
+                            }
+                            // Texto blanco — override directo (CSS no gana contra inline de FC)
+                            var titleEl = el.querySelector('.fc-event-title');
+                            if (titleEl) { titleEl.style.color = '#ffffff'; titleEl.style.fontWeight = '600'; titleEl.style.fontSize = '0.82rem'; }
+                            var timeEl = el.querySelector('.fc-event-time');
+                            if (timeEl) { timeEl.style.color = 'rgba(255,255,255,0.8)'; timeEl.style.fontSize = '0.72rem'; timeEl.style.fontWeight = '500'; }
+                        }
+
+                        if (vt === 'listWeek') {
+                            // Lista: título legible en oscuro
+                            var linkEl = el.querySelector('.fc-list-event-title a') || el.querySelector('.fc-list-event-title');
+                            if (linkEl) { linkEl.style.color = '#1D1D1F'; linkEl.style.fontWeight = '600'; linkEl.style.fontSize = '0.9rem'; linkEl.style.textDecoration = 'none'; }
+                            var timeCell = el.querySelector('.fc-list-event-time');
+                            if (timeCell) { timeCell.style.color = '#86868B'; timeCell.style.fontSize = '0.8rem'; }
+                        }
+                    },
                     editable: true,
                     eventDrop: function (info) {
                         var ev = info.event;
