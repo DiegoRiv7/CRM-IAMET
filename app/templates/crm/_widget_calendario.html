@@ -214,8 +214,23 @@
                     font-size: 0.8rem !important;
                     padding: 2px !important;
                 }
+
+                /* Vista mes: forzar que las filas llenen el espacio disponible sin scroll */
+                #fullCalendarRoot .fc-daygrid-body,
+                #fullCalendarRoot .fc-daygrid-body table,
+                #fullCalendarRoot .fc-scrollgrid-sync-table {
+                    height: 100% !important;
+                }
+                #fullCalendarRoot .fc-daygrid-day-frame {
+                    min-height: unset !important;
+                }
+                /* Toolbar más compacto */
+                #fullCalendarRoot .fc-header-toolbar {
+                    margin-bottom: 0.75rem !important;
+                    padding: 0;
+                }
             </style>
-            <div id="fullCalendarRoot" style="flex: 1; min-height: 0;"></div>
+            <div id="fullCalendarRoot" style="flex: 1; min-height: 0; overflow: hidden;"></div>
         </div>
     </div>
 </div>
@@ -432,7 +447,15 @@
                     },
                     eventClick: function (info) {
                         var e = info.event;
-                        woVerActividadGenerica(e.id);
+                        var stored = _globalEvents.find(function (x) { return String(x.id) === String(e.id); });
+                        if (stored && stored.extendedProps && stored.extendedProps.tipo_actividad === 'tarea') {
+                            // Es una tarea — abrir widget de detalle de tarea
+                            if (typeof window.crmTaskVerDetalle === 'function') {
+                                window.crmTaskVerDetalle(stored.extendedProps.tarea_id);
+                            }
+                        } else {
+                            woVerActividadGenerica(e.id);
+                        }
                     },
                     selectable: true,
                     select: function(info) {
