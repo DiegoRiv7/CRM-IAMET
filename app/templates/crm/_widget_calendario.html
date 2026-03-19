@@ -742,12 +742,14 @@
         if (esTarea) {
             btnListo.textContent = 'Abrir Tarea';
             btnListo.style.background = '#FF9500';
+            btnListo.dataset.tid = ep.tarea_id ? String(ep.tarea_id) : '';
             btnListo.onmouseover = function(){ this.style.background='#CC7600'; };
             btnListo.onmouseout = function(){ this.style.background='#FF9500'; };
             btnReprogram.style.display = 'none';
         } else {
             btnListo.textContent = 'Ver Detalle';
             btnListo.style.background = '#34C759';
+            btnListo.dataset.tid = '';
             btnListo.onmouseover = function(){ this.style.background='#2DBD4E'; };
             btnListo.onmouseout = function(){ this.style.background='#34C759'; };
             btnReprogram.style.display = '';
@@ -783,12 +785,28 @@
     };
 
     window.calDetailVerCompleto = function () {
-        var tId = window._calCurrentTareaId;
+        var btnListo = document.getElementById('calDetailBtnListo');
+        var tId = window._calCurrentTareaId || (btnListo && btnListo.dataset.tid ? parseInt(btnListo.dataset.tid) || null : null);
         var id = window._calCurrentActividadId;
         if (tId) {
-            // Abrir widget tarea encima del calendario (no cerrar el panel)
             if (typeof window.crmTaskVerDetalle === 'function') {
                 window.crmTaskVerDetalle(tId);
+            } else {
+                // fallback directo al modal de tareas
+                var modal = document.getElementById('crmTaskDetailModal');
+                if (modal) {
+                    modal.classList.add('active');
+                    var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
+                    fetch('/app/api/tarea/' + tId + '/', { headers: { 'X-CSRFToken': csrf } })
+                        .then(function(r){ return r.ok ? r.json() : null; })
+                        .then(function(data) {
+                            if (!data) return;
+                            var el = function(id){ return document.getElementById(id); };
+                            if (el('crmTaskModalTitulo')) el('crmTaskModalTitulo').textContent = data.titulo || '—';
+                            if (el('crmTaskModalDesc')) el('crmTaskModalDesc').textContent = data.descripcion || 'Sin descripción.';
+                            if (el('crmTaskModalEstado')) el('crmTaskModalEstado').textContent = data.estado || '—';
+                        }).catch(function(){});
+                }
             }
         } else if (id) {
             woVerActividadGenerica(id);
@@ -888,12 +906,16 @@
                 nextTimeEl.style.color = isNowHappening ? '#34C759' : '#86868B';
                 nextTimeEl.style.fontWeight = isNowHappening ? '700' : '500';
             }
-            if (nextContainer) nextContainer.style.borderLeftColor = isNowHappening ? '#34C759' : '#0052D4';
+            if (nextContainer) {
+                nextContainer.style.borderLeftColor = isNowHappening ? '#34C759' : '#0052D4';
+                nextContainer.style.cursor = 'pointer';
+                (function(evId){ nextContainer.onclick = function(){ calShowEventDetail(String(evId)); }; })(nextEvent.id);
+            }
             if (nextIcon) nextIcon.setAttribute('stroke', isNowHappening ? '#34C759' : '#86868B');
         } else {
             if (nextTitleEl) nextTitleEl.textContent = 'Sin eventos próximos';
             if (nextTimeEl) { nextTimeEl.textContent = '—'; nextTimeEl.style.color='#86868B'; nextTimeEl.style.fontWeight='500'; }
-            if (nextContainer) nextContainer.style.borderLeftColor = '#0052D4';
+            if (nextContainer) { nextContainer.style.borderLeftColor = '#0052D4'; nextContainer.style.cursor = 'default'; nextContainer.onclick = null; }
         }
 
         // ── Tareas de hoy ──
@@ -907,7 +929,8 @@
                     var timeFmt=calFmt12(tD);
                     var isOverdue=tD<now;
                     var textStyle=isOverdue?'text-decoration:line-through;color:#AEAEB2;':'color:#1D1D1F;';
-                    return '<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.05);">' +
+                    var safeId=String(t.id).replace(/'/g,'');
+                    return '<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.05);cursor:pointer;" onclick="calShowEventDetail(\''+safeId+'\')">'+
                         '<div style="width:16px;height:16px;border-radius:4px;border:2px solid '+(isOverdue?'#D1D1D6':'#FF9500')+';flex-shrink:0;margin-top:2px;"></div>'+
                         '<div><div style="font-size:0.82rem;font-weight:600;'+textStyle+'line-height:1.3;">'+woEscape(t.title)+'</div>'+
                         '<div style="font-size:0.72rem;color:#86868B;">'+timeFmt+'</div></div></div>';
