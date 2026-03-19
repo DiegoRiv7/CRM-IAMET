@@ -531,9 +531,9 @@
                         var e = info.event;
                         var stored = _globalEvents.find(function (x) { return String(x.id) === String(e.id); });
                         if (stored && stored.extendedProps && stored.extendedProps.tipo_actividad === 'tarea') {
-                            // Es una tarea — abrir widget de detalle de tarea
-                            if (typeof window.crmTaskVerDetalle === 'function') {
-                                window.crmTaskVerDetalle(stored.extendedProps.tarea_id);
+                            var tId = stored.extendedProps.tarea_id;
+                            if (tId && typeof window.crmTaskVerDetalle === 'function') {
+                                window.crmTaskVerDetalle(tId);
                             }
                         } else {
                             woVerActividadGenerica(e.id);
@@ -623,11 +623,26 @@
                 if (!t.fecha_limite) return;
                 var tParticipants = [];
                 if (t.asignado_a_id) tParticipants.push({ id: t.asignado_a_id });
+                // fecha_limite puede ser 'YYYY-MM-DD' (date-only) o 'YYYY-MM-DDTHH:MM:SS'
+                var tStart = t.fecha_limite;
+                var tEnd = null;
+                if (tStart && tStart.indexOf('T') === -1) {
+                    // Solo fecha — mostrar como bloque 1h en horario laboral
+                    tStart = tStart + 'T09:00:00';
+                    tEnd   = t.fecha_limite + 'T10:00:00';
+                } else if (tStart) {
+                    // Tiene hora — usar duración de 1h
+                    var _d = new Date(tStart);
+                    _d.setHours(_d.getHours() + 1);
+                    tEnd = _d.toISOString().slice(0, 19);
+                }
                 _globalEvents.push({
                     id: 'tarea-' + t.id,
                     title: t.titulo,
-                    start: t.fecha_limite,
+                    start: tStart,
+                    end: tEnd,
                     color: '#FF9500',
+                    editable: false,
                     extendedProps: {
                         tipo_actividad: 'tarea',
                         tarea_id: t.id,
