@@ -389,8 +389,8 @@
                                 title: ev.title,
                                 start: ev.startStr,
                                 end: ev.endStr || ev.startStr,
-                                description: ep.description || '',
-                                tipo: ep.tipo || 'otro',
+                                description: stored.description || '',
+                                tipo: ep.tipo_actividad || ep.tipo || 'otro',
                                 color: stored.color || '#1D1D1F',
                                 participants: (ep.participants || []).map(function (p) { return p.id; }),
                                 opportunity: ep.opportunity ? ep.opportunity.id : null
@@ -416,8 +416,8 @@
                                 title: ev.title,
                                 start: ev.startStr,
                                 end: ev.endStr || ev.startStr,
-                                description: ep.description || '',
-                                tipo: ep.tipo || 'otro',
+                                description: stored.description || '',
+                                tipo: ep.tipo_actividad || ep.tipo || 'otro',
                                 color: stored.color || '#1D1D1F',
                                 participants: (ep.participants || []).map(function (p) { return p.id; }),
                                 opportunity: ep.opportunity ? ep.opportunity.id : null
@@ -735,7 +735,7 @@
         document.getElementById('calFormActFecha').value = fecha;
         document.getElementById('calFormActInicio').value = inicio;
         document.getElementById('calFormActFin').value = fin;
-        document.getElementById('calFormActDesc').value = e.description || '';
+        document.getElementById('calFormActDesc').value = evt.description || '';
 
         _calParticipantesSel = e.participants ? e.participants.map(function (p) { return { id: p.id, nombre: p.text || p.nombre }; }) : [];
         calRenderParticipantes();
