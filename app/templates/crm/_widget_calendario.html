@@ -1435,7 +1435,9 @@
         verPop.textContent=evt.title||'Actividad';
         var d1=new Date(evt.start); var d2=evt.end?new Date(evt.end):d1;
         var fEl=document.getElementById('woVerActFecha');
-        if (fEl) fEl.textContent=d1.toLocaleDateString()+' '+d1.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(evt.end?' - '+d2.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'');
+        var fmtT=function(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+        var fmtD=function(d){return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
+        if (fEl) fEl.textContent=fmtD(d1)+' '+fmtT(d1)+(evt.end?' – '+fmtT(d2):'');
         var creadorNombre='';
         if (e.creado_por&&typeof e.creado_por==='object') creadorNombre=e.creado_por.text||e.creado_por.nombre||'';
         else creadorNombre=e.creado_por||'';

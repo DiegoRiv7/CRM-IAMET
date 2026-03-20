@@ -1833,8 +1833,9 @@
             if (!newVal) return;
 
             var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
-            var oldFecha = _woCurrentViewingTaskFechaLimite ? new Date(_woCurrentViewingTaskFechaLimite).toLocaleString() : 'Sin fecha';
-            var newFecha = new Date(newVal).toLocaleString();
+            var _fmtDT=function(d){return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+            var oldFecha = _woCurrentViewingTaskFechaLimite ? _fmtDT(new Date(_woCurrentViewingTaskFechaLimite)) : 'Sin fecha';
+            var newFecha = _fmtDT(new Date(newVal));
             var newIso = new Date(newVal).toISOString();
 
             fetch('/app/api/tarea-oportunidad/' + _woCurrentViewingTaskId + '/', {
@@ -1898,8 +1899,9 @@
                     }
                     document.getElementById('woVerActNombre').textContent = t.titulo || 'Sin título';
 
-                    var fechaCreacion = t.fecha_creacion ? new Date(t.fecha_creacion).toLocaleString() : '';
-                    var fechaLimite = t.fecha_limite ? new Date(t.fecha_limite).toLocaleString() : 'Sin límite';
+                    var _fmtDTt=function(d){return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+                    var fechaCreacion = t.fecha_creacion ? _fmtDTt(new Date(t.fecha_creacion)) : '';
+                    var fechaLimite = t.fecha_limite ? _fmtDTt(new Date(t.fecha_limite)) : 'Sin límite';
                     _woCurrentViewingTaskFechaLimite = t.fecha_limite;
                     var fechaEl = document.getElementById('woVerActFecha');
                     fechaEl.setAttribute('data-creacion', fechaCreacion);
