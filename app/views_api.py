@@ -473,16 +473,34 @@ def api_chat_oportunidad(request, opp_id):
             )
             notificados.add(opp.usuario_id)
 
-        # Notificar a usuarios etiquetados con @username
+        # Notificar a usuarios etiquetados con @[Nombre] o @username
         if texto:
             import re
             from django.contrib.auth.models import User as _User
-            menciones = re.findall(r'@([\w.]+)', texto)
-            for username in set(menciones):
+
+            def _buscar_mencionado(nombre):
+                parts = nombre.strip().split()
+                if len(parts) >= 2:
+                    u = _User.objects.filter(
+                        first_name__iexact=parts[0],
+                        last_name__iexact=' '.join(parts[1:])
+                    ).first()
+                    if u:
+                        return u
+                return _User.objects.filter(username__iexact=nombre.strip()).first()
+
+            mencionados = set()
+            for nombre in re.findall(r'@\[([^\]]+)\]', texto):
+                u = _buscar_mencionado(nombre)
+                if u:
+                    mencionados.add(u)
+            for username in re.findall(r'@(\w+)', texto):
                 try:
-                    mencionado = _User.objects.get(username=username)
+                    mencionados.add(_User.objects.get(username=username))
                 except _User.DoesNotExist:
-                    continue
+                    pass
+
+            for mencionado in mencionados:
                 if mencionado == request.user or mencionado.id in notificados:
                     continue
                 crear_notificacion(

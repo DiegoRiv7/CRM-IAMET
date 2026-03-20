@@ -4109,18 +4109,21 @@
                             var item = document.createElement('div');
                             item.setAttribute('data-mention-item', '1');
                             item.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;gap:8px;';
-                            item.innerHTML = '<span style="font-weight:600;color:#1D1D1F;">' + nombre + '</span><span style="color:#9CA3AF;font-size:0.78rem;">@' + username + '</span>';
+                            item.innerHTML = '<span style="font-weight:600;color:#1D1D1F;">' + nombre + '</span>';
                             item.addEventListener('mouseenter', function () { dd.querySelectorAll('[data-mention-item]').forEach(function (x) { x.classList.remove('focused'); }); item.classList.add('focused'); item.style.background = '#F3F4F6'; });
                             item.addEventListener('mouseleave', function () { item.style.background = ''; });
+                            (function(n) {
                             item.addEventListener('click', function () {
                                 var before = commentInput.value.slice(0, _mentionStart);
                                 var after = commentInput.value.slice(commentInput.selectionStart);
-                                commentInput.value = before + '@' + username + ' ' + after;
-                                var newPos = (_mentionStart + username.length + 2);
+                                var tag = '@[' + n + '] ';
+                                commentInput.value = before + tag + after;
+                                var newPos = _mentionStart + tag.length;
                                 commentInput.setSelectionRange(newPos, newPos);
                                 _crmMentionClose();
                                 commentInput.focus();
                             });
+                            })(nombre);
                             dd.appendChild(item);
                         });
                         dd.style.display = 'block';

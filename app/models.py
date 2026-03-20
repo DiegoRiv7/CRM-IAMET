@@ -1811,37 +1811,63 @@ class ProyectoComentario(models.Model):
         return f"{self.usuario.username} - {self.proyecto.nombre} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
     
     def get_contenido_con_menciones(self):
-        """Convierte las menciones @usuario en enlaces"""
+        """Convierte las menciones @[Nombre] / @usuario en enlaces"""
         import re
-        contenido = self.contenido
-        
-        # Buscar patrones @usuario
-        def reemplazar_mencion(match):
+        contenido = self.contenido or ""
+
+        def _buscar(nombre):
+            parts = nombre.strip().split()
+            if len(parts) >= 2:
+                u = User.objects.filter(first_name__iexact=parts[0], last_name__iexact=' '.join(parts[1:])).first()
+                if u: return u
+            return User.objects.filter(username__iexact=nombre.strip()).first()
+
+        def reemplazar_bracket(match):
+            nombre = match.group(1)
+            u = _buscar(nombre)
+            nd = u.get_full_name() or u.username if u else nombre
+            uid = u.id if u else ''
+            return f'<span class="mencion" data-user-id="{uid}">@{nd}</span>'
+
+        def reemplazar_legacy(match):
             username = match.group(1)
             try:
-                usuario = User.objects.get(username=username)
-                return f'<span class="mencion" data-user-id="{usuario.id}">@{username}</span>'
+                u = User.objects.get(username=username)
+                nd = u.get_full_name() or u.username
+                return f'<span class="mencion" data-user-id="{u.id}">@{nd}</span>'
             except User.DoesNotExist:
                 return match.group(0)
-        
-        contenido = re.sub(r'@(\w+)', reemplazar_mencion, contenido)
+
+        contenido = re.sub(r'@\[([^\]]+)\]', reemplazar_bracket, contenido)
+        contenido = re.sub(r'@(\w+)', reemplazar_legacy, contenido)
         return contenido
-    
+
     def extraer_menciones(self):
         """Extrae los usuarios mencionados del contenido"""
         import re
-        menciones = re.findall(r'@(\w+)', self.contenido)
         usuarios_mencionados = []
-        
-        for username in menciones:
+
+        def _add(u):
+            if u and u not in usuarios_mencionados:
+                usuarios_mencionados.append(u)
+
+        for nombre in re.findall(r'@\[([^\]]+)\]', self.contenido):
+            parts = nombre.strip().split()
+            u = None
+            if len(parts) >= 2:
+                u = User.objects.filter(first_name__iexact=parts[0], last_name__iexact=' '.join(parts[1:])).first()
+            if not u:
+                u = User.objects.filter(username__iexact=nombre.strip()).first()
+            _add(u)
+
+        for username in re.findall(r'@(\w+)', self.contenido):
             try:
-                usuario = User.objects.get(username=username)
-                usuarios_mencionados.append(usuario)
+                _add(User.objects.get(username=username))
             except User.DoesNotExist:
-                continue
-        
+                pass
+
         return usuarios_mencionados
-    
+
     def save(self, *args, **kwargs):
         # Si se está editando (no es creación), marcar como editado
         if self.pk:
@@ -1962,28 +1988,55 @@ class TareaComentario(models.Model):
         return f"{self.usuario.username} - {self.tarea.titulo} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
     
     def get_contenido_con_menciones(self):
-        """Convierte las menciones @usuario y [USER=XX] en enlaces HTML"""
+        """Convierte las menciones @[Nombre] / @usuario y [USER=XX] en enlaces HTML"""
         import re
         contenido = self.contenido or ""
-        
+
         def replace_bitrix_user(match):
             b_id = match.group(1)
             name = match.group(2)
             try:
                 up = UserProfile.objects.filter(bitrix_user_id=b_id).first()
-                if up: return f'<span class="mencion" data-user-id="{up.user.id}">@{up.user.username}</span>'
+                if up:
+                    nombre_display = up.user.get_full_name() or up.user.username
+                    return f'<span class="mencion" data-user-id="{up.user.id}">@{nombre_display}</span>'
             except: pass
             return f'<span class="mencion-bitrix">@{name}</span>'
-        
+
         contenido = re.sub(r'\[USER=(\d+)\](.*?)\[/USER\]', replace_bitrix_user, contenido)
-        
+
+        def _buscar_usuario_por_nombre(nombre):
+            parts = nombre.strip().split()
+            if len(parts) >= 2:
+                u = User.objects.filter(
+                    first_name__iexact=parts[0],
+                    last_name__iexact=' '.join(parts[1:])
+                ).first()
+                if u:
+                    return u
+            return User.objects.filter(username__iexact=nombre.strip()).first()
+
+        # Nuevo formato: @[Nombre Completo]
+        def reemplazar_mencion_bracket(match):
+            nombre = match.group(1)
+            usuario = _buscar_usuario_por_nombre(nombre)
+            if usuario:
+                nombre_display = usuario.get_full_name() or usuario.username
+                return f'<span class="mencion" data-user-id="{usuario.id}">@{nombre_display}</span>'
+            return f'<span class="mencion">@{nombre}</span>'
+
+        contenido = re.sub(r'@\[([^\]]+)\]', reemplazar_mencion_bracket, contenido)
+
+        # Formato legado: @username
         def reemplazar_mencion(match):
             username = match.group(1)
             try:
                 usuario = User.objects.get(username=username)
-                return f'<span class="mencion" data-user-id="{usuario.id}">@{username}</span>'
-            except User.DoesNotExist: return match.group(0)
-        
+                nombre_display = usuario.get_full_name() or usuario.username
+                return f'<span class="mencion" data-user-id="{usuario.id}">@{nombre_display}</span>'
+            except User.DoesNotExist:
+                return match.group(0)
+
         contenido = re.sub(r'@(\w+)', reemplazar_mencion, contenido)
         return contenido.replace('\n', '<br>')
 
@@ -1991,18 +2044,36 @@ class TareaComentario(models.Model):
     def extraer_menciones(self):
         """Extrae los usuarios mencionados del contenido"""
         import re
-        menciones = re.findall(r'@(\w+)', self.contenido)
         usuarios_mencionados = []
-        
-        for username in menciones:
+        ids_vistos = set()
+
+        def _add(u):
+            if u and u.id not in ids_vistos:
+                ids_vistos.add(u.id)
+                usuarios_mencionados.append(u)
+
+        # Nuevo formato: @[Nombre Completo]
+        for nombre in re.findall(r'@\[([^\]]+)\]', self.contenido):
+            parts = nombre.strip().split()
+            u = None
+            if len(parts) >= 2:
+                u = User.objects.filter(
+                    first_name__iexact=parts[0],
+                    last_name__iexact=' '.join(parts[1:])
+                ).first()
+            if not u:
+                u = User.objects.filter(username__iexact=nombre.strip()).first()
+            _add(u)
+
+        # Formato legado: @username
+        for username in re.findall(r'@(\w+)', self.contenido):
             try:
-                usuario = User.objects.get(username=username)
-                usuarios_mencionados.append(usuario)
+                _add(User.objects.get(username=username))
             except User.DoesNotExist:
-                continue
-        
+                pass
+
         return usuarios_mencionados
-    
+
     def save(self, *args, **kwargs):
         # Si se está editando (no es creación), marcar como editado
         if self.pk:
