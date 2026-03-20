@@ -1165,10 +1165,12 @@
                     calGlobalRefetch();
                 } else {
                     if (btn) { btn.textContent = 'Completar'; btn.disabled = false; }
+                    r.json().then(function(d){ alert(d.error || 'No se pudo completar la actividad.'); }).catch(function(){ alert('No se pudo completar la actividad.'); });
                 }
             })
             .catch(function () {
                 if (btn) { btn.textContent = 'Completar'; btn.disabled = false; }
+                alert('Error de conexión al completar la actividad.');
             });
     };
 

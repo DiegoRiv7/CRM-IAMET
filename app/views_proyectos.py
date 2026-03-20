@@ -2270,8 +2270,9 @@ def actividad_detail(request, pk):
         })
 
     elif request.method == 'DELETE':
-        # Verificar permisos: solo el creador o un supervisor puede eliminar
-        if actividad.creado_por != request.user and not is_supervisor(request.user):
+        # Pueden completar/eliminar: el creador, los participantes o un supervisor
+        es_participante = actividad.participantes.filter(pk=request.user.pk).exists()
+        if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user):
             return JsonResponse({'error': 'No tienes permiso para eliminar esta actividad.'}, status=403)
 
         actividad.delete()
