@@ -242,4 +242,5 @@ urlpatterns = [
     path('api/mail/destacar/<int:correo_id>/', views_mail.api_mail_destacar, name='api_mail_destacar'),
     path('api/mail/eliminar/<int:correo_id>/', views_mail.api_mail_eliminar, name='api_mail_eliminar'),
     path('api/mail/reenviar/<int:correo_id>/', views_mail.api_mail_reenviar, name='api_mail_reenviar'),
+    path('api/mail/conexion/<int:conexion_id>/eliminar/', views_mail.api_mail_eliminar_conexion, name='api_mail_eliminar_conexion'),
 ]

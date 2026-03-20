@@ -14,6 +14,7 @@
         var _mailPollInterval = null;
         var _mailPendingBadge = 0;
         var _mailConexionId = null;
+        var _mailConexiones = [];
 
         window.mailCambiarConexion = function () {
             var sel = document.getElementById('mailWidgetEmailSelect');
@@ -95,20 +96,12 @@
                     var btnText = document.getElementById('mailBtnConfigText');
 
                     if (data.tiene_conexion && data.conexiones && data.conexiones.length > 0) {
-                        if (selectEl) {
-                            selectEl.innerHTML = '';
-                            data.conexiones.forEach(function (c) {
-                                var opt = document.createElement('option');
-                                opt.value = c.id;
-                                opt.textContent = c.correo_electronico;
-                                selectEl.appendChild(opt);
-                            });
-                            selectEl.style.display = 'block';
-                            if (!_mailConexionId || !data.conexiones.find(c => c.id == _mailConexionId)) {
-                                _mailConexionId = data.conexiones[0].id;
-                            }
-                            selectEl.value = _mailConexionId;
+                        _mailConexiones = data.conexiones;
+                        if (!_mailConexionId || !data.conexiones.find(function(c){ return c.id == _mailConexionId; })) {
+                            _mailConexionId = data.conexiones[0].id;
                         }
+                        // Legacy select (hidden but kept for compat)
+                        if (selectEl) { selectEl.style.display = 'none'; }
                         if (btnText) btnText.style.display = 'none';
                         if (syncBtn) syncBtn.style.display = 'flex';
                         if (composeBtn) composeBtn.style.display = 'flex';
@@ -120,6 +113,9 @@
                         var userEmailEl = document.getElementById('mailUserEmail');
                         if (userNameEl) userNameEl.textContent = activeConn2.correo_electronico.split('@')[0];
                         if (userEmailEl) userEmailEl.textContent = '@' + activeConn2.correo_electronico.split('@')[1];
+
+                        // Populate account switch list
+                        _renderAccountSwitchList();
 
                         var activeConn = data.conexiones.find(c => c.id == _mailConexionId) || data.conexiones[0];
                         var cfgEmail = document.getElementById('mailCfgEmail');
@@ -869,7 +865,11 @@
         /* ── Reply panel drag & resize ─────────────── */
         (function () {
             var _dragging = false, _resizing = false;
-            var _startX, _startY, _startTop, _startLeft, _startRight, _startBottom, _startW, _startH;
+            var _startX, _startY, _startTop, _startLeft, _startW, _startH;
+
+            function _isInteractive(el) {
+                return el.closest('button, input, select, label, a') !== null;
+            }
 
             document.addEventListener('mousedown', function (e) {
                 var handle = document.getElementById('mailReplyDragHandle');
@@ -883,19 +883,28 @@
                     _startY = e.clientY;
                     _startW = panel.offsetWidth;
                     _startH = panel.offsetHeight;
+                    // Anchor top/left so resize doesn't jump
+                    _startTop = panel.offsetTop;
+                    _startLeft = panel.offsetLeft;
+                    panel.style.right = 'auto';
+                    panel.style.bottom = 'auto';
+                    panel.style.top = _startTop + 'px';
+                    panel.style.left = _startLeft + 'px';
                     e.preventDefault();
                     return;
                 }
 
-                if (handle && handle.contains(e.target)) {
+                if (handle && handle.contains(e.target) && !_isInteractive(e.target)) {
                     _dragging = true;
                     _startX = e.clientX;
                     _startY = e.clientY;
-                    var r = panel.getBoundingClientRect();
-                    _startTop = r.top;
-                    _startLeft = r.left;
+                    // Use offsetTop/offsetLeft (parent-relative) not getBoundingClientRect
+                    _startTop = panel.offsetTop;
+                    _startLeft = panel.offsetLeft;
                     panel.style.right = 'auto';
                     panel.style.bottom = 'auto';
+                    panel.style.top = _startTop + 'px';
+                    panel.style.left = _startLeft + 'px';
                     e.preventDefault();
                 }
             });
@@ -906,16 +915,17 @@
                 if (_dragging) {
                     var dx = e.clientX - _startX;
                     var dy = e.clientY - _startY;
-                    panel.style.top = Math.max(0, _startTop + dy) + 'px';
-                    panel.style.left = Math.max(0, _startLeft + dx) + 'px';
+                    var par = panel.parentElement;
+                    var maxT = par ? Math.max(0, par.offsetHeight - 60) : 9999;
+                    var maxL = par ? Math.max(0, par.offsetWidth - 120) : 9999;
+                    panel.style.top = Math.max(0, Math.min(maxT, _startTop + dy)) + 'px';
+                    panel.style.left = Math.max(0, Math.min(maxL, _startLeft + dx)) + 'px';
                 }
                 if (_resizing) {
                     var dx = e.clientX - _startX;
                     var dy = e.clientY - _startY;
                     panel.style.width = Math.max(300, _startW + dx) + 'px';
                     panel.style.height = Math.max(260, _startH + dy) + 'px';
-                    panel.style.right = 'auto';
-                    panel.style.bottom = 'auto';
                 }
             });
 
@@ -989,7 +999,72 @@
             }
         }
 
-        /* ── Account menu toggle ─────────────────────── */
+        /* ── Account menu ────────────────────────────── */
+        function _renderAccountSwitchList() {
+            var container = document.getElementById('mailAccountSwitchList');
+            if (!container) return;
+            var others = _mailConexiones.filter(function(c){ return c.id != _mailConexionId; });
+            if (!others.length) { container.innerHTML = ''; return; }
+            var h = '<div style="padding:6px 14px 2px;font-size:0.67rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;">Cambiar de cuenta</div>';
+            others.forEach(function(c) {
+                h += '<button onclick="event.stopPropagation();mailCambiarCuenta(' + c.id + ')" style="width:100%;display:flex;align-items:center;gap:9px;padding:8px 14px;background:none;border:none;font-size:0.81rem;color:#374151;cursor:pointer;font-family:inherit;text-align:left;" onmouseenter="this.style.background=\'#F3F4F8\'" onmouseleave="this.style.background=\'\'">';
+                h += '<div style="width:24px;height:24px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.7rem;font-weight:700;color:#6B7280;">' + (c.correo_electronico[0] || '?').toUpperCase() + '</div>';
+                h += '<div style="min-width:0;"><div style="font-size:0.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(c.correo_electronico) + '</div></div>';
+                h += '</button>';
+            });
+            container.innerHTML = h;
+        }
+
+        window.mailCambiarCuenta = function (conexionId) {
+            _mailConexionId = conexionId;
+            var menu = document.getElementById('mailAccountMenu');
+            if (menu) menu.style.display = 'none';
+            // Update user info display
+            var conn = _mailConexiones.find(function(c){ return c.id == conexionId; });
+            if (conn) {
+                var userNameEl = document.getElementById('mailUserName');
+                var userEmailEl = document.getElementById('mailUserEmail');
+                if (userNameEl) userNameEl.textContent = conn.correo_electronico.split('@')[0];
+                if (userEmailEl) userEmailEl.textContent = '@' + conn.correo_electronico.split('@')[1];
+            }
+            _renderAccountSwitchList();
+            mailCargarLista('INBOX');
+            // Reset to inbox
+            document.querySelectorAll('.mail-folder-wb').forEach(function(b){ b.classList.remove('active'); });
+            var inbox = document.getElementById('mwFolderInbox');
+            if (inbox) inbox.classList.add('active');
+            var title = document.getElementById('mailListTitle');
+            if (title) title.textContent = 'Bandeja de entrada';
+            _mailCarpeta = 'INBOX';
+        };
+
+        window.mailEliminarCuenta = function () {
+            var conn = _mailConexiones.find(function(c){ return c.id == _mailConexionId; });
+            var email = conn ? conn.correo_electronico : 'esta cuenta';
+            if (!confirm('¿Eliminar la cuenta ' + email + '?\nSe eliminarán todos los correos sincronizados de esta cuenta.')) return;
+            var menu = document.getElementById('mailAccountMenu');
+            if (menu) menu.style.display = 'none';
+            fetch('/app/api/mail/conexion/' + _mailConexionId + '/eliminar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() }
+            })
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (d.ok) {
+                        _mailConexiones = _mailConexiones.filter(function(c){ return c.id != _mailConexionId; });
+                        if (_mailConexiones.length > 0) {
+                            mailCambiarCuenta(_mailConexiones[0].id);
+                        } else {
+                            _mailConexionId = null;
+                            _mailInitState();
+                        }
+                        _showToastMail('Cuenta eliminada', true);
+                    } else {
+                        _showToastMail(d.error || 'Error al eliminar', false);
+                    }
+                });
+        };
+
         window.mailToggleAccountMenu = function () {
             var menu = document.getElementById('mailAccountMenu');
             if (!menu) return;

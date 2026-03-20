@@ -1177,3 +1177,15 @@ def api_mail_reenviar(request, correo_id):
         fecha_envio=django_tz.now(), leido=True, cuerpo_cargado=True,
     )
     return JsonResponse({'ok': True})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_eliminar_conexion(request, conexion_id):
+    try:
+        conexion = MailConexion.objects.get(id=conexion_id, usuario=request.user)
+    except MailConexion.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Conexión no encontrada'}, status=404)
+    conexion.delete()
+    return JsonResponse({'ok': True})
