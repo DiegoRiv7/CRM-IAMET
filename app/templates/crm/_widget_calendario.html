@@ -1146,6 +1146,10 @@
         if (tId) {
             if (typeof window.crmTaskVerDetalle === 'function') {
                 window.crmTaskVerDetalle(tId);
+            } else {
+                // Fallback: abrir el modal directamente
+                var modal = document.getElementById('crmTaskDetailModal');
+                if (modal) { modal.classList.add('active'); }
             }
         } else if (id) {
             woVerActividadGenerica(id);
@@ -1342,14 +1346,21 @@
                 return { id:e.id, title:e.title, start:e.start, end:e.end, description:e.description, color:evtColor,
                     extendedProps:{ participants:e.participants, opportunity:e.opportunity, creado_por:e.creado_por, tipo_actividad:e.tipo } };
             });
+            // Convierte cualquier fecha a string local sin sufijo timezone (p.ej. "2026-03-20T14:30:00")
+            // así FullCalendar y las vistas personalizadas la tratan como hora local consistente.
+            function _calToLocalISO(dateStr) {
+                var d = new Date(dateStr);
+                var p = function(n){ return String(n).padStart(2,'0'); };
+                return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':00';
+            }
             tareas.forEach(function(t){
                 if (!t.fecha_limite) return;
                 var tParticipants=[];
                 if (t.asignado_a_id) tParticipants.push({id:t.asignado_a_id});
-                // Tareas: solo marcar la hora límite con 5 minutos de duración
-                var tStart=t.fecha_limite, tEnd=null;
-                if (tStart && tStart.indexOf('T')===-1) { tStart=tStart+'T09:00:00'; tEnd=t.fecha_limite+'T09:05:00'; }
-                else if (tStart) { var _d=new Date(tStart); _d.setMinutes(_d.getMinutes()+5); tEnd=_d.toISOString().slice(0,19); }
+                // Normalizar a hora local sin timezone para consistencia
+                var tStart = _calToLocalISO(t.fecha_limite);
+                var _dEnd = new Date(t.fecha_limite); _dEnd.setMinutes(_dEnd.getMinutes()+5);
+                var tEnd = _calToLocalISO(_dEnd.toISOString());
                 _globalEvents.push({ id:'tarea-'+t.id, title:t.titulo, start:tStart, end:tEnd, color:'#FF9500', editable:false,
                     extendedProps:{ tipo_actividad:'tarea', tarea_id:t.id, participants:tParticipants, creado_por:{id:t.creado_por_id} } });
             });
