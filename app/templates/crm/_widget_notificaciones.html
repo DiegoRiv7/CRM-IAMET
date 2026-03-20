@@ -96,14 +96,14 @@
 /* ═══ macOS Toasts ═══ */
 .macos-toast {
     width: 350px;
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(32px) saturate(250%) contrast(110%);
-    -webkit-backdrop-filter: blur(32px) saturate(250%) contrast(110%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-top: 1px solid rgba(255, 255, 255, 0.8);
-    border-left: 1px solid rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.40);
+    backdrop-filter: blur(48px) saturate(300%) contrast(110%);
+    -webkit-backdrop-filter: blur(48px) saturate(300%) contrast(110%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.7);
+    border-left: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
     padding: 16px 18px;
     display: flex;
     gap: 14px;
@@ -761,12 +761,13 @@
         
         c.appendChild(div);
         setTimeout(() => div.classList.add('show'), 50);
-        setTimeout(() => { if (div.parentNode) _dismissToast(div); }, 6000);
+        // Durar 12 segundos para que el usuario pueda verla sin prisas
+        setTimeout(() => { if (div.parentNode) _dismissToast(div); }, 12000);
     }
     
     function _dismissToast(div) {
         div.classList.remove('show');
-        setTimeout(() => { if(div.parentNode) div.parentNode.removeChild(div); }, 400);
+        setTimeout(() => { if(div.parentNode) div.parentNode.removeChild(div); }, 500);
     }
 
     /* ═══ Filter ═══ */
