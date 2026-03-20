@@ -2121,6 +2121,7 @@ def actividad_list_create(request):
                     'opportunity': opportunity_data,
                     'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
                     'es_mio': actividad.creado_por_id == request.user.pk,
+                    'completada': actividad.completada,
                 })
             return JsonResponse(events, safe=False)
 
@@ -2213,7 +2214,19 @@ def actividad_detail(request, pk):
             'opportunity': opportunity_data,
             'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
             'es_mio': actividad.creado_por_id == request.user.pk,
+            'completada': actividad.completada,
         })
+
+    elif request.method == 'PATCH':
+        # Marcar como completada (puede hacerlo el creador, un participante o supervisor)
+        es_participante = actividad.participantes.filter(pk=request.user.pk).exists()
+        if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user):
+            return JsonResponse({'error': 'No tienes permiso para completar esta actividad.'}, status=403)
+        data = json.loads(request.body)
+        if 'completada' in data:
+            actividad.completada = data['completada']
+            actividad.save(update_fields=['completada'])
+        return JsonResponse({'id': actividad.id, 'completada': actividad.completada})
 
     elif request.method == 'PUT':
         data = json.loads(request.body)

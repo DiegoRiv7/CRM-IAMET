@@ -2321,6 +2321,8 @@ class Actividad(models.Model):
         verbose_name="Oportunidad Relacionada"
     )
 
+    completada = models.BooleanField(default=False, verbose_name="Completada")
+
     class Meta:
         verbose_name = "Actividad del Calendario"
         verbose_name_plural = "Actividades del Calendario"

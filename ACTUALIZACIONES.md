@@ -5,6 +5,24 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 
 
+## [2026-03-20] — Calendario
+
+### FIX — Botón "Completar" dejaba de funcionar tras la primera actividad
+- Corregido bug donde `btn.disabled = true` nunca se reiniciaba al completar con éxito.
+- Ahora al abrir el detalle de cualquier actividad, el botón siempre se reinicia a su estado activo.
+
+### MEJORA — Completar actividades sin que desaparezcan del calendario
+- Las actividades y tareas completadas ya no desaparecen del calendario.
+- Quedan visibles con opacidad reducida (~38%) y con tachado en el título.
+- El color de estado en el panel derecho cambia a gris cuando está completada.
+- El botón "Completar" pasa a "Ya completada" (deshabilitado) si la actividad ya fue marcada.
+- Aplica en las tres vistas: mes, día y semana.
+
+### TÉCNICO — Campo `completada` en modelo Actividad
+- Se agregó campo `completada = BooleanField(default=False)` al modelo `Actividad`.
+- El endpoint `PATCH /api/actividades/<id>/` actualiza únicamente ese campo.
+- Migración 0092 aplicada.
+
 ## [2026-03-19] — Calendario
 
 ### MEJORA — Vista diaria del calendario
@@ -136,6 +154,14 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 ### FIX - Calendario
 - Se arreglo que las tareas no aparecían
 - Tambien se arreglo que la descripcion y oportunidades de algunas actividades no salian el el widget de la actividad
+
+### FIX - Drive
+- Se arreglo que no se podían borrar archivos del drive
+
+### MEJORA - Tareas
+Ahora se permite reabrir tareas ya cerradas en caso que quieran volver a darle seguimiento o si el responsable se equivoco y no cumplio con lo solicitado.
+
+
 
 ## Cómo usar este archivo
 
