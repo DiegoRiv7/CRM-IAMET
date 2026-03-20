@@ -3,44 +3,15 @@
     <div
         style="width:94vw;max-width:94vw;height:92vh;max-height:92vh;display:flex;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,30,0.18);">
         <!-- Header -->
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1.5px solid #F0F2F5;flex-shrink:0;background:#fff;position:relative;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1.5px solid #F0F2F5;flex-shrink:0;background:#fff;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
             </svg>
-            <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex-shrink:0;">Correo</span>
-            <!-- Dynamic Island — centered, shown when a mail is open -->
-            <div id="mailHeaderIsland" style="display:none;position:absolute;left:50%;transform:translateX(-50%);">
-                <div style="background:#fff;border:1.5px solid #EBEBED;border-radius:999px;padding:4px 10px;display:inline-flex;align-items:center;gap:1px;box-shadow:0 2px 10px rgba(0,0,30,0.09);">
-                    <button onclick="mailResponder(false)" class="mail-island-btn" title="Responder">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                    </button>
-                    <button onclick="mailResponder(true)" class="mail-island-btn" title="Responder a todos">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 2 12 7 7"/><polyline points="11 17 6 12 11 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H6"/></svg>
-                    </button>
-                    <button onclick="mailAbrirReenvio()" class="mail-island-btn" title="Reenviar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
-                    </button>
-                    <div style="width:1px;height:16px;background:#E5E7EB;margin:0 5px;flex-shrink:0;"></div>
-                    <button onclick="mailDestacar()" class="mail-island-btn" id="mailIslandStarBtn" title="Destacar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    </button>
-                    <button onclick="mailEliminar()" class="mail-island-btn mail-island-danger" title="Eliminar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                    </button>
-                    <div style="width:1px;height:16px;background:#E5E7EB;margin:0 5px;flex-shrink:0;"></div>
-                    <button onclick="mailAbrirFormNuevaOpp()" class="mail-island-btn" title="Crear oportunidad">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                    </button>
-                    <button onclick="mailTogglePanel('mailPanelVincular')" class="mail-island-btn" title="Vincular a oportunidad">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    </button>
-                </div>
-            </div>
-            <div style="flex:1;"></div>
+            <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Correo</span>
             <button onclick="mailCerrar()"
-                style="border:none;background:none;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#9CA3AF;flex-shrink:0;"
+                style="border:none;background:none;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#9CA3AF;"
                 onmouseenter="this.style.background='#F3F4F8'" onmouseleave="this.style.background='none'">&times;</button>
         </div>
         <!-- 3-column body -->
@@ -253,6 +224,34 @@
                 </div>
                 <!-- Detail content -->
                 <div id="mailDetailContent" style="display:none;flex-direction:column;height:100%;position:relative;">
+                    <!-- Dynamic Island — centered in the body column -->
+                    <div style="display:flex;justify-content:center;padding:8px 0;flex-shrink:0;">
+                        <div style="background:#fff;border:1.5px solid #EBEBED;border-radius:999px;padding:4px 10px;display:inline-flex;align-items:center;gap:1px;box-shadow:0 2px 10px rgba(0,0,30,0.09);">
+                            <button onclick="mailResponder(false)" class="mail-island-btn" title="Responder">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                            </button>
+                            <button onclick="mailResponder(true)" class="mail-island-btn" title="Responder a todos">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 2 12 7 7"/><polyline points="11 17 6 12 11 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H6"/></svg>
+                            </button>
+                            <button onclick="mailAbrirReenvio()" class="mail-island-btn" title="Reenviar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
+                            </button>
+                            <div style="width:1px;height:16px;background:#E5E7EB;margin:0 5px;flex-shrink:0;"></div>
+                            <button onclick="mailDestacar()" class="mail-island-btn" id="mailIslandStarBtn" title="Destacar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </button>
+                            <button onclick="mailEliminar()" class="mail-island-btn mail-island-danger" title="Eliminar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                            </button>
+                            <div style="width:1px;height:16px;background:#E5E7EB;margin:0 5px;flex-shrink:0;"></div>
+                            <button onclick="mailAbrirFormNuevaOpp()" class="mail-island-btn" title="Crear oportunidad">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                            </button>
+                            <button onclick="mailTogglePanel('mailPanelVincular')" class="mail-island-btn" title="Vincular a oportunidad">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            </button>
+                        </div>
+                    </div>
                     <!-- Linked opp bar -->
                     <div id="mailDetailOppBar"
                         style="display:none;align-items:center;gap:8px;padding:6px 16px;background:#EEF3FF;border-bottom:1px solid #D0E1FF;font-size:0.79rem;color:#0052D4;font-weight:600;flex-shrink:0;">

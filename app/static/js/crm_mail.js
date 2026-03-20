@@ -63,9 +63,6 @@
             setTimeout(function () {
                 w.classList.remove('active', 'closing');
             }, 200);
-            // Hide island
-            var island = document.getElementById('mailHeaderIsland');
-            if (island) island.style.display = 'none';
             // Restore scroll
             var sy = parseInt(document.body.dataset.mailScrollY || '0');
             document.body.style.position = '';
@@ -283,9 +280,6 @@
             if (detailEmpty) detailEmpty.style.display = 'none';
             if (detailContent) detailContent.style.display = 'flex';
 
-            // Show header island
-            var island = document.getElementById('mailHeaderIsland');
-            if (island) island.style.display = 'block';
 
             fetch('/app/api/mail/detalle/' + id + '/')
                 .then(function (r) { return r.json(); })
@@ -846,8 +840,6 @@
                     if (card) card.remove();
                     document.getElementById('mailDetailContent').style.display = 'none';
                     document.getElementById('mailDetailEmpty').style.display = 'flex';
-                    var island = document.getElementById('mailHeaderIsland');
-                    if (island) island.style.display = 'none';
                     _mailCorreoActual = null;
                     _showToastMail('Movido a Papelera', true);
                 });
