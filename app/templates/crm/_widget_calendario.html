@@ -87,6 +87,7 @@
             </div>
             <div style="display:flex;gap:3px;background:#F2F2F7;border-radius:10px;padding:3px;">
                 <button id="calBtnMes" class="cal-view-btn active" onclick="calSwitchView('month')">Mes</button>
+                <button id="calBtnSemana" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
                 <button id="calBtnDia" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
             </div>
         </div>
@@ -101,6 +102,11 @@
                 <!-- Day view (custom timeline) -->
                 <div id="calDayViewRoot" style="flex:1;min-height:0;display:none;flex-direction:column;overflow:hidden;">
                     <div id="calDayTimeline"></div>
+                </div>
+                <!-- Week view -->
+                <div id="calWeekViewRoot" style="flex:1;min-height:0;display:none;flex-direction:column;overflow:hidden;">
+                    <div id="calWeekHeader" style="display:flex;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,0.07);padding-bottom:4px;"></div>
+                    <div id="calWeekTimeline" style="overflow-y:auto;flex:1;min-height:0;position:relative;"></div>
                 </div>
             </div>
 
@@ -454,6 +460,11 @@
     window.calNavPrev = function () {
         if (_calViewMode === 'month') {
             if (_globalCalendar) { _globalCalendar.prev(); }
+        } else if (_calViewMode === 'week') {
+            _calWeekStart = new Date(_calWeekStart);
+            _calWeekStart.setDate(_calWeekStart.getDate() - 7);
+            calRenderWeekView(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() - 1);
@@ -465,6 +476,11 @@
     window.calNavNext = function () {
         if (_calViewMode === 'month') {
             if (_globalCalendar) { _globalCalendar.next(); }
+        } else if (_calViewMode === 'week') {
+            _calWeekStart = new Date(_calWeekStart);
+            _calWeekStart.setDate(_calWeekStart.getDate() + 7);
+            calRenderWeekView(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() + 1);
@@ -477,6 +493,10 @@
         _calCurrentDay = new Date();
         if (_calViewMode === 'month') {
             if (_globalCalendar) { _globalCalendar.today(); }
+        } else if (_calViewMode === 'week') {
+            _calWeekStart = calGetWeekStart(new Date());
+            calRenderWeekView(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
@@ -487,20 +507,30 @@
         _calViewMode = mode;
         var fcRoot = document.getElementById('fullCalendarRoot');
         var dayRoot = document.getElementById('calDayViewRoot');
+        var weekRoot = document.getElementById('calWeekViewRoot');
         var btnMes = document.getElementById('calBtnMes');
         var btnDia = document.getElementById('calBtnDia');
+        var btnSemana = document.getElementById('calBtnSemana');
+        // Hide all
+        fcRoot.style.display = 'none';
+        dayRoot.style.display = 'none';
+        weekRoot.style.display = 'none';
+        [btnMes, btnDia, btnSemana].forEach(function(b){ if(b) b.classList.remove('active'); });
+
         if (mode === 'month') {
             fcRoot.style.display = '';
-            dayRoot.style.display = 'none';
-            btnMes.classList.add('active');
-            btnDia.classList.remove('active');
+            if (btnMes) btnMes.classList.add('active');
             if (_globalCalendar) { _globalCalendar.today(); _globalCalendar.render(); }
+        } else if (mode === 'week') {
+            weekRoot.style.display = 'flex';
+            weekRoot.style.flexDirection = 'column';
+            if (btnSemana) btnSemana.classList.add('active');
+            _calWeekStart = calGetWeekStart(new Date());
+            calRenderWeekView(_calWeekStart);
         } else {
-            fcRoot.style.display = 'none';
             dayRoot.style.display = 'flex';
             dayRoot.style.flexDirection = 'column';
-            btnMes.classList.remove('active');
-            btnDia.classList.add('active');
+            if (btnDia) btnDia.classList.add('active');
             _calCurrentDay = new Date();
             calRenderDayView(_calCurrentDay);
         }
@@ -523,6 +553,16 @@
                 var viewDate = view.currentStart;
                 if (titleEl) titleEl.textContent = MONTHS[viewDate.getMonth()] + ' ' + viewDate.getFullYear();
             }
+        } else if (_calViewMode === 'week' && _calWeekStart) {
+            var ws = _calWeekStart;
+            var we = new Date(ws); we.setDate(we.getDate() + 6);
+            var rangeStr;
+            if (ws.getMonth() === we.getMonth()) {
+                rangeStr = ws.getDate() + ' – ' + we.getDate() + ' de ' + MONTHS_ES[ws.getMonth()] + ', ' + ws.getFullYear();
+            } else {
+                rangeStr = ws.getDate() + ' de ' + MONTHS_ES[ws.getMonth()] + ' – ' + we.getDate() + ' de ' + MONTHS_ES[we.getMonth()] + ', ' + we.getFullYear();
+            }
+            if (titleEl) titleEl.textContent = rangeStr;
         } else if (_calViewMode === 'day') {
             var d = _calCurrentDay;
             var dayName = DAYS_ES[d.getDay()];
@@ -560,6 +600,227 @@
         nowDot.style.top = (top-4)+'px';
         nowLine.style.display = 'block';
         nowDot.style.display = 'block';
+    }
+
+    /* ─── WEEK VIEW ─── */
+    var _calWeekStart = null; // Monday of current week
+
+    function calGetWeekStart(date) {
+        var d = new Date(date);
+        var day = d.getDay(); // 0=Sun
+        d.setDate(d.getDate() - day); // go to Sunday
+        d.setHours(0,0,0,0);
+        return d;
+    }
+
+    function calRenderWeekHeader(weekStart) {
+        var headerEl = document.getElementById('calWeekHeader');
+        if (!headerEl) return;
+        var now = new Date();
+        var DAY_NAMES = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+        var html = '<div style="width:56px;min-width:56px;flex-shrink:0;"></div>';
+        for (var i = 0; i < 7; i++) {
+            var d = new Date(weekStart);
+            d.setDate(d.getDate() + i);
+            var isToday = d.toDateString() === now.toDateString();
+            var dayN = d.getDate();
+            var dayName = DAY_NAMES[d.getDay()];
+            var yr = d.getFullYear(), mo = d.getMonth(), dt = d.getDate();
+            html += '<div style="flex:1;text-align:center;padding:6px 2px 8px;cursor:pointer;border-left:'+(i>0?'1px solid rgba(0,0,0,0.05)':'none')+';"' +
+                ' onclick="calSwitchView(\'day\');_calCurrentDay=new Date('+yr+','+mo+','+dt+');calRenderDayView(_calCurrentDay);calUpdateNavTitle();">'+
+                '<div style="font-size:0.63rem;font-weight:700;letter-spacing:0.07em;color:'+(isToday?'#0052D4':'#AEAEB2')+';">'+dayName+'</div>'+
+                '<div style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;margin-top:3px;font-size:1.05rem;font-weight:700;'+
+                (isToday?'background:#0052D4;color:#fff;':'color:#1D1D1F;')+
+                '">'+dayN+'</div>'+
+                '</div>';
+        }
+        headerEl.innerHTML = html;
+    }
+
+    function calRenderWeekView(weekStart) {
+        var container = document.getElementById('calWeekTimeline');
+        if (!container) return;
+        if (!container.offsetWidth) {
+            requestAnimationFrame(function(){ calRenderWeekView(weekStart); });
+            return;
+        }
+        _calWeekStart = weekStart;
+        calRenderWeekHeader(weekStart);
+
+        var CAL_HOUR_H = 64;
+        var now = new Date();
+        var nowMs = now.getTime();
+        var pad = function(n){ return String(n).padStart(2,'0'); };
+
+        // Build 7 days
+        var days = [];
+        for (var i = 0; i < 7; i++) {
+            var dd = new Date(weekStart);
+            dd.setDate(dd.getDate() + i);
+            days.push(dd);
+        }
+
+        var hoursW = 56;
+        var availW = container.offsetWidth - hoursW;
+        var dayW = Math.floor(availW / 7);
+        var totalH = 24 * CAL_HOUR_H;
+
+        var html = '<div style="position:relative;min-height:'+totalH+'px;">';
+
+        // Hour grid + half-hour marks
+        for (var h = 0; h < 24; h++) {
+            var topPx = h * CAL_HOUR_H;
+            var label = h > 0 ? calFmtHour(h) : '';
+            html += '<div class="cal-hour-row" style="position:absolute;top:'+topPx+'px;left:0;right:0;height:'+CAL_HOUR_H+'px;" data-hour="'+h+'">' +
+                '<div class="cal-hour-label">'+label+'</div>' +
+                '<div class="cal-hour-area"></div></div>';
+            html += '<div style="position:absolute;top:'+(topPx+CAL_HOUR_H/2)+'px;left:'+hoursW+'px;right:0;height:1px;border-top:1px dashed rgba(0,0,0,0.04);pointer-events:none;"></div>';
+        }
+
+        // Vertical day separators
+        for (var di = 1; di < 7; di++) {
+            html += '<div style="position:absolute;top:0;bottom:0;left:'+(hoursW+di*dayW)+'px;width:1px;background:rgba(0,0,0,0.06);pointer-events:none;z-index:2;"></div>';
+        }
+
+        // Today highlight background
+        var todayIdx = -1;
+        days.forEach(function(d, idx){ if (d.toDateString() === now.toDateString()) todayIdx = idx; });
+        if (todayIdx >= 0) {
+            html += '<div style="position:absolute;top:0;bottom:0;left:'+(hoursW+todayIdx*dayW)+'px;width:'+dayW+'px;background:rgba(0,82,212,0.025);pointer-events:none;z-index:1;"></div>';
+            var nowMinsW = now.getHours()*60+now.getMinutes();
+            var nowTopW = (nowMinsW/60)*CAL_HOUR_H;
+            var nowLineLeft = hoursW + todayIdx * dayW;
+            html += '<div style="position:absolute;top:'+(nowTopW-4)+'px;left:'+(nowLineLeft-4)+'px;width:8px;height:8px;border-radius:50%;background:#FF3B30;z-index:11;pointer-events:none;"></div>';
+            html += '<div style="position:absolute;top:'+nowTopW+'px;left:'+nowLineLeft+'px;width:'+dayW+'px;height:2px;background:#FF3B30;z-index:10;pointer-events:none;"></div>';
+        }
+
+        // Get filtered events
+        var allEvts = window._calAllEvents || _globalEvents;
+        var sel = document.getElementById('calUserFilter');
+        var filterVal = sel ? sel.value : 'all';
+        var filtered = filterVal === 'all' ? allEvts : allEvts.filter(function(ev) {
+            var parts = (ev.extendedProps||{}).participants || [];
+            var uid = parseInt(filterVal);
+            var isP = parts.some(function(p){return p.id===uid||p.value===uid;});
+            var cr = (ev.extendedProps||{}).creado_por;
+            var isC = cr ? (typeof cr==='object'?cr.id===uid:parseInt(cr)===uid) : false;
+            return isP || isC;
+        });
+
+        // Render each day column
+        days.forEach(function(day, dayIdx) {
+            var dateStr = day.getFullYear()+'-'+pad(day.getMonth()+1)+'-'+pad(day.getDate());
+            var isToday = day.toDateString() === now.toDateString();
+            var dayLeft = hoursW + dayIdx * dayW;
+
+            var dayEvts = filtered.filter(function(ev){
+                return ev.start && ev.start.substring(0,10) === dateStr;
+            }).sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
+
+            var taskEvts = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') === 0; });
+            var actEvts  = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') !== 0; });
+
+            // Carril de tareas dentro de la columna del día
+            var taskLaneW = taskEvts.length > 0 ? Math.max(Math.round(dayW * 0.36), 52) : 0;
+            var actW = dayW - taskLaneW - (taskEvts.length > 0 ? 1 : 0);
+
+            // Column-split actividades dentro de este día
+            var actItems = actEvts.map(function(ev){
+                var sD = new Date(ev.start);
+                var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
+                return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1 };
+            });
+            var colEnds = [];
+            actItems.forEach(function(it){
+                var placed = false;
+                for (var c=0; c<colEnds.length; c++){
+                    if (it.sMs >= colEnds[c]){ it.col=c; colEnds[c]=it.eMs; placed=true; break; }
+                }
+                if (!placed){ it.col=colEnds.length; colEnds.push(it.eMs); }
+            });
+            actItems.forEach(function(it){
+                var maxC = it.col;
+                actItems.forEach(function(other){
+                    if (it.sMs < other.eMs && it.eMs > other.sMs) maxC = Math.max(maxC, other.col);
+                });
+                it.numCols = maxC + 1;
+            });
+
+            // Renderizar actividades
+            actItems.forEach(function(item){
+                var ev = item.ev;
+                var ep = ev.extendedProps||{};
+                var hasOpp = ep.opportunity && ep.opportunity.id;
+                var startD = new Date(ev.start);
+                var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
+                var startMins = startD.getHours()*60+startD.getMinutes();
+                var endMins = endD.getHours()*60+endD.getMinutes();
+                var evTop = (startMins/60)*CAL_HOUR_H;
+                var evH = Math.max(((Math.max(endMins-startMins,30))/60)*CAL_HOUR_H, 28);
+                var safeId = String(ev.id).replace(/'/g,'');
+
+                var bg = hasOpp ? 'linear-gradient(135deg,#EEF3FF 0%,#E8EFFF 100%)' : 'linear-gradient(135deg,#F5F5F7 0%,#EFEFEF 100%)';
+                var borderColor = hasOpp ? '#0052D4' : '#8E8E93';
+                var textColor = hasOpp ? '#0041A8' : '#3A3A3C';
+                var mutedColor = hasOpp ? 'rgba(0,65,168,0.55)' : 'rgba(58,58,60,0.55)';
+                var isNow = isToday && nowMs>=startD.getTime() && nowMs<=endD.getTime();
+                var isOvAct = isToday && nowMs>endD.getTime();
+
+                var n = item.numCols, c = item.col;
+                var gap = n > 1 ? 2 : 0;
+                var colW = Math.floor((actW - gap*(n-1)) / n);
+                var leftPx = dayLeft + c*(colW+gap);
+
+                var shadowStyle = isNow
+                    ? 'box-shadow:0 0 0 2px #34C759,0 2px 8px rgba(52,199,89,0.18);'
+                    : 'box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+
+                var oppId = hasOpp ? ep.opportunity.id : null;
+                var titleClick = oppId ? ' onclick="event.stopPropagation();if(typeof window.openDetalle===\'function\')window.openDetalle('+oppId+');"' : '';
+
+                var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
+                var statusDot = '';
+                if (isNow) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:1px;"></div>';
+                else if (isOvAct) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:1px;"></div>';
+
+                html += '<div style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;" onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                    '<div style="display:flex;align-items:flex-start;gap:3px;">'+statusDot+
+                    '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;"'+(oppId?' style="cursor:pointer;text-decoration:underline;text-decoration-color:'+borderColor+'44;"':'')+titleClick+'>'+woEscape(ev.title)+'</div>'+
+                    '</div>'+
+                    (evH > 46 ? '<div style="font-size:0.63rem;color:'+mutedColor+';margin-top:2px;padding-left:'+(statusDot?'8px':'0px')+';">'+startFmt+'</div>' : '')+
+                    '</div>';
+            });
+
+            // Separador y carril de tareas
+            if (taskEvts.length > 0) {
+                var taskX = dayLeft + actW + 1;
+                html += '<div style="position:absolute;top:0;bottom:0;left:'+(dayLeft+actW)+'px;width:1px;background:rgba(0,0,0,0.05);pointer-events:none;z-index:2;"></div>';
+                taskEvts.forEach(function(ev){
+                    var startD = new Date(ev.start);
+                    var startMins = startD.getHours()*60+startD.getMinutes();
+                    var evTop = (startMins/60)*CAL_HOUR_H;
+                    var safeId = String(ev.id).replace(/'/g,'');
+                    var isOverdue = isToday && nowMs > startD.getTime();
+                    var tColor = isOverdue ? '#FF3B30' : '#FF9500';
+                    var tBg = isOverdue ? 'linear-gradient(135deg,rgba(255,59,48,0.11) 0%,rgba(255,59,48,0.06) 100%)' : 'linear-gradient(135deg,rgba(255,149,0,0.14) 0%,rgba(255,149,0,0.07) 100%)';
+                    var tBorder = isOverdue ? 'rgba(255,59,48,0.4)' : 'rgba(255,149,0,0.5)';
+                    var deadlineFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
+                    var statusTxt = isOverdue ? 'Vencida' : 'Pendiente';
+
+                    html += '<div style="position:absolute;top:'+evTop+'px;left:'+taskX+'px;width:'+(taskLaneW-2)+'px;height:1px;background:'+tColor+';opacity:0.25;pointer-events:none;"></div>';
+                    html += '<div style="position:absolute;top:'+(evTop-20)+'px;left:'+(taskX+2)+'px;width:'+(taskLaneW-6)+'px;min-height:40px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;z-index:6;padding:5px 6px;border-radius:8px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 4px rgba(0,0,0,0.07);"' +
+                        ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                        '<div style="font-size:0.68rem;font-weight:700;color:'+tColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;">'+woEscape(ev.title)+'</div>'+
+                        '<div style="font-size:0.6rem;color:'+tColor+';opacity:0.75;">'+deadlineFmt+'</div>'+
+                        '</div>';
+                });
+            }
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+        setTimeout(function(){ if(container) container.scrollTop = 7*CAL_HOUR_H; }, 50);
+        calUpdateSidePanel();
     }
 
     /* ─── DAY VIEW RENDER ─── */
@@ -951,7 +1212,7 @@
         var efectPct = total>0 ? Math.round((ejecutadas.length/total)*100) : 100;
 
         var panelTitle=document.getElementById('calPanelOverviewTitle');
-        if (panelTitle) panelTitle.textContent = _calViewMode==='day' ? 'Tu día de un vistazo' : 'Tu mes de un vistazo';
+        if (panelTitle) panelTitle.textContent = _calViewMode==='day' ? 'Tu día de un vistazo' : (_calViewMode==='week' ? 'Tu semana de un vistazo' : 'Tu mes de un vistazo');
         var efectLabelEl=document.getElementById('calSideEfectLabel');
         var pctEl=document.getElementById('calSidePct');
         var listosEl=document.getElementById('calSideLisots');
@@ -1096,6 +1357,7 @@
             calApplyFilter(filterVal);
             calUpdateSidePanel();
             if (_calViewMode==='day') { calRenderDayView(_calCurrentDay); }
+            else if (_calViewMode==='week') { calRenderWeekView(_calWeekStart); }
         });
         calLoadUserFilter();
     };
@@ -1125,6 +1387,7 @@
         calApplyFilter(val);
         calUpdateSidePanel();
         if (_calViewMode==='day') { calRenderDayView(_calCurrentDay); }
+        else if (_calViewMode==='week') { calRenderWeekView(_calWeekStart); }
     };
 
     function calApplyFilter(filterVal) {
