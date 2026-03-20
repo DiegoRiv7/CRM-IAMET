@@ -1486,20 +1486,31 @@ class Notificacion(models.Model):
     Modelo para el sistema de notificaciones de usuarios
     """
     TIPO_CHOICES = [
+        # Críticas
+        ('tarea_vencida', 'Tarea vencida'),
+        ('tarea_por_vencer', 'Tarea por vencer'),
+        ('actividad_vencida', 'Actividad vencida'),
+        ('actividad_por_vencer', 'Actividad por vencer'),
+        ('rendimiento_bajo', 'Bajo rendimiento de usuario'),
+        # Importantes
+        ('tarea_reprogramada', 'Tarea reprogramada'),
+        ('tarea_asignada', 'Tarea asignada'),
+        ('tarea_opp_asignada', 'Tarea de oportunidad asignada'),
         ('mencion', 'Mención en comentario'),
-        ('respuesta', 'Respuesta a comentario'),
-        ('comentario_oportunidad', 'Nuevo comentario en oportunidad'),
-        ('proyecto_agregado', 'Agregado a proyecto'),
+        ('muro_mencion', 'Mención en el muro'),
+        ('tarea_mencion', 'Mención en tarea'),
+        ('solicitud_cambio_perfil', 'Solicitud de cambio de perfil'),
+        # Informativas
         ('tarea_participante', 'Agregado como participante a tarea'),
         ('tarea_observador', 'Agregado como observador a tarea'),
-        ('sistema', 'Notificación del sistema'),
-        ('tarea_opp_asignada', 'Tarea de oportunidad asignada'),
+        ('comentario_oportunidad', 'Nuevo comentario en oportunidad'),
+        ('tarea_comentario', 'Comentario en tarea'),
         ('tarea_opp_comentario', 'Comentario en tarea de oportunidad'),
         ('oportunidad_mensaje', 'Nuevo mensaje en oportunidad'),
-        ('muro_mencion', 'Mención en el muro'),
         ('muro_post', 'Nuevo anuncio en el muro'),
-        ('rendimiento_bajo', 'Bajo rendimiento de usuario'),
-        ('solicitud_cambio_perfil', 'Solicitud de cambio de perfil'),
+        ('respuesta', 'Respuesta a comentario'),
+        ('sistema', 'Notificación del sistema'),
+        ('proyecto_agregado', 'Agregado a proyecto'),
         ('programacion_proyecto', 'Asignado a actividad de proyecto'),
     ]
     
@@ -1525,7 +1536,7 @@ class Notificacion(models.Model):
         related_name='notificaciones'
     )
     tipo = models.CharField(
-        max_length=25,
+        max_length=30,
         choices=TIPO_CHOICES,
         verbose_name="Tipo de Notificación"
     )

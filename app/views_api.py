@@ -196,54 +196,39 @@ def obtener_notificaciones_api(request):
             from datetime import timedelta
             from .models import Tarea, TareaOportunidad
             now = timezone.now()
-            umbral_por_vencer = now + timedelta(days=1)
-
-            # Tareas generales: separar M2M para evitar JOIN+DISTINCT lento
-            ids_participando = set(user.tareas_participando.values_list('id', flat=True))
+            umbral_por_vencer = now + timedelta(minutes=10)
+            
+            # Buscar tareas generales del usuario
             mis_tareas = Tarea.objects.filter(
-                Q(asignado_a=user) | Q(id__in=ids_participando),
+                Q(asignado_a=user) | Q(participantes=user),
                 estado__in=['pendiente', 'iniciada', 'en_progreso'],
                 fecha_limite__isnull=False
-            ).only('id', 'titulo', 'fecha_limite')
-
-            # Batch lookup: IDs de notificaciones ya creadas (2 queries en vez de N)
-            ya_notif_vencida = set(Notificacion.objects.filter(
-                usuario_destinatario=user, tipo='tarea_vencida'
-            ).values_list('tarea_id', flat=True))
-            ya_notif_por_vencer = set(Notificacion.objects.filter(
-                usuario_destinatario=user, tipo='tarea_por_vencer'
-            ).values_list('tarea_id', flat=True))
-
+            ).distinct()
+            
             for t in mis_tareas:
                 if t.fecha_limite < now:
-                    if t.id not in ya_notif_vencida:
+                    # Vencida
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='tarea_vencida', tarea_id=t.id).exists():
                         crear_notificacion(user, 'tarea_vencida', 'Tarea Vencida', f'La tarea "{t.titulo}" ha vencido.', tarea_id=t.id)
                 elif t.fecha_limite <= umbral_por_vencer:
-                    if t.id not in ya_notif_por_vencer:
-                        crear_notificacion(user, 'tarea_por_vencer', 'Tarea por Vencer', f'La tarea "{t.titulo}" vencerá pronto.', tarea_id=t.id)
+                    # Por vencer
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='tarea_por_vencer', tarea_id=t.id).exists():
+                        crear_notificacion(user, 'tarea_por_vencer', 'Tarea por Vencer', f'La tarea "{t.titulo}" vence en menos de 10 minutos.', tarea_id=t.id)
 
-            # Tareas de oportunidad
+            # Idem para tareas de oportunidad
             mis_tareas_opp = TareaOportunidad.objects.filter(
                 responsable=user,
                 estado__in=['pendiente', 'en_progreso'],
                 fecha_limite__isnull=False
-            ).select_related('oportunidad').only('id', 'titulo', 'fecha_limite', 'oportunidad_id')
-
-            ya_notif_act_vencida = set(Notificacion.objects.filter(
-                usuario_destinatario=user, tipo='actividad_vencida'
-            ).values_list('tarea_opp_id', flat=True))
-            ya_notif_act_por_vencer = set(Notificacion.objects.filter(
-                usuario_destinatario=user, tipo='actividad_por_vencer'
-            ).values_list('tarea_opp_id', flat=True))
-
+            )
             for t in mis_tareas_opp:
                 if t.fecha_limite < now:
-                    if t.id not in ya_notif_act_vencida:
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='actividad_vencida', tarea_opp=t).exists():
                         crear_notificacion(user, 'actividad_vencida', 'Actividad Vencida', f'La actividad "{t.titulo}" ha vencido.', tarea_opp=t, oportunidad=t.oportunidad)
                 elif t.fecha_limite <= umbral_por_vencer:
-                    if t.id not in ya_notif_act_por_vencer:
-                        crear_notificacion(user, 'actividad_por_vencer', 'Actividad por Vencer', f'La actividad "{t.titulo}" vencerá pronto.', tarea_opp=t, oportunidad=t.oportunidad)
-
+                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='actividad_por_vencer', tarea_opp=t).exists():
+                        crear_notificacion(user, 'actividad_por_vencer', 'Actividad por Vencer', f'La actividad "{t.titulo}" vence en menos de 10 minutos.', tarea_opp=t, oportunidad=t.oportunidad)
+                        
         except Exception as ex_exp:
             print(f"Error verificando vencimientos: {ex_exp}")
         
