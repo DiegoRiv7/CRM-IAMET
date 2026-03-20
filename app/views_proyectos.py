@@ -1595,15 +1595,17 @@ def api_crear_tarea(request):
                 contenido=f"📝 Tarea creada: {descripcion}"
             )
         
-        # Enviar notificación al usuario asignado si es diferente al creador
-        if asignado_a and asignado_a != request.user:
+        # Enviar notificación al usuario asignado
+        if asignado_a:
             try:
                 crear_notificacion(
                     usuario_destinatario=asignado_a,
                     tipo='tarea_asignada',
                     titulo='Nueva tarea asignada',
                     mensaje=f'Se te ha asignado la tarea "{nombre}"',
-                    usuario_remitente=request.user
+                    usuario_remitente=request.user,
+                    tarea_id=tarea.id,
+                    tarea_titulo=tarea.titulo
                 )
             except Exception as e:
                 print(f"⚠️ Error enviando notificación: {e}")
@@ -3401,8 +3403,8 @@ def api_tareas_oportunidad(request, opp_id):
                 tarea.actividad_calendario = actividad
                 tarea.save(update_fields=['actividad_calendario'])
 
-            # Notificar al responsable incluso si es el mismo creador
-            if tarea.responsable:
+            # Notificar al responsable si es distinto al creador
+            if tarea.responsable and tarea.responsable != request.user:
                 remitente_nombre = request.user.get_full_name() or request.user.username
                 crear_notificacion(
                     usuario_destinatario=tarea.responsable,
