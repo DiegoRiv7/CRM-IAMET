@@ -279,6 +279,8 @@
             var detailContent = document.getElementById('mailDetailContent');
             if (detailEmpty) detailEmpty.style.display = 'none';
             if (detailContent) detailContent.style.display = 'flex';
+            var island = document.getElementById('mailHeaderIsland');
+            if (island) island.style.display = 'inline-flex';
 
 
             fetch('/app/api/mail/detalle/' + id + '/')
@@ -841,6 +843,8 @@
                     document.getElementById('mailDetailContent').style.display = 'none';
                     document.getElementById('mailDetailEmpty').style.display = 'flex';
                     _mailCorreoActual = null;
+                    var island = document.getElementById('mailHeaderIsland');
+                    if (island) island.style.display = 'none';
                     _showToastMail('Movido a Papelera', true);
                 });
         };
