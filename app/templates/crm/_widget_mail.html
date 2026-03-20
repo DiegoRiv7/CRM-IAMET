@@ -1,7 +1,7 @@
 <!-- ═══ WIDGET: CORREO ═══ -->
 <div class="widget-overlay" id="widgetMail" style="z-index:10210;">
     <div
-        style="width:94vw;max-width:1200px;height:92vh;max-height:92vh;display:flex;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,30,0.18);">
+        style="width:94vw;max-width:94vw;height:92vh;max-height:92vh;display:flex;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,30,0.18);">
         <!-- Header -->
         <div
             style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1.5px solid #F0F2F5;flex-shrink:0;background:#fff;">
@@ -16,7 +16,7 @@
                 onmouseenter="this.style.background='#F3F4F8'" onmouseleave="this.style.background='none'">&times;</button>
         </div>
         <!-- 3-column body -->
-        <div style="display:grid;grid-template-columns:200px 310px 1fr;flex:1;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:220px 340px 1fr;flex:1;overflow:hidden;">
 
             <!-- ──────────────────── SIDEBAR ──────────────────── -->
             <div
@@ -171,6 +171,48 @@
 
             <!-- ──────────────────── DETAIL COLUMN ──────────────────── -->
             <div style="display:flex;flex-direction:column;overflow:hidden;background:#fff;position:relative;">
+                <!-- Inline Compose Panel -->
+                <div id="mailComposePanel" style="display:none;flex-direction:column;height:100%;">
+                    <div style="display:flex;align-items:center;padding:14px 18px 10px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+                        <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Nuevo mensaje</span>
+                        <button onclick="mailCerrarCompose()" style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+                    </div>
+                    <!-- Fields -->
+                    <div style="flex-shrink:0;border-bottom:1px solid #F0F2F5;">
+                        <div style="display:flex;align-items:center;gap:10px;padding:8px 18px;border-bottom:1px solid #F3F4F8;">
+                            <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;">Para</span>
+                            <input type="email" id="mailCompPara" placeholder="destinatario@dominio.com" style="flex:1;border:none;outline:none;font-size:0.87rem;color:#1A1A2E;font-family:inherit;background:transparent;">
+                            <button onclick="mailToggleComposeCc()" style="font-size:0.7rem;color:#6B7280;background:none;border:1px solid #D1D5DB;border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;">CC / CCO</button>
+                        </div>
+                        <div id="mailComposeCcRow" style="display:none;align-items:center;gap:10px;padding:7px 18px;border-bottom:1px solid #F3F4F8;">
+                            <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;">CC</span>
+                            <input type="email" id="mailCompCc" placeholder="copia@dominio.com (opcional)" style="flex:1;border:none;outline:none;font-size:0.87rem;color:#1A1A2E;font-family:inherit;background:transparent;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;padding:8px 18px;">
+                            <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;">Asunto</span>
+                            <input type="text" id="mailCompAsunto" placeholder="Asunto del correo" style="flex:1;border:none;outline:none;font-size:0.87rem;color:#1A1A2E;font-family:inherit;background:transparent;">
+                        </div>
+                    </div>
+                    <!-- Compose toolbar -->
+                    <div style="display:flex;align-items:center;gap:1px;padding:5px 14px;border-bottom:1px solid #F0F2F5;flex-shrink:0;background:#FAFAFA;">
+                        <button onmousedown="event.preventDefault()" onclick="document.execCommand('bold')" class="mail-toolbar-btn" style="font-weight:800;font-family:serif;" title="Negrita">B</button>
+                        <button onmousedown="event.preventDefault()" onclick="document.execCommand('italic')" class="mail-toolbar-btn" style="font-style:italic;font-family:serif;" title="Cursiva">I</button>
+                        <button onmousedown="event.preventDefault()" onclick="document.execCommand('underline')" class="mail-toolbar-btn" style="text-decoration:underline;font-family:serif;" title="Subrayado">U</button>
+                        <div style="width:1px;height:16px;background:#EBEBED;margin:0 3px;flex-shrink:0;"></div>
+                        <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" class="mail-toolbar-btn" title="Lista">&#8801;</button>
+                    </div>
+                    <!-- Rich editor -->
+                    <div id="mailCompEditor" contenteditable="true" data-placeholder="Escribe tu mensaje..."
+                        style="flex:1;padding:14px 18px;outline:none;font-size:0.87rem;line-height:1.65;color:#1A1A2E;overflow-y:auto;font-family:inherit;"></div>
+                    <!-- Footer -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1.5px solid #F0F2F5;flex-shrink:0;background:#FAFAFA;">
+                        <button onclick="mailCerrarCompose()" style="background:none;color:#DC2626;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;padding:6px 4px;font-family:inherit;">Descartar</button>
+                        <button id="mailBtnEnviar" onclick="mailEnviarCorreo()" style="display:flex;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            Enviar
+                        </button>
+                    </div>
+                </div>
                 <!-- Empty state -->
                 <div id="mailDetailEmpty"
                     style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#D1D5DB;gap:10px;">
@@ -194,7 +236,7 @@
                         <span id="mailDetailOppName"></span>
                     </div>
                     <!-- Email header -->
-                    <div style="padding:14px 18px 10px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+                    <div style="padding:14px 18px 12px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
                         <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
                             <div id="mailDetailSubject"
                                 style="font-size:1rem;font-weight:700;color:#1A1A2E;flex:1;line-height:1.3;"></div>
@@ -214,6 +256,41 @@
                             <span style="color:#374151;font-weight:500;">De: <span id="mailDetailFrom"></span></span>
                             <span>Para: <span id="mailDetailTo"></span></span>
                             <span id="mailDetailDate" style="font-size:0.72rem;margin-top:1px;"></span>
+                        </div>
+                        <!-- Dynamic Island toolbar -->
+                        <div style="display:flex;justify-content:center;margin-top:14px;">
+                            <div style="background:#1A1A2E;border-radius:999px;padding:5px 10px;display:inline-flex;align-items:center;gap:1px;box-shadow:0 4px 16px rgba(0,0,30,0.22);">
+                                <!-- Responder -->
+                                <button onclick="mailResponder(false)" class="mail-island-btn" title="Responder">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                                </button>
+                                <!-- Responder a todos -->
+                                <button onclick="mailResponder(true)" class="mail-island-btn" title="Responder a todos">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 2 12 7 7"/><polyline points="12 17 7 12 12 7"/><path d="M22 20v-7a6 6 0 0 0-6-6H7"/></svg>
+                                </button>
+                                <!-- Reenviar -->
+                                <button onclick="mailAbrirReenvio()" class="mail-island-btn" title="Reenviar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
+                                </button>
+                                <div style="width:1px;height:16px;background:rgba(255,255,255,0.18);margin:0 5px;flex-shrink:0;"></div>
+                                <!-- Destacar -->
+                                <button onclick="mailDestacar()" class="mail-island-btn" id="mailIslandStarBtn" title="Destacar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                </button>
+                                <!-- Eliminar -->
+                                <button onclick="mailEliminar()" class="mail-island-btn mail-island-danger" title="Eliminar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                </button>
+                                <div style="width:1px;height:16px;background:rgba(255,255,255,0.18);margin:0 5px;flex-shrink:0;"></div>
+                                <!-- Crear Oportunidad -->
+                                <button onclick="mailAbrirFormNuevaOpp()" class="mail-island-btn" title="Crear oportunidad">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                                </button>
+                                <!-- Vincular -->
+                                <button onclick="mailTogglePanel('mailPanelVincular')" class="mail-island-btn" title="Vincular a oportunidad">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <!-- Attachments -->
@@ -385,66 +462,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Action toolbar (icon buttons) -->
-                    <div
-                        style="border-top:1.5px solid #F0F2F5;padding:8px 14px;display:flex;align-items:center;gap:4px;flex-shrink:0;background:#F9FAFB;">
-                        <!-- Responder -->
-                        <button onclick="mailResponder(false)" class="mail-action-btn" title="Responder">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="9 14 4 9 9 4" /><path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-                            </svg>
-                        </button>
-                        <!-- Responder a todos -->
-                        <button onclick="mailResponder(true)" class="mail-action-btn" title="Responder a todos">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="7 17 2 12 7 7"/><polyline points="12 17 7 12 12 7"/>
-                                <path d="M22 20v-7a6 6 0 0 0-6-6H7"/>
-                            </svg>
-                        </button>
-                        <!-- Reenviar -->
-                        <button onclick="mailAbrirReenvio()" class="mail-action-btn" title="Reenviar">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="15 10 20 15 15 20"/>
-                                <path d="M4 4v7a4 4 0 0 0 4 4h12"/>
-                            </svg>
-                        </button>
-                        <div style="width:1px;height:18px;background:#E5E7EB;margin:0 3px;flex-shrink:0;"></div>
-                        <!-- Destacar -->
-                        <button onclick="mailDestacar()" class="mail-action-btn" id="mailActionStarBtn" title="Destacar">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                            </svg>
-                        </button>
-                        <!-- Eliminar -->
-                        <button onclick="mailEliminar()" class="mail-action-btn mail-action-danger" title="Eliminar">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                            </svg>
-                        </button>
-                        <div style="width:1px;height:18px;background:#E5E7EB;margin:0 3px;flex-shrink:0;"></div>
-                        <!-- Crear Oportunidad -->
-                        <button onclick="mailAbrirFormNuevaOpp()" class="mail-action-btn" title="Crear oportunidad">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                            </svg>
-                        </button>
-                        <!-- Vincular a Oportunidad -->
-                        <button onclick="mailTogglePanel('mailPanelVincular')" class="mail-action-btn" title="Vincular a oportunidad">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                            </svg>
-                        </button>
-                    </div>
                     <!-- Panel: Vincular -->
                     <div id="mailPanelVincular"
                         style="display:none;flex-direction:column;gap:9px;padding:12px 16px;background:#F9FAFB;border-top:1px solid #F0F2F5;flex-shrink:0;">
@@ -472,44 +489,6 @@
             onclick="event.stopPropagation()">
         <button onclick="document.getElementById('mailLightbox').style.display='none';"
             style="position:absolute;top:20px;right:24px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-    </div>
-
-    <!-- ── MODAL: Redactar ── -->
-    <div id="mailModalRedactar"
-        style="display:none;position:fixed;inset:0;z-index:10310;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-        <div
-            style="background:#fff;border-radius:16px;width:580px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,30,0.25);">
-            <div style="padding:14px 18px 10px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;">
-                <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Redactar correo</span>
-                <button onclick="mailCerrarModal('mailModalRedactar')"
-                    style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-            </div>
-            <div style="padding:14px 18px;display:flex;flex-direction:column;gap:9px;flex:1;overflow-y:auto;">
-                <div>
-                    <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Para</div>
-                    <input type="email" class="wf-input" id="mailCompPara" placeholder="destinatario@dominio.com">
-                </div>
-                <div>
-                    <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">CC</div>
-                    <input type="email" class="wf-input" id="mailCompCc" placeholder="copia@dominio.com (opcional)">
-                </div>
-                <div>
-                    <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Asunto</div>
-                    <input type="text" class="wf-input" id="mailCompAsunto" placeholder="Asunto del correo">
-                </div>
-                <div style="flex:1;">
-                    <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Mensaje</div>
-                    <textarea class="wf-input" id="mailCompCuerpo" placeholder="Escribe tu mensaje..." style="min-height:140px;resize:vertical;"></textarea>
-                </div>
-            </div>
-            <div style="padding:10px 18px;border-top:1.5px solid #F0F2F5;display:flex;justify-content:flex-end;gap:8px;">
-                <button onclick="mailCerrarModal('mailModalRedactar')" style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Cancelar</button>
-                <button id="mailBtnEnviar" onclick="mailEnviarCorreo()" style="display:flex;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Enviar
-                </button>
-            </div>
-        </div>
     </div>
 
     <!-- ── MODAL: Config ── -->
@@ -661,11 +640,29 @@
         }
         .mail-toolbar-btn:hover { background: #E5E7EB; }
         #mailRespEditor:empty:before,
-        #mailFwdEditor:empty:before {
+        #mailFwdEditor:empty:before,
+        #mailCompEditor:empty:before {
             content: attr(data-placeholder);
             color: #9CA3AF;
             pointer-events: none;
         }
+        .mail-island-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            color: rgba(255,255,255,0.82);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.12s, color 0.12s;
+            flex-shrink: 0;
+        }
+        .mail-island-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+        .mail-island-btn.mail-island-danger:hover { background: rgba(239,68,68,0.28); color: #FCA5A5; }
+        .mail-island-btn.active { color: #F59E0B; }
         .mail-attach-chip {
             display: inline-flex;
             align-items: center;

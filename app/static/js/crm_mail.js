@@ -271,6 +271,10 @@
             var panelVincular = document.getElementById('mailPanelVincular');
             if (panelVincular) panelVincular.style.display = 'none';
 
+            // Close compose panel if open
+            var composePanel = document.getElementById('mailComposePanel');
+            if (composePanel) composePanel.style.display = 'none';
+
             var detailEmpty = document.getElementById('mailDetailEmpty');
             var detailContent = document.getElementById('mailDetailContent');
             if (detailEmpty) detailEmpty.style.display = 'none';
@@ -294,7 +298,7 @@
                     // Star state
                     var starBtn = document.getElementById('mailDetailStarBtn');
                     var starIcon = document.getElementById('mailDetailStarIcon');
-                    var actionStar = document.getElementById('mailActionStarBtn');
+                    var actionStar = document.getElementById('mailIslandStarBtn');
                     if (d.destacado) {
                         if (starBtn) starBtn.style.color = '#F59E0B';
                         if (starIcon) starIcon.setAttribute('fill', '#F59E0B');
@@ -488,13 +492,44 @@
         };
 
         window.mailRedactar = function () {
-            document.getElementById('mailModalRedactar').style.display = 'flex';
+            var panel = document.getElementById('mailComposePanel');
+            var empty = document.getElementById('mailDetailEmpty');
+            var content = document.getElementById('mailDetailContent');
+            var editor = document.getElementById('mailCompEditor');
+            var para = document.getElementById('mailCompPara');
+            var asunto = document.getElementById('mailCompAsunto');
+            if (empty) empty.style.display = 'none';
+            if (content) content.style.display = 'none';
+            if (panel) panel.style.display = 'flex';
+            if (editor) editor.innerHTML = '';
+            if (para) para.value = '';
+            if (asunto) asunto.value = '';
+        };
+
+        window.mailCerrarCompose = function () {
+            var panel = document.getElementById('mailComposePanel');
+            var empty = document.getElementById('mailDetailEmpty');
+            if (panel) panel.style.display = 'none';
+            if (_mailCorreoActual) {
+                var content = document.getElementById('mailDetailContent');
+                if (content) content.style.display = 'flex';
+            } else {
+                if (empty) empty.style.display = 'flex';
+            }
+        };
+
+        window.mailToggleComposeCc = function () {
+            var row = document.getElementById('mailComposeCcRow');
+            if (!row) return;
+            row.style.display = row.style.display === 'flex' ? 'none' : 'flex';
         };
 
         window.mailEnviarCorreo = function () {
             var para = document.getElementById('mailCompPara').value.trim();
             var asunto = document.getElementById('mailCompAsunto').value.trim();
-            var cuerpo = document.getElementById('mailCompCuerpo').value.trim();
+            var editor = document.getElementById('mailCompEditor');
+            var cuerpo_html = editor ? editor.innerHTML.trim() : '';
+            var cuerpo_texto = editor ? (editor.innerText || editor.textContent || '').trim() : '';
             var btn = document.getElementById('mailBtnEnviar');
 
             if (!para || !asunto) return;
@@ -503,13 +538,13 @@
             fetch('/app/api/mail/enviar/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({ para: para, asunto: asunto, cuerpo_texto: cuerpo })
+                body: JSON.stringify({ para: para, asunto: asunto, cuerpo_html: cuerpo_html, cuerpo_texto: cuerpo_texto })
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar'; }
                     if (data.ok) {
-                        mailCerrarModal('mailModalRedactar');
+                        mailCerrarCompose();
                         _showToastMail('Correo enviado', true);
                     }
                 });
@@ -776,7 +811,7 @@
                     _mailCorreoActual.destacado = d.destacado;
                     var starBtn = document.getElementById('mailDetailStarBtn');
                     var starIcon = document.getElementById('mailDetailStarIcon');
-                    var actionStar = document.getElementById('mailActionStarBtn');
+                    var actionStar = document.getElementById('mailIslandStarBtn');
                     if (d.destacado) {
                         if (starBtn) starBtn.style.color = '#F59E0B';
                         if (starIcon) starIcon.setAttribute('fill', '#F59E0B');
