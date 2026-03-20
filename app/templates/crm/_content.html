@@ -429,6 +429,10 @@
                         </svg>
                         Terminar tarea
                     </button>
+                    <button id="crmTaskBtnReabrir" onclick="crmTaskReabrir()" style="display:none;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #FF9500;background:rgba(255,149,0,0.08);color:#CC7600;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                        Reabrir
+                    </button>
                     <button class="crm-task-close-btn" onclick="crmTaskCerrarModal()">
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                             stroke-width="2">
@@ -577,6 +581,19 @@
                         <polyline points="9 18 15 12 9 6" />
                     </svg>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Reabrir tarea: capturar razón ── -->
+    <div id="crmReabrirOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:500;align-items:center;justify-content:center;border-radius:inherit;">
+        <div style="background:#fff;border-radius:16px;padding:28px 28px 22px;max-width:360px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+            <p style="font-weight:700;font-size:0.97rem;color:#1D1D1F;margin:0 0 6px;">¿Por qué quieres reabrir esta tarea?</p>
+            <p style="font-size:0.8rem;color:#6B7280;margin:0 0 14px;">Se notificará a los administradores con tu mensaje.</p>
+            <textarea id="crmReabrirRazon" rows="3" placeholder="Escribe el motivo..." style="width:100%;box-sizing:border-box;border:1.5px solid #E5E5EA;border-radius:10px;padding:10px 12px;font-size:0.85rem;font-family:inherit;resize:vertical;outline:none;color:#1D1D1F;"></textarea>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button onclick="document.getElementById('crmReabrirOverlay').style.display='none';" style="padding:9px 18px;border:1px solid #E5E5EA;border-radius:8px;background:none;color:#6B7280;font-size:0.85rem;cursor:pointer;font-weight:500;">Cancelar</button>
+                <button id="crmReabrirConfirmBtn" onclick="crmTaskReabrirConfirmar()" style="padding:9px 18px;border:none;border-radius:8px;background:#FF9500;color:#fff;font-size:0.85rem;cursor:pointer;font-weight:600;">Reabrir tarea</button>
             </div>
         </div>
     </div>

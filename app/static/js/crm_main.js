@@ -2905,10 +2905,6 @@
             cargarTareasCRM();
         }
 
-        // Refresh tasks every minute to check for new vencimientos
-        setInterval(function () {
-            if (typeof recargarTareasCRM === 'function' && window._crmTareasMode) recargarTareasCRM();
-        }, 60000);
 
         function renderTareasCRM(filtro, esPaginado) {
             var tbody = document.getElementById('tareasTableBody');
@@ -3190,18 +3186,15 @@
             var prioSidebarWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
             if (prioSidebarWrap) prioSidebarWrap.style.display = tarea.prioridad === 'alta' ? '' : 'none';
 
-            // Botón terminar
+            // Botón terminar / reabrir
             var btnTerminar = document.getElementById('crmTaskBtnTerminar');
-            if (btnTerminar) {
-                if (tarea.estado === 'completada') {
-                    btnTerminar.classList.add('completada');
-                    btnTerminar.textContent = 'Completada';
-                    btnTerminar.disabled = true;
-                } else {
-                    btnTerminar.classList.remove('completada');
-                    btnTerminar.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea';
-                    btnTerminar.disabled = false;
-                }
+            var btnReabrir = document.getElementById('crmTaskBtnReabrir');
+            if (tarea.estado === 'completada') {
+                if (btnTerminar) { btnTerminar.classList.add('completada'); btnTerminar.textContent = 'Completada'; btnTerminar.disabled = true; btnTerminar.style.display = 'none'; }
+                if (btnReabrir) btnReabrir.style.display = 'inline-flex';
+            } else {
+                if (btnTerminar) { btnTerminar.classList.remove('completada'); btnTerminar.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; btnTerminar.disabled = false; btnTerminar.style.display = ''; }
+                if (btnReabrir) btnReabrir.style.display = 'none';
             }
 
             // Info sidebar
@@ -3782,6 +3775,51 @@
                 })
                 .catch(function () {
                     if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
+                    showToast('Error de conexión', 'error');
+                });
+        }
+
+        // ── Reabrir tarea completada ──
+        function crmTaskReabrir() {
+            var overlay = document.getElementById('crmReabrirOverlay');
+            var textarea = document.getElementById('crmReabrirRazon');
+            if (overlay) { overlay.style.display = 'flex'; }
+            if (textarea) { textarea.value = ''; textarea.focus(); }
+        }
+
+        function crmTaskReabrirConfirmar() {
+            var razon = (document.getElementById('crmReabrirRazon') || {}).value || '';
+            if (!razon.trim()) { showToast('Escribe el motivo para reabrir la tarea', 'error'); return; }
+            var btn = document.getElementById('crmReabrirConfirmBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Reabriendo...'; }
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/reabrir/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfEl ? csrfEl.value : '' },
+                body: JSON.stringify({ razon: razon.trim() })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Reabrir tarea'; }
+                    var overlay = document.getElementById('crmReabrirOverlay');
+                    if (overlay) overlay.style.display = 'none';
+                    if (data.success) {
+                        showToast('Tarea reabierta', 'success');
+                        // Actualizar estado en memoria y tabla sin recargar
+                        if (_crmTaskLastData) _crmTaskLastData.estado = 'pendiente';
+                        var idx = _crmAllTareas.findIndex(function (t) { return t.id === _crmCurrentTaskId; });
+                        if (idx !== -1) {
+                            _crmAllTareas[idx].estado = 'pendiente';
+                            if (window._crmTareasMode) renderTareasCRM(_crmCurrentFilter);
+                        }
+                        // Refrescar el modal
+                        crmTaskVerDetalle(_crmCurrentTaskId);
+                    } else {
+                        showToast(data.error || 'Error al reabrir la tarea', 'error');
+                    }
+                })
+                .catch(function () {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Reabrir tarea'; }
                     showToast('Error de conexión', 'error');
                 });
         }
@@ -4481,6 +4519,8 @@
         window.crmTaskCerrarCrear = crmTaskCerrarCrear;
         window.crmTaskCrear = crmTaskCrear;
         window.crmTaskCompletar = crmTaskCompletar;
+        window.crmTaskReabrir = crmTaskReabrir;
+        window.crmTaskReabrirConfirmar = crmTaskReabrirConfirmar;
         window.crmTaskAbrirOportunidad = crmTaskAbrirOportunidad;
         window.crmTaskAbrirDrive = crmTaskAbrirDrive;
         window.crmTaskGuardar = crmTaskGuardar;

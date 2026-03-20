@@ -78,6 +78,7 @@ urlpatterns = [
     path('api/tarea/<int:tarea_id>/actualizar/', views.api_actualizar_tarea_real, name='api_actualizar_tarea_real'),
     path('api/tarea/<int:tarea_id>/toggle-timer/', views.api_toggle_task_timer, name='api_toggle_task_timer'),
     path('api/tarea/<int:tarea_id>/completar/', views.api_completar_tarea, name='api_completar_tarea'),
+    path('api/tarea/<int:tarea_id>/reabrir/', views.api_reabrir_tarea, name='api_reabrir_tarea'),
     path('api/tareas/actualizar-estado/', views.api_actualizar_estado_tarea, name='api_actualizar_estado_tarea'),
     path('api/tareas/actualizar/', views.api_actualizar_tarea, name='api_actualizar_tarea'),
     path('api/estadisticas-tareas-proyectos/', views.api_estadisticas_tareas_proyectos, name='api_estadisticas_tareas_proyectos'),

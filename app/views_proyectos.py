@@ -2787,6 +2787,58 @@ def api_completar_tarea(request, tarea_id):
 
 
 @login_required
+def api_reabrir_tarea(request, tarea_id):
+    """Reabre una tarea completada y notifica a todos los administradores/supervisores."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    try:
+        from .models import Tarea, Notificacion
+        from django.contrib.auth.models import User as AuthUser
+        from django.db.models import Q
+
+        tarea = get_object_or_404(Tarea, id=tarea_id)
+
+        # Solo el creador, asignado o supervisor puede reabrir
+        es_supervisor_user = is_supervisor(request.user)
+        if request.user != tarea.asignado_a and request.user != tarea.creado_por and not es_supervisor_user:
+            return JsonResponse({'error': 'Sin permiso para reabrir esta tarea'}, status=403)
+
+        if tarea.estado != 'completada':
+            return JsonResponse({'error': 'La tarea no está completada'}, status=400)
+
+        data = json.loads(request.body)
+        razon = data.get('razon', '').strip()
+        if not razon:
+            return JsonResponse({'error': 'Debes indicar el motivo para reabrir la tarea'}, status=400)
+
+        tarea.estado = 'pendiente'
+        tarea.fecha_completada = None
+        tarea.save(update_fields=['estado', 'fecha_completada'])
+
+        # Notificar a todos los supervisores y superusuarios
+        reabridor = request.user.get_full_name() or request.user.username
+        admins = AuthUser.objects.filter(
+            Q(is_superuser=True) | Q(groups__name='Supervisores')
+        ).distinct()
+        for admin in admins:
+            if admin == request.user:
+                continue
+            Notificacion.objects.create(
+                usuario_destinatario=admin,
+                usuario_remitente=request.user,
+                tipo='sistema',
+                titulo=f'Tarea reabierta: {tarea.titulo}',
+                mensaje=f'{reabridor} volvió a abrir la tarea "{tarea.titulo}". Motivo: {razon}',
+                tarea_id=tarea.id,
+                tarea_titulo=tarea.titulo,
+            )
+
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
 def solicitar_acceso_proyecto(request, proyecto_id):
     """
     API para solicitar acceso a un proyecto privado
