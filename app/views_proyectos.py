@@ -3401,8 +3401,8 @@ def api_tareas_oportunidad(request, opp_id):
                 tarea.actividad_calendario = actividad
                 tarea.save(update_fields=['actividad_calendario'])
 
-            # Notificar al responsable si es distinto al creador
-            if tarea.responsable and tarea.responsable != request.user:
+            # Notificar al responsable incluso si es el mismo creador
+            if tarea.responsable:
                 remitente_nombre = request.user.get_full_name() or request.user.username
                 crear_notificacion(
                     usuario_destinatario=tarea.responsable,
