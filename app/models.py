@@ -3404,3 +3404,179 @@ class NovedadesConfig(models.Model):
 
     def __str__(self):
         return f"Novedades v{self.version} — {'Activo' if self.widget_activo else 'Inactivo'}"
+
+class ReglaAutomatizacion(models.Model):
+    """
+    Regla de automatización: cuando una oportunidad cambia a una etapa específica,
+    se crean automáticamente una o varias tareas con la configuración predefinida.
+    """
+    TIPO_NEGOCIACION_CHOICES = [
+        ('ambos', 'Runrate y Proyecto'),
+        ('runrate', 'Solo Runrate'),
+        ('proyecto', 'Solo Proyecto'),
+    ]
+
+    OFFSET_TIPO_CHOICES = [
+        ('dias', 'días después del cambio'),
+        ('horas', 'horas después del cambio'),
+        ('fecha_fija', 'fecha fija'),
+    ]
+
+    PRIORIDAD_CHOICES = [
+        ('baja', 'Baja'),
+        ('normal', 'Normal'),
+        ('alta', 'Alta'),
+        ('urgente', 'Urgente'),
+    ]
+
+    # Identificación de la regla
+    nombre = models.CharField(
+        max_length=200,
+        verbose_name="Nombre de la regla",
+        help_text="Nombre descriptivo para identificar esta regla"
+    )
+    activa = models.BooleanField(
+        default=True,
+        verbose_name="Regla activa"
+    )
+
+    # Disparador: etapa que activa la regla
+    etapa_disparadora = models.CharField(
+        max_length=100,
+        verbose_name="Etapa que dispara la regla",
+        help_text="Nombre exacto de la etapa (ej: Vendido c/PO, Facturado)"
+    )
+    tipo_negociacion = models.CharField(
+        max_length=10,
+        choices=TIPO_NEGOCIACION_CHOICES,
+        default='ambos',
+        verbose_name="Aplica a tipo de negociación"
+    )
+
+    # Configuración de la tarea a crear
+    titulo_tarea = models.CharField(
+        max_length=200,
+        verbose_name="Título de la tarea"
+    )
+    descripcion_tarea = models.TextField(
+        blank=True,
+        default='',
+        verbose_name="Descripción de la tarea"
+    )
+    prioridad_tarea = models.CharField(
+        max_length=10,
+        choices=PRIORIDAD_CHOICES,
+        default='normal',
+        verbose_name="Prioridad de la tarea"
+    )
+
+    # Fecha de vencimiento
+    offset_tipo = models.CharField(
+        max_length=15,
+        choices=OFFSET_TIPO_CHOICES,
+        default='dias',
+        verbose_name="Tipo de fecha de vencimiento"
+    )
+    offset_valor = models.PositiveIntegerField(
+        default=3,
+        verbose_name="Valor del offset",
+        help_text="Número de días u horas después del cambio de etapa"
+    )
+    fecha_fija = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha fija de vencimiento",
+        help_text="Solo si el tipo es 'fecha fija'"
+    )
+
+    # Responsables predeterminados (se pueden sobreescribir)
+    responsable_predeterminado = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reglas_como_responsable',
+        verbose_name="Responsable predeterminado"
+    )
+    participantes_predeterminados = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name='reglas_como_participante',
+        verbose_name="Participantes predeterminados"
+    )
+    observadores_predeterminados = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name='reglas_como_observador',
+        verbose_name="Observadores predeterminados"
+    )
+
+    # Metadatos
+    creada_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reglas_creadas',
+        verbose_name="Creada por"
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    orden = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Orden de ejecución",
+        help_text="Orden en que se ejecuta cuando hay varias reglas para la misma etapa"
+    )
+
+    class Meta:
+        verbose_name = "Regla de Automatización"
+        verbose_name_plural = "Reglas de Automatización"
+        ordering = ['etapa_disparadora', 'orden', 'nombre']
+
+    def __str__(self):
+        estado = "✓" if self.activa else "✗"
+        return f"[{estado}] {self.etapa_disparadora} → {self.titulo_tarea}"
+
+
+class EjecucionAutomatizacion(models.Model):
+    """
+    Registro histórico de cada vez que una regla se ejecutó sobre una oportunidad.
+    Evita duplicados y permite auditoría.
+    """
+    regla = models.ForeignKey(
+        ReglaAutomatizacion,
+        on_delete=models.CASCADE,
+        related_name='ejecuciones',
+        verbose_name="Regla ejecutada"
+    )
+    oportunidad = models.ForeignKey(
+        'TodoItem',
+        on_delete=models.CASCADE,
+        related_name='automatizaciones_ejecutadas',
+        verbose_name="Oportunidad"
+    )
+    tarea_creada = models.ForeignKey(
+        'TareaOportunidad',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='origen_automatizacion',
+        verbose_name="Tarea creada"
+    )
+    fecha_ejecucion = models.DateTimeField(auto_now_add=True)
+    ejecutada_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Usuario que disparó el cambio"
+    )
+
+    class Meta:
+        verbose_name = "Ejecución de Automatización"
+        verbose_name_plural = "Ejecuciones de Automatización"
+        ordering = ['-fecha_ejecucion']
+        unique_together = ('regla', 'oportunidad')
+
+    def __str__(self):
+        return f"{self.regla.nombre} → {self.oportunidad} ({self.fecha_ejecucion.strftime('%d/%m/%Y')})"

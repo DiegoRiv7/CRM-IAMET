@@ -6,6 +6,7 @@ from .bitrix_integration import get_bitrix_companies_api
 
 from . import views_exportar
 from . import views_mail
+from . import views_automatizacion
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -243,4 +244,12 @@ urlpatterns = [
     path('api/mail/eliminar/<int:correo_id>/', views_mail.api_mail_eliminar, name='api_mail_eliminar'),
     path('api/mail/reenviar/<int:correo_id>/', views_mail.api_mail_reenviar, name='api_mail_reenviar'),
     path('api/mail/conexion/<int:conexion_id>/eliminar/', views_mail.api_mail_eliminar_conexion, name='api_mail_eliminar_conexion'),
+
+    # ── Automatización de tareas ──────────────────────────────────────────────────────────────────────
+    path('api/automatizacion/reglas/', views_automatizacion.api_automatizacion_listar, name='api_automatizacion_listar'),
+    path('api/automatizacion/reglas/crear/', views_automatizacion.api_automatizacion_crear, name='api_automatizacion_crear'),
+    path('api/automatizacion/reglas/<int:regla_id>/', views_automatizacion.api_automatizacion_editar, name='api_automatizacion_editar'),
+    path('api/automatizacion/reglas/<int:regla_id>/eliminar/', views_automatizacion.api_automatizacion_eliminar, name='api_automatizacion_eliminar'),
+    path('api/automatizacion/reglas/<int:regla_id>/toggle/', views_automatizacion.api_automatizacion_toggle, name='api_automatizacion_toggle'),
+    path('api/automatizacion/historial/', views_automatizacion.api_automatizacion_historial, name='api_automatizacion_historial'),
 ]

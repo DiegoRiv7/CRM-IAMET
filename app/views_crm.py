@@ -2066,9 +2066,11 @@ def editar_oportunidad_api(request, oportunidad_id):
             updated_values['mes_cierre'] = oportunidad.get_mes_cierre_display()
 
         # Actualizar etapa (desde widget CRM)
+        etapa_cambio = None
         if 'etapa_corta' in request.POST and request.POST['etapa_corta']:
             from .bitrix_integration import get_etapa_from_bitrix_stage
             nueva_etapa = request.POST['etapa_corta']
+            etapa_cambio = nueva_etapa
             oportunidad.etapa_corta = nueva_etapa
             oportunidad.etapa_completa = nueva_etapa
             updated_values['etapa_corta'] = nueva_etapa
@@ -2083,11 +2085,21 @@ def editar_oportunidad_api(request, oportunidad_id):
                 return JsonResponse({'success': False, 'error': 'Usuario no encontrado'})
 
         oportunidad.save()
+
+        # Ejecutar automatizaciones si hubo cambio de etapa
+        tareas_auto = []
+        if etapa_cambio:
+            try:
+                from .views_automatizacion import ejecutar_automatizaciones
+                tareas_auto = ejecutar_automatizaciones(oportunidad, etapa_cambio, request.user)
+            except Exception as e_auto:
+                print(f'[Automatización] Error ejecutando reglas: {e_auto}')
         
         return JsonResponse({
             'success': True, 
             'message': 'Oportunidad actualizada correctamente',
-            'updated_values': updated_values
+            'updated_values': updated_values,
+            'tareas_automaticas': tareas_auto,
         })
         
     except Exception as e:

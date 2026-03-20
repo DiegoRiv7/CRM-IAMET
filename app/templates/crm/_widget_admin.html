@@ -247,6 +247,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
           Metas
         </button>
+        <button class="admin-nav-item" id="admNav-tareas_auto" onclick="adminNavClick(this,'tareas_auto')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Tareas Auto.
+        </button>
         <p class="admin-section-label" style="margin-top:8px;">Acceso</p>
         <button class="admin-nav-item" id="admNav-permisos" onclick="adminNavClick(this,'permisos')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -309,6 +313,7 @@ window.loadAdminSection = function(section){
   else if(section==='clientes')  loadClientes();
   else if(section==='contactos') loadContactos();
   else if(section==='metas')     loadMetas();
+  else if(section==='tareas_auto') loadTareasAuto();
   else if(section==='permisos')  loadPermisos();
 };
 
@@ -732,6 +737,285 @@ window.loadPermisos = function(){
 window._showAdminToast = _showAdminToast;
 window._fmtCurrency    = _fmtCurrency;
 window._loadContactList = _loadContactList;
+
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   TAREAS AUTOMÁTICAS POR ETAPA
+   ═══════════════════════════════════════════════════════════ */
+(function(){
+  var _taAutoUsuarios = [];
+  var _taAutoEditandoId = null;
+
+  var ETAPAS_RUNRATE_TA = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta','Ganado','Perdido'];
+  var ETAPAS_PROYECTO_TA = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes','Pagado','Perdido'];
+  var TODAS_ETAPAS_TA = Array.from(new Set(ETAPAS_RUNRATE_TA.concat(ETAPAS_PROYECTO_TA))).sort();
+
+  window.loadTareasAuto = function() {
+    var ac = getAC();
+    Promise.all([
+      fetch('/app/api/automatizacion/reglas/').then(function(r){ return r.json(); }),
+      fetch('/app/api/admin/usuarios/').then(function(r){ return r.json(); })
+    ]).then(function(results) {
+      var data = results[0], usuariosData = results[1];
+      _taAutoUsuarios = usuariosData.usuarios || [];
+      _renderTaLista(data.reglas || [], data.por_etapa || {});
+    }).catch(function() {
+      getAC().innerHTML = '<div style="color:#FF3B30;text-align:center;padding:40px;">Error cargando reglas</div>';
+    });
+  };
+
+  function _renderTaLista(reglas, porEtapa) {
+    var ac = getAC();
+    var h = '<div class="admin-card-inner">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
+    h += '<div><div class="admin-section-title">&#9889; Tareas Autom&aacute;ticas</div>';
+    h += '<p class="admin-help">Las reglas crean tareas automáticamente cuando una oportunidad cambia de etapa. Cada regla se ejecuta una sola vez por oportunidad.</p></div>';
+    h += '<button class="admin-btn admin-btn-primary" onclick="_taShowForm(null)">+ Nueva Regla</button>';
+    h += '</div>';
+
+    if (reglas.length === 0) {
+      h += '<div style="text-align:center;padding:60px 0;">';
+      h += '<div style="font-size:2.5rem;margin-bottom:12px;">&#9889;</div>';
+      h += '<div style="color:#1C1C1E;font-weight:600;font-size:1rem;margin-bottom:6px;">Sin reglas configuradas</div>';
+      h += '<div style="color:#8E8E93;font-size:0.85rem;margin-bottom:20px;">Crea tu primera regla para automatizar tareas al cambiar etapa</div>';
+      h += '<button class="admin-btn admin-btn-primary" onclick="_taShowForm(null)">Crear primera regla</button>';
+      h += '</div>';
+    } else {
+      var etapasOrdenadas = Object.keys(porEtapa).sort();
+      etapasOrdenadas.forEach(function(etapa) {
+        var lista = porEtapa[etapa];
+        h += '<div style="margin-bottom:20px;">';
+        h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+        h += '<span style="background:#F2F2F7;border-radius:8px;padding:3px 10px;font-size:0.75rem;font-weight:600;color:#3A3A3C;">&#128204; ' + etapa + '</span>';
+        h += '<span style="color:#8E8E93;font-size:0.72rem;">' + lista.length + ' regla' + (lista.length > 1 ? 's' : '') + '</span>';
+        h += '</div>';
+        lista.forEach(function(r) {
+          var activaBadge = r.activa
+            ? '<span style="background:#34C759;color:#fff;border-radius:5px;padding:2px 7px;font-size:0.68rem;font-weight:600;">Activa</span>'
+            : '<span style="background:#8E8E93;color:#fff;border-radius:5px;padding:2px 7px;font-size:0.68rem;font-weight:600;">Inactiva</span>';
+          var prioColor = {baja:'#8E8E93',normal:'#007AFF',alta:'#FF9500',urgente:'#FF3B30'}[r.prioridad_tarea] || '#007AFF';
+          var fechaDesc = r.offset_tipo === 'fecha_fija' ? 'Fecha fija: '+(r.fecha_fija||'—') : (r.offset_valor+' '+(r.offset_tipo==='dias'?'días':'horas')+' después');
+          var respNombre = r.responsable ? r.responsable.nombre : '<span style="color:#8E8E93;">Dueño de la oportunidad</span>';
+          h += '<div class="admin-row" style="background:#fff;border:1px solid #E5E5EA;border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;">';
+          h += '<div style="flex:1;min-width:0;">';
+          h += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">';
+          h += '<span style="font-weight:600;font-size:0.88rem;color:#1C1C1E;">' + r.titulo_tarea + '</span>';
+          h += activaBadge;
+          h += '<span style="color:'+prioColor+';font-size:0.68rem;font-weight:700;text-transform:uppercase;">'+r.prioridad_tarea+'</span>';
+          h += '</div>';
+          if (r.descripcion_tarea) h += '<div style="color:#636366;font-size:0.77rem;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;">'+r.descripcion_tarea+'</div>';
+          h += '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.72rem;color:#8E8E93;">';
+          h += '<span>&#128197; '+fechaDesc+'</span>';
+          h += '<span>&#128100; '+respNombre+'</span>';
+          if (r.participantes.length) h += '<span>&#128101; '+r.participantes.length+' participante'+(r.participantes.length>1?'s':'')+'</span>';
+          if (r.observadores.length) h += '<span>&#128065; '+r.observadores.length+' observador'+(r.observadores.length>1?'es':'')+'</span>';
+          h += '<span style="color:#C7C7CC;">'+({ambos:'Runrate y Proyecto',runrate:'Solo Runrate',proyecto:'Solo Proyecto'}[r.tipo_negociacion]||r.tipo_negociacion)+'</span>';
+          h += '</div></div>';
+          h += '<div style="display:flex;gap:5px;flex-shrink:0;">';
+          h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:#F2F2F7;color:#3A3A3C;border:none;border-radius:7px;cursor:pointer;" onclick="_taToggle('+r.id+')">'+(r.activa?'Pausar':'Activar')+'</button>';
+          h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:#F2F2F7;color:#3A3A3C;border:none;border-radius:7px;cursor:pointer;" onclick="_taShowForm('+r.id+')">Editar</button>';
+          h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:#FFF0F0;color:#FF3B30;border:1px solid #FFD0D0;border-radius:7px;cursor:pointer;" onclick="_taEliminar('+r.id+',\''+r.titulo_tarea.replace(/'/g,'')+'\')">Eliminar</button>';
+          h += '</div></div>';
+        });
+        h += '</div>';
+      });
+    }
+    h += '</div>';
+    ac.innerHTML = h;
+  }
+
+  window._taToggle = function(id) {
+    fetch('/app/api/automatizacion/reglas/'+id+'/toggle/',{
+      method:'POST', headers:{'X-CSRFToken':_getAdminCsrf()}
+    }).then(function(r){return r.json();}).then(function(res){
+      if(res.success) window.loadTareasAuto(); else alert(res.error||'Error');
+    });
+  };
+
+  window._taEliminar = function(id, nombre) {
+    if(!confirm('¿Eliminar la regla "'+nombre+'"? Esta acción no se puede deshacer.')) return;
+    fetch('/app/api/automatizacion/reglas/'+id+'/eliminar/',{
+      method:'DELETE', headers:{'X-CSRFToken':_getAdminCsrf()}
+    }).then(function(r){return r.json();}).then(function(res){
+      if(res.success) window.loadTareasAuto(); else alert(res.error||'Error');
+    });
+  };
+
+  window._taShowForm = function(id) {
+    _taAutoEditandoId = id;
+    if(id) {
+      fetch('/app/api/automatizacion/reglas/').then(function(r){return r.json();}).then(function(data){
+        var regla = (data.reglas||[]).find(function(r){return r.id===id;});
+        if(!regla){window.loadTareasAuto();return;}
+        _renderTaForm(regla);
+      });
+    } else {
+      _renderTaForm(null);
+    }
+  };
+
+  function _getAdminCsrf(){
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  function _renderTaForm(regla) {
+    var ac = getAC();
+    var isEdit = !!regla;
+
+    var optsEtapas = '<option value="">Seleccionar etapa...</option>';
+    TODAS_ETAPAS_TA.forEach(function(e){
+      var sel = regla && regla.etapa_disparadora===e?' selected':'';
+      optsEtapas += '<option value="'+e+'"'+sel+'>'+e+'</option>';
+    });
+
+    var optsTipoNeg = [['ambos','Runrate y Proyecto'],['runrate','Solo Runrate'],['proyecto','Solo Proyecto']].map(function(o){
+      var sel = regla && regla.tipo_negociacion===o[0]?' selected':'';
+      return '<option value="'+o[0]+'"'+sel+'>'+o[1]+'</option>';
+    }).join('');
+
+    var optsPrio = [['baja','Baja'],['normal','Normal'],['alta','Alta'],['urgente','Urgente']].map(function(o){
+      var sel = regla ? (regla.prioridad_tarea===o[0]?' selected':'') : (o[0]==='normal'?' selected':'');
+      return '<option value="'+o[0]+'"'+sel+'>'+o[1]+'</option>';
+    }).join('');
+
+    var optsOffset = [['dias','Días después del cambio'],['horas','Horas después del cambio'],['fecha_fija','Fecha fija']].map(function(o){
+      var sel = regla ? (regla.offset_tipo===o[0]?' selected':'') : (o[0]==='dias'?' selected':'');
+      return '<option value="'+o[0]+'"'+sel+'>'+o[1]+'</option>';
+    }).join('');
+
+    var optsResp = '<option value="">Dueño de la oportunidad (por defecto)</option>';
+    _taAutoUsuarios.forEach(function(u){
+      var sel = regla && regla.responsable && regla.responsable.id===u.id?' selected':'';
+      optsResp += '<option value="'+u.id+'"'+sel+'>'+(u.first_name+' '+u.last_name).trim()+' (@'+u.username+')</option>';
+    });
+
+    var participantesIds = regla ? (regla.participantes||[]).map(function(p){return p.id;}) : [];
+    var observadoresIds  = regla ? (regla.observadores||[]).map(function(o){return o.id;}) : [];
+
+    var chkPartic = _taAutoUsuarios.map(function(u){
+      var chk = participantesIds.indexOf(u.id)!==-1?' checked':'';
+      return '<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;cursor:pointer;padding:2px 0;"><input type="checkbox" class="ta-chk-p" value="'+u.id+'"'+chk+'> '+(u.first_name+' '+u.last_name).trim()+'</label>';
+    }).join('');
+
+    var chkObs = _taAutoUsuarios.map(function(u){
+      var chk = observadoresIds.indexOf(u.id)!==-1?' checked':'';
+      return '<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;cursor:pointer;padding:2px 0;"><input type="checkbox" class="ta-chk-o" value="'+u.id+'"'+chk+'> '+(u.first_name+' '+u.last_name).trim()+'</label>';
+    }).join('');
+
+    var h = '<div class="admin-card-inner">';
+    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">';
+    h += '<button class="admin-btn" style="padding:5px 10px;font-size:0.8rem;background:#F2F2F7;border:none;border-radius:8px;cursor:pointer;" onclick="window.loadTareasAuto()">&#8592; Volver</button>';
+    h += '<div class="admin-section-title" style="margin:0;">'+(isEdit?'Editar Regla':'Nueva Regla de Automatización')+'</div>';
+    h += '</div>';
+
+    h += '<div style="background:#F9F9FB;border-radius:14px;padding:20px;max-width:580px;">';
+
+    // Identificación
+    h += '<div class="admin-field-group"><div class="admin-field-label">Nombre de la regla *</div>';
+    h += '<input class="admin-input" id="ta_nombre" placeholder="Ej: Crear tarea de seguimiento al vender" value="'+(regla?regla.nombre:'')+'"></div>';
+
+    // Disparador
+    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#9889; Disparador</div>';
+    h += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
+    h += '<div style="flex:1;"><div class="admin-field-label">Etapa que activa la regla *</div><select class="admin-select" id="ta_etapa">'+optsEtapas+'</select></div>';
+    h += '<div style="flex:1;"><div class="admin-field-label">Aplica a tipo de negociación</div><select class="admin-select" id="ta_tipo_neg">'+optsTipoNeg+'</select></div>';
+    h += '</div>';
+
+    // Tarea
+    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128203; Tarea a crear</div>';
+    h += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
+    h += '<div style="flex:1;"><div class="admin-field-label">Título de la tarea *</div><input class="admin-input" id="ta_titulo" placeholder="Ej: Solicitar PO al cliente" value="'+(regla?regla.titulo_tarea:'')+'"></div>';
+    h += '<div style="flex:0 0 130px;"><div class="admin-field-label">Prioridad</div><select class="admin-select" id="ta_prioridad">'+optsPrio+'</select></div>';
+    h += '</div>';
+    h += '<div class="admin-field-group"><div class="admin-field-label">Descripción (opcional)</div>';
+    h += '<textarea class="admin-input" id="ta_descripcion" rows="3" placeholder="Instrucciones o contexto para quien recibe la tarea..." style="resize:vertical;min-height:65px;">'+(regla?regla.descripcion_tarea:'')+'</textarea></div>';
+
+    // Fecha
+    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128197; Fecha de vencimiento</div>';
+    h += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
+    h += '<div style="flex:1;"><div class="admin-field-label">Tipo</div><select class="admin-select" id="ta_offset_tipo" onchange="_taToggleFecha()">'+optsOffset+'</select></div>';
+    h += '<div style="flex:0 0 110px;" id="ta_offset_valor_wrap"><div class="admin-field-label">Cantidad</div><input class="admin-input" id="ta_offset_valor" type="number" min="1" value="'+(regla?regla.offset_valor:3)+'" style="text-align:center;"></div>';
+    h += '<div style="flex:0 0 155px;display:none;" id="ta_fecha_fija_wrap"><div class="admin-field-label">Fecha fija</div><input class="admin-input" id="ta_fecha_fija" type="date" value="'+(regla&&regla.fecha_fija?regla.fecha_fija:'')+'"></div>';
+    h += '</div>';
+
+    // Responsables
+    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128101; Responsables</div>';
+    h += '<div class="admin-field-group"><div class="admin-field-label">Responsable predeterminado</div><select class="admin-select" id="ta_responsable">'+optsResp+'</select></div>';
+    h += '<div style="display:flex;gap:10px;margin-top:10px;">';
+    h += '<div style="flex:1;"><div class="admin-field-label">Participantes</div><div style="background:#fff;border:1px solid #E5E5EA;border-radius:8px;padding:8px 10px;max-height:130px;overflow-y:auto;">'+(chkPartic||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
+    h += '<div style="flex:1;"><div class="admin-field-label">Observadores</div><div style="background:#fff;border:1px solid #E5E5EA;border-radius:8px;padding:8px 10px;max-height:130px;overflow-y:auto;">'+(chkObs||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
+    h += '</div>';
+
+    // Botones
+    h += '<div style="display:flex;gap:10px;margin-top:18px;">';
+    h += '<button class="admin-btn admin-btn-primary" onclick="_taGuardar()">'+(isEdit?'Guardar cambios':'Crear regla')+'</button>';
+    h += '<button class="admin-btn" style="background:#F2F2F7;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;" onclick="window.loadTareasAuto()">Cancelar</button>';
+    h += '</div>';
+    h += '</div></div>';
+
+    ac.innerHTML = h;
+    _taToggleFecha();
+  }
+
+  window._taToggleFecha = function() {
+    var tipo = document.getElementById('ta_offset_tipo');
+    if(!tipo) return;
+    var esFija = tipo.value === 'fecha_fija';
+    var wv = document.getElementById('ta_offset_valor_wrap');
+    var wf = document.getElementById('ta_fecha_fija_wrap');
+    if(wv) wv.style.display = esFija ? 'none' : '';
+    if(wf) wf.style.display = esFija ? '' : 'none';
+  };
+
+  window._taGuardar = function() {
+    var nombre = (document.getElementById('ta_nombre').value||'').trim();
+    var etapa  = document.getElementById('ta_etapa').value;
+    var titulo = (document.getElementById('ta_titulo').value||'').trim();
+    if(!nombre){alert('El nombre de la regla es requerido');return;}
+    if(!etapa){alert('Selecciona la etapa que dispara la regla');return;}
+    if(!titulo){alert('El título de la tarea es requerido');return;}
+
+    var offsetTipo  = document.getElementById('ta_offset_tipo').value;
+    var offsetValor = parseInt(document.getElementById('ta_offset_valor').value)||3;
+    var fechaFija   = offsetTipo==='fecha_fija' ? (document.getElementById('ta_fecha_fija').value||'') : null;
+    if(offsetTipo==='fecha_fija' && !fechaFija){alert('Selecciona una fecha fija');return;}
+
+    var respId = document.getElementById('ta_responsable').value||null;
+    var partic = [], obs = [];
+    document.querySelectorAll('.ta-chk-p:checked').forEach(function(c){partic.push(parseInt(c.value));});
+    document.querySelectorAll('.ta-chk-o:checked').forEach(function(c){obs.push(parseInt(c.value));});
+
+    var body = {
+      nombre: nombre, activa: true, etapa_disparadora: etapa,
+      tipo_negociacion: document.getElementById('ta_tipo_neg').value,
+      titulo_tarea: titulo, descripcion_tarea: document.getElementById('ta_descripcion').value||'',
+      prioridad_tarea: document.getElementById('ta_prioridad').value,
+      offset_tipo: offsetTipo, offset_valor: offsetValor, fecha_fija: fechaFija,
+      responsable_id: respId ? parseInt(respId) : null,
+      participantes_ids: partic, observadores_ids: obs, orden: 0
+    };
+
+    var url = _taAutoEditandoId
+      ? '/app/api/automatizacion/reglas/'+_taAutoEditandoId+'/'
+      : '/app/api/automatizacion/reglas/crear/';
+    var method = _taAutoEditandoId ? 'PUT' : 'POST';
+
+    fetch(url,{method:method,headers:{'Content-Type':'application/json','X-CSRFToken':_getAdminCsrf()},body:JSON.stringify(body)})
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(res.success) window.loadTareasAuto();
+        else alert(res.error||'Error al guardar la regla');
+      }).catch(function(){alert('Error de conexión');});
+  };
+
+  /* Estilos adicionales para el formulario */
+  (function(){
+    var s = document.createElement('style');
+    s.textContent = '.admin-field-group{margin-bottom:10px;} .admin-field-label{font-size:0.73rem;color:#8E8E93;margin-bottom:4px;} .admin-input{width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.85rem;background:#fff;} .admin-input:focus{outline:none;border-color:#007AFF;} .admin-select{width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.85rem;background:#fff;} .admin-btn-primary{background:#007AFF;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:0.85rem;font-weight:600;}';
+    document.head.appendChild(s);
+  })();
 
 })();
 </script>
