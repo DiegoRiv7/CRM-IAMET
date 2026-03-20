@@ -322,7 +322,14 @@
 
         window.mailConfigurar = function () {
             var m = document.getElementById('mailModalConfig');
-            if (m) m.style.display = 'flex';
+            if (!m) return;
+            var titleEl = document.getElementById('mailConfigTitle');
+            if (titleEl) titleEl.textContent = 'Configurar cuenta de correo';
+            var errEl = document.getElementById('mailCfgErr');
+            var okEl = document.getElementById('mailCfgOk');
+            if (errEl) errEl.style.display = 'none';
+            if (okEl) okEl.style.display = 'none';
+            m.style.display = 'flex';
             // Check if current config looks like google workspace
             var imapSrv = document.getElementById('mailCfgImapSrv');
             if (imapSrv && imapSrv.value === 'imap.gmail.com') {
@@ -330,6 +337,24 @@
             } else {
                 mailSetConfigTpl('iamet', true);
             }
+        };
+
+        window.mailAbrirConfig = function () {
+            var m = document.getElementById('mailModalConfig');
+            if (!m) return;
+            var cfgEmail = document.getElementById('mailCfgEmail');
+            var cfgPass = document.getElementById('mailCfgPass');
+            var errEl = document.getElementById('mailCfgErr');
+            var okEl = document.getElementById('mailCfgOk');
+            var titleEl = document.getElementById('mailConfigTitle');
+            if (cfgEmail) cfgEmail.value = '';
+            if (cfgPass) cfgPass.value = '';
+            if (errEl) errEl.style.display = 'none';
+            if (okEl) okEl.style.display = 'none';
+            if (titleEl) titleEl.textContent = 'Agregar cuenta de correo';
+            m.style.display = 'flex';
+            mailSetConfigTpl('iamet', true);
+            if (cfgEmail) cfgEmail.focus();
         };
 
         window.mailSetConfigTpl = function (type, noClear) {
@@ -452,31 +477,188 @@
 
         window.mailResponder = function () {
             if (!_mailCorreoActual) return;
-            document.getElementById('mailRespPara').value = _mailCorreoActual.remitente_email;
-            document.getElementById('mailRespAsunto').value = 'Re: ' + (_mailCorreoActual.asunto || '');
-            document.getElementById('mailModalResponder').style.display = 'flex';
+            var panel = document.getElementById('mailReplyPanel');
+            var backBtn = document.getElementById('mailBodyBackBtn');
+            var editor = document.getElementById('mailRespEditor');
+            var paraLabel = document.getElementById('mailRespParaLabel');
+            var quoteBlock = document.getElementById('mailQuoteBlock');
+            var quoteText = document.getElementById('mailQuoteText');
+            var ccRow = document.getElementById('mailRespCcRow');
+            var bccRow = document.getElementById('mailRespBccRow');
+            var ccIn = document.getElementById('mailRespCc');
+            var bccIn = document.getElementById('mailRespBcc');
+            if (!panel) return;
+
+            if (paraLabel) paraLabel.textContent = _mailCorreoActual.remitente_nombre || _mailCorreoActual.remitente_email;
+            if (editor) editor.innerHTML = '';
+            if (ccRow) ccRow.style.display = 'none';
+            if (bccRow) bccRow.style.display = 'none';
+            if (ccIn) ccIn.value = '';
+            if (bccIn) bccIn.value = '';
+
+            if (_mailBodyTexto && quoteText) {
+                var qt = _mailBodyTexto.trim();
+                quoteText.textContent = qt.length > 1200 ? qt.substring(0, 1200) + '\n[...]' : qt;
+                if (quoteBlock) quoteBlock.style.display = 'block';
+                quoteText.style.display = 'none';
+            } else {
+                if (quoteBlock) quoteBlock.style.display = 'none';
+            }
+
+            panel.style.display = 'flex';
+            if (backBtn) backBtn.style.display = 'flex';
+            if (editor) editor.focus();
+        };
+
+        window.mailCerrarReply = function () {
+            var panel = document.getElementById('mailReplyPanel');
+            var backBtn = document.getElementById('mailBodyBackBtn');
+            if (panel) panel.style.display = 'none';
+            if (backBtn) backBtn.style.display = 'none';
+        };
+
+        window.mailRestoreEmailBody = function () {
+            mailCerrarReply();
+        };
+
+        window.mailToggleCcBcc = function () {
+            var ccRow = document.getElementById('mailRespCcRow');
+            var bccRow = document.getElementById('mailRespBccRow');
+            var visible = ccRow && ccRow.style.display !== 'none';
+            if (visible) {
+                if (ccRow) ccRow.style.display = 'none';
+                if (bccRow) bccRow.style.display = 'none';
+            } else {
+                if (ccRow) ccRow.style.display = 'flex';
+                if (bccRow) bccRow.style.display = 'flex';
+                var ccIn = document.getElementById('mailRespCc');
+                if (ccIn) ccIn.focus();
+            }
+        };
+
+        window.mailToggleQuote = function () {
+            var qt = document.getElementById('mailQuoteText');
+            if (!qt) return;
+            qt.style.display = qt.style.display === 'none' ? 'block' : 'none';
+        };
+
+        window.mailEditorCmd = function (cmd) {
+            var editor = document.getElementById('mailRespEditor');
+            if (!editor) return;
+            editor.focus();
+            document.execCommand(cmd, false, null);
         };
 
         window.mailEnviarRespuesta = function () {
             if (!_mailCorreoActual) return;
-            var cuerpo = document.getElementById('mailRespCuerpo').value.trim();
+            var editor = document.getElementById('mailRespEditor');
             var btn = document.getElementById('mailBtnRespEnviar');
-            if (!cuerpo) return;
+            if (!editor) return;
+
+            var cuerpoHtml = editor.innerHTML.trim();
+            var cuerpoTexto = editor.innerText.trim();
+            if (!cuerpoTexto) return;
+
+            var quoteText = document.getElementById('mailQuoteText');
+            if (quoteText && quoteText.style.display !== 'none' && quoteText.textContent) {
+                var qc = quoteText.textContent;
+                cuerpoHtml += '<br><br><blockquote style="border-left:3px solid #D1D5DB;padding-left:12px;margin:0;color:#6B7280;font-size:0.85em;">' + _esc(qc) + '</blockquote>';
+                cuerpoTexto += '\n\n--- Mensaje original ---\n' + qc;
+            }
+
+            var ccRow = document.getElementById('mailRespCcRow');
+            var bccRow = document.getElementById('mailRespBccRow');
+            var ccVal = (ccRow && ccRow.style.display !== 'none') ? ((document.getElementById('mailRespCc') || {}).value || '').trim() : '';
+            var bccVal = (bccRow && bccRow.style.display !== 'none') ? ((document.getElementById('mailRespBcc') || {}).value || '').trim() : '';
+
             if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+            var payload = { cuerpo_html: cuerpoHtml, cuerpo_texto: cuerpoTexto, conexion_id: _mailConexionId };
+            if (ccVal) payload.cc = ccVal;
+            if (bccVal) payload.bcc = bccVal;
 
             fetch('/app/api/mail/responder/' + _mailCorreoActual.id + '/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({ cuerpo_texto: cuerpo })
+                body: JSON.stringify(payload)
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (btn) { btn.disabled = false; btn.textContent = 'Enviar respuesta'; }
                     if (data.ok) {
-                        mailCerrarModal('mailModalResponder');
+                        mailCerrarReply();
                         _showToastMail('Respuesta enviada', true);
+                    } else {
+                        _showToastMail(data.error || 'Error al enviar', false);
                     }
+                })
+                .catch(function () {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Enviar respuesta'; }
+                    _showToastMail('Error de conexión', false);
                 });
+        };
+
+        /* ── Vincular a Oportunidad ─────────────────── */
+        window.mailBuscarOpps = function (q) {
+            clearTimeout(_mailBusqTimeout);
+            var resultsEl = document.getElementById('mailOppResults');
+            if (!q || q.trim().length < 2) {
+                if (resultsEl) resultsEl.style.display = 'none';
+                return;
+            }
+            _mailBusqTimeout = setTimeout(function () {
+                fetch('/app/api/buscar-oportunidades-proyecto/?q=' + encodeURIComponent(q.trim()))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        var opps = data.oportunidades || [];
+                        if (!resultsEl) return;
+                        if (!opps.length) {
+                            resultsEl.innerHTML = '<div style="padding:12px 14px;font-size:0.82rem;color:#9CA3AF;">Sin resultados</div>';
+                            resultsEl.style.display = 'block';
+                            return;
+                        }
+                        var h = '';
+                        opps.forEach(function (o) {
+                            var nombre = _esc(o.titulo || '');
+                            var cliente = _esc(o.cliente__nombre_empresa || '');
+                            var safeNombre = nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                            h += '<div onclick="mailVincularOpp(' + o.id + ',\'' + safeNombre + '\')" ';
+                            h += 'style="padding:9px 14px;font-size:0.82rem;cursor:pointer;border-bottom:1px solid #F0F2F5;" ';
+                            h += 'onmouseenter="this.style.background=\'#F0F9FF\'" onmouseleave="this.style.background=\'\'">';
+                            h += '<div style="font-weight:600;color:#1A1A2E;">' + nombre + '</div>';
+                            if (cliente) h += '<div style="font-size:0.74rem;color:#9CA3AF;margin-top:2px;">' + cliente + '</div>';
+                            h += '</div>';
+                        });
+                        resultsEl.innerHTML = h;
+                        resultsEl.style.display = 'block';
+                    })
+                    .catch(function () { });
+            }, 350);
+        };
+
+        window.mailVincularOpp = function (oppId, oppNombre) {
+            if (!_mailCorreoActual) return;
+            fetch('/app/api/mail/vincular/' + _mailCorreoActual.id + '/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ oportunidad_id: oppId })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.ok) {
+                        var bar = document.getElementById('mailDetailOppBar');
+                        var name = document.getElementById('mailDetailOppName');
+                        var panel = document.getElementById('mailPanelVincular');
+                        if (name) name.textContent = oppNombre;
+                        if (bar) bar.style.display = 'flex';
+                        if (panel) panel.style.display = 'none';
+                        if (_mailCorreoActual) _mailCorreoActual.oportunidad_nombre = oppNombre;
+                        _showToastMail('Vinculado a ' + oppNombre, true);
+                    } else {
+                        _showToastMail(data.error || 'Error al vincular', false);
+                    }
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
         };
 
         /* ── Crear Oportunidad desde correo ─────────── */

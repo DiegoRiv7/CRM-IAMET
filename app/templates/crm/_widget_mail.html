@@ -152,6 +152,95 @@
                             sandbox="allow-same-origin"></iframe>
                         <pre id="mailDetailPlain"
                             style="display:none;padding:18px 20px;font-size:0.85rem;line-height:1.65;color:#374151;white-space:pre-wrap;overflow-y:auto;flex:1;font-family:inherit;margin:0;"></pre>
+                        <!-- Inline Reply Panel -->
+                        <div id="mailReplyPanel"
+                            style="display:none;flex-direction:column;border-top:2px solid #007AFF;flex-shrink:0;background:#fff;max-height:52%;min-height:210px;">
+                            <!-- Reply header -->
+                            <div
+                                style="display:flex;align-items:center;gap:8px;padding:7px 14px;background:#F0F7FF;border-bottom:1px solid #D0E1FF;flex-shrink:0;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#007AFF"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                    style="flex-shrink:0;">
+                                    <polyline points="9 14 4 9 9 4" />
+                                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                                </svg>
+                                <span
+                                    style="font-size:0.78rem;font-weight:600;color:#0052D4;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Re:
+                                    <span id="mailRespParaLabel"></span></span>
+                                <button onclick="mailToggleCcBcc()"
+                                    style="font-size:0.71rem;color:#6B7280;background:none;border:1px solid #D1D5DB;border-radius:5px;padding:2px 7px;cursor:pointer;white-space:nowrap;font-family:inherit;">CC
+                                    / CCO</button>
+                                <button onclick="mailCerrarReply()"
+                                    style="background:none;border:none;color:#9CA3AF;cursor:pointer;font-size:1rem;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;"
+                                    onmouseenter="this.style.background='#E5E7EB'"
+                                    onmouseleave="this.style.background='none'">✕</button>
+                            </div>
+                            <!-- CC row -->
+                            <div id="mailRespCcRow"
+                                style="display:none;align-items:center;gap:8px;padding:4px 14px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+                                <span
+                                    style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:32px;">CC:</span>
+                                <input type="text" id="mailRespCc" placeholder="cc@dominio.com"
+                                    style="flex:1;border:none;outline:none;font-size:0.81rem;color:#374151;font-family:inherit;background:transparent;">
+                            </div>
+                            <!-- BCC row -->
+                            <div id="mailRespBccRow"
+                                style="display:none;align-items:center;gap:8px;padding:4px 14px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+                                <span
+                                    style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:32px;">CCO:</span>
+                                <input type="text" id="mailRespBcc" placeholder="cco@dominio.com"
+                                    style="flex:1;border:none;outline:none;font-size:0.81rem;color:#374151;font-family:inherit;background:transparent;">
+                            </div>
+                            <!-- Toolbar -->
+                            <div
+                                style="display:flex;align-items:center;gap:2px;padding:4px 12px;border-bottom:1px solid #F0F2F5;flex-shrink:0;background:#F9FAFB;">
+                                <button onmousedown="event.preventDefault()" onclick="mailEditorCmd('bold')"
+                                    title="Negrita"
+                                    style="width:26px;height:26px;border:none;background:none;border-radius:5px;cursor:pointer;font-size:0.85rem;font-weight:800;color:#374151;display:flex;align-items:center;justify-content:center;font-family:serif;"
+                                    onmouseenter="this.style.background='#E5E7EB'"
+                                    onmouseleave="this.style.background='none'">N</button>
+                                <button onmousedown="event.preventDefault()" onclick="mailEditorCmd('italic')"
+                                    title="Cursiva"
+                                    style="width:26px;height:26px;border:none;background:none;border-radius:5px;cursor:pointer;font-size:0.85rem;font-style:italic;font-weight:600;color:#374151;display:flex;align-items:center;justify-content:center;font-family:serif;"
+                                    onmouseenter="this.style.background='#E5E7EB'"
+                                    onmouseleave="this.style.background='none'">K</button>
+                                <button onmousedown="event.preventDefault()" onclick="mailEditorCmd('underline')"
+                                    title="Subrayado"
+                                    style="width:26px;height:26px;border:none;background:none;border-radius:5px;cursor:pointer;font-size:0.85rem;text-decoration:underline;font-weight:600;color:#374151;display:flex;align-items:center;justify-content:center;font-family:serif;"
+                                    onmouseenter="this.style.background='#E5E7EB'"
+                                    onmouseleave="this.style.background='none'">S</button>
+                                <div
+                                    style="width:1px;height:16px;background:#E5E7EB;margin:0 3px;flex-shrink:0;">
+                                </div>
+                                <button onmousedown="event.preventDefault()"
+                                    onclick="mailEditorCmd('insertUnorderedList')" title="Lista con viñetas"
+                                    style="width:26px;height:26px;border:none;background:none;border-radius:5px;cursor:pointer;font-size:1rem;color:#374151;display:flex;align-items:center;justify-content:center;"
+                                    onmouseenter="this.style.background='#E5E7EB'"
+                                    onmouseleave="this.style.background='none'">&#8801;</button>
+                            </div>
+                            <!-- Contenteditable editor -->
+                            <div id="mailRespEditor" contenteditable="true" data-placeholder="Escribe tu respuesta..."
+                                style="flex:1;padding:10px 16px;outline:none;font-size:0.87rem;line-height:1.6;color:#1A1A2E;overflow-y:auto;min-height:70px;font-family:inherit;">
+                            </div>
+                            <!-- Quoted text toggle -->
+                            <div id="mailQuoteBlock"
+                                style="display:none;flex-shrink:0;border-top:1px solid #F0F2F5;">
+                                <button onclick="mailToggleQuote()"
+                                    style="width:100%;padding:4px 14px;background:#F9FAFB;border:none;text-align:left;font-size:0.71rem;color:#6B7280;cursor:pointer;font-family:inherit;">&#8943;
+                                    mostrar mensaje original</button>
+                                <pre id="mailQuoteText"
+                                    style="display:none;font-size:0.75rem;color:#6B7280;white-space:pre-wrap;margin:0;border-left:3px solid #D1D5DB;padding:8px 14px 8px 18px;overflow-y:auto;max-height:90px;background:#FAFAFA;font-family:inherit;"></pre>
+                            </div>
+                            <!-- Footer -->
+                            <div
+                                style="display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:8px 14px;border-top:1px solid #F0F2F5;flex-shrink:0;background:#F9FAFB;">
+                                <button onclick="mailCerrarReply()"
+                                    style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:7px 14px;font-size:0.81rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancelar</button>
+                                <button id="mailBtnRespEnviar" onclick="mailEnviarRespuesta()"
+                                    style="background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:0.81rem;font-weight:600;cursor:pointer;font-family:inherit;">Enviar
+                                    respuesta</button>
+                            </div>
+                        </div>
                     </div>
                     <!-- Actions -->
                     <div
@@ -272,55 +361,6 @@
             </div>
         </div>
     </div>
-    <!-- Modal Responder -->
-    <div id="mailModalResponder"
-        style="display:none;position:fixed;inset:0;z-index:10310;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-        <div
-            style="background:#fff;border-radius:16px;width:560px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,30,0.25);">
-            <div
-                style="padding:16px 20px 12px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;">
-                <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Responder correo</span>
-                <button onclick="mailCerrarModal('mailModalResponder')"
-                    style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-            </div>
-            <div style="padding:14px 20px;display:flex;flex-direction:column;gap:9px;flex:1;overflow-y:auto;">
-                <div>
-                    <div
-                        style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
-                        Para</div><input type="text" class="wf-input" id="mailRespPara" readonly style="opacity:0.65;">
-                </div>
-                <div>
-                    <div
-                        style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
-                        Asunto</div><input type="text" class="wf-input" id="mailRespAsunto" readonly
-                        style="opacity:0.65;">
-                </div>
-                <div style="flex:1;">
-                    <div
-                        style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
-                        Respuesta</div><textarea class="wf-input" id="mailRespCuerpo"
-                        placeholder="Escribe tu respuesta..." style="min-height:140px;resize:vertical;"></textarea>
-                </div>
-                <div id="mailErrResp"
-                    style="display:none;font-size:0.76rem;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:7px 11px;">
-                </div>
-            </div>
-            <div
-                style="padding:11px 20px;border-top:1.5px solid #F0F2F5;display:flex;justify-content:flex-end;gap:8px;">
-                <button onclick="mailCerrarModal('mailModalResponder')"
-                    style="background:#F3F4F8;color:#374151;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Cancelar</button>
-                <button id="mailBtnRespEnviar" onclick="mailEnviarRespuesta()"
-                    style="display:flex;align-items:center;gap:6px;background:#007AFF;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 14 4 9 9 4" />
-                        <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-                    </svg>
-                    Enviar respuesta
-                </button>
-            </div>
-        </div>
-    </div>
     <!-- Modal Config -->
     <div id="mailModalConfig"
         style="display:none;position:fixed;inset:0;z-index:10310;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
@@ -329,7 +369,7 @@
             <!-- Header -->
             <div
                 style="padding:16px 20px 12px;border-bottom:1.5px solid #F0F2F5;display:flex;align-items:center;gap:10px;flex-shrink:0;">
-                <span style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Configurar cuenta de correo</span>
+                <span id="mailConfigTitle" style="font-size:0.97rem;font-weight:700;color:#1A1A2E;flex:1;">Configurar cuenta de correo</span>
                 <button onclick="mailCerrarModal('mailModalConfig')"
                     style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
             </div>
@@ -494,6 +534,12 @@
 
         .mail-card-wb.unread .mw-subject {
             font-weight: 600;
+        }
+
+        #mailRespEditor:empty:before {
+            content: attr(data-placeholder);
+            color: #9CA3AF;
+            pointer-events: none;
         }
     </style>
 </div>

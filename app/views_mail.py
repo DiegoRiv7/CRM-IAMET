@@ -696,6 +696,8 @@ def api_mail_responder(request, correo_id):
 
     cuerpo_html = data.get('cuerpo_html', '').strip()
     cuerpo_texto = data.get('cuerpo_texto', '').strip()
+    cc = data.get('cc', '').strip()
+    bcc = data.get('bcc', '').strip()
     asunto = f"Re: {original.asunto}" if not original.asunto.startswith('Re:') else original.asunto
     para = original.remitente_email
 
@@ -703,6 +705,8 @@ def api_mail_responder(request, correo_id):
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
     msg['To'] = para
+    if cc:
+        msg['CC'] = cc
     if original.message_id:
         msg['In-Reply-To'] = original.message_id
         msg['References'] = original.message_id
@@ -712,7 +716,12 @@ def api_mail_responder(request, correo_id):
 
     try:
         smtp = _get_smtp(conexion)
-        smtp.sendmail(conexion.correo_electronico, [para], msg.as_bytes())
+        recipients = [para]
+        if cc:
+            recipients += [a.strip() for a in cc.split(',') if a.strip()]
+        if bcc:
+            recipients += [a.strip() for a in bcc.split(',') if a.strip()]
+        smtp.sendmail(conexion.correo_electronico, recipients, msg.as_bytes())
         smtp.quit()
     except Exception as e:
         return JsonResponse({'ok': False, 'error': f'Error al enviar respuesta: {e}'}, status=500)
