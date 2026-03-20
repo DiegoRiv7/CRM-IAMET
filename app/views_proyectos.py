@@ -2826,7 +2826,7 @@ def api_reabrir_tarea(request, tarea_id):
             Notificacion.objects.create(
                 usuario_destinatario=admin,
                 usuario_remitente=request.user,
-                tipo='sistema',
+                tipo='tarea_reabierta',
                 titulo=f'Tarea reabierta: {tarea.titulo}',
                 mensaje=f'{reabridor} volvió a abrir la tarea "{tarea.titulo}". Motivo: {razon}',
                 tarea_id=tarea.id,

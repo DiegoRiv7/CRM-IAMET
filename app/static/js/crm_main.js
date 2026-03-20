@@ -3805,13 +3805,9 @@
                     if (overlay) overlay.style.display = 'none';
                     if (data.success) {
                         showToast('Tarea reabierta', 'success');
-                        // Actualizar estado en memoria y tabla sin recargar
-                        if (_crmTaskLastData) _crmTaskLastData.estado = 'pendiente';
-                        var idx = _crmAllTareas.findIndex(function (t) { return t.id === _crmCurrentTaskId; });
-                        if (idx !== -1) {
-                            _crmAllTareas[idx].estado = 'pendiente';
-                            if (window._crmTareasMode) renderTareasCRM(_crmCurrentFilter);
-                        }
+                        // Limpiar caché y recargar tabla para que aparezca en pendientes
+                        _crmTareasCache = {};
+                        if (window._crmTareasMode) cargarTareasCRM(_crmCurrentFilter);
                         // Refrescar el modal
                         crmTaskVerDetalle(_crmCurrentTaskId);
                     } else {
