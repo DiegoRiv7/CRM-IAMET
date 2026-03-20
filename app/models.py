@@ -3095,6 +3095,8 @@ class MailCorreo(models.Model):
     leido = models.BooleanField(default=False)
     tiene_adjuntos = models.BooleanField(default=False)
     cuerpo_cargado = models.BooleanField(default=False)  # True once RFC822 was fetched
+    destacado = models.BooleanField(default=False)
+    eliminado = models.BooleanField(default=False)
     oportunidad = models.ForeignKey(
         'TodoItem', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='correos_vinculados'

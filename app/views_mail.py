@@ -440,9 +440,13 @@ def api_mail_lista(request):
     if conexion_id:
         qs = qs.filter(conexion_id=conexion_id)
     if carpeta == 'SENT':
-        qs = qs.filter(carpeta_display='SENT')
+        qs = qs.filter(carpeta_display='SENT', eliminado=False)
+    elif carpeta == 'STARRED':
+        qs = qs.filter(destacado=True, eliminado=False)
+    elif carpeta == 'TRASH':
+        qs = qs.filter(eliminado=True)
     else:
-        qs = qs.filter(carpeta_display='INBOX')
+        qs = qs.filter(carpeta_display='INBOX', eliminado=False)
 
     total = qs.count()
     offset = (pagina - 1) * por_pagina
@@ -460,6 +464,8 @@ def api_mail_lista(request):
             'tiene_adjuntos': c.tiene_adjuntos,
             'oportunidad_id': c.oportunidad_id,
             'oportunidad_nombre': c.oportunidad.oportunidad if c.oportunidad else None,
+            'destacado': c.destacado,
+            'eliminado': c.eliminado,
         })
 
     return JsonResponse({
@@ -596,6 +602,8 @@ def api_mail_detalle(request, correo_id):
         'oportunidad_id': correo.oportunidad_id,
         'oportunidad_nombre': correo.oportunidad.oportunidad if correo.oportunidad else None,
         'message_id': correo.message_id,
+        'destacado': correo.destacado,
+        'eliminado': correo.eliminado,
     })
 
 
@@ -1060,3 +1068,112 @@ def api_mail_check_nuevos(request):
         return JsonResponse({'ok': True, 'nuevos': new_count})
     except Exception as e:
         return JsonResponse({'ok': False, 'nuevos': 0, 'error': str(e)})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_destacar(request, correo_id):
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
+    correo.destacado = not correo.destacado
+    correo.save(update_fields=['destacado'])
+    return JsonResponse({'ok': True, 'destacado': correo.destacado})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_eliminar(request, correo_id):
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = {}
+    if data.get('restaurar'):
+        correo.eliminado = False
+    else:
+        correo.eliminado = True
+    correo.save(update_fields=['eliminado'])
+    return JsonResponse({'ok': True, 'eliminado': correo.eliminado})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_reenviar(request, correo_id):
+    try:
+        original = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+
+    try:
+        conexion_id = data.get('conexion_id')
+        if conexion_id:
+            conexion = MailConexion.objects.get(id=conexion_id, usuario=request.user, activo=True)
+        else:
+            conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if not conexion:
+                raise MailConexion.DoesNotExist
+    except MailConexion.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Sin conexión de correo'}, status=400)
+
+    para = data.get('para', '').strip()
+    cuerpo_html = data.get('cuerpo_html', '').strip()
+    cuerpo_texto = data.get('cuerpo_texto', '').strip()
+    if not para:
+        return JsonResponse({'ok': False, 'error': 'Destinatario requerido'}, status=400)
+
+    asunto = f"Fwd: {original.asunto}" if not original.asunto.startswith('Fwd:') else original.asunto
+
+    # Build forward body with original email quoted
+    orig_texto = original.cuerpo_texto or ''
+    orig_html = original.cuerpo_html or ''
+    fwd_header_txt = f"\n\n--- Mensaje reenviado ---\nDe: {original.remitente_nombre} <{original.remitente_email}>\nAsunto: {original.asunto}\n\n"
+    fwd_header_html = (
+        f'<br><br><div style="border-top:1px solid #E5E7EB;padding-top:10px;color:#6B7280;font-size:0.85em;">'
+        f'<strong>--- Mensaje reenviado ---</strong><br>'
+        f'De: {original.remitente_nombre} &lt;{original.remitente_email}&gt;<br>'
+        f'Asunto: {original.asunto}</div><br>'
+    )
+
+    full_html = (cuerpo_html or cuerpo_texto) + fwd_header_html + orig_html
+    full_texto = (cuerpo_texto or '') + fwd_header_txt + orig_texto
+
+    msg = email.mime.multipart.MIMEMultipart('alternative')
+    msg['Subject'] = asunto
+    msg['From'] = conexion.correo_electronico
+    msg['To'] = para
+    if full_texto:
+        msg.attach(email.mime.text.MIMEText(full_texto, 'plain', 'utf-8'))
+    msg.attach(email.mime.text.MIMEText(full_html, 'html', 'utf-8'))
+
+    try:
+        smtp = _get_smtp(conexion)
+        smtp.sendmail(conexion.correo_electronico, [a.strip() for a in para.split(',')], msg.as_bytes())
+        smtp.quit()
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': f'Error al reenviar: {e}'}, status=500)
+
+    MailCorreo.objects.create(
+        usuario=request.user, conexion=conexion,
+        uid_imap=f'fwd_{django_tz.now().timestamp()}',
+        carpeta_imap='SENT', carpeta_display='SENT',
+        asunto=asunto,
+        remitente_nombre=request.user.get_full_name() or request.user.username,
+        remitente_email=conexion.correo_electronico,
+        destinatarios_json=json.dumps([{'nombre': '', 'email': e.strip()} for e in para.split(',')], ensure_ascii=False),
+        cuerpo_html=full_html, cuerpo_texto=full_texto,
+        fecha_envio=django_tz.now(), leido=True, cuerpo_cargado=True,
+    )
+    return JsonResponse({'ok': True})
