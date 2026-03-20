@@ -16,7 +16,7 @@ from django.views.decorators.http import require_http_methods
 from .models import (
     ReglaAutomatizacion,
     EjecucionAutomatizacion,
-    TareaOportunidad,
+    Tarea,
     TodoItem,
     Notificacion,
 )
@@ -351,7 +351,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
 
         # Crear la tarea
         try:
-            tarea = TareaOportunidad.objects.create(
+            tarea = Tarea.objects.create(
                 oportunidad=oportunidad,
                 titulo=regla.titulo_tarea,
                 descripcion=regla.descripcion_tarea,
@@ -359,7 +359,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
                 estado='pendiente',
                 fecha_limite=fecha_limite,
                 creado_por=usuario,
-                responsable=responsable,
+                asignado_a=responsable,
             )
 
             # Asignar participantes y observadores
@@ -369,11 +369,12 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
             if regla.observadores_predeterminados.exists():
                 tarea.observadores.set(regla.observadores_predeterminados.all())
 
-            # Registrar ejecución (para evitar duplicados)
+            # Registrar ejecución (para evitar duplicados) — tarea_creada queda null
+            # porque ahora es Tarea, no TareaOportunidad
             EjecucionAutomatizacion.objects.create(
                 regla=regla,
                 oportunidad=oportunidad,
-                tarea_creada=tarea,
+                tarea_creada=None,
                 ejecutada_por=usuario,
             )
 
@@ -381,10 +382,11 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
             if responsable and responsable != usuario:
                 crear_notificacion(
                     usuario_destinatario=responsable,
-                    tipo='tarea_opp_asignada',
+                    tipo='tarea_asignada',
                     titulo='Tarea asignada automáticamente',
                     mensaje=f'Se creó la tarea "{tarea.titulo}" en la oportunidad "{oportunidad.oportunidad}" al pasar a etapa "{nueva_etapa}".',
-                    tarea_opp=tarea,
+                    tarea_id=tarea.id,
+                    tarea_titulo=tarea.titulo,
                     oportunidad=oportunidad,
                     usuario_remitente=usuario,
                 )
@@ -397,7 +399,8 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
                         tipo='tarea_participante',
                         titulo='Agregado como participante',
                         mensaje=f'Fuiste agregado como participante en la tarea "{tarea.titulo}" (automatización).',
-                        tarea_opp=tarea,
+                        tarea_id=tarea.id,
+                        tarea_titulo=tarea.titulo,
                         oportunidad=oportunidad,
                         usuario_remitente=usuario,
                     )
@@ -410,7 +413,8 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
                         tipo='tarea_observador',
                         titulo='Agregado como observador',
                         mensaje=f'Fuiste agregado como observador en la tarea "{tarea.titulo}" (automatización).',
-                        tarea_opp=tarea,
+                        tarea_id=tarea.id,
+                        tarea_titulo=tarea.titulo,
                         oportunidad=oportunidad,
                         usuario_remitente=usuario,
                     )

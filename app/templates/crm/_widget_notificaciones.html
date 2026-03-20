@@ -858,8 +858,8 @@
 
         if (tiposActividad.includes(tipo) && typeof window.calendarioAbrir === 'function') {
             window.calendarioAbrir();
-        } else if (tiposTareaOpp.includes(tipo) && actId && typeof window.woVerActividad === 'function') {
-            window.woVerActividad(actId);
+        } else if (tiposTareaOpp.includes(tipo) && actId && typeof window.crmTaskVerDetalle === 'function') {
+            window.crmTaskVerDetalle(actId);
         } else if (esMensajeChat && oppId && typeof window.openDetalle === 'function') {
             window.openDetalle(oppId);
             setTimeout(() => { if (typeof window.woAbrirGestorConversacion === 'function') window.woAbrirGestorConversacion(); }, 600);
