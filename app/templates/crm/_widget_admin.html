@@ -1,81 +1,738 @@
-    {% if es_supervisor %}
-    <!-- ═══ ADMIN PANEL OVERLAY ═══ -->
-    <div class="widget-overlay" id="adminOverlay"
-        onclick="if(event.target===this){var ao=this;ao.classList.add('closing');setTimeout(function(){ao.classList.remove('active','closing');},250);}">
-        <div class="admin-panel">
-            <div class="admin-sidebar">
-                <div class="admin-sidebar-header">Configuraci&oacute;n</div>
-                <button class="admin-nav-item active" data-section="usuarios"
-                    onclick="adminNavClick(this,'usuarios')"><span class="admin-nav-icon">&#128100;</span>
-                    Usuarios</button>
-                <button class="admin-nav-item" data-section="clientes" onclick="adminNavClick(this,'clientes')"><span
-                        class="admin-nav-icon">&#127970;</span> Clientes</button>
-                <button class="admin-nav-item" data-section="contactos" onclick="adminNavClick(this,'contactos')"><span
-                        class="admin-nav-icon">&#128222;</span> Contactos</button>
-                <button class="admin-nav-item" data-section="metas" onclick="adminNavClick(this,'metas')"><span
-                        class="admin-nav-icon">&#127919;</span> Metas</button>
-                <button class="admin-nav-item" data-section="permisos" onclick="adminNavClick(this,'permisos')"><span
-                        class="admin-nav-icon">&#128274;</span> Permisos</button>
-            </div>
-            <div class="admin-content" id="adminContent">
-                <div style="color:#8E8E93;text-align:center;margin-top:40px;">Selecciona una secci&oacute;n</div>
-            </div>
-            <button class="admin-close" id="adminClose"
-                onclick="var ao=document.getElementById('adminOverlay');ao.classList.add('closing');setTimeout(function(){ao.classList.remove('active','closing');},250);">&times;</button>
-        </div>
-    </div>
-    <script>
-        var _adminCsrfToken = null;
-        function getAdminCsrf() { if (!_adminCsrfToken) { var el = document.querySelector('[name=csrfmiddlewaretoken]'); _adminCsrfToken = el ? el.value : ''; } return _adminCsrfToken; }
-        function getAC() { return document.getElementById('adminContent'); }
+{% if es_supervisor %}
+<style>
+/* ── Admin Widget ─────────────────────────────────────── */
+.admin-card {
+  width: 94vw; height: 92vh; max-width: 94vw;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(48px) saturate(180%);
+  -webkit-backdrop-filter: blur(48px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.75);
+  border-radius: 24px;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.95) inset,
+              0 32px 64px rgba(0,0,0,0.15),
+              0 8px 20px rgba(0,0,0,0.07);
+  display: flex; flex-direction: column; overflow: hidden;
+  position: relative;
+}
+.admin-card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  flex-shrink: 0;
+}
+.admin-card-header-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(0,122,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; color: #007AFF;
+}
+.admin-card-header h2 {
+  font-size: 0.95rem; font-weight: 600; color: #1C1C1E; margin: 0; flex: 1;
+}
+.admin-close-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,0.06); border: none; cursor: pointer;
+  font-size: 1rem; color: #636366; display: flex; align-items: center;
+  justify-content: center; transition: background 0.15s;
+}
+.admin-close-btn:hover { background: rgba(255,59,48,0.12); color: #FF3B30; }
+.admin-body {
+  display: flex; flex: 1; overflow: hidden;
+}
+/* Sidebar */
+.admin-sidebar {
+  width: 220px; flex-shrink: 0;
+  background: rgba(248,249,252,0.6);
+  border-right: 1px solid rgba(0,0,0,0.06);
+  display: flex; flex-direction: column;
+  padding: 12px 10px;
+  overflow-y: auto;
+}
+.admin-section-label {
+  font-size: 0.67rem; font-weight: 700; letter-spacing: 0.06em;
+  color: #8E8E93; text-transform: uppercase;
+  padding: 10px 8px 4px; margin: 0;
+}
+.admin-nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border: none; background: transparent;
+  border-radius: 10px; cursor: pointer;
+  font-size: 0.82rem; color: #3A3A3C; width: 100%;
+  text-align: left; transition: background 0.15s, color 0.15s;
+  margin-bottom: 1px;
+}
+.admin-nav-item svg { flex-shrink: 0; opacity: 0.7; }
+.admin-nav-item:hover { background: rgba(0,0,0,0.04); }
+.admin-nav-item.active {
+  background: rgba(0,122,255,0.1); color: #007AFF;
+}
+.admin-nav-item.active svg { opacity: 1; }
+.admin-sidebar-spacer { flex: 1; }
+.admin-sidebar-footer {
+  font-size: 0.68rem; color: #AEAEB2; padding: 8px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+/* Content */
+.admin-content {
+  flex: 1; overflow-y: auto; padding: 20px; background: transparent;
+}
+.admin-card-inner {
+  background: rgba(255,255,255,0.7);
+  border-radius: 16px; padding: 20px; margin-bottom: 16px;
+}
+.admin-content-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+}
+.admin-content-title {
+  font-size: 0.95rem; font-weight: 600; color: #1C1C1E;
+}
+/* Tables */
+.admin-table {
+  width: 100%; border-collapse: collapse; font-size: 0.82rem;
+}
+.admin-table thead th {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: #8E8E93;
+  padding: 8px 10px; text-align: left;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  position: sticky; top: 0; background: rgba(255,255,255,0.88);
+}
+.admin-table tbody tr {
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: background 0.1s;
+}
+.admin-table tbody tr:hover { background: rgba(0,122,255,0.03); }
+.admin-table td {
+  padding: 9px 10px; color: #3A3A3C; vertical-align: middle;
+}
+/* Badges */
+.admin-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+}
+.admin-badge-gray  { background: rgba(142,142,147,0.15); color: #636366; }
+.admin-badge-blue  { background: rgba(0,122,255,0.12);   color: #007AFF; }
+.admin-badge-green { background: rgba(52,199,89,0.13);   color: #1C8C3C; }
+.admin-badge-red   { background: rgba(255,59,48,0.12);   color: #D70015; }
+.admin-badge-purple{ background: rgba(175,82,222,0.12);  color: #9B30C7; }
+.admin-badge-a     { background: rgba(52,199,89,0.13);   color: #1C8C3C; }
+.admin-badge-b     { background: rgba(0,122,255,0.12);   color: #007AFF; }
+.admin-badge-c     { background: rgba(142,142,147,0.15); color: #636366; }
+/* Toggle switch */
+.admin-toggle-wrap { display: inline-flex; align-items: center; }
+.admin-toggle { position: relative; display: inline-block; width: 38px; height: 22px; }
+.admin-toggle input { opacity: 0; width: 0; height: 0; }
+.admin-toggle-slider {
+  position: absolute; cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(120,120,128,0.3); border-radius: 22px;
+  transition: 0.2s;
+}
+.admin-toggle-slider:before {
+  content: ""; position: absolute;
+  height: 16px; width: 16px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: 0.2s;
+}
+.admin-toggle input:checked + .admin-toggle-slider { background: #34C759; }
+.admin-toggle input:checked + .admin-toggle-slider:before { transform: translateX(16px); }
+/* Inputs */
+.admin-input {
+  border: 1px solid rgba(0,0,0,0.12); border-radius: 8px;
+  padding: 6px 10px; font-size: 0.82rem; color: #1C1C1E;
+  background: rgba(255,255,255,0.8); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%; box-sizing: border-box;
+}
+.admin-input:focus {
+  border-color: #007AFF;
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
+}
+.admin-form-row {
+  display: flex; gap: 8px; margin-bottom: 8px;
+}
+.admin-form-row .admin-input { flex: 1; }
+/* Buttons */
+.admin-btn {
+  padding: 6px 14px; border-radius: 8px; border: none;
+  font-size: 0.82rem; font-weight: 500; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.admin-btn:active { transform: scale(0.97); }
+.admin-btn-primary   { background: #007AFF; color: #fff; }
+.admin-btn-primary:hover { opacity: 0.88; }
+.admin-btn-danger    { background: #FF3B30; color: #fff; }
+.admin-btn-danger:hover { opacity: 0.88; }
+.admin-btn-secondary {
+  background: rgba(0,0,0,0.06); color: #3A3A3C;
+}
+.admin-btn-secondary:hover { background: rgba(0,0,0,0.1); }
+.admin-btn-icon {
+  background: none; border: none; cursor: pointer; padding: 4px 6px;
+  border-radius: 6px; color: #636366; font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.admin-btn-icon:hover { background: rgba(0,122,255,0.08); color: #007AFF; }
+/* Search bar */
+.admin-search {
+  display: flex; align-items: center;
+  border: 1px solid rgba(0,0,0,0.12); border-radius: 8px;
+  padding: 5px 10px; gap: 6px;
+  background: rgba(255,255,255,0.8);
+  font-size: 0.82rem; max-width: 260px;
+}
+.admin-search input {
+  border: none; outline: none; background: transparent;
+  font-size: 0.82rem; color: #1C1C1E; width: 100%;
+}
+/* Inline form box */
+.admin-inline-form {
+  background: rgba(248,249,252,0.8);
+  border-radius: 12px; padding: 16px; margin: 8px 0 12px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+/* Filter row */
+.admin-filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Help text */
+.admin-help { font-size: 0.75rem; color: #8E8E93; margin-bottom: 14px; }
+/* Toast */
+#adminToast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: rgba(30,30,30,0.92); color: #fff;
+  padding: 10px 22px; border-radius: 20px; font-size: 0.82rem;
+  opacity: 0; pointer-events: none; z-index: 10500;
+  transition: opacity 0.2s, transform 0.2s;
+}
+#adminToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#adminToast.toast-ok  { background: rgba(52,199,89,0.92); }
+#adminToast.toast-err { background: rgba(255,59,48,0.92); }
+</style>
 
-        function adminNavClick(btn, section) {
-            document.querySelectorAll('.admin-nav-item').forEach(function (b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            loadAdminSection(section);
-        }
-        function loadAdminSection(section) {
-            var ac = getAC(); if (!ac) return;
-            ac.innerHTML = '<div style="text-align:center;color:#8E8E93;margin-top:40px;">Cargando...</div>';
-            if (section === 'usuarios') loadUsuarios();
-            else if (section === 'clientes') loadClientes();
-            else if (section === 'contactos') loadContactos();
-            else if (section === 'metas') loadMetas();
-            else if (section === 'permisos') loadPermisos();
-        }
-        function loadUsuarios() { var ac = getAC(), ct = getAdminCsrf(); fetch('/app/api/admin/usuarios/').then(function (r) { return r.json(); }).then(function (data) { window._admUsuarios = data.usuarios; var h = '<div class="adm-section-title">Usuarios del Sistema</div>'; h += '<div style="margin-bottom:16px;"><button class="adm-btn adm-btn-primary" id="admNewUser">+ Nuevo Usuario</button></div>'; h += '<div id="admNewUserForm" style="display:none;background:#F9F9FB;border-radius:12px;padding:16px;margin-bottom:16px;">'; h += '<div class="adm-form-row"><input class="adm-input" id="nuUsername" placeholder="Username"><input class="adm-input" id="nuPassword" placeholder="Password" type="password"></div>'; h += '<div class="adm-form-row"><input class="adm-input" id="nuFirstName" placeholder="Nombre"><input class="adm-input" id="nuLastName" placeholder="Apellido"></div>'; h += '<div class="adm-form-row"><input class="adm-input" id="nuEmail" placeholder="Email" type="email"></div>'; h += '<div class="adm-form-row"><select class="adm-input adm-select" id="nuRol"><option value="vendedor">Vendedor</option><option value="ingeniero">Ingeniero</option></select></div>'; h += '<div style="display:flex;gap:8px;margin-top:8px;"><button class="adm-btn adm-btn-primary" id="admSaveUser">Crear</button><button class="adm-btn adm-btn-secondary" id="admCancelUser">Cancelar</button></div></div>'; h += '<input class="adm-input" id="admUserSearch" placeholder="Buscar por nombre o usuario..." style="margin-bottom:12px;width:100%;max-width:320px;box-sizing:border-box;">';
-h += '<table class="adm-table"><thead><tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th></tr></thead><tbody>'; data.usuarios.forEach(function (u) { var rolLabel = u.is_supervisor ? 'admin' : (u.rol || 'vendedor'); var rolText = u.is_supervisor ? 'Admin' : (rolLabel === 'ingeniero' ? 'Ingeniero' : 'Vendedor'); var rolColor = u.is_supervisor ? 'adm-badge-blue' : (rolLabel === 'ingeniero' ? 'adm-badge-purple' : 'adm-badge-gray'); var badge = u.is_supervisor ? '<span class="adm-badge adm-badge-blue">Admin</span>' : '<span class="adm-badge ' + rolColor + '" style="cursor:pointer;" onclick="admCambiarRol(' + u.id + ',\'' + rolLabel + '\')" title="Clic para cambiar rol">' + rolText + ' &#9660;</span>'; var estado = u.is_active ? '<span class="adm-badge adm-badge-green">Activo</span>' : '<span class="adm-badge adm-badge-gray">Inactivo</span>'; h += '<tr><td><strong>' + u.username + '</strong></td><td><span style="cursor:pointer;color:#007AFF;text-decoration:underline;" onclick="admEditUser(' + u.id + ')" title="Editar usuario">' + (u.first_name + ' ' + u.last_name).trim() + '</span></td><td>' + u.email + '</td><td>' + badge + '</td><td>' + estado + '</td></tr>'; }); h += '</tbody></table>'; ac.innerHTML = h; document.getElementById('admNewUser').addEventListener('click', function () { document.getElementById('admNewUserForm').style.display = 'block'; }); document.getElementById('admCancelUser').addEventListener('click', function () { document.getElementById('admNewUserForm').style.display = 'none'; });
-var admUserSearch = document.getElementById('admUserSearch'); if (admUserSearch) { admUserSearch.addEventListener('input', function () { var q = this.value.toLowerCase(); document.querySelectorAll('.adm-table tbody tr').forEach(function (row) { row.style.display = row.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none'; }); }); } document.getElementById('admSaveUser').addEventListener('click', function () { var body = { username: document.getElementById('nuUsername').value, password: document.getElementById('nuPassword').value, first_name: document.getElementById('nuFirstName').value, last_name: document.getElementById('nuLastName').value, email: document.getElementById('nuEmail').value, rol: document.getElementById('nuRol').value }; fetch('/app/api/admin/usuarios/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }).then(function (res) { if (res.success) loadUsuarios(); else alert(res.error || 'Error'); }); }); }); } function loadClientes() { var ac = getAC(), ct = getAdminCsrf(); Promise.all([fetch('/app/api/admin/clientes/').then(function (r) { return r.json(); }), fetch('/app/api/admin/usuarios/').then(function (r) { return r.json(); })]).then(function (results) { var clientes = results[0].clientes, usuarios = results[1].usuarios; var h = '<div class="adm-section-title">Clientes (' + clientes.length + ')</div>'; h += '<p style="font-size:0.78rem;color:#8E8E93;margin-bottom:12px;">Metas mensuales por cliente y tipo de vista.</p>'; h += '<table class="adm-table"><thead><tr><th>Empresa</th><th>Asignado a</th><th>Meta Fact.</th><th>Meta Cobr.</th><th>Meta Oport.</th><th>Meta Cot.</th></tr></thead><tbody>'; clientes.forEach(function (c) { var opts = '<option value="">Sin asignar</option>'; usuarios.forEach(function (u) { var sel = u.id == c.asignado_a_id ? ' selected' : ''; opts += '<option value="' + u.id + '"' + sel + '>' + (u.first_name + ' ' + u.last_name).trim() + '</option>'; }); var inp = function(tipo, val) { return '<input type="number" class="adm-input adm-client-meta" data-cliente-id="' + c.id + '" data-meta-tipo="' + tipo + '" value="' + (val || 0) + '" style="width:90px;">'; }; h += '<tr data-cliente-id="' + c.id + '"><td><strong>' + c.nombre_empresa + '</strong></td><td><select class="adm-select adm-assign-user" data-cliente-id="' + c.id + '">' + opts + '</select></td><td>' + inp('meta_mensual', c.meta_mensual) + '</td><td>' + inp('meta_cobrado', c.meta_cobrado) + '</td><td>' + inp('meta_oportunidades', c.meta_oportunidades) + '</td><td>' + inp('meta_cotizado', c.meta_cotizado) + '</td></tr>'; }); h += '</tbody></table>'; h += '<div style="margin-top:16px;"><button class="adm-btn adm-btn-primary" id="admSaveClientMetas">Guardar Metas</button></div>'; ac.innerHTML = h; document.querySelectorAll('.adm-assign-user').forEach(function (sel) { sel.addEventListener('change', function () { var cid = this.getAttribute('data-cliente-id'); fetch('/app/api/admin/clientes/' + cid + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct }, body: JSON.stringify({ asignado_a_id: this.value ? parseInt(this.value) : null }) }).then(function (r) { return r.json(); }).then(function (res) { if (!res.success) alert(res.error || 'Error'); }); }); }); document.getElementById('admSaveClientMetas').addEventListener('click', function () { var porCliente = {}; document.querySelectorAll('.adm-client-meta').forEach(function (inp) { var cid = inp.getAttribute('data-cliente-id'); var tipo = inp.getAttribute('data-meta-tipo'); if (!porCliente[cid]) porCliente[cid] = {}; porCliente[cid][tipo] = inp.value; }); var promises = Object.keys(porCliente).map(function (cid) { return fetch('/app/api/admin/clientes/' + cid + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct }, body: JSON.stringify(porCliente[cid]) }).then(function (r) { return r.json(); }); }); Promise.all(promises).then(function () { alert('Metas guardadas'); }).catch(function () { alert('Error al guardar alguna meta'); }); }); }); } function loadContactos() { var ac = getAC(); fetch('/app/api/admin/clientes/').then(function (r) { return r.json(); }).then(function (data) { var h = '<div class="adm-section-title">Contactos</div><div style="margin-bottom:16px;"><select class="adm-select" id="admContactCliente" style="min-width:200px;"><option value="">Seleccionar cliente...</option>'; data.clientes.forEach(function (c) { h += '<option value="' + c.id + '">' + c.nombre_empresa + '</option>'; }); h += '</select></div><div id="admContactList"></div>'; ac.innerHTML = h; document.getElementById('admContactCliente').addEventListener('change', function () { var cid = this.value; if (!cid) { document.getElementById('admContactList').innerHTML = ''; return; } loadContactosForCliente(cid); }); }); } function loadContactosForCliente(clienteId) { var ct = getAdminCsrf(); fetch('/app/api/admin/contactos/?cliente_id=' + clienteId).then(function (r) { return r.json(); }).then(function (data) { var h = '<div style="margin-bottom:12px;"><button class="adm-btn adm-btn-primary" id="admNewContact">+ Nuevo Contacto</button></div><div id="admNewContactForm" style="display:none;background:#F9F9FB;border-radius:12px;padding:16px;margin-bottom:16px;"><div class="adm-form-row"><input class="adm-input" id="ncNombre" placeholder="Nombre"><input class="adm-input" id="ncApellido" placeholder="Apellido"></div><div class="adm-form-row"><input class="adm-input" id="ncEmail" placeholder="Email"><input class="adm-input" id="ncTelefono" placeholder="Telefono"></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="adm-btn adm-btn-primary" id="admSaveContact">Crear</button><button class="adm-btn adm-btn-secondary" id="admCancelContact">Cancelar</button></div></div>'; if (data.contactos.length === 0) { h += '<div style="color:#8E8E93;text-align:center;padding:20px;">No hay contactos</div>'; } else { h += '<table class="adm-table"><thead><tr><th>Nombre</th><th>Email</th><th>Telefono</th></tr></thead><tbody>'; data.contactos.forEach(function (c) { h += '<tr><td><strong>' + c.nombre + ' ' + c.apellido + '</strong></td><td>' + c.email + '</td><td>' + c.telefono + '</td></tr>'; }); h += '</tbody></table>'; } document.getElementById('admContactList').innerHTML = h; document.getElementById('admNewContact').addEventListener('click', function () { document.getElementById('admNewContactForm').style.display = 'block'; }); document.getElementById('admCancelContact').addEventListener('click', function () { document.getElementById('admNewContactForm').style.display = 'none'; }); document.getElementById('admSaveContact').addEventListener('click', function () { var body = { nombre: document.getElementById('ncNombre').value, apellido: document.getElementById('ncApellido').value, email: document.getElementById('ncEmail').value, telefono: document.getElementById('ncTelefono').value, empresa_id: parseInt(clienteId) }; fetch('/app/api/admin/contactos/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }).then(function (res) { if (res.success) loadContactosForCliente(clienteId); else alert(res.error || 'Error'); }); }); }); } function loadMetas() { var ac = getAC(), ct = getAdminCsrf(); fetch('/app/api/admin/usuarios/').then(function (r) { return r.json(); }).then(function (data) { var h = '<div class="adm-section-title">Metas Mensuales por Vendedor</div><table class="adm-table"><thead><tr><th>Vendedor</th><th>Meta Mensual (USD)</th></tr></thead><tbody>'; data.usuarios.forEach(function (u) { if (u.is_supervisor) return; h += '<tr><td><strong>' + (u.first_name + ' ' + u.last_name).trim() + '</strong><br><span style="color:#8E8E93;font-size:0.72rem;">@' + u.username + '</span></td><td><input class="adm-input adm-meta-input" data-uid="' + u.id + '" value="' + parseFloat(u.meta_mensual).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '" style="max-width:180px;text-align:right;font-weight:600;"></td></tr>'; }); h += '</tbody></table><div style="margin-top:16px;"><button class="adm-btn adm-btn-primary" id="admSaveMetas">Guardar Metas</button></div>'; ac.innerHTML = h; document.getElementById('admSaveMetas').addEventListener('click', function () { var metas = {}; document.querySelectorAll('.adm-meta-input').forEach(function (inp) { var uid = inp.getAttribute('data-uid'); var val = inp.value.replace(/,/g, '').trim(); if (val) metas[uid] = val; }); fetch('/app/api/admin/metas/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct }, body: JSON.stringify({ metas: metas }) }).then(function (r) { return r.json(); }).then(function (res) { if (res.success) alert(res.updated + ' metas actualizadas'); else alert(res.error || 'Error'); }); }); }); } function loadPermisos() { var ac = getAC(), ct = getAdminCsrf(); fetch('/app/api/admin/usuarios/').then(function (r) { return r.json(); }).then(function (data) { var h = '<div class="adm-section-title">Permisos de Usuario</div><p style="color:#8E8E93;font-size:0.78rem;margin-bottom:16px;">Los administradores pueden ver datos de todos los vendedores y acceder a este panel.</p><table class="adm-table"><thead><tr><th>Usuario</th><th>Nombre</th><th>Administrador</th></tr></thead><tbody>'; data.usuarios.forEach(function (u) { var cls = u.is_supervisor ? 'adm-toggle on' : 'adm-toggle'; h += '<tr><td><strong>' + u.username + '</strong></td><td>' + (u.first_name + ' ' + u.last_name).trim() + '</td><td><button class="' + cls + ' adm-perm-toggle" data-uid="' + u.id + '"></button></td></tr>'; }); h += '</tbody></table>'; ac.innerHTML = h; document.querySelectorAll('.adm-perm-toggle').forEach(function (btn) { btn.addEventListener('click', function () { var uid = this.getAttribute('data-uid'); var isOn = this.classList.contains('on'); var el = this; fetch('/app/api/admin/permisos/' + uid + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct }, body: JSON.stringify({ is_supervisor: !isOn }) }).then(function (r) { return r.json(); }).then(function (res) { if (res.success) { if (res.is_supervisor) el.classList.add('on'); else el.classList.remove('on'); } }); }); }); }); } function admCambiarRol(uid, currentRol) { var newRol = currentRol === 'ingeniero' ? 'vendedor' : 'ingeniero'; var ct = getAdminCsrf(); fetch('/app/api/admin/usuarios/' + uid + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct }, body: JSON.stringify({ rol: newRol }) }).then(function (r) { return r.json(); }).then(function (res) { if (res.success) loadUsuarios(); else alert(res.error || 'Error al cambiar rol'); }); }
-        function admEditUser(uid) {
-            var u = (window._admUsuarios || []).find(function(x) { return x.id === uid; });
-            if (!u) return;
-            var ac = getAC();
-            var h = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="adm-btn adm-btn-secondary" onclick="loadUsuarios()">&#8592; Volver</button><div class="adm-section-title" style="margin:0;">Editar Usuario</div></div>';
-            h += '<div style="background:#F9F9FB;border-radius:12px;padding:20px;max-width:480px;">';
-            h += '<div style="color:#8E8E93;font-size:0.78rem;margin-bottom:16px;">@' + u.username + '</div>';
-            h += '<div class="adm-form-row"><input class="adm-input" id="euFirstName" placeholder="Nombre" value="' + (u.first_name || '') + '"><input class="adm-input" id="euLastName" placeholder="Apellido" value="' + (u.last_name || '') + '"></div>';
-            h += '<div class="adm-form-row"><input class="adm-input" id="euEmail" placeholder="Email" type="email" value="' + (u.email || '') + '"></div>';
-            h += '<div class="adm-form-row"><input class="adm-input" id="euPassword" placeholder="Nueva contrase\u00f1a (dejar vac\u00edo para no cambiar)" type="password"></div>';
-            h += '<div style="display:flex;gap:8px;margin-top:16px;"><button class="adm-btn adm-btn-primary" onclick="admSaveEditUser(' + uid + ')">Guardar</button><button class="adm-btn adm-btn-secondary" onclick="loadUsuarios()">Cancelar</button></div>';
-            h += '</div>';
-            ac.innerHTML = h;
-        }
-        function admSaveEditUser(uid) {
-            var ct = getAdminCsrf();
-            var body = {
-                first_name: document.getElementById('euFirstName').value.trim(),
-                last_name: document.getElementById('euLastName').value.trim(),
-                email: document.getElementById('euEmail').value.trim(),
-                password: document.getElementById('euPassword').value
-            };
-            fetch('/app/api/admin/usuarios/' + uid + '/', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ct },
-                body: JSON.stringify(body)
-            }).then(function(r) { return r.json(); }).then(function(res) {
-                if (res.success) loadUsuarios();
-                else alert(res.error || 'Error al guardar');
-            });
-        }
-    </script>
-    {% endif %} <!-- Toast notification -->
+<!-- ═══ ADMIN PANEL OVERLAY ═══ -->
+<div class="widget-overlay" id="widgetAdmin"
+  onclick="if(event.target===this){_admClose();}">
+  <div class="admin-card" id="adminCard">
+
+    <!-- Header -->
+    <div class="admin-card-header">
+      <div class="admin-card-header-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/><polyline points="16 11 18 13 22 9"/></svg>
+      </div>
+      <h2>Panel de Administraci&oacute;n</h2>
+      <button class="admin-close-btn" onclick="_admClose()" title="Cerrar">&times;</button>
+    </div>
+
+    <!-- Body -->
+    <div class="admin-body">
+
+      <!-- Sidebar -->
+      <nav class="admin-sidebar">
+        <p class="admin-section-label">Gesti&oacute;n</p>
+        <button class="admin-nav-item active" id="admNav-usuarios" onclick="adminNavClick(this,'usuarios')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+          Usuarios
+        </button>
+        <button class="admin-nav-item" id="admNav-clientes" onclick="adminNavClick(this,'clientes')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          Clientes
+        </button>
+        <button class="admin-nav-item" id="admNav-contactos" onclick="adminNavClick(this,'contactos')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 3.08 4.18 2 2 0 0 1 5.09 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Contactos
+        </button>
+        <button class="admin-nav-item" id="admNav-metas" onclick="adminNavClick(this,'metas')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Metas
+        </button>
+        <p class="admin-section-label" style="margin-top:8px;">Acceso</p>
+        <button class="admin-nav-item" id="admNav-permisos" onclick="adminNavClick(this,'permisos')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Permisos
+        </button>
+        <div class="admin-sidebar-spacer"></div>
+        <div class="admin-sidebar-footer">CRM v2.0 &mdash; Solo supervisores</div>
+      </nav>
+
+      <!-- Content -->
+      <div class="admin-content" id="adminContent">
+        <div style="color:#8E8E93;text-align:center;margin-top:60px;font-size:0.85rem;">Selecciona una secci&oacute;n del men&uacute;</div>
+      </div>
+
+    </div><!-- /admin-body -->
+  </div><!-- /admin-card -->
+</div><!-- /widgetAdmin -->
+
+<!-- Toast -->
+<div id="adminToast"></div>
+
+<script>
+(function(){
+/* ── Helpers ─────────────────────────────────────────── */
+function getAC(){ return document.getElementById('adminContent'); }
+function getCsrf(){ return (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value||''; }
+
+function _showAdminToast(msg, ok){
+  var t = document.getElementById('adminToast');
+  t.textContent = msg;
+  t.className = 'show ' + (ok===false ? 'toast-err' : 'toast-ok');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function(){ t.className=''; }, 2600);
+}
+
+function _fmtCurrency(val){
+  var n = parseFloat(String(val).replace(/,/g,''))||0;
+  return n.toLocaleString('en-US',{maximumFractionDigits:0});
+}
+
+function _admClose(){
+  var el = document.getElementById('widgetAdmin');
+  if(!el) return;
+  el.classList.add('closing');
+  setTimeout(function(){ el.classList.remove('active','closing'); }, 250);
+}
+window._admClose = _admClose;
+
+/* ── Nav ─────────────────────────────────────────────── */
+window.adminNavClick = function(btn, section){
+  document.querySelectorAll('.admin-nav-item').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  loadAdminSection(section);
+};
+
+window.loadAdminSection = function(section){
+  var ac = getAC(); if(!ac) return;
+  ac.innerHTML = '<div style="text-align:center;color:#8E8E93;margin-top:60px;">Cargando...</div>';
+  if(section==='usuarios')  loadUsuarios();
+  else if(section==='clientes')  loadClientes();
+  else if(section==='contactos') loadContactos();
+  else if(section==='metas')     loadMetas();
+  else if(section==='permisos')  loadPermisos();
+};
+
+/* ── Usuarios ────────────────────────────────────────── */
+window.loadUsuarios = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/usuarios/').then(function(r){ return r.json(); }).then(function(data){
+    window._admUsuarios = data.usuarios||[];
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header">';
+    h += '<span class="admin-content-title">Usuarios del Sistema</span>';
+    h += '<div style="display:flex;gap:8px;align-items:center;">';
+    h += '<div class="admin-search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="admUserSearch" placeholder="Buscar usuario..."></div>';
+    h += '<button class="admin-btn admin-btn-primary" onclick="admNuevoUsuarioForm()">+ Nuevo Usuario</button>';
+    h += '</div></div>';
+    /* New user form */
+    h += '<div id="admNewUserForm" class="admin-inline-form" style="display:none;">';
+    h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Nuevo Usuario</div>';
+    h += '<div class="admin-form-row"><input class="admin-input" id="nuUsername" placeholder="Username"><input class="admin-input" id="nuPassword" placeholder="Contrase&ntilde;a" type="password"></div>';
+    h += '<div class="admin-form-row"><input class="admin-input" id="nuFirstName" placeholder="Nombre"><input class="admin-input" id="nuLastName" placeholder="Apellido"></div>';
+    h += '<div class="admin-form-row"><input class="admin-input" id="nuEmail" placeholder="Email" type="email"><select class="admin-input" id="nuRol" style="max-width:160px;"><option value="vendedor">Vendedor</option><option value="ingeniero">Ingeniero</option></select></div>';
+    h += '<div style="display:flex;gap:8px;margin-top:4px;"><button class="admin-btn admin-btn-primary" onclick="admGuardarNuevoUsuario()">Crear</button><button class="admin-btn admin-btn-secondary" onclick="admNuevoUsuarioForm()">Cancelar</button></div>';
+    h += '</div>';
+    /* Table */
+    h += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Nombre Completo</th><th>Email</th><th>Rol</th><th>Supervisor</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>';
+    (data.usuarios||[]).forEach(function(u){
+      var rol = u.rol||'vendedor';
+      var rolBadge;
+      if(u.is_supervisor){
+        rolBadge = '<span class="admin-badge admin-badge-blue">Admin</span>';
+      } else if(rol==='ingeniero'){
+        rolBadge = '<span class="admin-badge admin-badge-purple" style="cursor:pointer;" onclick="admCambiarRol('+u.id+',\'ingeniero\')" title="Cambiar rol">Ingeniero &#9660;</span>';
+      } else {
+        rolBadge = '<span class="admin-badge admin-badge-gray" style="cursor:pointer;" onclick="admCambiarRol('+u.id+',\'vendedor\')" title="Cambiar rol">Vendedor &#9660;</span>';
+      }
+      var estadoBadge = u.is_active
+        ? '<span class="admin-badge admin-badge-green">Activo</span>'
+        : '<span class="admin-badge admin-badge-red">Inactivo</span>';
+      var supChk = u.is_supervisor ? 'checked' : '';
+      h += '<tr id="admRow-'+u.id+'">';
+      h += '<td><strong style="font-size:0.82rem;">'+u.username+'</strong></td>';
+      h += '<td>'+((u.first_name+' '+u.last_name).trim()||'&mdash;')+'</td>';
+      h += '<td style="color:#636366;">'+( u.email||'&mdash;')+'</td>';
+      h += '<td>'+rolBadge+'</td>';
+      h += '<td><label class="admin-toggle"><input type="checkbox" '+supChk+' onchange="admToggleSupervisor('+u.id+',this.checked)"><span class="admin-toggle-slider"></span></label></td>';
+      h += '<td>'+estadoBadge+'</td>';
+      h += '<td><button class="admin-btn-icon" onclick="admEditUser('+u.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>';
+      h += '</tr>';
+      h += '<tr id="admEditRow-'+u.id+'" style="display:none;"><td colspan="7"><div class="admin-inline-form" id="admEditForm-'+u.id+'"></div></td></tr>';
+    });
+    h += '</tbody></table></div>';
+    ac.innerHTML = h;
+    /* Search */
+    var s = document.getElementById('admUserSearch');
+    if(s) s.addEventListener('input', function(){
+      var q = this.value.toLowerCase();
+      document.querySelectorAll('.admin-table tbody tr[id^="admRow-"]').forEach(function(row){
+        row.style.display = row.textContent.toLowerCase().indexOf(q)!==-1 ? '' : 'none';
+      });
+    });
+  });
+};
+
+window.admNuevoUsuarioForm = function(){
+  var f = document.getElementById('admNewUserForm');
+  if(f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+};
+
+window.admGuardarNuevoUsuario = function(){
+  var body = {
+    username:   (document.getElementById('nuUsername')||{}).value,
+    password:   (document.getElementById('nuPassword')||{}).value,
+    first_name: (document.getElementById('nuFirstName')||{}).value,
+    last_name:  (document.getElementById('nuLastName')||{}).value,
+    email:      (document.getElementById('nuEmail')||{}).value,
+    rol:        (document.getElementById('nuRol')||{}).value
+  };
+  fetch('/app/api/admin/usuarios/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success){ _showAdminToast('Usuario creado'); loadUsuarios(); }
+    else _showAdminToast(res.error||'Error al crear usuario', false);
+  });
+};
+
+window.admToggleSupervisor = function(uid, val){
+  fetch('/app/api/admin/permisos/'+uid+'/',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({is_supervisor: val})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success) _showAdminToast('Permiso actualizado');
+    else _showAdminToast(res.error||'Error', false);
+  });
+};
+
+window.admCambiarRol = function(uid, currentRol){
+  var newRol = currentRol==='ingeniero' ? 'vendedor' : 'ingeniero';
+  fetch('/app/api/admin/usuarios/'+uid+'/',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({rol: newRol})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success){ _showAdminToast('Rol actualizado'); loadUsuarios(); }
+    else _showAdminToast(res.error||'Error al cambiar rol', false);
+  });
+};
+
+window.admEditUser = function(uid){
+  var u = (window._admUsuarios||[]).find(function(x){ return x.id===uid; });
+  if(!u) return;
+  /* Toggle */
+  var editRow = document.getElementById('admEditRow-'+uid);
+  if(!editRow) return;
+  if(editRow.style.display!=='none'){
+    editRow.style.display='none'; return;
+  }
+  /* Close others */
+  document.querySelectorAll('[id^="admEditRow-"]').forEach(function(r){ r.style.display='none'; });
+  var f = document.getElementById('admEditForm-'+uid);
+  f.innerHTML = ''
+    +'<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Editar: @'+u.username+'</div>'
+    +'<div class="admin-form-row">'
+    +'<input class="admin-input" id="euFN-'+uid+'" placeholder="Nombre" value="'+(u.first_name||'')+'">'
+    +'<input class="admin-input" id="euLN-'+uid+'" placeholder="Apellido" value="'+(u.last_name||'')+'">'
+    +'</div>'
+    +'<div class="admin-form-row">'
+    +'<input class="admin-input" id="euEM-'+uid+'" placeholder="Email" type="email" value="'+(u.email||'')+'">'
+    +'<input class="admin-input" id="euPW-'+uid+'" placeholder="Nueva contrase\u00f1a (opcional)" type="password">'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:4px;">'
+    +'<button class="admin-btn admin-btn-primary" onclick="admSaveEditUser('+uid+')">Guardar</button>'
+    +'<button class="admin-btn admin-btn-secondary" onclick="document.getElementById(\'admEditRow-'+uid+'\').style.display=\'none\'">Cancelar</button>'
+    +'</div>';
+  editRow.style.display='';
+};
+
+window.admSaveEditUser = function(uid){
+  var body = {
+    first_name: (document.getElementById('euFN-'+uid)||{}).value||'',
+    last_name:  (document.getElementById('euLN-'+uid)||{}).value||'',
+    email:      (document.getElementById('euEM-'+uid)||{}).value||'',
+    password:   (document.getElementById('euPW-'+uid)||{}).value||''
+  };
+  fetch('/app/api/admin/usuarios/'+uid+'/',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success){ _showAdminToast('Usuario guardado'); loadUsuarios(); }
+    else _showAdminToast(res.error||'Error al guardar', false);
+  });
+};
+
+/* ── Clientes ────────────────────────────────────────── */
+window.loadClientes = function(){
+  var ac = getAC();
+  Promise.all([
+    fetch('/app/api/admin/clientes/').then(function(r){return r.json();}),
+    fetch('/app/api/admin/usuarios/').then(function(r){return r.json();})
+  ]).then(function(results){
+    var clientes = results[0].clientes||[];
+    var usuarios = results[1].usuarios||[];
+    window._admClientes = clientes;
+    window._admUsuariosCache = usuarios;
+
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header">';
+    h += '<span class="admin-content-title">Clientes ('+clientes.length+')</span>';
+    h += '<div class="admin-filter-row">';
+    h += '<div class="admin-search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="admClientSearch" placeholder="Buscar empresa..."></div>';
+    h += '<select class="admin-input" id="admCatFilter" style="max-width:120px;"><option value="">Todos</option><option value="A">Cat. A</option><option value="B">Cat. B</option><option value="C">Cat. C</option></select>';
+    h += '</div></div>';
+    h += '<p class="admin-help">Haz clic en el icono de edici&oacute;n para ajustar metas y asignaci&oacute;n de cada cliente.</p>';
+
+    h += '<table class="admin-table"><thead><tr><th>Empresa</th><th>Categor&iacute;a</th><th>Asignado a</th><th>Meta Mensual</th><th>Acciones</th></tr></thead><tbody>';
+    clientes.forEach(function(c){
+      var cat = c.categoria||'C';
+      var catBadge = '<span class="admin-badge admin-badge-'+cat.toLowerCase()+'">'+cat+'</span>';
+      var asig = '';
+      usuarios.forEach(function(u){ if(u.id===c.asignado_a_id) asig=(u.first_name+' '+u.last_name).trim(); });
+      h += '<tr id="admCRow-'+c.id+'">';
+      h += '<td><strong>'+c.nombre_empresa+'</strong></td>';
+      h += '<td>'+catBadge+'</td>';
+      h += '<td style="color:#636366;">'+(asig||'&mdash;')+'</td>';
+      h += '<td>'+(c.meta_mensual ? '$'+_fmtCurrency(c.meta_mensual) : '&mdash;')+'</td>';
+      h += '<td><button class="admin-btn-icon" onclick="admEditCliente('+c.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>';
+      h += '</tr>';
+      h += '<tr id="admCEditRow-'+c.id+'" style="display:none;"><td colspan="5"><div class="admin-inline-form" id="admCEditForm-'+c.id+'"></div></td></tr>';
+    });
+    h += '</tbody></table></div>';
+    ac.innerHTML = h;
+
+    /* Search */
+    var s = document.getElementById('admClientSearch');
+    if(s) s.addEventListener('input', function(){
+      var q = this.value.toLowerCase();
+      document.querySelectorAll('[id^="admCRow-"]').forEach(function(row){
+        row.style.display = row.textContent.toLowerCase().indexOf(q)!==-1 ? '' : 'none';
+      });
+    });
+    /* Category filter */
+    var cf = document.getElementById('admCatFilter');
+    if(cf) cf.addEventListener('change', function(){
+      var v = this.value;
+      document.querySelectorAll('[id^="admCRow-"]').forEach(function(row){
+        row.style.display = (!v || row.textContent.indexOf(v)!==-1) ? '' : 'none';
+      });
+    });
+  });
+};
+
+window.admEditCliente = function(cid){
+  var c = (window._admClientes||[]).find(function(x){return x.id===cid;});
+  var usuarios = window._admUsuariosCache||[];
+  if(!c) return;
+  var editRow = document.getElementById('admCEditRow-'+cid);
+  if(!editRow) return;
+  if(editRow.style.display!=='none'){ editRow.style.display='none'; return; }
+  document.querySelectorAll('[id^="admCEditRow-"]').forEach(function(r){ r.style.display='none'; });
+  var opts = '<option value="">Sin asignar</option>';
+  usuarios.forEach(function(u){
+    var sel = u.id===c.asignado_a_id ? ' selected' : '';
+    opts += '<option value="'+u.id+'"'+sel+'>'+(u.first_name+' '+u.last_name).trim()+'</option>';
+  });
+  var f = document.getElementById('admCEditForm-'+cid);
+  f.innerHTML = ''
+    +'<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Editar: '+c.nombre_empresa+'</div>'
+    +'<div class="admin-form-row">'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Asignado a</label><select class="admin-input" id="ceAsig-'+cid+'">'+opts+'</select></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Categor&iacute;a</label><select class="admin-input" id="ceCat-'+cid+'"><option value="A"'+(c.categoria==='A'?' selected':'')+'>A</option><option value="B"'+(c.categoria==='B'?' selected':'')+'>B</option><option value="C"'+(c.categoria==='C'?' selected':'')+'>C</option></select></div>'
+    +'</div>'
+    +'<div class="admin-form-row">'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Facturado</label><input class="admin-input" id="ceMF-'+cid+'" type="number" value="'+(c.meta_mensual||0)+'"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cobrado</label><input class="admin-input" id="ceMC-'+cid+'" type="number" value="'+(c.meta_cobrado||0)+'"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Opor.</label><input class="admin-input" id="ceMO-'+cid+'" type="number" value="'+(c.meta_oportunidades||0)+'"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cotizado</label><input class="admin-input" id="ceMQ-'+cid+'" type="number" value="'+(c.meta_cotizado||0)+'"></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:4px;">'
+    +'<button class="admin-btn admin-btn-primary" onclick="admGuardarCliente('+cid+')">Guardar</button>'
+    +'<button class="admin-btn admin-btn-secondary" onclick="document.getElementById(\'admCEditRow-'+cid+'\').style.display=\'none\'">Cancelar</button>'
+    +'</div>';
+  editRow.style.display='';
+};
+
+window.admGuardarCliente = function(cid){
+  var asigEl = document.getElementById('ceAsig-'+cid);
+  var body = {
+    asignado_a_id:     asigEl&&asigEl.value ? parseInt(asigEl.value) : null,
+    categoria:         (document.getElementById('ceCat-'+cid)||{}).value||'C',
+    meta_mensual:      (document.getElementById('ceMF-'+cid)||{}).value||0,
+    meta_cobrado:      (document.getElementById('ceMC-'+cid)||{}).value||0,
+    meta_oportunidades:(document.getElementById('ceMO-'+cid)||{}).value||0,
+    meta_cotizado:     (document.getElementById('ceMQ-'+cid)||{}).value||0
+  };
+  fetch('/app/api/admin/clientes/'+cid+'/',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success){ _showAdminToast('Cliente guardado'); loadClientes(); }
+    else _showAdminToast(res.error||'Error al guardar', false);
+  });
+};
+
+/* ── Contactos ───────────────────────────────────────── */
+window.loadContactos = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/clientes/').then(function(r){return r.json();}).then(function(data){
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Contactos</span>';
+    h += '<button class="admin-btn admin-btn-primary" onclick="admNuevoContactoForm()">+ Nuevo Contacto</button></div>';
+    h += '<div id="admNewContactForm" class="admin-inline-form" style="display:none;">';
+    h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Nuevo Contacto</div>';
+    h += '<div class="admin-form-row"><input class="admin-input" id="ncNombre" placeholder="Nombre"><input class="admin-input" id="ncApellido" placeholder="Apellido"></div>';
+    h += '<div class="admin-form-row"><input class="admin-input" id="ncEmail" placeholder="Email (opcional)" type="email"><input class="admin-input" id="ncTelefono" placeholder="Tel&eacute;fono (opcional)"></div>';
+    h += '<div class="admin-form-row"><select class="admin-input" id="ncCliente"><option value="">Seleccionar empresa...</option>';
+    (data.clientes||[]).forEach(function(c){ h += '<option value="'+c.id+'">'+c.nombre_empresa+'</option>'; });
+    h += '</select></div>';
+    h += '<div style="display:flex;gap:8px;margin-top:4px;"><button class="admin-btn admin-btn-primary" onclick="admGuardarNuevoContacto()">Crear</button><button class="admin-btn admin-btn-secondary" onclick="admNuevoContactoForm()">Cancelar</button></div>';
+    h += '</div>';
+    /* Filter by cliente */
+    h += '<div class="admin-filter-row" style="margin-bottom:14px;"><label class="admin-help" style="margin:0;">Filtrar por empresa:</label>';
+    h += '<select class="admin-input" id="admContactCliente" style="max-width:240px;"><option value="">Todos</option>';
+    (data.clientes||[]).forEach(function(c){ h += '<option value="'+c.id+'">'+c.nombre_empresa+'</option>'; });
+    h += '</select></div>';
+    h += '<div id="admContactList"><div style="color:#8E8E93;text-align:center;font-size:0.82rem;padding:20px;">Selecciona una empresa para ver sus contactos, o deja en "Todos".</div></div>';
+    h += '</div>';
+    ac.innerHTML = h;
+    var sel = document.getElementById('admContactCliente');
+    if(sel) sel.addEventListener('change', function(){ _loadContactList(this.value); });
+  });
+};
+
+window.admNuevoContactoForm = function(){
+  var f = document.getElementById('admNewContactForm');
+  if(f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+};
+
+window.admGuardarNuevoContacto = function(){
+  var cid = (document.getElementById('ncCliente')||{}).value;
+  var body = {
+    nombre:     (document.getElementById('ncNombre')||{}).value,
+    apellido:   (document.getElementById('ncApellido')||{}).value,
+    email:      (document.getElementById('ncEmail')||{}).value,
+    telefono:   (document.getElementById('ncTelefono')||{}).value,
+    empresa_id: cid ? parseInt(cid) : null
+  };
+  fetch('/app/api/admin/contactos/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success){ _showAdminToast('Contacto creado'); loadContactos(); }
+    else _showAdminToast(res.error||'Error al crear contacto', false);
+  });
+};
+
+function _loadContactList(cid){
+  var url = '/app/api/admin/contactos/' + (cid ? '?cliente_id='+cid : '');
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    var contactos = data.contactos||[];
+    var el = document.getElementById('admContactList');
+    if(!el) return;
+    if(!contactos.length){
+      el.innerHTML='<div style="color:#8E8E93;text-align:center;font-size:0.82rem;padding:20px;">No hay contactos.</div>';
+      return;
+    }
+    var h='<table class="admin-table"><thead><tr><th>Nombre</th><th>Empresa</th><th>Email</th><th>Tel&eacute;fono</th></tr></thead><tbody>';
+    contactos.forEach(function(c){
+      h+='<tr><td><strong>'+c.nombre+' '+c.apellido+'</strong></td><td style="color:#636366;">'+(c.empresa||'&mdash;')+'</td><td>'+(c.email||'&mdash;')+'</td><td>'+(c.telefono||'&mdash;')+'</td></tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  });
+}
+
+/* ── Metas ───────────────────────────────────────────── */
+window.loadMetas = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/usuarios/').then(function(r){return r.json();}).then(function(data){
+    var vendedores = (data.usuarios||[]).filter(function(u){ return !u.is_supervisor; });
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Metas por Vendedor</span></div>';
+    h += '<p class="admin-help">Define las metas mensuales de cada vendedor. Haz clic en Guardar por fila para aplicar los cambios.</p>';
+    h += '<table class="admin-table"><thead><tr><th>Vendedor</th><th>Meta Facturado</th><th>Meta Cotizado</th><th>Meta Cobrado</th><th>Meta Opor.</th><th></th></tr></thead><tbody>';
+    vendedores.forEach(function(u){
+      h += '<tr>';
+      h += '<td><strong>'+((u.first_name+' '+u.last_name).trim()||u.username)+'</strong><br><span style="color:#8E8E93;font-size:0.72rem;">@'+u.username+'</span></td>';
+      h += '<td><input class="admin-input" id="mMF-'+u.id+'" type="number" value="'+(u.meta_mensual||0)+'" style="max-width:120px;text-align:right;"></td>';
+      h += '<td><input class="admin-input" id="mMQ-'+u.id+'" type="number" value="'+(u.meta_cotizado||0)+'" style="max-width:120px;text-align:right;"></td>';
+      h += '<td><input class="admin-input" id="mMC-'+u.id+'" type="number" value="'+(u.meta_cobrado||0)+'" style="max-width:120px;text-align:right;"></td>';
+      h += '<td><input class="admin-input" id="mMO-'+u.id+'" type="number" value="'+(u.meta_oportunidades||0)+'" style="max-width:100px;text-align:right;"></td>';
+      h += '<td><button class="admin-btn admin-btn-primary" onclick="admGuardarMeta('+u.id+')" style="white-space:nowrap;">Guardar</button></td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    ac.innerHTML = h;
+  });
+};
+
+window.admGuardarMeta = function(uid){
+  var metas = {
+    meta_mensual:      (document.getElementById('mMF-'+uid)||{}).value||0,
+    meta_cotizado:     (document.getElementById('mMQ-'+uid)||{}).value||0,
+    meta_cobrado:      (document.getElementById('mMC-'+uid)||{}).value||0,
+    meta_oportunidades:(document.getElementById('mMO-'+uid)||{}).value||0
+  };
+  fetch('/app/api/admin/metas/',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({user_id: uid, metas: metas})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success) _showAdminToast('Meta guardada');
+    else _showAdminToast(res.error||'Error al guardar', false);
+  });
+};
+
+/* ── Permisos ────────────────────────────────────────── */
+window.loadPermisos = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/usuarios/').then(function(r){return r.json();}).then(function(data){
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Control de Acceso</span></div>';
+    h += '<p class="admin-help">Los supervisores pueden ver todos los vendedores y acceder a este panel de administraci&oacute;n.</p>';
+    h += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Email</th><th>Acceso Supervisor</th><th>Activo</th></tr></thead><tbody>';
+    (data.usuarios||[]).forEach(function(u){
+      var supChk = u.is_supervisor ? 'checked' : '';
+      var actChk = u.is_active ? 'checked' : '';
+      h += '<tr>';
+      h += '<td><strong>'+u.username+'</strong><br><span style="color:#8E8E93;font-size:0.72rem;">'+((u.first_name+' '+u.last_name).trim())+'</span></td>';
+      h += '<td style="color:#636366;">'+(u.email||'&mdash;')+'</td>';
+      h += '<td><label class="admin-toggle"><input type="checkbox" '+supChk+' onchange="admToggleSupervisor('+u.id+',this.checked)"><span class="admin-toggle-slider"></span></label></td>';
+      h += '<td><span class="admin-badge '+(u.is_active?'admin-badge-green':'admin-badge-red')+'">'+(u.is_active?'Activo':'Inactivo')+'</span></td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    ac.innerHTML = h;
+  });
+};
+
+/* ── Auto-load on open ───────────────────────────────── */
+(function(){
+  var btn = document.getElementById('btnAdminPanel');
+  if(!btn) return;
+  var _orig = btn.onclick;
+  btn.addEventListener('click', function(){
+    setTimeout(function(){
+      var ac = getAC();
+      if(ac && ac.innerHTML.indexOf('Cargando')===-1 && ac.innerHTML.indexOf('admin-card-inner')===-1){
+        loadAdminSection('usuarios');
+        document.getElementById('admNav-usuarios') && document.getElementById('admNav-usuarios').click();
+      }
+    }, 80);
+  });
+})();
+
+/* Expose helpers */
+window._showAdminToast = _showAdminToast;
+window._fmtCurrency    = _fmtCurrency;
+window._loadContactList = _loadContactList;
+
+})();
+</script>
+{% endif %}
