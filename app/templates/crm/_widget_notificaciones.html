@@ -834,7 +834,7 @@
         }
 
         // Mark as read (except chat messages)
-        const esMensajeChat = tipo === 'oportunidad_mensaje';
+        const esMensajeChat = tipo === 'oportunidad_mensaje' || tipo === 'comentario_oportunidad';
         if (!esMensajeChat) {
             try {
                 fetch('/app/api/marcar-notificacion-leida/' + id + '/', { method: 'POST', headers: { 'X-CSRFToken': _csrf() } });
