@@ -845,8 +845,8 @@
 
         if (tiposActividad.includes(tipo) && typeof window.calendarioAbrir === 'function') {
             window.calendarioAbrir();
-        } else if (tiposTareaOpp.includes(tipo) && actId) {
-            if (oppId && typeof window.openDetalle === 'function') window.openDetalle(oppId);
+        } else if (tiposTareaOpp.includes(tipo) && actId && typeof window.crmTaskVerDetalle === 'function') {
+            window.crmTaskVerDetalle(actId);
         } else if (esMensajeChat && oppId && typeof window.openDetalle === 'function') {
             window.openDetalle(oppId);
             setTimeout(() => { if (typeof window.woAbrirGestorConversacion === 'function') window.woAbrirGestorConversacion(); }, 600);
@@ -940,13 +940,39 @@
         } catch(e) {}
     };
 
+    /* ═══ Fast Toast Polling ═══ */
+    function _pollForToasts() {
+        if (!_firstLoadDone) return;
+        fetch('/app/api/obtener-notificaciones/')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const newMaxId = Math.max(0, ...data.notifications.map(n => n.id));
+                    if (newMaxId > _maxNotifIdSeen) {
+                        const news = data.notifications.filter(n => n.id > _maxNotifIdSeen && !n.leida);
+                        if (news.length > 0) {
+                            _nData = data.notifications;
+                            _maxNotifIdSeen = newMaxId;
+                            // Update counts and render before showing toast
+                            _updateCounts();
+                            _render();
+                            // Show toast for up to 3 newest
+                            news.slice(0, 3).forEach(n => _showMacOSToast(n));
+                        }
+                    }
+                }
+            })
+            .catch(e => {});
+    }
+
     /* ═══ Expose for external use ═══ */
     window.notifLoad = _load;
 
     /* ═══ Init ═══ */
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(_load, 1800);
-        setInterval(_load, 15000);
+        setInterval(_load, 30000); // reduced from 15s since pollForToasts updates _nData anyway when seeing new things
+        setInterval(_pollForToasts, 3000); // 3 seconds fast polling
     });
 
 })();
