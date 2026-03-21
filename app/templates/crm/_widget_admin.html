@@ -277,7 +277,7 @@
 <div id="adminToast"></div>
 
 <!-- Confirm dialog -->
-<div id="adminConfirm" style="display:none;position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;">
+<div id="adminConfirmDlg" style="display:none;position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(4px);" onclick="adminConfirmCancel()"></div>
   <div style="position:relative;background:rgba(255,255,255,0.92);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,0.8);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.18);width:320px;max-width:90vw;padding:24px;text-align:center;">
     <div id="adminConfirmIcon" style="width:48px;height:48px;background:#FFF0F0;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
@@ -299,19 +299,19 @@ function getAC(){ return document.getElementById('adminContent'); }
 function getCsrf(){ return (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value||''; }
 
 var _adminConfirmCb = null;
-function adminConfirm(title, msg, onOk) {
-  var d = document.getElementById('adminConfirm');
+window.adminConfirm = function(title, msg, onOk) {
+  var d = document.getElementById('adminConfirmDlg');
   document.getElementById('adminConfirmTitle').textContent = title;
   document.getElementById('adminConfirmMsg').textContent = msg;
   _adminConfirmCb = onOk;
   d.style.display = 'flex';
-}
-function adminConfirmCancel() {
-  document.getElementById('adminConfirm').style.display = 'none';
+};
+window.adminConfirmCancel = function() {
+  document.getElementById('adminConfirmDlg').style.display = 'none';
   _adminConfirmCb = null;
-}
+};
 document.getElementById('adminConfirmOk').addEventListener('click', function() {
-  document.getElementById('adminConfirm').style.display = 'none';
+  document.getElementById('adminConfirmDlg').style.display = 'none';
   if (_adminConfirmCb) { _adminConfirmCb(); _adminConfirmCb = null; }
 });
 
@@ -1247,7 +1247,7 @@ window.getAC            = getAC;
   };
 
   window._gtEliminar = function(id, nombre) {
-    _adminConfirm('¿Eliminar el grupo "'+nombre+'"? Los usuarios no perderán sus cuentas, solo dejarán de compartir visibilidad.', function(){
+    adminConfirm('Eliminar grupo', '¿Eliminar el grupo "'+nombre+'"? Los usuarios no perderán sus cuentas, solo dejarán de compartir visibilidad.', function(){
       fetch('/app/api/grupos/'+id+'/eliminar/',{
         method:'DELETE', headers:{'X-CSRFToken':_getAdminCsrf()}
       }).then(function(r){return r.json();}).then(function(res){
