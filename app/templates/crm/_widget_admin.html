@@ -922,10 +922,11 @@ window.getAC            = getAC;
     }
   };
 
-  function _getAdminCsrf(){
+  window._getAdminCsrf = function(){
     var el = document.querySelector('[name=csrfmiddlewaretoken]');
     return el ? el.value : '';
-  }
+  };
+  function _getAdminCsrf(){ return window._getAdminCsrf(); }
 
   function _getEtapasPorTipo(tipo) {
     if (tipo === 'runrate') return ETAPAS_RUNRATE_TA;
@@ -1156,85 +1157,84 @@ window.getAC            = getAC;
 
   function _renderGtLista(grupos) {
     var ac = getAC();
-    var h = '<div class="admin-card-inner">';
-    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
-    h += '<div><div class="admin-section-title">&#128101; Grupos de Trabajo</div>';
-    h += '<p class="admin-help">Agrupa usuarios en equipos. Los miembros de un grupo pueden ver las oportunidades de sus compañeros. El supervisor del grupo tiene visibilidad completa del equipo.</p></div>';
-    h += '<button class="admin-btn admin-btn-primary" onclick="_gtShowForm(null)">+ Nuevo Grupo</button>';
+    var h = '<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">';
+    /* header fijo */
+    h += '<div style="padding:16px 20px 12px;border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">';
+    h += '<div>';
+    h += '<div style="font-size:0.9rem;font-weight:700;color:#1C1C1E;margin-bottom:3px;">Grupos de Trabajo</div>';
+    h += '<div style="font-size:0.78rem;color:#8E8E93;">Agrupa usuarios en equipos para compartir visibilidad de oportunidades.</div>';
     h += '</div>';
+    h += '<button onclick="_gtShowForm(null)" style="flex-shrink:0;background:#007AFF;color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:0.8rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.3);">+ Nuevo grupo</button>';
+    h += '</div>';
+    /* cuerpo scrollable */
+    h += '<div style="flex:1;overflow-y:auto;padding:16px 20px;">';
 
     if (grupos.length === 0) {
-      h += '<div style="text-align:center;padding:60px 0;">';
-      h += '<div style="font-size:2.5rem;margin-bottom:12px;">&#128101;</div>';
-      h += '<div style="color:#1C1C1E;font-weight:600;font-size:1rem;margin-bottom:6px;">Sin grupos configurados</div>';
-      h += '<div style="color:#8E8E93;font-size:0.85rem;margin-bottom:20px;">Crea tu primer grupo para compartir visibilidad entre compañeros</div>';
-      h += '<button class="admin-btn admin-btn-primary" onclick="_gtShowForm(null)">Crear primer grupo</button>';
+      h += '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:60px 0;text-align:center;">';
+      h += '<div style="width:56px;height:56px;background:rgba(0,122,255,0.08);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:14px;">&#128101;</div>';
+      h += '<div style="color:#1C1C1E;font-weight:600;font-size:0.95rem;margin-bottom:6px;">Sin grupos configurados</div>';
+      h += '<div style="color:#8E8E93;font-size:0.82rem;margin-bottom:20px;max-width:280px;">Crea tu primer grupo para compartir visibilidad entre compañeros</div>';
+      h += '<button onclick="_gtShowForm(null)" style="background:#007AFF;color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;">Crear primer grupo</button>';
       h += '</div>';
     } else {
-      // Vista de organigrama: tarjetas por grupo
-      h += '<div style="display:flex;flex-direction:column;gap:16px;">';
+      h += '<div style="display:flex;flex-direction:column;gap:14px;">';
       grupos.forEach(function(g) {
-        var colorBg = g.color + '18'; // color con opacidad baja
+        var colorBg = g.color + '15';
         var activaBadge = g.activo
-          ? '<span style="background:#34C759;color:#fff;border-radius:5px;padding:2px 7px;font-size:0.68rem;font-weight:600;">Activo</span>'
-          : '<span style="background:#8E8E93;color:#fff;border-radius:5px;padding:2px 7px;font-size:0.68rem;font-weight:600;">Inactivo</span>';
+          ? '<span style="background:#34C759;color:#fff;border-radius:5px;padding:2px 8px;font-size:0.67rem;font-weight:700;letter-spacing:0.3px;">Activo</span>'
+          : '<span style="background:#8E8E93;color:#fff;border-radius:5px;padding:2px 8px;font-size:0.67rem;font-weight:700;">Inactivo</span>';
 
-        h += '<div style="border:2px solid '+g.color+';border-radius:14px;overflow:hidden;">';
+        h += '<div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(20px) saturate(160%);border:1.5px solid '+g.color+'40;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
 
-        // Cabecera del grupo
-        h += '<div style="background:'+colorBg+';padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">';
+        /* barra de color lateral */
+        h += '<div style="display:flex;">';
+        h += '<div style="width:4px;background:'+g.color+';flex-shrink:0;"></div>';
+        h += '<div style="flex:1;">';
+
+        /* cabecera */
+        h += '<div style="background:'+colorBg+';padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">';
         h += '<div style="display:flex;align-items:center;gap:10px;">';
-        h += '<div style="width:36px;height:36px;border-radius:10px;background:'+g.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem;flex-shrink:0;">'+g.nombre.charAt(0).toUpperCase()+'</div>';
+        h += '<div style="width:34px;height:34px;border-radius:10px;background:'+g.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.95rem;flex-shrink:0;box-shadow:0 2px 6px '+g.color+'50;">'+g.nombre.charAt(0).toUpperCase()+'</div>';
         h += '<div>';
-        h += '<div style="font-weight:700;font-size:0.95rem;color:#1C1C1E;display:flex;align-items:center;gap:7px;">'+g.nombre+' '+activaBadge+'</div>';
-        if (g.descripcion) h += '<div style="color:#636366;font-size:0.78rem;margin-top:1px;">'+g.descripcion+'</div>';
+        h += '<div style="font-weight:700;font-size:0.88rem;color:#1C1C1E;display:flex;align-items:center;gap:6px;">'+g.nombre+' '+activaBadge+'</div>';
+        if (g.descripcion) h += '<div style="color:#6E6E73;font-size:0.75rem;margin-top:1px;">'+g.descripcion+'</div>';
         h += '</div></div>';
-        h += '<div style="display:flex;gap:6px;">';
-        h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:rgba(255,255,255,0.8);color:#3A3A3C;border:1px solid rgba(0,0,0,0.1);border-radius:7px;cursor:pointer;" onclick="_gtToggle('+g.id+')">'+(g.activo?'Pausar':'Activar')+'</button>';
-        h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:rgba(255,255,255,0.8);color:#3A3A3C;border:1px solid rgba(0,0,0,0.1);border-radius:7px;cursor:pointer;" onclick="_gtShowForm('+g.id+')">Editar</button>';
-        h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:#FFF0F0;color:#FF3B30;border:1px solid #FFD0D0;border-radius:7px;cursor:pointer;" onclick="_gtEliminar('+g.id+',\''+g.nombre.replace(/'/g,'')+'\')">Eliminar</button>';
+        h += '<div style="display:flex;gap:5px;">';
+        h += '<button style="padding:4px 9px;font-size:0.72rem;background:rgba(255,255,255,0.85);color:#3A3A3C;border:1px solid rgba(0,0,0,0.1);border-radius:7px;cursor:pointer;font-weight:500;" onclick="_gtToggle('+g.id+')">'+(g.activo?'Pausar':'Activar')+'</button>';
+        h += '<button style="padding:4px 9px;font-size:0.72rem;background:rgba(255,255,255,0.85);color:#007AFF;border:1px solid rgba(0,122,255,0.2);border-radius:7px;cursor:pointer;font-weight:500;" onclick="_gtShowForm('+g.id+')">Editar</button>';
+        h += '<button style="padding:4px 9px;font-size:0.72rem;background:#FFF0F0;color:#FF3B30;border:1px solid #FFD0D0;border-radius:7px;cursor:pointer;font-weight:500;" onclick="_gtEliminar('+g.id+',\''+g.nombre.replace(/'/g,'')+'\')">Eliminar</button>';
         h += '</div></div>';
 
-        // Organigrama: supervisor + miembros
-        h += '<div style="background:#fff;padding:14px 16px;">';
-
-        // Fila del supervisor
+        /* organigrama */
+        h += '<div style="padding:12px 14px;">';
         if (g.supervisor) {
           h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
-          h += '<div style="width:2px;height:32px;background:'+g.color+';border-radius:2px;margin-right:4px;"></div>';
-          h += '<div style="background:'+colorBg+';border:1.5px solid '+g.color+';border-radius:10px;padding:6px 12px;display:flex;align-items:center;gap:8px;">';
-          h += '<div style="width:28px;height:28px;border-radius:8px;background:'+g.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.8rem;flex-shrink:0;">'+g.supervisor.nombre.charAt(0).toUpperCase()+'</div>';
-          h += '<div><div style="font-weight:600;font-size:0.82rem;color:#1C1C1E;">'+g.supervisor.nombre+'</div>';
-          h += '<div style="font-size:0.68rem;color:'+g.color+';font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Supervisor del grupo</div></div>';
+          h += '<div style="background:'+colorBg+';border:1.5px solid '+g.color+'60;border-radius:10px;padding:5px 11px;display:flex;align-items:center;gap:7px;">';
+          h += '<div style="width:26px;height:26px;border-radius:7px;background:'+g.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.75rem;flex-shrink:0;">'+g.supervisor.nombre.charAt(0).toUpperCase()+'</div>';
+          h += '<div><div style="font-weight:600;font-size:0.8rem;color:#1C1C1E;">'+g.supervisor.nombre+'</div>';
+          h += '<div style="font-size:0.65rem;color:'+g.color+';font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Supervisor</div></div>';
           h += '</div></div>';
-          // Línea conectora
-          if (g.miembros.length > 0) {
-            h += '<div style="margin-left:14px;border-left:2px dashed '+g.color+'40;padding-left:16px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">';
-          } else {
-            h += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-          }
-        } else {
-          h += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
         }
-
-        // Miembros
         if (g.miembros.length > 0) {
+          var lineStyle = g.supervisor ? 'margin-left:12px;border-left:2px dashed '+g.color+'30;padding-left:14px;' : '';
+          h += '<div style="'+lineStyle+'display:flex;flex-wrap:wrap;gap:7px;">';
           g.miembros.forEach(function(m) {
-            h += '<div style="background:#F9F9FB;border:1px solid #E5E5EA;border-radius:9px;padding:5px 10px;display:flex;align-items:center;gap:7px;">';
-            h += '<div style="width:24px;height:24px;border-radius:7px;background:#E5E5EA;display:flex;align-items:center;justify-content:center;color:#636366;font-weight:700;font-size:0.72rem;flex-shrink:0;">'+m.nombre.charAt(0).toUpperCase()+'</div>';
-            h += '<div style="font-size:0.8rem;color:#1C1C1E;font-weight:500;">'+m.nombre+'</div>';
+            h += '<div style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:8px;padding:4px 9px;display:flex;align-items:center;gap:6px;">';
+            h += '<div style="width:22px;height:22px;border-radius:6px;background:#D1D1D6;display:flex;align-items:center;justify-content:center;color:#636366;font-weight:700;font-size:0.68rem;flex-shrink:0;">'+m.nombre.charAt(0).toUpperCase()+'</div>';
+            h += '<div style="font-size:0.77rem;color:#1C1C1E;font-weight:500;">'+m.nombre+'</div>';
             h += '</div>';
           });
-        } else {
-          h += '<div style="color:#C7C7CC;font-size:0.78rem;font-style:italic;padding:4px 0;">Sin miembros aún</div>';
+          h += '</div>';
+        } else if (!g.supervisor) {
+          h += '<div style="color:#C7C7CC;font-size:0.77rem;font-style:italic;">Sin miembros aún</div>';
         }
-        h += '</div>'; // cierra flex miembros
-        h += '</div>'; // cierra padding organigrama
-        h += '</div>'; // cierra tarjeta grupo
+        h += '</div>'; /* organigrama */
+        h += '</div></div></div>'; /* flex + card */
       });
-      h += '</div>'; // cierra columna de grupos
+      h += '</div>';
     }
-    h += '</div>';
+
+    h += '</div></div>'; /* body + container */
     ac.innerHTML = h;
   }
 
@@ -1274,6 +1274,9 @@ window.getAC            = getAC;
     var ac = getAC();
     var isEdit = !!grupo;
     var colorActual = grupo ? grupo.color : '#007AFF';
+    var glass = 'background:rgba(255,255,255,0.72);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,0.8);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);';
+    var lbl = 'display:block;font-size:0.75rem;font-weight:600;color:#6E6E73;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;';
+    var inp = 'width:100%;background:rgba(255,255,255,0.85);border:1px solid rgba(0,0,0,0.1);border-radius:10px;padding:9px 12px;font-size:0.85rem;color:#1C1C1E;outline:none;box-sizing:border-box;';
 
     var optsSuper = '<option value="">Sin supervisor de grupo</option>';
     _gtUsuarios.forEach(function(u){
@@ -1284,58 +1287,69 @@ window.getAC            = getAC;
     var miembrosIds = grupo ? (grupo.miembros||[]).map(function(m){return m.id;}) : [];
     var chkMiembros = _gtUsuarios.map(function(u){
       var chk = miembrosIds.indexOf(u.id)!==-1?' checked':'';
-      return '<label style="display:flex;align-items:center;gap:7px;font-size:0.82rem;cursor:pointer;padding:4px 6px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background=\'#F2F2F7\'" onmouseout="this.style.background=\'\'"><input type="checkbox" class="gt-chk-m" value="'+u.id+'"'+chk+'> '+(u.first_name+' '+u.last_name).trim()+'<span style="color:#8E8E93;font-size:0.72rem;margin-left:2px;">@'+u.username+'</span></label>';
+      return '<label style="display:flex;align-items:center;gap:7px;font-size:0.82rem;cursor:pointer;padding:5px 7px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background=\'rgba(0,0,0,0.04)\'" onmouseout="this.style.background=\'transparent\'"><input type="checkbox" class="gt-chk-m" value="'+u.id+'"'+chk+'> <span style="flex:1;color:#1C1C1E;font-weight:500;">'+(u.first_name+' '+u.last_name).trim()+'</span><span style="color:#8E8E93;font-size:0.72rem;">@'+u.username+'</span></label>';
     }).join('');
 
-    // Selector de color con swatches
     var swatches = COLORES_GT.map(function(c){
       var isSelected = c.hex === colorActual;
-      return '<div onclick="_gtSelectColor(\''+c.hex+'\')" title="'+c.label+'" id="gt-swatch-'+c.hex.replace('#','')+'" style="width:22px;height:22px;border-radius:50%;background:'+c.hex+';cursor:pointer;border:2px solid '+(isSelected?'#1C1C1E':'transparent')+';transition:border 0.15s;flex-shrink:0;"></div>';
+      return '<div onclick="_gtSelectColor(\''+c.hex+'\')" title="'+c.label+'" id="gt-swatch-'+c.hex.replace('#','')+'" style="width:26px;height:26px;border-radius:50%;background:'+c.hex+';cursor:pointer;border:3px solid '+(isSelected?'#1C1C1E':'transparent')+';transition:border 0.15s,transform 0.1s;flex-shrink:0;"  onmouseover="this.style.transform=\'scale(1.15)\'" onmouseout="this.style.transform=\'scale(1)\'"></div>';
     }).join('');
 
-    var h = '<div class="admin-card-inner">';
-    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">';
-    h += '<button class="admin-btn" style="padding:5px 10px;font-size:0.8rem;background:#F2F2F7;border:none;border-radius:8px;cursor:pointer;" onclick="window.loadGrupos()">&#8592; Volver</button>';
-    h += '<div class="admin-section-title" style="margin:0;">'+(isEdit?'Editar Grupo':'Nuevo Grupo de Trabajo')+'</div>';
+    var h = '<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">';
+
+    /* header */
+    h += '<div style="padding:14px 20px 12px;border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0;display:flex;align-items:center;gap:10px;">';
+    h += '<button onclick="window.loadGrupos()" style="background:rgba(0,0,0,0.06);border:none;border-radius:8px;padding:5px 10px;font-size:0.8rem;color:#3A3A3C;cursor:pointer;font-weight:500;">&#8592; Volver</button>';
+    h += '<div style="font-size:0.9rem;font-weight:700;color:#1C1C1E;">'+(isEdit?'Editar grupo':'Nuevo Grupo de Trabajo')+'</div>';
     h += '</div>';
 
-    h += '<div style="background:#F9F9FB;border-radius:14px;padding:20px;max-width:560px;">';
+    /* cuerpo scrollable */
+    h += '<div style="flex:1;overflow-y:auto;padding:16px 20px;">';
 
-    // Nombre y color
-    h += '<div style="display:flex;gap:12px;margin-bottom:12px;">';
-    h += '<div style="flex:1;"><div class="admin-field-label">Nombre del grupo *</div>';
-    h += '<input class="admin-input" id="gt_nombre" placeholder="Ej: Equipo Norte" value="'+(grupo?grupo.nombre:'')+'"></div>';
-    h += '</div>';
-
-    h += '<div style="margin-bottom:12px;"><div class="admin-field-label">Descripción (opcional)</div>';
-    h += '<input class="admin-input" id="gt_descripcion" placeholder="Ej: Vendedores de la zona norte" value="'+(grupo?grupo.descripcion:'')+'"></div>';
-
-    h += '<div style="margin-bottom:14px;"><div class="admin-field-label">Color del grupo</div>';
-    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">';
-    h += swatches;
-    h += '</div>';
+    /* card: info básica */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
+    h += '<div style="width:22px;height:22px;background:#007AFF;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>';
+    h += '<span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Información del grupo</span></div>';
+    h += '<label style="'+lbl+'">Nombre del grupo *</label>';
+    h += '<input style="'+inp+'margin-bottom:10px;" id="gt_nombre" placeholder="Ej: Equipo Norte" value="'+(grupo?grupo.nombre:'')+'">';
+    h += '<label style="'+lbl+'">Descripción (opcional)</label>';
+    h += '<input style="'+inp+'margin-bottom:12px;" id="gt_descripcion" placeholder="Ej: Vendedores de la zona norte" value="'+(grupo?grupo.descripcion:'')+'">';
+    h += '<label style="'+lbl+'">Color identificador</label>';
+    h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px;">'+swatches+'</div>';
     h += '<input type="hidden" id="gt_color" value="'+colorActual+'">';
     h += '</div>';
 
-    // Supervisor
-    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128081; Supervisor del grupo</div>';
-    h += '<div class="admin-field-group"><div class="admin-field-label">El supervisor puede ver las oportunidades de todos los miembros</div>';
-    h += '<select class="admin-select" id="gt_supervisor">'+optsSuper+'</select></div>';
+    /* card: supervisor */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
+    h += '<div style="width:22px;height:22px;background:#FF9500;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>';
+    h += '<span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Supervisor del grupo</span></div>';
+    h += '<label style="'+lbl+'">Tiene visibilidad completa del equipo</label>';
+    h += '<select style="'+inp+'" id="gt_supervisor">'+optsSuper+'</select>';
+    h += '</div>';
 
-    // Miembros
-    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128101; Miembros del equipo</div>';
-    h += '<div class="admin-field-label" style="margin-bottom:6px;">Los miembros pueden ver las oportunidades de sus compañeros de grupo</div>';
-    h += '<div style="background:#fff;border:1px solid #E5E5EA;border-radius:10px;padding:8px 10px;max-height:200px;overflow-y:auto;">';
+    /* card: miembros */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
+    h += '<div style="width:22px;height:22px;background:#34C759;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.87"/></svg></div>';
+    h += '<span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Miembros del equipo</span></div>';
+    h += '<label style="'+lbl+'">Pueden ver oportunidades de sus compañeros de grupo</label>';
+    h += '<div style="background:rgba(255,255,255,0.6);border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:8px 10px;max-height:220px;overflow-y:auto;">';
     h += chkMiembros || '<span style="color:#C7C7CC;font-size:0.8rem;">Sin usuarios disponibles</span>';
     h += '</div>';
-
-    // Botones
-    h += '<div style="display:flex;gap:10px;margin-top:18px;">';
-    h += '<button class="admin-btn admin-btn-primary" onclick="_gtGuardar()">'+(isEdit?'Guardar cambios':'Crear grupo')+'</button>';
-    h += '<button class="admin-btn" style="background:#F2F2F7;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;" onclick="window.loadGrupos()">Cancelar</button>';
     h += '</div>';
-    h += '</div></div>';
 
+    h += '<div style="height:8px;"></div>';
+    h += '</div>'; /* fin body */
+
+    /* footer */
+    h += '<div style="padding:12px 16px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,0.06);display:flex;gap:8px;flex-shrink:0;">';
+    h += '<button onclick="_gtGuardar()" style="flex:1;background:#007AFF;color:#fff;border:none;border-radius:12px;padding:11px;font-size:0.88rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.35);">'+(isEdit?'Guardar cambios':'Crear grupo')+'</button>';
+    h += '<button onclick="window.loadGrupos()" style="padding:11px 18px;background:rgba(0,0,0,0.07);color:#3A3A3C;border:none;border-radius:12px;font-size:0.88rem;font-weight:500;cursor:pointer;">Cancelar</button>';
+    h += '</div>';
+
+    h += '</div>';
     ac.innerHTML = h;
   }
 
