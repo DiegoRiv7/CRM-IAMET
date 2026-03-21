@@ -757,6 +757,7 @@ window.getAC            = getAC;
 
   window.loadTareasAuto = function() {
     var ac = getAC();
+    ac.style.overflow = '';  /* Restore scroll */
     ac.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:120px;color:#8E8E93;font-size:0.85rem;">Cargando...</div>';
     Promise.all([
       fetch('/app/api/automatizacion/reglas/').then(function(r){ return r.json(); }),
@@ -950,57 +951,74 @@ window.getAC            = getAC;
       return '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;"><input type="checkbox" class="ta-chk-o" value="'+u.id+'"'+chk+' style="accent-color:#007AFF;"> <span style="font-size:0.82rem;color:#1C1C1E;">'+(u.first_name+' '+u.last_name).trim()+'</span></label>';
     }).join('');
 
-    var inp = 'width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #E5E5EA;border-radius:10px;font-size:0.85rem;background:#fff;outline:none;';
-    var lbl = 'font-size:0.72rem;font-weight:600;color:#8E8E93;letter-spacing:0.02em;margin-bottom:5px;display:block;';
-    var sec = 'font-size:0.75rem;font-weight:700;color:#3A3A3C;letter-spacing:0.04em;text-transform:uppercase;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid #F2F2F7;';
+    /* Lock background scroll */
+    ac.style.overflow = 'hidden';
 
-    var h = '<div style="display:flex;flex-direction:column;height:100%;">';
+    var inp = 'width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid rgba(0,0,0,0.08);border-radius:10px;font-size:0.85rem;background:rgba(255,255,255,0.9);outline:none;color:#1C1C1E;';
+    var lbl = 'font-size:0.7rem;font-weight:700;color:#6E6E73;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;display:block;';
+    var glass = 'background:rgba(255,255,255,0.72);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,0.8);border-radius:14px;box-shadow:0 2px 14px rgba(0,0,0,0.07),0 0 0 0.5px rgba(0,0,0,0.04);padding:16px 18px;margin-bottom:10px;';
+
+    var h = '<div style="display:flex;flex-direction:column;height:100%;background:#F2F2F7;">';
     /* header */
-    h += '<div style="display:flex;align-items:center;gap:10px;padding:20px 24px 16px;border-bottom:1px solid #F2F2F7;flex-shrink:0;">';
-    h += '<button onclick="window.loadTareasAuto()" style="width:30px;height:30px;border-radius:8px;background:#F2F2F7;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3A3A3C;">'+
+    h += '<div style="display:flex;align-items:center;gap:10px;padding:18px 20px 14px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0;">';
+    h += '<button onclick="window.loadTareasAuto()" style="width:30px;height:30px;border-radius:8px;background:rgba(0,0,0,0.06);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3A3A3C;">'+
          '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>';
     h += '<div style="font-size:1rem;font-weight:700;color:#1C1C1E;">'+(isEdit?'Editar Regla':'Nueva Regla')+'</div>';
     h += '</div>';
-    /* form body */
-    h += '<div style="flex:1;overflow-y:auto;padding:4px 24px 24px;">';
+    /* scrollable body */
+    h += '<div style="flex:1;overflow-y:auto;padding:16px 16px 0;">';
 
-    h += '<div style="'+sec+'">Identificación</div>';
-    h += '<div style="margin-bottom:12px;"><label style="'+lbl+'">Nombre de la regla *</label>';
-    h += '<input style="'+inp+'" id="ta_nombre" placeholder="Ej: Seguimiento al llegar a Vendido" value="'+(regla?regla.nombre:'')+'"></div>';
-
-    h += '<div style="'+sec+'">Disparador</div>';
-    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
-    h += '<div><label style="'+lbl+'">Tipo de negociación</label><select style="'+inp+'" id="ta_tipo_neg" onchange="_taFiltrarEtapas()">'+optsTipoNeg+'</select></div>';
-    h += '<div><label style="'+lbl+'">Etapa que activa la regla *</label><select style="'+inp+'" id="ta_etapa">'+optsEtapas+'</select></div>';
+    /* Card: Identificación */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><div style="width:22px;height:22px;background:#007AFF;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Identificación</span></div>';
+    h += '<label style="'+lbl+'">Nombre de la regla *</label>';
+    h += '<input style="'+inp+'" id="ta_nombre" placeholder="Ej: Seguimiento al llegar a Vendido" value="'+(regla?regla.nombre:'')+'">';
     h += '</div>';
 
-    h += '<div style="'+sec+'">Tarea a crear</div>';
-    h += '<div style="display:grid;grid-template-columns:1fr 120px;gap:10px;margin-bottom:10px;">';
+    /* Card: Disparador */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><div style="width:22px;height:22px;background:linear-gradient(135deg,#FF9500,#FF6B00);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;">⚡</div><span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Disparador</span></div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    h += '<div><label style="'+lbl+'">Tipo de negociación</label><select style="'+inp+'" id="ta_tipo_neg" onchange="_taFiltrarEtapas()">'+optsTipoNeg+'</select></div>';
+    h += '<div><label style="'+lbl+'">Etapa que activa la regla *</label><select style="'+inp+'" id="ta_etapa">'+optsEtapas+'</select></div>';
+    h += '</div></div>';
+
+    /* Card: Tarea */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><div style="width:22px;height:22px;background:#34C759;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Tarea a crear</span></div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 110px;gap:10px;margin-bottom:10px;">';
     h += '<div><label style="'+lbl+'">Título *</label><input style="'+inp+'" id="ta_titulo" placeholder="Ej: Solicitar PO al cliente" value="'+(regla?regla.titulo_tarea:'')+'"></div>';
     h += '<div><label style="'+lbl+'">Prioridad</label><select style="'+inp+'" id="ta_prioridad">'+optsPrio+'</select></div>';
     h += '</div>';
-    h += '<div style="margin-bottom:12px;"><label style="'+lbl+'">Descripción (opcional)</label>';
-    h += '<textarea style="'+inp+'resize:vertical;min-height:60px;" id="ta_descripcion" placeholder="Instrucciones para quien recibe la tarea...">'+(regla?regla.descripcion_tarea:'')+'</textarea></div>';
+    h += '<label style="'+lbl+'">Descripción (opcional)</label>';
+    h += '<textarea style="'+inp+'resize:none;height:64px;" id="ta_descripcion" placeholder="Instrucciones para quien recibe la tarea...">'+(regla?regla.descripcion_tarea:'')+'</textarea>';
+    h += '</div>';
 
-    h += '<div style="'+sec+'">Fecha de vencimiento</div>';
-    h += '<div style="display:grid;grid-template-columns:1fr 100px;gap:10px;margin-bottom:12px;">';
+    /* Card: Fecha */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><div style="width:22px;height:22px;background:#5856D6;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Fecha de vencimiento</span></div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 90px;gap:10px;">';
     h += '<div><label style="'+lbl+'">Tipo</label><select style="'+inp+'" id="ta_offset_tipo" onchange="_taToggleFecha()">'+optsOffset+'</select></div>';
     h += '<div id="ta_offset_valor_wrap"><label style="'+lbl+'">Cantidad</label><input style="'+inp+'text-align:center;" id="ta_offset_valor" type="number" min="1" value="'+(regla?regla.offset_valor:3)+'"></div>';
-    h += '<div style="display:none;" id="ta_fecha_fija_wrap"><label style="'+lbl+'">Fecha</label><input style="'+inp+'" id="ta_fecha_fija" type="date" value="'+(regla&&regla.fecha_fija?regla.fecha_fija:'')+'"></div>';
-    h += '</div>';
+    h += '<div style="display:none;grid-column:1/-1;" id="ta_fecha_fija_wrap"><label style="'+lbl+'">Fecha fija</label><input style="'+inp+'" id="ta_fecha_fija" type="date" value="'+(regla&&regla.fecha_fija?regla.fecha_fija:'')+'"></div>';
+    h += '</div></div>';
 
-    h += '<div style="'+sec+'">Responsables</div>';
-    h += '<div style="margin-bottom:10px;"><label style="'+lbl+'">Responsable predeterminado</label><select style="'+inp+'" id="ta_responsable">'+optsResp+'</select></div>';
+    /* Card: Responsables */
+    h += '<div style="'+glass+'">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><div style="width:22px;height:22px;background:#FF2D55;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg></div><span style="font-size:0.78rem;font-weight:700;color:#1C1C1E;">Responsables</span></div>';
+    h += '<label style="'+lbl+'">Responsable predeterminado</label>';
+    h += '<select style="'+inp+'margin-bottom:12px;" id="ta_responsable">'+optsResp+'</select>';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-    h += '<div><label style="'+lbl+'">Participantes</label><div style="background:#F9F9FB;border:1px solid #E5E5EA;border-radius:10px;padding:8px 12px;max-height:120px;overflow-y:auto;">'+(chkPartic||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
-    h += '<div><label style="'+lbl+'">Observadores</label><div style="background:#F9F9FB;border:1px solid #E5E5EA;border-radius:10px;padding:8px 12px;max-height:120px;overflow-y:auto;">'+(chkObs||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
-    h += '</div>';
+    h += '<div><label style="'+lbl+'">Participantes</label><div style="background:rgba(255,255,255,0.6);border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:8px 12px;max-height:110px;overflow-y:auto;">'+(chkPartic||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
+    h += '<div><label style="'+lbl+'">Observadores</label><div style="background:rgba(255,255,255,0.6);border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:8px 12px;max-height:110px;overflow-y:auto;">'+(chkObs||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
+    h += '</div></div>';
 
+    h += '<div style="height:16px;"></div>';
     h += '</div>';
     /* footer */
-    h += '<div style="padding:14px 24px;border-top:1px solid #F2F2F7;display:flex;gap:8px;flex-shrink:0;">';
-    h += '<button onclick="_taGuardar()" style="flex:1;background:#007AFF;color:#fff;border:none;border-radius:10px;padding:10px;font-size:0.88rem;font-weight:600;cursor:pointer;">'+(isEdit?'Guardar cambios':'Crear regla')+'</button>';
-    h += '<button onclick="window.loadTareasAuto()" style="padding:10px 16px;background:#F2F2F7;color:#3A3A3C;border:none;border-radius:10px;font-size:0.88rem;cursor:pointer;">Cancelar</button>';
+    h += '<div style="padding:12px 16px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,0.06);display:flex;gap:8px;flex-shrink:0;">';
+    h += '<button onclick="_taGuardar()" style="flex:1;background:#007AFF;color:#fff;border:none;border-radius:12px;padding:11px;font-size:0.88rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.35);">'+(isEdit?'Guardar cambios':'Crear regla')+'</button>';
+    h += '<button onclick="window.loadTareasAuto()" style="padding:11px 18px;background:rgba(0,0,0,0.07);color:#3A3A3C;border:none;border-radius:12px;font-size:0.88rem;font-weight:500;cursor:pointer;">Cancelar</button>';
     h += '</div>';
     h += '</div>';
 
