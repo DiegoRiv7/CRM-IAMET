@@ -3580,3 +3580,50 @@ class EjecucionAutomatizacion(models.Model):
 
     def __str__(self):
         return f"{self.regla.nombre} → {self.oportunidad} ({self.fecha_ejecucion.strftime('%d/%m/%Y')})"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GRUPOS DE TRABAJO
+# ─────────────────────────────────────────────────────────────────────────────
+
+class GrupoTrabajo(models.Model):
+    """
+    Grupo de trabajo que agrupa varios usuarios bajo un supervisor de grupo.
+    Los miembros del grupo pueden ver las oportunidades de sus compañeros.
+    El supervisor_grupo puede ver las oportunidades de todos los miembros del grupo.
+    """
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del grupo")
+    descripcion = models.CharField(max_length=255, blank=True, default='', verbose_name="Descripción")
+    color = models.CharField(max_length=7, default='#007AFF', verbose_name="Color del grupo (hex)")
+    supervisor_grupo = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='grupos_supervisados',
+        verbose_name="Supervisor del grupo"
+    )
+    miembros = models.ManyToManyField(
+        User,
+        related_name='grupos_trabajo',
+        blank=True,
+        verbose_name="Miembros del grupo"
+    )
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Grupo de Trabajo"
+        verbose_name_plural = "Grupos de Trabajo"
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+    def get_todos_los_usuarios(self):
+        """Retorna todos los usuarios del grupo (miembros + supervisor si existe)."""
+        ids = set(self.miembros.values_list('id', flat=True))
+        if self.supervisor_grupo_id:
+            ids.add(self.supervisor_grupo_id)
+        return User.objects.filter(id__in=ids)

@@ -36,6 +36,7 @@ from django.utils.html import json_script
 
 # Helper function to detect lost opportunities
 from .views_utils import *
+from .views_grupos import get_usuarios_visibles_ids
 
 @login_required
 def get_oportunidades_por_cliente(request):
@@ -165,14 +166,20 @@ def crm_home(request):
     if mes_filter != 'todos':
         base_qs = base_qs.filter(mes_cierre=mes_filter)
 
-    # Si NO es supervisor, filtrar solo sus oportunidades
+    # Filtrado por visibilidad: supervisor global ve todo, grupos de trabajo amplían visibilidad
     if not es_supervisor:
-        base_qs = base_qs.filter(usuario=user)
+        usuarios_visibles = get_usuarios_visibles_ids(user)
+        if usuarios_visibles is None:
+            pass  # ve todo (no debería llegar aquí)
+        elif len(usuarios_visibles) == 1:
+            base_qs = base_qs.filter(usuario=user)
+        else:
+            base_qs = base_qs.filter(usuario_id__in=usuarios_visibles)
     elif vendedores_ids:
         # Supervisor con filtro de vendedores específicos
         base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
 
-    # Lista de vendedores para el filtro (solo para supervisores)
+    # Lista de vendedores para el filtro (supervisores globales ven todos; supervisores de grupo ven su grupo)
     vendedores_list = []
     if es_supervisor:
         vendedores_list = User.objects.filter(
@@ -180,6 +187,13 @@ def crm_home(request):
         ).exclude(
             groups__name='Supervisores'
         ).order_by('first_name', 'last_name')
+    else:
+        # Usuarios de grupo visibles para el selector de vendedores
+        usuarios_visibles_ids = get_usuarios_visibles_ids(user)
+        if usuarios_visibles_ids and len(usuarios_visibles_ids) > 1:
+            vendedores_list = User.objects.filter(
+                id__in=usuarios_visibles_ids, is_active=True
+            ).order_by('first_name', 'last_name')
 
     # ── Meta (calculada antes para usar en running meta) ──
     # Determinar qué campo de meta usar según el tab activo
@@ -477,7 +491,11 @@ def api_crm_table_data(request):
             base_qs = base_qs.filter(mes_cierre=mes_filter)
 
     if not es_supervisor:
-        base_qs = base_qs.filter(usuario=user)
+        usuarios_visibles_r = get_usuarios_visibles_ids(user)
+        if usuarios_visibles_r and len(usuarios_visibles_r) > 1:
+            base_qs = base_qs.filter(usuario_id__in=usuarios_visibles_r)
+        else:
+            base_qs = base_qs.filter(usuario=user)
     elif vendedores_ids:
         base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
 

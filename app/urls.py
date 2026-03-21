@@ -7,6 +7,7 @@ from .bitrix_integration import get_bitrix_companies_api
 from . import views_exportar
 from . import views_mail
 from . import views_automatizacion
+from . import views_grupos
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -252,4 +253,10 @@ urlpatterns = [
     path('api/automatizacion/reglas/<int:regla_id>/eliminar/', views_automatizacion.api_automatizacion_eliminar, name='api_automatizacion_eliminar'),
     path('api/automatizacion/reglas/<int:regla_id>/toggle/', views_automatizacion.api_automatizacion_toggle, name='api_automatizacion_toggle'),
     path('api/automatizacion/historial/', views_automatizacion.api_automatizacion_historial, name='api_automatizacion_historial'),
+    # ── Grupos de Trabajo ─────────────────────────────────────────────────────────────────────────────
+    path('api/grupos/', views_grupos.api_grupos_listar, name='api_grupos_listar'),
+    path('api/grupos/crear/', views_grupos.api_grupos_crear, name='api_grupos_crear'),
+    path('api/grupos/<int:grupo_id>/', views_grupos.api_grupos_editar, name='api_grupos_editar'),
+    path('api/grupos/<int:grupo_id>/eliminar/', views_grupos.api_grupos_eliminar, name='api_grupos_eliminar'),
+    path('api/grupos/<int:grupo_id>/toggle/', views_grupos.api_grupos_toggle, name='api_grupos_toggle'),
 ]
