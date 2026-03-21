@@ -272,11 +272,44 @@
 <!-- Toast -->
 <div id="adminToast"></div>
 
+<!-- Confirm dialog -->
+<div id="adminConfirm" style="display:none;position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(4px);" onclick="adminConfirmCancel()"></div>
+  <div style="position:relative;background:rgba(255,255,255,0.92);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,0.8);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.18);width:320px;max-width:90vw;padding:24px;text-align:center;">
+    <div id="adminConfirmIcon" style="width:48px;height:48px;background:#FFF0F0;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+      <svg width="22" height="22" fill="none" stroke="#FF3B30" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+    </div>
+    <div id="adminConfirmTitle" style="font-size:0.95rem;font-weight:700;color:#1C1C1E;margin-bottom:6px;"></div>
+    <div id="adminConfirmMsg" style="font-size:0.82rem;color:#6E6E73;margin-bottom:20px;line-height:1.45;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="adminConfirmCancel()" style="flex:1;padding:10px;border:none;border-radius:11px;background:rgba(0,0,0,0.07);color:#3A3A3C;font-size:0.88rem;font-weight:500;cursor:pointer;">Cancelar</button>
+      <button id="adminConfirmOk" style="flex:1;padding:10px;border:none;border-radius:11px;background:#FF3B30;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
 /* ── Helpers ─────────────────────────────────────────── */
 function getAC(){ return document.getElementById('adminContent'); }
 function getCsrf(){ return (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value||''; }
+
+var _adminConfirmCb = null;
+function adminConfirm(title, msg, onOk) {
+  var d = document.getElementById('adminConfirm');
+  document.getElementById('adminConfirmTitle').textContent = title;
+  document.getElementById('adminConfirmMsg').textContent = msg;
+  _adminConfirmCb = onOk;
+  d.style.display = 'flex';
+}
+function adminConfirmCancel() {
+  document.getElementById('adminConfirm').style.display = 'none';
+  _adminConfirmCb = null;
+}
+document.getElementById('adminConfirmOk').addEventListener('click', function() {
+  document.getElementById('adminConfirm').style.display = 'none';
+  if (_adminConfirmCb) { _adminConfirmCb(); _adminConfirmCb = null; }
+});
 
 function _showAdminToast(msg, ok){
   var t = document.getElementById('adminToast');
@@ -857,13 +890,18 @@ window.getAC            = getAC;
   };
 
   window._taEliminar = function(id, titulo, nombre) {
-    if(!confirm('¿Eliminar la regla "'+nombre+'"?\nSe eliminarán todas sus configuraciones.')) return;
-    fetch('/app/api/automatizacion/reglas/'+id+'/eliminar/',{
-      method:'DELETE', headers:{'X-CSRFToken':_getAdminCsrf()}
-    }).then(function(r){return r.json();}).then(function(res){
-      if(res.success) { _showAdminToast('Regla eliminada','ok'); window.loadTareasAuto(); }
-      else _showAdminToast(res.error||'Error','error');
-    });
+    adminConfirm(
+      'Eliminar regla',
+      '¿Eliminar "' + nombre + '"? Esta acción no se puede deshacer.',
+      function() {
+        fetch('/app/api/automatizacion/reglas/'+id+'/eliminar/',{
+          method:'DELETE', headers:{'X-CSRFToken':_getAdminCsrf()}
+        }).then(function(r){return r.json();}).then(function(res){
+          if(res.success) { _showAdminToast('Regla eliminada','ok'); window.loadTareasAuto(); }
+          else _showAdminToast(res.error||'Error','error');
+        });
+      }
+    );
   };
 
   window._taShowForm = function(id) {
