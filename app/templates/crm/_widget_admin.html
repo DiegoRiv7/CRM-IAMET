@@ -752,8 +752,12 @@ window.getAC            = getAC;
   var ETAPAS_PROYECTO_TA = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes','Pagado','Perdido'];
   var TODAS_ETAPAS_TA = Array.from(new Set(ETAPAS_RUNRATE_TA.concat(ETAPAS_PROYECTO_TA))).sort();
 
+  var PRIO_COLORS = {baja:'#8E8E93',normal:'#007AFF',alta:'#FF9500',urgente:'#FF3B30'};
+  var TIPO_LABEL = {ambos:'Runrate & Proyecto',runrate:'Runrate',proyecto:'Proyecto'};
+
   window.loadTareasAuto = function() {
     var ac = getAC();
+    ac.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:120px;color:#8E8E93;font-size:0.85rem;">Cargando...</div>';
     Promise.all([
       fetch('/app/api/automatizacion/reglas/').then(function(r){ return r.json(); }),
       fetch('/app/api/admin/usuarios/').then(function(r){ return r.json(); })
@@ -768,19 +772,29 @@ window.getAC            = getAC;
 
   function _renderTaLista(reglas, porEtapa) {
     var ac = getAC();
-    var h = '<div class="admin-card-inner">';
-    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
-    h += '<div><div class="admin-section-title">&#9889; Tareas Autom&aacute;ticas</div>';
-    h += '<p class="admin-help">Las reglas crean tareas automáticamente cuando una oportunidad cambia de etapa. Cada regla se ejecuta una sola vez por oportunidad.</p></div>';
-    h += '<button class="admin-btn admin-btn-primary" onclick="_taShowForm(null)">+ Nueva Regla</button>';
+    var h = '<div style="display:flex;flex-direction:column;height:100%;">';
+
+    /* ── Header ── */
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid #F2F2F7;flex-shrink:0;">';
+    h += '<div>';
+    h += '<div style="font-size:1rem;font-weight:700;color:#1C1C1E;display:flex;align-items:center;gap:8px;">';
+    h += '<div style="width:28px;height:28px;background:linear-gradient(135deg,#FF9500,#FF6B00);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div>';
+    h += 'Tareas Automáticas</div>';
+    h += '<div style="font-size:0.75rem;color:#8E8E93;margin-top:3px;">Las reglas crean tareas al cambiar de etapa · Una vez por oportunidad</div>';
+    h += '</div>';
+    h += '<button onclick="_taShowForm(null)" style="background:#007AFF;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">'+
+         '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nueva Regla</button>';
     h += '</div>';
 
+    /* ── Body ── */
+    h += '<div style="flex:1;overflow-y:auto;padding:16px 24px;">';
+
     if (reglas.length === 0) {
-      h += '<div style="text-align:center;padding:60px 0;">';
-      h += '<div style="font-size:2.5rem;margin-bottom:12px;">&#9889;</div>';
-      h += '<div style="color:#1C1C1E;font-weight:600;font-size:1rem;margin-bottom:6px;">Sin reglas configuradas</div>';
-      h += '<div style="color:#8E8E93;font-size:0.85rem;margin-bottom:20px;">Crea tu primera regla para automatizar tareas al cambiar etapa</div>';
-      h += '<button class="admin-btn admin-btn-primary" onclick="_taShowForm(null)">Crear primera regla</button>';
+      h += '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;gap:12px;">';
+      h += '<div style="width:56px;height:56px;background:#FFF3E0;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;">⚡</div>';
+      h += '<div style="font-size:0.95rem;font-weight:600;color:#1C1C1E;">Sin reglas configuradas</div>';
+      h += '<div style="font-size:0.8rem;color:#8E8E93;text-align:center;max-width:280px;">Crea una regla para automatizar tareas cuando cambie la etapa de una oportunidad</div>';
+      h += '<button onclick="_taShowForm(null)" style="margin-top:4px;background:#007AFF;color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;">Crear primera regla</button>';
       h += '</div>';
     } else {
       var etapasOrdenadas = Object.keys(porEtapa).sort();
@@ -788,41 +802,48 @@ window.getAC            = getAC;
         var lista = porEtapa[etapa];
         h += '<div style="margin-bottom:20px;">';
         h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
-        h += '<span style="background:#F2F2F7;border-radius:8px;padding:3px 10px;font-size:0.75rem;font-weight:600;color:#3A3A3C;">&#128204; ' + etapa + '</span>';
-        h += '<span style="color:#8E8E93;font-size:0.72rem;">' + lista.length + ' regla' + (lista.length > 1 ? 's' : '') + '</span>';
+        h += '<div style="height:1px;width:10px;background:#E5E5EA;"></div>';
+        h += '<span style="font-size:0.7rem;font-weight:700;color:#8E8E93;letter-spacing:0.06em;text-transform:uppercase;">' + etapa + '</span>';
+        h += '<div style="flex:1;height:1px;background:#E5E5EA;"></div>';
+        h += '<span style="font-size:0.68rem;color:#C7C7CC;">' + lista.length + ' regla' + (lista.length > 1 ? 's' : '') + '</span>';
         h += '</div>';
         lista.forEach(function(r) {
-          var activaBadge = r.activa
-            ? '<span style="background:#34C759;color:#fff;border-radius:5px;padding:2px 7px;font-size:0.68rem;font-weight:600;">Activa</span>'
-            : '<span style="background:#8E8E93;color:#fff;border-radius:5px;padding:2px 7px;font-size:0.68rem;font-weight:600;">Inactiva</span>';
-          var prioColor = {baja:'#8E8E93',normal:'#007AFF',alta:'#FF9500',urgente:'#FF3B30'}[r.prioridad_tarea] || '#007AFF';
-          var fechaDesc = r.offset_tipo === 'fecha_fija' ? 'Fecha fija: '+(r.fecha_fija||'—') : (r.offset_valor+' '+(r.offset_tipo==='dias'?'días':'horas')+' después');
-          var respNombre = r.responsable ? r.responsable.nombre : '<span style="color:#8E8E93;">Dueño de la oportunidad</span>';
-          h += '<div class="admin-row" style="background:#fff;border:1px solid #E5E5EA;border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;">';
+          var pColor = PRIO_COLORS[r.prioridad_tarea] || '#007AFF';
+          var fechaDesc = r.offset_tipo === 'fecha_fija'
+            ? 'Fecha fija: '+(r.fecha_fija||'—')
+            : r.offset_valor+' '+(r.offset_tipo==='dias'?'día':'hora')+(r.offset_valor>1?'s':'')+' después';
+          var respNombre = r.responsable ? r.responsable.nombre : 'Dueño de la oportunidad';
+          var tipoTag = TIPO_LABEL[r.tipo_negociacion] || r.tipo_negociacion;
+
+          h += '<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.07),0 0 0 1px rgba(0,0,0,0.05);display:flex;align-items:center;gap:14px;">';
+          /* left accent */
+          h += '<div style="width:3px;height:40px;border-radius:99px;background:' + pColor + ';flex-shrink:0;"></div>';
+          /* info */
           h += '<div style="flex:1;min-width:0;">';
-          h += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">';
-          h += '<span style="font-weight:600;font-size:0.88rem;color:#1C1C1E;">' + r.titulo_tarea + '</span>';
-          h += activaBadge;
-          h += '<span style="color:'+prioColor+';font-size:0.68rem;font-weight:700;text-transform:uppercase;">'+r.prioridad_tarea+'</span>';
+          h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
+          h += '<span style="font-weight:600;font-size:0.88rem;color:#1C1C1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.titulo_tarea + '</span>';
+          var badgeBg = r.activa ? '#E8FAF0' : '#F2F2F7';
+          var badgeColor = r.activa ? '#1C7C3D' : '#8E8E93';
+          h += '<span style="background:'+badgeBg+';color:'+badgeColor+';border-radius:6px;padding:2px 7px;font-size:0.65rem;font-weight:700;flex-shrink:0;">' + (r.activa ? 'Activa' : 'Pausada') + '</span>';
+          h += '<span style="background:'+pColor+'18;color:'+pColor+';border-radius:6px;padding:2px 7px;font-size:0.65rem;font-weight:700;flex-shrink:0;text-transform:uppercase;">' + r.prioridad_tarea + '</span>';
           h += '</div>';
-          if (r.descripcion_tarea) h += '<div style="color:#636366;font-size:0.77rem;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;">'+r.descripcion_tarea+'</div>';
-          h += '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.72rem;color:#8E8E93;">';
-          h += '<span>&#128197; '+fechaDesc+'</span>';
-          h += '<span>&#128100; '+respNombre+'</span>';
-          if (r.participantes.length) h += '<span>&#128101; '+r.participantes.length+' participante'+(r.participantes.length>1?'s':'')+'</span>';
-          if (r.observadores.length) h += '<span>&#128065; '+r.observadores.length+' observador'+(r.observadores.length>1?'es':'')+'</span>';
-          h += '<span style="color:#C7C7CC;">'+({ambos:'Runrate y Proyecto',runrate:'Solo Runrate',proyecto:'Solo Proyecto'}[r.tipo_negociacion]||r.tipo_negociacion)+'</span>';
+          h += '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.72rem;color:#8E8E93;">';
+          h += '<span style="display:flex;align-items:center;gap:4px;"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'+fechaDesc+'</span>';
+          h += '<span style="display:flex;align-items:center;gap:4px;"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>'+respNombre+'</span>';
+          if (r.participantes.length) h += '<span>+'+r.participantes.length+' part.</span>';
+          h += '<span style="background:#F2F2F7;border-radius:4px;padding:1px 6px;font-size:0.66rem;font-weight:600;color:#636366;">'+tipoTag+'</span>';
           h += '</div></div>';
-          h += '<div style="display:flex;gap:5px;flex-shrink:0;">';
-          h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:#F2F2F7;color:#3A3A3C;border:none;border-radius:7px;cursor:pointer;" onclick="_taToggle('+r.id+')">'+(r.activa?'Pausar':'Activar')+'</button>';
-          h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:#F2F2F7;color:#3A3A3C;border:none;border-radius:7px;cursor:pointer;" onclick="_taShowForm('+r.id+')">Editar</button>';
-          h += '<button class="admin-btn" style="padding:4px 9px;font-size:0.72rem;background:#FFF0F0;color:#FF3B30;border:1px solid #FFD0D0;border-radius:7px;cursor:pointer;" onclick="_taEliminar('+r.id+',\''+r.titulo_tarea.replace(/'/g,'')+'\')">Eliminar</button>';
+          /* actions */
+          h += '<div style="display:flex;gap:6px;flex-shrink:0;">';
+          h += '<button onclick="_taToggle('+r.id+')" style="padding:6px 11px;font-size:0.75rem;font-weight:500;background:#F2F2F7;color:#3A3A3C;border:none;border-radius:8px;cursor:pointer;">'+(r.activa?'Pausar':'Activar')+'</button>';
+          h += '<button onclick="_taShowForm('+r.id+')" style="padding:6px 11px;font-size:0.75rem;font-weight:500;background:#EBF2FF;color:#007AFF;border:none;border-radius:8px;cursor:pointer;">Editar</button>';
+          h += '<button onclick="_taEliminar('+r.id+',\''+r.titulo_tarea.replace(/'/g,'')+'\',\''+r.nombre.replace(/'/g,'')+'\')" style="padding:6px 11px;font-size:0.75rem;font-weight:500;background:#FFF0F0;color:#FF3B30;border:1px solid #FFE4E4;border-radius:8px;cursor:pointer;">Eliminar</button>';
           h += '</div></div>';
         });
         h += '</div>';
       });
     }
-    h += '</div>';
+    h += '</div></div>';
     ac.innerHTML = h;
   }
 
@@ -830,16 +851,17 @@ window.getAC            = getAC;
     fetch('/app/api/automatizacion/reglas/'+id+'/toggle/',{
       method:'POST', headers:{'X-CSRFToken':_getAdminCsrf()}
     }).then(function(r){return r.json();}).then(function(res){
-      if(res.success) window.loadTareasAuto(); else alert(res.error||'Error');
+      if(res.success) window.loadTareasAuto(); else _showAdminToast(res.error||'Error','error');
     });
   };
 
-  window._taEliminar = function(id, nombre) {
-    if(!confirm('¿Eliminar la regla "'+nombre+'"? Esta acción no se puede deshacer.')) return;
+  window._taEliminar = function(id, titulo, nombre) {
+    if(!confirm('¿Eliminar la regla "'+nombre+'"?\nSe eliminarán todas sus configuraciones.')) return;
     fetch('/app/api/automatizacion/reglas/'+id+'/eliminar/',{
       method:'DELETE', headers:{'X-CSRFToken':_getAdminCsrf()}
     }).then(function(r){return r.json();}).then(function(res){
-      if(res.success) window.loadTareasAuto(); else alert(res.error||'Error');
+      if(res.success) { _showAdminToast('Regla eliminada','ok'); window.loadTareasAuto(); }
+      else _showAdminToast(res.error||'Error','error');
     });
   };
 
@@ -861,18 +883,41 @@ window.getAC            = getAC;
     return el ? el.value : '';
   }
 
+  function _getEtapasPorTipo(tipo) {
+    if (tipo === 'runrate') return ETAPAS_RUNRATE_TA;
+    if (tipo === 'proyecto') return ETAPAS_PROYECTO_TA;
+    return TODAS_ETAPAS_TA;
+  }
+
+  window._taFiltrarEtapas = function() {
+    var tipoSel = document.getElementById('ta_tipo_neg');
+    var etapaSel = document.getElementById('ta_etapa');
+    if (!tipoSel || !etapaSel) return;
+    var etapas = _getEtapasPorTipo(tipoSel.value);
+    var prevVal = etapaSel.value;
+    etapaSel.innerHTML = '<option value="">Seleccionar etapa...</option>';
+    etapas.forEach(function(e){
+      var opt = document.createElement('option');
+      opt.value = e; opt.textContent = e;
+      if (e === prevVal) opt.selected = true;
+      etapaSel.appendChild(opt);
+    });
+  };
+
   function _renderTaForm(regla) {
     var ac = getAC();
     var isEdit = !!regla;
+    var tipoNegVal = regla ? regla.tipo_negociacion : 'ambos';
+    var etapasDisponibles = _getEtapasPorTipo(tipoNegVal);
 
     var optsEtapas = '<option value="">Seleccionar etapa...</option>';
-    TODAS_ETAPAS_TA.forEach(function(e){
+    etapasDisponibles.forEach(function(e){
       var sel = regla && regla.etapa_disparadora===e?' selected':'';
       optsEtapas += '<option value="'+e+'"'+sel+'>'+e+'</option>';
     });
 
     var optsTipoNeg = [['ambos','Runrate y Proyecto'],['runrate','Solo Runrate'],['proyecto','Solo Proyecto']].map(function(o){
-      var sel = regla && regla.tipo_negociacion===o[0]?' selected':'';
+      var sel = o[0]===tipoNegVal?' selected':'';
       return '<option value="'+o[0]+'"'+sel+'>'+o[1]+'</option>';
     }).join('');
 
@@ -881,15 +926,15 @@ window.getAC            = getAC;
       return '<option value="'+o[0]+'"'+sel+'>'+o[1]+'</option>';
     }).join('');
 
-    var optsOffset = [['dias','Días después del cambio'],['horas','Horas después del cambio'],['fecha_fija','Fecha fija']].map(function(o){
+    var optsOffset = [['dias','Días después'],['horas','Horas después'],['fecha_fija','Fecha fija']].map(function(o){
       var sel = regla ? (regla.offset_tipo===o[0]?' selected':'') : (o[0]==='dias'?' selected':'');
       return '<option value="'+o[0]+'"'+sel+'>'+o[1]+'</option>';
     }).join('');
 
-    var optsResp = '<option value="">Dueño de la oportunidad (por defecto)</option>';
+    var optsResp = '<option value="">Dueño de la oportunidad</option>';
     _taAutoUsuarios.forEach(function(u){
       var sel = regla && regla.responsable && regla.responsable.id===u.id?' selected':'';
-      optsResp += '<option value="'+u.id+'"'+sel+'>'+(u.first_name+' '+u.last_name).trim()+' (@'+u.username+')</option>';
+      optsResp += '<option value="'+u.id+'"'+sel+'>'+(u.first_name+' '+u.last_name).trim()+'</option>';
     });
 
     var participantesIds = regla ? (regla.participantes||[]).map(function(p){return p.id;}) : [];
@@ -897,64 +942,67 @@ window.getAC            = getAC;
 
     var chkPartic = _taAutoUsuarios.map(function(u){
       var chk = participantesIds.indexOf(u.id)!==-1?' checked':'';
-      return '<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;cursor:pointer;padding:2px 0;"><input type="checkbox" class="ta-chk-p" value="'+u.id+'"'+chk+'> '+(u.first_name+' '+u.last_name).trim()+'</label>';
+      return '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;"><input type="checkbox" class="ta-chk-p" value="'+u.id+'"'+chk+' style="accent-color:#007AFF;"> <span style="font-size:0.82rem;color:#1C1C1E;">'+(u.first_name+' '+u.last_name).trim()+'</span></label>';
     }).join('');
 
     var chkObs = _taAutoUsuarios.map(function(u){
       var chk = observadoresIds.indexOf(u.id)!==-1?' checked':'';
-      return '<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;cursor:pointer;padding:2px 0;"><input type="checkbox" class="ta-chk-o" value="'+u.id+'"'+chk+'> '+(u.first_name+' '+u.last_name).trim()+'</label>';
+      return '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;"><input type="checkbox" class="ta-chk-o" value="'+u.id+'"'+chk+' style="accent-color:#007AFF;"> <span style="font-size:0.82rem;color:#1C1C1E;">'+(u.first_name+' '+u.last_name).trim()+'</span></label>';
     }).join('');
 
-    var h = '<div class="admin-card-inner">';
-    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">';
-    h += '<button class="admin-btn" style="padding:5px 10px;font-size:0.8rem;background:#F2F2F7;border:none;border-radius:8px;cursor:pointer;" onclick="window.loadTareasAuto()">&#8592; Volver</button>';
-    h += '<div class="admin-section-title" style="margin:0;">'+(isEdit?'Editar Regla':'Nueva Regla de Automatización')+'</div>';
+    var inp = 'width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #E5E5EA;border-radius:10px;font-size:0.85rem;background:#fff;outline:none;';
+    var lbl = 'font-size:0.72rem;font-weight:600;color:#8E8E93;letter-spacing:0.02em;margin-bottom:5px;display:block;';
+    var sec = 'font-size:0.75rem;font-weight:700;color:#3A3A3C;letter-spacing:0.04em;text-transform:uppercase;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid #F2F2F7;';
+
+    var h = '<div style="display:flex;flex-direction:column;height:100%;">';
+    /* header */
+    h += '<div style="display:flex;align-items:center;gap:10px;padding:20px 24px 16px;border-bottom:1px solid #F2F2F7;flex-shrink:0;">';
+    h += '<button onclick="window.loadTareasAuto()" style="width:30px;height:30px;border-radius:8px;background:#F2F2F7;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3A3A3C;">'+
+         '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>';
+    h += '<div style="font-size:1rem;font-weight:700;color:#1C1C1E;">'+(isEdit?'Editar Regla':'Nueva Regla')+'</div>';
+    h += '</div>';
+    /* form body */
+    h += '<div style="flex:1;overflow-y:auto;padding:4px 24px 24px;">';
+
+    h += '<div style="'+sec+'">Identificación</div>';
+    h += '<div style="margin-bottom:12px;"><label style="'+lbl+'">Nombre de la regla *</label>';
+    h += '<input style="'+inp+'" id="ta_nombre" placeholder="Ej: Seguimiento al llegar a Vendido" value="'+(regla?regla.nombre:'')+'"></div>';
+
+    h += '<div style="'+sec+'">Disparador</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
+    h += '<div><label style="'+lbl+'">Tipo de negociación</label><select style="'+inp+'" id="ta_tipo_neg" onchange="_taFiltrarEtapas()">'+optsTipoNeg+'</select></div>';
+    h += '<div><label style="'+lbl+'">Etapa que activa la regla *</label><select style="'+inp+'" id="ta_etapa">'+optsEtapas+'</select></div>';
     h += '</div>';
 
-    h += '<div style="background:#F9F9FB;border-radius:14px;padding:20px;max-width:580px;">';
+    h += '<div style="'+sec+'">Tarea a crear</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 120px;gap:10px;margin-bottom:10px;">';
+    h += '<div><label style="'+lbl+'">Título *</label><input style="'+inp+'" id="ta_titulo" placeholder="Ej: Solicitar PO al cliente" value="'+(regla?regla.titulo_tarea:'')+'"></div>';
+    h += '<div><label style="'+lbl+'">Prioridad</label><select style="'+inp+'" id="ta_prioridad">'+optsPrio+'</select></div>';
+    h += '</div>';
+    h += '<div style="margin-bottom:12px;"><label style="'+lbl+'">Descripción (opcional)</label>';
+    h += '<textarea style="'+inp+'resize:vertical;min-height:60px;" id="ta_descripcion" placeholder="Instrucciones para quien recibe la tarea...">'+(regla?regla.descripcion_tarea:'')+'</textarea></div>';
 
-    // Identificación
-    h += '<div class="admin-field-group"><div class="admin-field-label">Nombre de la regla *</div>';
-    h += '<input class="admin-input" id="ta_nombre" placeholder="Ej: Crear tarea de seguimiento al vender" value="'+(regla?regla.nombre:'')+'"></div>';
-
-    // Disparador
-    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#9889; Disparador</div>';
-    h += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
-    h += '<div style="flex:1;"><div class="admin-field-label">Etapa que activa la regla *</div><select class="admin-select" id="ta_etapa">'+optsEtapas+'</select></div>';
-    h += '<div style="flex:1;"><div class="admin-field-label">Aplica a tipo de negociación</div><select class="admin-select" id="ta_tipo_neg">'+optsTipoNeg+'</select></div>';
+    h += '<div style="'+sec+'">Fecha de vencimiento</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 100px;gap:10px;margin-bottom:12px;">';
+    h += '<div><label style="'+lbl+'">Tipo</label><select style="'+inp+'" id="ta_offset_tipo" onchange="_taToggleFecha()">'+optsOffset+'</select></div>';
+    h += '<div id="ta_offset_valor_wrap"><label style="'+lbl+'">Cantidad</label><input style="'+inp+'text-align:center;" id="ta_offset_valor" type="number" min="1" value="'+(regla?regla.offset_valor:3)+'"></div>';
+    h += '<div style="display:none;" id="ta_fecha_fija_wrap"><label style="'+lbl+'">Fecha</label><input style="'+inp+'" id="ta_fecha_fija" type="date" value="'+(regla&&regla.fecha_fija?regla.fecha_fija:'')+'"></div>';
     h += '</div>';
 
-    // Tarea
-    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128203; Tarea a crear</div>';
-    h += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
-    h += '<div style="flex:1;"><div class="admin-field-label">Título de la tarea *</div><input class="admin-input" id="ta_titulo" placeholder="Ej: Solicitar PO al cliente" value="'+(regla?regla.titulo_tarea:'')+'"></div>';
-    h += '<div style="flex:0 0 130px;"><div class="admin-field-label">Prioridad</div><select class="admin-select" id="ta_prioridad">'+optsPrio+'</select></div>';
-    h += '</div>';
-    h += '<div class="admin-field-group"><div class="admin-field-label">Descripción (opcional)</div>';
-    h += '<textarea class="admin-input" id="ta_descripcion" rows="3" placeholder="Instrucciones o contexto para quien recibe la tarea..." style="resize:vertical;min-height:65px;">'+(regla?regla.descripcion_tarea:'')+'</textarea></div>';
-
-    // Fecha
-    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128197; Fecha de vencimiento</div>';
-    h += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
-    h += '<div style="flex:1;"><div class="admin-field-label">Tipo</div><select class="admin-select" id="ta_offset_tipo" onchange="_taToggleFecha()">'+optsOffset+'</select></div>';
-    h += '<div style="flex:0 0 110px;" id="ta_offset_valor_wrap"><div class="admin-field-label">Cantidad</div><input class="admin-input" id="ta_offset_valor" type="number" min="1" value="'+(regla?regla.offset_valor:3)+'" style="text-align:center;"></div>';
-    h += '<div style="flex:0 0 155px;display:none;" id="ta_fecha_fija_wrap"><div class="admin-field-label">Fecha fija</div><input class="admin-input" id="ta_fecha_fija" type="date" value="'+(regla&&regla.fecha_fija?regla.fecha_fija:'')+'"></div>';
+    h += '<div style="'+sec+'">Responsables</div>';
+    h += '<div style="margin-bottom:10px;"><label style="'+lbl+'">Responsable predeterminado</label><select style="'+inp+'" id="ta_responsable">'+optsResp+'</select></div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    h += '<div><label style="'+lbl+'">Participantes</label><div style="background:#F9F9FB;border:1px solid #E5E5EA;border-radius:10px;padding:8px 12px;max-height:120px;overflow-y:auto;">'+(chkPartic||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
+    h += '<div><label style="'+lbl+'">Observadores</label><div style="background:#F9F9FB;border:1px solid #E5E5EA;border-radius:10px;padding:8px 12px;max-height:120px;overflow-y:auto;">'+(chkObs||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
     h += '</div>';
 
-    // Responsables
-    h += '<div style="font-weight:600;font-size:0.82rem;color:#3A3A3C;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid #E5E5EA;">&#128101; Responsables</div>';
-    h += '<div class="admin-field-group"><div class="admin-field-label">Responsable predeterminado</div><select class="admin-select" id="ta_responsable">'+optsResp+'</select></div>';
-    h += '<div style="display:flex;gap:10px;margin-top:10px;">';
-    h += '<div style="flex:1;"><div class="admin-field-label">Participantes</div><div style="background:#fff;border:1px solid #E5E5EA;border-radius:8px;padding:8px 10px;max-height:130px;overflow-y:auto;">'+(chkPartic||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
-    h += '<div style="flex:1;"><div class="admin-field-label">Observadores</div><div style="background:#fff;border:1px solid #E5E5EA;border-radius:8px;padding:8px 10px;max-height:130px;overflow-y:auto;">'+(chkObs||'<span style="color:#C7C7CC;font-size:0.78rem;">Sin usuarios</span>')+'</div></div>';
     h += '</div>';
-
-    // Botones
-    h += '<div style="display:flex;gap:10px;margin-top:18px;">';
-    h += '<button class="admin-btn admin-btn-primary" onclick="_taGuardar()">'+(isEdit?'Guardar cambios':'Crear regla')+'</button>';
-    h += '<button class="admin-btn" style="background:#F2F2F7;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;" onclick="window.loadTareasAuto()">Cancelar</button>';
+    /* footer */
+    h += '<div style="padding:14px 24px;border-top:1px solid #F2F2F7;display:flex;gap:8px;flex-shrink:0;">';
+    h += '<button onclick="_taGuardar()" style="flex:1;background:#007AFF;color:#fff;border:none;border-radius:10px;padding:10px;font-size:0.88rem;font-weight:600;cursor:pointer;">'+(isEdit?'Guardar cambios':'Crear regla')+'</button>';
+    h += '<button onclick="window.loadTareasAuto()" style="padding:10px 16px;background:#F2F2F7;color:#3A3A3C;border:none;border-radius:10px;font-size:0.88rem;cursor:pointer;">Cancelar</button>';
     h += '</div>';
-    h += '</div></div>';
+    h += '</div>';
 
     ac.innerHTML = h;
     _taToggleFecha();
@@ -974,14 +1022,14 @@ window.getAC            = getAC;
     var nombre = (document.getElementById('ta_nombre').value||'').trim();
     var etapa  = document.getElementById('ta_etapa').value;
     var titulo = (document.getElementById('ta_titulo').value||'').trim();
-    if(!nombre){alert('El nombre de la regla es requerido');return;}
-    if(!etapa){alert('Selecciona la etapa que dispara la regla');return;}
-    if(!titulo){alert('El título de la tarea es requerido');return;}
+    if(!nombre){_showAdminToast('El nombre de la regla es requerido','error');return;}
+    if(!etapa){_showAdminToast('Selecciona la etapa que dispara la regla','error');return;}
+    if(!titulo){_showAdminToast('El título de la tarea es requerido','error');return;}
 
     var offsetTipo  = document.getElementById('ta_offset_tipo').value;
     var offsetValor = parseInt(document.getElementById('ta_offset_valor').value)||3;
     var fechaFija   = offsetTipo==='fecha_fija' ? (document.getElementById('ta_fecha_fija').value||'') : null;
-    if(offsetTipo==='fecha_fija' && !fechaFija){alert('Selecciona una fecha fija');return;}
+    if(offsetTipo==='fecha_fija' && !fechaFija){_showAdminToast('Selecciona una fecha fija','error');return;}
 
     var respId = document.getElementById('ta_responsable').value||null;
     var partic = [], obs = [];
@@ -998,25 +1046,16 @@ window.getAC            = getAC;
       participantes_ids: partic, observadores_ids: obs, orden: 0
     };
 
-    var url = _taAutoEditandoId
-      ? '/app/api/automatizacion/reglas/'+_taAutoEditandoId+'/'
-      : '/app/api/automatizacion/reglas/crear/';
+    var url = _taAutoEditandoId ? '/app/api/automatizacion/reglas/'+_taAutoEditandoId+'/' : '/app/api/automatizacion/reglas/crear/';
     var method = _taAutoEditandoId ? 'PUT' : 'POST';
 
     fetch(url,{method:method,headers:{'Content-Type':'application/json','X-CSRFToken':_getAdminCsrf()},body:JSON.stringify(body)})
       .then(function(r){return r.json();})
       .then(function(res){
-        if(res.success) window.loadTareasAuto();
-        else alert(res.error||'Error al guardar la regla');
-      }).catch(function(){alert('Error de conexión');});
+        if(res.success){ _showAdminToast(_taAutoEditandoId?'Regla actualizada':'Regla creada','ok'); window.loadTareasAuto(); }
+        else _showAdminToast(res.error||'Error al guardar','error');
+      }).catch(function(){_showAdminToast('Error de conexión','error');});
   };
-
-  /* Estilos adicionales para el formulario */
-  (function(){
-    var s = document.createElement('style');
-    s.textContent = '.admin-field-group{margin-bottom:10px;} .admin-field-label{font-size:0.73rem;color:#8E8E93;margin-bottom:4px;} .admin-input{width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.85rem;background:#fff;} .admin-input:focus{outline:none;border-color:#007AFF;} .admin-select{width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.85rem;background:#fff;} .admin-btn-primary{background:#007AFF;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:0.85rem;font-weight:600;}';
-    document.head.appendChild(s);
-  })();
 
 })();
 </script>

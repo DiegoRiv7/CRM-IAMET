@@ -2701,6 +2701,13 @@ def api_crear_oportunidad(request):
         )
         todo.save()
 
+        # Ejecutar automatizaciones para la etapa inicial
+        try:
+            from .views_automatizacion import ejecutar_automatizaciones
+            ejecutar_automatizaciones(todo, etapa_corta_init, request.user)
+        except Exception:
+            pass  # No bloquear la creación si falla la automatización
+
         # If there are comments, add them as a chat message
         if todo.comentarios:
             from .models import MensajeOportunidad
