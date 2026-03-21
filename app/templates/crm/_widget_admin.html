@@ -1290,8 +1290,7 @@ window.getAC            = getAC;
     // Selector de color con swatches
     var swatches = COLORES_GT.map(function(c){
       var isSelected = c.hex === colorActual;
-      return '<div onclick="_gtSelectColor(\''+c.hex+'\')\" title="'+c.label+'" id="gt-swatch-'+c.hex.replace('#','')+'"
-        style="width:22px;height:22px;border-radius:50%;background:'+c.hex+';cursor:pointer;border:2px solid '+(isSelected?'#1C1C1E':'transparent')+';transition:border 0.15s;flex-shrink:0;"></div>';
+      return '<div onclick="_gtSelectColor(\''+c.hex+'\')" title="'+c.label+'" id="gt-swatch-'+c.hex.replace('#','')+'" style="width:22px;height:22px;border-radius:50%;background:'+c.hex+';cursor:pointer;border:2px solid '+(isSelected?'#1C1C1E':'transparent')+';transition:border 0.15s;flex-shrink:0;"></div>';
     }).join('');
 
     var h = '<div class="admin-card-inner">';
