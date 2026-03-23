@@ -220,26 +220,19 @@ def get_usuarios_visibles_ids(user):
 def comparten_grupo(user1, user2):
     """True si user1 puede actuar sobre contenido de user2 por ser del mismo grupo activo."""
     if user1.id == user2.id:
-        print(f"[comparten_grupo] mismo usuario ({user1.id}), False")
         return False
     if is_supervisor(user1):
-        print(f"[comparten_grupo] {user1} es supervisor global, True")
         return True
-    # Query directa: busca un grupo activo que contenga a ambos
-    grupos_user1 = list(GrupoTrabajo.objects.filter(
+    grupos_user1 = GrupoTrabajo.objects.filter(
         Q(miembros=user1) | Q(supervisor_grupo=user1), activo=True
-    ).values_list('id', flat=True))
-    print(f"[comparten_grupo] {user1} grupos activos: {grupos_user1}")
+    ).values_list('id', flat=True)
     if not grupos_user1:
-        print(f"[comparten_grupo] {user1} no tiene grupos, False")
         return False
-    resultado = GrupoTrabajo.objects.filter(
+    return GrupoTrabajo.objects.filter(
         id__in=grupos_user1
     ).filter(
         Q(miembros=user2) | Q(supervisor_grupo=user2)
     ).exists()
-    print(f"[comparten_grupo] {user1} + {user2} comparten grupo: {resultado}")
-    return resultado
 
 
 def usuario_puede_acceder_grupo(user, grupo):
@@ -305,9 +298,12 @@ def registrar_accion_grupo(actor, propietario, accion, contenido, objeto_tipo=''
     """
     Crea un mensaje de sistema en todos los grupos activos que contengan
     tanto a `actor` como a `propietario`. Si son la misma persona, no registra.
+    Tambien crea Notificacion para cada miembro del grupo (excepto el actor).
     """
     if actor.id == propietario.id:
         return
+    from .models import Notificacion
+    actor_nombre = actor.get_full_name() or actor.username
     grupos = GrupoTrabajo.objects.filter(activo=True).prefetch_related('miembros')
     for g in grupos:
         todos_ids = set(g.miembros.values_list('id', flat=True))
@@ -324,6 +320,20 @@ def registrar_accion_grupo(actor, propietario, accion, contenido, objeto_tipo=''
                 objeto_id=objeto_id,
                 objeto_titulo=objeto_titulo,
             )
+            # Notificar a todos los miembros del grupo (excepto el actor)
+            for uid in todos_ids:
+                if uid == actor.id:
+                    continue
+                try:
+                    Notificacion.objects.create(
+                        usuario_destinatario_id=uid,
+                        usuario_remitente=actor,
+                        tipo='mensaje_grupo',
+                        titulo=f'{actor_nombre} en {g.nombre}',
+                        mensaje=contenido[:120],
+                    )
+                except Exception:
+                    pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────

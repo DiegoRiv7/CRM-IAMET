@@ -1011,10 +1011,17 @@ def api_tareas(request):
                         request.user.tareas_observando.values_list('id', flat=True)
                     )
                     ids_m2m = ids_participando | ids_observando
+
+                    # Incluir tareas de miembros del grupo
+                    from .views_grupos import get_usuarios_visibles_ids
+                    ids_grupo = get_usuarios_visibles_ids(request.user)
+                    grupo_filter = Q(creado_por__id__in=ids_grupo) | Q(asignado_a__id__in=ids_grupo) if ids_grupo else Q()
+
                     tareas = Tarea.objects.filter(
                         Q(creado_por=request.user) |
                         Q(asignado_a=request.user) |
-                        Q(id__in=ids_m2m)
+                        Q(id__in=ids_m2m) |
+                        grupo_filter
                     ).defer('descripcion').select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
@@ -2238,14 +2245,30 @@ def actividad_detail(request, pk):
         })
 
     elif request.method == 'PATCH':
-        # Marcar como completada (puede hacerlo el creador, un participante o supervisor)
+        # Marcar como completada (puede hacerlo el creador, un participante, supervisor o compañero de grupo)
         es_participante = actividad.participantes.filter(pk=request.user.pk).exists()
-        if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user):
+        from .views_grupos import comparten_grupo
+        es_companero = comparten_grupo(request.user, actividad.creado_por) if actividad.creado_por != request.user else False
+        if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user) and not es_companero:
             return JsonResponse({'error': 'No tienes permiso para completar esta actividad.'}, status=403)
         data = json.loads(request.body)
         if 'completada' in data:
             actividad.completada = data['completada']
             actividad.save(update_fields=['completada'])
+            # Registrar en chat de grupo si completó actividad de otro
+            if actividad.completada and actividad.creado_por != request.user:
+                try:
+                    from .views_grupos import registrar_accion_grupo
+                    actor_nombre = request.user.get_full_name() or request.user.username
+                    prop_nombre = actividad.creado_por.get_full_name() or actividad.creado_por.username
+                    registrar_accion_grupo(
+                        request.user, actividad.creado_por,
+                        'completar_actividad',
+                        f'{actor_nombre} completó la actividad "{actividad.titulo}" de {prop_nombre}',
+                        objeto_tipo='actividad', objeto_id=actividad.id, objeto_titulo=actividad.titulo,
+                    )
+                except Exception:
+                    pass
         return JsonResponse({'id': actividad.id, 'completada': actividad.completada})
 
     elif request.method == 'PUT':

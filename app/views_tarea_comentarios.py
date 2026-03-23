@@ -31,20 +31,8 @@ def api_comentarios_tarea(request, tarea_id):
     API para obtener comentarios de una tarea
     """
     try:
-        print(f"🔍 === API COMENTARIOS TAREA ===")
-        print(f"🔍 Tarea ID: {tarea_id}")
-        print(f"🔍 Usuario: {request.user}")
-        print(f"🔍 Método: {request.method}")
-        
         tarea = get_object_or_404(Tarea, id=tarea_id)
-        print(f"🔍 Tarea encontrada: {tarea.titulo}")
-        
-        # Verificar permisos - el usuario debe ser participante, creador o asignado
-        print(f"🔍 Verificando permisos para usuario: {request.user}")
-        print(f"🔍 Creado por: {tarea.creado_por}")
-        print(f"🔍 Asignado a: {tarea.asignado_a}")
-        print(f"🔍 Es superuser: {request.user.is_superuser}")
-        
+
         from .views_grupos import comparten_grupo
         involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
         user_can_view = (
@@ -58,11 +46,8 @@ def api_comentarios_tarea(request, tarea_id):
 
         if not user_can_view:
             return JsonResponse({'error': 'Sin permisos para ver esta tarea'}, status=403)
-        
-        # Obtener comentarios ordenados por fecha (más nuevos primero)
-        print(f"🔍 Obteniendo comentarios para tarea {tarea_id}")
+
         comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('-fecha_creacion')
-        print(f"🔍 Comentarios encontrados: {comentarios.count()}")
         
         comentarios_data = []
         for comentario in comentarios:
