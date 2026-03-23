@@ -3876,15 +3876,18 @@
         // ── Abrir oportunidad desde tarea (sin cerrar el modal de tarea) ──
         function crmTaskAbrirOportunidad() {
             if (!_crmTaskCurrentOppId) return;
-            // Elevar el overlay de oportunidad por encima del modal de tarea
+            // Elevar el overlay de oportunidad por encima del modal de tarea (10300)
             var dl = document.getElementById('widgetDetalle');
-            if (dl) dl.style.zIndex = '10300';
+            if (dl) dl.style.zIndex = '10350';
             if (typeof openDetalle === 'function') openDetalle(_crmTaskCurrentOppId);
         }
 
         // ── Abrir drive desde tarea ──
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
+            // Elevar drive por encima del modal de tarea (10300)
+            var drv = document.getElementById('widgetOppDrive');
+            if (drv) drv.style.zIndex = '10350';
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
             if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
         }
