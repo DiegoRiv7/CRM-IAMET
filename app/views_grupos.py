@@ -220,21 +220,26 @@ def get_usuarios_visibles_ids(user):
 def comparten_grupo(user1, user2):
     """True si user1 puede actuar sobre contenido de user2 por ser del mismo grupo activo."""
     if user1.id == user2.id:
+        print(f"[comparten_grupo] mismo usuario ({user1.id}), False")
         return False
     if is_supervisor(user1):
+        print(f"[comparten_grupo] {user1} es supervisor global, True")
         return True
     # Query directa: busca un grupo activo que contenga a ambos
-    # (ya sea como miembro o supervisor de grupo)
-    grupos_user1 = GrupoTrabajo.objects.filter(
+    grupos_user1 = list(GrupoTrabajo.objects.filter(
         Q(miembros=user1) | Q(supervisor_grupo=user1), activo=True
-    ).values_list('id', flat=True)
+    ).values_list('id', flat=True))
+    print(f"[comparten_grupo] {user1} grupos activos: {grupos_user1}")
     if not grupos_user1:
+        print(f"[comparten_grupo] {user1} no tiene grupos, False")
         return False
-    return GrupoTrabajo.objects.filter(
+    resultado = GrupoTrabajo.objects.filter(
         id__in=grupos_user1
     ).filter(
         Q(miembros=user2) | Q(supervisor_grupo=user2)
     ).exists()
+    print(f"[comparten_grupo] {user1} + {user2} comparten grupo: {resultado}")
+    return resultado
 
 
 def usuario_puede_acceder_grupo(user, grupo):
