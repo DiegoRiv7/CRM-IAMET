@@ -46,14 +46,14 @@ def api_comentarios_tarea(request, tarea_id):
         print(f"🔍 Es superuser: {request.user.is_superuser}")
         
         from .views_grupos import comparten_grupo
-        target = tarea.asignado_a or tarea.creado_por
+        involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
         user_can_view = (
             request.user == tarea.creado_por or
             request.user == tarea.asignado_a or
             request.user in tarea.participantes.all() or
             request.user in tarea.observadores.all() or
             request.user.is_superuser or
-            (target and comparten_grupo(request.user, target))
+            any(comparten_grupo(request.user, u) for u in involucrados)
         )
 
         if not user_can_view:
@@ -119,14 +119,14 @@ def api_agregar_comentario_tarea(request, tarea_id):
         
         # Verificar permisos
         from .views_grupos import comparten_grupo
-        target = tarea.asignado_a or tarea.creado_por
+        involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
         user_can_comment = (
             request.user == tarea.creado_por or
             request.user == tarea.asignado_a or
             request.user in tarea.participantes.all() or
             request.user in tarea.observadores.all() or
             request.user.is_superuser or
-            (target and comparten_grupo(request.user, target))
+            any(comparten_grupo(request.user, u) for u in involucrados)
         )
 
         if not user_can_comment:

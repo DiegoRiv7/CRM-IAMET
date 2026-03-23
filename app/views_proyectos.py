@@ -2740,8 +2740,8 @@ def api_completar_tarea(request, tarea_id):
             request.user != tarea.creado_por and
             not request.user.is_superuser):
             from .views_grupos import comparten_grupo
-            target = tarea.asignado_a or tarea.creado_por
-            if not (target and comparten_grupo(request.user, target)):
+            involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
+            if not any(comparten_grupo(request.user, u) for u in involucrados):
                 return JsonResponse({'error': 'Sin permisos para completar esta tarea'}, status=403)
         
         # Verificar que no esté ya completada
@@ -3238,8 +3238,8 @@ def api_actualizar_tarea_real(request, tarea_id):
         es_creador = tarea.creado_por == request.user
 
         from .views_grupos import comparten_grupo
-        target = tarea.asignado_a or tarea.creado_por
-        es_companero_grupo = target and comparten_grupo(request.user, target)
+        involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
+        es_companero_grupo = any(comparten_grupo(request.user, u) for u in involucrados)
 
         # El responsable solo puede cambiar fecha_limite (con razón obligatoria)
         # El creador, superusuario y compañero de grupo pueden editar todo
@@ -3474,8 +3474,8 @@ def api_tarea_oportunidad_detail(request, tarea_id):
 
     if tarea.creado_por != user and tarea.responsable != user and not is_supervisor(user):
         from .views_grupos import comparten_grupo
-        target = tarea.responsable or tarea.creado_por
-        if not (target and comparten_grupo(user, target)):
+        involucrados = [u for u in [tarea.responsable, tarea.creado_por] if u and u != user]
+        if not any(comparten_grupo(user, u) for u in involucrados):
             return JsonResponse({'error': 'Sin permiso'}, status=403)
 
     if request.method == 'PUT':
