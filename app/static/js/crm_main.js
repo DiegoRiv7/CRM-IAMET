@@ -4506,6 +4506,7 @@
 
 
         window.refreshCrmTable = refreshCrmTable;
+        window.recargarTareasCRM = recargarTareasCRM;
 
         // Expose to global scope for inline onclick handlers
         window.crmTaskVerDetalle = crmTaskVerDetalle;

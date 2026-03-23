@@ -498,8 +498,12 @@
       var iconoAccion = _iconoAccion(msg.accion);
       var linkObj = '';
       if(msg.objeto_tipo && msg.objeto_id) {
-        var href = _linkObjeto(msg.objeto_tipo, msg.objeto_id);
-        if(href) linkObj = ' — <a href="'+href+'" target="_blank">'+_esc(msg.objeto_titulo||msg.objeto_tipo)+'</a>';
+        if(msg.objeto_tipo === 'tarea') {
+          linkObj = ' — <a href="javascript:void(0)" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle('+msg.objeto_id+');" style="cursor:pointer;">'+_esc(msg.objeto_titulo||'Ver tarea')+'</a>';
+        } else {
+          var href = _linkObjeto(msg.objeto_tipo, msg.objeto_id);
+          if(href) linkObj = ' — <a href="'+href+'" target="_blank">'+_esc(msg.objeto_titulo||msg.objeto_tipo)+'</a>';
+        }
       }
       return '<div class="grupo-msg sistema"><div class="grupo-msg-sistema-inner">'+iconoAccion+' '+_parseMenciones(msg.contenido)+linkObj+'<span style="color:#C7C7CC;margin-left:6px;font-size:0.66rem;">'+msg.fecha.split(' ')[1]+'</span></div></div>';
     }
@@ -529,6 +533,7 @@
       'editar_oportunidad': '✏️',
       'cambio_etapa': '🔀',
       'cerrar_tarea': '✅',
+      'completar_actividad': '✅',
       'programar_actividad': '📅',
     };
     return icons[accion] || '🔔';
@@ -657,6 +662,7 @@
         .then(function(r){return r.json();})
         .then(function(d){
           if(d.mensajes && d.mensajes.length > 0){
+            var hayAccionTarea = false;
             if(widgetAbierto) {
               var feed = document.getElementById('grupoChatFeed');
               if(feed){
@@ -673,6 +679,15 @@
                   _notifMac(autor+' en '+grupoNombre, msg.contenido.substring(0,80), _grupoActualId);
                 }
               });
+            }
+            // Si algun mensaje de sistema es sobre tareas/actividades, refrescar lista de tareas
+            d.mensajes.forEach(function(msg){
+              if(msg.tipo === 'sistema' && (msg.accion === 'cerrar_tarea' || msg.accion === 'completar_actividad' || msg.accion === 'programar_actividad')) {
+                hayAccionTarea = true;
+              }
+            });
+            if(hayAccionTarea && typeof window.recargarTareasCRM === 'function') {
+              window.recargarTareasCRM();
             }
             _ultimoMsgId = d.mensajes[d.mensajes.length-1].id;
           }
