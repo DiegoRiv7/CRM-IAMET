@@ -3793,13 +3793,10 @@
                             }).then(function () { if (typeof notifLoad === 'function') notifLoad(); });
                         } catch (ex) { }
 
-                        // Actualizar en modo silencioso sin recargar tabla
+                        // Actualizar tabla de tareas y polling hash
                         if (_crmTaskLastData) _crmTaskLastData.estado = 'completada';
-                        var idx = _crmAllTareas.findIndex(function (t) { return t.id === _crmCurrentTaskId; });
-                        if (idx !== -1) {
-                            _crmAllTareas[idx].estado = 'completada';
-                            if (window._crmTareasMode) renderTareasCRM(_crmCurrentFilter);
-                        }
+                        _tareasPollHash = null;
+                        recargarTareasCRM();
                         // Refrescar tareas inline y tab completo del widget oportunidad si está abierto
                         if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {
                             var oppId = _crmTaskLastData.oportunidad_id;
