@@ -2988,7 +2988,7 @@
             if (countEl) countEl.innerHTML = '<strong>' + tareas.length + '</strong> tarea' + (tareas.length !== 1 ? 's' : '');
 
             if (tareas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="tareas-empty">No hay tareas disponibles.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">No hay tareas disponibles.</td></tr>';
                 return;
             }
 

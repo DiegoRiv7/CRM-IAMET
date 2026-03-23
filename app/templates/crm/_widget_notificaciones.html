@@ -23,7 +23,7 @@
                     Marcar todo como leído
                 </button>
                 <button class="notif-v2-btn-close"
-                    onclick="document.getElementById('widgetNotificaciones').classList.remove('active'); document.body.style.overflow='auto';">
+                    onclick="document.getElementById('widgetNotificaciones').classList.remove('active'); document.body.style.overflow='auto'; var _rz=[['widgetDetalle','10100'],['widgetOppConversacion','10160'],['widgetOppVerActividad','10150'],['widgetMuro','10200'],['widgetCalendarioMaster','10005']]; _rz.forEach(function(p){var e=document.getElementById(p[0]);if(e)e.style.zIndex=p[1];});">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
@@ -848,23 +848,32 @@
             } catch(e) {}
         }
 
-        // Close widget
-        document.getElementById('widgetNotificaciones').classList.remove('active');
-        document.body.style.overflow = 'auto';
+        // NO cerrar notificaciones — el widget que se abre se muestra ENCIMA
+        // El usuario cierra notificaciones manualmente con la X
 
         // Navigate to the right place
         const tiposConv = ['mencion', 'comentario_oportunidad', 'oportunidad_mensaje', 'tarea_opp_asignada', 'tarea_opp_comentario'];
         const tiposActividad = ['actividad_por_vencer', 'actividad_vencida'];
         const tiposTareaOpp = ['tarea_opp_asignada', 'tarea_opp_comentario'];
 
+        // Elevar widgets para que se abran ENCIMA de notificaciones (10210)
+        function _elevarWidget(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.zIndex = '10450';
+        }
+
         if (tiposActividad.includes(tipo) && typeof window.calendarioAbrir === 'function') {
+            _elevarWidget('widgetCalendarioMaster');
             window.calendarioAbrir();
         } else if (tiposTareaOpp.includes(tipo) && actId && typeof window.crmTaskVerDetalle === 'function') {
             window.crmTaskVerDetalle(actId);
         } else if (esMensajeChat && oppId && typeof window.openDetalle === 'function') {
+            _elevarWidget('widgetDetalle');
+            _elevarWidget('widgetOppConversacion');
             window.openDetalle(oppId);
             setTimeout(() => { if (typeof window.woAbrirGestorConversacion === 'function') window.woAbrirGestorConversacion(); }, 600);
         } else if (tiposConv.includes(tipo) && oppId && typeof window.openDetalle === 'function') {
+            _elevarWidget('widgetDetalle');
             window.openDetalle(oppId);
         } else if (tipo === 'tarea_reprogramada' && tareaId && typeof window.crmTaskVerDetalle === 'function') {
             window.crmTaskVerDetalle(tareaId);
@@ -873,8 +882,10 @@
         } else if (tipo === 'mensaje_grupo' && typeof window.grupoAbrir === 'function') {
             window.grupoAbrir();
         } else if (CAT_EQUIPO.includes(tipo) && typeof window.muroAbrir === 'function') {
+            _elevarWidget('widgetMuro');
             window.muroAbrir();
         } else if (oppId && typeof window.openDetalle === 'function') {
+            _elevarWidget('widgetDetalle');
             window.openDetalle(oppId);
         }
     };
