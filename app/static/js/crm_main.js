@@ -2732,7 +2732,7 @@
 
                     // Invalidar cache para siempre cargar datos frescos al entrar
                     _crmTareasCache = {};
-                    _tareasPollHash = '';
+                    _tareasPollHash = null;
                     cargarTareasCRM();
                 });
             }
@@ -2802,17 +2802,15 @@
         }
 
         // ── Polling ligero: detectar tareas nuevas/cambiadas de grupo cada 15s ──
-        var _tareasPollHash = '';
+        var _tareasPollHash = null;
         setInterval(function() {
-            // Solo si estamos en vista de tareas
             if (!window._crmTareasMode) return;
             fetch('/app/api/tareas/?estado=pendientes')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.success && Array.isArray(data.tareas)) {
-                        // Comparar por IDs + estados para detectar cualquier cambio
                         var nuevoHash = data.tareas.map(function(t) { return t.id + ':' + t.estado; }).join(',');
-                        if (_tareasPollHash && nuevoHash !== _tareasPollHash) {
+                        if (_tareasPollHash !== null && nuevoHash !== _tareasPollHash) {
                             _crmTareasCache = {};
                             _crmAllTareas = data.tareas;
                             _actualizarDropdownResponsables(data.tareas);
