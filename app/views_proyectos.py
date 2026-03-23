@@ -2828,6 +2828,14 @@ def api_completar_tarea(request, tarea_id):
         except Exception as e:
             print(f"[registrar_accion_grupo] Error en completar_tarea: {e}")
 
+        # --- Cadena reactiva: si la tarea fue creada por automatizacion ---
+        cadena_resultado = None
+        try:
+            from .views_automatizacion import procesar_cadena_reactiva
+            cadena_resultado = procesar_cadena_reactiva(tarea, request.user)
+        except Exception as e_cadena:
+            print(f'[Cadena reactiva] Error: {e_cadena}')
+
         # Formatear tiempo trabajado para respuesta
         tiempo_total_str = "00:00:00"
         if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado:
@@ -2836,8 +2844,8 @@ def api_completar_tarea(request, tarea_id):
             minutes = (total_seconds % 3600) // 60
             seconds = total_seconds % 60
             tiempo_total_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-        
-        return JsonResponse({
+
+        response_data = {
             'success': True,
             'message': 'Tarea completada exitosamente',
             'tarea': {
@@ -2847,7 +2855,19 @@ def api_completar_tarea(request, tarea_id):
                 'tiempo_trabajado_total': tiempo_total_str,
                 'trabajando_actualmente': False
             }
-        })
+        }
+
+        if cadena_resultado:
+            avance = cadena_resultado['avances'][0] if cadena_resultado['avances'] else None
+            response_data['cadena_reactiva'] = {
+                'avances': cadena_resultado['avances'],
+                'tareas_creadas': cadena_resultado['tareas_creadas'],
+                'mensaje': f'Oportunidad avanzada a "{avance["a"]}"' if avance else '',
+            }
+            if avance:
+                response_data['message'] += f' | Oportunidad avanzada a "{avance["a"]}"'
+
+        return JsonResponse(response_data)
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

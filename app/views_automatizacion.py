@@ -29,6 +29,45 @@ def _es_admin(user):
     return user.is_superuser or is_supervisor(user)
 
 
+ETAPAS_RUNRATE = [
+    'En Solicitud', 'Cotizando', 'Enviada', 'Seguimiento',
+    'Vendido s/PO', 'Vendido c/PO', 'En Tránsito', 'Facturado',
+    'Programado', 'Entregado', 'Esperando Pago', 'Sin Respuesta',
+    'Ganado', 'Perdido',
+]
+
+ETAPAS_PROYECTO = [
+    'Oportunidad', 'Levantamiento', 'Base Cotización', 'Cotizando',
+    'Enviada', 'Seguimiento', 'Vendido s/PO', 'Vendido c/PO',
+    'Cotiz. Proveedor', 'Comprando', 'En Tránsito', 'Ejecutando',
+    'Entregado', 'Facturado', 'Reportes', 'Pagado', 'Perdido',
+]
+
+
+def obtener_siguiente_etapa(tipo_negociacion, etapa_actual):
+    """
+    Devuelve la siguiente etapa dada la etapa actual y el tipo de negociacion.
+    Retorna None si no hay siguiente etapa (ultima etapa o etapa no encontrada).
+    """
+    etapas = ETAPAS_PROYECTO if tipo_negociacion == 'proyecto' else ETAPAS_RUNRATE
+    try:
+        idx = etapas.index(etapa_actual)
+    except ValueError:
+        # Intentar busqueda case-insensitive
+        lower_map = {e.lower(): i for i, e in enumerate(etapas)}
+        idx = lower_map.get(etapa_actual.lower(), -1)
+        if idx == -1:
+            return None
+
+    if idx + 1 < len(etapas):
+        siguiente = etapas[idx + 1]
+        # No avanzar a Perdido automaticamente
+        if siguiente == 'Perdido':
+            return None
+        return siguiente
+    return None
+
+
 def _regla_to_dict(regla):
     """Serializa una ReglaAutomatizacion a dict para el frontend."""
     return {
@@ -44,6 +83,7 @@ def _regla_to_dict(regla):
         'offset_valor': regla.offset_valor,
         'fecha_fija': regla.fecha_fija.strftime('%Y-%m-%d') if regla.fecha_fija else None,
         'orden': regla.orden,
+        'avanzar_etapa_al_completar': regla.avanzar_etapa_al_completar,
         'responsable': {
             'id': regla.responsable_predeterminado.id,
             'nombre': regla.responsable_predeterminado.get_full_name() or regla.responsable_predeterminado.username,
@@ -166,6 +206,7 @@ def api_automatizacion_crear(request):
         offset_valor=int(data.get('offset_valor', 3)),
         fecha_fija=fecha_fija,
         orden=int(data.get('orden', 0)),
+        avanzar_etapa_al_completar=bool(data.get('avanzar_etapa_al_completar', False)),
         responsable_predeterminado=responsable,
         creada_por=request.user,
     )
@@ -226,6 +267,8 @@ def api_automatizacion_editar(request, regla_id):
         regla.offset_valor = int(data['offset_valor'] or 3)
     if 'orden' in data:
         regla.orden = int(data['orden'] or 0)
+    if 'avanzar_etapa_al_completar' in data:
+        regla.avanzar_etapa_al_completar = bool(data['avanzar_etapa_al_completar'])
 
     if 'fecha_fija' in data:
         if data['fecha_fija']:
@@ -360,6 +403,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
                 fecha_limite=fecha_limite,
                 creado_por=usuario,
                 asignado_a=responsable,
+                regla_origen=regla,
             )
 
             # Asignar participantes y observadores
@@ -369,12 +413,12 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
             if regla.observadores_predeterminados.exists():
                 tarea.observadores.set(regla.observadores_predeterminados.all())
 
-            # Registrar ejecución (para evitar duplicados) — tarea_creada queda null
-            # porque ahora es Tarea, no TareaOportunidad
+            # Registrar ejecución (para evitar duplicados)
             EjecucionAutomatizacion.objects.create(
                 regla=regla,
                 oportunidad=oportunidad,
                 tarea_creada=None,
+                tarea_general=tarea,
                 ejecutada_por=usuario,
             )
 
@@ -430,6 +474,74 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
             continue
 
     return tareas_creadas
+
+
+# ─── Cadena reactiva: completar tarea → avanzar etapa → nuevas tareas ────────
+
+MAX_AVANCES_CADENA = 10  # Proteccion contra loops infinitos
+
+
+def procesar_cadena_reactiva(tarea, usuario):
+    """
+    Al completar una tarea creada por automatizacion, verifica si la regla
+    tiene avanzar_etapa_al_completar=True. Si es asi, avanza la oportunidad
+    a la siguiente etapa y ejecuta las automatizaciones de esa nueva etapa.
+
+    Retorna dict con info de lo que sucedio, o None si no aplica.
+    """
+    regla = tarea.regla_origen
+    if not regla or not regla.avanzar_etapa_al_completar:
+        return None
+
+    oportunidad = tarea.oportunidad
+    if not oportunidad:
+        return None
+
+    tipo_neg = getattr(oportunidad, 'tipo_negociacion', 'runrate') or 'runrate'
+    etapa_actual = oportunidad.etapa_corta or ''
+
+    resultado = {
+        'avances': [],
+        'tareas_creadas': [],
+    }
+
+    for paso in range(MAX_AVANCES_CADENA):
+        siguiente = obtener_siguiente_etapa(tipo_neg, etapa_actual)
+        if not siguiente:
+            break
+
+        # Avanzar la etapa de la oportunidad
+        oportunidad.etapa_corta = siguiente
+        oportunidad.save(update_fields=['etapa_corta'])
+
+        resultado['avances'].append({
+            'de': etapa_actual,
+            'a': siguiente,
+            'paso': paso + 1,
+        })
+
+        # Ejecutar automatizaciones para la nueva etapa
+        nuevas_tareas = ejecutar_automatizaciones(oportunidad, siguiente, usuario)
+        resultado['tareas_creadas'].extend(nuevas_tareas)
+
+        # Verificar si alguna de las nuevas tareas tambien tiene avanzar_etapa_al_completar
+        # Si ninguna lo tiene, la cadena se detiene aqui (no hay continuacion automatica)
+        # La cadena solo continua cuando se COMPLETE manualmente la siguiente tarea
+        break
+
+    # Notificar al dueno de la oportunidad sobre el avance automatico
+    if resultado['avances'] and oportunidad.usuario and oportunidad.usuario != usuario:
+        avance = resultado['avances'][0]
+        crear_notificacion(
+            usuario_destinatario=oportunidad.usuario,
+            tipo='sistema',
+            titulo='Etapa avanzada automaticamente',
+            mensaje=f'La oportunidad "{oportunidad.oportunidad}" avanzo de "{avance["de"]}" a "{avance["a"]}" al completar la tarea "{tarea.titulo}".',
+            oportunidad=oportunidad,
+            usuario_remitente=usuario,
+        )
+
+    return resultado if resultado['avances'] else None
 
 
 # ─── API: Historial de ejecuciones ───────────────────────────────────────────

@@ -2275,6 +2275,14 @@ class Tarea(models.Model):
         unique=True,
         verbose_name="ID de Tarea en Bitrix24"
     )
+    regla_origen = models.ForeignKey(
+        'ReglaAutomatizacion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tareas_creadas',
+        verbose_name="Regla de automatizacion que creo esta tarea"
+    )
 
     class Meta:
         verbose_name = "Tarea"
@@ -3528,6 +3536,11 @@ class ReglaAutomatizacion(models.Model):
         verbose_name="Orden de ejecución",
         help_text="Orden en que se ejecuta cuando hay varias reglas para la misma etapa"
     )
+    avanzar_etapa_al_completar = models.BooleanField(
+        default=False,
+        verbose_name="Avanzar etapa al completar",
+        help_text="Al completar la tarea creada por esta regla, avanzar automaticamente la oportunidad a la siguiente etapa"
+    )
 
     class Meta:
         verbose_name = "Regla de Automatización"
@@ -3563,6 +3576,14 @@ class EjecucionAutomatizacion(models.Model):
         blank=True,
         related_name='origen_automatizacion',
         verbose_name="Tarea creada"
+    )
+    tarea_general = models.ForeignKey(
+        'Tarea',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='origen_automatizacion',
+        verbose_name="Tarea general creada"
     )
     fecha_ejecucion = models.DateTimeField(auto_now_add=True)
     ejecutada_por = models.ForeignKey(

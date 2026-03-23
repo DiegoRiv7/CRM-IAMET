@@ -865,6 +865,9 @@ window.getAC            = getAC;
           var badgeColor = r.activa ? '#1C7C3D' : '#8E8E93';
           h += '<span style="background:'+badgeBg+';color:'+badgeColor+';border-radius:6px;padding:2px 7px;font-size:0.65rem;font-weight:700;flex-shrink:0;">' + (r.activa ? 'Activa' : 'Pausada') + '</span>';
           h += '<span style="background:'+pColor+'18;color:'+pColor+';border-radius:6px;padding:2px 7px;font-size:0.65rem;font-weight:700;flex-shrink:0;text-transform:uppercase;">' + r.prioridad_tarea + '</span>';
+          if (r.avanzar_etapa_al_completar) {
+            h += '<span style="background:#FFF3E0;color:#E65100;border-radius:6px;padding:2px 7px;font-size:0.65rem;font-weight:700;flex-shrink:0;display:flex;align-items:center;gap:3px;"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>Cadena</span>';
+          }
           h += '</div>';
           h += '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.72rem;color:#8E8E93;">';
           h += '<span style="display:flex;align-items:center;gap:4px;"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'+fechaDesc+'</span>';
@@ -1036,6 +1039,16 @@ window.getAC            = getAC;
     h += '</div>';
     h += '<label style="'+lbl+'">Descripción (opcional)</label>';
     h += '<textarea style="'+inp+'resize:none;height:64px;" id="ta_descripcion" placeholder="Instrucciones para quien recibe la tarea...">'+(regla?regla.descripcion_tarea:'')+'</textarea>';
+
+    /* Toggle: Avanzar etapa al completar */
+    var avanzarChecked = regla && regla.avanzar_etapa_al_completar ? ' checked' : '';
+    h += '<div style="margin-top:12px;background:linear-gradient(135deg,#FFF8E1,#FFF3E0);border:1px solid #FFE0B2;border-radius:10px;padding:12px 14px;">';
+    h += '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;">';
+    h += '<input type="checkbox" id="ta_avanzar_etapa"'+avanzarChecked+' style="accent-color:#E65100;margin-top:2px;width:16px;height:16px;flex-shrink:0;">';
+    h += '<div>';
+    h += '<div style="font-size:0.82rem;font-weight:600;color:#E65100;display:flex;align-items:center;gap:5px;"><svg width="13" height="13" fill="none" stroke="#E65100" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>Cadena reactiva: avanzar etapa al completar</div>';
+    h += '<div style="font-size:0.72rem;color:#BF360C;margin-top:3px;line-height:1.4;">Al completar esta tarea, la oportunidad avanza automaticamente a la siguiente etapa. Si la nueva etapa tiene reglas, se crearan nuevas tareas (formando una cadena).</div>';
+    h += '</div></label></div>';
     h += '</div>';
 
     /* Card: Fecha */
@@ -1098,6 +1111,7 @@ window.getAC            = getAC;
     document.querySelectorAll('.ta-chk-p:checked').forEach(function(c){partic.push(parseInt(c.value));});
     document.querySelectorAll('.ta-chk-o:checked').forEach(function(c){obs.push(parseInt(c.value));});
 
+    var avanzarEtapa = document.getElementById('ta_avanzar_etapa');
     var body = {
       nombre: nombre, activa: true, etapa_disparadora: etapa,
       tipo_negociacion: document.getElementById('ta_tipo_neg').value,
@@ -1105,7 +1119,8 @@ window.getAC            = getAC;
       prioridad_tarea: document.getElementById('ta_prioridad').value,
       offset_tipo: offsetTipo, offset_valor: offsetValor, fecha_fija: fechaFija,
       responsable_id: respId ? parseInt(respId) : null,
-      participantes_ids: partic, observadores_ids: obs, orden: 0
+      participantes_ids: partic, observadores_ids: obs, orden: 0,
+      avanzar_etapa_al_completar: avanzarEtapa ? avanzarEtapa.checked : false
     };
 
     var url = _taAutoEditandoId ? '/app/api/automatizacion/reglas/'+_taAutoEditandoId+'/' : '/app/api/automatizacion/reglas/crear/';
