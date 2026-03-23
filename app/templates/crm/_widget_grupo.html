@@ -345,7 +345,7 @@
     var miembrosNames = grupo.miembros.map(function(m){return m.nombre.split(' ')[0];}).join(', ');
     h += '<div style="font-size:0.72rem;color:#8E8E93;">'+(miembrosNames||'Sin miembros')+'</div>';
     h += '</div></div>';
-    h += '<div style="display:flex;align-items:center;gap:6px;">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-right:36px;">';
     if(puedeGestionar) {
       h += '<button class="grupo-gestionar-btn" onclick="_grupoGestionarToggle('+grupo.id+')">Gestionar</button>';
     }
@@ -499,7 +499,7 @@
       var linkObj = '';
       if(msg.objeto_tipo && msg.objeto_id) {
         if(msg.objeto_tipo === 'tarea') {
-          linkObj = ' — <a href="javascript:void(0)" onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle('+msg.objeto_id+');" style="cursor:pointer;">'+_esc(msg.objeto_titulo||'Ver tarea')+'</a>';
+          linkObj = ' — <a href="javascript:void(0)" onclick="var m=document.getElementById(\'crmTaskDetailModal\');if(m)m.style.zIndex=\'10450\';if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle('+msg.objeto_id+');" style="cursor:pointer;">'+_esc(msg.objeto_titulo||'Ver tarea')+'</a>';
         } else {
           var href = _linkObjeto(msg.objeto_tipo, msg.objeto_id);
           if(href) linkObj = ' — <a href="'+href+'" target="_blank">'+_esc(msg.objeto_titulo||msg.objeto_tipo)+'</a>';
