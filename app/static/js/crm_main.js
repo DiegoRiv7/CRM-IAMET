@@ -388,13 +388,12 @@
                 });
             }
 
-            // Set default mes_cierre to next month
+            // Set default mes_cierre to current month
             var now = new Date();
-            var nextMonth = now.getMonth() + 2; // getMonth is 0-indexed
-            if (nextMonth > 12) nextMonth = 1;
+            var mesActual = now.getMonth() + 1; // getMonth is 0-indexed
             var mesCierreSelect = document.getElementById('wfMesCierre');
             if (mesCierreSelect) {
-                mesCierreSelect.value = nextMonth.toString().padStart(2, '0');
+                mesCierreSelect.value = mesActual.toString().padStart(2, '0');
             }
         } catch (e) { console.error('Negociacion Init Error', e); }
 
