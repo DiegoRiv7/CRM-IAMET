@@ -3237,11 +3237,15 @@ def api_actualizar_tarea_real(request, tarea_id):
         es_responsable = tarea.asignado_a == request.user
         es_creador = tarea.creado_por == request.user
 
+        from .views_grupos import comparten_grupo
+        target = tarea.asignado_a or tarea.creado_por
+        es_companero_grupo = target and comparten_grupo(request.user, target)
+
         # El responsable solo puede cambiar fecha_limite (con razón obligatoria)
-        # El creador y superusuario pueden editar todo
+        # El creador, superusuario y compañero de grupo pueden editar todo
         campos_permitidos_responsable = {'fecha_limite', 'razon_reprogramacion'}
         campos_enviados = set(data.keys())
-        if not es_creador and not request.user.is_superuser:
+        if not es_creador and not request.user.is_superuser and not es_companero_grupo:
             if not es_responsable:
                 return JsonResponse({'error': 'Sin permisos para editar esta tarea'}, status=403)
             # Es responsable — solo puede tocar fecha_limite
@@ -3469,7 +3473,10 @@ def api_tarea_oportunidad_detail(request, tarea_id):
     user = request.user
 
     if tarea.creado_por != user and tarea.responsable != user and not is_supervisor(user):
-        return JsonResponse({'error': 'Sin permiso'}, status=403)
+        from .views_grupos import comparten_grupo
+        target = tarea.responsable or tarea.creado_por
+        if not (target and comparten_grupo(user, target)):
+            return JsonResponse({'error': 'Sin permiso'}, status=403)
 
     if request.method == 'PUT':
         data = json.loads(request.body)
