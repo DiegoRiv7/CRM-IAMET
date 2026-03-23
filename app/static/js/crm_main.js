@@ -2798,6 +2798,26 @@
             cargarTareasCRM(_crmCurrentFilter);
         }
 
+        // ── Polling ligero: detectar tareas nuevas de grupo cada 15s ──
+        var _tareasPollCount = 0;
+        setInterval(function() {
+            // Solo si estamos en vista de tareas
+            if (!window._crmTareasMode) return;
+            fetch('/app/api/tareas/?estado=pendientes')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && Array.isArray(data.tareas)) {
+                        var nuevoCount = data.tareas.length;
+                        if (_tareasPollCount > 0 && nuevoCount !== _tareasPollCount) {
+                            _crmTareasCache = {};
+                            _crmAllTareas = data.tareas;
+                            renderTareasCRM(_crmCurrentFilter);
+                        }
+                        _tareasPollCount = nuevoCount;
+                    }
+                }).catch(function(){});
+        }, 15000);
+
         function _actualizarDropdownResponsables(tareas) {
             var sel = document.getElementById('tareasFilterResponsable');
             if (!sel) return;
@@ -3767,6 +3787,10 @@
                             _crmAllTareas[idx].estado = 'completada';
                             if (window._crmTareasMode) renderTareasCRM(_crmCurrentFilter);
                         }
+                        // Refrescar tareas inline del widget oportunidad si está abierto
+                        if (_crmTaskLastData && _crmTaskLastData.oportunidad_id && typeof window.woCargarTareasInline === 'function') {
+                            window.woCargarTareasInline(_crmTaskLastData.oportunidad_id);
+                        }
                     } else {
                         if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
                         showToast(data.error || 'Error al completar', 'error');
@@ -3809,6 +3833,10 @@
                         if (window._crmTareasMode) cargarTareasCRM(_crmCurrentFilter);
                         // Refrescar el modal
                         crmTaskVerDetalle(_crmCurrentTaskId);
+                        // Refrescar tareas inline del widget oportunidad
+                        if (_crmTaskLastData && _crmTaskLastData.oportunidad_id && typeof window.woCargarTareasInline === 'function') {
+                            window.woCargarTareasInline(_crmTaskLastData.oportunidad_id);
+                        }
                     } else {
                         showToast(data.error || 'Error al reabrir la tarea', 'error');
                     }
