@@ -780,7 +780,7 @@
         }
 
         // ── Tareas de oportunidad (tab completo) ──
-        function woCargarTareasOpp(oppId) {
+        window.woCargarTareasOpp = function woCargarTareasOpp(oppId) {
             var container = document.getElementById('woTareasContainer');
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;">Cargando tareas...</div>';
@@ -824,7 +824,7 @@
                 .catch(function () {
                     container.innerHTML = '<div style="text-align:center;padding:2rem;color:#DC2626;font-size:0.85rem;">Error al cargar tareas.</div>';
                 });
-        }
+        };
 
         window.woCrearTareaOpp = function () {
             if (typeof crmTaskAbrirCrear === 'function') {

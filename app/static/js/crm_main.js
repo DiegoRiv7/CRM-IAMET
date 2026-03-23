@@ -2730,6 +2730,9 @@
                     // Change Negociacion -> Crear
                     if (btnNeg) btnNeg.textContent = 'Crear';
 
+                    // Invalidar cache para siempre cargar datos frescos al entrar
+                    _crmTareasCache = {};
+                    _tareasPollHash = '';
                     cargarTareasCRM();
                 });
             }
@@ -2798,8 +2801,8 @@
             cargarTareasCRM(_crmCurrentFilter);
         }
 
-        // ── Polling ligero: detectar tareas nuevas de grupo cada 15s ──
-        var _tareasPollCount = 0;
+        // ── Polling ligero: detectar tareas nuevas/cambiadas de grupo cada 15s ──
+        var _tareasPollHash = '';
         setInterval(function() {
             // Solo si estamos en vista de tareas
             if (!window._crmTareasMode) return;
@@ -2807,13 +2810,15 @@
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.success && Array.isArray(data.tareas)) {
-                        var nuevoCount = data.tareas.length;
-                        if (_tareasPollCount > 0 && nuevoCount !== _tareasPollCount) {
+                        // Comparar por IDs + estados para detectar cualquier cambio
+                        var nuevoHash = data.tareas.map(function(t) { return t.id + ':' + t.estado; }).join(',');
+                        if (_tareasPollHash && nuevoHash !== _tareasPollHash) {
                             _crmTareasCache = {};
                             _crmAllTareas = data.tareas;
+                            _actualizarDropdownResponsables(data.tareas);
                             renderTareasCRM(_crmCurrentFilter);
                         }
-                        _tareasPollCount = nuevoCount;
+                        _tareasPollHash = nuevoHash;
                     }
                 }).catch(function(){});
         }, 15000);
@@ -3732,6 +3737,16 @@
             var modal = document.getElementById('crmTaskDetailModal');
             if (modal) modal.classList.remove('active');
             document.body.style.overflow = '';
+            // Refrescar widget oportunidad al cerrar si la tarea tenia oportunidad
+            if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {
+                var oppId = _crmTaskLastData.oportunidad_id;
+                if (typeof window.woCargarTareasInline === 'function') {
+                    window.woCargarTareasInline(oppId);
+                }
+                if (typeof window.woCargarTareasOpp === 'function') {
+                    window.woCargarTareasOpp(oppId);
+                }
+            }
             _crmCurrentTaskId = null;
             if (_crmTimerInterval) { clearInterval(_crmTimerInterval); _crmTimerInterval = null; }
             // Limpiar archivos pendientes del comentario
@@ -3787,9 +3802,15 @@
                             _crmAllTareas[idx].estado = 'completada';
                             if (window._crmTareasMode) renderTareasCRM(_crmCurrentFilter);
                         }
-                        // Refrescar tareas inline del widget oportunidad si está abierto
-                        if (_crmTaskLastData && _crmTaskLastData.oportunidad_id && typeof window.woCargarTareasInline === 'function') {
-                            window.woCargarTareasInline(_crmTaskLastData.oportunidad_id);
+                        // Refrescar tareas inline y tab completo del widget oportunidad si está abierto
+                        if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {
+                            var oppId = _crmTaskLastData.oportunidad_id;
+                            if (typeof window.woCargarTareasInline === 'function') {
+                                window.woCargarTareasInline(oppId);
+                            }
+                            if (typeof window.woCargarTareasOpp === 'function') {
+                                window.woCargarTareasOpp(oppId);
+                            }
                         }
                     } else {
                         if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
@@ -3833,9 +3854,15 @@
                         if (window._crmTareasMode) cargarTareasCRM(_crmCurrentFilter);
                         // Refrescar el modal
                         crmTaskVerDetalle(_crmCurrentTaskId);
-                        // Refrescar tareas inline del widget oportunidad
-                        if (_crmTaskLastData && _crmTaskLastData.oportunidad_id && typeof window.woCargarTareasInline === 'function') {
-                            window.woCargarTareasInline(_crmTaskLastData.oportunidad_id);
+                        // Refrescar tareas inline y tab completo del widget oportunidad
+                        if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {
+                            var oppId = _crmTaskLastData.oportunidad_id;
+                            if (typeof window.woCargarTareasInline === 'function') {
+                                window.woCargarTareasInline(oppId);
+                            }
+                            if (typeof window.woCargarTareasOpp === 'function') {
+                                window.woCargarTareasOpp(oppId);
+                            }
                         }
                     } else {
                         showToast(data.error || 'Error al reabrir la tarea', 'error');
