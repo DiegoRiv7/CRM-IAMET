@@ -215,6 +215,9 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 ### FIX - tares
 - Ahora sin necesidad de recargar la pagina se pueden ver las tareas completadas y las tareas pendientes.
 
+### MEJORA - drive
+- Ahora se pueden agregar multiples archivos al drive al mismo tiempo
+- Ahora sale que tipo de archivo es en el drive 
 
 ## Cómo usar este archivo
 
