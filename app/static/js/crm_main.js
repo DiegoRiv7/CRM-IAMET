@@ -1198,7 +1198,7 @@
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
                 // Restaurar z-index del overlay (puede haberse elevado al abrir desde tarea)
-                detalleOverlay.style.zIndex = '';
+                detalleOverlay.classList.remove('z-elevated');
                 _crmTableDirty = false;
                 refreshCrmTable();
             }
@@ -3737,7 +3737,7 @@
 
         function crmTaskCerrarModal() {
             var modal = document.getElementById('crmTaskDetailModal');
-            if (modal) modal.classList.remove('active');
+            if (modal) { modal.classList.remove('active'); modal.classList.remove('z-elevated'); }
             document.body.style.overflow = '';
             // Refrescar widget oportunidad al cerrar si la tarea tenia oportunidad
             if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {
@@ -3876,18 +3876,18 @@
         // ── Abrir oportunidad desde tarea (sin cerrar el modal de tarea) ──
         function crmTaskAbrirOportunidad() {
             if (!_crmTaskCurrentOppId) return;
-            // Elevar el overlay de oportunidad por encima del modal de tarea (10300)
+            // Elevar el overlay de oportunidad por encima del modal de tarea (CAPA 4)
             var dl = document.getElementById('widgetDetalle');
-            if (dl) dl.style.zIndex = '10350';
+            if (dl) dl.classList.add('z-elevated');
             if (typeof openDetalle === 'function') openDetalle(_crmTaskCurrentOppId);
         }
 
         // ── Abrir drive desde tarea ──
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
-            // Elevar drive por encima del modal de tarea (10300)
+            // Elevar drive por encima del modal de tarea (CAPA 4)
             var drv = document.getElementById('widgetOppDrive');
-            if (drv) drv.style.zIndex = '10350';
+            if (drv) drv.classList.add('z-elevated');
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
             if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
         }

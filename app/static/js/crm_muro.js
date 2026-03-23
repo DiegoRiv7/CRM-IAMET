@@ -11,7 +11,7 @@
     window.getCsrf = getCsrf;
 
     window.muroAbrir = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('active'); ov.classList.remove('closing'); muroCargar(); };
-    window.muroCerrar = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('closing'); setTimeout(function () { ov.classList.remove('active', 'closing'); }, 220); var btn = $m('btnMuro'); if (btn) btn.classList.remove('active'); };
+    window.muroCerrar = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('closing'); setTimeout(function () { ov.classList.remove('active', 'closing', 'z-elevated'); }, 220); var btn = $m('btnMuro'); if (btn) btn.classList.remove('active'); };
 
     document.addEventListener('DOMContentLoaded', function () {
         var ov = $m('widgetMuro');

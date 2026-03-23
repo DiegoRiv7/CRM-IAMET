@@ -1,5 +1,5 @@
 <!-- ═══ WIDGET: CALENDARIO OVERLAY MASTER ═══ -->
-<div class="widget-overlay" id="widgetCalendarioMaster" style="z-index:10005;display:none;">
+<div class="widget-overlay" id="widgetCalendarioMaster" style="z-index:10100;display:none;"><!-- CAPA 1 -->
     <div style="width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.85);overflow:hidden;">
         <style>
             /* ─── FullCalendar base ─── */
@@ -209,7 +209,7 @@
 </div>
 
 <!-- ═══ WIDGET: CREAR ACTIVIDAD GLOBAL ═══ -->
-<div class="widget-overlay" id="widgetGlobalCrearActividad" style="z-index: 10020; display: none;">
+<div class="widget-overlay" id="widgetGlobalCrearActividad" style="z-index:10200; display:none;"><!-- CAPA 2 -->
     <div class="widget-card widget-card-md"
         style="width: 550px; max-width: 95vw; background: #fff; border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
         <div style="padding: 1.5rem; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center;">
@@ -270,7 +270,7 @@
 </div>
 
 <!-- ═══ WIDGET: CONFIRMAR ELIMINACIÓN ═══ -->
-<div class="widget-overlay" id="widgetConfirmarEliminar" style="z-index: 10030; display: none;">
+<div class="widget-overlay" id="widgetConfirmarEliminar" style="z-index:10500; display:none;"><!-- CAPA 5 -->
     <div style="background:#fff; border-radius:16px; padding:2rem; width:380px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:1.25rem;">
         <div style="display:flex; align-items:center; gap:0.75rem;">
             <div style="width:40px;height:40px;border-radius:50%;background:#FFF0F0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -447,7 +447,9 @@
     };
 
     window.calendarioCerrar = function () {
-        document.getElementById('widgetCalendarioMaster').style.display = 'none';
+        var calW = document.getElementById('widgetCalendarioMaster');
+        calW.style.display = 'none';
+        calW.classList.remove('z-elevated');
         var _sy = parseInt(document.body.dataset.calScrollY || '0');
         document.body.style.position = '';
         document.body.style.top = '';

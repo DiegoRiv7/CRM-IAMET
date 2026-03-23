@@ -1,5 +1,5 @@
 <!-- ═══ WIDGET: NOTIFICACIONES v2 — Centro de Comando ═══ -->
-<div class="widget-overlay" id="widgetNotificaciones" style="z-index:10210;">
+<div class="widget-overlay" id="widgetNotificaciones" style="z-index:10300;"><!-- CAPA 3 -->
     <div class="notif-v2-shell">
 
         <!-- ── Header ── -->
@@ -23,7 +23,7 @@
                     Marcar todo como leído
                 </button>
                 <button class="notif-v2-btn-close"
-                    onclick="document.getElementById('widgetNotificaciones').classList.remove('active'); document.body.style.overflow='auto'; var _rz=[['widgetDetalle','10100'],['widgetOppConversacion','10160'],['widgetOppVerActividad','10150'],['widgetMuro','10200'],['widgetCalendarioMaster','10005']]; _rz.forEach(function(p){var e=document.getElementById(p[0]);if(e)e.style.zIndex=p[1];});">
+                    onclick="document.getElementById('widgetNotificaciones').classList.remove('active'); document.body.style.overflow='auto'; document.querySelectorAll('.z-elevated').forEach(function(el){el.classList.remove('z-elevated');});">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
@@ -90,7 +90,7 @@
 </div>
 
 <!-- macOS Style Toasts Container -->
-<div id="macostToastContainer" style="position:fixed; top:20px; right:20px; z-index:10600; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
+<div id="macostToastContainer" style="position:fixed; top:20px; right:20px; z-index:10800; /* CAPA TOP */ display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
 
 <style>
 /* ═══ macOS Toasts ═══ */
@@ -856,10 +856,10 @@
         const tiposActividad = ['actividad_por_vencer', 'actividad_vencida'];
         const tiposTareaOpp = ['tarea_opp_asignada', 'tarea_opp_comentario'];
 
-        // Elevar widgets para que se abran ENCIMA de notificaciones (10210)
+        // Elevar widgets para que se abran ENCIMA de notificaciones (CAPA 3)
         function _elevarWidget(id) {
             var el = document.getElementById(id);
-            if (el) el.style.zIndex = '10450';
+            if (el) el.classList.add('z-elevated');
         }
 
         if (tiposActividad.includes(tipo) && typeof window.calendarioAbrir === 'function') {

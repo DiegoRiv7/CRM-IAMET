@@ -1,3 +1,41 @@
+/* ═══════════════════════════════════════════════════════════════════
+ * SISTEMA DE Z-INDEX POR CAPAS — Referencia definitiva
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ * CAPA 1 (10100) — Widgets principales (se abren desde topbar/tabla)
+ *   widgetCalendarioMaster, widgetMuro, widgetMail, widgetDetalle,
+ *   widgetNegociacion, widgetCotizador, widgetClienteOportunidades
+ *
+ * CAPA 2 (10200) — Sub-widgets (se abren desde un widget de Capa 1)
+ *   widgetOppConversacion, widgetOppVerActividad, widgetTodasTareas,
+ *   widgetOppCrearActividad, widgetOppDrive, widgetGlobalCrearActividad
+ *
+ * CAPA 3 (10300) — Paneles flotantes (se superponen a Capa 1 y 2)
+ *   widgetNotificaciones, widgetGrupo (grupo-overlay),
+ *   crm-create-task-overlay
+ *
+ * CAPA 4 (10400) — Modal de tarea detalle
+ *   crm-task-modal-overlay (crmTaskDetailModal)
+ *
+ * CAPA 5 (10500) — Dialogs y confirmaciones modales
+ *   widgetOppDialog, widgetConfirmTipo, widgetConfirmarEliminar,
+ *   muroWidgetEliminar, muroWidgetEditar
+ *
+ * CAPA ELEVADA (10700) — .z-elevated
+ *   Clase temporal para widgets que se abren DESDE DENTRO de otro.
+ *   Ejemplo: oportunidad abierta desde modal de tarea, calendario
+ *   abierto desde notificaciones. Se elimina al cerrar el widget.
+ *
+ * CAPA TOP (10800) — Toasts y alertas transitorias
+ *   macostToastContainer
+ *
+ * REGLA: nunca hardcodear style.zIndex en JS. Usar la clase
+ * .z-elevated cuando un widget se abre desde otro contexto,
+ * y quitarla al cerrar.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+    .z-elevated { z-index: 10700 !important; }
+
     .main-content.container {
         max-width: none !important;
         margin: 0 !important;
@@ -2771,12 +2809,12 @@
         left: 0;
         width: 100vw;
         height: 100vh;
-        /* Higher than .grupo-overlay (10250) so it shows above the group chat */
+        /* CAPA 4 — Modal de tarea detalle */
         background: rgba(0, 0, 0, 0.4);
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 10300;
+        z-index: 10400;
         padding: 1rem;
         backdrop-filter: blur(4px);
     }
@@ -3189,7 +3227,7 @@
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 10210;
+        z-index: 10300;
         padding: 1rem;
         backdrop-filter: blur(4px);
     }

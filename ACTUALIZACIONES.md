@@ -199,6 +199,23 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - Ahora los supervisores de grupo pueden ver las oportunidades de las personas que están en su grupo.
 - Los usuarios que pertenecen a un grupo pueden ver las oportunidades de su supervisor.
 
+
+## [2026-03-23] — grupos de trabajo
+
+
+### MEJORA 
+- Se mejoro la colaboración entre los miebors del grupo, ahora todos los miebros del grupo pueden ver las actividades, tareas y oportunidades de otros miebros y cerrar tareas y actividades de otros.
+- Los supervisores de los grupos pueden quitar y agregar usaurios.
+
+### NUEVO - chat grupo de trabajo
+- Se creó un chat para cada grupo de trabajo, donde los miebros del grupo pueden comunicarse entre sí.
+- Cuando un miebro del grupo crea una oportunidad, se le notifica a todos los miebros del grupo.
+- Cuando un miebro del grupo cierra una oportunidad, se le notifica a todos los miebros del grupo.
+
+### FIX - tares
+- Ahora sin necesidad de recargar la pagina se pueden ver las tareas completadas y las tareas pendientes.
+
+
 ## Cómo usar este archivo
 
 **Para generar un reporte de cambios recientes:**
