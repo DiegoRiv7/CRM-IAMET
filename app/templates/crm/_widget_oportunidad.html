@@ -683,7 +683,7 @@
 
         window.woCerrarGestorDrive = function () {
             var w = document.getElementById('widgetOppDrive');
-            if (w) { w.style.display = 'none'; w.classList.remove('z-elevated'); }
+            if (w) { w.style.display = 'none'; w.classList.remove('z-elevated', 'z-elevated-top'); }
         };
 
         window.woAbrirGestorConversacion = function () {
@@ -1066,7 +1066,7 @@
 
         window.woCerrarGestorConversacion = function () {
             var w = document.getElementById('widgetOppConversacion');
-            if (w) { w.style.display = 'none'; w.classList.remove('z-elevated'); }
+            if (w) { w.style.display = 'none'; w.classList.remove('z-elevated', 'z-elevated-top'); }
         };
 
         var _woConvReplyToId = null;

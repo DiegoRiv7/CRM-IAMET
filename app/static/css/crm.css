@@ -23,18 +23,21 @@
  *
  * CAPA ELEVADA (10700) — .z-elevated
  *   Clase temporal para widgets que se abren DESDE DENTRO de otro.
- *   Ejemplo: oportunidad abierta desde modal de tarea, calendario
- *   abierto desde notificaciones. Se elimina al cerrar el widget.
+ *   Ejemplo: tarea abierta desde chat de grupo, calendario desde notificaciones.
+ *
+ * CAPA ELEVADA-TOP (10750) — .z-elevated-top
+ *   Para widgets abiertos desde un widget YA elevado.
+ *   Ejemplo: drive abierto desde tarea que fue abierta desde chat de grupo.
  *
  * CAPA TOP (10800) — Toasts y alertas transitorias
  *   macostToastContainer
  *
- * REGLA: nunca hardcodear style.zIndex en JS. Usar la clase
- * .z-elevated cuando un widget se abre desde otro contexto,
- * y quitarla al cerrar.
+ * REGLA: nunca hardcodear style.zIndex en JS. Usar .z-elevated
+ * o .z-elevated-top y quitarlas al cerrar.
  * ═══════════════════════════════════════════════════════════════════ */
 
     .z-elevated { z-index: 10700 !important; }
+    .z-elevated-top { z-index: 10750 !important; }
 
     .main-content.container {
         max-width: none !important;

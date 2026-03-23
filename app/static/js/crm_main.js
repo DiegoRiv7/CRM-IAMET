@@ -1198,7 +1198,7 @@
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
                 // Restaurar z-index del overlay (puede haberse elevado al abrir desde tarea)
-                detalleOverlay.classList.remove('z-elevated');
+                detalleOverlay.classList.remove('z-elevated', 'z-elevated-top');
                 _crmTableDirty = false;
                 refreshCrmTable();
             }
@@ -3876,18 +3876,18 @@
         // ── Abrir oportunidad desde tarea (sin cerrar el modal de tarea) ──
         function crmTaskAbrirOportunidad() {
             if (!_crmTaskCurrentOppId) return;
-            // Elevar el overlay de oportunidad por encima del modal de tarea (CAPA 4)
+            // Elevar por encima del modal de tarea (puede ser z-elevated o CAPA 4)
             var dl = document.getElementById('widgetDetalle');
-            if (dl) dl.classList.add('z-elevated');
+            if (dl) { dl.classList.add('z-elevated'); dl.classList.add('z-elevated-top'); }
             if (typeof openDetalle === 'function') openDetalle(_crmTaskCurrentOppId);
         }
 
         // ── Abrir drive desde tarea ──
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
-            // Elevar drive por encima del modal de tarea (CAPA 4)
+            // Elevar por encima del modal de tarea (puede ser z-elevated o CAPA 4)
             var drv = document.getElementById('widgetOppDrive');
-            if (drv) drv.classList.add('z-elevated');
+            if (drv) { drv.classList.add('z-elevated'); drv.classList.add('z-elevated-top'); }
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
             if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
         }
