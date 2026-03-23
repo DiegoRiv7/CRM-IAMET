@@ -109,7 +109,7 @@ body { background:#F5F5F7 !important; }
 .nov-toggle-btn:active   { transform:scale(0.97); }
 .nov-hint { font-size:0.74rem; color:#8E8E93; max-width:260px; line-height:1.5; }
 
-/* ── FILTER PILLS BAR ── */
+/* ── NAV BAR (volver + filtros tipo) ── */
 .nov-filter-bar {
     background:#fff;
     border-bottom:1px solid #E5E5EA;
@@ -144,22 +144,57 @@ body { background:#F5F5F7 !important; }
     transform:scale(1.02);
 }
 .nov-pill.active.p-todos   { background:#1D1D1F; }
-.nov-pill.active.p-crm     { background:#007AFF; }
-.nov-pill.active.p-tareas  { background:#5856D6; }
 .nov-pill.active.p-nuevo   { background:#007AFF; }
 .nov-pill.active.p-mejoras { background:#34C759; }
-.nov-pill.active.p-fixes      { background:#FF9500; }
-.nov-pill.active.p-calendario { background:#FF9500; }
-.nov-pill.active.p-correo     { background:#007AFF; }
-.nov-pill.active.p-grupos     { background:#34C759; }
-.nov-pill.active.p-drive      { background:#8E8E93; }
+.nov-pill.active.p-fixes   { background:#FF9500; }
 
 .nov-pill-dot {
     width:7px; height:7px; border-radius:50%; flex-shrink:0;
 }
 
+/* ── DATE BAR ── */
+.nov-date-bar {
+    background:#F5F5F7;
+    padding:20px 40px 0;
+    display:flex;
+    align-items:stretch;
+    gap:10px;
+    flex-wrap:wrap;
+    max-width:1120px;
+    margin:0 auto;
+}
+.nov-date-btn {
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:12px 20px;
+    border-radius:14px;
+    background:#fff;
+    border:1.5px solid #E5E5EA;
+    cursor:pointer;
+    transition:all 0.18s;
+    font-family:inherit;
+    min-width:100px;
+}
+.nov-date-btn:hover { border-color:#D1D1D6; background:#EBEBF0; }
+.nov-date-btn.active {
+    border-color:#007AFF;
+    background:rgba(0,122,255,0.06);
+    box-shadow:0 2px 8px rgba(0,122,255,0.12);
+}
+.nov-date-btn .nov-date-day {
+    font-size:1.1rem; font-weight:800; color:#1D1D1F; letter-spacing:-0.02em;
+}
+.nov-date-btn .nov-date-month {
+    font-size:0.68rem; font-weight:600; color:#8E8E93; text-transform:uppercase; letter-spacing:0.05em;
+}
+.nov-date-btn.active .nov-date-day { color:#007AFF; }
+.nov-date-btn.active .nov-date-month { color:#007AFF; }
+.nov-date-btn .nov-date-count {
+    font-size:0.62rem; font-weight:700; color:#8E8E93; margin-top:2px;
+}
+.nov-date-btn.active .nov-date-count { color:#007AFF; }
+
 /* ── SECTION HEADER ── */
-.nov-section-header { background:#F5F5F7; padding:52px 0 0; }
+.nov-section-header { background:#F5F5F7; padding:32px 0 0; }
 .nov-section-header-inner {
     max-width:1120px; margin:0 auto; padding:0 40px 26px;
     border-bottom:1px solid #D2D2D7;
@@ -168,11 +203,6 @@ body { background:#F5F5F7 !important; }
     font-size:0.7rem; font-weight:700; letter-spacing:0.12em;
     text-transform:uppercase; color:#007AFF; margin-bottom:6px;
 }
-.nov-section-overline.tareas     { color:#5856D6; }
-.nov-section-overline.calendario { color:#FF9500; }
-.nov-section-overline.correo     { color:#007AFF; }
-.nov-section-overline.grupos     { color:#34C759; }
-.nov-section-overline.drive      { color:#8E8E93; }
 .nov-section-title {
     font-size:2.2rem; font-weight:800; letter-spacing:-0.03em; color:#1D1D1F; margin:0 0 4px;
 }
@@ -249,12 +279,16 @@ body { background:#F5F5F7 !important; }
     padding:16px; border-left:1px solid rgba(0,0,0,0.05);
 }
 
-/* ── Empty state cuando filtro no tiene resultados ── */
+/* ── Empty state ── */
 .nov-empty {
     display:none; text-align:center; padding:56px 20px;
     color:#8E8E93; font-size:0.92rem; font-weight:500;
 }
 .nov-empty.show { display:block; }
+
+/* ── Date group wrapper ── */
+.nov-date-group { display:none; }
+.nov-date-group.active { display:block; }
 
 /* ── Footer spacer ── */
 .nov-footer-spacer { height:72px; background:#F5F5F7; }
@@ -281,7 +315,7 @@ body { background:#F5F5F7 !important; }
         <div class="nov-hero-eyebrow">CRM IAMET</div>
         <h1 class="nov-hero-title">Novedades</h1>
         <p class="nov-hero-sub">Historial completo de cambios, mejoras y correcciones del sistema.</p>
-        <div class="nov-chip">
+        <div class="nov-chip" id="novChip">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             Actualizacion — 23 de marzo 2026
         </div>
@@ -309,22 +343,14 @@ body { background:#F5F5F7 !important; }
     </div>
     {% endif %}
 
-    <!-- FILTER PILLS -->
+    <!-- NAV BAR -->
     <div class="nov-filter-bar" id="novFilterBar">
-        <a href="/app/todos/" class="nov-back" id="novBack">
+        <a href="/app/todos/" class="nov-back">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
             Volver al CRM
         </a>
         <span class="nov-filter-label">Filtrar:</span>
-        <button class="nov-pill p-todos active" data-filter="todos" onclick="novFilter(this)">
-            Todos
-        </button>
-        <button class="nov-pill p-crm" data-filter="crm" onclick="novFilter(this)">
-            <span class="nov-pill-dot" style="background:#007AFF;"></span>CRM
-        </button>
-        <button class="nov-pill p-tareas" data-filter="tareas" onclick="novFilter(this)">
-            <span class="nov-pill-dot" style="background:#5856D6;"></span>Tareas
-        </button>
+        <button class="nov-pill p-todos active" data-filter="todos" onclick="novFilter(this)">Todos</button>
         <button class="nov-pill p-nuevo" data-filter="nuevo" onclick="novFilter(this)">
             <span class="nov-pill-dot" style="background:#007AFF;"></span>Nuevo
         </button>
@@ -334,812 +360,728 @@ body { background:#F5F5F7 !important; }
         <button class="nov-pill p-fixes" data-filter="fixes" onclick="novFilter(this)">
             <span class="nov-pill-dot" style="background:#FF9500;"></span>Fixes
         </button>
-        <button class="nov-pill p-calendario" data-filter="calendario" onclick="novFilter(this)">
-            <span class="nov-pill-dot" style="background:#FF9500;"></span>Calendario
+    </div>
+
+    <!-- DATE NAVIGATION -->
+    <div class="nov-date-bar" id="novDateBar">
+        <button class="nov-date-btn active" data-date="2026-03-23" onclick="novSelectDate(this)">
+            <span class="nov-date-day">23</span>
+            <span class="nov-date-month">Mar 2026</span>
+            <span class="nov-date-count">4 cambios</span>
         </button>
-        <button class="nov-pill p-correo" data-filter="correo" onclick="novFilter(this)">
-            <span class="nov-pill-dot" style="background:#007AFF;"></span>Correo
+        <button class="nov-date-btn" data-date="2026-03-20" onclick="novSelectDate(this)">
+            <span class="nov-date-day">20</span>
+            <span class="nov-date-month">Mar 2026</span>
+            <span class="nov-date-count">8 cambios</span>
         </button>
-        <button class="nov-pill p-grupos" data-filter="grupos" onclick="novFilter(this)">
-            <span class="nov-pill-dot" style="background:#34C759;"></span>Grupos
+        <button class="nov-date-btn" data-date="2026-03-19" onclick="novSelectDate(this)">
+            <span class="nov-date-day">19</span>
+            <span class="nov-date-month">Mar 2026</span>
+            <span class="nov-date-count">7 cambios</span>
         </button>
-        <button class="nov-pill p-drive" data-filter="drive" onclick="novFilter(this)">
-            <span class="nov-pill-dot" style="background:#8E8E93;"></span>Drive
+        <button class="nov-date-btn" data-date="2026-03-18" onclick="novSelectDate(this)">
+            <span class="nov-date-day">18</span>
+            <span class="nov-date-month">Mar 2026</span>
+            <span class="nov-date-count">3 cambios</span>
+        </button>
+        <button class="nov-date-btn" data-date="2026-03-17" onclick="novSelectDate(this)">
+            <span class="nov-date-day">17</span>
+            <span class="nov-date-month">Mar 2026</span>
+            <span class="nov-date-count">5 cambios</span>
+        </button>
+        <button class="nov-date-btn" data-date="2026-03-13" onclick="novSelectDate(this)">
+            <span class="nov-date-day">13</span>
+            <span class="nov-date-month">Mar 2026</span>
+            <span class="nov-date-count">10 cambios</span>
         </button>
     </div>
 
-    <!-- ══════════ SECCIÓN GRUPOS DE TRABAJO ══════════ -->
-    <div class="nov-section-header" id="sec-grupos">
-        <div class="nov-section-header-inner">
-            <div class="nov-section-overline grupos">Grupos de Trabajo</div>
-            <div class="nov-section-title">Grupos de Trabajo</div>
-            <div class="nov-section-sub">3 cambios — colaboracion en equipo</div>
+    <!-- ══════════════════════════════════════════════
+         CONTENIDO POR FECHA
+         ══════════════════════════════════════════════ -->
+
+    <!-- ══════════ 23 DE MARZO 2026 ══════════ -->
+    <div class="nov-date-group active" id="date-2026-03-23">
+        <div class="nov-section-header">
+            <div class="nov-section-header-inner">
+                <div class="nov-section-overline">23 de marzo 2026</div>
+                <div class="nov-section-title">Grupos de trabajo y Drive</div>
+                <div class="nov-section-sub">4 cambios</div>
+            </div>
+        </div>
+        <div class="nov-cards-wrap">
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Colaboracion entre miembros del grupo</div>
+                        <div class="nov-card-desc">Todos los miembros del grupo pueden ver las actividades, tareas y oportunidades de otros miembros y cerrar tareas y actividades de otros. Los supervisores pueden quitar y agregar usuarios.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Chat de grupo de trabajo</div>
+                        <div class="nov-card-desc">Cada grupo de trabajo tiene su propio chat. Cuando un miembro crea o cierra una oportunidad, se notifica a todos los miembros del grupo.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Tareas sin recargar</div>
+                        <div class="nov-card-desc">Ahora sin necesidad de recargar la pagina se pueden ver las tareas completadas y las tareas pendientes.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Drive — subida multiple y tipo de archivo</div>
+                        <div class="nov-card-desc">Ahora se pueden agregar multiples archivos al drive al mismo tiempo. El sistema identifica automaticamente el tipo de archivo.</div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
-    <div class="nov-cards-wrap" id="wrap-grupos">
 
-        <div class="nov-card" data-section="grupos" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Grupos de trabajo</div>
-                    <div class="nov-card-desc">Nueva seccion para crear grupos de trabajo y establecer supervisores y personas que trabajaran en conjunto.
-                        <ul>
-                            <li>Los supervisores de grupo pueden ver las oportunidades de las personas en su grupo</li>
-                            <li>Los usuarios que pertenecen a un grupo pueden ver las oportunidades de su supervisor</li>
-                            <li>Los supervisores pueden quitar y agregar usuarios al grupo</li>
-                        </ul>
+    <!-- ══════════ 20 DE MARZO 2026 ══════════ -->
+    <div class="nov-date-group" id="date-2026-03-20">
+        <div class="nov-section-header">
+            <div class="nov-section-header-inner">
+                <div class="nov-section-overline">20 de marzo 2026</div>
+                <div class="nov-section-title">Correo, calendario y mas</div>
+                <div class="nov-section-sub">8 cambios</div>
+            </div>
+        </div>
+        <div class="nov-cards-wrap">
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Panel de respuesta inline — Correo</div>
+                        <div class="nov-card-desc">Estilo macOS Mail: el panel aparece debajo del correo sin ventana separada.
+                            <ul>
+                                <li>Editor enriquecido con negrita, cursiva, subrayado y listas</li>
+                                <li>Boton CC / CCO para agregar copias sin saturar la interfaz</li>
+                                <li>Texto original del correo colapsado al final, expandible con un clic</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="nov-card" data-section="grupos" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Colaboracion entre miembros</div>
-                    <div class="nov-card-desc">Todos los miembros del grupo pueden ver las actividades, tareas y oportunidades de otros miembros y cerrar tareas y actividades de otros.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="grupos" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Chat de grupo de trabajo</div>
-                    <div class="nov-card-desc">Cada grupo de trabajo tiene su propio chat para comunicarse entre si.
-                        <ul>
-                            <li>Cuando un miembro crea una oportunidad, se notifica a todos los miembros del grupo</li>
-                            <li>Cuando un miembro cierra una oportunidad, se notifica a todos los miembros del grupo</li>
-                        </ul>
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Agregar cuenta de correo</div>
+                        <div class="nov-card-desc">Corregido error al presionar el boton "+". Ahora abre el modal de configuracion en modo "Agregar cuenta" con los campos vacios.</div>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </div><!-- /wrap-grupos -->
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Vincular correo a oportunidad</div>
+                        <div class="nov-card-desc">El buscador de oportunidades funciona con busqueda inteligente. Al seleccionar una oportunidad, el correo queda vinculado y se muestra la barra azul sin recargar.</div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- ══════════ SECCIÓN CALENDARIO ══════════ -->
-    <div class="nov-section-header" id="sec-calendario" style="padding-top:24px;">
-        <div class="nov-section-header-inner">
-            <div class="nov-section-overline calendario">Calendario</div>
-            <div class="nov-section-title">Calendario</div>
-            <div class="nov-section-sub">5 cambios en el calendario</div>
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Actividades completadas visibles en calendario</div>
+                        <div class="nov-card-desc">Las actividades y tareas completadas ya no desaparecen del calendario. Quedan con opacidad reducida y tachado en el titulo. Aplica en mes, dia y semana.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Boton "Completar" del calendario</div>
+                        <div class="nov-card-desc">Corregido bug donde el boton dejaba de funcionar tras completar la primera actividad. Ahora siempre se reinicia al abrir el detalle.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Notificaciones rediseñadas</div>
+                        <div class="nov-card-desc">Se rediseno por completo el diseno de las notificaciones para mayor claridad. Sistema estilo mac para nuevas notificaciones sin abrir el panel.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Tareas automaticas</div>
+                        <div class="nov-card-desc">Sistema para crear tareas automaticas segun las etapas de las oportunidades.
+                            <ul>
+                                <li>Cuando un usuario cambia de etapa, se crea una tarea automaticamente</li>
+                                <li>Configurables por el administrador: editar, administrar y eliminar</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Grupos de trabajo</div>
+                        <div class="nov-card-desc">Nueva seccion para crear grupos de trabajo con supervisores y miembros.
+                            <ul>
+                                <li>Los supervisores pueden ver las oportunidades de su grupo</li>
+                                <li>Los miembros pueden ver las oportunidades de su supervisor</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
-    <div class="nov-cards-wrap" id="wrap-calendario">
 
-        <div class="nov-card" data-section="calendario" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Rediseno del calendario</div>
-                    <div class="nov-card-desc">
-                        <ul>
-                            <li>Se pueden arrastrar actividades para reagendarlas</li>
-                            <li>El widget es mas grande para ver el mes completo sin scroll</li>
-                            <li>Muestra 3 indicadores: actividades, tareas y efectividad del mes</li>
-                        </ul>
+    <!-- ══════════ 19 DE MARZO 2026 ══════════ -->
+    <div class="nov-date-group" id="date-2026-03-19">
+        <div class="nov-section-header">
+            <div class="nov-section-header-inner">
+                <div class="nov-section-overline">19 de marzo 2026</div>
+                <div class="nov-section-title">Calendario y tareas</div>
+                <div class="nov-section-sub">7 cambios</div>
+            </div>
+        </div>
+        <div class="nov-cards-wrap">
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Rediseno del calendario</div>
+                        <div class="nov-card-desc">
+                            <ul>
+                                <li>Se pueden arrastrar actividades para reagendarlas</li>
+                                <li>Widget mas grande para ver el mes completo sin scroll</li>
+                                <li>3 indicadores: actividades, tareas y efectividad del mes</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="nov-card" data-section="calendario" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Vista diaria mejorada</div>
-                    <div class="nov-card-desc">
-                        <ul>
-                            <li>Las tareas aparecen como marcadores compactos alineados a la derecha del timeline</li>
-                            <li>Las actividades solapadas se dividen en columnas estilo Google Calendar</li>
-                            <li>Colores consistentes: azul para actividades con oportunidad, naranja para tareas</li>
-                        </ul>
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Vista diaria mejorada</div>
+                        <div class="nov-card-desc">Las tareas aparecen como marcadores compactos. Las actividades solapadas se dividen en columnas estilo Google Calendar. Colores consistentes: azul actividades, naranja tareas.</div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="nov-card" data-section="calendario" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Panel derecho del calendario</div>
-                    <div class="nov-card-desc">Las actividades muestran botones "Ver Detalle" y "Completar" directamente sin abrir el widget. Las tareas muestran "Abrir Tarea" que abre directamente el widget de tarea.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="calendario" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Actividades completadas visibles</div>
-                    <div class="nov-card-desc">Las actividades y tareas completadas ya no desaparecen del calendario. Quedan visibles con opacidad reducida y tachado en el titulo. Aplica en las tres vistas: mes, dia y semana.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="calendario" data-type="fix">
-            <div class="nov-card-bar fix"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap fix">
-                    <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag fix">Fix</span>
-                    <div class="nov-card-title">Correcciones de calendario</div>
-                    <div class="nov-card-desc">
-                        <ul>
-                            <li>Se arreglo que las tareas no aparecian en el calendario</li>
-                            <li>Se arreglo la descripcion y oportunidades de algunas actividades</li>
-                            <li>Se pueden agendar actividades desde el calendario sin error</li>
-                            <li>Los widgets ya no abren detras del widget de oportunidad</li>
-                            <li>Se arreglo el boton "Completar" que dejaba de funcionar</li>
-                        </ul>
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Panel derecho del calendario</div>
+                        <div class="nov-card-desc">Las actividades muestran botones "Ver Detalle" y "Completar" directamente. Las tareas muestran "Abrir Tarea" que abre el widget de tarea.</div>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </div><!-- /wrap-calendario -->
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Correcciones de calendario</div>
+                        <div class="nov-card-desc">
+                            <ul>
+                                <li>Se arreglo que las tareas no aparecian</li>
+                                <li>Se arreglo la descripcion y oportunidades de algunas actividades</li>
+                                <li>Los widgets ya no abren detras del widget de oportunidad</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- ══════════ SECCIÓN CORREO ══════════ -->
-    <div class="nov-section-header" id="sec-correo" style="padding-top:24px;">
-        <div class="nov-section-header-inner">
-            <div class="nov-section-overline correo">Correo</div>
-            <div class="nov-section-title">Modulo de Correo</div>
-            <div class="nov-section-sub">3 cambios en el correo</div>
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Drive — no se podian borrar archivos</div>
+                        <div class="nov-card-desc">Se arreglo que no se podian borrar archivos del drive.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Reabrir tareas cerradas</div>
+                        <div class="nov-card-desc">Se permite reabrir tareas ya cerradas en caso que quieran volver a darle seguimiento. Al reabrir, se envia un mensaje al administrador explicando el porque.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Calendario — vista diaria: tareas y actividades</div>
+                        <div class="nov-card-desc">Las tareas ya no se muestran como bloques largos: aparecen como marcadores compactos. Los colores son consistentes: azul actividades con oportunidad, naranja tareas, gris sin oportunidad.</div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
-    <div class="nov-cards-wrap" id="wrap-correo">
 
-        <div class="nov-card" data-section="correo" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Panel de respuesta inline</div>
-                    <div class="nov-card-desc">Estilo macOS Mail: el panel aparece debajo del correo sin ventana separada.
-                        <ul>
-                            <li>Editor enriquecido con negrita, cursiva, subrayado y listas</li>
-                            <li>Boton CC / CCO para agregar copias sin saturar la interfaz</li>
-                            <li>Texto original del correo colapsado al final, expandible con un clic</li>
-                        </ul>
+    <!-- ══════════ 18 DE MARZO 2026 ══════════ -->
+    <div class="nov-date-group" id="date-2026-03-18">
+        <div class="nov-section-header">
+            <div class="nov-section-header-inner">
+                <div class="nov-section-overline">18 de marzo 2026</div>
+                <div class="nov-section-title">Formularios y tareas</div>
+                <div class="nov-section-sub">3 cambios</div>
+            </div>
+        </div>
+        <div class="nov-cards-wrap">
+
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Formulario de negociacion</div>
+                        <div class="nov-card-desc">
+                            <ul>
+                                <li>Mejor UX: el nombre de la oportunidad es el primer campo</li>
+                                <li>Se pueden crear clientes y contactos nuevos directo del formulario</li>
+                                <li>Diseno mejorado</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="nov-card" data-section="correo" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Vincular correo a oportunidad</div>
-                    <div class="nov-card-desc">El buscador de oportunidades en el panel "Vincular a Oportunidad" ahora funciona. Al seleccionar una oportunidad, el correo queda vinculado y se muestra la barra azul sin recargar.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="correo" data-type="fix">
-            <div class="nov-card-bar fix"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap fix">
-                    <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag fix">Fix</span>
-                    <div class="nov-card-title">Agregar cuenta de correo</div>
-                    <div class="nov-card-desc">Corregido error al presionar el boton "+". Ahora abre el modal de configuracion en modo "Agregar cuenta" con los campos vacios.</div>
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Cotizacion rapida</div>
+                        <div class="nov-card-desc">Diseno mejorado del widget. Al crear cotizacion despliega el formulario con campos de oportunidad y cliente ya llenados.</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-    </div><!-- /wrap-correo -->
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Optimizacion de tareas</div>
+                        <div class="nov-card-desc">Se ajusto la logica de tareas activas para evitar tiempos de carga. Se realizo un sistema de paginacion para tareas completadas y la seccion de todas las tareas.</div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- ══════════ SECCIÓN DRIVE ══════════ -->
-    <div class="nov-section-header" id="sec-drive" style="padding-top:24px;">
-        <div class="nov-section-header-inner">
-            <div class="nov-section-overline drive">Drive</div>
-            <div class="nov-section-title">Drive de Archivos</div>
-            <div class="nov-section-sub">3 cambios en el drive</div>
         </div>
     </div>
-    <div class="nov-cards-wrap" id="wrap-drive">
 
-        <div class="nov-card" data-section="drive" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Subida multiple de archivos</div>
-                    <div class="nov-card-desc">Ahora se pueden agregar multiples archivos al drive al mismo tiempo.</div>
-                </div>
+    <!-- ══════════ 17 DE MARZO 2026 ══════════ -->
+    <div class="nov-date-group" id="date-2026-03-17">
+        <div class="nov-section-header">
+            <div class="nov-section-header-inner">
+                <div class="nov-section-overline">17 de marzo 2026</div>
+                <div class="nov-section-title">Clientes, novedades y correcciones</div>
+                <div class="nov-section-sub">5 cambios</div>
             </div>
         </div>
+        <div class="nov-cards-wrap">
 
-        <div class="nov-card" data-section="drive" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Tipo de archivo visible</div>
-                    <div class="nov-card-desc">Ahora sale que tipo de archivo es en el drive para identificar rapidamente el contenido de cada archivo.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="drive" data-type="fix">
-            <div class="nov-card-bar fix"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap fix">
-                    <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag fix">Fix</span>
-                    <div class="nov-card-title">Correcciones del drive</div>
-                    <div class="nov-card-desc">
-                        <ul>
-                            <li>Se arreglo que no se podian borrar archivos del drive</li>
-                            <li>Se arreglo que los mensajes de editar/eliminar salian detras del widget</li>
-                            <li>Se arreglo archivos que no se podian ver porque el sistema los buscaba en Bitrix</li>
-                        </ul>
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Seccion Clientes en CRM</div>
+                        <div class="nov-card-desc">Se combinaron cotizado, cobrado y facturado en una sola seccion.
+                            <ul>
+                                <li>Estatus de ventas por vendedor</li>
+                                <li>Metas por cliente y marca</li>
+                                <li>KPIs inteligentes</li>
+                                <li>Metas mensuales configurables: oportunidades, cotizaciones, cobrado, facturado</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </div><!-- /wrap-drive -->
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Seccion de Novedades</div>
+                        <div class="nov-card-desc">Se incluyo esta seccion donde se registran todas las novedades, mejoras y fixes del sistema. Incluye filtros para ver solo lo relevante.</div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- ══════════ SECCIÓN CRM ══════════ -->
-    <div class="nov-section-header" id="sec-crm" style="padding-top:24px;">
-        <div class="nov-section-header-inner">
-            <div class="nov-section-overline">CRM</div>
-            <div class="nov-section-title">Oportunidades y CRM</div>
-            <div class="nov-section-sub">13 cambios en el modulo principal</div>
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Muro — enviar fotos</div>
+                        <div class="nov-card-desc">Ya se pueden enviar fotos en los mensajes del muro.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Calendario — agendar actividades</div>
+                        <div class="nov-card-desc">Ya se pueden agendar actividades desde el calendario sin error. La hora de inicio es la hora seleccionada y la hora de cierre una hora despues.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Drive — correcciones</div>
+                        <div class="nov-card-desc">
+                            <ul>
+                                <li>Se arreglo que los mensajes de editar/eliminar salian detras del widget</li>
+                                <li>Se arreglo archivos que no se podian ver porque el sistema los buscaba en Bitrix</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
-    <div class="nov-cards-wrap" id="wrap-crm">
 
-        <!-- ── Nuevas cards CRM (mar 17-23) ── -->
-        <div class="nov-card" data-section="crm" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    <!-- ══════════ 13 DE MARZO 2026 ══════════ -->
+    <div class="nov-date-group" id="date-2026-03-13">
+        <div class="nov-section-header">
+            <div class="nov-section-header-inner">
+                <div class="nov-section-overline">13 de marzo 2026</div>
+                <div class="nov-section-title">Lanzamiento inicial</div>
+                <div class="nov-section-sub">10 cambios</div>
+            </div>
+        </div>
+        <div class="nov-cards-wrap">
+
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Buscador global</div>
+                        <div class="nov-card-desc">Busca oportunidades, cotizaciones y tareas desde la barra superior.
+                            <ul>
+                                <li>Busca por nombre, PO o numero de factura</li>
+                                <li>Busca cotizaciones por su numero</li>
+                                <li>Busca tareas por nombre</li>
+                                <li>Acceso rapido con <strong>&#8984;K</strong></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Seccion Clientes</div>
-                    <div class="nov-card-desc">Se combinaron las secciones de cotizado, cobrado y facturado en una sola seccion.
-                        <ul>
-                            <li>Muestra estatus de ventas por vendedor en la empresa</li>
-                            <li>Indica como vamos respecto a las metas por cliente y marca</li>
-                            <li>KPIs inteligentes que facilitan la lectura de datos</li>
-                            <li>Metas mensuales configurables por cliente: oportunidades, cotizaciones, cobrado y facturado</li>
-                        </ul>
+                <div class="nov-card-preview">
+                    <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="4" width="112" height="88" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
+                        <rect x="12" y="14" width="96" height="16" rx="8" fill="#F2F2F7"/>
+                        <circle cx="24" cy="22" r="5.5" fill="none" stroke="#007AFF" stroke-width="2"/>
+                        <line x1="28" y1="26" x2="32" y2="30" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="34" y="19.5" width="34" height="5" rx="2.5" fill="#C7C7CC"/>
+                        <rect x="12" y="36" width="10" height="10" rx="3" fill="rgba(0,122,255,0.14)"/>
+                        <rect x="26" y="38" width="50" height="4" rx="2" fill="#1D1D1F" opacity=".75"/>
+                        <rect x="26" y="44" width="32" height="3" rx="1.5" fill="#C7C7CC"/>
+                        <line x1="12" y1="52" x2="108" y2="52" stroke="#F2F2F7" stroke-width="1"/>
+                        <rect x="12" y="57" width="10" height="10" rx="3" fill="rgba(52,199,89,0.14)"/>
+                        <rect x="26" y="59" width="42" height="4" rx="2" fill="#1D1D1F" opacity=".65"/>
+                        <rect x="26" y="65" width="24" height="3" rx="1.5" fill="#C7C7CC"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Tarjeta "Actividad Programada"</div>
+                        <div class="nov-card-desc">Tu proxima actividad pendiente, siempre visible.
+                            <ul>
+                                <li>Muestra nombre, fecha, y si esta vencida aparece en rojo</li>
+                                <li>Haz clic para abrir el detalle y completarla</li>
+                                <li>Si no hay actividades muestra "Sin actividad programada"</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="nov-card" data-section="crm" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linejoin="round"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Seccion de Novedades</div>
-                    <div class="nov-card-desc">Se incluyo esta seccion donde se registran todas las novedades, mejoras y fixes del sistema. Incluye filtros para que los usuarios vean solo las novedades que les importen mas.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="crm" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Formulario de negociacion</div>
-                    <div class="nov-card-desc">
-                        <ul>
-                            <li>Mejor UX: el nombre de la oportunidad ahora es el primer campo que se llena</li>
-                            <li>Se pueden crear clientes nuevos y contactos nuevos directo del formulario</li>
-                            <li>Diseno mejorado</li>
-                        </ul>
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar nuevo"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap nuevo">
+                        <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag nuevo">Nuevo</span>
+                        <div class="nov-card-title">Campo PO y Factura</div>
+                        <div class="nov-card-desc">Los campos PO y factura en el detalle de oportunidades ahora guardan correctamente. Todas las oportunidades importadas de Bitrix ya tienen su PO y factura original.</div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="nov-card" data-section="crm" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Cotizacion rapida</div>
-                    <div class="nov-card-desc">Se mejoro el diseno del widget. Cuando se le da a crear cotizacion, despliega el formulario con los campos de oportunidad y cliente ya llenados.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="crm" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Notificaciones rediseñadas</div>
-                    <div class="nov-card-desc">Se rediseno por completo el diseno de las notificaciones para ordenarlas con mayor claridad. Sistema estilo mac para nuevas notificaciones sin necesidad de abrir el panel.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="crm" data-type="fix">
-            <div class="nov-card-bar fix"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap fix">
-                    <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag fix">Fix</span>
-                    <div class="nov-card-title">Muro — enviar fotos</div>
-                    <div class="nov-card-desc">Ya se pueden enviar fotos en los mensajes del muro.</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Cards CRM antiguas (mar 13) ── -->
-        <div class="nov-card" data-section="crm" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Buscador global</div>
-                    <div class="nov-card-desc">Ahora en la barra superior hay una lupa para buscar cualquier cosa en el sistema.
-                        <ul>
-                            <li>Busca oportunidades por nombre, PO o numero de factura</li>
-                            <li>Busca cotizaciones por su numero</li>
-                            <li>Busca tareas por nombre</li>
-                            <li>Acceso rapido con el atajo <strong>⌘K</strong></li>
-                        </ul>
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar tareas"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap tareas">
+                        <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag tareas">Nuevo</span>
+                        <div class="nov-card-title">Editar fecha limite de tarea</div>
+                        <div class="nov-card-desc">El responsable puede cambiar la fecha limite de su tarea. El administrador recibe notificacion automatica del cambio.</div>
                     </div>
                 </div>
             </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="4" width="112" height="88" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="12" y="14" width="96" height="16" rx="8" fill="#F2F2F7"/>
-                    <circle cx="24" cy="22" r="5.5" fill="none" stroke="#007AFF" stroke-width="2"/>
-                    <line x1="28" y1="26" x2="32" y2="30" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
-                    <rect x="34" y="19.5" width="34" height="5" rx="2.5" fill="#C7C7CC"/>
-                    <rect x="90" y="19" width="16" height="6" rx="3" fill="#E5E5EA"/>
-                    <text x="92" y="23.5" font-size="5" fill="#8E8E93" font-family="sans-serif">⌘K</text>
-                    <rect x="12" y="36" width="10" height="10" rx="3" fill="rgba(0,122,255,0.14)"/>
-                    <rect x="26" y="38" width="50" height="4" rx="2" fill="#1D1D1F" opacity=".75"/>
-                    <rect x="26" y="44" width="32" height="3" rx="1.5" fill="#C7C7CC"/>
-                    <line x1="12" y1="52" x2="108" y2="52" stroke="#F2F2F7" stroke-width="1"/>
-                    <rect x="12" y="57" width="10" height="10" rx="3" fill="rgba(52,199,89,0.14)"/>
-                    <rect x="26" y="59" width="42" height="4" rx="2" fill="#1D1D1F" opacity=".65"/>
-                    <rect x="26" y="65" width="24" height="3" rx="1.5" fill="#C7C7CC"/>
-                    <line x1="12" y1="73" x2="108" y2="73" stroke="#F2F2F7" stroke-width="1"/>
-                    <rect x="12" y="78" width="10" height="10" rx="3" fill="rgba(255,149,0,0.14)"/>
-                    <rect x="26" y="80" width="36" height="4" rx="2" fill="#1D1D1F" opacity=".55"/>
-                </svg>
-            </div>
-        </div>
 
-        <div class="nov-card" data-section="crm" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Tarjeta "Actividad Programada"</div>
-                    <div class="nov-card-desc">Una tarjeta siempre visible que muestra tu proxima actividad pendiente.
-                        <ul>
-                            <li>Muestra nombre, fecha, y si esta vencida aparece en rojo</li>
-                            <li>Haz clic para abrir el detalle y completarla directamente</li>
-                            <li>Si no hay actividades muestra "Sin actividad programada"</li>
-                        </ul>
+            <div class="nov-card" data-type="nuevo">
+                <div class="nov-card-bar tareas"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap tareas">
+                        <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M15 10a3 3 0 1 1-6 0"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag tareas">Nuevo</span>
+                        <div class="nov-card-title">Adjuntos y etiquetas en comentarios de tareas</div>
+                        <div class="nov-card-desc">Se pueden etiquetar usuarios con <strong>@nombre</strong> y subir documentos directamente en los comentarios de las tareas.</div>
                     </div>
                 </div>
             </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="12" width="112" height="72" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="14" y="20" width="36" height="5" rx="2.5" fill="#E5E5EA"/>
-                    <rect x="14" y="30" width="68" height="7" rx="3.5" fill="#1D1D1F" opacity=".8"/>
-                    <rect x="14" y="42" width="46" height="7" rx="3.5" fill="rgba(88,86,214,0.14)"/>
-                    <rect x="18" y="44" width="4" height="3" rx="1" fill="#5856D6"/>
-                    <rect x="25" y="44.5" width="30" height="3" rx="1.5" fill="#5856D6" opacity=".65"/>
-                    <rect x="64" y="42" width="38" height="7" rx="3.5" fill="rgba(255,59,48,0.1)"/>
-                    <rect x="68" y="44" width="26" height="3" rx="1.5" fill="#FF3B30" opacity=".75"/>
-                    <rect x="14" y="66" width="92" height="12" rx="6" fill="#007AFF" opacity=".9"/>
-                    <rect x="36" y="69.5" width="48" height="5" rx="2.5" fill="#fff" opacity=".9"/>
-                </svg>
-            </div>
-        </div>
 
-        <div class="nov-card" data-section="crm" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Campo PO</div>
-                    <div class="nov-card-desc">El campo PO en el detalle de oportunidades ahora guarda correctamente. Todas las oportunidades importadas de Bitrix ya tienen su PO original. Puedes buscarlo desde el buscador global.</div>
-                </div>
-            </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="8" width="112" height="80" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="14" y="18" width="28" height="4.5" rx="2.25" fill="#C7C7CC"/>
-                    <rect x="14" y="26" width="92" height="11" rx="5.5" fill="#F2F2F7" stroke="#D1D1D6" stroke-width="1"/>
-                    <rect x="19" y="29" width="38" height="5" rx="2.5" fill="#007AFF" opacity=".7"/>
-                    <rect x="14" y="44" width="28" height="4.5" rx="2.25" fill="#C7C7CC"/>
-                    <rect x="14" y="52" width="92" height="11" rx="5.5" fill="#F2F2F7" stroke="#007AFF" stroke-width="1.2"/>
-                    <text x="19" y="60" font-size="6" fill="#007AFF" font-family="-apple-system,sans-serif" font-weight="600">PO-2026-0142</text>
-                    <rect x="14" y="70" width="48" height="10" rx="5" fill="#007AFF" opacity=".9"/>
-                    <rect x="20" y="73" width="36" height="4" rx="2" fill="#fff" opacity=".9"/>
-                </svg>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="crm" data-type="nuevo">
-            <div class="nov-card-bar nuevo"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap nuevo">
-                    <svg width="24" height="24" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag nuevo">Nuevo</span>
-                    <div class="nov-card-title">Campo Factura</div>
-                    <div class="nov-card-desc">El campo factura en el detalle de oportunidades ahora guarda correctamente. Las oportunidades importadas de Bitrix ya incluyen su numero de factura original.</div>
-                </div>
-            </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="8" y="10" width="104" height="76" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="18" y="20" width="38" height="5" rx="2.5" fill="#1D1D1F" opacity=".8"/>
-                    <line x1="18" y1="30" x2="102" y2="30" stroke="#E5E5EA" stroke-width="1"/>
-                    <rect x="18" y="36" width="24" height="4" rx="2" fill="#C7C7CC"/>
-                    <rect x="54" y="36" width="48" height="4" rx="2" fill="#1D1D1F" opacity=".6"/>
-                    <rect x="18" y="45" width="24" height="4" rx="2" fill="#C7C7CC"/>
-                    <rect x="54" y="45" width="40" height="4" rx="2" fill="#34C759" opacity=".8"/>
-                    <rect x="18" y="54" width="24" height="4" rx="2" fill="#C7C7CC"/>
-                    <rect x="54" y="54" width="44" height="4" rx="2" fill="#007AFF" opacity=".8"/>
-                    <rect x="18" y="68" width="32" height="10" rx="5" fill="#F2F2F7" stroke="#D1D1D6" stroke-width="1"/>
-                    <rect x="58" y="68" width="44" height="10" rx="5" fill="#007AFF" opacity=".9"/>
-                </svg>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="crm" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Tabla de Oportunidades</div>
-                    <div class="nov-card-desc">
-                        <ul>
-                            <li>Las oportunidades con actividades o tareas vencidas se muestran en rojo y al inicio de la tabla</li>
-                            <li>El widget de una oportunidad no se puede cerrar si no tiene una actividad activa</li>
-                        </ul>
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Drive — hasta 100 MB por archivo</div>
+                        <div class="nov-card-desc">El drive ahora acepta archivos de hasta <strong>100 MB</strong> (antes 2.5 MB). Planos DWG, videos y archivos pesados de ingenieria ya no dan error.</div>
                     </div>
                 </div>
             </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="8" width="112" height="80" rx="12" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="4" y="8" width="112" height="16" rx="12" fill="#F5F5F7"/><rect x="4" y="17" width="112" height="7" fill="#F5F5F7"/>
-                    <rect x="12" y="13" width="20" height="4" rx="2" fill="#C7C7CC"/><rect x="44" y="13" width="14" height="4" rx="2" fill="#C7C7CC"/><rect x="68" y="13" width="14" height="4" rx="2" fill="#C7C7CC"/>
-                    <rect x="4" y="24" width="112" height="14" fill="rgba(255,59,48,0.07)"/>
-                    <rect x="12" y="28" width="4" height="6" rx="2" fill="#FF3B30"/><rect x="20" y="29" width="28" height="4" rx="2" fill="#FF3B30" opacity=".55"/><rect x="60" y="29" width="16" height="4" rx="2" fill="#FF3B30" opacity=".35"/>
-                    <rect x="4" y="38" width="112" height="14" fill="#fff"/><rect x="12" y="42" width="26" height="4" rx="2" fill="#1D1D1F" opacity=".55"/><rect x="60" y="42" width="16" height="4" rx="2" fill="#1D1D1F" opacity=".3"/>
-                    <rect x="4" y="52" width="112" height="14" fill="#F9F9FB"/><rect x="12" y="56" width="20" height="4" rx="2" fill="#1D1D1F" opacity=".45"/><rect x="60" y="56" width="12" height="4" rx="2" fill="#1D1D1F" opacity=".22"/>
-                    <rect x="4" y="66" width="112" height="14" fill="#fff"/><rect x="12" y="70" width="30" height="4" rx="2" fill="#1D1D1F" opacity=".38"/><rect x="60" y="70" width="18" height="4" rx="2" fill="#1D1D1F" opacity=".18"/>
-                    <line x1="4" y1="38" x2="116" y2="38" stroke="#F2F2F7" stroke-width="1"/><line x1="4" y1="52" x2="116" y2="52" stroke="#F2F2F7" stroke-width="1"/><line x1="4" y1="66" x2="116" y2="66" stroke="#F2F2F7" stroke-width="1"/>
-                </svg>
-            </div>
-        </div>
 
-        <div class="nov-card" data-section="crm" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Drive — hasta 100 MB por archivo</div>
-                    <div class="nov-card-desc">El drive de oportunidades ahora acepta archivos de hasta <strong>100 MB</strong> (antes era 2.5 MB). Planos DWG, videos y archivos pesados de ingenieria ya no dan error al subir.</div>
-                </div>
-            </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="10" width="112" height="76" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="14" y="20" width="92" height="44" rx="9" fill="#F9F9FB" stroke="#D1D1D6" stroke-width="1" stroke-dasharray="5 3"/>
-                    <circle cx="60" cy="34" r="10" fill="rgba(52,199,89,0.12)"/>
-                    <path d="M60 28 L60 40 M55 33 L60 28 L65 33" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    <rect x="36" y="50" width="48" height="6" rx="3" fill="#E5E5EA"/><rect x="42" y="51.5" width="36" height="3" rx="1.5" fill="#C7C7CC"/>
-                    <rect x="30" y="72" width="60" height="10" rx="5" fill="rgba(52,199,89,0.12)" stroke="#34C759" stroke-width="1"/>
-                    <text x="38" y="79" font-size="6.5" fill="#1E9E40" font-family="-apple-system,sans-serif" font-weight="700">max 100 MB</text>
-                </svg>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="crm" data-type="mejora">
-            <div class="nov-card-bar mejora"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap mejora">
-                    <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Chat: cualquier archivo y etiquetas @</div>
-                    <div class="nov-card-desc">
-                        <ul>
-                            <li>Ya no se limita a imagenes: sube PDFs, Word, Excel, DWG, videos</li>
-                            <li>Selecciona varios archivos a la vez; se envian como mensajes separados</li>
-                            <li>Etiqueta companeros en el chat con <strong>@nombre</strong></li>
-                            <li>Los archivos no-imagen se muestran como enlace descargable</li>
-                        </ul>
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Tabla de oportunidades</div>
+                        <div class="nov-card-desc">Las oportunidades con actividades o tareas vencidas se muestran en rojo y al inicio de la tabla. El widget no se puede cerrar si no tiene una actividad activa.</div>
                     </div>
                 </div>
             </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="6" width="112" height="84" rx="14" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="12" y="14" width="62" height="12" rx="6" fill="#F2F2F7"/><rect x="17" y="17.5" width="36" height="5" rx="2.5" fill="#D1D1D6"/>
-                    <rect x="46" y="30" width="62" height="12" rx="6" fill="rgba(0,122,255,0.12)"/><rect x="51" y="33.5" width="48" height="5" rx="2.5" fill="#007AFF" opacity=".5"/>
-                    <rect x="12" y="46" width="72" height="12" rx="6" fill="#F2F2F7"/>
-                    <text x="17" y="54.5" font-size="6.5" fill="#007AFF" font-family="-apple-system,sans-serif" font-weight="700">@carlos</text>
-                    <rect x="55" y="49" width="24" height="5" rx="2.5" fill="#D1D1D6"/>
-                    <rect x="12" y="62" width="58" height="14" rx="7" fill="#F5F5F7" stroke="#E5E5EA" stroke-width="1"/>
-                    <rect x="19" y="66" width="8" height="6" rx="2" fill="rgba(255,59,48,0.3)"/><rect x="31" y="67" width="28" height="4" rx="2" fill="#C7C7CC"/><rect x="31" y="72.5" width="18" height="2.5" rx="1.25" fill="#E5E5EA"/>
-                </svg>
-            </div>
-        </div>
 
-        <div class="nov-card" data-section="crm" data-type="fix">
-            <div class="nov-card-bar fix"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap fix">
-                    <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag fix">Fix</span>
-                    <div class="nov-card-title">Recargar la pagina ya no regresa al inicio</div>
-                    <div class="nov-card-desc">Al recargar la pagina ya no regresa automaticamente a la seccion CRM. Ahora el sistema recuerda en que seccion estabas (tareas, muro, calendario, correo...) y regresa ahi despues de recargar.</div>
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Chat: cualquier archivo y etiquetas @</div>
+                        <div class="nov-card-desc">
+                            <ul>
+                                <li>Sube PDFs, Word, Excel, DWG, videos — ya no solo imagenes</li>
+                                <li>Selecciona varios archivos a la vez</li>
+                                <li>Etiqueta companeros con <strong>@nombre</strong></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="8" width="112" height="80" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="4" y="8" width="112" height="18" rx="13" fill="#F5F5F7"/><rect x="4" y="19" width="112" height="7" fill="#F5F5F7"/>
-                    <rect x="12" y="13" width="28" height="8" rx="4" fill="#007AFF" opacity=".15"/><rect x="14" y="15" width="22" height="4" rx="2" fill="#007AFF" opacity=".8"/>
-                    <rect x="46" y="13" width="20" height="8" rx="4"/><rect x="48" y="15" width="14" height="4" rx="2" fill="#C7C7CC"/>
-                    <rect x="72" y="13" width="20" height="8" rx="4"/><rect x="74" y="15" width="14" height="4" rx="2" fill="#C7C7CC"/>
-                    <rect x="12" y="32" width="44" height="6" rx="3" fill="#1D1D1F" opacity=".75"/>
-                    <rect x="12" y="42" width="70" height="4" rx="2" fill="#E5E5EA"/><rect x="12" y="50" width="56" height="4" rx="2" fill="#E5E5EA"/>
-                    <circle cx="90" cy="62" r="14" fill="rgba(52,199,89,0.1)" stroke="#34C759" stroke-width="1.2"/>
-                    <path d="M90 55 L90 64 M85 60 L90 65 L95 60" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                </svg>
+
+            <div class="nov-card" data-type="fix">
+                <div class="nov-card-bar fix"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap fix">
+                        <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag fix">Fix</span>
+                        <div class="nov-card-title">Recargar la pagina ya no regresa al inicio</div>
+                        <div class="nov-card-desc">Al recargar, el sistema recuerda en que seccion estabas (tareas, muro, calendario, correo...) y regresa ahi.</div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-    </div><!-- /wrap-crm -->
+            <div class="nov-card" data-type="mejora">
+                <div class="nov-card-bar mejora"></div>
+                <div class="nov-card-main">
+                    <div class="nov-card-icon-wrap mejora">
+                        <svg width="24" height="24" fill="none" stroke="#1E9E40" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    </div>
+                    <div class="nov-card-body">
+                        <span class="nov-card-tag mejora">Mejora</span>
+                        <div class="nov-card-title">Tareas: adjuntos y etiquetas en comentarios</div>
+                        <div class="nov-card-desc">Se pueden etiquetar usuarios con @nombre y subir documentos en los comentarios de las tareas.</div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- ══════════ SECCIÓN TAREAS ══════════ -->
-    <div class="nov-section-header" id="sec-tareas" style="padding-top:24px;">
-        <div class="nov-section-header-inner">
-            <div class="nov-section-overline tareas">Tareas</div>
-            <div class="nov-section-title">Modulo de Tareas</div>
-            <div class="nov-section-sub">6 cambios en tareas</div>
         </div>
     </div>
-    <div class="nov-cards-wrap" id="wrap-tareas">
-
-        <!-- ── Nuevas cards Tareas (mar 17-23) ── -->
-        <div class="nov-card" data-section="tareas" data-type="nuevo">
-            <div class="nov-card-bar tareas"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap tareas">
-                    <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag tareas">Nuevo</span>
-                    <div class="nov-card-title">Tareas automaticas</div>
-                    <div class="nov-card-desc">Sistema dentro de la configuracion para crear tareas automaticas segun las etapas de las oportunidades.
-                        <ul>
-                            <li>Cuando un usuario cambia de etapa una oportunidad, se le crea una tarea automaticamente</li>
-                            <li>Perfectamente configurables por el administrador: editar, administrar y eliminar</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="tareas" data-type="mejora">
-            <div class="nov-card-bar tareas"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap tareas">
-                    <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Reabrir tareas cerradas</div>
-                    <div class="nov-card-desc">Se permite reabrir tareas ya cerradas en caso que quieran volver a darle seguimiento. Cuando se vuelve a abrir una tarea, se envia un mensaje al administrador para informar el porque.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="tareas" data-type="mejora">
-            <div class="nov-card-bar tareas"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap tareas">
-                    <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag mejora">Mejora</span>
-                    <div class="nov-card-title">Optimizacion de tareas</div>
-                    <div class="nov-card-desc">Se ajusto la logica de como el sistema mostraba las tareas activas para evitar tiempos de carga. Se realizo un sistema de paginacion para las tareas completadas y la seccion de todas las tareas.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="tareas" data-type="fix">
-            <div class="nov-card-bar tareas"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap fix">
-                    <svg width="24" height="24" fill="none" stroke="#B86B00" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag fix">Fix</span>
-                    <div class="nov-card-title">Tareas sin recargar</div>
-                    <div class="nov-card-desc">Ahora sin necesidad de recargar la pagina se pueden ver las tareas completadas y las tareas pendientes.</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Cards Tareas antiguas (mar 13) ── -->
-        <div class="nov-card" data-section="tareas" data-type="nuevo">
-            <div class="nov-card-bar tareas"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap tareas">
-                    <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag tareas">Nuevo</span>
-                    <div class="nov-card-title">El responsable puede editar la fecha limite</div>
-                    <div class="nov-card-desc">Ahora el responsable de una tarea puede editar su propia fecha limite directamente desde la vista de tareas.
-                        <ul>
-                            <li>Al cambiar la fecha, el administrador recibe una notificacion automatica del cambio</li>
-                            <li>El administrador puede ver quien cambio la fecha y cuando</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="8" width="112" height="80" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <rect x="12" y="16" width="96" height="28" rx="8" fill="#F5F5F7"/>
-                    <rect x="18" y="20" width="10" height="10" rx="3" fill="rgba(88,86,214,0.15)" stroke="#5856D6" stroke-width="1.2"/>
-                    <rect x="32" y="21.5" width="44" height="4" rx="2" fill="#1D1D1F" opacity=".75"/>
-                    <rect x="32" y="28.5" width="28" height="3.5" rx="1.75" fill="#C7C7CC"/>
-                    <rect x="12" y="50" width="96" height="14" rx="7" fill="rgba(88,86,214,0.08)" stroke="#5856D6" stroke-width="1"/>
-                    <rect x="18" y="55" width="4" height="4" rx="1" fill="#5856D6"/>
-                    <rect x="26" y="55.5" width="42" height="3" rx="1.5" fill="#5856D6" opacity=".65"/>
-                    <rect x="82" y="53" width="22" height="8" rx="4" fill="#5856D6" opacity=".12"/>
-                    <rect x="85" y="55.5" width="16" height="3" rx="1.5" fill="#5856D6" opacity=".7"/>
-                    <circle cx="100" cy="20" r="8" fill="rgba(255,149,0,0.12)"/>
-                    <rect x="96" y="18" width="8" height="4" rx="1" fill="#FF9500" opacity=".6"/>
-                    <rect x="98" y="23" width="4" height="1.5" rx=".75" fill="#FF9500" opacity=".6"/>
-                    <rect x="12" y="72" width="96" height="8" rx="4" fill="#F2F2F7"/><rect x="18" y="74.5" width="60" height="3" rx="1.5" fill="#D1D1D6"/>
-                </svg>
-            </div>
-        </div>
-
-        <div class="nov-card" data-section="tareas" data-type="nuevo">
-            <div class="nov-card-bar tareas"></div>
-            <div class="nov-card-main">
-                <div class="nov-card-icon-wrap tareas">
-                    <svg width="24" height="24" fill="none" stroke="#5856D6" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M15 10a3 3 0 1 1-6 0"/></svg>
-                </div>
-                <div class="nov-card-body">
-                    <span class="nov-card-tag tareas">Nuevo</span>
-                    <div class="nov-card-title">Adjuntos y etiquetas en comentarios de tareas</div>
-                    <div class="nov-card-desc">Los comentarios de las tareas ahora soportan funciones avanzadas.
-                        <ul>
-                            <li>Se pueden etiquetar usuarios con <strong>@nombre</strong> en los comentarios</li>
-                            <li>Se pueden subir y adjuntar documentos directamente en los comentarios</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="nov-card-preview">
-                <svg viewBox="0 0 120 96" width="120" height="96" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="6" width="112" height="84" rx="13" fill="#fff" stroke="#E5E5EA" stroke-width="1.5"/>
-                    <circle cx="18" cy="22" r="7" fill="rgba(88,86,214,0.2)"/>
-                    <rect x="30" y="14" width="76" height="16" rx="8" fill="#F2F2F7"/><rect x="36" y="18" width="50" height="4" rx="2" fill="#D1D1D6"/><rect x="36" y="24" width="36" height="3.5" rx="1.75" fill="#E5E5EA"/>
-                    <circle cx="18" cy="48" r="7" fill="rgba(52,199,89,0.2)"/>
-                    <rect x="30" y="40" width="80" height="16" rx="8" fill="rgba(88,86,214,0.07)"/>
-                    <text x="35" y="50.5" font-size="7" fill="#5856D6" font-family="-apple-system,sans-serif" font-weight="700">@laura</text>
-                    <rect x="67" y="44" width="36" height="4" rx="2" fill="#5856D6" opacity=".4"/>
-                    <rect x="30" y="60" width="60" height="14" rx="7" fill="#F5F5F7" stroke="#E5E5EA" stroke-width="1"/>
-                    <rect x="37" y="64" width="8" height="6" rx="2" fill="rgba(255,59,48,0.35)"/>
-                    <rect x="49" y="65" width="28" height="3.5" rx="1.75" fill="#C7C7CC"/>
-                    <rect x="49" y="70" width="18" height="2.5" rx="1.25" fill="#E5E5EA"/>
-                </svg>
-            </div>
-        </div>
-
-    </div><!-- /wrap-tareas -->
 
     <div id="novEmpty" class="nov-empty">
         <div style="font-size:2rem;margin-bottom:8px;">&#128269;</div>
@@ -1151,52 +1093,60 @@ body { background:#F5F5F7 !important; }
 
 <script>
 (function () {
-    /* ── Filtro pills ── */
+    var fechaLabels = {
+        '2026-03-23': '23 de marzo 2026',
+        '2026-03-20': '20 de marzo 2026',
+        '2026-03-19': '19 de marzo 2026',
+        '2026-03-18': '18 de marzo 2026',
+        '2026-03-17': '17 de marzo 2026',
+        '2026-03-13': '13 de marzo 2026'
+    };
+    var currentDate = '2026-03-23';
+    var currentFilter = 'todos';
+
+    /* ── Seleccionar fecha ── */
+    window.novSelectDate = function (btn) {
+        currentDate = btn.getAttribute('data-date');
+        // Actualizar botones fecha
+        document.querySelectorAll('.nov-date-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        // Actualizar chip hero
+        var chip = document.getElementById('novChip');
+        if (chip) chip.innerHTML = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Actualizacion — ' + fechaLabels[currentDate];
+        // Mostrar/ocultar date groups
+        document.querySelectorAll('.nov-date-group').forEach(function(g){
+            g.classList.toggle('active', g.id === 'date-' + currentDate);
+        });
+        // Re-aplicar filtro tipo
+        aplicarFiltro();
+    };
+
+    /* ── Filtro por tipo ── */
     window.novFilter = function (btn) {
-        var filter = btn.getAttribute('data-filter');
-        // Actualizar pills
+        currentFilter = btn.getAttribute('data-filter');
         document.querySelectorAll('.nov-pill').forEach(function(p){ p.classList.remove('active'); });
         btn.classList.add('active');
+        aplicarFiltro();
+    };
 
-        var cards = document.querySelectorAll('.nov-card');
-        var empty = document.getElementById('novEmpty');
-        var secciones = ['grupos','calendario','correo','drive','crm','tareas'];
-
+    function aplicarFiltro() {
+        var grupo = document.getElementById('date-' + currentDate);
+        if (!grupo) return;
+        var cards = grupo.querySelectorAll('.nov-card');
         var visibles = 0;
         cards.forEach(function(card) {
-            var sec  = card.getAttribute('data-section');
             var type = card.getAttribute('data-type');
             var show = false;
-            if (filter === 'todos')        show = true;
-            else if (filter === 'crm')         show = sec === 'crm';
-            else if (filter === 'tareas')      show = sec === 'tareas';
-            else if (filter === 'calendario')  show = sec === 'calendario';
-            else if (filter === 'correo')      show = sec === 'correo';
-            else if (filter === 'grupos')      show = sec === 'grupos';
-            else if (filter === 'drive')       show = sec === 'drive';
-            else if (filter === 'nuevo')       show = type === 'nuevo';
-            else if (filter === 'mejoras')     show = type === 'mejora';
-            else if (filter === 'fixes')       show = type === 'fix';
+            if (currentFilter === 'todos')        show = true;
+            else if (currentFilter === 'nuevo')   show = type === 'nuevo';
+            else if (currentFilter === 'mejoras') show = type === 'mejora';
+            else if (currentFilter === 'fixes')   show = type === 'fix';
             card.classList.toggle('nov-hidden', !show);
             if (show) visibles++;
         });
-
-        // Mostrar/ocultar seccion headers segun si tienen tarjetas visibles
-        function secTieneVisibles(wrapId) {
-            var w = document.getElementById(wrapId);
-            if (!w) return false;
-            return Array.from(w.querySelectorAll('.nov-card')).some(function(c){ return !c.classList.contains('nov-hidden'); });
-        }
-        secciones.forEach(function(s) {
-            var sec  = document.getElementById('sec-' + s);
-            var wrap = document.getElementById('wrap-' + s);
-            var vis  = secTieneVisibles('wrap-' + s);
-            if (sec)  sec.style.display  = vis ? '' : 'none';
-            if (wrap) wrap.style.display = vis ? '' : 'none';
-        });
-
+        var empty = document.getElementById('novEmpty');
         if (empty) empty.classList.toggle('show', visibles === 0);
-    };
+    }
 
     /* ── Toggle widget (admin) ── */
     var widgetActivo = {{ novedades_config.widget_activo|yesno:"true,false" }};
