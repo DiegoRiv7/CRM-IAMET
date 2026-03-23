@@ -284,7 +284,7 @@
           }
         }).catch(function(){});
       // Miembros
-      fetch('/app/api/grupos/')
+      fetch('/app/api/grupos/mis-grupos/')
         .then(function(r){return r.json();})
         .then(function(d){
           var grupos = d.grupos || [];
@@ -629,31 +629,79 @@
     if(list) list.style.display='none';
   };
 
+  /* ── Notificación Mac-style ─────────────────── */
+  function _notifMac(titulo, cuerpo, grupoId, color) {
+    // Usa el sistema de notificaciones existente del CRM si está disponible
+    if(typeof showToast === 'function') {
+      showToast('<strong>'+_esc(titulo)+'</strong><br><span style="font-size:0.8rem;opacity:0.85;">'+_esc(cuerpo)+'</span>', 'info', 5000);
+    } else {
+      // Fallback: notificación nativa del browser
+      if(window.Notification && Notification.permission === 'granted') {
+        new Notification(titulo, {body: cuerpo, icon: '/static/img/icon.png'});
+      }
+    }
+    // Actualizar badge del topbar
+    var badge = document.getElementById('grupoBadge');
+    if(badge) badge.style.display = '';
+    // Badge en sidebar del grupo
+    var sb = document.getElementById('gs-badge-'+grupoId);
+    if(sb){ var n=parseInt(sb.textContent||0)+1; sb.textContent=n>99?'99+':n; sb.style.display=''; }
+  }
+
   /* ── Polling para nuevos mensajes ───────────── */
   function _startPoll() {
     _pollInterval = setInterval(function(){
       if(!_grupoActualId) return;
-      if(!document.getElementById('widgetGrupo').classList.contains('active')) return;
+      var widgetAbierto = document.getElementById('widgetGrupo').classList.contains('active');
       fetch('/app/api/grupos/'+_grupoActualId+'/chat/?desde_id='+_ultimoMsgId)
         .then(function(r){return r.json();})
         .then(function(d){
           if(d.mensajes && d.mensajes.length > 0){
-            var feed = document.getElementById('grupoChatFeed');
-            if(feed){
-              feed.insertAdjacentHTML('beforeend', _renderMensajes(d.mensajes, false));
-              _scrollChatFeed();
+            if(widgetAbierto) {
+              var feed = document.getElementById('grupoChatFeed');
+              if(feed){
+                feed.insertAdjacentHTML('beforeend', _renderMensajes(d.mensajes, false));
+                _scrollChatFeed();
+              }
+              fetch('/app/api/grupos/'+_grupoActualId+'/chat/leer/',{method:'POST',headers:{'X-CSRFToken':_csrf()}});
+            } else {
+              // Widget cerrado: mostrar notificación Mac por cada mensaje nuevo ajeno
+              d.mensajes.forEach(function(msg){
+                if(!msg.es_mio){
+                  var autor = msg.autor_nombre || 'Grupo';
+                  var grupoNombre = (_misGrupos.find(function(g){return g.id===_grupoActualId;})||{}).nombre || 'Grupo';
+                  _notifMac(autor+' en '+grupoNombre, msg.contenido.substring(0,80), _grupoActualId);
+                }
+              });
             }
             _ultimoMsgId = d.mensajes[d.mensajes.length-1].id;
-            // Marcar como leído
-            fetch('/app/api/grupos/'+_grupoActualId+'/chat/leer/',{method:'POST',headers:{'X-CSRFToken':_csrf()}});
           }
         }).catch(function(){});
-    }, 5000);
+    }, 2000);
   }
 
   function _stopPoll() {
     if(_pollInterval){ clearInterval(_pollInterval); _pollInterval = null; }
   }
+
+  /* ── Poll de fondo para todos los grupos (badge) ─ */
+  var _bgPollInterval = null;
+  function _startBgPoll() {
+    _bgPollInterval = setInterval(function(){
+      if(document.getElementById('widgetGrupo').classList.contains('active')) return;
+      _misGrupos.forEach(function(g){
+        if(g.id === _grupoActualId) return; // ya lo cubre el poll principal
+        fetch('/app/api/grupos/'+g.id+'/no-leidos/')
+          .then(function(r){return r.json();})
+          .then(function(d){
+            var sb = document.getElementById('gs-badge-'+g.id);
+            if(sb){ if(d.no_leidos>0){sb.textContent=d.no_leidos>99?'99+':d.no_leidos;sb.style.display='';}else{sb.style.display='none';} }
+            if(d.no_leidos>0){var b=document.getElementById('grupoBadge');if(b)b.style.display='';}
+          }).catch(function(){});
+      });
+    }, 10000);
+  }
+  _startBgPoll();
 
   /* ── Scroll al fondo ────────────────────────── */
   function _scrollChatFeed() {

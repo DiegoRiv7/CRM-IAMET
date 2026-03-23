@@ -223,8 +223,18 @@ def comparten_grupo(user1, user2):
         return False
     if is_supervisor(user1):
         return True
-    ids_visibles = get_usuarios_visibles_ids(user1)
-    return ids_visibles is not None and user2.id in ids_visibles
+    # Query directa: busca un grupo activo que contenga a ambos
+    # (ya sea como miembro o supervisor de grupo)
+    grupos_user1 = GrupoTrabajo.objects.filter(
+        Q(miembros=user1) | Q(supervisor_grupo=user1), activo=True
+    ).values_list('id', flat=True)
+    if not grupos_user1:
+        return False
+    return GrupoTrabajo.objects.filter(
+        id__in=grupos_user1
+    ).filter(
+        Q(miembros=user2) | Q(supervisor_grupo=user2)
+    ).exists()
 
 
 def usuario_puede_acceder_grupo(user, grupo):
@@ -376,6 +386,30 @@ def api_grupo_chat_enviar(request, grupo_id):
         tipo='mensaje',
         contenido=contenido,
     )
+
+    # Notificar a los demás miembros del grupo
+    try:
+        from .models import Notificacion
+        autor_nombre = (request.user.get_full_name() or request.user.username)
+        todos_ids = set(grupo.miembros.values_list('id', flat=True))
+        if grupo.supervisor_grupo_id:
+            todos_ids.add(grupo.supervisor_grupo_id)
+        todos_ids.discard(request.user.id)
+        for uid in todos_ids:
+            try:
+                dest = User.objects.get(id=uid)
+                Notificacion.objects.create(
+                    usuario_destinatario=dest,
+                    usuario_remitente=request.user,
+                    tipo='mensaje_grupo',
+                    titulo=f'{autor_nombre} en {grupo.nombre}',
+                    mensaje=contenido[:120],
+                )
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     return JsonResponse({'success': True, 'mensaje': _serializar_mensaje(msg, request.user)})
 
 

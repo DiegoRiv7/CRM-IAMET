@@ -1512,6 +1512,7 @@ class Notificacion(models.Model):
         ('sistema', 'Notificación del sistema'),
         ('proyecto_agregado', 'Agregado a proyecto'),
         ('programacion_proyecto', 'Asignado a actividad de proyecto'),
+        ('mensaje_grupo', 'Mensaje en grupo de trabajo'),
     ]
     
     usuario_destinatario = models.ForeignKey(
