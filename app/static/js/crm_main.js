@@ -3786,7 +3786,11 @@
 
                         var estadoEl = document.getElementById('crm-task-estado');
                         if (estadoEl) estadoEl.innerHTML = getEstadoBadgeCRM('completada');
-                        showToast('Tarea completada', 'success');
+                        if (data.cadena_reactiva && data.cadena_reactiva.mensaje) {
+                            showToast('Tarea completada — ' + data.cadena_reactiva.mensaje, 'success', 5000);
+                        } else {
+                            showToast('Tarea completada', 'success');
+                        }
 
                         // Marcar notificaciones de esta tarea como leidas
                         try {
@@ -3801,14 +3805,23 @@
                         if (_crmTaskLastData) _crmTaskLastData.estado = 'completada';
                         _tareasPollHash = null;
                         recargarTareasCRM();
-                        // Refrescar tareas inline y tab completo del widget oportunidad si está abierto
+                        // Refrescar widget oportunidad si está abierto
                         if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {
                             var oppId = _crmTaskLastData.oportunidad_id;
-                            if (typeof window.woCargarTareasInline === 'function') {
-                                window.woCargarTareasInline(oppId);
-                            }
-                            if (typeof window.woCargarTareasOpp === 'function') {
-                                window.woCargarTareasOpp(oppId);
+                            // Si hubo cadena reactiva (avance de etapa), recargar widget completo
+                            if (data.cadena_reactiva && data.cadena_reactiva.avances && data.cadena_reactiva.avances.length > 0) {
+                                if (typeof window.openDetalle === 'function') {
+                                    window.openDetalle(oppId);
+                                }
+                                // Refrescar tabla CRM tambien (etapa cambio)
+                                if (typeof window.refreshCrmTable === 'function') window.refreshCrmTable();
+                            } else {
+                                if (typeof window.woCargarTareasInline === 'function') {
+                                    window.woCargarTareasInline(oppId);
+                                }
+                                if (typeof window.woCargarTareasOpp === 'function') {
+                                    window.woCargarTareasOpp(oppId);
+                                }
                             }
                         }
                     } else {
