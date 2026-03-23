@@ -2883,6 +2883,10 @@
                             _actualizarDropdownResponsables(data.tareas);
                             renderTareasCRM(_crmCurrentFilter);
                             _renderPaginacion(false);
+                            // Set poll hash baseline so next poll detects changes immediately
+                            if (estado === 'pendientes') {
+                                _tareasPollHash = data.tareas.map(function(t) { return t.id + ':' + t.estado; }).join(',');
+                            }
                         }
                     } else {
                         if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">No se pudieron cargar las tareas.</td></tr>';

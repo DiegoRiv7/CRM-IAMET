@@ -974,6 +974,18 @@
                             _render();
                             // Show toast for up to 3 newest
                             news.slice(0, 3).forEach(n => _showMacOSToast(n));
+                            // Auto-refresh tareas table if a task-related notification arrived
+                            if (window._crmTareasMode && typeof window.recargarTareasCRM === 'function') {
+                                var hasTareaNotif = news.some(n =>
+                                    CAT_TAREAS.includes(n.tipo) ||
+                                    n.tipo === 'tarea_nueva' ||
+                                    n.tipo === 'tarea_reabierta' ||
+                                    n.tipo === 'mensaje_grupo'
+                                );
+                                if (hasTareaNotif) {
+                                    window.recargarTareasCRM();
+                                }
+                            }
                         }
                     }
                 }
