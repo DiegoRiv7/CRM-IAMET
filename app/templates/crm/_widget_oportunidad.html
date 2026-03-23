@@ -849,12 +849,31 @@
                 '<div style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(c.nombre) + '</div></div></div>';
         }
 
+        function _woDriveFileIcon(tipo, ext) {
+            var icons = {
+                'pdf': {color:'#DC2626', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-1.5a1.5 1.5 0 013 0V15m-3 0h3m2-2v4m3-4l-1.5 2L18 17" style="fill:none;stroke:#fff;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;"/>'},
+                'imagen': {color:'#8B5CF6', svg:'<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'},
+                'documento': {color:'#2563EB', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>'},
+                'hoja_calculo': {color:'#16A34A', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="12" y1="9" x2="12" y2="21"/>'},
+                'presentacion': {color:'#EA580C', svg:'<path d="M2 3h20v14H2z"/><path d="M12 17v4"/><path d="M8 21h8"/><path d="M7 8l3 3-3 3"/><line x1="12" y1="11" x2="17" y2="11"/>'},
+                'video': {color:'#7C3AED', svg:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>'},
+                'audio': {color:'#EC4899', svg:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'},
+                'archivo_comprimido': {color:'#854D0E', svg:'<path d="M21 8v13H3V3h12z"/><path d="M14 3v5h7"/><path d="M10 12h1m-1 3h1m-1-6h1m-1-3h1"/>'},
+            };
+            var def = {color:'#0052D4', svg:'<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'};
+            return icons[tipo] || def;
+        }
+
         function woDriveRenderArchivo(a, readOnly) {
             var esBitrix = !!a.es_bitrix;
             var streamUrl = a.url || a.bitrix_download_url || '';
             var dlUrl = streamUrl ? (streamUrl + '?dl=1') : '';
-            var iconColor = esBitrix ? '#FF6B00' : '#0052D4';
+            var tipoArchivo = a.tipo_archivo || 'otro';
+            var iconInfo = _woDriveFileIcon(tipoArchivo, a.extension || '');
+            var iconColor = esBitrix ? '#FF6B00' : iconInfo.color;
             var badge = esBitrix ? '<span style="position:absolute;top:0.4rem;left:0.5rem;font-size:0.6rem;background:#FF6B00;color:#fff;border-radius:4px;padding:1px 4px;">Bitrix</span>' : '';
+            var extLabel = (a.extension || '').toUpperCase();
+            var extBadge = extLabel ? '<span style="font-size:0.6rem;color:' + iconColor + ';font-weight:700;background:' + iconColor + '14;border-radius:3px;padding:1px 4px;">' + extLabel + '</span>' : '';
             var menu = readOnly ? '' :
                 '<div style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;z-index:10;" onclick="event.stopPropagation(); woDriveMenu(\'archivo\', ' + a.id + ', \'' + woEscape(a.nombre || a.nombre_original || '') + '\')">' +
                 '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>';
@@ -867,9 +886,9 @@
             return '<div onclick="if(\'' + woEscape(streamUrl) + '\') window.open(\'' + woEscape(streamUrl) + '\', \'_blank\')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;cursor:pointer;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
                 badge + menu +
                 '<div style="text-align:center;">' +
-                '<svg width="42" height="42" fill="none" stroke="' + iconColor + '" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+                '<svg width="42" height="42" fill="none" stroke="' + iconColor + '" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;">' + iconInfo.svg + '</svg>' +
                 '<div title="' + nombre + '" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:0.2rem;">' + nombre + '</div>' +
-                '<div style="font-size:0.7rem;color:#9CA3AF;">' + (a.tamaño > 0 ? (a.tamaño / 1024).toFixed(1) + ' KB' : '—') + '</div>' +
+                '<div style="font-size:0.7rem;color:#9CA3AF;display:flex;align-items:center;justify-content:center;gap:4px;">' + extBadge + ' ' + (a.tamaño > 0 ? (a.tamaño / 1024).toFixed(1) + ' KB' : '—') + '</div>' +
                 acciones + '</div></div>';
         }
 
@@ -944,22 +963,32 @@
         window.woDriveHandleFiles = function (files) {
             if (!files || !files.length) return;
             document.getElementById('woDriveLoading').style.display = 'block';
-            var formData = new FormData();
-            formData.append('archivo', files[0]); // For now, single upload correctly handled by API
-            if (_woDriveCurrentFolder) formData.append('carpeta_id', _woDriveCurrentFolder);
+            var fileList = Array.prototype.slice.call(files);
+            var errores = [];
 
-            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivos/', {
-                method: 'POST',
-                body: formData
-            }).then(function (r) { return r.json(); }).then(function (res) {
-                if (res.error) woDialogConfirm('Error', res.error, null, null, true);
-                document.getElementById('woDriveFileInput').value = '';
-                woDriveCargarDirectorio();
-            }).catch(function (e) {
-                woDialogConfirm('Error', e.message, null, null, true);
-                document.getElementById('woDriveFileInput').value = '';
-                woDriveCargarDirectorio();
-            });
+            function subirSiguiente(idx) {
+                if (idx >= fileList.length) {
+                    document.getElementById('woDriveFileInput').value = '';
+                    if (errores.length) woDialogConfirm('Errores', errores.join('<br>'), null, null, true);
+                    woDriveCargarDirectorio();
+                    return;
+                }
+                var formData = new FormData();
+                formData.append('archivo', fileList[idx]);
+                if (_woDriveCurrentFolder) formData.append('carpeta_id', _woDriveCurrentFolder);
+
+                fetch('/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivos/', {
+                    method: 'POST',
+                    body: formData
+                }).then(function (r) { return r.json(); }).then(function (res) {
+                    if (res.error) errores.push(fileList[idx].name + ': ' + res.error);
+                    subirSiguiente(idx + 1);
+                }).catch(function (e) {
+                    errores.push(fileList[idx].name + ': ' + e.message);
+                    subirSiguiente(idx + 1);
+                });
+            }
+            subirSiguiente(0);
         };
 
         var _woDragCounter = 0;
@@ -1015,8 +1044,12 @@
                 {
                     label: 'Eliminar', color: '#FF3B30', onClick: function () {
                         woDialogConfirm('Eliminar', '¿Estás seguro de que quieres eliminar este elemento?', '#FF3B30', function () {
+                            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
                             var endpoint = tipo === 'carpeta' ? '/app/api/oportunidad/' + _woCurrentOppId + '/drive/carpeta/' + id + '/?force=true' : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivo/' + id + '/';
-                            fetch(endpoint, { method: 'DELETE' }).then(function () { woDriveCargarDirectorio(); }).catch(console.error);
+                            fetch(endpoint, { method: 'DELETE', headers: csrf ? {'X-CSRFToken': csrf.value} : {} }).then(function (r) {
+                                if (!r.ok) woDialogConfirm('Error', 'No se pudo eliminar ('+r.status+')', null, null, true);
+                                woDriveCargarDirectorio();
+                            }).catch(console.error);
                         });
                     }
                 }
