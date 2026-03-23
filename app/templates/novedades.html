@@ -384,15 +384,10 @@ body { background:#F5F5F7 !important; }
             <span class="nov-date-month">Mar 2026</span>
             <span class="nov-date-count">3 cambios</span>
         </button>
-        <button class="nov-date-btn" data-date="2026-03-17" onclick="novSelectDate(this)">
-            <span class="nov-date-day">17</span>
-            <span class="nov-date-month">Mar 2026</span>
-            <span class="nov-date-count">5 cambios</span>
-        </button>
         <button class="nov-date-btn" data-date="2026-03-13" onclick="novSelectDate(this)">
             <span class="nov-date-day">13</span>
             <span class="nov-date-month">Mar 2026</span>
-            <span class="nov-date-count">10 cambios</span>
+            <span class="nov-date-count">15 cambios</span>
         </button>
     </div>
 
@@ -798,17 +793,18 @@ body { background:#F5F5F7 !important; }
         </div>
     </div>
 
-    <!-- ══════════ 17 DE MARZO 2026 ══════════ -->
-    <div class="nov-date-group" id="date-2026-03-17">
+    <!-- ══════════ 13 DE MARZO 2026 (incluye 13-17) ══════════ -->
+    <div class="nov-date-group" id="date-2026-03-13">
         <div class="nov-section-header">
             <div class="nov-section-header-inner">
-                <div class="nov-section-overline">17 de marzo 2026</div>
-                <div class="nov-section-title">Clientes, novedades y correcciones</div>
-                <div class="nov-section-sub">5 cambios</div>
+                <div class="nov-section-overline">13 — 17 de marzo 2026</div>
+                <div class="nov-section-title">Lanzamiento inicial</div>
+                <div class="nov-section-sub">15 cambios</div>
             </div>
         </div>
         <div class="nov-cards-wrap">
 
+            <!-- Cards del 17 mar -->
             <div class="nov-card" data-type="nuevo">
                 <div class="nov-card-bar nuevo"></div>
                 <div class="nov-card-main">
@@ -891,19 +887,7 @@ body { background:#F5F5F7 !important; }
                 </div>
             </div>
 
-        </div>
-    </div>
-
-    <!-- ══════════ 13 DE MARZO 2026 ══════════ -->
-    <div class="nov-date-group" id="date-2026-03-13">
-        <div class="nov-section-header">
-            <div class="nov-section-header-inner">
-                <div class="nov-section-overline">13 de marzo 2026</div>
-                <div class="nov-section-title">Lanzamiento inicial</div>
-                <div class="nov-section-sub">10 cambios</div>
-            </div>
-        </div>
-        <div class="nov-cards-wrap">
+            <!-- Cards del 13 mar -->
 
             <div class="nov-card" data-type="nuevo">
                 <div class="nov-card-bar nuevo"></div>
@@ -1098,7 +1082,6 @@ body { background:#F5F5F7 !important; }
         '2026-03-20': '20 de marzo 2026',
         '2026-03-19': '19 de marzo 2026',
         '2026-03-18': '18 de marzo 2026',
-        '2026-03-17': '17 de marzo 2026',
         '2026-03-13': '13 de marzo 2026'
     };
     var currentDate = '2026-03-23';
