@@ -35,6 +35,9 @@
 
     {% include "crm/_widget_muro.html" %}
     {% include "crm/_widget_calendario.html" %}
+    {% if mis_grupos %}
+    {% include "crm/_widget_grupo.html" %}
+    {% endif %}
 
 </div>
 

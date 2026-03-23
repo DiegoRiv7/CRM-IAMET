@@ -3627,3 +3627,65 @@ class GrupoTrabajo(models.Model):
         if self.supervisor_grupo_id:
             ids.add(self.supervisor_grupo_id)
         return User.objects.filter(id__in=ids)
+
+
+class MensajeGrupo(models.Model):
+    """
+    Mensaje en el chat de un Grupo de Trabajo.
+    tipo='mensaje'  → escrito por un miembro/supervisor
+    tipo='sistema'  → generado automáticamente por el sistema al registrar
+                      acciones entre miembros (editar oportunidad ajena,
+                      cerrar tarea ajena, programar actividad, etc.)
+    """
+    TIPO_CHOICES = [
+        ('mensaje', 'Mensaje'),
+        ('sistema', 'Sistema'),
+    ]
+
+    grupo = models.ForeignKey(
+        GrupoTrabajo,
+        on_delete=models.CASCADE,
+        related_name='mensajes',
+        verbose_name='Grupo',
+    )
+    autor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='mensajes_grupo',
+        verbose_name='Autor',
+    )
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='mensaje')
+    contenido = models.TextField(verbose_name='Contenido')
+    # Para mensajes de sistema: acción ejecutada y referencia al objeto
+    accion = models.CharField(max_length=60, blank=True, default='',
+                               verbose_name='Acción (sistema)')
+    objeto_tipo = models.CharField(max_length=30, blank=True, default='',
+                                    verbose_name='Tipo de objeto referenciado')
+    objeto_id = models.PositiveIntegerField(null=True, blank=True,
+                                             verbose_name='ID del objeto referenciado')
+    objeto_titulo = models.CharField(max_length=255, blank=True, default='',
+                                      verbose_name='Título del objeto referenciado')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Mensaje de Grupo'
+        verbose_name_plural = 'Mensajes de Grupo'
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'[{self.grupo.nombre}] {self.autor or "Sistema"}: {self.contenido[:50]}'
+
+
+class LecturaGrupo(models.Model):
+    """Marca hasta qué mensaje ha leído cada usuario en cada grupo."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lecturas_grupo')
+    grupo = models.ForeignKey(GrupoTrabajo, on_delete=models.CASCADE, related_name='lecturas')
+    ultimo_leido = models.ForeignKey(
+        MensajeGrupo, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    fecha_lectura = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('usuario', 'grupo')
+        verbose_name = 'Lectura de Grupo'

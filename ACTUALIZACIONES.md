@@ -5,23 +5,7 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 
 
-## [2026-03-20] — Calendario
 
-### FIX — Botón "Completar" dejaba de funcionar tras la primera actividad
-- Corregido bug donde `btn.disabled = true` nunca se reiniciaba al completar con éxito.
-- Ahora al abrir el detalle de cualquier actividad, el botón siempre se reinicia a su estado activo.
-
-### MEJORA — Completar actividades sin que desaparezcan del calendario
-- Las actividades y tareas completadas ya no desaparecen del calendario.
-- Quedan visibles con opacidad reducida (~38%) y con tachado en el título.
-- El color de estado en el panel derecho cambia a gris cuando está completada.
-- El botón "Completar" pasa a "Ya completada" (deshabilitado) si la actividad ya fue marcada.
-- Aplica en las tres vistas: mes, día y semana.
-
-### TÉCNICO — Campo `completada` en modelo Actividad
-- Se agregó campo `completada = BooleanField(default=False)` al modelo `Actividad`.
-- El endpoint `PATCH /api/actividades/<id>/` actualiza únicamente ese campo.
-- Migración 0092 aplicada.
 
 ## [2026-03-19] — Calendario
 
@@ -159,9 +143,61 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - Se arreglo que no se podían borrar archivos del drive
 
 ### MEJORA - Tareas
-Ahora se permite reabrir tareas ya cerradas en caso que quieran volver a darle seguimiento o si el responsable se equivoco y no cumplio con lo solicitado.
+- Ahora se permite reabrir tareas ya cerradas en caso que quieran volver a darle seguimiento o si el responsable se equivoco y no cumplio con lo solicitado.
+- Cuando se vuelve a abrir una tarea se envía un mensaje al administrador para informar el porque se volvió a abrir una tarea completada.
+
+## [2026-03-20] — Módulo de Correo
+
+### MEJORA — Panel de respuesta inline (estilo macOS Mail)
+- Al presionar "Responder", el panel de respuesta aparece directamente debajo del correo sin abrir una ventana separada.
+- Editor enriquecido (contenteditable) con barra de herramientas: negrita, cursiva, subrayado, lista con viñetas.
+- Botón "CC / CCO" para agregar copias y copias ocultas sin saturar la interfaz.
+- Texto original del correo colapsado al final del panel, expandible con un clic.
+- El panel se cierra con "Cancelar" o con el botón ✕ del encabezado.
+
+### FIX — Botón "+" para agregar cuenta de correo
+- Corregido error `mailAbrirConfig is not defined` al presionar el botón "+".
+- Ahora abre el modal de configuración en modo "Agregar cuenta" con los campos vacíos.
+
+### MEJORA — Vincular correo a oportunidad
+- El buscador de oportunidades en el panel "Vincular a Oportunidad" ahora funciona (búsqueda con debounce 350ms).
+- Al seleccionar una oportunidad, el correo queda vinculado y se muestra la barra azul de oportunidad sin recargar.
+
+### TÉCNICO — CC y CCO en respuestas
+- `api_mail_responder` ahora acepta los campos `cc` y `bcc`.
+- El CCO se agrega solo a la lista de destinatarios SMTP (no aparece en los headers del correo).
 
 
+### FIX — Botón "Completar" dejaba de funcionar tras la primera actividad - calendario 
+- Corregido bug donde `btn.disabled = true` nunca se reiniciaba al completar con éxito.
+- Ahora al abrir el detalle de cualquier actividad, el botón siempre se reinicia a su estado activo.
+
+### MEJORA — Completar actividades sin que desaparezcan del calendario
+- Las actividades y tareas completadas ya no desaparecen del calendario.
+- Quedan visibles con opacidad reducida (~38%) y con tachado en el título.
+- El color de estado en el panel derecho cambia a gris cuando está completada.
+- El botón "Completar" pasa a "Ya completada" (deshabilitado) si la actividad ya fue marcada.
+- Aplica en las tres vistas: mes, día y semana.
+
+### TÉCNICO — Campo `completada` en modelo Actividad
+- Se agregó campo `completada = BooleanField(default=False)` al modelo `Actividad`.
+- El endpoint `PATCH /api/actividades/<id>/` actualiza únicamente ese campo.
+- Migración 0092 aplicada.
+
+### MEJORA - Notificaciones 
+- Se rediseño por completo el diseño de las notificaciones para ordenarlas con mayor claridad.
+- Se estableció un sistema estilo mac para las nuevas notifaciones, para no tener que abrir el panel de notificaciones para verlas.
+
+
+### NUEVO - Tareas automáticas 
+- Se creó un sistema dentro de la configuración, para crear tareas automáticas según las etapas de las oportunidades.
+- Ahora cuando un usuario cambia de etapa una oportunidad, se le crea una tarea automáticamente según la etapa en la que se encuentra.
+- Las tareas automaticas son perfectamente configurables por un usaurio administrador, se pueden editar, administrar y eliminar.
+
+### NUEVO - Grupos de trabajo
+- Se creó una nueva sección para crear grupos de trabajo y establecer supervisores y personas que trabajaran en conjunto 
+- Ahora los supervisores de grupo pueden ver las oportunidades de las personas que están en su grupo.
+- Los usuarios que pertenecen a un grupo pueden ver las oportunidades de su supervisor.
 
 ## Cómo usar este archivo
 

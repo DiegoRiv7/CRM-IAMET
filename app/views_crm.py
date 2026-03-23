@@ -431,8 +431,26 @@ def crm_home(request):
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
         'novedades_config': NovedadesConfig.get(),
+        'mis_grupos': _get_mis_grupos_ctx(user),
+        'es_supervisor_de_grupo': _es_supervisor_de_grupo(user),
     }
     return render(request, 'crm_home.html', context)
+
+
+def _get_mis_grupos_ctx(user):
+    """Grupos activos del usuario para el contexto del template."""
+    from .views_grupos import get_grupos_del_usuario
+    from .views_utils import is_supervisor as _is_sup
+    if _is_sup(user):
+        from .models import GrupoTrabajo
+        return list(GrupoTrabajo.objects.filter(activo=True).values('id', 'nombre', 'color'))
+    grupos = get_grupos_del_usuario(user)
+    return [{'id': g.id, 'nombre': g.nombre, 'color': g.color} for g in grupos]
+
+
+def _es_supervisor_de_grupo(user):
+    from .models import GrupoTrabajo
+    return GrupoTrabajo.objects.filter(supervisor_grupo=user, activo=True).exists()
 
 
 @login_required
@@ -2010,9 +2028,11 @@ def editar_oportunidad_api(request, oportunidad_id):
     try:
         oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
         
-        # Verificar permisos - supervisores pueden editar todo, usuarios solo sus oportunidades
+        # Verificar permisos - supervisores y compañeros de grupo pueden editar
         if not is_supervisor(request.user) and oportunidad.usuario != request.user:
-            return JsonResponse({'success': False, 'error': 'No tienes permisos para editar esta oportunidad'})
+            from .views_grupos import comparten_grupo
+            if not (oportunidad.usuario and comparten_grupo(request.user, oportunidad.usuario)):
+                return JsonResponse({'success': False, 'error': 'No tienes permisos para editar esta oportunidad'})
         
         updated_values = {}
         
@@ -2102,7 +2122,27 @@ def editar_oportunidad_api(request, oportunidad_id):
             except User.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Usuario no encontrado'})
 
+        propietario_opp = oportunidad.usuario
         oportunidad.save()
+
+        # Registrar en chat de grupo si es edición de oportunidad ajena
+        try:
+            if propietario_opp and propietario_opp != request.user:
+                from .views_grupos import registrar_accion_grupo
+                actor_nombre = request.user.get_full_name() or request.user.username
+                prop_nombre = propietario_opp.get_full_name() or propietario_opp.username
+                nombre_opp = oportunidad.oportunidad or 'oportunidad'
+                if etapa_cambio:
+                    msg = f'{actor_nombre} cambió la etapa de "{nombre_opp}" (de {prop_nombre}) a {etapa_cambio}'
+                    accion = 'cambio_etapa'
+                else:
+                    msg = f'{actor_nombre} editó la oportunidad "{nombre_opp}" de {prop_nombre}'
+                    accion = 'editar_oportunidad'
+                registrar_accion_grupo(request.user, propietario_opp, accion, msg,
+                                       objeto_tipo='oportunidad', objeto_id=oportunidad.id,
+                                       objeto_titulo=nombre_opp)
+        except Exception:
+            pass
 
         # Ejecutar automatizaciones si hubo cambio de etapa
         tareas_auto = []
@@ -2112,9 +2152,9 @@ def editar_oportunidad_api(request, oportunidad_id):
                 tareas_auto = ejecutar_automatizaciones(oportunidad, etapa_cambio, request.user)
             except Exception as e_auto:
                 print(f'[Automatización] Error ejecutando reglas: {e_auto}')
-        
+
         return JsonResponse({
-            'success': True, 
+            'success': True,
             'message': 'Oportunidad actualizada correctamente',
             'updated_values': updated_values,
             'tareas_automaticas': tareas_auto,

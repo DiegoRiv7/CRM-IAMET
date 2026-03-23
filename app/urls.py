@@ -256,7 +256,15 @@ urlpatterns = [
     # ── Grupos de Trabajo ─────────────────────────────────────────────────────────────────────────────
     path('api/grupos/', views_grupos.api_grupos_listar, name='api_grupos_listar'),
     path('api/grupos/crear/', views_grupos.api_grupos_crear, name='api_grupos_crear'),
+    path('api/grupos/mis-grupos/', views_grupos.api_mis_grupos, name='api_mis_grupos'),
     path('api/grupos/<int:grupo_id>/', views_grupos.api_grupos_editar, name='api_grupos_editar'),
     path('api/grupos/<int:grupo_id>/eliminar/', views_grupos.api_grupos_eliminar, name='api_grupos_eliminar'),
     path('api/grupos/<int:grupo_id>/toggle/', views_grupos.api_grupos_toggle, name='api_grupos_toggle'),
+    path('api/grupos/<int:grupo_id>/chat/', views_grupos.api_grupo_chat, name='api_grupo_chat'),
+    path('api/grupos/<int:grupo_id>/chat/enviar/', views_grupos.api_grupo_chat_enviar, name='api_grupo_chat_enviar'),
+    path('api/grupos/<int:grupo_id>/chat/leer/', views_grupos.api_grupo_chat_leer, name='api_grupo_chat_leer'),
+    path('api/grupos/<int:grupo_id>/no-leidos/', views_grupos.api_grupo_no_leidos, name='api_grupo_no_leidos'),
+    path('api/grupos/<int:grupo_id>/miembros/agregar/', views_grupos.api_grupo_agregar_miembro, name='api_grupo_agregar_miembro'),
+    path('api/grupos/<int:grupo_id>/miembros/<int:user_id>/', views_grupos.api_grupo_quitar_miembro, name='api_grupo_quitar_miembro'),
+    path('api/grupos/<int:grupo_id>/renombrar/', views_grupos.api_grupo_renombrar, name='api_grupo_renombrar'),
 ]

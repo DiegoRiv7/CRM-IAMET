@@ -2154,11 +2154,27 @@ def actividad_list_create(request):
         
             if 'participants' in data and data['participants']:
                 actividad.participantes.set(data['participants'])
-        
+
+            # Registrar en chat de grupo si programó actividad para compañero
+            try:
+                from .views_grupos import registrar_accion_grupo
+                actor_nombre = request.user.get_full_name() or request.user.username
+                for p in actividad.participantes.all():
+                    if p != request.user:
+                        prop_nombre = p.get_full_name() or p.username
+                        registrar_accion_grupo(
+                            request.user, p,
+                            'programar_actividad',
+                            f'{actor_nombre} programó la actividad "{actividad.titulo}" para {prop_nombre}',
+                            objeto_tipo='actividad', objeto_id=actividad.id, objeto_titulo=actividad.titulo,
+                        )
+            except Exception:
+                pass
+
             participants_data = []
             for p in actividad.participantes.all():
                 participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
-        
+
             opportunity_data = None
             if actividad.oportunidad:
                 opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad, 'monto': float(actividad.oportunidad.monto or 0)}
@@ -2191,9 +2207,11 @@ def actividad_detail(request, pk):
     """
     actividad = get_object_or_404(Actividad, pk=pk)
 
-    # Verificar permisos: solo el creador o un participante puede ver/editar/eliminar
+    # Verificar permisos: creador, participante, supervisor o compañero de grupo
     if actividad.creado_por != request.user and request.user not in actividad.participantes.all() and not is_supervisor(request.user):
-        return JsonResponse({'error': 'No tienes permiso para acceder a esta actividad.'}, status=403)
+        from .views_grupos import comparten_grupo
+        if not comparten_grupo(request.user, actividad.creado_por):
+            return JsonResponse({'error': 'No tienes permiso para acceder a esta actividad.'}, status=403)
 
     if request.method == 'GET':
         participants_data = []
@@ -2717,11 +2735,14 @@ def api_completar_tarea(request, tarea_id):
         # Obtener la tarea
         tarea = get_object_or_404(Tarea, id=tarea_id)
         
-        # Verificar permisos - solo el asignado, creador o superusuario pueden completar
-        if (request.user != tarea.asignado_a and 
-            request.user != tarea.creado_por and 
+        # Verificar permisos - el asignado, creador, superusuario o compañero de grupo
+        if (request.user != tarea.asignado_a and
+            request.user != tarea.creado_por and
             not request.user.is_superuser):
-            return JsonResponse({'error': 'Sin permisos para completar esta tarea'}, status=403)
+            from .views_grupos import comparten_grupo
+            target = tarea.asignado_a or tarea.creado_por
+            if not (target and comparten_grupo(request.user, target)):
+                return JsonResponse({'error': 'Sin permisos para completar esta tarea'}, status=403)
         
         # Verificar que no esté ya completada
         if tarea.estado == 'completada':
@@ -2762,6 +2783,22 @@ def api_completar_tarea(request, tarea_id):
                 tarea_id=tarea.id,
                 tarea_titulo=tarea.titulo,
             )
+
+        # Registrar en chat de grupo si cerró tarea de otro
+        try:
+            propietario_tarea = tarea.asignado_a or tarea.creado_por
+            if propietario_tarea and propietario_tarea != request.user:
+                from .views_grupos import registrar_accion_grupo
+                actor_nombre = request.user.get_full_name() or request.user.username
+                prop_nombre = propietario_tarea.get_full_name() or propietario_tarea.username
+                registrar_accion_grupo(
+                    request.user, propietario_tarea,
+                    'cerrar_tarea',
+                    f'{actor_nombre} completó la tarea "{tarea.titulo}" de {prop_nombre}',
+                    objeto_tipo='tarea', objeto_id=tarea.id, objeto_titulo=tarea.titulo,
+                )
+        except Exception:
+            pass
 
         # Formatear tiempo trabajado para respuesta
         tiempo_total_str = "00:00:00"

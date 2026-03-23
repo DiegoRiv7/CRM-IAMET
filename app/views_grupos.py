@@ -1,20 +1,33 @@
 """
 views_grupos.py — APIs para el sistema de Grupos de Trabajo.
 
-Endpoints:
-  GET  /api/grupos/                    → listar grupos
-  POST /api/grupos/crear/              → crear grupo
-  PUT  /api/grupos/<id>/               → editar grupo
-  DELETE /api/grupos/<id>/eliminar/    → eliminar grupo
-  POST /api/grupos/<id>/toggle/        → activar/desactivar
+Endpoints (admin/supervisor global):
+  GET    /api/grupos/                       → listar grupos
+  POST   /api/grupos/crear/                 → crear grupo
+  PUT    /api/grupos/<id>/                  → editar grupo
+  DELETE /api/grupos/<id>/eliminar/         → eliminar grupo
+  POST   /api/grupos/<id>/toggle/           → activar/desactivar
+
+Endpoints (supervisor de grupo):
+  POST   /api/grupos/<id>/miembros/agregar/ → agregar miembro
+  DELETE /api/grupos/<id>/miembros/<uid>/   → quitar miembro
+  PATCH  /api/grupos/<id>/renombrar/        → renombrar grupo
+
+Endpoints (miembros + supervisores):
+  GET    /api/grupos/mis-grupos/            → grupos del usuario actual
+  GET    /api/grupos/<id>/chat/             → mensajes del grupo
+  POST   /api/grupos/<id>/chat/enviar/      → enviar mensaje
+  POST   /api/grupos/<id>/chat/leer/        → marcar leído
+  GET    /api/grupos/<id>/no-leidos/        → conteo de no leídos
 """
 import json
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
+from django.db.models import Q
 
-from app.models import GrupoTrabajo
+from app.models import GrupoTrabajo, MensajeGrupo, LecturaGrupo
 from app.views_utils import is_supervisor
 
 
@@ -202,3 +215,265 @@ def get_usuarios_visibles_ids(user):
             ids.add(g.supervisor_grupo_id)
 
     return ids
+
+
+def comparten_grupo(user1, user2):
+    """True si user1 puede actuar sobre contenido de user2 por ser del mismo grupo activo."""
+    if user1.id == user2.id:
+        return False
+    if is_supervisor(user1):
+        return True
+    ids_visibles = get_usuarios_visibles_ids(user1)
+    return ids_visibles is not None and user2.id in ids_visibles
+
+
+def usuario_puede_acceder_grupo(user, grupo):
+    """True si el usuario es miembro, supervisor del grupo, o supervisor global."""
+    if is_supervisor(user):
+        return True
+    if grupo.supervisor_grupo_id == user.id:
+        return True
+    return grupo.miembros.filter(id=user.id).exists()
+
+
+def get_grupos_del_usuario(user):
+    """Devuelve los grupos activos donde participa el usuario (como miembro o supervisor de grupo)."""
+    if is_supervisor(user):
+        return GrupoTrabajo.objects.filter(activo=True).prefetch_related('miembros').select_related('supervisor_grupo')
+    return GrupoTrabajo.objects.filter(
+        Q(miembros=user) | Q(supervisor_grupo=user), activo=True
+    ).distinct().prefetch_related('miembros').select_related('supervisor_grupo')
+
+
+def puede_gestionar_grupo(user, grupo):
+    """True si puede agregar/quitar miembros y renombrar el grupo."""
+    return is_supervisor(user) or grupo.supervisor_grupo_id == user.id
+
+
+def _no_leidos_grupo(user, grupo):
+    """Cuántos mensajes no leídos tiene el usuario en este grupo."""
+    try:
+        lectura = LecturaGrupo.objects.get(usuario=user, grupo=grupo)
+        ultimo_id = lectura.ultimo_leido_id or 0
+    except LecturaGrupo.DoesNotExist:
+        ultimo_id = 0
+    return MensajeGrupo.objects.filter(grupo=grupo, id__gt=ultimo_id).exclude(autor=user).count()
+
+
+def _serializar_mensaje(msg, request_user=None):
+    autor_nombre = None
+    autor_username = None
+    if msg.autor:
+        autor_nombre = (msg.autor.first_name + ' ' + msg.autor.last_name).strip() or msg.autor.username
+        autor_username = msg.autor.username
+    return {
+        'id': msg.id,
+        'tipo': msg.tipo,
+        'contenido': msg.contenido,
+        'autor_nombre': autor_nombre,
+        'autor_username': autor_username,
+        'es_mio': request_user and msg.autor_id == request_user.id,
+        'accion': msg.accion,
+        'objeto_tipo': msg.objeto_tipo,
+        'objeto_id': msg.objeto_id,
+        'objeto_titulo': msg.objeto_titulo,
+        'fecha': msg.fecha.strftime('%d/%m/%Y %H:%M'),
+        'fecha_iso': msg.fecha.isoformat(),
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Helper público: crear mensaje de sistema en todos los grupos compartidos
+# ─────────────────────────────────────────────────────────────────────────────
+
+def registrar_accion_grupo(actor, propietario, accion, contenido, objeto_tipo='', objeto_id=None, objeto_titulo=''):
+    """
+    Crea un mensaje de sistema en todos los grupos activos que contengan
+    tanto a `actor` como a `propietario`. Si son la misma persona, no registra.
+    """
+    if actor.id == propietario.id:
+        return
+    grupos = GrupoTrabajo.objects.filter(activo=True).prefetch_related('miembros')
+    for g in grupos:
+        todos_ids = set(g.miembros.values_list('id', flat=True))
+        if g.supervisor_grupo_id:
+            todos_ids.add(g.supervisor_grupo_id)
+        if actor.id in todos_ids and propietario.id in todos_ids:
+            MensajeGrupo.objects.create(
+                grupo=g,
+                autor=actor,
+                tipo='sistema',
+                contenido=contenido,
+                accion=accion,
+                objeto_tipo=objeto_tipo,
+                objeto_id=objeto_id,
+                objeto_titulo=objeto_titulo,
+            )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Endpoints: mis grupos + chat
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+@require_http_methods(['GET'])
+def api_mis_grupos(request):
+    """Devuelve los grupos del usuario actual con conteo de no leídos."""
+    grupos = get_grupos_del_usuario(request.user)
+    resultado = []
+    for g in grupos:
+        no_leidos = _no_leidos_grupo(request.user, g)
+        resultado.append({**_grupo_a_dict(g), 'no_leidos': no_leidos})
+    return JsonResponse({'grupos': resultado})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_grupo_chat(request, grupo_id):
+    """Lista los mensajes de un grupo. Solo accesible a miembros."""
+    try:
+        grupo = GrupoTrabajo.objects.get(id=grupo_id)
+    except GrupoTrabajo.DoesNotExist:
+        return JsonResponse({'error': 'Grupo no encontrado'}, status=404)
+    if not usuario_puede_acceder_grupo(request.user, grupo):
+        return JsonResponse({'error': 'Sin acceso'}, status=403)
+
+    desde_id = request.GET.get('desde_id')
+    qs = MensajeGrupo.objects.filter(grupo=grupo).select_related('autor').order_by('fecha')
+    if desde_id:
+        qs = qs.filter(id__gt=int(desde_id))
+    else:
+        qs = qs.order_by('-fecha')[:60]
+        qs = list(reversed(list(qs)))
+
+    mensajes = [_serializar_mensaje(m, request.user) for m in qs]
+    return JsonResponse({'mensajes': mensajes, 'grupo': _grupo_a_dict(grupo)})
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_grupo_chat_enviar(request, grupo_id):
+    """Envía un mensaje al chat del grupo."""
+    try:
+        grupo = GrupoTrabajo.objects.get(id=grupo_id)
+    except GrupoTrabajo.DoesNotExist:
+        return JsonResponse({'error': 'Grupo no encontrado'}, status=404)
+    if not usuario_puede_acceder_grupo(request.user, grupo):
+        return JsonResponse({'error': 'Sin acceso'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    contenido = (data.get('contenido') or '').strip()
+    if not contenido:
+        return JsonResponse({'error': 'Mensaje vacío'}, status=400)
+
+    msg = MensajeGrupo.objects.create(
+        grupo=grupo,
+        autor=request.user,
+        tipo='mensaje',
+        contenido=contenido,
+    )
+    return JsonResponse({'success': True, 'mensaje': _serializar_mensaje(msg, request.user)})
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_grupo_chat_leer(request, grupo_id):
+    """Marca todos los mensajes del grupo como leídos por el usuario."""
+    try:
+        grupo = GrupoTrabajo.objects.get(id=grupo_id)
+    except GrupoTrabajo.DoesNotExist:
+        return JsonResponse({'error': 'Grupo no encontrado'}, status=404)
+    if not usuario_puede_acceder_grupo(request.user, grupo):
+        return JsonResponse({'error': 'Sin acceso'}, status=403)
+
+    ultimo = MensajeGrupo.objects.filter(grupo=grupo).order_by('-fecha').first()
+    if ultimo:
+        LecturaGrupo.objects.update_or_create(
+            usuario=request.user, grupo=grupo,
+            defaults={'ultimo_leido': ultimo}
+        )
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_grupo_no_leidos(request, grupo_id):
+    try:
+        grupo = GrupoTrabajo.objects.get(id=grupo_id)
+    except GrupoTrabajo.DoesNotExist:
+        return JsonResponse({'error': 'Grupo no encontrado'}, status=404)
+    if not usuario_puede_acceder_grupo(request.user, grupo):
+        return JsonResponse({'error': 'Sin acceso'}, status=403)
+    return JsonResponse({'no_leidos': _no_leidos_grupo(request.user, grupo)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Endpoints: gestión de miembros (supervisor de grupo + supervisor global)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+@require_http_methods(['POST'])
+def api_grupo_agregar_miembro(request, grupo_id):
+    try:
+        grupo = GrupoTrabajo.objects.get(id=grupo_id)
+    except GrupoTrabajo.DoesNotExist:
+        return JsonResponse({'error': 'Grupo no encontrado'}, status=404)
+    if not puede_gestionar_grupo(request.user, grupo):
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        user_id = int(data.get('user_id'))
+        usuario = User.objects.get(id=user_id)
+    except Exception:
+        return JsonResponse({'error': 'Usuario inválido'}, status=400)
+
+    grupo.miembros.add(usuario)
+    return JsonResponse({'success': True, 'grupo': _grupo_a_dict(grupo)})
+
+
+@login_required
+@require_http_methods(['DELETE'])
+def api_grupo_quitar_miembro(request, grupo_id, user_id):
+    try:
+        grupo = GrupoTrabajo.objects.get(id=grupo_id)
+    except GrupoTrabajo.DoesNotExist:
+        return JsonResponse({'error': 'Grupo no encontrado'}, status=404)
+    if not puede_gestionar_grupo(request.user, grupo):
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+
+    try:
+        usuario = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+
+    grupo.miembros.remove(usuario)
+    return JsonResponse({'success': True, 'grupo': _grupo_a_dict(grupo)})
+
+
+@login_required
+@require_http_methods(['PATCH'])
+def api_grupo_renombrar(request, grupo_id):
+    try:
+        grupo = GrupoTrabajo.objects.get(id=grupo_id)
+    except GrupoTrabajo.DoesNotExist:
+        return JsonResponse({'error': 'Grupo no encontrado'}, status=404)
+    if not puede_gestionar_grupo(request.user, grupo):
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        return JsonResponse({'error': 'Nombre requerido'}, status=400)
+
+    grupo.nombre = nombre
+    grupo.save(update_fields=['nombre'])
+    return JsonResponse({'success': True, 'grupo': _grupo_a_dict(grupo)})

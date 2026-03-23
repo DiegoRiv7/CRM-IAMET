@@ -1,0 +1,687 @@
+<!-- ═══ WIDGET GRUPOS / CHAT DE EQUIPO ═══ -->
+<style>
+.grupo-overlay {
+  display:none;position:fixed;inset:0;z-index:10250;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.25);backdrop-filter:blur(6px);
+}
+.grupo-overlay.active { display:flex; }
+.grupo-card {
+  width:92vw;max-width:980px;height:88vh;
+  background:rgba(250,250,252,0.96);
+  backdrop-filter:blur(48px) saturate(180%);
+  -webkit-backdrop-filter:blur(48px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.8);
+  border-radius:24px;
+  box-shadow:0 2px 0 rgba(255,255,255,0.9) inset,0 32px 64px rgba(0,0,0,0.18);
+  display:flex;overflow:hidden;position:relative;
+}
+/* Sidebar de grupos */
+.grupo-sidebar {
+  width:240px;flex-shrink:0;
+  background:rgba(242,242,247,0.7);
+  border-right:1px solid rgba(0,0,0,0.07);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.grupo-sidebar-header {
+  padding:18px 16px 12px;
+  border-bottom:1px solid rgba(0,0,0,0.06);
+  flex-shrink:0;
+}
+.grupo-sidebar-header h3 {
+  font-size:0.9rem;font-weight:700;color:#1C1C1E;margin:0;
+}
+.grupo-sidebar-list { flex:1;overflow-y:auto;padding:8px; }
+.grupo-sidebar-item {
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;border-radius:12px;cursor:pointer;
+  transition:background 0.12s;position:relative;
+}
+.grupo-sidebar-item:hover { background:rgba(0,0,0,0.05); }
+.grupo-sidebar-item.active { background:rgba(0,122,255,0.1); }
+.grupo-sidebar-item .gs-avatar {
+  width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:0.88rem;flex-shrink:0;
+}
+.grupo-sidebar-item .gs-info { flex:1;min-width:0; }
+.grupo-sidebar-item .gs-nombre {
+  font-size:0.82rem;font-weight:600;color:#1C1C1E;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.grupo-sidebar-item .gs-miembros {
+  font-size:0.7rem;color:#8E8E93;margin-top:1px;
+}
+.grupo-sidebar-item .gs-badge {
+  background:#FF3B30;color:#fff;border-radius:10px;
+  padding:1px 6px;font-size:0.65rem;font-weight:700;flex-shrink:0;
+}
+/* Panel principal del chat */
+.grupo-main {
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+}
+.grupo-chat-header {
+  padding:14px 18px 12px;
+  border-bottom:1px solid rgba(0,0,0,0.06);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;background:rgba(255,255,255,0.6);
+}
+.grupo-chat-feed {
+  flex:1;overflow-y:auto;padding:14px 18px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.grupo-msg { display:flex;gap:8px;align-items:flex-end;max-width:72%; }
+.grupo-msg.mio { flex-direction:row-reverse;align-self:flex-end; }
+.grupo-msg.otro { align-self:flex-start; }
+.grupo-msg.sistema { align-self:center;max-width:88%; }
+.grupo-msg-avatar {
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+.grupo-msg-burbuja {
+  background:#fff;border:1px solid rgba(0,0,0,0.08);
+  border-radius:16px;padding:8px 12px;
+  font-size:0.83rem;color:#1C1C1E;line-height:1.45;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+.grupo-msg.mio .grupo-msg-burbuja {
+  background:#007AFF;color:#fff;border-color:transparent;
+}
+.grupo-msg-sistema-inner {
+  background:rgba(0,0,0,0.05);border-radius:12px;
+  padding:6px 14px;font-size:0.76rem;color:#636366;
+  text-align:center;line-height:1.4;
+}
+.grupo-msg-sistema-inner a {
+  color:#007AFF;text-decoration:none;font-weight:600;
+}
+.grupo-msg-sistema-inner a:hover { text-decoration:underline; }
+.grupo-msg-meta {
+  font-size:0.68rem;color:#8E8E93;margin-top:2px;
+  padding:0 4px;
+}
+.grupo-msg.mio .grupo-msg-meta { text-align:right; }
+.grupo-msg-autor {
+  font-size:0.72rem;font-weight:600;color:#636366;margin-bottom:2px;padding:0 4px;
+}
+/* Input de chat */
+.grupo-input-bar {
+  padding:10px 14px;
+  background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);
+  border-top:1px solid rgba(0,0,0,0.06);
+  display:flex;align-items:flex-end;gap:8px;flex-shrink:0;
+}
+.grupo-input-wrap { flex:1;position:relative; }
+.grupo-textarea {
+  width:100%;background:rgba(242,242,247,0.8);
+  border:1.5px solid transparent;border-radius:18px;
+  padding:9px 14px;font-size:0.85rem;color:#1C1C1E;
+  outline:none;resize:none;line-height:1.4;max-height:120px;
+  overflow-y:auto;box-sizing:border-box;
+  transition:border-color 0.15s;
+}
+.grupo-textarea:focus { border-color:rgba(0,122,255,0.4); }
+.grupo-send-btn {
+  width:36px;height:36px;border-radius:50%;
+  background:#007AFF;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background 0.15s;
+  box-shadow:0 2px 8px rgba(0,122,255,0.35);
+}
+.grupo-send-btn:hover { background:#0062CC; }
+.grupo-send-btn:disabled { background:#C7C7CC;box-shadow:none;cursor:default; }
+/* Vacío */
+.grupo-empty {
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:#8E8E93;font-size:0.85rem;text-align:center;padding:40px;
+}
+/* Gestión (supervisor de grupo) */
+.grupo-gestionar-btn {
+  background:transparent;border:1px solid rgba(0,0,0,0.1);
+  border-radius:8px;padding:4px 10px;font-size:0.75rem;
+  color:#3A3A3C;cursor:pointer;font-weight:500;
+  transition:background 0.12s;
+}
+.grupo-gestionar-btn:hover { background:rgba(0,0,0,0.05); }
+/* Mentions autocomplete */
+.grupo-mention-list {
+  position:absolute;bottom:calc(100% + 6px);left:0;right:0;
+  background:#fff;border:1px solid rgba(0,0,0,0.1);
+  border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);
+  max-height:160px;overflow-y:auto;z-index:10;
+}
+.grupo-mention-item {
+  padding:7px 12px;font-size:0.82rem;cursor:pointer;
+  display:flex;align-items:center;gap:8px;
+  transition:background 0.1s;
+}
+.grupo-mention-item:hover { background:#F2F2F7; }
+/* Panel gestionar */
+.grupo-gestionar-panel {
+  position:absolute;top:58px;right:16px;z-index:20;
+  background:rgba(255,255,255,0.96);backdrop-filter:blur(24px);
+  border:1px solid rgba(0,0,0,0.1);border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.14);
+  padding:14px;width:280px;
+}
+.grupo-fecha-sep {
+  text-align:center;font-size:0.7rem;color:#8E8E93;
+  padding:6px 0 2px;font-weight:500;
+}
+</style>
+
+<div class="grupo-overlay" id="widgetGrupo">
+  <div class="grupo-card">
+
+    <!-- Sidebar: lista de grupos -->
+    <div class="grupo-sidebar">
+      <div class="grupo-sidebar-header">
+        <h3>{% if es_supervisor %}Grupos{% else %}Mi Grupo{% endif %}</h3>
+      </div>
+      <div class="grupo-sidebar-list" id="grupoSidebarList">
+        {% for g in mis_grupos %}
+        <div class="grupo-sidebar-item {% if forloop.first %}active{% endif %}"
+             id="gs-item-{{ g.id }}"
+             onclick="grupoChatAbrir({{ g.id }})">
+          <div class="gs-avatar" style="background:{{ g.color }};">
+            {{ g.nombre|slice:":1"|upper }}
+          </div>
+          <div class="gs-info">
+            <div class="gs-nombre">{{ g.nombre }}</div>
+            <div class="gs-miembros" id="gs-miembros-{{ g.id }}">Cargando...</div>
+          </div>
+          <span class="gs-badge" id="gs-badge-{{ g.id }}" style="display:none;"></span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Panel principal -->
+    <div class="grupo-main" id="grupoMain">
+      <div class="grupo-empty" id="grupoEmptyPanel">
+        <svg width="40" height="40" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:12px;">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <div>Selecciona un grupo</div>
+      </div>
+    </div>
+
+    <!-- Cerrar -->
+    <button onclick="grupoCerrar()" style="position:absolute;top:14px;right:16px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.07);border:none;cursor:pointer;font-size:1.1rem;color:#636366;display:flex;align-items:center;justify-content:center;z-index:5;">&times;</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var _grupoActualId = null;
+  var _grupoActualData = null;
+  var _pollInterval = null;
+  var _ultimoMsgId = 0;
+  var _misGrupos = {{ mis_grupos|safe }};
+  var _esSupervisor = {{ es_supervisor|yesno:"true,false" }};
+  var _esSuperDeGrupo = {{ es_supervisor_de_grupo|yesno:"true,false" }};
+  var _miUserId = {{ usuario.id }};
+  var _miNombre = '{{ usuario.get_full_name|default:usuario.username }}';
+
+  function _csrf() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  function _avatarColor(nombre) {
+    var colors = ['#007AFF','#34C759','#FF9500','#FF2D55','#AF52DE','#5AC8FA','#FF3B30'];
+    var h = 0;
+    for(var i=0;i<nombre.length;i++) h = nombre.charCodeAt(i) + ((h<<5)-h);
+    return colors[Math.abs(h) % colors.length];
+  }
+
+  function _initials(nombre) {
+    if(!nombre) return '?';
+    var parts = nombre.trim().split(' ');
+    if(parts.length >= 2) return (parts[0][0]||'') + (parts[1][0]||'');
+    return nombre[0]||'?';
+  }
+
+  /* ── Abrir / cerrar ─────────────────────────── */
+  window.grupoAbrir = function() {
+    document.getElementById('widgetGrupo').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    _cargarBadgesYMiembros();
+    // Abrir el primer grupo automáticamente
+    if(_misGrupos.length === 1 || !_esSupervisor) {
+      var primero = _misGrupos[0];
+      if(primero) grupoChatAbrir(primero.id);
+    } else if(_misGrupos.length > 0) {
+      grupoChatAbrir(_misGrupos[0].id);
+    }
+  };
+
+  window.grupoCerrar = function() {
+    document.getElementById('widgetGrupo').classList.remove('active');
+    document.body.style.overflow = '';
+    _stopPoll();
+    _grupoActualId = null;
+  };
+
+  /* ── Badges sidebar ─────────────────────────── */
+  function _cargarBadgesYMiembros() {
+    _misGrupos.forEach(function(g) {
+      // No-leídos
+      fetch('/app/api/grupos/'+g.id+'/no-leidos/')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var badge = document.getElementById('gs-badge-'+g.id);
+          if(badge) {
+            if(d.no_leidos > 0) {
+              badge.textContent = d.no_leidos > 99 ? '99+' : d.no_leidos;
+              badge.style.display = '';
+            } else {
+              badge.style.display = 'none';
+            }
+          }
+        }).catch(function(){});
+      // Miembros
+      fetch('/app/api/grupos/')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var grupos = d.grupos || [];
+          var gr = grupos.find(function(x){return x.id===g.id;});
+          if(gr) {
+            var el = document.getElementById('gs-miembros-'+g.id);
+            if(el) el.textContent = (gr.miembros.length||0) + ' miembro' + (gr.miembros.length===1?'':'s');
+          }
+        }).catch(function(){});
+    });
+  }
+
+  /* ── Abrir chat de un grupo ─────────────────── */
+  window.grupoChatAbrir = function(grupoId) {
+    _stopPoll();
+    _grupoActualId = grupoId;
+    _ultimoMsgId = 0;
+
+    // Activar sidebar
+    document.querySelectorAll('.grupo-sidebar-item').forEach(function(el){
+      el.classList.remove('active');
+    });
+    var item = document.getElementById('gs-item-'+grupoId);
+    if(item) item.classList.add('active');
+
+    // Limpiar badge
+    var badge = document.getElementById('gs-badge-'+grupoId);
+    if(badge) badge.style.display = 'none';
+
+    // Mostrar loader en main
+    var main = document.getElementById('grupoMain');
+    main.innerHTML = '<div class="grupo-empty"><svg width="24" height="24" fill="none" stroke="#C7C7CC" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div style="margin-top:8px;font-size:0.8rem;">Cargando...</div></div>';
+
+    fetch('/app/api/grupos/'+grupoId+'/chat/')
+      .then(function(r){return r.json();})
+      .then(function(data){
+        _grupoActualData = data.grupo;
+        _renderChatPanel(data.grupo, data.mensajes);
+        // Marcar como leído
+        fetch('/app/api/grupos/'+grupoId+'/chat/leer/',{method:'POST',headers:{'X-CSRFToken':_csrf()}});
+        _startPoll();
+      }).catch(function(){
+        document.getElementById('grupoMain').innerHTML = '<div class="grupo-empty">Error cargando el chat.</div>';
+      });
+  };
+
+  /* ── Render panel chat ──────────────────────── */
+  function _renderChatPanel(grupo, mensajes) {
+    var puedeGestionar = _esSupervisor || (grupo.supervisor && grupo.supervisor.id === _miUserId);
+    var h = '';
+
+    // Header
+    h += '<div class="grupo-chat-header">';
+    h += '<div style="display:flex;align-items:center;gap:10px;">';
+    h += '<div style="width:36px;height:36px;border-radius:10px;background:'+grupo.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem;">'+grupo.nombre.charAt(0).toUpperCase()+'</div>';
+    h += '<div>';
+    h += '<div style="font-size:0.9rem;font-weight:700;color:#1C1C1E;">'+_esc(grupo.nombre)+'</div>';
+    var miembrosNames = grupo.miembros.map(function(m){return m.nombre.split(' ')[0];}).join(', ');
+    h += '<div style="font-size:0.72rem;color:#8E8E93;">'+(miembrosNames||'Sin miembros')+'</div>';
+    h += '</div></div>';
+    h += '<div style="display:flex;align-items:center;gap:6px;">';
+    if(puedeGestionar) {
+      h += '<button class="grupo-gestionar-btn" onclick="_grupoGestionarToggle('+grupo.id+')">Gestionar</button>';
+    }
+    h += '</div>';
+    h += '</div>';
+
+    // Panel de gestión (hidden por defecto)
+    h += '<div id="grupoGestionarPanel" style="display:none;border-bottom:1px solid rgba(0,0,0,0.06);padding:12px 18px;background:rgba(255,255,255,0.5);">';
+    h += _renderGestionPanel(grupo);
+    h += '</div>';
+
+    // Feed
+    h += '<div class="grupo-chat-feed" id="grupoChatFeed">';
+    if(mensajes.length === 0) {
+      h += '<div style="text-align:center;color:#C7C7CC;font-size:0.8rem;padding:40px 0;">Sé el primero en escribir en el grupo</div>';
+    } else {
+      h += _renderMensajes(mensajes, true);
+    }
+    h += '</div>';
+
+    // Mentions dropdown
+    h += '<div style="position:relative;padding:0 14px 0;">';
+    h += '<div class="grupo-mention-list" id="grupoMentionList" style="display:none;"></div>';
+    h += '</div>';
+
+    // Input bar
+    h += '<div class="grupo-input-bar">';
+    h += '<div class="grupo-input-wrap">';
+    h += '<textarea class="grupo-textarea" id="grupoTextarea" rows="1" placeholder="Escribe un mensaje... usa @ para etiquetar" oninput="_grupoInputAuto(this);_grupoCheckMention(this);" onkeydown="_grupoEnterSend(event)"></textarea>';
+    h += '</div>';
+    h += '<button class="grupo-send-btn" id="grupoSendBtn" onclick="_grupoEnviar()" title="Enviar">';
+    h += '<svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+    h += '</button>';
+    h += '</div>';
+
+    document.getElementById('grupoMain').innerHTML = h;
+
+    // Actualizar último ID
+    if(mensajes.length > 0) _ultimoMsgId = mensajes[mensajes.length-1].id;
+    _scrollChatFeed();
+  }
+
+  function _renderGestionPanel(grupo) {
+    var h = '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">';
+    // Renombrar
+    h += '<div style="display:flex;gap:6px;align-items:center;">';
+    h += '<input id="grupoRenombrarInput" value="'+_esc(grupo.nombre)+'" style="background:rgba(242,242,247,0.9);border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:5px 10px;font-size:0.82rem;width:160px;outline:none;">';
+    h += '<button onclick="_grupoRenombrar('+grupo.id+')" style="background:#007AFF;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-weight:600;cursor:pointer;">Renombrar</button>';
+    h += '</div>';
+    // Agregar miembro
+    h += '<div style="display:flex;gap:6px;align-items:center;">';
+    h += '<select id="grupoAddUserSel" style="background:rgba(242,242,247,0.9);border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:5px 10px;font-size:0.78rem;outline:none;"></select>';
+    h += '<button onclick="_grupoAgregarMiembro('+grupo.id+')" style="background:#34C759;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-weight:600;cursor:pointer;">+ Agregar</button>';
+    h += '</div>';
+    h += '</div>';
+    // Miembros actuales
+    h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">';
+    grupo.miembros.forEach(function(m){
+      h += '<div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.05);border-radius:8px;padding:3px 8px;">';
+      h += '<span style="font-size:0.78rem;color:#1C1C1E;font-weight:500;">'+_esc(m.nombre)+'</span>';
+      h += '<button onclick="_grupoQuitarMiembro('+grupo.id+','+m.id+')" style="background:none;border:none;color:#FF3B30;cursor:pointer;font-size:0.9rem;line-height:1;padding:0 2px;" title="Quitar del grupo">&times;</button>';
+      h += '</div>';
+    });
+    h += '</div>';
+    // Cargar usuarios para el select
+    setTimeout(function(){ _cargarUsersParaSelect(grupo); }, 50);
+    return h;
+  }
+
+  function _cargarUsersParaSelect(grupo) {
+    var sel = document.getElementById('grupoAddUserSel');
+    if(!sel) return;
+    var miembrosIds = grupo.miembros.map(function(m){return m.id;});
+    if(grupo.supervisor) miembrosIds.push(grupo.supervisor.id);
+    fetch('/app/api/admin/usuarios/')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var usuarios = (d.usuarios||[]).filter(function(u){ return miembrosIds.indexOf(u.id)===-1; });
+        sel.innerHTML = '<option value="">Seleccionar usuario</option>';
+        usuarios.forEach(function(u){
+          var nombre = ((u.first_name||'')+' '+(u.last_name||'')).trim()||u.username;
+          sel.innerHTML += '<option value="'+u.id+'">'+_esc(nombre)+'</option>';
+        });
+      }).catch(function(){});
+  }
+
+  window._grupoGestionarToggle = function(grupoId) {
+    var panel = document.getElementById('grupoGestionarPanel');
+    if(!panel) return;
+    panel.style.display = panel.style.display === 'none' ? '' : 'none';
+  };
+
+  window._grupoRenombrar = function(grupoId) {
+    var input = document.getElementById('grupoRenombrarInput');
+    if(!input) return;
+    var nombre = input.value.trim();
+    if(!nombre) return;
+    fetch('/app/api/grupos/'+grupoId+'/renombrar/',{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-CSRFToken':_csrf()},
+      body:JSON.stringify({nombre:nombre})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.success){
+        _grupoActualData = d.grupo;
+        // Actualizar sidebar
+        var el = document.getElementById('gs-item-'+grupoId);
+        if(el){ var n=el.querySelector('.gs-nombre'); if(n) n.textContent=nombre; }
+        grupoChatAbrir(grupoId);
+      }
+    });
+  };
+
+  window._grupoAgregarMiembro = function(grupoId) {
+    var sel = document.getElementById('grupoAddUserSel');
+    if(!sel||!sel.value) return;
+    fetch('/app/api/grupos/'+grupoId+'/miembros/agregar/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':_csrf()},
+      body:JSON.stringify({user_id:parseInt(sel.value)})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.success) grupoChatAbrir(grupoId);
+    });
+  };
+
+  window._grupoQuitarMiembro = function(grupoId, userId) {
+    fetch('/app/api/grupos/'+grupoId+'/miembros/'+userId+'/',{
+      method:'DELETE',headers:{'X-CSRFToken':_csrf()}
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.success) grupoChatAbrir(grupoId);
+    });
+  };
+
+  /* ── Render mensajes ────────────────────────── */
+  function _renderMensajes(mensajes, conFechas) {
+    var h = '';
+    var fechaAnterior = null;
+    mensajes.forEach(function(msg){
+      var fechaMsg = msg.fecha.split(' ')[0];
+      if(conFechas && fechaMsg !== fechaAnterior) {
+        h += '<div class="grupo-fecha-sep">'+fechaMsg+'</div>';
+        fechaAnterior = fechaMsg;
+      }
+      h += _renderMensaje(msg);
+    });
+    return h;
+  }
+
+  function _renderMensaje(msg) {
+    if(msg.tipo === 'sistema') {
+      var iconoAccion = _iconoAccion(msg.accion);
+      var linkObj = '';
+      if(msg.objeto_tipo && msg.objeto_id) {
+        var href = _linkObjeto(msg.objeto_tipo, msg.objeto_id);
+        if(href) linkObj = ' — <a href="'+href+'" target="_blank">'+_esc(msg.objeto_titulo||msg.objeto_tipo)+'</a>';
+      }
+      return '<div class="grupo-msg sistema"><div class="grupo-msg-sistema-inner">'+iconoAccion+' '+_parseMenciones(msg.contenido)+linkObj+'<span style="color:#C7C7CC;margin-left:6px;font-size:0.66rem;">'+msg.fecha.split(' ')[1]+'</span></div></div>';
+    }
+
+    var esMio = msg.es_mio;
+    var clase = esMio ? 'mio' : 'otro';
+    var color = _avatarColor(msg.autor_nombre||'?');
+    var ini = _initials(msg.autor_nombre||'?');
+    var h = '<div class="grupo-msg '+clase+'">';
+    if(!esMio) {
+      h += '<div class="grupo-msg-avatar" style="background:'+color+';">'+ini+'</div>';
+    }
+    h += '<div>';
+    if(!esMio) h += '<div class="grupo-msg-autor">'+_esc(msg.autor_nombre||msg.autor_username||'')+'</div>';
+    h += '<div class="grupo-msg-burbuja">'+_parseMenciones(_esc(msg.contenido))+'</div>';
+    h += '<div class="grupo-msg-meta">'+msg.fecha.split(' ')[1]+'</div>';
+    h += '</div>';
+    if(esMio) {
+      h += '<div class="grupo-msg-avatar" style="background:'+color+';">'+ini+'</div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  function _iconoAccion(accion) {
+    var icons = {
+      'editar_oportunidad': '✏️',
+      'cambio_etapa': '🔀',
+      'cerrar_tarea': '✅',
+      'programar_actividad': '📅',
+    };
+    return icons[accion] || '🔔';
+  }
+
+  function _linkObjeto(tipo, id) {
+    if(tipo === 'oportunidad') return '/app/home/?tab=crm#opp-'+id;
+    if(tipo === 'tarea') return '/app/home/?tab=tareas#tarea-'+id;
+    return null;
+  }
+
+  function _parseMenciones(texto) {
+    return texto.replace(/@\[([^\]]+)\]/g, '<strong style="color:#007AFF;">@$1</strong>');
+  }
+
+  function _esc(s) {
+    if(!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Enviar mensaje ─────────────────────────── */
+  window._grupoEnviar = function() {
+    if(!_grupoActualId) return;
+    var ta = document.getElementById('grupoTextarea');
+    if(!ta) return;
+    var texto = ta.value.trim();
+    if(!texto) return;
+
+    var btn = document.getElementById('grupoSendBtn');
+    if(btn) btn.disabled = true;
+
+    fetch('/app/api/grupos/'+_grupoActualId+'/chat/enviar/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':_csrf()},
+      body:JSON.stringify({contenido:texto})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.success){
+        ta.value='';
+        ta.style.height='';
+        var msg = d.mensaje;
+        _ultimoMsgId = msg.id;
+        var feed = document.getElementById('grupoChatFeed');
+        if(feed){
+          feed.insertAdjacentHTML('beforeend', _renderMensaje(msg));
+          _scrollChatFeed();
+        }
+      }
+      if(btn) btn.disabled = false;
+    }).catch(function(){ if(btn) btn.disabled = false; });
+  };
+
+  window._grupoEnterSend = function(e) {
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _grupoEnviar(); }
+  };
+
+  /* ── Autosize textarea ──────────────────────── */
+  window._grupoInputAuto = function(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120)+'px';
+  };
+
+  /* ── @menciones ─────────────────────────────── */
+  window._grupoCheckMention = function(el) {
+    var val = el.value;
+    var pos = el.selectionStart;
+    var at = val.lastIndexOf('@', pos-1);
+    var list = document.getElementById('grupoMentionList');
+    if(!list) return;
+    if(at === -1 || (pos - at) > 20) { list.style.display='none'; return; }
+    var query = val.substring(at+1, pos).toLowerCase();
+    var miembros = (_grupoActualData && _grupoActualData.miembros) ? _grupoActualData.miembros : [];
+    var filtrados = miembros.filter(function(m){
+      return m.nombre.toLowerCase().indexOf(query) !== -1;
+    });
+    if(!filtrados.length){ list.style.display='none'; return; }
+    list.innerHTML = filtrados.map(function(m){
+      var color = _avatarColor(m.nombre);
+      var ini = _initials(m.nombre);
+      return '<div class="grupo-mention-item" onclick="_grupoInsertMencion(\''+_esc(m.nombre)+'\')">'+
+        '<div style="width:22px;height:22px;border-radius:6px;background:'+color+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.65rem;font-weight:700;flex-shrink:0;">'+ini+'</div>'+
+        '<span>'+_esc(m.nombre)+'</span>'+
+        '</div>';
+    }).join('');
+    list.style.display = '';
+  };
+
+  window._grupoInsertMencion = function(nombre) {
+    var ta = document.getElementById('grupoTextarea');
+    if(!ta) return;
+    var val = ta.value;
+    var pos = ta.selectionStart;
+    var at = val.lastIndexOf('@', pos-1);
+    ta.value = val.substring(0, at) + '@['+nombre+'] ' + val.substring(pos);
+    ta.focus();
+    var newPos = at + nombre.length + 4;
+    ta.setSelectionRange(newPos, newPos);
+    var list = document.getElementById('grupoMentionList');
+    if(list) list.style.display='none';
+  };
+
+  /* ── Polling para nuevos mensajes ───────────── */
+  function _startPoll() {
+    _pollInterval = setInterval(function(){
+      if(!_grupoActualId) return;
+      if(!document.getElementById('widgetGrupo').classList.contains('active')) return;
+      fetch('/app/api/grupos/'+_grupoActualId+'/chat/?desde_id='+_ultimoMsgId)
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(d.mensajes && d.mensajes.length > 0){
+            var feed = document.getElementById('grupoChatFeed');
+            if(feed){
+              feed.insertAdjacentHTML('beforeend', _renderMensajes(d.mensajes, false));
+              _scrollChatFeed();
+            }
+            _ultimoMsgId = d.mensajes[d.mensajes.length-1].id;
+            // Marcar como leído
+            fetch('/app/api/grupos/'+_grupoActualId+'/chat/leer/',{method:'POST',headers:{'X-CSRFToken':_csrf()}});
+          }
+        }).catch(function(){});
+    }, 5000);
+  }
+
+  function _stopPoll() {
+    if(_pollInterval){ clearInterval(_pollInterval); _pollInterval = null; }
+  }
+
+  /* ── Scroll al fondo ────────────────────────── */
+  function _scrollChatFeed() {
+    var feed = document.getElementById('grupoChatFeed');
+    if(feed) setTimeout(function(){ feed.scrollTop = feed.scrollHeight; }, 40);
+  }
+
+  /* ── Badge global (topbar) ──────────────────── */
+  function _actualizarBadgeTopbar() {
+    var total = 0;
+    var pendientes = _misGrupos.length;
+    _misGrupos.forEach(function(g){
+      fetch('/app/api/grupos/'+g.id+'/no-leidos/')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          total += (d.no_leidos||0);
+          pendientes--;
+          if(pendientes === 0) {
+            var badge = document.getElementById('grupoBadge');
+            if(badge) badge.style.display = total > 0 ? '' : 'none';
+          }
+        }).catch(function(){ pendientes--; });
+    });
+  }
+
+  // Verificar badge cada 30s
+  setInterval(_actualizarBadgeTopbar, 30000);
+  setTimeout(_actualizarBadgeTopbar, 3000);
+
+})();
+</script>
