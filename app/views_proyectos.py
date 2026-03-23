@@ -1015,7 +1015,10 @@ def api_tareas(request):
                     # Incluir tareas de miembros del grupo
                     from .views_grupos import get_usuarios_visibles_ids
                     ids_grupo = get_usuarios_visibles_ids(request.user)
-                    grupo_filter = Q(creado_por__id__in=ids_grupo) | Q(asignado_a__id__in=ids_grupo) if ids_grupo else Q()
+                    if ids_grupo:
+                        grupo_filter = Q(creado_por__id__in=ids_grupo) | Q(asignado_a__id__in=ids_grupo)
+                    else:
+                        grupo_filter = Q()
 
                     tareas = Tarea.objects.filter(
                         Q(creado_por=request.user) |
