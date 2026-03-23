@@ -2812,19 +2812,21 @@ def api_completar_tarea(request, tarea_id):
 
         # Registrar en chat de grupo si cerró tarea de otro
         try:
-            propietario_tarea = tarea.asignado_a or tarea.creado_por
-            if propietario_tarea and propietario_tarea != request.user:
-                from .views_grupos import registrar_accion_grupo
-                actor_nombre = request.user.get_full_name() or request.user.username
-                prop_nombre = propietario_tarea.get_full_name() or propietario_tarea.username
-                registrar_accion_grupo(
-                    request.user, propietario_tarea,
-                    'cerrar_tarea',
-                    f'{actor_nombre} completó la tarea "{tarea.titulo}" de {prop_nombre}',
-                    objeto_tipo='tarea', objeto_id=tarea.id, objeto_titulo=tarea.titulo,
-                )
-        except Exception:
-            pass
+            from .views_grupos import registrar_accion_grupo
+            actor_nombre = request.user.get_full_name() or request.user.username
+            grupos_notificados = set()
+            for prop in [tarea.asignado_a, tarea.creado_por]:
+                if prop and prop != request.user and prop.id not in grupos_notificados:
+                    grupos_notificados.add(prop.id)
+                    prop_nombre = prop.get_full_name() or prop.username
+                    registrar_accion_grupo(
+                        request.user, prop,
+                        'cerrar_tarea',
+                        f'{actor_nombre} completó la tarea "{tarea.titulo}" de {prop_nombre}',
+                        objeto_tipo='tarea', objeto_id=tarea.id, objeto_titulo=tarea.titulo,
+                    )
+        except Exception as e:
+            print(f"[registrar_accion_grupo] Error en completar_tarea: {e}")
 
         # Formatear tiempo trabajado para respuesta
         tiempo_total_str = "00:00:00"
