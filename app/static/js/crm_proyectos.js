@@ -806,7 +806,7 @@
 
         var oppLink = '';
         if (p.oportunidad_id && p.oportunidad_nombre) {
-            oppLink = '<a href="javascript:void(0)" onclick="if(typeof openDetalle===\'function\')openDetalle(' + p.oportunidad_id + ')" style="color:#007aff;text-decoration:none;font-weight:500">' + (p.oportunidad_nombre || '') + '</a>';
+            oppLink = '<a href="javascript:void(0)" onclick="var d=document.getElementById(\'widgetDetalle\');if(d){d.classList.add(\'z-elevated\');d.style.zIndex=\'10800\';}if(typeof openDetalle===\'function\')openDetalle(' + p.oportunidad_id + ')" style="color:#007aff;text-decoration:none;font-weight:500">' + (p.oportunidad_nombre || '') + '</a>';
         } else {
             oppLink = '<span style="color:#8e8e93">Sin oportunidad vinculada</span>';
         }

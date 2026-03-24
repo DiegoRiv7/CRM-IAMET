@@ -432,7 +432,7 @@
                 detalleOverlay.classList.remove('closing');
                 // Elevar z-index si hay otro widget abierto debajo
                 var _needsElevation = false;
-                ['widgetCalendarioMaster','widgetClienteOportunidades'].forEach(function(wid){
+                ['widgetCalendarioMaster','widgetClienteOportunidades','widgetProyectoDetalle'].forEach(function(wid){
                     var el = document.getElementById(wid);
                     if (el && (el.style.display === 'flex' || el.classList.contains('active'))) _needsElevation = true;
                 });
