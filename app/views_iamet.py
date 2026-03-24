@@ -12,7 +12,7 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Sum, DecimalField
 from django.utils import timezone
 from .models import (
-    Proyecto, ProyectoPartida, ProyectoOrdenCompra,
+    ProyectoIAMET as Proyecto, ProyectoPartida, ProyectoOrdenCompra,
     ProyectoFacturaProveedor, ProyectoFacturaIngreso,
     ProyectoGasto, ProyectoTarea, ProyectoAlerta,
     ProyectoConfiguracion,
