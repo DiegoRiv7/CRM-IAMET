@@ -3711,3 +3711,352 @@ class LecturaGrupo(models.Model):
     class Meta:
         unique_together = ('usuario', 'grupo')
         verbose_name = 'Lectura de Grupo'
+
+
+# ──────────────────────────────────────────────
+# Modelos de Gestión de Proyectos IAMET
+# ──────────────────────────────────────────────
+
+class ProyectoIAMET(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='proyectos_iamet')
+    nombre = models.CharField(max_length=255)
+    descripcion = models.TextField(blank=True, default='')
+    cliente_nombre = models.CharField(max_length=255, blank=True, default='')
+    STATUS_CHOICES = [
+        ('planning', 'Planificacion'),
+        ('active', 'Activo'),
+        ('paused', 'Pausado'),
+        ('completed', 'Completado'),
+        ('archived', 'Archivado'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planning')
+    utilidad_presupuestada = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    utilidad_real = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_fin = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Proyecto IAMET'
+        verbose_name_plural = 'Proyectos IAMET'
+
+    def __str__(self):
+        return self.nombre
+
+
+class ProyectoPartida(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='partidas')
+    CATEGORY_CHOICES = [
+        ('equipamiento', 'Equipamiento'),
+        ('accesorios', 'Accesorios'),
+        ('mano_obra', 'Mano de Obra'),
+        ('otros', 'Otros'),
+    ]
+    categoria = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='equipamiento')
+    descripcion = models.TextField()
+    marca = models.CharField(max_length=255, blank=True, default='')
+    numero_parte = models.CharField(max_length=255, blank=True, default='')
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
+    cantidad_pendiente = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_lista = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    descuento = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0'))
+    costo_unitario = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    costo_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    precio_venta_unitario = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    precio_venta_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    ganancia = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    proveedor = models.CharField(max_length=255, blank=True, default='')
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('ordered', 'Ordenado'),
+        ('in_transit', 'En Transito'),
+        ('received', 'Recibido'),
+        ('closed', 'Cerrado'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['categoria', 'created_at']
+        verbose_name = 'Partida de Proyecto'
+        verbose_name_plural = 'Partidas de Proyecto'
+
+    def calcular_totales(self):
+        """Auto-calcula costo_total, precio_venta_total y ganancia"""
+        self.costo_total = self.costo_unitario * self.cantidad
+        self.precio_venta_total = self.precio_venta_unitario * self.cantidad
+        self.ganancia = self.precio_venta_total - self.costo_total
+
+    def save(self, *args, **kwargs):
+        self.calcular_totales()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.descripcion} ({self.marca})"
+
+
+class ProyectoOrdenCompra(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='ordenes_compra')
+    partida = models.ForeignKey(ProyectoPartida, on_delete=models.CASCADE, related_name='ordenes_compra')
+    numero_oc = models.CharField(max_length=100, unique=True, blank=True)
+    proveedor = models.CharField(max_length=255)
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
+    monto_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    STATUS_CHOICES = [
+        ('draft', 'Borrador'),
+        ('emitted', 'Emitida'),
+        ('received', 'Recibida'),
+        ('cancelled', 'Cancelada'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    fecha_emision = models.DateField(null=True, blank=True)
+    fecha_entrega_esperada = models.DateField(null=True, blank=True)
+    fecha_entrega_real = models.DateField(null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Orden de Compra'
+        verbose_name_plural = 'Ordenes de Compra'
+
+    def save(self, *args, **kwargs):
+        self.monto_total = self.cantidad * self.precio_unitario
+        if not self.numero_oc:
+            import time
+            self.numero_oc = f"OC-{int(time.time())}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.numero_oc
+
+
+class ProyectoFacturaProveedor(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='facturas_proveedor')
+    orden_compra = models.ForeignKey(ProyectoOrdenCompra, on_delete=models.SET_NULL, null=True, blank=True)
+    numero_factura = models.CharField(max_length=100)
+    proveedor = models.CharField(max_length=255)
+    monto = models.DecimalField(max_digits=14, decimal_places=2)
+    monto_presupuestado = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    varianza = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    varianza_porcentaje = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    fecha_factura = models.DateField()
+    fecha_vencimiento = models.DateField(null=True, blank=True)
+    fecha_pago = models.DateField(null=True, blank=True)
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('received', 'Recibida'),
+        ('paid', 'Pagada'),
+        ('disputed', 'Disputada'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    archivo = models.FileField(upload_to='proyectos/facturas/', null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Factura de Proveedor'
+        verbose_name_plural = 'Facturas de Proveedor'
+
+    def save(self, *args, **kwargs):
+        if self.monto_presupuestado and self.monto_presupuestado > 0:
+            self.varianza = self.monto - self.monto_presupuestado
+            self.varianza_porcentaje = (self.varianza / self.monto_presupuestado) * 100
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.numero_factura} - {self.proveedor}"
+
+
+class ProyectoFacturaIngreso(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='facturas_ingreso')
+    numero_factura = models.CharField(max_length=100)
+    monto = models.DecimalField(max_digits=14, decimal_places=2)
+    fecha_factura = models.DateField()
+    fecha_vencimiento = models.DateField(null=True, blank=True)
+    fecha_pago = models.DateField(null=True, blank=True)
+    STATUS_CHOICES = [
+        ('emitted', 'Emitida'),
+        ('partial_payment', 'Pago Parcial'),
+        ('paid', 'Pagada'),
+        ('overdue', 'Vencida'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='emitted')
+    metodo_pago = models.CharField(max_length=100, blank=True, default='')
+    notas = models.TextField(blank=True, default='')
+    archivo = models.FileField(upload_to='proyectos/facturas_ingreso/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Factura de Ingreso'
+        verbose_name_plural = 'Facturas de Ingreso'
+
+    def __str__(self):
+        return f"{self.numero_factura} - ${self.monto}"
+
+
+class ProyectoGasto(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='gastos')
+    CATEGORY_CHOICES = [
+        ('viatics', 'Viaticos'),
+        ('fuel', 'Combustible'),
+        ('lodging', 'Hospedaje'),
+        ('meals', 'Comidas'),
+        ('equipment', 'Equipo'),
+        ('labor', 'Mano de Obra'),
+        ('other', 'Otro'),
+    ]
+    categoria = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    descripcion = models.CharField(max_length=500)
+    monto = models.DecimalField(max_digits=14, decimal_places=2)
+    monto_presupuestado = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    varianza = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    fecha_gasto = models.DateField()
+    APPROVAL_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('approved', 'Aprobado'),
+        ('rejected', 'Rechazado'),
+    ]
+    estado_aprobacion = models.CharField(max_length=20, choices=APPROVAL_CHOICES, default='pending')
+    aprobado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='gastos_aprobados')
+    fecha_aprobacion = models.DateTimeField(null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Gasto Operativo'
+        verbose_name_plural = 'Gastos Operativos'
+
+    def save(self, *args, **kwargs):
+        if self.monto_presupuestado:
+            self.varianza = self.monto - self.monto_presupuestado
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.get_categoria_display()} - ${self.monto}"
+
+
+class ProyectoTarea(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='tareas_proyecto')
+    titulo = models.CharField(max_length=500)
+    descripcion = models.TextField(blank=True, default='')
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('in_progress', 'En Progreso'),
+        ('completed', 'Completada'),
+        ('cancelled', 'Cancelada'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    PRIORITY_CHOICES = [
+        ('low', 'Baja'),
+        ('medium', 'Media'),
+        ('high', 'Alta'),
+        ('critical', 'Critica'),
+    ]
+    prioridad = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    asignado_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tareas_proyecto_asignadas')
+    fecha_limite = models.DateField(null=True, blank=True)
+    fecha_completada = models.DateTimeField(null=True, blank=True)
+    horas_estimadas = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    horas_reales = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-prioridad', '-created_at']
+        verbose_name = 'Tarea de Proyecto'
+        verbose_name_plural = 'Tareas de Proyecto'
+
+    def __str__(self):
+        return self.titulo
+
+
+class ProyectoAlerta(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='alertas')
+    ALERT_TYPE_CHOICES = [
+        ('budget_variance', 'Varianza de Presupuesto'),
+        ('critical_item_low', 'Item Critico Bajo'),
+        ('expense_approval_pending', 'Gasto Pendiente de Aprobacion'),
+        ('profit_threshold_low', 'Umbral de Utilidad Bajo'),
+        ('delivery_delay', 'Retraso de Entrega'),
+        ('task_overdue', 'Tarea Vencida'),
+    ]
+    tipo_alerta = models.CharField(max_length=50, choices=ALERT_TYPE_CHOICES)
+    SEVERITY_CHOICES = [
+        ('info', 'Info'),
+        ('warning', 'Advertencia'),
+        ('critical', 'Critica'),
+    ]
+    severidad = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='warning')
+    titulo = models.CharField(max_length=255)
+    mensaje = models.TextField()
+    entidad_tipo = models.CharField(max_length=100, blank=True, default='')
+    entidad_id = models.PositiveIntegerField(null=True, blank=True)
+    resuelta = models.BooleanField(default=False)
+    fecha_resolucion = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Alerta de Proyecto'
+        verbose_name_plural = 'Alertas de Proyecto'
+
+    def __str__(self):
+        return f"[{self.severidad}] {self.titulo}"
+
+
+class ProyectoConfiguracion(models.Model):
+    proyecto = models.OneToOneField(ProyectoIAMET, on_delete=models.CASCADE, related_name='configuracion')
+    umbral_utilidad_minima = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('15'))
+    umbral_alerta_varianza = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('5'))
+    umbral_cantidad_critica = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5'))
+    requiere_aprobacion_gastos = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuracion de Proyecto'
+        verbose_name_plural = 'Configuraciones de Proyecto'
+
+    def __str__(self):
+        return f"Config: {self.proyecto.nombre}"
+
+
+class ProyectoEvidencia(models.Model):
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='evidencias')
+    ENTITY_CHOICES = [
+        ('gasto', 'Gasto Operativo'),
+        ('tarea', 'Tarea'),
+        ('orden_compra', 'Orden de Compra'),
+        ('partida', 'Partida'),
+    ]
+    entidad_tipo = models.CharField(max_length=50, choices=ENTITY_CHOICES)
+    entidad_id = models.PositiveIntegerField()
+    archivo = models.FileField(upload_to='proyectos/evidencias/')
+    nombre_archivo = models.CharField(max_length=255)
+    tipo_mime = models.CharField(max_length=100, blank=True, default='')
+    tamano = models.PositiveIntegerField(null=True, blank=True)
+    descripcion = models.TextField(blank=True, default='')
+    subido_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='evidencias_proyecto')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Evidencia de Proyecto'
+        verbose_name_plural = 'Evidencias de Proyecto'
+
+    def __str__(self):
+        return self.nombre_archivo

@@ -8,6 +8,8 @@ from . import views_exportar
 from . import views_mail
 from . import views_automatizacion
 from . import views_grupos
+from . import views_proyectos
+from . import views_iamet
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -267,4 +269,43 @@ urlpatterns = [
     path('api/grupos/<int:grupo_id>/miembros/agregar/', views_grupos.api_grupo_agregar_miembro, name='api_grupo_agregar_miembro'),
     path('api/grupos/<int:grupo_id>/miembros/<int:user_id>/', views_grupos.api_grupo_quitar_miembro, name='api_grupo_quitar_miembro'),
     path('api/grupos/<int:grupo_id>/renombrar/', views_grupos.api_grupo_renombrar, name='api_grupo_renombrar'),
+
+    # ═══ PROYECTOS IAMET ═══════════════════════════════════════
+    # Proyectos
+    path('api/iamet/proyectos/', views_iamet.api_proyectos_lista, name='api_iamet_proyectos_lista'),
+    path('api/iamet/proyectos/crear/', views_iamet.api_proyecto_crear, name='api_iamet_proyecto_crear'),
+    path('api/iamet/proyectos/<int:proyecto_id>/', views_iamet.api_proyecto_detalle, name='api_iamet_proyecto_detalle'),
+    path('api/iamet/proyectos/<int:proyecto_id>/actualizar/', views_iamet.api_proyecto_actualizar, name='api_iamet_proyecto_actualizar'),
+    path('api/iamet/proyectos/<int:proyecto_id>/eliminar/', views_iamet.api_proyecto_eliminar, name='api_iamet_proyecto_eliminar'),
+    # Partidas
+    path('api/iamet/proyectos/<int:proyecto_id>/partidas/', views_iamet.api_partidas_lista, name='api_iamet_partidas_lista'),
+    path('api/iamet/partidas/crear/', views_iamet.api_partida_crear, name='api_iamet_partida_crear'),
+    path('api/iamet/partidas/<int:partida_id>/actualizar/', views_iamet.api_partida_actualizar, name='api_iamet_partida_actualizar'),
+    path('api/iamet/partidas/<int:partida_id>/eliminar/', views_iamet.api_partida_eliminar, name='api_iamet_partida_eliminar'),
+    # Ordenes de Compra
+    path('api/iamet/proyectos/<int:proyecto_id>/oc/', views_iamet.api_oc_lista, name='api_iamet_oc_lista'),
+    path('api/iamet/oc/crear/', views_iamet.api_oc_crear, name='api_iamet_oc_crear'),
+    path('api/iamet/oc/<int:oc_id>/actualizar/', views_iamet.api_oc_actualizar, name='api_iamet_oc_actualizar'),
+    # Facturas Proveedor
+    path('api/iamet/proyectos/<int:proyecto_id>/facturas-proveedor/', views_iamet.api_facturas_proveedor_lista, name='api_iamet_facturas_proveedor_lista'),
+    path('api/iamet/facturas-proveedor/crear/', views_iamet.api_factura_proveedor_crear, name='api_iamet_factura_proveedor_crear'),
+    path('api/iamet/facturas-proveedor/<int:factura_id>/actualizar/', views_iamet.api_factura_proveedor_actualizar, name='api_iamet_factura_proveedor_actualizar'),
+    # Facturas Ingreso
+    path('api/iamet/proyectos/<int:proyecto_id>/facturas-ingreso/', views_iamet.api_facturas_ingreso_lista, name='api_iamet_facturas_ingreso_lista'),
+    path('api/iamet/facturas-ingreso/crear/', views_iamet.api_factura_ingreso_crear, name='api_iamet_factura_ingreso_crear'),
+    path('api/iamet/facturas-ingreso/<int:factura_id>/actualizar/', views_iamet.api_factura_ingreso_actualizar, name='api_iamet_factura_ingreso_actualizar'),
+    # Gastos Operativos
+    path('api/iamet/proyectos/<int:proyecto_id>/gastos/', views_iamet.api_gastos_lista, name='api_iamet_gastos_lista'),
+    path('api/iamet/gastos/crear/', views_iamet.api_gasto_crear, name='api_iamet_gasto_crear'),
+    path('api/iamet/gastos/<int:gasto_id>/actualizar/', views_iamet.api_gasto_actualizar, name='api_iamet_gasto_actualizar'),
+    path('api/iamet/gastos/<int:gasto_id>/aprobar/', views_iamet.api_gasto_aprobar, name='api_iamet_gasto_aprobar'),
+    # Tareas de Proyecto
+    path('api/iamet/proyectos/<int:proyecto_id>/tareas/', views_iamet.api_tareas_proyecto_lista, name='api_iamet_tareas_proyecto_lista'),
+    path('api/iamet/tareas/crear/', views_iamet.api_tarea_proyecto_crear, name='api_iamet_tarea_proyecto_crear'),
+    path('api/iamet/tareas/<int:tarea_id>/actualizar/', views_iamet.api_tarea_proyecto_actualizar, name='api_iamet_tarea_proyecto_actualizar'),
+    # Alertas
+    path('api/iamet/proyectos/<int:proyecto_id>/alertas/', views_iamet.api_alertas_lista, name='api_iamet_alertas_lista'),
+    path('api/iamet/alertas/<int:alerta_id>/resolver/', views_iamet.api_alerta_resolver, name='api_iamet_alerta_resolver'),
+    # Financieros
+    path('api/iamet/proyectos/<int:proyecto_id>/financieros/', views_iamet.api_proyecto_financieros, name='api_iamet_proyecto_financieros'),
 ]
