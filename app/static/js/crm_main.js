@@ -438,9 +438,6 @@
                 });
                 if (_needsElevation) {
                     detalleOverlay.classList.add('z-elevated');
-                    window._woDetalleElevated = true;
-                } else {
-                    window._woDetalleElevated = false;
                 }
                 document.body.style.overflow = 'hidden';
                 detalleLoading.style.display = 'block';
@@ -1209,9 +1206,8 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
-                // Restaurar z-index del overlay (puede haberse elevado al abrir desde tarea/calendario/cliente)
+                // Restaurar z-index del overlay
                 detalleOverlay.classList.remove('z-elevated', 'z-elevated-top');
-                window._woDetalleElevated = false;
                 _crmTableDirty = false;
                 refreshCrmTable();
             }
@@ -3918,9 +3914,6 @@
         // ── Abrir drive desde tarea ──
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
-            // Elevar por encima del modal de tarea (puede ser z-elevated o CAPA 4)
-            var drv = document.getElementById('widgetOppDrive');
-            if (drv) { drv.classList.add('z-elevated'); drv.classList.add('z-elevated-top'); }
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
             if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
         }
