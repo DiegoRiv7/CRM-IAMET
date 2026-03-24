@@ -243,18 +243,45 @@ def crm_home(request):
             except ArchivoFacturacion.DoesNotExist:
                 pass
 
-        # Mapear nombres del XLS a objetos Cliente
+        # Mapear nombres del XLS a objetos Cliente (matching flexible)
         facturado_por_cliente_obj = {}  # {cliente_id: monto}
+        _all_clientes = list(Cliente.objects.all())
         for cliente_name, monto_str in facturado_por_cliente.items():
             monto_val = Decimal(str(monto_str))
-            cliente_match = Cliente.objects.filter(nombre_empresa__iexact=cliente_name).first()
+            cn_upper = cliente_name.upper().strip()
+            cliente_match = None
+            # 1) Exact match
+            for c in _all_clientes:
+                if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
+                    cliente_match = c
+                    break
+            # 2) XLS name contiene nombre CRM o viceversa
             if not cliente_match:
-                cliente_match = Cliente.objects.filter(nombre_empresa__icontains=cliente_name).first()
-            if not cliente_match:
-                for cliente_obj in Cliente.objects.all():
-                    if cliente_obj.nombre_empresa and cliente_obj.nombre_empresa.upper() in cliente_name.upper():
-                        cliente_match = cliente_obj
+                for c in _all_clientes:
+                    if not c.nombre_empresa:
+                        continue
+                    crm_upper = c.nombre_empresa.upper().strip()
+                    if crm_upper in cn_upper or cn_upper in crm_upper:
+                        cliente_match = c
                         break
+            # 3) Match por primeras 2 palabras significativas
+            if not cliente_match:
+                palabras_xls = [w for w in cn_upper.split() if len(w) > 2 and w not in ('DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'SA', 'CV', 'SAS', 'INC', 'MEXICO')]
+                if len(palabras_xls) >= 2:
+                    for c in _all_clientes:
+                        if not c.nombre_empresa:
+                            continue
+                        crm_upper = c.nombre_empresa.upper()
+                        if palabras_xls[0] in crm_upper and palabras_xls[1] in crm_upper:
+                            cliente_match = c
+                            break
+                elif len(palabras_xls) == 1 and len(palabras_xls[0]) >= 4:
+                    for c in _all_clientes:
+                        if not c.nombre_empresa:
+                            continue
+                        if palabras_xls[0] in c.nombre_empresa.upper():
+                            cliente_match = c
+                            break
             if cliente_match:
                 facturado_por_cliente_obj[cliente_match.id] = (
                     facturado_por_cliente_obj.get(cliente_match.id, Decimal('0')) + monto_val
