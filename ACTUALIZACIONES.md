@@ -88,13 +88,13 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 ## [2026-03-17] — actualizaciones
 
 ### NUEVO - Sección clientes en CRM
-- Se combino las secciones de cotizado, cobrado y facturado para hacer una sola sección 
+- Se combino las secciones de cotizado, cobrado y facturado para hacer una sola sección
 - Esta sección se encarga de darnos un estatus de como estan las ventas de cada vendedor en la empresa
 - Nos dice como vamos respecto a las metas y nos sirve para ver por cliente si estamos llegando a las metas y con que marcas
 - Muestra kpis inteligentes que nos evitan la fatiga de leer e interpretar tantos datos, los kpis ya nos ayudan con eso
 - Se configuro para establecer metas mensuales por cliente de: oportunidades, cotizaciones, cobrado y facturado
 
-### NUEVO - Sección de novedades 
+### NUEVO - Sección de novedades
 - Se incluyo una sección de novedades donde se registran todas las novedades, mejoras y fixes de la ultima actualización del sistema.
 - Esta sección icluye filtros para que los usuarios vean solo las novedades que les importen mas.
 
@@ -107,6 +107,7 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 ### FIX - drive 
 - Se arreglo que el mensaje para editar algo dentro del drive o eliminar algo, salía atras del widget del drive y no se veía.
+<<<<<<< HEAD
 - Se arreglo archivos que no se podían ver porque el sistema lo seguia buscando en bitrix pero ya lo descargamos en local.
 
 ### TÉCNICO - cambios a producción 
@@ -217,7 +218,10 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 
 ### MEJORA - drive
 - Ahora se pueden agregar multiples archivos al drive al mismo tiempo
-- Ahora sale que tipo de archivo es en el drive 
+- Ahora sale que tipo de archivo es en el drive
+
+### TÉCNICO - cambios a producción
+- Se subieron los cambios que se habían trabajado en pruebas a producción.
 
 ## Cómo usar este archivo
 
