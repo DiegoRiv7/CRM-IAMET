@@ -212,6 +212,13 @@
                     <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                     <span class="ck-kpi-label">FACTURADO</span>
                     <span class="ck-kpi-pct-badge" id="ckPctFact"></span>
+                    {% if es_supervisor %}
+                    <button onclick="document.getElementById('ckExcelInput').click();" style="margin-left:auto;padding:3px 8px;border-radius:6px;border:1px solid #059669;background:rgba(5,150,105,0.08);color:#059669;font-size:0.65rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Subir Excel de facturacion">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Excel
+                    </button>
+                    <input type="file" id="ckExcelInput" accept=".xls,.xlsx" style="display:none;" onchange="ckSubirExcelFacturacion(this)">
+                    {% endif %}
                 </div>
                 <div class="ck-kpi-value" id="ckKpiFact">—</div>
                 <div class="ck-kpi-of-meta" id="ckMetaFact">de — meta</div>

@@ -1756,6 +1756,29 @@
             _CLIENTES_VISTAS.forEach(function (v) { loadClientesPanel(v); });
         }
 
+        window.ckSubirExcelFacturacion = function (input) {
+            if (!input.files || !input.files[0]) return;
+            var file = input.files[0];
+            var formData = new FormData();
+            formData.append('archivo', file);
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            fetch('/app/api/subir-facturacion/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken ? csrfToken.value : '' },
+                body: formData,
+                credentials: 'same-origin'
+            }).then(function (r) { return r.json(); })
+            .then(function (resp) {
+                if (resp.success) {
+                    showToast('Facturacion importada: ' + (resp.num_clientes || 0) + ' clientes, meses: ' + (resp.meses || []).join(', '), 'success');
+                    if (typeof refreshCrmTable === 'function') refreshCrmTable();
+                } else {
+                    showToast(resp.error || 'Error al importar', 'error');
+                }
+            }).catch(function () { showToast('Error de conexion', 'error'); });
+            input.value = '';
+        };
+
         window.clientesVistaAbrir = function (vista) {
             var data = _clientesPanelData[vista];
             var overlay = document.getElementById('clientesDetalleOverlay');
