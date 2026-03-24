@@ -152,46 +152,31 @@ body { background:#F5F5F7 !important; }
     width:7px; height:7px; border-radius:50%; flex-shrink:0;
 }
 
-/* ── DATE BAR ── */
-.nov-date-bar {
-    background:#F5F5F7;
-    padding:20px 40px 0;
-    display:flex;
-    align-items:stretch;
-    gap:10px;
-    flex-wrap:wrap;
-    max-width:1120px;
-    margin:0 auto;
-}
-.nov-date-btn {
-    display:flex; flex-direction:column; align-items:center; gap:2px;
-    padding:12px 20px;
-    border-radius:14px;
-    background:#fff;
-    border:1.5px solid #E5E5EA;
-    cursor:pointer;
+/* ── Date chips (discretos en admin bar) ── */
+.nov-date-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 14px;
+    border-radius:20px;
+    font-size:0.75rem; font-weight:600;
+    cursor:pointer; border:1.5px solid #E5E5EA;
+    background:#F5F5F7; color:#6E6E73;
     transition:all 0.18s;
     font-family:inherit;
-    min-width:100px;
+    white-space:nowrap;
 }
-.nov-date-btn:hover { border-color:#D1D1D6; background:#EBEBF0; }
-.nov-date-btn.active {
+.nov-date-chip:hover { background:#EBEBF0; border-color:#D1D1D6; }
+.nov-date-chip.active {
+    background:rgba(0,122,255,0.08);
     border-color:#007AFF;
-    background:rgba(0,122,255,0.06);
-    box-shadow:0 2px 8px rgba(0,122,255,0.12);
+    color:#007AFF;
+    font-weight:700;
 }
-.nov-date-btn .nov-date-day {
-    font-size:1.1rem; font-weight:800; color:#1D1D1F; letter-spacing:-0.02em;
+.nov-date-chip svg { flex-shrink:0; }
+.nov-date-sep {
+    font-size:0.72rem; font-weight:600; color:#8E8E93;
+    margin-left:auto; margin-right:4px;
+    white-space:nowrap;
 }
-.nov-date-btn .nov-date-month {
-    font-size:0.68rem; font-weight:600; color:#8E8E93; text-transform:uppercase; letter-spacing:0.05em;
-}
-.nov-date-btn.active .nov-date-day { color:#007AFF; }
-.nov-date-btn.active .nov-date-month { color:#007AFF; }
-.nov-date-btn .nov-date-count {
-    font-size:0.62rem; font-weight:700; color:#8E8E93; margin-top:2px;
-}
-.nov-date-btn.active .nov-date-count { color:#007AFF; }
 
 /* ── SECTION HEADER ── */
 .nov-section-header { background:#F5F5F7; padding:32px 0 0; }
@@ -321,11 +306,11 @@ body { background:#F5F5F7 !important; }
         </div>
     </div>
 
-    {% if es_supervisor %}
     <div class="nov-admin-bar">
+        {% if es_supervisor %}
         <div class="nov-admin-label">
             <svg width="15" height="15" fill="none" stroke="#8E8E93" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            Widget de bienvenida para usuarios &mdash;
+            Widget &mdash;
             <span id="novWidgetStatus" class="nov-toggle-status {% if novedades_config.widget_activo %}on{% else %}off{% endif %}">
                 {% if novedades_config.widget_activo %}Activo{% else %}Inactivo{% endif %}
             </span>
@@ -334,14 +319,19 @@ body { background:#F5F5F7 !important; }
             class="nov-toggle-btn {% if novedades_config.widget_activo %}activo{% else %}inactivo{% endif %}"
             onclick="novToggleWidget()">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            <span id="novToggleBtnLabel">{% if novedades_config.widget_activo %}Desactivar widget{% else %}Activar widget para usuarios{% endif %}</span>
+            <span id="novToggleBtnLabel">{% if novedades_config.widget_activo %}Desactivar{% else %}Activar{% endif %}</span>
         </button>
-        <div class="nov-hint" id="novToggleHint">
-            {% if novedades_config.widget_activo %}Los usuarios veran el popup al recargar el CRM.
-            {% else %}Al activar, aparecera un popup la proxima vez que los usuarios carguen el CRM.{% endif %}
-        </div>
+        {% endif %}
+        <span class="nov-date-sep">Actualizaciones:</span>
+        <button class="nov-date-chip active" data-date="2026-03-23" onclick="novSelectDate(this)">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            23 mar 2026
+        </button>
+        <button class="nov-date-chip" data-date="2026-03-13" onclick="novSelectDate(this)">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            13 mar 2026
+        </button>
     </div>
-    {% endif %}
 
     <!-- NAV BAR -->
     <div class="nov-filter-bar" id="novFilterBar">
@@ -359,20 +349,6 @@ body { background:#F5F5F7 !important; }
         </button>
         <button class="nov-pill p-fixes" data-filter="fixes" onclick="novFilter(this)">
             <span class="nov-pill-dot" style="background:#FF9500;"></span>Fixes
-        </button>
-    </div>
-
-    <!-- DATE NAVIGATION -->
-    <div class="nov-date-bar" id="novDateBar">
-        <button class="nov-date-btn active" data-date="2026-03-23" onclick="novSelectDate(this)">
-            <span class="nov-date-day">23</span>
-            <span class="nov-date-month">Mar 2026</span>
-            <span class="nov-date-count">22 cambios</span>
-        </button>
-        <button class="nov-date-btn" data-date="2026-03-13" onclick="novSelectDate(this)">
-            <span class="nov-date-day">13</span>
-            <span class="nov-date-month">Mar 2026</span>
-            <span class="nov-date-count">15 cambios</span>
         </button>
     </div>
 
@@ -1031,7 +1007,7 @@ body { background:#F5F5F7 !important; }
     window.novSelectDate = function (btn) {
         currentDate = btn.getAttribute('data-date');
         // Actualizar botones fecha
-        document.querySelectorAll('.nov-date-btn').forEach(function(b){ b.classList.remove('active'); });
+        document.querySelectorAll('.nov-date-chip').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
         // Actualizar chip hero
         var chip = document.getElementById('novChip');
