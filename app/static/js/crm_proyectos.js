@@ -862,11 +862,43 @@
                     '<label class="proy-info-label">Creado</label>' +
                     '<div style="padding:8px 0;color:#8e8e93;font-size:0.82rem">' + fmtDate(p.created_at) + '</div>' +
                 '</div>' +
-                '<div style="margin-top:16px;text-align:right">' +
+                '<div style="margin-top:24px;display:flex;justify-content:space-between;align-items:center;">' +
+                    '<button style="padding:8px 18px;border-radius:10px;border:1.5px solid #FF3B30;background:none;color:#FF3B30;font-size:0.82rem;font-weight:600;cursor:pointer;" onclick="proyectosMostrarEliminar()">Eliminar proyecto</button>' +
                     '<button class="proy-btn proy-btn-primary" onclick="proyectosGuardarInfo()">Guardar cambios</button>' +
                 '</div>' +
             '</div>';
     }
+
+    window.proyectosMostrarEliminar = function() {
+        var d = document.getElementById('proyDialogoEliminar');
+        if (d) {
+            d.style.display = 'flex';
+            var ta = document.getElementById('proyEliminarMotivo');
+            if (ta) ta.value = '';
+        }
+    };
+
+    window.proyectosConfirmarEliminar = function() {
+        if (!currentProjectId) return;
+        var motivo = (document.getElementById('proyEliminarMotivo') || {}).value || '';
+        if (!motivo.trim()) {
+            _showToast('Debes documentar el motivo de eliminacion', 'error');
+            return;
+        }
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/eliminar/', {
+            method: 'POST',
+            body: { motivo: motivo.trim() }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoEliminar');
+                proyectosVolverLista();
+                proyectosCargarLista();
+                _showToast('Proyecto eliminado', 'success');
+            } else {
+                _showToast(resp.error || 'Error al eliminar', 'error');
+            }
+        });
+    };
 
     window.proyectosGuardarInfo = function() {
         if (!currentProjectId) return;
