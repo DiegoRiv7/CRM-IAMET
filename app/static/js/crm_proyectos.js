@@ -700,7 +700,7 @@
                     var titleCell;
                     var sourceBadge;
                     if (t.source === 'oportunidad') {
-                        titleCell = '<span style="color:#007aff;cursor:pointer;font-weight:600;" onclick="var m=document.getElementById(\'crmTaskDetailModal\');if(m)m.classList.add(\'z-elevated\');if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' + truncate(t.titulo, 40) + '</span>';
+                        titleCell = '<span style="font-weight:600;color:#2563eb;">' + truncate(t.titulo, 40) + '</span>';
                         sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#dbeafe;color:#2563eb;">CRM</span>';
                     } else {
                         titleCell = '<span style="font-weight:600;color:#1d1d1f;">' + truncate(t.titulo, 40) + '</span>';

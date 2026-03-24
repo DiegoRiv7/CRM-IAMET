@@ -998,7 +998,8 @@ select.proy-input {
    ========================================= */
 
 .proy-info-form {
-  max-width: 640px;
+  max-width: 100%;
+  width: 100%;
 }
 
 .proy-info-row {
