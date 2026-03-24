@@ -7,7 +7,8 @@
     // --- State ---
     var currentProjectId = null;
     var currentFilter = 'todos';
-    var currentTab = 'partidas';
+    var currentTab = 'info';
+    var _cachedProjectDetail = null;
     var searchQuery = '';
 
     // --- Cached data from API ---
@@ -249,7 +250,7 @@
 
     window.proyectosVerDetalle = function(projectId) {
         currentProjectId = projectId;
-        currentTab = 'partidas';
+        currentTab = 'info';
 
         // Open the detail overlay
         var overlay = el('widgetProyectoDetalle');
@@ -259,6 +260,7 @@
         _fetch('/app/api/iamet/proyectos/' + projectId + '/').then(function(resp) {
             if (resp.ok || resp.success) {
                 var project = resp.data;
+                _cachedProjectDetail = project;
 
                 // Header
                 var hName = el('proyDetailName');
@@ -277,6 +279,11 @@
                 if (hDesc) hDesc.textContent = project.descripcion || '';
 
                 renderKPIsFromAPI(projectId);
+
+                // Render info tab if it's the current tab
+                if (currentTab === 'info') {
+                    renderInfo();
+                }
             } else {
                 console.error('Error cargando proyecto:', resp.error);
             }
@@ -284,7 +291,7 @@
             console.error('Error de red cargando proyecto:', err);
         });
 
-        proyectosSetTab('partidas');
+        proyectosSetTab('info');
     };
 
     window.proyectosVolverLista = function() {
@@ -364,6 +371,7 @@
         // Render data
         if (!currentProjectId) return;
         switch (tabName) {
+            case 'info':       renderInfo(); break;
             case 'partidas':   renderPartidas(currentProjectId); break;
             case 'oc':         renderOC(currentProjectId); break;
             case 'financiero': renderFinanciero(currentProjectId); break;
@@ -385,7 +393,11 @@
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/partidas/').then(function(resp) {
             if (resp.ok || resp.success) {
-                var items = resp.data || [];
+                // API returns {data: {partidas: [...], totales: {...}}}
+                var respData = resp.data || {};
+                var items = Array.isArray(respData) ? respData : (respData.partidas || []);
+                var apiTotales = Array.isArray(respData) ? null : (respData.totales || null);
+
                 if (items.length === 0) {
                     container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">No hay partidas registradas</td></tr>';
                     var foot = el('proyPartidasFoot');
@@ -419,12 +431,12 @@
                 container.innerHTML = html;
 
                 // Totals — use API totals if available, otherwise calculate
-                var totals = resp.totales || {};
+                var totals = apiTotales || {};
                 var totalsCost = totals.total_costo || 0;
                 var totalsSale = totals.total_venta || 0;
                 var totalsProfit = totals.total_ganancia || 0;
 
-                if (!resp.totales) {
+                if (!apiTotales) {
                     totalsCost = 0; totalsSale = 0; totalsProfit = 0;
                     items.forEach(function(item) {
                         totalsCost += (item.costo_unitario || 0) * (item.cantidad || 0);
@@ -686,7 +698,7 @@
                 var html = '';
                 tasks.forEach(function(t) {
                     html += '<tr>' +
-                        '<td style="font-weight:500">' + (t.titulo || '\u2014') + '</td>' +
+                        '<td><span style="color:#007aff;cursor:pointer;font-weight:600;" onclick="proyectosTareaToast()">' + truncate(t.titulo, 40) + '</span></td>' +
                         '<td><span class="proy-badge ' + priorityClass(t.prioridad) + '">' + priorityLabel(t.prioridad) + '</span></td>' +
                         '<td>' + (t.asignado_a || t.asignado_nombre || 'Sin asignar') + '</td>' +
                         '<td>' + fmtDate(t.fecha_limite) + '</td>' +
@@ -766,6 +778,166 @@
             console.error('Error de red resolviendo alerta:', err);
         });
     };
+
+
+    // =========================================
+    //  RENDER: INFORMACION
+    // =========================================
+
+    function renderInfo() {
+        var container = el('proyPane_info_body');
+        if (!container) return;
+
+        var p = _cachedProjectDetail;
+        if (!p) {
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#8e8e93">Cargando informacion...</div>';
+            return;
+        }
+
+        var oppLink = '';
+        if (p.oportunidad_id && p.oportunidad_nombre) {
+            oppLink = '<a href="javascript:void(0)" onclick="if(typeof openDetalle===\'function\')openDetalle(' + p.oportunidad_id + ')" style="color:#007aff;text-decoration:none;font-weight:500">' + (p.oportunidad_nombre || '') + '</a>';
+        } else {
+            oppLink = '<span style="color:#8e8e93">Sin oportunidad vinculada</span>';
+        }
+
+        var startVal = p.fecha_inicio ? p.fecha_inicio.split('T')[0] : '';
+        var endVal = p.fecha_fin ? p.fecha_fin.split('T')[0] : '';
+
+        container.innerHTML =
+            '<div class="proy-info-form">' +
+                '<div class="proy-info-row">' +
+                    '<label class="proy-info-label">Nombre del proyecto</label>' +
+                    '<input type="text" id="proyInfoNombre" class="proy-info-input" value="' + (p.nombre || '').replace(/"/g, '&quot;') + '">' +
+                '</div>' +
+                '<div class="proy-info-row">' +
+                    '<label class="proy-info-label">Cliente</label>' +
+                    '<input type="text" id="proyInfoCliente" class="proy-info-input" value="' + (p.cliente_nombre || '').replace(/"/g, '&quot;') + '">' +
+                '</div>' +
+                '<div class="proy-info-row">' +
+                    '<label class="proy-info-label">Descripcion</label>' +
+                    '<textarea id="proyInfoDescripcion" class="proy-info-input" rows="3">' + (p.descripcion || '') + '</textarea>' +
+                '</div>' +
+                '<div class="proy-info-grid">' +
+                    '<div class="proy-info-row">' +
+                        '<label class="proy-info-label">Status</label>' +
+                        '<select id="proyInfoStatus" class="proy-info-input">' +
+                            '<option value="planning"' + (p.status === 'planning' ? ' selected' : '') + '>Planificacion</option>' +
+                            '<option value="active"' + (p.status === 'active' ? ' selected' : '') + '>Activo</option>' +
+                            '<option value="paused"' + (p.status === 'paused' ? ' selected' : '') + '>Pausado</option>' +
+                            '<option value="completed"' + (p.status === 'completed' ? ' selected' : '') + '>Completado</option>' +
+                            '<option value="archived"' + (p.status === 'archived' ? ' selected' : '') + '>Archivado</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="proy-info-row">' +
+                        '<label class="proy-info-label">Utilidad presupuestada</label>' +
+                        '<input type="number" id="proyInfoUtilidad" class="proy-info-input" value="' + (p.utilidad_presupuestada || 0) + '" step="0.01">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="proy-info-grid">' +
+                    '<div class="proy-info-row">' +
+                        '<label class="proy-info-label">Fecha inicio</label>' +
+                        '<input type="date" id="proyInfoInicio" class="proy-info-input" value="' + startVal + '">' +
+                    '</div>' +
+                    '<div class="proy-info-row">' +
+                        '<label class="proy-info-label">Fecha fin</label>' +
+                        '<input type="date" id="proyInfoFin" class="proy-info-input" value="' + endVal + '">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="proy-info-row">' +
+                    '<label class="proy-info-label">Oportunidad vinculada</label>' +
+                    '<div style="padding:8px 0">' + oppLink + '</div>' +
+                '</div>' +
+                '<div class="proy-info-row">' +
+                    '<label class="proy-info-label">Creado</label>' +
+                    '<div style="padding:8px 0;color:#8e8e93;font-size:0.82rem">' + fmtDate(p.created_at) + '</div>' +
+                '</div>' +
+                '<div style="margin-top:16px;text-align:right">' +
+                    '<button class="proy-btn proy-btn-primary" onclick="proyectosGuardarInfo()">Guardar cambios</button>' +
+                '</div>' +
+            '</div>';
+    }
+
+    window.proyectosGuardarInfo = function() {
+        if (!currentProjectId) return;
+
+        var nombre = el('proyInfoNombre') ? el('proyInfoNombre').value.trim() : '';
+        var cliente = el('proyInfoCliente') ? el('proyInfoCliente').value.trim() : '';
+        var desc = el('proyInfoDescripcion') ? el('proyInfoDescripcion').value.trim() : '';
+        var status = el('proyInfoStatus') ? el('proyInfoStatus').value : '';
+        var utilidad = el('proyInfoUtilidad') ? parseFloat(el('proyInfoUtilidad').value) || 0 : 0;
+        var inicio = el('proyInfoInicio') ? el('proyInfoInicio').value : '';
+        var fin = el('proyInfoFin') ? el('proyInfoFin').value : '';
+
+        if (!nombre) {
+            alert('El nombre del proyecto es obligatorio');
+            return;
+        }
+
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/actualizar/', {
+            method: 'POST',
+            body: {
+                nombre: nombre,
+                cliente_nombre: cliente,
+                descripcion: desc,
+                status: status,
+                utilidad_presupuestada: utilidad,
+                fecha_inicio: inicio,
+                fecha_fin: fin
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                var project = resp.data;
+                _cachedProjectDetail = project;
+
+                // Refresh header
+                var hName = el('proyDetailName');
+                var hStatus = el('proyDetailStatus');
+                var hClient = el('proyDetailClient');
+                var hDates = el('proyDetailDates');
+                var hDesc = el('proyDetailDesc');
+
+                if (hName) hName.textContent = project.nombre || '';
+                if (hStatus) {
+                    hStatus.textContent = statusLabel(project.status);
+                    hStatus.className = 'proy-badge ' + statusClass(project.status);
+                }
+                if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
+                if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
+                if (hDesc) hDesc.textContent = project.descripcion || '';
+
+                renderKPIsFromAPI(currentProjectId);
+
+                // Show toast
+                _showToast('Proyecto actualizado correctamente');
+            } else {
+                alert('Error al guardar: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al guardar proyecto');
+            console.error('Error guardando proyecto:', err);
+        });
+    };
+
+    window.proyectosTareaToast = function() {
+        _showToast('Detalle de tarea \u2014 proximamente');
+    };
+
+    function _showToast(message) {
+        var existing = document.getElementById('proyToast');
+        if (existing) existing.remove();
+
+        var toast = document.createElement('div');
+        toast.id = 'proyToast';
+        toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.82rem;z-index:99999;opacity:0;transition:opacity 0.3s;box-shadow:0 4px 16px rgba(0,0,0,0.2)';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.style.opacity = '1'; }, 10);
+        setTimeout(function() {
+            toast.style.opacity = '0';
+            setTimeout(function() { toast.remove(); }, 300);
+        }, 2500);
+    }
 
 
     // =========================================

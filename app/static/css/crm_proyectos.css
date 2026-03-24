@@ -991,3 +991,66 @@ select.proy-input {
     padding: 8px 10px;
   }
 }
+
+
+/* =========================================
+   INFO TAB (editable project details)
+   ========================================= */
+
+.proy-info-form {
+  max-width: 640px;
+}
+
+.proy-info-row {
+  margin-bottom: 14px;
+}
+
+.proy-info-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #636366;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.proy-info-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #1c1c1e;
+  background: #fafafa;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.proy-info-input:focus {
+  border-color: #007aff;
+  background: #fff;
+}
+
+textarea.proy-info-input {
+  resize: vertical;
+  min-height: 60px;
+}
+
+select.proy-info-input {
+  appearance: auto;
+}
+
+.proy-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+@media (max-width: 600px) {
+  .proy-info-grid {
+    grid-template-columns: 1fr;
+  }
+}

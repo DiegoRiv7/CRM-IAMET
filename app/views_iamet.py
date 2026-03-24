@@ -83,6 +83,8 @@ def _proyecto_to_dict(p, include_alerts=False):
         'fecha_fin': _fmt(p.fecha_fin),
         'created_at': _fmt(p.created_at),
         'updated_at': _fmt(p.updated_at),
+        'oportunidad_id': p.oportunidad_id if hasattr(p, 'oportunidad_id') else None,
+        'oportunidad_nombre': p.oportunidad.oportunidad if hasattr(p, 'oportunidad_id') and p.oportunidad_id and p.oportunidad else None,
     }
     if include_alerts:
         d['alertas_pendientes'] = p.alertas.filter(resuelta=False).count()
@@ -281,7 +283,7 @@ def api_proyecto_crear(request):
 @require_http_methods(["GET"])
 def api_proyecto_detalle(request, proyecto_id):
     try:
-        proyecto = Proyecto.objects.select_related('usuario', 'configuracion').get(id=proyecto_id)
+        proyecto = Proyecto.objects.select_related('usuario', 'configuracion', 'oportunidad').get(id=proyecto_id)
     except Proyecto.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
 
