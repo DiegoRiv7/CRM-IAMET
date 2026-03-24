@@ -95,15 +95,7 @@
 
     <!-- Tab Bar -->
     <div class="proy-tab-bar">
-      <button class="proy-tab-btn active" data-tab="info" onclick="proyectosSetTab('info')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="16" x2="12" y2="12"/>
-          <line x1="12" y1="8" x2="12.01" y2="8"/>
-        </svg>
-        Informacion
-      </button>
-      <button class="proy-tab-btn" data-tab="partidas" onclick="proyectosSetTab('partidas')">
+      <button class="proy-tab-btn active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
@@ -143,23 +135,21 @@
         </svg>
         Alertas
       </button>
+      <button class="proy-tab-btn" data-tab="info" onclick="proyectosSetTab('info')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        Informacion
+      </button>
     </div>
 
     <!-- Tab Content -->
     <div class="proy-tab-content">
 
-      <!-- TAB: Informacion -->
-      <div id="proyPane_info" class="proy-tab-pane">
-        <div class="proy-tab-header">
-          <h3>Informacion del Proyecto</h3>
-        </div>
-        <div id="proyPane_info_body" style="padding:8px 0;">
-          <!-- Rendered by JS renderInfo() -->
-        </div>
-      </div>
-
       <!-- TAB: Partidas -->
-      <div id="proyPane_partidas" class="proy-tab-pane" style="display:none;">
+      <div id="proyPane_partidas" class="proy-tab-pane">
         <div class="proy-tab-header">
           <h3>Partidas de Volumetria</h3>
           <div class="proy-tab-actions">
@@ -317,6 +307,7 @@
             <thead>
               <tr>
                 <th>Titulo</th>
+                <th>Origen</th>
                 <th>Prioridad</th>
                 <th>Asignado</th>
                 <th>Fecha Limite</th>
@@ -335,6 +326,16 @@
         </div>
         <div id="proyAlertasContainer" class="proy-alertas-lista">
           <!-- Alert items rendered by JS -->
+        </div>
+      </div>
+
+      <!-- TAB: Informacion -->
+      <div id="proyPane_info" class="proy-tab-pane" style="display:none;">
+        <div class="proy-tab-header">
+          <h3>Informacion del Proyecto</h3>
+        </div>
+        <div id="proyPane_info_body" style="padding:8px 0;">
+          <!-- Rendered by JS renderInfo() -->
         </div>
       </div>
 

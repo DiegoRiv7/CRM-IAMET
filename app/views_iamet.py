@@ -1007,8 +1007,37 @@ def api_tareas_proyecto_lista(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
+    # 1) Tareas propias del proyecto
     tareas = proyecto.tareas_proyecto.select_related('asignado_a').all()
-    items = [_tarea_to_dict(t) for t in tareas]
+    items = []
+    for t in tareas:
+        d = _tarea_to_dict(t)
+        d['source'] = 'proyecto'
+        items.append(d)
+
+    # 2) Tareas de la oportunidad vinculada (TareaOportunidad)
+    if proyecto.oportunidad_id:
+        from .models import TareaOportunidad
+        tareas_opp = TareaOportunidad.objects.filter(
+            oportunidad_id=proyecto.oportunidad_id
+        ).select_related('responsable')
+        prioridad_map = {'normal': 'medium', 'alta': 'high'}
+        estado_map = {'pendiente': 'pending', 'completada': 'completed'}
+        for t in tareas_opp:
+            resp_name = None
+            if t.responsable:
+                resp_name = (t.responsable.first_name + ' ' + t.responsable.last_name).strip() or t.responsable.username
+            items.append({
+                'id': t.id,
+                'source': 'oportunidad',
+                'titulo': t.titulo,
+                'descripcion': t.descripcion,
+                'prioridad': prioridad_map.get(t.prioridad, 'medium'),
+                'status': estado_map.get(t.estado, 'pending'),
+                'asignado_a_nombre': resp_name,
+                'fecha_limite': _fmt(t.fecha_limite),
+            })
+
     return JsonResponse({'success': True, 'data': items})
 
 

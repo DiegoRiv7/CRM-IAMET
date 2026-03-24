@@ -7,7 +7,7 @@
     // --- State ---
     var currentProjectId = null;
     var currentFilter = 'todos';
-    var currentTab = 'info';
+    var currentTab = 'partidas';
     var _cachedProjectDetail = null;
     var searchQuery = '';
 
@@ -291,7 +291,7 @@
             console.error('Error de red cargando proyecto:', err);
         });
 
-        proyectosSetTab('info');
+        proyectosSetTab('partidas');
     };
 
     window.proyectosVolverLista = function() {
@@ -685,22 +685,32 @@
         var container = el('proyTareasBody');
         if (!container) return;
 
-        container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
+        container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/tareas/').then(function(resp) {
             if (resp.ok || resp.success) {
                 var tasks = resp.data || [];
                 if (tasks.length === 0) {
-                    container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay tareas registradas</td></tr>';
+                    container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">No hay tareas registradas</td></tr>';
                     return;
                 }
 
                 var html = '';
                 tasks.forEach(function(t) {
+                    var titleCell;
+                    var sourceBadge;
+                    if (t.source === 'oportunidad') {
+                        titleCell = '<span style="color:#007aff;cursor:pointer;font-weight:600;" onclick="var m=document.getElementById(\'crmTaskDetailModal\');if(m)m.classList.add(\'z-elevated\');if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' + truncate(t.titulo, 40) + '</span>';
+                        sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#dbeafe;color:#2563eb;">CRM</span>';
+                    } else {
+                        titleCell = '<span style="font-weight:600;color:#1d1d1f;">' + truncate(t.titulo, 40) + '</span>';
+                        sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#f3e8ff;color:#7c3aed;">Proyecto</span>';
+                    }
                     html += '<tr>' +
-                        '<td><span style="color:#007aff;cursor:pointer;font-weight:600;" onclick="proyectosTareaToast()">' + truncate(t.titulo, 40) + '</span></td>' +
+                        '<td>' + titleCell + '</td>' +
+                        '<td>' + sourceBadge + '</td>' +
                         '<td><span class="proy-badge ' + priorityClass(t.prioridad) + '">' + priorityLabel(t.prioridad) + '</span></td>' +
-                        '<td>' + (t.asignado_a || t.asignado_nombre || 'Sin asignar') + '</td>' +
+                        '<td>' + (t.asignado_a || t.asignado_a_nombre || t.asignado_nombre || 'Sin asignar') + '</td>' +
                         '<td>' + fmtDate(t.fecha_limite) + '</td>' +
                         '<td><span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></td>' +
                     '</tr>';
@@ -708,11 +718,11 @@
 
                 container.innerHTML = html;
             } else {
-                container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#ef4444">Error al cargar tareas</td></tr>';
+                container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">Error al cargar tareas</td></tr>';
                 console.error('Error cargando tareas:', resp.error);
             }
         }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
+            container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
             console.error('Error de red cargando tareas:', err);
         });
     }
