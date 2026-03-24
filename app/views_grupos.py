@@ -258,6 +258,20 @@ def puede_gestionar_grupo(user, grupo):
     return is_supervisor(user) or grupo.supervisor_grupo_id == user.id
 
 
+def get_clientes_visibles_q(user):
+    """
+    Retorna un Q object para filtrar clientes visibles por el usuario.
+    Incluye: propios + sin asignar + los de miembros de su grupo.
+    Supervisores globales ven todo (retorna Q() sin filtro).
+    """
+    if is_supervisor(user):
+        return Q()
+    ids = get_usuarios_visibles_ids(user)
+    if ids is None:
+        return Q()
+    return Q(asignado_a__in=ids) | Q(asignado_a__isnull=True)
+
+
 def _no_leidos_grupo(user, grupo):
     """Cuántos mensajes no leídos tiene el usuario en este grupo."""
     try:

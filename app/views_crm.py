@@ -2891,16 +2891,11 @@ def api_buscar_clientes(request):
     if len(query) < 2:
         return JsonResponse({'clientes': []})
     
-    # Buscar clientes que coincidan con el query
-    if is_supervisor(request.user):
-        clientes = Cliente.objects.filter(
-            nombre_empresa__icontains=query
-        ).order_by('nombre_empresa')[:10]
-    else:
-        clientes = Cliente.objects.filter(
-            Q(nombre_empresa__icontains=query) & 
-            (Q(asignado_a=request.user) | Q(asignado_a__isnull=True))
-        ).order_by('nombre_empresa')[:10]
+    # Buscar clientes que coincidan con el query (incluye grupo)
+    from .views_grupos import get_clientes_visibles_q
+    clientes = Cliente.objects.filter(
+        Q(nombre_empresa__icontains=query) & get_clientes_visibles_q(request.user)
+    ).order_by('nombre_empresa')[:10]
     
     clientes_data = []
     for cliente in clientes:
