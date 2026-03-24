@@ -430,6 +430,12 @@
                 if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(oppId);
                 detalleOverlay.classList.add('active');
                 detalleOverlay.classList.remove('closing');
+                // Elevar z-index si se abre desde otro widget abierto (calendario, cliente, etc.)
+                var calW = document.getElementById('widgetCalendarioMaster');
+                var cliW = document.getElementById('widgetClienteOportunidades');
+                if ((calW && calW.style.display === 'flex') || (cliW && cliW.style.display === 'flex')) {
+                    detalleOverlay.classList.add('z-elevated');
+                }
                 document.body.style.overflow = 'hidden';
                 detalleLoading.style.display = 'block';
                 detalleContent.style.display = 'none';
