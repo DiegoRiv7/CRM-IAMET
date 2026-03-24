@@ -401,8 +401,10 @@
     </div>
 </div>
 
+{% include "crm/_widget_proyectos.html" %}
+
 <!-- Aplica estado inicial antes del primer paint para evitar flash -->
-<script>(function(){if(localStorage.getItem('crmView')==='tareas'){var c=document.getElementById('crmContentSection');var t=document.getElementById('tareasSection');if(c)c.style.display='none';if(t)t.classList.add('active');}})();</script>
+<script>(function(){var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t=document.getElementById('tareasSection');if(t)t.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}})();</script>
 
 <!-- ═══ MODAL DETALLE TAREA ═══ -->
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal">

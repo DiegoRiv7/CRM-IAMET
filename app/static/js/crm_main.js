@@ -2722,31 +2722,33 @@
         var _crmCurrentTaskId = null;
         var _crmTimerInterval = null;
 
-        // ── Switching CRM <-> Tareas ──
+        // ── Switching CRM <-> Tareas <-> Proyectos ──
         var btnTareas = document.getElementById('btnTareas');
         var btnCRM = document.getElementById('btnCRM');
+        var btnProyectos = document.getElementById('btnProyectos');
         var crmContent = document.getElementById('crmContentSection');
         var tareasSection = document.getElementById('tareasSection');
+        var proyectosSection = document.getElementById('proyectosSection');
         var islandFilters = document.getElementById('islandFiltersSection');
         var islandSep = document.getElementById('islandSepFilters');
         var btnNeg = document.getElementById('btnNegociacion');
 
+        function switchCrmView(view) {
+            localStorage.setItem('crmView', view);
+            window._crmTareasMode = (view === 'tareas');
+            if (crmContent) crmContent.style.display = (view === 'crm') ? '' : 'none';
+            if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
+            if (proyectosSection) proyectosSection.classList.toggle('active', view === 'proyectos');
+            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
+            if (activeBtn) activeBtn.classList.add('active');
+            if (btnNeg) btnNeg.textContent = (view === 'crm') ? 'Negociacion' : 'Crear';
+        }
+
         try {
             if (btnTareas) {
                 btnTareas.addEventListener('click', function () {
-                    localStorage.setItem('crmView', 'tareas');
-                    window._crmTareasMode = true;
-                    if (crmContent) crmContent.style.display = 'none';
-                    if (tareasSection) tareasSection.classList.add('active');
-
-                    // Toggle active buttons
-                    document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
-                    btnTareas.classList.add('active');
-
-                    // Change Negociacion -> Crear
-                    if (btnNeg) btnNeg.textContent = 'Crear';
-
-                    // Invalidar cache para siempre cargar datos frescos al entrar
+                    switchCrmView('tareas');
                     _crmTareasCache = {};
                     _tareasPollHash = null;
                     cargarTareasCRM();
@@ -2755,18 +2757,17 @@
 
             if (btnCRM) {
                 btnCRM.addEventListener('click', function () {
-                    localStorage.setItem('crmView', 'crm');
-                    window._crmTareasMode = false;
-                    if (crmContent) crmContent.style.display = '';
-                    if (tareasSection) tareasSection.classList.remove('active');
-
-                    document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
-                    btnCRM.classList.add('active');
-
-                    if (btnNeg) btnNeg.textContent = 'Negociacion';
+                    switchCrmView('crm');
                 });
             }
-        } catch (e) { console.error('Tasks Init Error', e); }
+
+            if (btnProyectos) {
+                btnProyectos.addEventListener('click', function () {
+                    switchCrmView('proyectos');
+                    if (typeof proyectosInit === 'function') proyectosInit();
+                });
+            }
+        } catch (e) { console.error('Section Switch Error', e); }
 
         // ── Cargar tareas desde API ──
         var _crmTareasPrioFilter = 'todas';
@@ -2938,13 +2939,20 @@
         // ── Renderizar tabla de tareas ──
 
         // Restaurar tab desde localStorage (HTML + topbar ya aplicaron estilos antes del paint)
-        if (localStorage.getItem('crmView') === 'tareas') {
+        var _savedView = localStorage.getItem('crmView');
+        if (_savedView === 'tareas') {
             window._crmTareasMode = true;
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
             if (typeof btnNeg !== 'undefined' && btnNeg) btnNeg.textContent = 'Crear';
             cargarTareasCRM();
+        } else if (_savedView === 'proyectos') {
+            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            var btnProyInit = document.getElementById('btnProyectos');
+            if (btnProyInit) btnProyInit.classList.add('active');
+            if (typeof btnNeg !== 'undefined' && btnNeg) btnNeg.textContent = 'Crear';
+            if (typeof proyectosInit === 'function') proyectosInit();
         }
 
 

@@ -125,7 +125,7 @@
                 </button>
                 {% endif %}
             </nav>
-            <script>(function(){if(localStorage.getItem('crmView')==='tareas'){var c=document.getElementById('btnCRM');var t=document.getElementById('btnTareas');if(c)c.classList.remove('active');if(t)t.classList.add('active');}})();</script>
+            <script>(function(){var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('btnCRM');if(c)c.classList.remove('active');var b=document.getElementById(v==='tareas'?'btnTareas':'btnProyectos');if(b)b.classList.add('active');}})();</script>
 
             <div class="island-sep"></div>
 
