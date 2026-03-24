@@ -1200,13 +1200,11 @@ def api_subir_facturacion(request):
                         totales_por_mes[key] = Decimal('0')
 
                     clientes_mes = datos_por_mes[key]
-                    clientes_mes[cliente_name] = str(
-                        Decimal(clientes_mes.get(cliente_name, '0')) + monto
+                    # Usar nombre comercial si existe, sino cliente
+                    nombre_final = nombre_comercial if nombre_comercial else cliente_name
+                    clientes_mes[nombre_final] = str(
+                        Decimal(clientes_mes.get(nombre_final, '0')) + monto
                     )
-                    if nombre_comercial and nombre_comercial != cliente_name:
-                        clientes_mes[nombre_comercial] = str(
-                            Decimal(clientes_mes.get(nombre_comercial, '0')) + monto
-                        )
                     totales_por_mes[key] += monto
             except (IndexError, ValueError):
                 continue
