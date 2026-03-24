@@ -35,6 +35,7 @@
 
     {% include "crm/_widget_muro.html" %}
     {% include "crm/_widget_calendario.html" %}
+    {% include "crm/_widget_proyectos.html" %}
     {% if mis_grupos %}
     {% include "crm/_widget_grupo.html" %}
     {% endif %}
@@ -45,6 +46,8 @@
 {% include "crm/_scripts_main.html" %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
+<link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
+<script src="{% static 'js/crm_proyectos.js' %}"></script>
 {% if es_ingeniero %}
 {% include "crm/_scripts_ingeniero.html" %}
 {% endif %}

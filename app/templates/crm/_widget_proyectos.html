@@ -1,0 +1,577 @@
+<!-- ================================================================
+     WIDGET PROYECTOS — overlay completo (lista + detalle)
+     ================================================================ -->
+<div class="widget-overlay" id="widgetProyectos" style="z-index:10100;display:none;">
+  <div class="proy-shell">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         HEADER
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="proy-header">
+      <div class="proy-header-left">
+        <svg class="proy-header-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        <h1 class="proy-header-title">Proyectos</h1>
+      </div>
+
+      <div class="proy-header-center">
+        <div class="proy-filter-pills">
+          <button class="proy-pill proy-pill-active" data-filter="todos" onclick="proyectosFiltrar('todos')">Todos</button>
+          <button class="proy-pill" data-filter="activo" onclick="proyectosFiltrar('activo')">Activos</button>
+          <button class="proy-pill" data-filter="completado" onclick="proyectosFiltrar('completado')">Completados</button>
+          <button class="proy-pill" data-filter="planificacion" onclick="proyectosFiltrar('planificacion')">Planificacion</button>
+        </div>
+      </div>
+
+      <div class="proy-header-right">
+        <button class="proy-btn proy-btn-primary" onclick="proyectosCrearDialogo()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Nuevo Proyecto
+        </button>
+        <button class="proy-btn-close" onclick="proyectosCerrar()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         BODY
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="proy-body">
+
+      <!-- ────────────────────────────────────────────────────────────
+           LIST VIEW
+           ──────────────────────────────────────────────────────────── -->
+      <div id="proyListView">
+        <div class="proy-grid" id="proyGrid">
+          <!-- Cards rendered by JS -->
+        </div>
+        <div class="proy-empty" id="proyEmpty" style="display:none;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          <p>No hay proyectos</p>
+        </div>
+      </div>
+
+      <!-- ────────────────────────────────────────────────────────────
+           DETAIL VIEW
+           ──────────────────────────────────────────────────────────── -->
+      <div id="proyDetailView" style="display:none;">
+
+        <!-- Detail header -->
+        <div class="proy-detail-header">
+          <button class="proy-detail-back" onclick="proyectosVolverLista()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <h2 id="proyDetailName">Proyecto</h2>
+          <span id="proyDetailStatus" class="proy-status">—</span>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="proy-kpi-grid">
+          <div class="proy-kpi-card">
+            <div class="proy-kpi-icon proy-kpi-icon--blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="proy-kpi-body">
+              <span class="proy-kpi-label">Utilidad Presupuestada</span>
+              <span class="proy-kpi-value" id="proyKpiPresupuesto">$0.00</span>
+            </div>
+          </div>
+
+          <div class="proy-kpi-card">
+            <div class="proy-kpi-icon proy-kpi-icon--green">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="proy-kpi-body">
+              <span class="proy-kpi-label">Utilidad Real</span>
+              <span class="proy-kpi-value" id="proyKpiReal">$0.00</span>
+            </div>
+          </div>
+
+          <div class="proy-kpi-card">
+            <div class="proy-kpi-icon proy-kpi-icon--purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            </div>
+            <div class="proy-kpi-body">
+              <span class="proy-kpi-label">Margen</span>
+              <span class="proy-kpi-value" id="proyKpiMargen">0%</span>
+            </div>
+          </div>
+
+          <div class="proy-kpi-card">
+            <div class="proy-kpi-icon proy-kpi-icon--amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <div class="proy-kpi-body">
+              <span class="proy-kpi-label">Cobertura de Costos</span>
+              <span class="proy-kpi-value" id="proyKpiCobertura">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="proy-tab-bar">
+          <button class="proy-tab proy-tab-active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Partidas
+          </button>
+          <button class="proy-tab" data-tab="oc" onclick="proyectosSetTab('oc')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13"/>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/>
+              <circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+            Ordenes de Compra
+          </button>
+          <button class="proy-tab" data-tab="financiero" onclick="proyectosSetTab('financiero')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            Financiero
+          </button>
+          <button class="proy-tab" data-tab="tareas" onclick="proyectosSetTab('tareas')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Tareas
+          </button>
+          <button class="proy-tab" data-tab="alertas" onclick="proyectosSetTab('alertas')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Alertas
+          </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="proy-tab-content">
+
+          <!-- TAB: Partidas -->
+          <div id="proyTabPartidas" class="proy-tab-pane">
+            <div class="proy-tab-header">
+              <h3>Partidas de Volumetria</h3>
+              <div class="proy-tab-actions">
+                <button class="proy-btn proy-btn-outline" onclick="proyectosImportarExcel()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                  Importar Excel
+                </button>
+                <button class="proy-btn proy-btn-primary" onclick="proyectosCrearPartidaDialogo()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                  Agregar Partida
+                </button>
+              </div>
+            </div>
+            <div class="proy-table-wrap">
+              <table class="proy-table">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Descripcion</th>
+                    <th>Marca</th>
+                    <th>No. Parte</th>
+                    <th>Cant.</th>
+                    <th>Pendiente</th>
+                    <th>Costo U.</th>
+                    <th>Venta U.</th>
+                    <th>Ganancia</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="proyPartidasTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB: Ordenes de Compra -->
+          <div id="proyTabOC" class="proy-tab-pane" style="display:none;">
+            <div class="proy-tab-header">
+              <h3>Ordenes de Compra</h3>
+              <div class="proy-tab-actions">
+                <button class="proy-btn proy-btn-primary" onclick="proyectosCrearOCDialogo()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                  Nueva OC
+                </button>
+              </div>
+            </div>
+            <div class="proy-table-wrap">
+              <table class="proy-table">
+                <thead>
+                  <tr>
+                    <th>#OC</th>
+                    <th>Proveedor</th>
+                    <th>Partida</th>
+                    <th>Cant.</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="proyOCTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB: Financiero -->
+          <div id="proyTabFinanciero" class="proy-tab-pane" style="display:none;">
+
+            <!-- Facturas Proveedor -->
+            <div class="proy-tab-header">
+              <h3>Facturas Proveedor</h3>
+            </div>
+            <div class="proy-table-wrap">
+              <table class="proy-table">
+                <thead>
+                  <tr>
+                    <th># Factura</th>
+                    <th>Proveedor</th>
+                    <th>Monto</th>
+                    <th>Presupuestado</th>
+                    <th>Varianza</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="proyFactProvTbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Facturas de Ingreso -->
+            <div class="proy-tab-header" style="margin-top:24px;">
+              <h3>Facturas de Ingreso</h3>
+            </div>
+            <div class="proy-table-wrap">
+              <table class="proy-table">
+                <thead>
+                  <tr>
+                    <th># Factura</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="proyFactIngTbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Gastos Operativos -->
+            <div class="proy-tab-header" style="margin-top:24px;">
+              <h3>Gastos Operativos</h3>
+            </div>
+            <div class="proy-table-wrap">
+              <table class="proy-table">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Descripcion</th>
+                    <th>Monto</th>
+                    <th>Estado Aprobacion</th>
+                  </tr>
+                </thead>
+                <tbody id="proyGastosTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB: Tareas -->
+          <div id="proyTabTareas" class="proy-tab-pane" style="display:none;">
+            <div class="proy-tab-header">
+              <h3>Tareas del Proyecto</h3>
+              <div class="proy-tab-actions">
+                <button class="proy-btn proy-btn-primary" onclick="proyectosCrearTareaDialogo()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                  Nueva Tarea
+                </button>
+              </div>
+            </div>
+            <div class="proy-table-wrap">
+              <table class="proy-table">
+                <thead>
+                  <tr>
+                    <th>Titulo</th>
+                    <th>Prioridad</th>
+                    <th>Asignado</th>
+                    <th>Fecha Limite</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="proyTareasTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB: Alertas -->
+          <div id="proyTabAlertas" class="proy-tab-pane" style="display:none;">
+            <div class="proy-tab-header">
+              <h3>Alertas del Proyecto</h3>
+            </div>
+            <div id="proyAlertasLista" class="proy-alertas-lista">
+              <!-- Alert items rendered by JS -->
+            </div>
+          </div>
+
+        </div><!-- /proy-tab-content -->
+      </div><!-- /proyDetailView -->
+    </div><!-- /proy-body -->
+  </div><!-- /proy-shell -->
+</div><!-- /widgetProyectos -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR PROYECTO
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoCrear" style="z-index:10200;display:none;">
+  <div class="proy-dialog-card">
+    <div class="proy-dialog-header">
+      <h3>Nuevo Proyecto</h3>
+      <button class="proy-btn-close" onclick="proyectosCerrarDialogo('proyDialogoCrear')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="proy-dialog-body">
+      <div class="proy-field">
+        <label for="proyNuevoNombre">Nombre del proyecto <span class="proy-required">*</span></label>
+        <input type="text" id="proyNuevoNombre" class="proy-input" placeholder="Ej. Torre Norte - Fase 2" required>
+      </div>
+      <div class="proy-field">
+        <label for="proyNuevoCliente">Cliente</label>
+        <input type="text" id="proyNuevoCliente" class="proy-input" placeholder="Nombre del cliente">
+      </div>
+      <div class="proy-field">
+        <label for="proyNuevoDescripcion">Descripcion</label>
+        <textarea id="proyNuevoDescripcion" class="proy-input proy-textarea" rows="3" placeholder="Descripcion del proyecto"></textarea>
+      </div>
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyNuevoFechaInicio">Fecha inicio</label>
+          <input type="date" id="proyNuevoFechaInicio" class="proy-input">
+        </div>
+        <div class="proy-field">
+          <label for="proyNuevoFechaFin">Fecha fin</label>
+          <input type="date" id="proyNuevoFechaFin" class="proy-input">
+        </div>
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoCrear')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" onclick="proyectosCrear()">Crear Proyecto</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR PARTIDA
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoPartida" style="z-index:10200;display:none;">
+  <div class="proy-dialog-card">
+    <div class="proy-dialog-header">
+      <h3>Nueva Partida</h3>
+      <button class="proy-btn-close" onclick="proyectosCerrarDialogo('proyDialogoPartida')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="proy-dialog-body">
+      <div class="proy-field">
+        <label for="proyPartidaCategoria">Categoria</label>
+        <select id="proyPartidaCategoria" class="proy-input">
+          <option value="">Seleccionar...</option>
+          <option value="equipamiento">Equipamiento</option>
+          <option value="accesorios">Accesorios</option>
+          <option value="mano_de_obra">Mano de Obra</option>
+          <option value="otros">Otros</option>
+        </select>
+      </div>
+      <div class="proy-field">
+        <label for="proyPartidaDescripcion">Descripcion</label>
+        <input type="text" id="proyPartidaDescripcion" class="proy-input" placeholder="Descripcion de la partida">
+      </div>
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyPartidaMarca">Marca</label>
+          <input type="text" id="proyPartidaMarca" class="proy-input" placeholder="Marca">
+        </div>
+        <div class="proy-field">
+          <label for="proyPartidaNoParte">No. Parte</label>
+          <input type="text" id="proyPartidaNoParte" class="proy-input" placeholder="No. Parte">
+        </div>
+      </div>
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyPartidaCantidad">Cantidad</label>
+          <input type="number" id="proyPartidaCantidad" class="proy-input" min="0" step="1" placeholder="0">
+        </div>
+        <div class="proy-field">
+          <label for="proyPartidaPrecioLista">Precio Lista</label>
+          <input type="number" id="proyPartidaPrecioLista" class="proy-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyPartidaDescuento">Descuento %</label>
+          <input type="number" id="proyPartidaDescuento" class="proy-input" min="0" max="100" step="0.01" placeholder="0">
+        </div>
+        <div class="proy-field">
+          <label for="proyPartidaPrecioVenta">Precio Venta</label>
+          <input type="number" id="proyPartidaPrecioVenta" class="proy-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="proy-field">
+        <label for="proyPartidaProveedor">Proveedor</label>
+        <input type="text" id="proyPartidaProveedor" class="proy-input" placeholder="Nombre del proveedor">
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoPartida')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" onclick="proyectosAgregarPartida()">Agregar Partida</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR OC
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoOC" style="z-index:10200;display:none;">
+  <div class="proy-dialog-card">
+    <div class="proy-dialog-header">
+      <h3>Nueva Orden de Compra</h3>
+      <button class="proy-btn-close" onclick="proyectosCerrarDialogo('proyDialogoOC')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="proy-dialog-body">
+      <div class="proy-field">
+        <label for="proyOCProveedor">Proveedor</label>
+        <input type="text" id="proyOCProveedor" class="proy-input" placeholder="Nombre del proveedor">
+      </div>
+      <div class="proy-field">
+        <label for="proyOCPartida">Partida</label>
+        <select id="proyOCPartida" class="proy-input">
+          <option value="">Seleccionar partida...</option>
+        </select>
+      </div>
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyOCCantidad">Cantidad</label>
+          <input type="number" id="proyOCCantidad" class="proy-input" min="0" step="1" placeholder="0">
+        </div>
+        <div class="proy-field">
+          <label for="proyOCMonto">Monto</label>
+          <input type="number" id="proyOCMonto" class="proy-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="proy-field">
+        <label for="proyOCFecha">Fecha</label>
+        <input type="date" id="proyOCFecha" class="proy-input">
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoOC')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" onclick="proyectosCrearOC()">Crear OC</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR TAREA
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoTarea" style="z-index:10200;display:none;">
+  <div class="proy-dialog-card">
+    <div class="proy-dialog-header">
+      <h3>Nueva Tarea</h3>
+      <button class="proy-btn-close" onclick="proyectosCerrarDialogo('proyDialogoTarea')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="proy-dialog-body">
+      <div class="proy-field">
+        <label for="proyTareaTitulo">Titulo</label>
+        <input type="text" id="proyTareaTitulo" class="proy-input" placeholder="Titulo de la tarea">
+      </div>
+      <div class="proy-field">
+        <label for="proyTareaDescripcion">Descripcion</label>
+        <textarea id="proyTareaDescripcion" class="proy-input proy-textarea" rows="3" placeholder="Descripcion de la tarea"></textarea>
+      </div>
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyTareaPrioridad">Prioridad</label>
+          <select id="proyTareaPrioridad" class="proy-input">
+            <option value="baja">Baja</option>
+            <option value="media" selected>Media</option>
+            <option value="alta">Alta</option>
+            <option value="urgente">Urgente</option>
+          </select>
+        </div>
+        <div class="proy-field">
+          <label for="proyTareaAsignado">Asignado a</label>
+          <input type="text" id="proyTareaAsignado" class="proy-input" placeholder="Nombre">
+        </div>
+      </div>
+      <div class="proy-field">
+        <label for="proyTareaFechaLimite">Fecha limite</label>
+        <input type="date" id="proyTareaFechaLimite" class="proy-input">
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoTarea')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" onclick="proyectosCrearTarea()">Crear Tarea</button>
+    </div>
+  </div>
+</div>
