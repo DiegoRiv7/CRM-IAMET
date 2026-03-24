@@ -700,7 +700,12 @@
                     var titleCell;
                     var sourceBadge;
                     if (t.source === 'oportunidad') {
-                        titleCell = '<span style="font-weight:600;color:#2563eb;">' + truncate(t.titulo, 40) + '</span>';
+                        var oppId = (_cachedProjectDetail && _cachedProjectDetail.oportunidad_id) ? _cachedProjectDetail.oportunidad_id : null;
+                        if (oppId) {
+                            titleCell = '<span style="color:#007aff;cursor:pointer;font-weight:600;" onclick="if(typeof openDetalle===\'function\'){var d=document.getElementById(\'widgetDetalle\');if(d)d.classList.add(\'z-elevated\');openDetalle(' + oppId + ');}">' + truncate(t.titulo, 40) + '</span>';
+                        } else {
+                            titleCell = '<span style="font-weight:600;color:#2563eb;">' + truncate(t.titulo, 40) + '</span>';
+                        }
                         sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#dbeafe;color:#2563eb;">CRM</span>';
                     } else {
                         titleCell = '<span style="font-weight:600;color:#1d1d1f;">' + truncate(t.titulo, 40) + '</span>';
