@@ -673,9 +673,7 @@
             var w = document.getElementById('widgetOppDrive');
             if (w) {
                 w.style.display = 'flex';
-                var det = document.getElementById('widgetDetalle');
-                if (det && det.classList.contains('z-elevated')) { w.classList.add('z-elevated', 'z-elevated-top'); }
-                else { w.classList.remove('z-elevated', 'z-elevated-top'); }
+                if (window._woDetalleElevated || w.classList.contains('z-elevated')) { w.classList.add('z-elevated', 'z-elevated-top'); }
                 _woDriveCurrentFolder = null;
                 _woDriveBreadcrumbs = [];
                 _woDriveMode = 'opp';
@@ -693,9 +691,7 @@
             var w = document.getElementById('widgetOppConversacion');
             if (!w || !_woCurrentOppId) return;
             w.style.display = 'flex';
-            var det = document.getElementById('widgetDetalle');
-            if (det && det.classList.contains('z-elevated')) { w.classList.add('z-elevated', 'z-elevated-top'); }
-            else { w.classList.remove('z-elevated', 'z-elevated-top'); }
+            if (window._woDetalleElevated || w.classList.contains('z-elevated')) { w.classList.add('z-elevated', 'z-elevated-top'); }
             woCargarNotas(_woCurrentOppId);
         };
 

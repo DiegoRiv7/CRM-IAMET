@@ -430,11 +430,17 @@
                 if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(oppId);
                 detalleOverlay.classList.add('active');
                 detalleOverlay.classList.remove('closing');
-                // Elevar z-index si se abre desde otro widget abierto (calendario, cliente, etc.)
-                var calW = document.getElementById('widgetCalendarioMaster');
-                var cliW = document.getElementById('widgetClienteOportunidades');
-                if ((calW && calW.style.display === 'flex') || (cliW && cliW.style.display === 'flex')) {
+                // Elevar z-index si hay otro widget abierto debajo
+                var _needsElevation = false;
+                ['widgetCalendarioMaster','widgetClienteOportunidades'].forEach(function(wid){
+                    var el = document.getElementById(wid);
+                    if (el && (el.style.display === 'flex' || el.classList.contains('active'))) _needsElevation = true;
+                });
+                if (_needsElevation) {
                     detalleOverlay.classList.add('z-elevated');
+                    window._woDetalleElevated = true;
+                } else {
+                    window._woDetalleElevated = false;
                 }
                 document.body.style.overflow = 'hidden';
                 detalleLoading.style.display = 'block';
@@ -1203,8 +1209,9 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
-                // Restaurar z-index del overlay (puede haberse elevado al abrir desde tarea)
+                // Restaurar z-index del overlay (puede haberse elevado al abrir desde tarea/calendario/cliente)
                 detalleOverlay.classList.remove('z-elevated', 'z-elevated-top');
+                window._woDetalleElevated = false;
                 _crmTableDirty = false;
                 refreshCrmTable();
             }
