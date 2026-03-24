@@ -21,95 +21,78 @@
     </div>
 </div>
 
-<!-- ═══ WIDGET: OPORTUNIDADES POR CLIENTE ═══ -->
+<!-- ═══ WIDGET: OPORTUNIDADES POR CLIENTE (liquid glass) ═══ -->
 <div class="widget-overlay" id="widgetClienteOportunidades">
-    <div class="widget-card widget-card-lg">
-        <div class="wo-header"
-            style="padding:1.25rem 2rem 0.75rem; border-bottom:1px solid #F2F2F7; display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <h1 style="font-size:1.3rem; font-weight:700; color:#1D1D1F; margin:0; letter-spacing:-0.02em;"
-                    id="clienteOppTitle">
-                    Oportunidades del Cliente</h1>
-            </div>
-            <button type="button" class="widget-close" id="clienteOppClose">&times;</button>
-        </div>
-
-        <!-- Search and Filters Bar -->
-        <div style="padding:1rem 2rem; border-bottom:1px solid #F2F2F7; background:#FAFAFA;">
-            <div style="display:flex; gap:1rem; align-items:center;">
-                <div style="flex:1; position:relative;">
-                    <input type="text" id="clienteOppSearch" placeholder="Buscar..."
-                        style="width:100%; padding:0.75rem 1rem 0.75rem 2.5rem; border:1px solid #E5E5EA; border-radius:8px; font-size:0.875rem;">
-                    <svg style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); width:16px; height:16px;"
-                        viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
+    <div class="wco-card">
+        <!-- Header -->
+        <div class="wco-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="wco-icon">
+                    <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                     </svg>
                 </div>
-                <!-- Filtros solo visibles en modo oportunidades/cobrado -->
-                <div id="clienteOppFiltersOpp" style="display:flex; gap:1rem; align-items:center;">
-                    <select id="clienteOppFilterArea"
-                        style="padding:0.75rem 1rem; border:1px solid #E5E5EA; border-radius:8px; font-size:0.875rem;">
-                        <option value="">Todas las áreas</option>
-                        <option value="SISTEMAS">Sistemas</option>
-                        <option value="Recursos Humanos">Recursos Humanos</option>
-                        <option value="Compras">Compras</option>
-                        <option value="Seguridad">Seguridad</option>
-                        <option value="Mantenimiento">Mantenimiento</option>
-                        <option value="Almacén">Almacén</option>
-                    </select>
-                    <select id="clienteOppFilterProducto"
-                        style="padding:0.75rem 1rem; border:1px solid #E5E5EA; border-radius:8px; font-size:0.875rem;">
-                        <option value="">Todos los productos</option>
-                        <option value="ZEBRA">Zebra</option>
-                        <option value="PANDUIT">Panduit</option>
-                        <option value="APC">APC</option>
-                        <option value="AVIGILON">Avigilon</option>
-                        <option value="GENETEC">Genetec</option>
-                        <option value="AXIS">Axis</option>
-                        <option value="SOFTWARE">Software</option>
-                        <option value="RUNRATE">Runrate</option>
-                        <option value="PÓLIZA">Póliza</option>
-                    </select>
-                </div>
-                <button id="clienteOppClearFilters"
-                    style="padding:0.75rem 1.5rem; background:#F5F5F7; border:1px solid #E5E5EA; border-radius:8px; font-size:0.875rem; font-weight:600; cursor:pointer;">
-                    Limpiar
-                </button>
+                <h1 class="wco-title" id="clienteOppTitle">Oportunidades del Cliente</h1>
             </div>
+            <button type="button" class="wco-close" id="clienteOppClose">&times;</button>
         </div>
 
-        <!-- Table Container -->
-        <div style="overflow-y:auto; max-height:500px; padding:1rem 2rem;">
-            <table class="w-full" id="clienteOppTable">
-                <thead class="bg-gray-50/80 sticky top-0 z-10">
-                    <!-- Cabecera para modo oportunidades/cobrado -->
-                    <tr id="clienteOppHeadOpp" class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                        <th class="px-2 py-3 text-left font-black">Oportunidad</th>
-                        <th class="px-2 py-3 text-left font-black">Contacto</th>
-                        <th class="px-2 py-3 text-left font-black">Área</th>
-                        <th class="px-2 py-3 text-left font-black">Producto</th>
-                        <th class="px-2 py-3 text-right font-black">Monto</th>
-                        <th class="px-2 py-3 text-center font-black">Prob.</th>
-                        <th class="px-2 py-3 text-center font-black">Acciones</th>
+        <!-- Filters -->
+        <div class="wco-filters">
+            <div style="flex:1;position:relative;">
+                <input type="text" id="clienteOppSearch" class="wco-search" placeholder="Buscar oportunidad...">
+                <svg class="wco-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+            </div>
+            <div id="clienteOppFiltersOpp" style="display:flex;gap:8px;align-items:center;">
+                <select id="clienteOppFilterArea" class="wco-select">
+                    <option value="">Todas las areas</option>
+                    <option value="SISTEMAS">Sistemas</option>
+                    <option value="Recursos Humanos">Recursos Humanos</option>
+                    <option value="Compras">Compras</option>
+                    <option value="Seguridad">Seguridad</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="Almacén">Almacen</option>
+                </select>
+                <select id="clienteOppFilterProducto" class="wco-select">
+                    <option value="">Todos los productos</option>
+                    <option value="ZEBRA">Zebra</option>
+                    <option value="PANDUIT">Panduit</option>
+                    <option value="APC">APC</option>
+                    <option value="AVIGILON">Avigilon</option>
+                    <option value="GENETEC">Genetec</option>
+                    <option value="AXIS">Axis</option>
+                    <option value="SOFTWARE">Software</option>
+                    <option value="RUNRATE">Runrate</option>
+                    <option value="PÓLIZA">Poliza</option>
+                </select>
+            </div>
+            <button id="clienteOppClearFilters" class="wco-btn-clear">Limpiar</button>
+        </div>
+
+        <!-- List -->
+        <div class="wco-list" id="clienteOppListWrap">
+            <table class="wco-table" id="clienteOppTable">
+                <thead>
+                    <tr id="clienteOppHeadOpp" class="wco-thead-row">
+                        <th style="width:40%;">Oportunidad</th>
+                        <th>Contacto</th>
+                        <th>Area</th>
+                        <th>Producto</th>
+                        <th style="text-align:right;">Monto</th>
+                        <th style="text-align:center;">Prob.</th>
                     </tr>
-                    <!-- Cabecera para modo cotizaciones -->
-                    <tr id="clienteOppHeadCot" class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100" style="display:none">
-                        <th class="px-2 py-3 text-left font-black"># Cot.</th>
-                        <th class="px-2 py-3 text-left font-black">Título</th>
-                        <th class="px-2 py-3 text-left font-black">Oportunidad</th>
-                        <th class="px-2 py-3 text-left font-black">Fecha</th>
-                        <th class="px-2 py-3 text-left font-black">Creado por</th>
-                        <th class="px-2 py-3 text-right font-black">Total</th>
+                    <tr id="clienteOppHeadCot" class="wco-thead-row" style="display:none">
+                        <th># Cot.</th>
+                        <th>Titulo</th>
+                        <th>Oportunidad</th>
+                        <th>Fecha</th>
+                        <th>Creado por</th>
+                        <th style="text-align:right;">Total</th>
                     </tr>
                 </thead>
-                <tbody id="clienteOppTbody" class="text-[11px] divide-y divide-gray-100">
-                    <!-- Rows will be populated via JavaScript -->
-                </tbody>
+                <tbody id="clienteOppTbody"></tbody>
             </table>
         </div>
     </div>

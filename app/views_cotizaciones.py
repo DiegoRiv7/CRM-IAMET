@@ -84,10 +84,10 @@ def api_cliente_cotizaciones(request, cliente_id):
 def api_clientes_rapido(request):
     """GET: lista de clientes. POST: crear cliente rápido."""
     if request.method == 'GET':
-        if is_supervisor(request.user):
-            clientes = Cliente.objects.all().order_by('nombre_empresa')
-        else:
-            clientes = Cliente.objects.filter(asignado_a=request.user).order_by('nombre_empresa')
+        from .views_grupos import get_clientes_visibles_q
+        clientes = Cliente.objects.filter(
+            get_clientes_visibles_q(request.user)
+        ).order_by('nombre_empresa')
         data = [{'id': c.id, 'nombre': c.nombre_empresa} for c in clientes]
         return JsonResponse({'clientes': data})
     elif request.method == 'POST':
@@ -1533,7 +1533,10 @@ def api_clientes(request):
     Retorna lista de clientes para filtros
     """
     try:
-        clientes = Cliente.objects.all().values('id', 'nombre_empresa')
+        from .views_grupos import get_clientes_visibles_q
+        clientes = Cliente.objects.filter(
+            get_clientes_visibles_q(request.user)
+        ).values('id', 'nombre_empresa')
         return JsonResponse({'clientes': list(clientes)})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

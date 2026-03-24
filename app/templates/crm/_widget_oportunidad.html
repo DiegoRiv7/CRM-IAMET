@@ -251,7 +251,7 @@
 </div>
 
 <!-- ═══ WIDGET: DRIVE GESTOR DE ARCHIVOS ═══ -->
-<div class="widget-overlay" id="widgetOppDrive" style="z-index:10200;display:none;"><!-- CAPA 2 -->
+<div class="widget-overlay" id="widgetOppDrive" style="z-index:10800;display:none;"><!-- CAPA TOP: siempre encima -->
     <div class="widget-card widget-card-md"
         style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;"
         ondragenter="woDriveDragEnter(event)" ondragover="woDriveDragOver(event)" ondragleave="woDriveDragLeave(event)" ondrop="woDriveDrop(event)">
@@ -335,7 +335,7 @@
 </div>
 
 <!-- ═══ WIDGET: CONVERSACION ═══ -->
-<div class="widget-overlay" id="widgetOppConversacion" style="z-index:10200;display:none;"><!-- CAPA 2 -->
+<div class="widget-overlay" id="widgetOppConversacion" style="z-index:10800;display:none;"><!-- CAPA TOP: siempre encima -->
     <div class="widget-card widget-card-md"
         style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;position:relative;">
         <!-- Drop overlay -->
@@ -683,7 +683,7 @@
 
         window.woCerrarGestorDrive = function () {
             var w = document.getElementById('widgetOppDrive');
-            if (w) { w.style.display = 'none'; w.classList.remove('z-elevated', 'z-elevated-top'); }
+            if (w) { w.style.display = 'none'; }
         };
 
         window.woAbrirGestorConversacion = function () {
@@ -1099,7 +1099,7 @@
 
         window.woCerrarGestorConversacion = function () {
             var w = document.getElementById('widgetOppConversacion');
-            if (w) { w.style.display = 'none'; w.classList.remove('z-elevated', 'z-elevated-top'); }
+            if (w) { w.style.display = 'none'; }
         };
 
         var _woConvReplyToId = null;

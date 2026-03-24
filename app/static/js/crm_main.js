@@ -430,6 +430,15 @@
                 if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(oppId);
                 detalleOverlay.classList.add('active');
                 detalleOverlay.classList.remove('closing');
+                // Elevar z-index si hay otro widget abierto debajo
+                var _needsElevation = false;
+                ['widgetCalendarioMaster','widgetClienteOportunidades'].forEach(function(wid){
+                    var el = document.getElementById(wid);
+                    if (el && (el.style.display === 'flex' || el.classList.contains('active'))) _needsElevation = true;
+                });
+                if (_needsElevation) {
+                    detalleOverlay.classList.add('z-elevated');
+                }
                 document.body.style.overflow = 'hidden';
                 detalleLoading.style.display = 'block';
                 detalleContent.style.display = 'none';
@@ -1197,7 +1206,7 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
-                // Restaurar z-index del overlay (puede haberse elevado al abrir desde tarea)
+                // Restaurar z-index del overlay
                 detalleOverlay.classList.remove('z-elevated', 'z-elevated-top');
                 _crmTableDirty = false;
                 refreshCrmTable();
@@ -2087,8 +2096,8 @@
                 if (clienteOppFilterProducto) clienteOppFilterProducto.value = '';
                 setWidgetMode(mode);
 
-                var colspan = (mode === 'cotizado') ? '6' : '7';
-                clienteOppTbody.innerHTML = '<tr><td colspan="' + colspan + '" class="text-center py-10 text-gray-400">Cargando...</td></tr>';
+                var colspan = '6';
+                clienteOppTbody.innerHTML = '<tr><td colspan="' + colspan + '" class="wco-empty">Cargando...</td></tr>';
 
                 var url = mode === 'cotizado'
                     ? '/app/api/cliente-cotizaciones/' + clienteId + '/'
@@ -2102,30 +2111,29 @@
                     })
                     .catch(function (err) {
                         console.error('Error cargando datos cliente:', err);
-                        clienteOppTbody.innerHTML = '<tr><td colspan="' + colspan + '" class="text-center py-10 text-red-400">Error al cargar los datos</td></tr>';
+                        clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar los datos</td></tr>';
                     });
             }
 
             // ── Renderizar filas según modo ──
             function renderClienteData() {
                 var filtered = filterClienteData();
-                var colspan = (currentMode === 'cotizado') ? '6' : '7';
 
                 if (filtered.length === 0) {
-                    clienteOppTbody.innerHTML = '<tr><td colspan="' + colspan + '" class="text-center py-10 text-gray-400">No se encontraron registros</td></tr>';
+                    clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty">No se encontraron registros</td></tr>';
                     return;
                 }
 
                 var html = '';
                 if (currentMode === 'cotizado') {
                     filtered.forEach(function (cot) {
-                        html += '<tr class="hover:bg-blue-50/40 transition-colors">';
-                        html += '<td class="px-2 py-3"><a href="' + (cot.pdf_url || '#') + '" target="_blank" class="px-2 py-1 bg-blue-50 rounded text-xs font-mono font-bold text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors" style="text-decoration:none;">COT-' + cot.id + '</a></td>';
-                        html += '<td class="px-2 py-3 text-gray-700">' + truncate(cot.titulo || 'Cotización', 35) + '</td>';
-                        html += '<td class="px-2 py-3 text-gray-500 text-xs">' + truncate(cot.oportunidad || '—', 30) + '</td>';
-                        html += '<td class="px-2 py-3 text-gray-400 text-xs">' + (cot.fecha || '—') + '</td>';
-                        html += '<td class="px-2 py-3 text-gray-500 text-xs">' + (cot.usuario || '—') + '</td>';
-                        html += '<td class="px-2 py-3 text-right font-bold text-blue-600">$' + (cot.total || '0') + ' <span class="text-gray-400 font-normal text-[10px]">' + (cot.moneda || '') + '</span></td>';
+                        html += '<tr>';
+                        html += '<td><a href="' + (cot.pdf_url || '#') + '" target="_blank" style="text-decoration:none;padding:2px 8px;background:rgba(0,122,255,0.08);border-radius:6px;font-family:monospace;font-weight:700;font-size:0.75rem;color:#007AFF;">COT-' + cot.id + '</a></td>';
+                        html += '<td>' + truncate(cot.titulo || 'Cotizacion', 35) + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + truncate(cot.oportunidad || '—', 30) + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (cot.fecha || '—') + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (cot.usuario || '—') + '</td>';
+                        html += '<td style="text-align:right;font-weight:700;color:#007AFF;">$' + (cot.total || '0') + ' <span style="color:#8E8E93;font-weight:400;font-size:0.65rem;">' + (cot.moneda || '') + '</span></td>';
                         html += '</tr>';
                     });
                 } else {
@@ -2133,18 +2141,13 @@
                         var contactoNombre = opp.contacto ? opp.contacto.nombre : '-';
                         var monto = formatCurrency(opp.monto_raw !== undefined ? opp.monto_raw : parseFloat((opp.monto || '0').toString().replace(/,/g, '')) || 0);
                         var probabilidad = opp.probabilidad_cierre || 0;
-                        html += '<tr class="hover:bg-blue-50/40 transition-colors">';
-                        html += '<td class="px-2 py-3"><span class="opp-name-link cursor-pointer text-blue-600 hover:text-blue-800" data-oportunidad-id="' + opp.id + '">' + truncate(opp.oportunidad, 40) + '</span></td>';
-                        html += '<td class="px-2 py-3 text-gray-600">' + truncate(contactoNombre, 20) + '</td>';
-                        html += '<td class="px-2 py-3 text-gray-500 text-xs">' + (opp.area || '-') + '</td>';
-                        html += '<td class="px-2 py-3 text-gray-500 text-xs">' + (opp.producto || '-') + '</td>';
-                        html += '<td class="px-2 py-3 text-right font-bold text-gray-900">$' + monto + '</td>';
-                        html += '<td class="px-2 py-3 text-center"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">' + probabilidad + '%</span></td>';
-                        if (currentMode === 'oportunidades') {
-                            html += '<td class="px-2 py-3 text-center"><button class="btn-cotizar btn-cotizar-widget px-2 py-1 bg-blue-600 text-white rounded text-xs" data-oportunidad-id="' + opp.id + '">Cotizar</button></td>';
-                        } else {
-                            html += '<td class="px-2 py-3 text-center text-xs text-emerald-600 font-bold">Cobrado</td>';
-                        }
+                        html += '<tr data-opp-id="' + opp.id + '">';
+                        html += '<td><span class="wco-opp-name" data-oportunidad-id="' + opp.id + '">' + truncate(opp.oportunidad, 50) + '</span></td>';
+                        html += '<td style="color:#6E6E73;">' + truncate(contactoNombre, 20) + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (opp.area || '-') + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (opp.producto || '-') + '</td>';
+                        html += '<td style="text-align:right;font-weight:700;color:#1D1D1F;">$' + monto + '</td>';
+                        html += '<td style="text-align:center;"><span class="wco-prob">' + probabilidad + '%</span></td>';
                         html += '</tr>';
                     });
                 }
@@ -2182,6 +2185,19 @@
                     if (clienteOppFilterArea) clienteOppFilterArea.value = '';
                     if (clienteOppFilterProducto) clienteOppFilterProducto.value = '';
                     renderClienteData();
+                });
+            }
+
+            // ── Click en nombre de oportunidad dentro del widget → abrir detalle ──
+            if (widgetClienteOpp) {
+                widgetClienteOpp.addEventListener('click', function (e) {
+                    var oppLink = e.target.closest('.wco-opp-name');
+                    if (oppLink) {
+                        var oppId = oppLink.getAttribute('data-oportunidad-id');
+                        if (oppId && typeof openDetalle === 'function') {
+                            openDetalle(oppId);
+                        }
+                    }
                 });
             }
 
@@ -3898,9 +3914,6 @@
         // ── Abrir drive desde tarea ──
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
-            // Elevar por encima del modal de tarea (puede ser z-elevated o CAPA 4)
-            var drv = document.getElementById('widgetOppDrive');
-            if (drv) { drv.classList.add('z-elevated'); drv.classList.add('z-elevated-top'); }
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
             if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
         }
