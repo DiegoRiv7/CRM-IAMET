@@ -239,13 +239,16 @@ def _alerta_to_dict(a):
 @login_required
 @require_http_methods(["GET"])
 def api_proyectos_lista(request):
-    qs = _get_proyectos_qs(request.user)
-    status_filter = request.GET.get('status')
-    if status_filter:
-        qs = qs.filter(status=status_filter)
-    qs = qs.select_related('usuario')
-    proyectos = [_proyecto_to_dict(p, include_alerts=True) for p in qs]
-    return JsonResponse({'success': True, 'data': proyectos})
+    try:
+        qs = _get_proyectos_qs(request.user)
+        status_filter = request.GET.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        qs = qs.select_related('usuario')
+        proyectos = [_proyecto_to_dict(p, include_alerts=True) for p in qs]
+        return JsonResponse({'ok': True, 'data': proyectos})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
 @login_required

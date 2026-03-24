@@ -124,6 +124,7 @@
         if (searchInput) searchInput.value = '';
         proyectosCargarLista();
     };
+    window.proyectosAbrir = window.proyectosInit;
 
 
     // =========================================
