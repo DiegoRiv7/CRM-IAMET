@@ -888,6 +888,16 @@ def api_crm_table_data(request):
         if vista == 'facturado':
             # Total desde ArchivoFacturacion
             facturado_por_cliente_obj = {}
+
+            def _extract_datos(datos_json):
+                """Extrae datos independiente del formato (plano o anidado)"""
+                if not datos_json:
+                    return {}
+                if 'datos' in datos_json and isinstance(datos_json['datos'], dict):
+                    return datos_json['datos']
+                # Formato plano: {cliente: monto} directamente
+                return {k: v for k, v in datos_json.items() if k != 'datos'}
+
             try:
                 if usando_periodo:
                     from datetime import date as _date
@@ -896,24 +906,52 @@ def api_crm_table_data(request):
                     while cur <= end:
                         try:
                             af = ArchivoFacturacion.objects.get(mes=cur.strftime('%m'), anio=cur.year)
-                            for c_name, val in af.datos_json.get('datos', {}).items():
+                            for c_name, val in _extract_datos(af.datos_json).items():
                                 facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
                         except ArchivoFacturacion.DoesNotExist:
                             pass
                         cur = cur.replace(month=cur.month % 12 + 1, day=1) if cur.month < 12 else cur.replace(year=cur.year + 1, month=1, day=1)
                 elif mes_filter == 'todos':
                     for af in ArchivoFacturacion.objects.filter(anio=anio_int):
-                        for c_name, val in af.datos_json.get('datos', {}).items():
+                        for c_name, val in _extract_datos(af.datos_json).items():
                             facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
                 else:
                     af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
-                    for c_name, val in af.datos_json.get('datos', {}).items():
+                    for c_name, val in _extract_datos(af.datos_json).items():
                         facturado_por_cliente_obj[c_name] = Decimal(str(val))
             except ArchivoFacturacion.DoesNotExist:
                 pass
+            # Matching flexible de nombres XLS → Cliente CRM
+            _all_clientes_api = list(clientes_qs)
             total_by_id = {}
             for name, monto in facturado_por_cliente_obj.items():
-                c_obj = Cliente.objects.filter(nombre_empresa__icontains=name).first()
+                cn_upper = name.upper().strip()
+                c_obj = None
+                # 1) Exact
+                for c in _all_clientes_api:
+                    if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
+                        c_obj = c; break
+                # 2) Contains bidireccional
+                if not c_obj:
+                    for c in _all_clientes_api:
+                        if not c.nombre_empresa: continue
+                        crm_u = c.nombre_empresa.upper().strip()
+                        if crm_u in cn_upper or cn_upper in crm_u:
+                            c_obj = c; break
+                # 3) Primeras 2 palabras
+                if not c_obj:
+                    pw = [w for w in cn_upper.split() if len(w) > 2 and w not in ('DE','DEL','LA','LAS','LOS','EL','SA','CV','SAS','INC','MEXICO')]
+                    if len(pw) >= 2:
+                        for c in _all_clientes_api:
+                            if not c.nombre_empresa: continue
+                            cu = c.nombre_empresa.upper()
+                            if pw[0] in cu and pw[1] in cu:
+                                c_obj = c; break
+                    elif len(pw) == 1 and len(pw[0]) >= 4:
+                        for c in _all_clientes_api:
+                            if not c.nombre_empresa: continue
+                            if pw[0] in c.nombre_empresa.upper():
+                                c_obj = c; break
                 if c_obj:
                     total_by_id[c_obj.id] = total_by_id.get(c_obj.id, Decimal('0')) + monto
             prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs.filter(monto_facturacion__gt=0), 'monto_facturacion')}
@@ -924,7 +962,7 @@ def api_crm_table_data(request):
             if _pm:
                 try:
                     _paf = ArchivoFacturacion.objects.get(mes=_pm, anio=_pa)
-                    _prev_sum = sum(Decimal(str(v)) for v in _paf.datos_json.get('datos', {}).values())
+                    _prev_sum = sum(Decimal(str(v)) for v in _extract_datos(_paf.datos_json).values())
                 except ArchivoFacturacion.DoesNotExist:
                     pass
 
