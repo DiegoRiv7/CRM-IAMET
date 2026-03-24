@@ -1015,23 +1015,23 @@ def api_tareas_proyecto_lista(request, proyecto_id):
         d['source'] = 'proyecto'
         items.append(d)
 
-    # 2) Tareas de la oportunidad vinculada (TareaOportunidad)
+    # 2) Tareas de la oportunidad vinculada (modelo Tarea del CRM)
     if proyecto.oportunidad_id:
-        from .models import TareaOportunidad
-        tareas_opp = TareaOportunidad.objects.filter(
+        from .models import Tarea
+        tareas_crm = Tarea.objects.filter(
             oportunidad_id=proyecto.oportunidad_id
-        ).select_related('responsable')
-        prioridad_map = {'normal': 'medium', 'alta': 'high'}
-        estado_map = {'pendiente': 'pending', 'completada': 'completed'}
-        for t in tareas_opp:
+        ).select_related('asignado_a', 'creado_por')
+        prioridad_map = {'baja': 'low', 'media': 'medium', 'alta': 'high'}
+        estado_map = {'pendiente': 'pending', 'iniciada': 'in_progress', 'en_progreso': 'in_progress', 'completada': 'completed', 'cancelada': 'cancelled'}
+        for t in tareas_crm:
             resp_name = None
-            if t.responsable:
-                resp_name = (t.responsable.first_name + ' ' + t.responsable.last_name).strip() or t.responsable.username
+            if t.asignado_a:
+                resp_name = (t.asignado_a.first_name + ' ' + t.asignado_a.last_name).strip() or t.asignado_a.username
             items.append({
                 'id': t.id,
                 'source': 'oportunidad',
                 'titulo': t.titulo,
-                'descripcion': t.descripcion,
+                'descripcion': getattr(t, 'descripcion', ''),
                 'prioridad': prioridad_map.get(t.prioridad, 'medium'),
                 'status': estado_map.get(t.estado, 'pending'),
                 'asignado_a_nombre': resp_name,
