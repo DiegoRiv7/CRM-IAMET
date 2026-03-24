@@ -1,6 +1,8 @@
-{% extends "base.html" %}{% load app_filters %}
+{% extends "base.html" %}{% load app_filters %}{% load static %}
 {% block title %}Sistema CRM{% endblock %}
-{% block extra_head %}{% include "crm/_styles.html" %}{% endblock %}
+{% block extra_head %}{% include "crm/_styles.html" %}
+<link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
+{% endblock %}
 {% block content %}
 
 <div class="crm-page">
@@ -46,7 +48,6 @@
 {% include "crm/_scripts_main.html" %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
-<link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
 <script src="{% static 'js/crm_proyectos.js' %}"></script>
 {% if es_ingeniero %}
 {% include "crm/_scripts_ingeniero.html" %}
