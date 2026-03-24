@@ -3719,6 +3719,7 @@ class LecturaGrupo(models.Model):
 
 class ProyectoIAMET(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='proyectos_iamet')
+    oportunidad = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='proyectos_iamet_vinculados')
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True, default='')
     cliente_nombre = models.CharField(max_length=255, blank=True, default='')

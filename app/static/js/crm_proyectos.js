@@ -10,80 +10,30 @@
     var currentTab = 'partidas';
     var searchQuery = '';
 
-    // --- Sample Data ---
+    // --- Cached data from API ---
+    var _cachedProjects = [];
 
-    var PROY_PROJECTS = [
-        { id:1, name:'Instalacion CCTV Torre Norte', client:'Telcel', status:'active', description:'Instalacion de 48 camaras IP y NVR centralizado', budgetedProfit:450000, actualProfit:380000, startDate:'2026-01-15', endDate:'2026-06-30' },
-        { id:2, name:'Fibra Optica Reforma 222', client:'AT&T Mexico', status:'planning', description:'Tendido de fibra optica en edificio corporativo', budgetedProfit:1200000, actualProfit:0, startDate:'2026-03-01', endDate:'2026-09-15' },
-        { id:3, name:'Control de Acceso Planta Monterrey', client:'FEMSA', status:'completed', description:'Sistema de control de acceso biometrico para 12 puntos', budgetedProfit:800000, actualProfit:920000, startDate:'2025-11-01', endDate:'2026-02-28' },
-        { id:4, name:'Red WiFi Campus UNAM', client:'UNAM', status:'active', description:'Implementacion de red WiFi 6E en 5 edificios', budgetedProfit:650000, actualProfit:410000, startDate:'2026-02-01', endDate:'2026-07-31' },
-        { id:5, name:'Videovigilancia Centro Comercial', client:'Liverpool', status:'paused', description:'Upgrade de sistema analogico a IP - 120 camaras', budgetedProfit:1500000, actualProfit:200000, startDate:'2026-01-20', endDate:'2026-08-30' },
-    ];
 
-    var PROY_LINE_ITEMS = {
-        1: [
-            { id:1, category:'Equipamiento', description:'Camara IP 4MP Bullet', brand:'AXIS', partNumber:'P3245-V', quantity:48, remaining:12, listPrice:8500, discount:15, unitCost:7225, unitSale:12000, profit:4775, supplier:'Ingram Micro', status:'ordered' },
-            { id:2, category:'Equipamiento', description:'NVR 64 canales', brand:'GENETEC', partNumber:'GSC-NVR64', quantity:2, remaining:0, listPrice:185000, discount:10, unitCost:166500, unitSale:250000, profit:83500, supplier:'CT Internacional', status:'received' },
-            { id:3, category:'Accesorios', description:'Cable UTP Cat6 305m', brand:'PANDUIT', partNumber:'PUP6C04BU-FE', quantity:20, remaining:5, listPrice:3200, discount:20, unitCost:2560, unitSale:4500, profit:1940, supplier:'Panduit Direct', status:'ordered' },
-            { id:4, category:'Mano de Obra', description:'Instalacion por camara', brand:'\u2014', partNumber:'\u2014', quantity:48, remaining:48, listPrice:0, discount:0, unitCost:1500, unitSale:3500, profit:2000, supplier:'Interno', status:'pending' },
-            { id:5, category:'Accesorios', description:'Montaje para poste', brand:'AXIS', partNumber:'T91B61', quantity:24, remaining:10, listPrice:1800, discount:12, unitCost:1584, unitSale:2800, profit:1216, supplier:'Ingram Micro', status:'in_transit' },
-        ],
-        2: [], 3: [], 4: [], 5: []
-    };
+    // =========================================
+    //  API HELPERS
+    // =========================================
 
-    var PROY_PURCHASE_ORDERS = {
-        1: [
-            { id:1, poNumber:'OC-2026-001', supplier:'Ingram Micro', item:'Camara IP 4MP Bullet x36', quantity:36, amount:260100, status:'received', date:'2026-02-01' },
-            { id:2, poNumber:'OC-2026-002', supplier:'CT Internacional', item:'NVR 64 canales x2', quantity:2, amount:333000, status:'received', date:'2026-01-25' },
-            { id:3, poNumber:'OC-2026-003', supplier:'Panduit Direct', item:'Cable UTP Cat6 x15', quantity:15, amount:38400, status:'emitted', date:'2026-03-10' },
-        ],
-        2: [], 3: [], 4: [], 5: []
-    };
+    function _csrf() {
+        var elem = document.querySelector('[name=csrfmiddlewaretoken]');
+        return elem ? elem.value : '';
+    }
 
-    var PROY_TASKS = {
-        1: [
-            { id:1, title:'Levantamiento de sitio', priority:'high', assignedTo:'Carlos Mendez', dueDate:'2026-02-15', status:'completed' },
-            { id:2, title:'Instalacion de cableado estructurado', priority:'critical', assignedTo:'Eduardo Rios', dueDate:'2026-03-20', status:'in_progress' },
-            { id:3, title:'Configuracion de NVR', priority:'medium', assignedTo:'Laura Herrera', dueDate:'2026-04-01', status:'pending' },
-            { id:4, title:'Pruebas de video y grabacion', priority:'high', assignedTo:'Carlos Mendez', dueDate:'2026-04-15', status:'pending' },
-        ],
-        2: [], 3: [], 4: [], 5: []
-    };
-
-    var PROY_ALERTS = {
-        1: [
-            { id:1, type:'budget_variance', severity:'warning', title:'Varianza en costo de camaras', message:'El costo real supera el presupuestado en 8.2%', resolved:false },
-            { id:2, type:'low_stock', severity:'critical', title:'Stock critico: Cable UTP', message:'Solo quedan 5 bobinas de 20 presupuestadas', resolved:false },
-            { id:3, type:'task_overdue', severity:'warning', title:'Tarea vencida: Instalacion cableado', message:'La fecha limite fue el 20 de marzo', resolved:false },
-            { id:4, type:'expense_pending', severity:'info', title:'Gasto pendiente de aprobacion', message:'Viaticos por $12,500 pendientes de aprobacion', resolved:false },
-        ],
-        2: [], 3: [], 4: [], 5: []
-    };
-
-    var PROY_SUPPLIER_INVOICES = {
-        1: [
-            { id:1, invoiceNumber:'FAC-IM-4521', supplier:'Ingram Micro', amount:260100, budgeted:252000, variance:8100, variancePct:3.2, status:'paid', date:'2026-02-15' },
-            { id:2, invoiceNumber:'FAC-CT-1893', supplier:'CT Internacional', amount:333000, budgeted:333000, variance:0, variancePct:0, status:'received', date:'2026-02-01' },
-        ],
-        2: [], 3: [], 4: [], 5: []
-    };
-
-    var PROY_REVENUE_INVOICES = {
-        1: [
-            { id:1, invoiceNumber:'FI-2026-0045', amount:450000, date:'2026-03-01', status:'paid' },
-            { id:2, invoiceNumber:'FI-2026-0078', amount:380000, date:'2026-03-15', status:'emitted' },
-        ],
-        2: [], 3: [], 4: [], 5: []
-    };
-
-    var PROY_EXPENSES = {
-        1: [
-            { id:1, category:'Viaticos', description:'Viaje a sitio Torre Norte', amount:12500, approval:'pending' },
-            { id:2, category:'Combustible', description:'Diesel camioneta proyecto', amount:4800, approval:'approved' },
-            { id:3, category:'Hospedaje', description:'Hotel 3 noches equipo instalacion', amount:8700, approval:'approved' },
-        ],
-        2: [], 3: [], 4: [], 5: []
-    };
+    function _fetch(url, opts) {
+        opts = opts || {};
+        opts.headers = opts.headers || {};
+        opts.headers['X-CSRFToken'] = _csrf();
+        if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(opts.body);
+        }
+        opts.credentials = 'same-origin';
+        return fetch(url, opts).then(function(r) { return r.json(); });
+    }
 
 
     // =========================================
@@ -97,7 +47,7 @@
     function fmtDate(dateStr) {
         if (!dateStr) return '\u2014';
         var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-        var parts = dateStr.split('-');
+        var parts = dateStr.split('T')[0].split('-');
         return parseInt(parts[2]) + ' ' + months[parseInt(parts[1]) - 1] + ' ' + parts[0];
     }
 
@@ -157,13 +107,6 @@
         return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:6px;flex-shrink:0"></span>';
     }
 
-    function getProject(id) {
-        for (var i = 0; i < PROY_PROJECTS.length; i++) {
-            if (PROY_PROJECTS[i].id === id) return PROY_PROJECTS[i];
-        }
-        return null;
-    }
-
     function el(id) {
         return document.getElementById(id);
     }
@@ -188,41 +131,40 @@
     // =========================================
 
     function proyectosCargarLista() {
-        var filtered = getFilteredProjects();
-
         // Update filter pill active state
         var pills = document.querySelectorAll('.proy-filter-pill');
         pills.forEach(function(pill) {
             pill.classList.toggle('active', pill.getAttribute('data-filter') === currentFilter);
         });
 
-        renderProjectCards(filtered);
+        var url = '/app/api/iamet/proyectos/';
+        if (currentFilter !== 'todos') {
+            url += '?status=' + currentFilter;
+        }
+
+        _fetch(url).then(function(resp) {
+            if (resp.ok || resp.success) {
+                _cachedProjects = resp.data || [];
+                var filtered = getFilteredProjects();
+                renderProjectCards(filtered);
+            } else {
+                console.error('Error cargando proyectos:', resp.error);
+            }
+        }).catch(function(err) {
+            console.error('Error de red cargando proyectos:', err);
+        });
     }
 
     function getFilteredProjects() {
-        var filtered;
+        var filtered = _cachedProjects.slice();
 
-        // Status filter
-        if (currentFilter === 'todos') {
-            filtered = PROY_PROJECTS.slice();
-        } else {
-            // Map filter values to status values
-            var filterMap = {
-                'active': 'active',
-                'completed': 'completed',
-                'planning': 'planning'
-            };
-            var statusVal = filterMap[currentFilter] || currentFilter;
-            filtered = PROY_PROJECTS.filter(function(p) { return p.status === statusVal; });
-        }
-
-        // Search filter
+        // Search filter (client-side on cached data)
         if (searchQuery) {
             var q = searchQuery.toLowerCase();
             filtered = filtered.filter(function(p) {
-                return (p.name && p.name.toLowerCase().indexOf(q) !== -1) ||
-                       (p.client && p.client.toLowerCase().indexOf(q) !== -1) ||
-                       (p.description && p.description.toLowerCase().indexOf(q) !== -1);
+                return (p.nombre && p.nombre.toLowerCase().indexOf(q) !== -1) ||
+                       (p.cliente_nombre && p.cliente_nombre.toLowerCase().indexOf(q) !== -1) ||
+                       (p.descripcion && p.descripcion.toLowerCase().indexOf(q) !== -1);
             });
         }
 
@@ -237,7 +179,8 @@
     window.proyectosBuscar = function() {
         var searchInput = el('proySearch');
         searchQuery = searchInput ? searchInput.value.trim() : '';
-        proyectosCargarLista();
+        var filtered = getFilteredProjects();
+        renderProjectCards(filtered);
     };
 
 
@@ -260,28 +203,28 @@
 
         var html = '';
         projects.forEach(function(p) {
-            var pct = p.budgetedProfit > 0 ? Math.min(Math.round(p.actualProfit / p.budgetedProfit * 100), 100) : 0;
-            var profitOk = p.actualProfit >= p.budgetedProfit;
+            var budgeted = p.utilidad_presupuestada || 0;
+            var actual = p.utilidad_real || 0;
+            var pct = budgeted > 0 ? Math.min(Math.round(actual / budgeted * 100), 100) : 0;
+            var profitOk = actual >= budgeted;
             var barColor = profitOk ? '#10b981' : (pct >= 60 ? '#f59e0b' : '#ef4444');
             var amountColor = profitOk ? '#10b981' : '#636366';
 
-            // Unresolved alert count
-            var alerts = PROY_ALERTS[p.id] || [];
-            var unresolved = alerts.filter(function(a) { return !a.resolved; }).length;
+            var unresolved = p.alertas_count || 0;
 
             html += '<div class="proy-card" onclick="proyectosVerDetalle(' + p.id + ')">' +
                 '<div class="proy-card-header">' +
                     '<div style="flex:1;min-width:0">' +
-                        '<div class="proy-card-title">' + truncate(p.name, 45) + '</div>' +
-                        '<div class="proy-card-client">' + p.client + '</div>' +
+                        '<div class="proy-card-title">' + truncate(p.nombre, 45) + '</div>' +
+                        '<div class="proy-card-client">' + (p.cliente_nombre || '\u2014') + '</div>' +
                     '</div>' +
                     '<span class="proy-badge ' + statusClass(p.status) + '">' + statusLabel(p.status) + '</span>' +
                 '</div>' +
-                '<div class="proy-card-desc">' + truncate(p.description, 90) + '</div>' +
+                '<div class="proy-card-desc">' + truncate(p.descripcion, 90) + '</div>' +
                 '<div class="proy-card-profit">' +
                     '<div class="proy-card-profit-row">' +
                         '<span class="proy-card-profit-label">Utilidad</span>' +
-                        '<span class="proy-card-profit-amounts" style="color:' + amountColor + '">' + fmtMoney(p.actualProfit) + ' / ' + fmtMoney(p.budgetedProfit) + '</span>' +
+                        '<span class="proy-card-profit-amounts" style="color:' + amountColor + '">' + fmtMoney(actual) + ' / ' + fmtMoney(budgeted) + '</span>' +
                     '</div>' +
                     '<div class="proy-progress-track">' +
                         '<div class="proy-progress-fill" style="width:' + pct + '%;background:' + barColor + '"></div>' +
@@ -289,7 +232,7 @@
                     '<div class="proy-card-profit-pct">' + pct + '%</div>' +
                 '</div>' +
                 '<div class="proy-card-footer">' +
-                    '<span class="proy-card-dates">' + fmtDate(p.startDate) + ' \u2014 ' + fmtDate(p.endDate) + '</span>' +
+                    '<span class="proy-card-dates">' + fmtDate(p.fecha_inicio) + ' \u2014 ' + fmtDate(p.fecha_fin) + '</span>' +
                     (unresolved > 0 ? '<span class="proy-alert-count" title="' + unresolved + ' alertas">' + unresolved + '</span>' : '') +
                 '</div>' +
             '</div>';
@@ -304,9 +247,6 @@
     // =========================================
 
     window.proyectosVerDetalle = function(projectId) {
-        var project = getProject(projectId);
-        if (!project) return;
-
         currentProjectId = projectId;
         currentTab = 'partidas';
 
@@ -314,23 +254,35 @@
         var overlay = el('widgetProyectoDetalle');
         if (overlay) overlay.style.display = 'flex';
 
-        // Header
-        var hName = el('proyDetailName');
-        var hStatus = el('proyDetailStatus');
-        var hClient = el('proyDetailClient');
-        var hDates = el('proyDetailDates');
-        var hDesc = el('proyDetailDesc');
+        // Fetch project detail + financials
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var project = resp.data;
 
-        if (hName) hName.textContent = project.name;
-        if (hStatus) {
-            hStatus.textContent = statusLabel(project.status);
-            hStatus.className = 'proy-badge ' + statusClass(project.status);
-        }
-        if (hClient) hClient.textContent = project.client;
-        if (hDates) hDates.textContent = fmtDate(project.startDate) + '  \u2192  ' + fmtDate(project.endDate);
-        if (hDesc) hDesc.textContent = project.description;
+                // Header
+                var hName = el('proyDetailName');
+                var hStatus = el('proyDetailStatus');
+                var hClient = el('proyDetailClient');
+                var hDates = el('proyDetailDates');
+                var hDesc = el('proyDetailDesc');
 
-        renderKPIs(project);
+                if (hName) hName.textContent = project.nombre || '';
+                if (hStatus) {
+                    hStatus.textContent = statusLabel(project.status);
+                    hStatus.className = 'proy-badge ' + statusClass(project.status);
+                }
+                if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
+                if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
+                if (hDesc) hDesc.textContent = project.descripcion || '';
+
+                renderKPIsFromAPI(projectId);
+            } else {
+                console.error('Error cargando proyecto:', resp.error);
+            }
+        }).catch(function(err) {
+            console.error('Error de red cargando proyecto:', err);
+        });
+
         proyectosSetTab('partidas');
     };
 
@@ -346,40 +298,42 @@
     //  KPIs
     // =========================================
 
-    function renderKPIs(project) {
+    function renderKPIsFromAPI(projectId) {
         var kpiContainer = el('proyKPIs');
         if (!kpiContainer) return;
 
-        var margin = project.budgetedProfit > 0 ? Math.round(project.actualProfit / project.budgetedProfit * 100) : 0;
-        var profitOk = project.actualProfit >= project.budgetedProfit;
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var fin = resp.data;
+                var budgeted = fin.utilidad_presupuestada || 0;
+                var actual = fin.utilidad_real || 0;
+                var margin = fin.margen || 0;
+                var coverage = fin.cobertura || 0;
+                var profitOk = actual >= budgeted;
 
-        // Calculate cost coverage from line items
-        var items = PROY_LINE_ITEMS[project.id] || [];
-        var totalCost = 0;
-        var totalSale = 0;
-        items.forEach(function(item) {
-            totalCost += item.unitCost * item.quantity;
-            totalSale += item.unitSale * item.quantity;
+                kpiContainer.innerHTML =
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Utilidad Presupuestada</div>' +
+                        '<div class="proy-kpi-value">' + fmtMoney(budgeted) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Utilidad Real</div>' +
+                        '<div class="proy-kpi-value" style="color:' + (profitOk ? '#10b981' : '#ef4444') + '">' + fmtMoney(actual) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Margen</div>' +
+                        '<div class="proy-kpi-value" style="color:' + (margin >= 100 ? '#10b981' : margin >= 70 ? '#f59e0b' : '#ef4444') + '">' + margin + '%</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Cobertura de Costos</div>' +
+                        '<div class="proy-kpi-value">' + coverage + '%</div>' +
+                    '</div>';
+            } else {
+                console.error('Error cargando financieros:', resp.error);
+            }
+        }).catch(function(err) {
+            console.error('Error de red cargando financieros:', err);
         });
-        var coverage = totalCost > 0 ? Math.round(totalSale / totalCost * 100) : 0;
-
-        kpiContainer.innerHTML =
-            '<div class="proy-kpi-card">' +
-                '<div class="proy-kpi-label">Utilidad Presupuestada</div>' +
-                '<div class="proy-kpi-value">' + fmtMoney(project.budgetedProfit) + '</div>' +
-            '</div>' +
-            '<div class="proy-kpi-card">' +
-                '<div class="proy-kpi-label">Utilidad Real</div>' +
-                '<div class="proy-kpi-value" style="color:' + (profitOk ? '#10b981' : '#ef4444') + '">' + fmtMoney(project.actualProfit) + '</div>' +
-            '</div>' +
-            '<div class="proy-kpi-card">' +
-                '<div class="proy-kpi-label">Margen</div>' +
-                '<div class="proy-kpi-value" style="color:' + (margin >= 100 ? '#10b981' : margin >= 70 ? '#f59e0b' : '#ef4444') + '">' + margin + '%</div>' +
-            '</div>' +
-            '<div class="proy-kpi-card">' +
-                '<div class="proy-kpi-label">Cobertura de Costos</div>' +
-                '<div class="proy-kpi-value">' + coverage + '%</div>' +
-            '</div>';
     }
 
 
@@ -426,55 +380,76 @@
         var container = el('proyPartidasBody');
         if (!container) return;
 
-        var items = PROY_LINE_ITEMS[projectId] || [];
-        if (items.length === 0) {
-            container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">No hay partidas registradas</td></tr>';
-            return;
-        }
+        container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
 
-        var html = '';
-        items.forEach(function(item) {
-            var totalCost = item.unitCost * item.quantity;
-            var totalSale = item.unitSale * item.quantity;
-            var totalProfit = item.profit * item.quantity;
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/partidas/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var items = resp.data || [];
+                if (items.length === 0) {
+                    container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">No hay partidas registradas</td></tr>';
+                    var foot = el('proyPartidasFoot');
+                    if (foot) foot.innerHTML = '';
+                    return;
+                }
 
-            html += '<tr>' +
-                '<td>' + categoryDot(item.category) + item.category + '</td>' +
-                '<td title="' + item.description + '">' + truncate(item.description, 28) + '</td>' +
-                '<td>' + item.brand + '</td>' +
-                '<td style="font-size:0.72rem;color:#aeaeb2">' + item.partNumber + '</td>' +
-                '<td style="text-align:center">' + item.quantity + '</td>' +
-                '<td style="text-align:center;color:' + (item.remaining > 0 ? '#f59e0b' : '#10b981') + '">' + item.remaining + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(item.listPrice) + '</td>' +
-                '<td style="text-align:center">' + item.discount + '%</td>' +
-                '<td style="text-align:right">' + fmtMoney(item.unitCost) + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(item.unitSale) + '</td>' +
-                '<td style="text-align:right;color:#10b981">' + fmtMoney(totalProfit) + '</td>' +
-                '<td>' + truncate(item.supplier, 16) + '</td>' +
-                '<td><span class="proy-badge ' + statusClass(item.status) + '">' + statusLabel(item.status) + '</span></td>' +
-            '</tr>';
+                var html = '';
+                items.forEach(function(item) {
+                    var totalCost = (item.costo_unitario || 0) * (item.cantidad || 0);
+                    var totalSale = (item.precio_venta_unitario || 0) * (item.cantidad || 0);
+                    var totalProfit = (item.ganancia || ((item.precio_venta_unitario || 0) - (item.costo_unitario || 0))) * (item.cantidad || 0);
+
+                    html += '<tr>' +
+                        '<td>' + categoryDot(item.categoria) + (item.categoria || '\u2014') + '</td>' +
+                        '<td title="' + (item.descripcion || '') + '">' + truncate(item.descripcion, 28) + '</td>' +
+                        '<td>' + (item.marca || '\u2014') + '</td>' +
+                        '<td style="font-size:0.72rem;color:#aeaeb2">' + (item.numero_parte || '\u2014') + '</td>' +
+                        '<td style="text-align:center">' + (item.cantidad || 0) + '</td>' +
+                        '<td style="text-align:center;color:' + ((item.cantidad_pendiente || 0) > 0 ? '#f59e0b' : '#10b981') + '">' + (item.cantidad_pendiente || 0) + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(item.precio_lista) + '</td>' +
+                        '<td style="text-align:center">' + (item.descuento || 0) + '%</td>' +
+                        '<td style="text-align:right">' + fmtMoney(item.costo_unitario) + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(item.precio_venta_unitario) + '</td>' +
+                        '<td style="text-align:right;color:#10b981">' + fmtMoney(totalProfit) + '</td>' +
+                        '<td>' + truncate(item.proveedor, 16) + '</td>' +
+                        '<td><span class="proy-badge ' + statusClass(item.status) + '">' + statusLabel(item.status) + '</span></td>' +
+                    '</tr>';
+                });
+
+                container.innerHTML = html;
+
+                // Totals — use API totals if available, otherwise calculate
+                var totals = resp.totales || {};
+                var totalsCost = totals.total_costo || 0;
+                var totalsSale = totals.total_venta || 0;
+                var totalsProfit = totals.total_ganancia || 0;
+
+                if (!resp.totales) {
+                    totalsCost = 0; totalsSale = 0; totalsProfit = 0;
+                    items.forEach(function(item) {
+                        totalsCost += (item.costo_unitario || 0) * (item.cantidad || 0);
+                        totalsSale += (item.precio_venta_unitario || 0) * (item.cantidad || 0);
+                        totalsProfit += (item.ganancia || ((item.precio_venta_unitario || 0) - (item.costo_unitario || 0))) * (item.cantidad || 0);
+                    });
+                }
+
+                var foot = el('proyPartidasFoot');
+                if (foot) {
+                    foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
+                        '<td colspan="8" style="text-align:right;color:#8e8e93">Totales</td>' +
+                        '<td style="text-align:right">' + fmtMoney(totalsCost) + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(totalsSale) + '</td>' +
+                        '<td style="text-align:right;color:#10b981">' + fmtMoney(totalsProfit) + '</td>' +
+                        '<td colspan="2"></td>' +
+                    '</tr>';
+                }
+            } else {
+                container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#ef4444">Error al cargar partidas</td></tr>';
+                console.error('Error cargando partidas:', resp.error);
+            }
+        }).catch(function(err) {
+            container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
+            console.error('Error de red cargando partidas:', err);
         });
-
-        container.innerHTML = html;
-
-        // Totals
-        var totalsCost = 0, totalsSale = 0, totalsProfit = 0;
-        items.forEach(function(item) {
-            totalsCost += item.unitCost * item.quantity;
-            totalsSale += item.unitSale * item.quantity;
-            totalsProfit += item.profit * item.quantity;
-        });
-
-        var foot = el('proyPartidasFoot');
-        if (foot) {
-            foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
-                '<td colspan="8" style="text-align:right;color:#8e8e93">Totales</td>' +
-                '<td style="text-align:right">' + fmtMoney(totalsCost) + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(totalsSale) + '</td>' +
-                '<td style="text-align:right;color:#10b981">' + fmtMoney(totalsProfit) + '</td>' +
-                '<td colspan="2"></td>' +
-            '</tr>';
-        }
     }
 
 
@@ -486,38 +461,52 @@
         var container = el('proyOCBody');
         if (!container) return;
 
-        var orders = PROY_PURCHASE_ORDERS[projectId] || [];
-        if (orders.length === 0) {
-            container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8e8e93">No hay ordenes de compra</td></tr>';
-            return;
-        }
+        container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
 
-        var html = '';
-        orders.forEach(function(oc) {
-            html += '<tr>' +
-                '<td style="font-weight:600;color:#007aff">' + oc.poNumber + '</td>' +
-                '<td>' + oc.supplier + '</td>' +
-                '<td>' + oc.item + '</td>' +
-                '<td style="text-align:center">' + oc.quantity + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(oc.amount) + '</td>' +
-                '<td><span class="proy-badge ' + statusClass(oc.status) + '">' + statusLabel(oc.status) + '</span></td>' +
-                '<td>' + fmtDate(oc.date) + '</td>' +
-            '</tr>';
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/oc/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var orders = resp.data || [];
+                if (orders.length === 0) {
+                    container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8e8e93">No hay ordenes de compra</td></tr>';
+                    var foot = el('proyOCFoot');
+                    if (foot) foot.innerHTML = '';
+                    return;
+                }
+
+                var html = '';
+                var total = 0;
+                orders.forEach(function(oc) {
+                    var amount = oc.monto_total || ((oc.cantidad || 0) * (oc.precio_unitario || 0));
+                    total += amount;
+                    html += '<tr>' +
+                        '<td style="font-weight:600;color:#007aff">' + (oc.numero_oc || '\u2014') + '</td>' +
+                        '<td>' + (oc.proveedor || '\u2014') + '</td>' +
+                        '<td>' + (oc.descripcion || oc.partida_descripcion || '\u2014') + '</td>' +
+                        '<td style="text-align:center">' + (oc.cantidad || 0) + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
+                        '<td><span class="proy-badge ' + statusClass(oc.status) + '">' + statusLabel(oc.status) + '</span></td>' +
+                        '<td>' + fmtDate(oc.fecha_emision) + '</td>' +
+                    '</tr>';
+                });
+
+                container.innerHTML = html;
+
+                var foot = el('proyOCFoot');
+                if (foot) {
+                    foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
+                        '<td colspan="4" style="text-align:right;color:#8e8e93">Total OC</td>' +
+                        '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
+                        '<td colspan="2"></td>' +
+                    '</tr>';
+                }
+            } else {
+                container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#ef4444">Error al cargar OC</td></tr>';
+                console.error('Error cargando OC:', resp.error);
+            }
+        }).catch(function(err) {
+            container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
+            console.error('Error de red cargando OC:', err);
         });
-
-        container.innerHTML = html;
-
-        // OC total
-        var total = 0;
-        orders.forEach(function(oc) { total += oc.amount; });
-        var foot = el('proyOCFoot');
-        if (foot) {
-            foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
-                '<td colspan="4" style="text-align:right;color:#8e8e93">Total OC</td>' +
-                '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
-                '<td colspan="2"></td>' +
-            '</tr>';
-        }
     }
 
 
@@ -535,96 +524,143 @@
         var container = el('proyFacProvBody');
         if (!container) return;
 
-        var invoices = PROY_SUPPLIER_INVOICES[projectId] || [];
-        if (invoices.length === 0) {
-            container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de proveedores</td></tr>';
-            return;
-        }
+        container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
 
-        var html = '';
-        invoices.forEach(function(inv) {
-            var varianceColor = inv.variance > 0 ? '#ef4444' : (inv.variance < 0 ? '#10b981' : '#8e8e93');
-            html += '<tr>' +
-                '<td style="font-weight:600;color:#007aff">' + inv.invoiceNumber + '</td>' +
-                '<td>' + inv.supplier + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(inv.amount) + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(inv.budgeted) + '</td>' +
-                '<td style="text-align:right;color:' + varianceColor + '">' + (inv.variance > 0 ? '+' : '') + fmtMoney(inv.variance) + '</td>' +
-                '<td style="text-align:right;color:' + varianceColor + '">' + (inv.variancePct > 0 ? '+' : '') + inv.variancePct + '%</td>' +
-                '<td><span class="proy-badge ' + statusClass(inv.status) + '">' + statusLabel(inv.status) + '</span></td>' +
-                '<td>' + fmtDate(inv.date) + '</td>' +
-            '</tr>';
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/facturas-proveedor/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var invoices = resp.data || [];
+                if (invoices.length === 0) {
+                    container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de proveedores</td></tr>';
+                    return;
+                }
+
+                var html = '';
+                invoices.forEach(function(inv) {
+                    var amount = inv.monto || 0;
+                    var budgeted = inv.monto_presupuestado || 0;
+                    var variance = amount - budgeted;
+                    var variancePct = budgeted > 0 ? Math.round(variance / budgeted * 1000) / 10 : 0;
+                    var varianceColor = variance > 0 ? '#ef4444' : (variance < 0 ? '#10b981' : '#8e8e93');
+
+                    html += '<tr>' +
+                        '<td style="font-weight:600;color:#007aff">' + (inv.numero_factura || '\u2014') + '</td>' +
+                        '<td>' + (inv.proveedor || '\u2014') + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(budgeted) + '</td>' +
+                        '<td style="text-align:right;color:' + varianceColor + '">' + (variance > 0 ? '+' : '') + fmtMoney(variance) + '</td>' +
+                        '<td style="text-align:right;color:' + varianceColor + '">' + (variancePct > 0 ? '+' : '') + variancePct + '%</td>' +
+                        '<td><span class="proy-badge ' + statusClass(inv.status) + '">' + statusLabel(inv.status) + '</span></td>' +
+                        '<td>' + fmtDate(inv.fecha_factura) + '</td>' +
+                    '</tr>';
+                });
+
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
+                console.error('Error cargando facturas proveedor:', resp.error);
+            }
+        }).catch(function(err) {
+            container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
+            console.error('Error de red cargando facturas proveedor:', err);
         });
-
-        container.innerHTML = html;
     }
 
     function renderRevenueInvoices(projectId) {
         var container = el('proyFacIngBody');
         if (!container) return;
 
-        var invoices = PROY_REVENUE_INVOICES[projectId] || [];
-        if (invoices.length === 0) {
-            container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de ingreso</td></tr>';
-            return;
-        }
+        container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
 
-        var html = '';
-        var total = 0;
-        invoices.forEach(function(inv) {
-            total += inv.amount;
-            html += '<tr>' +
-                '<td style="font-weight:600;color:#007aff">' + inv.invoiceNumber + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(inv.amount) + '</td>' +
-                '<td><span class="proy-badge ' + statusClass(inv.status) + '">' + statusLabel(inv.status) + '</span></td>' +
-                '<td>' + fmtDate(inv.date) + '</td>' +
-            '</tr>';
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/facturas-ingreso/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var invoices = resp.data || [];
+                if (invoices.length === 0) {
+                    container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de ingreso</td></tr>';
+                    var foot = el('proyFacIngFoot');
+                    if (foot) foot.innerHTML = '';
+                    return;
+                }
+
+                var html = '';
+                var total = 0;
+                invoices.forEach(function(inv) {
+                    var amount = inv.monto || 0;
+                    total += amount;
+                    html += '<tr>' +
+                        '<td style="font-weight:600;color:#007aff">' + (inv.numero_factura || '\u2014') + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
+                        '<td><span class="proy-badge ' + statusClass(inv.status || inv.metodo_pago || 'emitted') + '">' + statusLabel(inv.status || inv.metodo_pago || 'emitted') + '</span></td>' +
+                        '<td>' + fmtDate(inv.fecha_factura) + '</td>' +
+                    '</tr>';
+                });
+
+                container.innerHTML = html;
+
+                var foot = el('proyFacIngFoot');
+                if (foot) {
+                    foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
+                        '<td style="text-align:right;color:#8e8e93">Total</td>' +
+                        '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
+                        '<td colspan="2"></td>' +
+                    '</tr>';
+                }
+            } else {
+                container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
+                console.error('Error cargando facturas ingreso:', resp.error);
+            }
+        }).catch(function(err) {
+            container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
+            console.error('Error de red cargando facturas ingreso:', err);
         });
-
-        container.innerHTML = html;
-
-        var foot = el('proyFacIngFoot');
-        if (foot) {
-            foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
-                '<td style="text-align:right;color:#8e8e93">Total</td>' +
-                '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
-                '<td colspan="2"></td>' +
-            '</tr>';
-        }
     }
 
     function renderExpenses(projectId) {
         var container = el('proyGastosBody');
         if (!container) return;
 
-        var expenses = PROY_EXPENSES[projectId] || [];
-        if (expenses.length === 0) {
-            container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">No hay gastos registrados</td></tr>';
-            return;
-        }
+        container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
 
-        var html = '';
-        var total = 0;
-        expenses.forEach(function(exp) {
-            total += exp.amount;
-            html += '<tr>' +
-                '<td>' + exp.category + '</td>' +
-                '<td>' + exp.description + '</td>' +
-                '<td style="text-align:right">' + fmtMoney(exp.amount) + '</td>' +
-                '<td><span class="proy-badge ' + statusClass(exp.approval) + '">' + statusLabel(exp.approval) + '</span></td>' +
-            '</tr>';
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/gastos/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var expenses = resp.data || [];
+                if (expenses.length === 0) {
+                    container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">No hay gastos registrados</td></tr>';
+                    var foot = el('proyGastosFoot');
+                    if (foot) foot.innerHTML = '';
+                    return;
+                }
+
+                var html = '';
+                var total = 0;
+                expenses.forEach(function(exp) {
+                    var amount = exp.monto || 0;
+                    total += amount;
+                    html += '<tr>' +
+                        '<td>' + (exp.categoria || '\u2014') + '</td>' +
+                        '<td>' + (exp.descripcion || '\u2014') + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
+                        '<td><span class="proy-badge ' + statusClass(exp.status || exp.aprobacion || 'pending') + '">' + statusLabel(exp.status || exp.aprobacion || 'pending') + '</span></td>' +
+                    '</tr>';
+                });
+
+                container.innerHTML = html;
+
+                var foot = el('proyGastosFoot');
+                if (foot) {
+                    foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
+                        '<td colspan="2" style="text-align:right;color:#8e8e93">Total Gastos</td>' +
+                        '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
+                        '<td></td>' +
+                    '</tr>';
+                }
+            } else {
+                container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error al cargar gastos</td></tr>';
+                console.error('Error cargando gastos:', resp.error);
+            }
+        }).catch(function(err) {
+            container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
+            console.error('Error de red cargando gastos:', err);
         });
-
-        container.innerHTML = html;
-
-        var foot = el('proyGastosFoot');
-        if (foot) {
-            foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
-                '<td colspan="2" style="text-align:right;color:#8e8e93">Total Gastos</td>' +
-                '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
-                '<td></td>' +
-            '</tr>';
-        }
     }
 
 
@@ -636,24 +672,36 @@
         var container = el('proyTareasBody');
         if (!container) return;
 
-        var tasks = PROY_TASKS[projectId] || [];
-        if (tasks.length === 0) {
-            container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay tareas registradas</td></tr>';
-            return;
-        }
+        container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
 
-        var html = '';
-        tasks.forEach(function(t) {
-            html += '<tr>' +
-                '<td style="font-weight:500">' + t.title + '</td>' +
-                '<td><span class="proy-badge ' + priorityClass(t.priority) + '">' + priorityLabel(t.priority) + '</span></td>' +
-                '<td>' + t.assignedTo + '</td>' +
-                '<td>' + fmtDate(t.dueDate) + '</td>' +
-                '<td><span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></td>' +
-            '</tr>';
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/tareas/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var tasks = resp.data || [];
+                if (tasks.length === 0) {
+                    container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay tareas registradas</td></tr>';
+                    return;
+                }
+
+                var html = '';
+                tasks.forEach(function(t) {
+                    html += '<tr>' +
+                        '<td style="font-weight:500">' + (t.titulo || '\u2014') + '</td>' +
+                        '<td><span class="proy-badge ' + priorityClass(t.prioridad) + '">' + priorityLabel(t.prioridad) + '</span></td>' +
+                        '<td>' + (t.asignado_a || t.asignado_nombre || 'Sin asignar') + '</td>' +
+                        '<td>' + fmtDate(t.fecha_limite) + '</td>' +
+                        '<td><span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></td>' +
+                    '</tr>';
+                });
+
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#ef4444">Error al cargar tareas</td></tr>';
+                console.error('Error cargando tareas:', resp.error);
+            }
+        }).catch(function(err) {
+            container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
+            console.error('Error de red cargando tareas:', err);
         });
-
-        container.innerHTML = html;
     }
 
 
@@ -665,43 +713,57 @@
         var container = el('proyAlertasContainer');
         if (!container) return;
 
-        var alerts = PROY_ALERTS[projectId] || [];
-        if (alerts.length === 0) {
-            container.innerHTML = '<div style="text-align:center;padding:40px;color:#8e8e93">No hay alertas</div>';
-            return;
-        }
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#8e8e93">Cargando...</div>';
 
-        var html = '';
-        alerts.forEach(function(a) {
-            var severityColors = { critical:'#ef4444', warning:'#f59e0b', info:'#3b82f6' };
-            var bgColors = { critical:'rgba(239,68,68,0.06)', warning:'rgba(245,158,11,0.06)', info:'rgba(59,130,246,0.06)' };
-            var borderColor = severityColors[a.severity] || '#3b82f6';
-            var bgColor = bgColors[a.severity] || bgColors.info;
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/alertas/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var alerts = resp.data || [];
+                if (alerts.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;padding:40px;color:#8e8e93">No hay alertas</div>';
+                    return;
+                }
 
-            html += '<div class="proy-alert-item' + (a.resolved ? ' resolved' : '') + '" style="border-left-color:' + borderColor + ';background:' + bgColor + '">' +
-                '<div style="color:' + borderColor + ';flex-shrink:0;margin-top:1px">' + severityIcon(a.severity) + '</div>' +
-                '<div style="flex:1;min-width:0">' +
-                    '<div style="font-weight:600;font-size:0.82rem;color:#1c1c1e;margin-bottom:3px">' + a.title + '</div>' +
-                    '<div style="font-size:0.75rem;color:#636366">' + a.message + '</div>' +
-                '</div>' +
-                (!a.resolved ? '<button class="proy-btn-sm" onclick="event.stopPropagation();proyectosResolverAlerta(' + projectId + ',' + a.id + ')" title="Marcar resuelta">Resolver</button>' : '<span style="font-size:0.7rem;color:#8e8e93;white-space:nowrap">Resuelta</span>') +
-            '</div>';
+                var html = '';
+                alerts.forEach(function(a) {
+                    var severity = a.severity || a.severidad || 'info';
+                    var resolved = a.resolved || a.resuelta || false;
+                    var severityColors = { critical:'#ef4444', warning:'#f59e0b', info:'#3b82f6' };
+                    var bgColors = { critical:'rgba(239,68,68,0.06)', warning:'rgba(245,158,11,0.06)', info:'rgba(59,130,246,0.06)' };
+                    var borderColor = severityColors[severity] || '#3b82f6';
+                    var bgColor = bgColors[severity] || bgColors.info;
+
+                    html += '<div class="proy-alert-item' + (resolved ? ' resolved' : '') + '" style="border-left-color:' + borderColor + ';background:' + bgColor + '">' +
+                        '<div style="color:' + borderColor + ';flex-shrink:0;margin-top:1px">' + severityIcon(severity) + '</div>' +
+                        '<div style="flex:1;min-width:0">' +
+                            '<div style="font-weight:600;font-size:0.82rem;color:#1c1c1e;margin-bottom:3px">' + (a.title || a.titulo || '') + '</div>' +
+                            '<div style="font-size:0.75rem;color:#636366">' + (a.message || a.mensaje || '') + '</div>' +
+                        '</div>' +
+                        (!resolved ? '<button class="proy-btn-sm" onclick="event.stopPropagation();proyectosResolverAlerta(' + projectId + ',' + a.id + ')" title="Marcar resuelta">Resolver</button>' : '<span style="font-size:0.7rem;color:#8e8e93;white-space:nowrap">Resuelta</span>') +
+                    '</div>';
+                });
+
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444">Error al cargar alertas</div>';
+                console.error('Error cargando alertas:', resp.error);
+            }
+        }).catch(function(err) {
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444">Error de conexion</div>';
+            console.error('Error de red cargando alertas:', err);
         });
-
-        container.innerHTML = html;
     }
 
     window.proyectosResolverAlerta = function(projectId, alertId) {
-        var alerts = PROY_ALERTS[projectId] || [];
-        for (var i = 0; i < alerts.length; i++) {
-            if (alerts[i].id === alertId) {
-                alerts[i].resolved = true;
-                break;
+        _fetch('/app/api/iamet/alertas/' + alertId + '/resolver/', { method: 'POST' }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                renderAlertas(projectId);
+                renderKPIsFromAPI(projectId);
+            } else {
+                console.error('Error resolviendo alerta:', resp.error);
             }
-        }
-        renderAlertas(projectId);
-        var project = getProject(projectId);
-        if (project) renderKPIs(project);
+        }).catch(function(err) {
+            console.error('Error de red resolviendo alerta:', err);
+        });
     };
 
 
@@ -734,8 +796,49 @@
         if (d) d.style.display = 'flex';
     };
 
+    window.proyectosCrearFacturaProveedorDialogo = function() {
+        var d = el('proyDialogoFacProv');
+        if (d) d.style.display = 'flex';
+    };
+
+    window.proyectosCrearFacturaIngresoDialogo = function() {
+        var d = el('proyDialogoFacIng');
+        if (d) d.style.display = 'flex';
+    };
+
+    window.proyectosCrearGastoDialogo = function() {
+        var d = el('proyDialogoGasto');
+        if (d) d.style.display = 'flex';
+    };
+
     window.proyectosImportarExcel = function() {
-        alert('Importar Excel: funcionalidad pendiente');
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.xlsx,.xls,.csv';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            var formData = new FormData();
+            formData.append('archivo', file);
+            formData.append('proyecto_id', currentProjectId);
+
+            _fetch('/app/api/iamet/partidas/importar-excel/', {
+                method: 'POST',
+                body: formData
+            }).then(function(resp) {
+                if (resp.ok || resp.success) {
+                    renderPartidas(currentProjectId);
+                    alert('Partidas importadas correctamente');
+                } else {
+                    alert('Error al importar: ' + (resp.error || 'Error desconocido'));
+                }
+            }).catch(function(err) {
+                alert('Error de conexion al importar');
+                console.error('Error importando Excel:', err);
+            });
+        };
+        input.click();
     };
 
     // --- Dialog form submissions ---
@@ -750,39 +853,34 @@
 
         if (!name || !client) return;
 
-        var maxId = 0;
-        PROY_PROJECTS.forEach(function(p) { if (p.id > maxId) maxId = p.id; });
-
-        PROY_PROJECTS.push({
-            id: maxId + 1,
-            name: name,
-            client: client,
-            status: 'planning',
-            description: desc,
-            budgetedProfit: budget,
-            actualProfit: 0,
-            startDate: startDate,
-            endDate: endDate
+        _fetch('/app/api/iamet/proyectos/crear/', {
+            method: 'POST',
+            body: {
+                nombre: name,
+                descripcion: desc,
+                cliente_nombre: client,
+                utilidad_presupuestada: budget,
+                fecha_inicio: startDate,
+                fecha_fin: endDate
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoCrear');
+                // Clear form
+                if (el('proyFormNombre')) el('proyFormNombre').value = '';
+                if (el('proyFormCliente')) el('proyFormCliente').value = '';
+                if (el('proyFormDescripcion')) el('proyFormDescripcion').value = '';
+                if (el('proyFormPresupuesto')) el('proyFormPresupuesto').value = '';
+                if (el('proyFormInicio')) el('proyFormInicio').value = '';
+                if (el('proyFormFin')) el('proyFormFin').value = '';
+                proyectosCargarLista();
+            } else {
+                alert('Error al crear proyecto: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al crear proyecto');
+            console.error('Error creando proyecto:', err);
         });
-
-        PROY_LINE_ITEMS[maxId + 1] = [];
-        PROY_PURCHASE_ORDERS[maxId + 1] = [];
-        PROY_TASKS[maxId + 1] = [];
-        PROY_ALERTS[maxId + 1] = [];
-        PROY_SUPPLIER_INVOICES[maxId + 1] = [];
-        PROY_REVENUE_INVOICES[maxId + 1] = [];
-        PROY_EXPENSES[maxId + 1] = [];
-
-        proyectosCerrarDialogo('proyDialogoCrear');
-        // Clear form
-        if (el('proyFormNombre')) el('proyFormNombre').value = '';
-        if (el('proyFormCliente')) el('proyFormCliente').value = '';
-        if (el('proyFormDescripcion')) el('proyFormDescripcion').value = '';
-        if (el('proyFormPresupuesto')) el('proyFormPresupuesto').value = '';
-        if (el('proyFormInicio')) el('proyFormInicio').value = '';
-        if (el('proyFormFin')) el('proyFormFin').value = '';
-
-        proyectosCargarLista();
     };
 
     window.proyectosGuardarPartida = function() {
@@ -801,89 +899,300 @@
 
         if (!desc || quantity <= 0) return;
 
-        var items = PROY_LINE_ITEMS[currentProjectId] || [];
-        var maxId = 0;
-        items.forEach(function(it) { if (it.id > maxId) maxId = it.id; });
-
-        items.push({
-            id: maxId + 1,
-            category: category || 'Equipamiento',
-            description: desc,
-            brand: brand || '\u2014',
-            partNumber: partNumber || '\u2014',
-            quantity: quantity,
-            remaining: quantity,
-            listPrice: listPrice,
-            discount: discount,
-            unitCost: unitCost,
-            unitSale: unitSale,
-            profit: unitSale - unitCost,
-            supplier: supplier || '\u2014',
-            status: 'pending'
+        _fetch('/app/api/iamet/partidas/crear/', {
+            method: 'POST',
+            body: {
+                proyecto_id: currentProjectId,
+                categoria: category || 'Equipamiento',
+                descripcion: desc,
+                marca: brand,
+                numero_parte: partNumber,
+                cantidad: quantity,
+                precio_lista: listPrice,
+                descuento: discount,
+                costo_unitario: unitCost,
+                precio_venta_unitario: unitSale,
+                proveedor: supplier
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoPartida');
+                // Clear form
+                if (el('proyPartCategoria')) el('proyPartCategoria').value = '';
+                if (el('proyPartDescripcion')) el('proyPartDescripcion').value = '';
+                if (el('proyPartMarca')) el('proyPartMarca').value = '';
+                if (el('proyPartNumParte')) el('proyPartNumParte').value = '';
+                if (el('proyPartCantidad')) el('proyPartCantidad').value = '';
+                if (el('proyPartPrecioLista')) el('proyPartPrecioLista').value = '';
+                if (el('proyPartDescuento')) el('proyPartDescuento').value = '';
+                if (el('proyPartCostoUnit')) el('proyPartCostoUnit').value = '';
+                if (el('proyPartVentaUnit')) el('proyPartVentaUnit').value = '';
+                if (el('proyPartProveedor')) el('proyPartProveedor').value = '';
+                renderPartidas(currentProjectId);
+            } else {
+                alert('Error al crear partida: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al crear partida');
+            console.error('Error creando partida:', err);
         });
-
-        PROY_LINE_ITEMS[currentProjectId] = items;
-        proyectosCerrarDialogo('proyDialogoPartida');
-        renderPartidas(currentProjectId);
     };
 
     window.proyectosGuardarOC = function() {
         if (!currentProjectId) return;
 
-        var poNumber = el('proyOCNumero') ? el('proyOCNumero').value.trim() : '';
+        var partidaId = el('proyOCPartida') ? el('proyOCPartida').value : '';
         var supplier = el('proyOCProveedor') ? el('proyOCProveedor').value.trim() : '';
-        var item = el('proyOCItem') ? el('proyOCItem').value.trim() : '';
         var quantity = el('proyOCCantidad') ? parseInt(el('proyOCCantidad').value) || 0 : 0;
-        var amount = el('proyOCMonto') ? parseFloat(el('proyOCMonto').value) || 0 : 0;
+        var unitPrice = el('proyOCPrecioUnit') ? parseFloat(el('proyOCPrecioUnit').value) || 0 : 0;
+        var deliveryDate = el('proyOCFechaEntrega') ? el('proyOCFechaEntrega').value : '';
+        var notes = el('proyOCNotas') ? el('proyOCNotas').value.trim() : '';
 
-        if (!poNumber || !supplier) return;
+        if (!supplier) return;
 
-        var orders = PROY_PURCHASE_ORDERS[currentProjectId] || [];
-        var maxId = 0;
-        orders.forEach(function(o) { if (o.id > maxId) maxId = o.id; });
-
-        orders.push({
-            id: maxId + 1,
-            poNumber: poNumber,
-            supplier: supplier,
-            item: item,
-            quantity: quantity,
-            amount: amount,
-            status: 'draft',
-            date: new Date().toISOString().split('T')[0]
+        _fetch('/app/api/iamet/oc/crear/', {
+            method: 'POST',
+            body: {
+                proyecto_id: currentProjectId,
+                partida_id: partidaId || null,
+                proveedor: supplier,
+                cantidad: quantity,
+                precio_unitario: unitPrice,
+                fecha_entrega_esperada: deliveryDate,
+                notas: notes
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoOC');
+                // Clear form
+                if (el('proyOCPartida')) el('proyOCPartida').value = '';
+                if (el('proyOCProveedor')) el('proyOCProveedor').value = '';
+                if (el('proyOCCantidad')) el('proyOCCantidad').value = '';
+                if (el('proyOCPrecioUnit')) el('proyOCPrecioUnit').value = '';
+                if (el('proyOCFechaEntrega')) el('proyOCFechaEntrega').value = '';
+                if (el('proyOCNotas')) el('proyOCNotas').value = '';
+                renderOC(currentProjectId);
+            } else {
+                alert('Error al crear OC: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al crear OC');
+            console.error('Error creando OC:', err);
         });
-
-        PROY_PURCHASE_ORDERS[currentProjectId] = orders;
-        proyectosCerrarDialogo('proyDialogoOC');
-        renderOC(currentProjectId);
     };
 
     window.proyectosGuardarTarea = function() {
         if (!currentProjectId) return;
 
         var title = el('proyTareaTitulo') ? el('proyTareaTitulo').value.trim() : '';
+        var desc = el('proyTareaDescripcion') ? el('proyTareaDescripcion').value.trim() : '';
         var priority = el('proyTareaPrioridad') ? el('proyTareaPrioridad').value : 'medium';
         var assignedTo = el('proyTareaAsignado') ? el('proyTareaAsignado').value.trim() : '';
         var dueDate = el('proyTareaFecha') ? el('proyTareaFecha').value : '';
 
         if (!title) return;
 
-        var tasks = PROY_TASKS[currentProjectId] || [];
-        var maxId = 0;
-        tasks.forEach(function(t) { if (t.id > maxId) maxId = t.id; });
-
-        tasks.push({
-            id: maxId + 1,
-            title: title,
-            priority: priority,
-            assignedTo: assignedTo || 'Sin asignar',
-            dueDate: dueDate,
-            status: 'pending'
+        _fetch('/app/api/iamet/tareas/crear/', {
+            method: 'POST',
+            body: {
+                proyecto_id: currentProjectId,
+                titulo: title,
+                descripcion: desc,
+                prioridad: priority,
+                asignado_a: assignedTo,
+                fecha_limite: dueDate
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoTarea');
+                // Clear form
+                if (el('proyTareaTitulo')) el('proyTareaTitulo').value = '';
+                if (el('proyTareaDescripcion')) el('proyTareaDescripcion').value = '';
+                if (el('proyTareaPrioridad')) el('proyTareaPrioridad').value = 'medium';
+                if (el('proyTareaAsignado')) el('proyTareaAsignado').value = '';
+                if (el('proyTareaFecha')) el('proyTareaFecha').value = '';
+                renderTareas(currentProjectId);
+            } else {
+                alert('Error al crear tarea: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al crear tarea');
+            console.error('Error creando tarea:', err);
         });
+    };
 
-        PROY_TASKS[currentProjectId] = tasks;
-        proyectosCerrarDialogo('proyDialogoTarea');
-        renderTareas(currentProjectId);
+    window.proyectosGuardarFacturaProveedor = function() {
+        if (!currentProjectId) return;
+
+        var invoiceNumber = el('proyFacProvNumero') ? el('proyFacProvNumero').value.trim() : '';
+        var supplier = el('proyFacProvProveedor') ? el('proyFacProvProveedor').value.trim() : '';
+        var amount = el('proyFacProvMonto') ? parseFloat(el('proyFacProvMonto').value) || 0 : 0;
+        var budgeted = el('proyFacProvPresupuestado') ? parseFloat(el('proyFacProvPresupuestado').value) || 0 : 0;
+        var invoiceDate = el('proyFacProvFecha') ? el('proyFacProvFecha').value : '';
+        var notes = el('proyFacProvNotas') ? el('proyFacProvNotas').value.trim() : '';
+
+        if (!invoiceNumber || !supplier) return;
+
+        _fetch('/app/api/iamet/facturas-proveedor/crear/', {
+            method: 'POST',
+            body: {
+                proyecto_id: currentProjectId,
+                numero_factura: invoiceNumber,
+                proveedor: supplier,
+                monto: amount,
+                monto_presupuestado: budgeted,
+                fecha_factura: invoiceDate,
+                notas: notes
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoFacProv');
+                // Clear form
+                if (el('proyFacProvNumero')) el('proyFacProvNumero').value = '';
+                if (el('proyFacProvProveedor')) el('proyFacProvProveedor').value = '';
+                if (el('proyFacProvMonto')) el('proyFacProvMonto').value = '';
+                if (el('proyFacProvPresupuestado')) el('proyFacProvPresupuestado').value = '';
+                if (el('proyFacProvFecha')) el('proyFacProvFecha').value = '';
+                if (el('proyFacProvNotas')) el('proyFacProvNotas').value = '';
+                renderSupplierInvoices(currentProjectId);
+            } else {
+                alert('Error al crear factura: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al crear factura proveedor');
+            console.error('Error creando factura proveedor:', err);
+        });
+    };
+
+    window.proyectosGuardarFacturaIngreso = function() {
+        if (!currentProjectId) return;
+
+        var invoiceNumber = el('proyFacIngNumero') ? el('proyFacIngNumero').value.trim() : '';
+        var amount = el('proyFacIngMonto') ? parseFloat(el('proyFacIngMonto').value) || 0 : 0;
+        var invoiceDate = el('proyFacIngFecha') ? el('proyFacIngFecha').value : '';
+        var paymentMethod = el('proyFacIngMetodo') ? el('proyFacIngMetodo').value.trim() : '';
+        var notes = el('proyFacIngNotas') ? el('proyFacIngNotas').value.trim() : '';
+
+        if (!invoiceNumber) return;
+
+        _fetch('/app/api/iamet/facturas-ingreso/crear/', {
+            method: 'POST',
+            body: {
+                proyecto_id: currentProjectId,
+                numero_factura: invoiceNumber,
+                monto: amount,
+                fecha_factura: invoiceDate,
+                metodo_pago: paymentMethod,
+                notas: notes
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoFacIng');
+                // Clear form
+                if (el('proyFacIngNumero')) el('proyFacIngNumero').value = '';
+                if (el('proyFacIngMonto')) el('proyFacIngMonto').value = '';
+                if (el('proyFacIngFecha')) el('proyFacIngFecha').value = '';
+                if (el('proyFacIngMetodo')) el('proyFacIngMetodo').value = '';
+                if (el('proyFacIngNotas')) el('proyFacIngNotas').value = '';
+                renderRevenueInvoices(currentProjectId);
+            } else {
+                alert('Error al crear factura: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al crear factura ingreso');
+            console.error('Error creando factura ingreso:', err);
+        });
+    };
+
+    window.proyectosGuardarGasto = function() {
+        if (!currentProjectId) return;
+
+        var category = el('proyGastoCategoria') ? el('proyGastoCategoria').value.trim() : '';
+        var desc = el('proyGastoDescripcion') ? el('proyGastoDescripcion').value.trim() : '';
+        var amount = el('proyGastoMonto') ? parseFloat(el('proyGastoMonto').value) || 0 : 0;
+        var expenseDate = el('proyGastoFecha') ? el('proyGastoFecha').value : '';
+        var notes = el('proyGastoNotas') ? el('proyGastoNotas').value.trim() : '';
+
+        if (!desc || amount <= 0) return;
+
+        _fetch('/app/api/iamet/gastos/crear/', {
+            method: 'POST',
+            body: {
+                proyecto_id: currentProjectId,
+                categoria: category,
+                descripcion: desc,
+                monto: amount,
+                fecha_gasto: expenseDate,
+                notas: notes
+            }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoGasto');
+                // Clear form
+                if (el('proyGastoCategoria')) el('proyGastoCategoria').value = '';
+                if (el('proyGastoDescripcion')) el('proyGastoDescripcion').value = '';
+                if (el('proyGastoMonto')) el('proyGastoMonto').value = '';
+                if (el('proyGastoFecha')) el('proyGastoFecha').value = '';
+                if (el('proyGastoNotas')) el('proyGastoNotas').value = '';
+                renderExpenses(currentProjectId);
+            } else {
+                alert('Error al crear gasto: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al crear gasto');
+            console.error('Error creando gasto:', err);
+        });
+    };
+
+    window.proyectosAprobarGasto = function(gastoId, accion) {
+        _fetch('/app/api/iamet/gastos/' + gastoId + '/aprobar/', {
+            method: 'POST',
+            body: { accion: accion }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                if (currentProjectId) renderExpenses(currentProjectId);
+            } else {
+                alert('Error: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion');
+            console.error('Error aprobando gasto:', err);
+        });
+    };
+
+    window.proyectosEliminarProyecto = function(projectId) {
+        if (!confirm('Estas seguro de eliminar este proyecto?')) return;
+
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/eliminar/', {
+            method: 'POST'
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                proyectosVolverLista();
+                proyectosCargarLista();
+            } else {
+                alert('Error al eliminar: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al eliminar proyecto');
+            console.error('Error eliminando proyecto:', err);
+        });
+    };
+
+    window.proyectosEliminarPartida = function(partidaId) {
+        if (!confirm('Estas seguro de eliminar esta partida?')) return;
+
+        _fetch('/app/api/iamet/partidas/' + partidaId + '/eliminar/', {
+            method: 'POST'
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                if (currentProjectId) renderPartidas(currentProjectId);
+            } else {
+                alert('Error al eliminar: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            alert('Error de conexion al eliminar partida');
+            console.error('Error eliminando partida:', err);
+        });
     };
 
 

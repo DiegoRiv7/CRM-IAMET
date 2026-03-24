@@ -2153,6 +2153,43 @@ def editar_oportunidad_api(request, oportunidad_id):
             except Exception as e_auto:
                 print(f'[Automatización] Error ejecutando reglas: {e_auto}')
 
+        # Auto-crear ProyectoIAMET si la etapa es "Levantamiento" y es tipo proyecto
+        if etapa_cambio and etapa_cambio == 'Levantamiento' and oportunidad.tipo_negociacion in ('proyecto', 'bitrix_proyecto'):
+            try:
+                from .models import ProyectoIAMET, ProyectoConfiguracion
+                from datetime import timedelta
+                # Solo crear si no existe ya un proyecto vinculado a esta oportunidad
+                if not ProyectoIAMET.objects.filter(oportunidad=oportunidad).exists():
+                    from datetime import date
+                    hoy = date.today()
+                    proyecto = ProyectoIAMET.objects.create(
+                        usuario=oportunidad.usuario,
+                        oportunidad=oportunidad,
+                        nombre=oportunidad.oportunidad,
+                        cliente_nombre=oportunidad.cliente.nombre_empresa if oportunidad.cliente else '',
+                        descripcion=oportunidad.comentarios or oportunidad.oportunidad,
+                        utilidad_presupuestada=oportunidad.monto or 0,
+                        status='active',
+                        fecha_inicio=hoy,
+                        fecha_fin=hoy + timedelta(days=30),
+                    )
+                    ProyectoConfiguracion.objects.create(proyecto=proyecto)
+                    # Sync existing tasks from the opportunity
+                    from .models import ProyectoTarea
+                    tareas_opp = oportunidad.tareas_oportunidad.all()
+                    for t in tareas_opp:
+                        ProyectoTarea.objects.create(
+                            proyecto=proyecto,
+                            titulo=t.titulo,
+                            descripcion=t.descripcion or '',
+                            status='completed' if t.estado == 'completada' else 'pending',
+                            prioridad='high' if t.prioridad == 'alta' else 'medium',
+                            asignado_a=t.responsable,
+                            fecha_limite=t.fecha_limite.date() if t.fecha_limite else None,
+                        )
+            except Exception as e_proy:
+                print(f'[ProyectoIAMET] Error auto-creando proyecto: {e_proy}')
+
         return JsonResponse({
             'success': True,
             'message': 'Oportunidad actualizada correctamente',

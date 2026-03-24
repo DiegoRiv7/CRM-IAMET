@@ -547,3 +547,35 @@
     </div>
   </div>
 </div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: IMPORTAR EXCEL
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoExcel" style="z-index:10200;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <h3 class="proy-dialog-title">Importar Volumetria desde Excel</h3>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoExcel')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <p style="font-size:0.82rem;color:#6b7280;margin-bottom:16px;">Sube un archivo Excel (.xlsx) con las partidas. El sistema detecta automaticamente las columnas por nombre.</p>
+      <p style="font-size:0.75rem;color:#9ca3af;margin-bottom:12px;">Columnas soportadas: Descripcion, Marca, No. Parte, Cantidad, Precio Lista, Descuento, Costo, Precio Venta, Proveedor</p>
+      <div id="proyExcelDropZone" style="border:2px dashed #d1d5db;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s;margin-bottom:16px;"
+          onclick="document.getElementById('proyExcelInput').click();"
+          ondragover="event.preventDefault();this.style.borderColor='#007aff';"
+          ondragleave="this.style.borderColor='#d1d5db';"
+          ondrop="event.preventDefault();this.style.borderColor='#d1d5db';var f=event.dataTransfer.files[0];if(f)proyectosSubirExcel(f);">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" style="margin:0 auto 8px;display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p style="font-size:0.85rem;color:#6b7280;margin:0;">Arrastra tu archivo aqui o <span style="color:#007aff;font-weight:600;">haz clic para seleccionar</span></p>
+        <p id="proyExcelFileName" style="font-size:0.78rem;color:#059669;margin-top:8px;display:none;font-weight:600;"></p>
+      </div>
+      <input type="file" id="proyExcelInput" accept=".xlsx,.xls" style="display:none;" onchange="if(this.files[0])proyectosSubirExcel(this.files[0]);">
+      <div id="proyExcelResult" style="display:none;padding:12px;border-radius:8px;font-size:0.82rem;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
