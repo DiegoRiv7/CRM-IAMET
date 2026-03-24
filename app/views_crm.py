@@ -1179,10 +1179,10 @@ def api_subir_facturacion(request):
                 except Exception:
                     continue  # Sin fecha válida, saltar
 
-                # Facturado = (Col L Subtotal idx 11 - Col O Descuento idx 14) * Col AQ T.C. idx 42
+                # Facturado = Col L Subtotal (idx 11) - Col O Descuento (idx 14)
+                # Los importes ya vienen en pesos, no se multiplica por T.C.
                 subtotal_str = str(sheet.cell_value(row_idx, 11)).replace(',', '').strip()
                 descuento_str = str(sheet.cell_value(row_idx, 14)).replace(',', '').strip()
-                tc_str = str(sheet.cell_value(row_idx, 42)).replace(',', '').strip()
                 try:
                     subtotal = Decimal(subtotal_str) if subtotal_str else Decimal('0')
                 except Exception:
@@ -1191,11 +1191,7 @@ def api_subir_facturacion(request):
                     descuento = Decimal(descuento_str) if descuento_str else Decimal('0')
                 except Exception:
                     descuento = Decimal('0')
-                try:
-                    tc = Decimal(tc_str) if tc_str else Decimal('1')
-                except Exception:
-                    tc = Decimal('1')
-                monto = (subtotal - descuento) * tc
+                monto = subtotal - descuento
 
                 if monto > 0:
                     key = (row_mes, row_anio)
