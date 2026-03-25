@@ -449,23 +449,22 @@ def api_partidas_lista(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
-    partidas = proyecto.partidas.all()
+    partidas = list(proyecto.partidas.all())
     items = [_partida_to_dict(p) for p in partidas]
 
-    totals = proyecto.partidas.aggregate(
-        total_costo=Sum('costo_total'),
-        total_venta=Sum('precio_venta_total'),
-        total_ganancia=Sum('ganancia'),
-    )
+    # Calcular totales en Python (evita problemas con Sum/Decimal en MySQL)
+    t_costo = sum((p.costo_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in partidas)
+    t_venta = sum((p.precio_venta_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in partidas)
+    t_ganancia = t_venta - t_costo
 
     return JsonResponse({
         'success': True,
         'data': {
             'partidas': items,
             'totales': {
-                'costo_total': float(totals['total_costo'] or 0),
-                'precio_venta_total': float(totals['total_venta'] or 0),
-                'ganancia': float(totals['total_ganancia'] or 0),
+                'costo_total': float(t_costo),
+                'precio_venta_total': float(t_venta),
+                'ganancia': float(t_ganancia),
             },
         },
     })
@@ -1228,7 +1227,12 @@ def api_proyecto_financieros(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
-    utilidad_presupuestada = proyecto.partidas.aggregate(total=Sum('ganancia'))['total'] or Decimal('0')
+    # Calcular en Python para evitar problemas con Sum en MySQL
+    _partidas = list(proyecto.partidas.all())
+    utilidad_presupuestada = sum(
+        ((p.precio_venta_unitario or Decimal('0')) - (p.costo_unitario or Decimal('0'))) * (p.cantidad or Decimal('0'))
+        for p in _partidas
+    )
     ingresos = proyecto.facturas_ingreso.aggregate(total=Sum('monto'))['total'] or Decimal('0')
     costos = proyecto.facturas_proveedor.aggregate(total=Sum('monto'))['total'] or Decimal('0')
     gastos = proyecto.gastos.filter(estado_aprobacion='approved').aggregate(total=Sum('monto'))['total'] or Decimal('0')
