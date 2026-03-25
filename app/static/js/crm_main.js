@@ -1848,11 +1848,12 @@
         function ckRenderCharts(merged, totFact, totCob, totOpp, totCot) {
             if (typeof Chart === 'undefined') return;
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
+            var fmtCurrency = function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; };
 
             // Sort by facturado descending, top 8
             var sorted = merged.slice().sort(function(a, b) { return fN(b.fact_total) - fN(a.fact_total); });
             var top8 = sorted.slice(0, 8);
-            var labels8 = top8.map(function(r) { return r.cliente.length > 18 ? r.cliente.substring(0, 18) + '...' : r.cliente; });
+            var labels8 = top8.map(function(r) { return r.cliente.length > 15 ? r.cliente.substring(0, 15) + '...' : r.cliente; });
 
             // Chart defaults
             Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif';
@@ -1860,11 +1861,24 @@
             Chart.defaults.plugins.legend.labels.boxWidth = 10;
             Chart.defaults.plugins.legend.labels.padding = 12;
 
+            // Shared tooltip config
+            var sharedTooltip = {
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                titleFont: { size: 12, weight: '600' },
+                bodyFont: { size: 11 },
+                padding: 10,
+                cornerRadius: 8
+            };
+
             // Chart 1: Facturado vs Meta (horizontal bar)
             ckDestroyChart('ckChartFactVsMeta');
             var ctx1 = document.getElementById('ckChartFactVsMeta');
             if (ctx1) {
-                _ckChartInstances['ckChartFactVsMeta'] = new Chart(ctx1.getContext('2d'), {
+                var ctx1_2d = ctx1.getContext('2d');
+                var gradBlue = ctx1_2d.createLinearGradient(0, 0, ctx1.width, 0);
+                gradBlue.addColorStop(0, '#0052D4');
+                gradBlue.addColorStop(1, '#007AFF');
+                _ckChartInstances['ckChartFactVsMeta'] = new Chart(ctx1_2d, {
                     type: 'bar',
                     data: {
                         labels: labels8,
@@ -1872,15 +1886,15 @@
                             {
                                 label: 'Facturado',
                                 data: top8.map(function(r) { return fN(r.fact_total); }),
-                                backgroundColor: 'rgba(107,114,128,0.75)',
-                                borderRadius: 4,
+                                backgroundColor: gradBlue,
+                                borderRadius: 6,
                                 barPercentage: 0.6
                             },
                             {
                                 label: 'Meta',
                                 data: top8.map(function(r) { return fN(r.fact_meta); }),
-                                backgroundColor: 'rgba(209,213,219,0.5)',
-                                borderRadius: 4,
+                                backgroundColor: '#E5E5EA',
+                                borderRadius: 6,
                                 barPercentage: 0.6
                             }
                         ]
@@ -1889,13 +1903,34 @@
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { position: 'top' } },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: { size: 11 },
+                                    color: '#8E8E93',
+                                    padding: 16
+                                }
+                            },
+                            tooltip: Object.assign({}, sharedTooltip, {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ' ' + ctx.dataset.label + ': $' + ctx.parsed.x.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                                    }
+                                }
+                            })
+                        },
                         scales: {
                             x: {
-                                ticks: { callback: function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; } },
+                                ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 11 }, color: '#8E8E93' },
                                 grid: { color: 'rgba(0,0,0,0.04)' }
                             },
-                            y: { grid: { display: false } }
+                            y: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11 }, color: '#8E8E93' }
+                            }
                         }
                     }
                 });
@@ -1905,33 +1940,62 @@
             ckDestroyChart('ckChartDistribucion');
             var ctx2 = document.getElementById('ckChartDistribucion');
             if (ctx2) {
+                var donutTotal = totFact + totCob + totOpp + totCot;
                 _ckChartInstances['ckChartDistribucion'] = new Chart(ctx2.getContext('2d'), {
                     type: 'doughnut',
                     data: {
                         labels: ['Facturado', 'Cobrado', 'Oportunidades', 'Cotizado'],
                         datasets: [{
                             data: [totFact, totCob, totOpp, totCot],
-                            backgroundColor: ['#9CA3AF', '#16A34A', '#2563EB', '#D97706'],
-                            borderWidth: 0,
-                            hoverOffset: 6
+                            backgroundColor: ['#6B7280', '#10B981', '#3B82F6', '#F59E0B'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 8,
+                            hoverBorderWidth: 0
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '62%',
+                        cutout: '55%',
                         plugins: {
-                            legend: { position: 'right', labels: { font: { size: 11 } } },
-                            tooltip: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: { size: 11 },
+                                    color: '#374151',
+                                    padding: 14
+                                }
+                            },
+                            tooltip: Object.assign({}, sharedTooltip, {
                                 callbacks: {
                                     label: function(ctx) {
                                         var v = ctx.raw || 0;
-                                        return ' $' + v.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                                        var pct = donutTotal > 0 ? ((v / donutTotal) * 100).toFixed(1) : 0;
+                                        return ' ' + ctx.label + ': $' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' (' + pct + '%)';
                                     }
                                 }
-                            }
+                            })
                         }
-                    }
+                    },
+                    plugins: [{
+                        id: 'donutCenterText',
+                        beforeDraw: function(chart) {
+                            var width = chart.width, height = chart.height, ctx = chart.ctx;
+                            ctx.save();
+                            var fontSize = Math.min(width, height) / 10;
+                            ctx.font = '600 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
+                            ctx.fillStyle = '#1F2937';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            var centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+                            var centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+                            ctx.fillText(fmtCurrency(donutTotal), centerX, centerY);
+                            ctx.restore();
+                        }
+                    }]
                 });
             }
 
@@ -1941,30 +2005,64 @@
             ckDestroyChart('ckChartTopClientes');
             var ctx3 = document.getElementById('ckChartTopClientes');
             if (ctx3) {
+                var top5colors = ['#007AFF', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE'];
                 _ckChartInstances['ckChartTopClientes'] = new Chart(ctx3.getContext('2d'), {
                     type: 'bar',
                     data: {
-                        labels: top5opp.map(function(r) { return r.cliente.length > 14 ? r.cliente.substring(0, 14) + '...' : r.cliente; }),
+                        labels: top5opp.map(function(r) { return r.cliente.length > 15 ? r.cliente.substring(0, 15) + '...' : r.cliente; }),
                         datasets: [{
                             label: 'Oportunidades',
                             data: top5opp.map(function(r) { return fN(r.opp_total); }),
-                            backgroundColor: ['#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE'],
-                            borderRadius: 6,
+                            backgroundColor: top5colors,
+                            borderRadius: 8,
                             barPercentage: 0.55
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: Object.assign({}, sharedTooltip, {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ' $' + ctx.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                                    }
+                                }
+                            })
+                        },
                         scales: {
                             y: {
-                                ticks: { callback: function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; } },
+                                ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 11 }, color: '#8E8E93' },
                                 grid: { color: 'rgba(0,0,0,0.04)' }
                             },
-                            x: { grid: { display: false } }
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11 }, color: '#8E8E93' }
+                            }
                         }
-                    }
+                    },
+                    plugins: [{
+                        id: 'barValueLabels',
+                        afterDatasetsDraw: function(chart) {
+                            var ctx = chart.ctx;
+                            chart.data.datasets.forEach(function(dataset, di) {
+                                var meta = chart.getDatasetMeta(di);
+                                meta.data.forEach(function(bar, index) {
+                                    var value = dataset.data[index];
+                                    if (value > 0) {
+                                        ctx.save();
+                                        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
+                                        ctx.fillStyle = '#374151';
+                                        ctx.textAlign = 'center';
+                                        ctx.textBaseline = 'bottom';
+                                        ctx.fillText(fmtCurrency(value), bar.x, bar.y - 4);
+                                        ctx.restore();
+                                    }
+                                });
+                            });
+                        }
+                    }]
                 });
             }
 
