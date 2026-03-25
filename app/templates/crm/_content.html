@@ -207,7 +207,7 @@
         {% elif tab_activo == 'clientes' %}
         <!-- KPI Cards -->
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
-            <div class="ck-kpi-card ck-kpi--fact">
+            <div class="ck-kpi-card ck-kpi--fact" style="cursor:pointer;" onclick="ckAbrirDesgloseFacturacion()">
                 <div class="ck-kpi-header">
                     <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                     <span class="ck-kpi-label">FACTURADO</span>
@@ -409,6 +409,37 @@
 </div>
 
 {% include "crm/_widget_proyectos.html" %}
+
+<!-- ═══ OVERLAY: DESGLOSE FACTURACION ═══ -->
+<div class="widget-overlay" id="widgetDesgloseFacturacion" style="z-index:10200;display:none;" onclick="if(event.target===this)this.style.display='none';">
+    <div class="wco-card" style="width:min(680px,94vw);max-height:85vh;">
+        <div class="wco-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="wco-icon" style="background:linear-gradient(135deg,#059669,#10b981);">
+                    <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <h1 class="wco-title">Desglose de Facturacion</h1>
+            </div>
+            <button class="wco-close" onclick="document.getElementById('widgetDesgloseFacturacion').style.display='none';">&times;</button>
+        </div>
+        <div style="padding:14px 24px 8px;font-size:0.78rem;color:#8e8e93;border-bottom:1px solid rgba(0,0,0,0.04);">
+            Total del Excel — todos los clientes (incluye los que no estan en el CRM)
+            <div style="font-size:1.4rem;font-weight:800;color:#1d1d1f;margin-top:4px;" id="ckDesgloseTotal">—</div>
+        </div>
+        <div class="wco-list" style="flex:1;overflow-y:auto;">
+            <table class="wco-table">
+                <thead>
+                    <tr class="wco-thead-row">
+                        <th style="width:5%">#</th>
+                        <th style="width:65%">Cliente (Excel)</th>
+                        <th style="width:30%;text-align:right;">Monto</th>
+                    </tr>
+                </thead>
+                <tbody id="ckDesgloseTbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <!-- Aplica estado inicial antes del primer paint para evitar flash -->
 <script>(function(){var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t=document.getElementById('tareasSection');if(t)t.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}})();</script>

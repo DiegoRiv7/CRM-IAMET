@@ -372,30 +372,15 @@ def crm_home(request):
     num_deals = base_qs.count()
     num_cobradas = base_qs.filter(probabilidad_cierre=100).count()
 
-    # ── Total facturado desde XLS ──
+    # ── Total facturado desde XLS (siempre el total real del Excel) ──
     total_facturado = Decimal('0')
     try:
         if mes_filter == 'todos':
-            archivos_fact = ArchivoFacturacion.objects.filter(anio=anio_int)
-            for af in archivos_fact:
-                if es_supervisor and not vendedores_ids:
-                    total_facturado += af.total_facturado
-                elif es_supervisor and vendedores_ids:
-                    fm = calcular_facturado_por_vendedor(af.datos_json)
-                    total_facturado += sum(Decimal(str(v)) for uid, v in fm.items() if uid in vendedores_ids)
-                else:
-                    fm = calcular_facturado_por_vendedor(af.datos_json)
-                    total_facturado += Decimal(str(fm.get(user.id, 0)))
+            for af in ArchivoFacturacion.objects.filter(anio=anio_int):
+                total_facturado += af.total_facturado
         else:
             archivo_fact = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
-            if es_supervisor and not vendedores_ids:
-                total_facturado = archivo_fact.total_facturado
-            elif es_supervisor and vendedores_ids:
-                facturado_map = calcular_facturado_por_vendedor(archivo_fact.datos_json)
-                total_facturado = sum(Decimal(str(v)) for uid, v in facturado_map.items() if uid in vendedores_ids)
-            else:
-                facturado_map = calcular_facturado_por_vendedor(archivo_fact.datos_json)
-                total_facturado = Decimal(str(facturado_map.get(user.id, 0)))
+            total_facturado = archivo_fact.total_facturado
     except ArchivoFacturacion.DoesNotExist:
         total_facturado = Decimal('0')
 
@@ -1117,6 +1102,39 @@ def api_crm_table_data(request):
         })
 
     return JsonResponse({'tab': tab_activo, 'rows': [], 'footer': {'left': '', 'right': ''}})
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_desglose_facturacion(request):
+    """Desglose completo de facturación del Excel por cliente (sin filtro de match)"""
+    try:
+        mes = request.GET.get('mes', 'todos')
+        anio = int(request.GET.get('anio', 2026))
+        datos = {}
+        if mes == 'todos':
+            for af in ArchivoFacturacion.objects.filter(anio=anio):
+                raw = af.datos_json or {}
+                if 'datos' in raw and isinstance(raw['datos'], dict):
+                    raw = raw['datos']
+                for c, v in raw.items():
+                    datos[c] = float(Decimal(str(datos.get(c, 0))) + Decimal(str(v)))
+        else:
+            try:
+                af = ArchivoFacturacion.objects.get(mes=mes, anio=anio)
+                raw = af.datos_json or {}
+                if 'datos' in raw and isinstance(raw['datos'], dict):
+                    raw = raw['datos']
+                datos = {c: float(Decimal(str(v))) for c, v in raw.items()}
+            except ArchivoFacturacion.DoesNotExist:
+                pass
+
+        # Ordenar por monto descendente
+        rows = sorted([{'cliente': c, 'monto': m} for c, m in datos.items()], key=lambda x: -x['monto'])
+        total = sum(r['monto'] for r in rows)
+        return JsonResponse({'ok': True, 'rows': rows, 'total': total})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
 @login_required

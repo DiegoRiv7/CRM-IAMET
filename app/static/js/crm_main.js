@@ -1756,6 +1756,34 @@
             _CLIENTES_VISTAS.forEach(function (v) { loadClientesPanel(v); });
         }
 
+        window.ckAbrirDesgloseFacturacion = function () {
+            var overlay = document.getElementById('widgetDesgloseFacturacion');
+            if (!overlay) return;
+            overlay.style.display = 'flex';
+            var tbody = document.getElementById('ckDesgloseTbody');
+            var totalEl = document.getElementById('ckDesgloseTotal');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
+
+            var params = new URLSearchParams(window.location.search);
+            var mes = params.get('mes') || 'todos';
+            var anio = params.get('anio') || new Date().getFullYear();
+            fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (resp) {
+                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
+                    if (totalEl) totalEl.textContent = '$' + Number(resp.total || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos de facturacion para este periodo</td></tr>'; return; }
+                    var html = '';
+                    resp.rows.forEach(function (r, i) {
+                        html += '<tr><td style="color:#8e8e93;font-size:0.75rem;">' + (i + 1) + '</td>' +
+                            '<td style="font-weight:500;">' + (r.cliente || '—') + '</td>' +
+                            '<td style="text-align:right;font-weight:700;color:#059669;">$' + Number(r.monto || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
+                    });
+                    if (tbody) tbody.innerHTML = html;
+                })
+                .catch(function () { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#FF3B30;">Error de conexion</td></tr>'; });
+        };
+
         window.ckSubirExcelFacturacion = function (input) {
             if (!input.files || !input.files[0]) return;
             var file = input.files[0];
