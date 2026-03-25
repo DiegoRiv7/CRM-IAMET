@@ -294,26 +294,20 @@ def api_proyecto_detalle(request, proyecto_id):
 
     # KPIs calculados
     partidas_agg = proyecto.partidas.aggregate(
-        total_costo=Sum('costo_total', default=Decimal('0')),
-        total_venta=Sum('precio_venta_total', default=Decimal('0')),
-        total_ganancia=Sum('ganancia', default=Decimal('0')),
+        total_costo=Sum('costo_total'),
+        total_venta=Sum('precio_venta_total'),
+        total_ganancia=Sum('ganancia'),
     )
-    ingresos = proyecto.facturas_ingreso.aggregate(
-        total=Sum('monto', default=Decimal('0'))
-    )['total']
-    costos_prov = proyecto.facturas_proveedor.aggregate(
-        total=Sum('monto', default=Decimal('0'))
-    )['total']
-    gastos_aprobados = proyecto.gastos.filter(estado_aprobacion='approved').aggregate(
-        total=Sum('monto', default=Decimal('0'))
-    )['total']
+    ingresos = proyecto.facturas_ingreso.aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    costos_prov = proyecto.facturas_proveedor.aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    gastos_aprobados = proyecto.gastos.filter(estado_aprobacion='approved').aggregate(total=Sum('monto'))['total'] or Decimal('0')
     utilidad_real = ingresos - costos_prov - gastos_aprobados
     margen = (utilidad_real / ingresos * 100) if ingresos > 0 else Decimal('0')
 
     d['kpis'] = {
-        'total_costo_partidas': float(partidas_agg['total_costo']),
-        'total_venta_partidas': float(partidas_agg['total_venta']),
-        'utilidad_presupuestada': float(partidas_agg['total_ganancia']),
+        'total_costo_partidas': float(partidas_agg['total_costo'] or 0),
+        'total_venta_partidas': float(partidas_agg['total_venta'] or 0),
+        'utilidad_presupuestada': float(partidas_agg['total_ganancia'] or 0),
         'ingresos': float(ingresos),
         'costos_proveedor': float(costos_prov),
         'gastos_aprobados': float(gastos_aprobados),
@@ -459,9 +453,9 @@ def api_partidas_lista(request, proyecto_id):
     items = [_partida_to_dict(p) for p in partidas]
 
     totals = proyecto.partidas.aggregate(
-        total_costo=Sum('costo_total', default=Decimal('0')),
-        total_venta=Sum('precio_venta_total', default=Decimal('0')),
-        total_ganancia=Sum('ganancia', default=Decimal('0')),
+        total_costo=Sum('costo_total'),
+        total_venta=Sum('precio_venta_total'),
+        total_ganancia=Sum('ganancia'),
     )
 
     return JsonResponse({
@@ -469,9 +463,9 @@ def api_partidas_lista(request, proyecto_id):
         'data': {
             'partidas': items,
             'totales': {
-                'costo_total': float(totals['total_costo']),
-                'precio_venta_total': float(totals['total_venta']),
-                'ganancia': float(totals['total_ganancia']),
+                'costo_total': float(totals['total_costo'] or 0),
+                'precio_venta_total': float(totals['total_venta'] or 0),
+                'ganancia': float(totals['total_ganancia'] or 0),
             },
         },
     })
@@ -1234,21 +1228,10 @@ def api_proyecto_financieros(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
-    utilidad_presupuestada = proyecto.partidas.aggregate(
-        total=Sum('ganancia', default=Decimal('0'))
-    )['total']
-
-    ingresos = proyecto.facturas_ingreso.aggregate(
-        total=Sum('monto', default=Decimal('0'))
-    )['total']
-
-    costos = proyecto.facturas_proveedor.aggregate(
-        total=Sum('monto', default=Decimal('0'))
-    )['total']
-
-    gastos = proyecto.gastos.filter(estado_aprobacion='approved').aggregate(
-        total=Sum('monto', default=Decimal('0'))
-    )['total']
+    utilidad_presupuestada = proyecto.partidas.aggregate(total=Sum('ganancia'))['total'] or Decimal('0')
+    ingresos = proyecto.facturas_ingreso.aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    costos = proyecto.facturas_proveedor.aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    gastos = proyecto.gastos.filter(estado_aprobacion='approved').aggregate(total=Sum('monto'))['total'] or Decimal('0')
 
     utilidad_real = ingresos - costos - gastos
     costos_gastos = costos + gastos
