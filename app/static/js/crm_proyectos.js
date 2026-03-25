@@ -447,7 +447,9 @@
                     });
                 }
 
+                console.log('[PARTIDAS] totalsCost=' + totalsCost + ' totalsSale=' + totalsSale + ' totalsProfit=' + totalsProfit);
                 var foot = el('proyPartidasFoot');
+                console.log('[PARTIDAS] foot element:', foot);
                 if (foot) {
                     foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
                         '<td colspan="8" style="text-align:right;color:#8e8e93">Totales</td>' +

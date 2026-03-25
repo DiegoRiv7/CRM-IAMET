@@ -2043,7 +2043,7 @@
                         }
                     },
                     plugins: [{
-                        id: 'barValueLabels',
+                        id: 'barValueLabelsTop5',
                         afterDatasetsDraw: function(chart) {
                             var ctx = chart.ctx;
                             chart.data.datasets.forEach(function(dataset, di) {
@@ -2063,6 +2063,43 @@
                             });
                         }
                     }]
+                });
+            }
+
+            // Chart 4: Facturado por Vendedor (horizontal bar)
+            var vendedorTotals = {};
+            merged.forEach(function(c) {
+                var v = c.vendedor || 'Sin asignar';
+                vendedorTotals[v] = (vendedorTotals[v] || 0) + fN(c.fact_total);
+            });
+            var vendedorArr = Object.keys(vendedorTotals).map(function(k) { return { name: k, total: vendedorTotals[k] }; });
+            vendedorArr.sort(function(a, b) { return b.total - a.total; });
+            var topVend = vendedorArr.slice(0, 6);
+            ckDestroyChart('ckChartPorVendedor');
+            var ctx4 = document.getElementById('ckChartPorVendedor');
+            if (ctx4 && topVend.length > 0) {
+                var vendColors = ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5', '#ECFDF5'];
+                _ckChartInstances['ckChartPorVendedor'] = new Chart(ctx4.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: topVend.map(function(v) { return v.name.length > 15 ? v.name.substring(0,15)+'...' : v.name; }),
+                        datasets: [{
+                            data: topVend.map(function(v) { return v.total; }),
+                            backgroundColor: vendColors.slice(0, topVend.length),
+                            borderRadius: 8,
+                            barPercentage: 0.6
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { return ' $' + c.parsed.x.toLocaleString(); } } } },
+                        scales: {
+                            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, color: '#8E8E93', callback: function(v) { return fmtCurrency(v); } } },
+                            y: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#3C3C43' } }
+                        }
+                    }
                 });
             }
 
