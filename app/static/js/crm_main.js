@@ -1968,45 +1968,6 @@
                 });
             }
 
-            // Chart 4: Cobrado vs Cotizado (grouped bar, top 8)
-            ckDestroyChart('ckChartCobVsCot');
-            var ctx4 = document.getElementById('ckChartCobVsCot');
-            if (ctx4) {
-                _ckChartInstances['ckChartCobVsCot'] = new Chart(ctx4.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: labels8,
-                        datasets: [
-                            {
-                                label: 'Cobrado',
-                                data: top8.map(function(r) { return fN(r.cob_total); }),
-                                backgroundColor: 'rgba(22,163,74,0.7)',
-                                borderRadius: 4,
-                                barPercentage: 0.5
-                            },
-                            {
-                                label: 'Cotizado',
-                                data: top8.map(function(r) { return fN(r.cot_total); }),
-                                backgroundColor: 'rgba(217,119,6,0.6)',
-                                borderRadius: 4,
-                                barPercentage: 0.5
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { position: 'top' } },
-                        scales: {
-                            y: {
-                                ticks: { callback: function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; } },
-                                grid: { color: 'rgba(0,0,0,0.04)' }
-                            },
-                            x: { grid: { display: false }, ticks: { maxRotation: 45 } }
-                        }
-                    }
-                });
-            }
         }
 
         // ═══ KPI DETAIL (INLINE, REPLACES CHARTS) ═══

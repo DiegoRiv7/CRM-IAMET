@@ -5262,14 +5262,10 @@
 
 /* Chart cards */
 .ck-chart-card {
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid rgba(0,0,0,0.06);
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     position: relative;
-    height: 320px;
+    height: 300px;
     overflow: hidden;
+    padding: 12px 0;
 }
 #ckDetalleSection th {
     padding: 10px 14px;
@@ -5296,7 +5292,8 @@
     color: #636366;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    padding-left: 4px;
 }
 @media (max-width: 768px) {
     #ckChartsSection > div { grid-template-columns: 1fr !important; }

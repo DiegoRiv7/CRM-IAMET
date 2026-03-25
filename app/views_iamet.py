@@ -1261,7 +1261,7 @@ def api_proyecto_financieros(request, proyecto_id):
 @login_required
 @require_http_methods(['POST'])
 def api_importar_excel(request):
-    """POST: Importar partidas desde archivo Excel (formato volumetria ingenieros)"""
+    """Import volumetria Excel — specific format used by IAMET engineers"""
     try:
         proyecto_id = request.POST.get('proyecto_id')
         if not proyecto_id:
@@ -1276,139 +1276,153 @@ def api_importar_excel(request):
             return JsonResponse({'ok': False, 'error': 'Archivo requerido'}, status=400)
 
         import openpyxl
-        import requests as http_requests
         wb = openpyxl.load_workbook(archivo, data_only=True)
         ws = wb.active
 
-        # --- Obtain USD->MXN exchange rate ---
+        # Get exchange rate USD->MXN
         exchange_rate = Decimal('19.50')  # fallback
         try:
-            resp = http_requests.get(
-                'https://api.exchangerate-api.com/v4/latest/USD', timeout=5
-            )
-            if resp.status_code == 200:
-                rate = resp.json().get('rates', {}).get('MXN')
-                if rate:
-                    exchange_rate = Decimal(str(rate))
+            import urllib.request
+            resp = urllib.request.urlopen('https://api.exchangerate-api.com/v4/latest/USD', timeout=5)
+            import json as _json
+            rates = _json.loads(resp.read())
+            exchange_rate = Decimal(str(rates['rates'].get('MXN', 19.50)))
         except Exception:
-            pass  # use fallback
+            pass
 
-        # --- Section category mapping ---
+        # Also try to get exchange rate from cell I4 which says "Moneda : Dolares 19.50"
+        try:
+            cell_i4 = str(ws.cell(4, 9).value or '')
+            if 'dolar' in cell_i4.lower():
+                import re
+                match = re.search(r'[\d.]+', cell_i4.replace('Dolares', '').replace('dolares', ''))
+                if match:
+                    tc_from_excel = Decimal(match.group())
+                    if tc_from_excel > 10:  # sanity check
+                        exchange_rate = tc_from_excel
+        except Exception:
+            pass
+
+        # Section category mapping
         SECTION_MAP = {
             'material': 'equipamiento',
             'equipamiento': 'equipamiento',
-            'equipos de elevacion': 'equipamiento',
             'canalizacion': 'accesorios',
+            'canalización': 'accesorios',
+            'equipos de elevacion': 'equipamiento',
+            'equipos de elevación': 'equipamiento',
             'accesorios': 'accesorios',
             'mano de obra': 'mano_obra',
         }
 
-        def classify_section(text):
-            """Return category for a section header text."""
-            t = (text or '').strip().lower()
-            for key, cat in SECTION_MAP.items():
-                if key in t:
-                    return cat
-            return 'otros'
-
-        def is_section_header(row_values):
-            """A section header has text in col A but no valid cantidad in col C,
-            and often has a subtotal in col H."""
-            col_a = row_values[0]
-            col_c = row_values[2] if len(row_values) > 2 else None
-            if not col_a or not str(col_a).strip():
-                return False, ''
-            text_a = str(col_a).strip()
-            # If col A matches a known section name, always treat as header
-            if classify_section(text_a) != 'otros':
-                return True, text_a
-            # col C must be empty or non-numeric for a header
-            if col_c is not None and col_c != '' and col_c != 0:
-                try:
-                    float(col_c)
-                    # col C is a number — could still be a header if cantidad is 0
-                    if float(col_c) != 0:
-                        return False, ''
-                except (ValueError, TypeError):
-                    pass
-            return True, text_a
-
-        # --- Parse rows ---
+        current_category = 'equipamiento'  # default
         items_created = 0
         errors = []
-        current_category = 'equipamiento'
-        total_venta_mxn = Decimal('0')
-        total_costo_mxn = Decimal('0')
-        max_row = ws.max_row or 0
+        total_venta = Decimal('0')
+        total_costo = Decimal('0')
 
-        # Read all rows (skip first 4 metadata/header rows, start from row 5 onward)
-        # Row 5 is column headers, data starts at row 6
-        for row_idx in range(6, max_row + 1):
+        # Detect summary section start
+        summary_keywords = ['analisis de costos', 'análisis de costos', 'precio de lista',
+                            'precio bajanet', 'ganancia de material', 'total de ganancia']
+
+        for row_idx in range(6, ws.max_row + 1):
             try:
-                row_cells = []
-                for col_idx in range(1, 12):  # cols A-K (1-11)
-                    cell = ws.cell(row=row_idx, column=col_idx)
-                    row_cells.append(cell.value)
+                # Read all cells
+                col_a = ws.cell(row_idx, 1).value   # Marca
+                col_b = ws.cell(row_idx, 2).value   # No. Parte
+                col_c = ws.cell(row_idx, 3).value   # Cantidad
+                col_d = ws.cell(row_idx, 4).value   # Descripcion
+                col_e = ws.cell(row_idx, 5).value   # Precio Lista
+                col_f = ws.cell(row_idx, 6).value   # Descuento
+                col_g = ws.cell(row_idx, 7).value   # Unitario (venta)
+                col_h = ws.cell(row_idx, 8).value   # Total (venta)
+                col_i = ws.cell(row_idx, 9).value   # Desc costo
+                col_j = ws.cell(row_idx, 10).value  # Unitario (costo)
+                col_k = ws.cell(row_idx, 11).value  # Total (costo)
 
-                # Pad to 11 elements
-                while len(row_cells) < 11:
-                    row_cells.append(None)
+                # Check for summary section — STOP processing
+                col_a_str = str(col_a or '').strip().lower()
+                col_d_str = str(col_d or '').strip().lower()
+                if any(kw in col_a_str for kw in summary_keywords) or \
+                   any(kw in col_d_str for kw in summary_keywords):
+                    break
 
-                # Check if this is a section header
-                is_header, header_text = is_section_header(row_cells)
-                if is_header and header_text:
-                    current_category = classify_section(header_text)
+                # Check for section header
+                if col_a and isinstance(col_a, str) and col_a.strip():
+                    # Check if this is a section name (no quantity, text in col A)
+                    is_section = False
+                    for section_name in SECTION_MAP:
+                        if section_name in col_a_str:
+                            current_category = SECTION_MAP[section_name]
+                            is_section = True
+                            break
+                    if is_section:
+                        continue
+                    # Also check col_d for "Mano de obra" type headers
+
+                if col_d and isinstance(col_d, str) and col_d.strip():
+                    for section_name in SECTION_MAP:
+                        if section_name in col_d_str:
+                            current_category = SECTION_MAP[section_name]
+
+                # Check for header rows (like "Marca | No. Parte | Cantidad | Descripcion...")
+                if col_a_str in ('marca', '') and col_d_str in ('descripcion', 'descripción', ''):
+                    if col_a_str == 'marca':
+                        continue  # skip header row
+
+                # Validate: must have quantity > 0 and description
+                cantidad = None
+                try:
+                    if col_c is not None:
+                        cantidad = Decimal(str(col_c))
+                except (ValueError, InvalidOperation):
+                    pass
+
+                if not cantidad or cantidad <= 0:
                     continue
 
-                # Extract values (0-indexed from row_cells)
-                marca = str(row_cells[0] or '').strip()         # col A
-                numero_parte = str(row_cells[1] or '').strip()  # col B
-                cantidad_raw = row_cells[2]                      # col C
-                descripcion = str(row_cells[3] or '').strip()   # col D
-                precio_lista_raw = row_cells[4]                  # col E
-                descuento_raw = row_cells[5]                     # col F
-                precio_venta_raw = row_cells[6]                  # col G
-                # col H = total venta (skip, calculated)
-                # col I = descuento costo (skip)
-                costo_raw = row_cells[9]                         # col J
-                # col K = total costo (skip, calculated)
-
-                # Validate: skip if no descripcion
+                descripcion = str(col_d or '').strip()
                 if not descripcion:
                     continue
 
-                # Validate: skip if cantidad is empty, 0, or not a number
-                cantidad = _dec(cantidad_raw)
-                if cantidad <= 0:
+                # Skip if description is just a number (subtotal row)
+                try:
+                    float(descripcion.replace(',', ''))
+                    continue  # it's a number, skip
+                except ValueError:
+                    pass
+
+                # Skip "Total de..." rows
+                if descripcion.lower().startswith('total de') or \
+                   descripcion.lower().startswith('total '):
                     continue
 
-                precio_lista = _dec(precio_lista_raw)
-                descuento_pct = _dec(descuento_raw)  # decimal form, e.g. 0.3
-                precio_venta = _dec(precio_venta_raw)
-                costo = _dec(costo_raw)
+                # Parse prices
+                marca = str(col_a or '').strip()
+                numero_parte = str(col_b or '').strip()
 
-                # For labor rows: if precio_venta is empty, use precio_lista
-                if current_category == 'mano_obra':
-                    if precio_venta == 0 and precio_lista > 0:
-                        precio_venta = precio_lista
-                    if costo == 0:
-                        costo = precio_venta  # labor cost = sale price
+                precio_lista = _dec(col_e)
+                descuento_dec = _dec(col_f)  # decimal like 0.3
+                precio_venta_unit = _dec(col_g)
+                costo_unit = _dec(col_j)
 
-                # Convert descuento from decimal to percentage (0.3 -> 30)
-                descuento_display = descuento_pct * Decimal('100')
+                # Fallbacks for labor/different formats
+                if precio_venta_unit == 0 and precio_lista > 0:
+                    precio_venta_unit = precio_lista
+                if costo_unit == 0 and col_e and current_category == 'mano_obra':
+                    # For labor, cost might be in col E (Precio Lista = Costo)
+                    costo_unit = precio_lista
 
-                # Convert USD prices to MXN
+                # Convert to MXN
                 precio_lista_mxn = precio_lista * exchange_rate
-                precio_venta_mxn = precio_venta * exchange_rate
-                costo_mxn = costo * exchange_rate
+                precio_venta_mxn = precio_venta_unit * exchange_rate
+                costo_mxn = costo_unit * exchange_rate
+                descuento_pct = descuento_dec * Decimal('100')
 
-                # Use marca as default proveedor
-                proveedor = marca
-
-                # Pre-calculate totals to ensure they are stored
-                costo_total_calc = costo_mxn * cantidad
-                precio_venta_total_calc = precio_venta_mxn * cantidad
-                ganancia_calc = precio_venta_total_calc - costo_total_calc
+                # Calculate totals
+                costo_total = costo_mxn * cantidad
+                venta_total = precio_venta_mxn * cantidad
+                ganancia = venta_total - costo_total
 
                 ProyectoPartida.objects.create(
                     proyecto=proyecto,
@@ -1419,40 +1433,37 @@ def api_importar_excel(request):
                     cantidad=cantidad,
                     cantidad_pendiente=cantidad,
                     precio_lista=precio_lista_mxn,
-                    descuento=descuento_display,
+                    descuento=descuento_pct,
                     costo_unitario=costo_mxn,
                     precio_venta_unitario=precio_venta_mxn,
-                    costo_total=costo_total_calc,
-                    precio_venta_total=precio_venta_total_calc,
-                    ganancia=ganancia_calc,
-                    proveedor=proveedor,
+                    costo_total=costo_total,
+                    precio_venta_total=venta_total,
+                    ganancia=ganancia,
+                    proveedor=marca if marca else '',
                 )
                 items_created += 1
-                total_venta_mxn += precio_venta_mxn * cantidad
-                total_costo_mxn += costo_mxn * cantidad
+                total_venta += venta_total
+                total_costo += costo_total
 
-            except Exception as row_err:
-                errors.append(f'Fila {row_idx}: {str(row_err)}')
+            except Exception as e:
+                errors.append(f'Fila {row_idx}: {str(e)}')
 
-        # Recalculate project utilidad_presupuestada
-        ganancia_total = Decimal('0')
-        for p in proyecto.partidas.all():
-            ganancia_total += p.ganancia
+        # Update project utilidad_presupuestada
+        ganancia_total = proyecto.partidas.aggregate(total=Sum('ganancia'))['total'] or Decimal('0')
         proyecto.utilidad_presupuestada = ganancia_total
         proyecto.save(update_fields=['utilidad_presupuestada'])
 
-        ganancia_mxn = total_venta_mxn - total_costo_mxn
+        ganancia_mxn = total_venta - total_costo
 
         return JsonResponse({
             'ok': True,
             'items_created': items_created,
-            'total_venta_mxn': float(total_venta_mxn.quantize(Decimal('0.01'))),
-            'total_costo_mxn': float(total_costo_mxn.quantize(Decimal('0.01'))),
+            'total_venta_mxn': float(total_venta.quantize(Decimal('0.01'))),
+            'total_costo_mxn': float(total_costo.quantize(Decimal('0.01'))),
             'ganancia_mxn': float(ganancia_mxn.quantize(Decimal('0.01'))),
-            'exchange_rate': float(exchange_rate.quantize(Decimal('0.01'))),
+            'exchange_rate': float(exchange_rate),
             'errors': errors,
         })
-
     except Proyecto.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Proyecto no encontrado'}, status=404)
     except Exception as e:
