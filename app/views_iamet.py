@@ -1477,24 +1477,27 @@ def api_importar_excel(request):
                 descuento_dec = _dec(col_f)  # decimal like 0.3
                 precio_venta_unit = _dec(col_g)
                 costo_unit = _dec(col_j)
+                total_venta_excel = _dec(col_h)  # Total de la columna precio de lista
+                total_costo_excel = _dec(col_k)  # Total de la columna costo
 
-                # Fallbacks for labor/different formats
+                # Fallbacks
                 if precio_venta_unit == 0 and precio_lista > 0:
                     precio_venta_unit = precio_lista
-                if costo_unit == 0 and col_e and current_category == 'mano_obra':
-                    # For labor, cost might be in col E (Precio Lista = Costo)
-                    costo_unit = precio_lista
+                if total_venta_excel == 0 and precio_venta_unit > 0:
+                    total_venta_excel = precio_venta_unit * cantidad
+                if total_costo_excel == 0 and costo_unit > 0:
+                    total_costo_excel = costo_unit * cantidad
 
-                # Convert to MXN
-                precio_lista_mxn = precio_lista * exchange_rate
-                precio_venta_mxn = precio_venta_unit * exchange_rate
-                costo_mxn = costo_unit * exchange_rate
-                descuento_pct = descuento_dec * Decimal('100')
+                # Convert to MXN — usar totales del Excel directamente
+                precio_lista_mxn = (precio_lista * exchange_rate).quantize(Decimal('0.01'))
+                precio_venta_mxn = (precio_venta_unit * exchange_rate).quantize(Decimal('0.01'))
+                costo_mxn = (costo_unit * exchange_rate).quantize(Decimal('0.01'))
+                descuento_pct = (descuento_dec * Decimal('100')).quantize(Decimal('0.01'))
 
-                # Calculate totals
-                costo_total = costo_mxn * cantidad
-                venta_total = precio_venta_mxn * cantidad
-                ganancia = venta_total - costo_total
+                # Ganancia = Total Precio Lista - Total Costo (del Excel, convertido a MXN)
+                venta_total = (total_venta_excel * exchange_rate).quantize(Decimal('0.01'))
+                costo_total = (total_costo_excel * exchange_rate).quantize(Decimal('0.01'))
+                ganancia = (venta_total - costo_total).quantize(Decimal('0.01'))
 
                 ProyectoPartida.objects.create(
                     proyecto=proyecto,

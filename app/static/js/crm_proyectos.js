@@ -42,7 +42,7 @@
     // =========================================
 
     function fmtMoney(val) {
-        return '$' + Number(val || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        return '$' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function fmtDate(dateStr) {
