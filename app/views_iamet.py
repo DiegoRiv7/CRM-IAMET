@@ -384,7 +384,10 @@ def api_proyecto_actualizar(request, proyecto_id):
 @require_http_methods(["POST"])
 def api_proyecto_eliminar(request, proyecto_id):
     try:
-        proyecto = Proyecto.objects.select_related('usuario', 'oportunidad').get(id=proyecto_id)
+        try:
+            proyecto = Proyecto.objects.select_related('usuario', 'oportunidad').get(id=proyecto_id)
+        except Exception:
+            proyecto = Proyecto.objects.select_related('usuario').get(id=proyecto_id)
     except Proyecto.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Proyecto no encontrado'}, status=404)
 
@@ -392,13 +395,16 @@ def api_proyecto_eliminar(request, proyecto_id):
     puede_eliminar = False
     if proyecto.usuario_id == request.user.id:
         puede_eliminar = True
-    if proyecto.oportunidad and proyecto.oportunidad.usuario_id == request.user.id:
-        puede_eliminar = True
+    try:
+        if proyecto.oportunidad and proyecto.oportunidad.usuario_id == request.user.id:
+            puede_eliminar = True
+    except Exception:
+        pass
     if is_supervisor(request.user):
         puede_eliminar = True
 
     if not puede_eliminar:
-        return JsonResponse({'ok': False, 'error': 'Solo el creador del proyecto o el responsable de la oportunidad puede eliminarlo'}, status=403)
+        return JsonResponse({'ok': False, 'error': 'Solo el creador o supervisor puede eliminarlo'}, status=403)
 
     try:
         data = json.loads(request.body)
@@ -409,26 +415,26 @@ def api_proyecto_eliminar(request, proyecto_id):
     if not motivo:
         return JsonResponse({'ok': False, 'error': 'Debes documentar el motivo de eliminacion'}, status=400)
 
-    # Guardar info antes de eliminar
     proyecto_nombre = proyecto.nombre
-    cliente_nombre = proyecto.cliente_nombre
+    cliente_nombre = proyecto.cliente_nombre or ''
     usuario_nombre = (request.user.first_name + ' ' + request.user.last_name).strip() or request.user.username
 
-    # Notificar a todos los administradores
-    from .models import Notificacion
-    from django.contrib.auth.models import User as AuthUser
-    admins = AuthUser.objects.filter(
-        Q(is_superuser=True) | Q(groups__name='Supervisores')
-    ).distinct().exclude(id=request.user.id)
-
-    for admin in admins:
-        Notificacion.objects.create(
-            usuario_destinatario=admin,
-            usuario_remitente=request.user,
-            tipo='sistema',
-            titulo=f'Proyecto eliminado: {proyecto_nombre}',
-            mensaje=f'{usuario_nombre} elimino el proyecto "{proyecto_nombre}" (Cliente: {cliente_nombre}).\n\nMotivo: {motivo}',
-        )
+    try:
+        from .models import Notificacion
+        from django.contrib.auth.models import User as AuthUser
+        admins = AuthUser.objects.filter(
+            Q(is_superuser=True) | Q(groups__name='Supervisores')
+        ).distinct().exclude(id=request.user.id)
+        for admin in admins:
+            Notificacion.objects.create(
+                usuario_destinatario=admin,
+                usuario_remitente=request.user,
+                tipo='sistema',
+                titulo=f'Proyecto eliminado: {proyecto_nombre}',
+                mensaje=f'{usuario_nombre} elimino el proyecto "{proyecto_nombre}" (Cliente: {cliente_nombre}).\n\nMotivo: {motivo}',
+            )
+    except Exception:
+        pass  # No fallar si la notificacion no se puede crear
 
     proyecto.delete()
     return JsonResponse({'ok': True, 'data': {'deleted': proyecto_id}})
