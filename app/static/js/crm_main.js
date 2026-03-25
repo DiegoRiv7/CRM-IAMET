@@ -1775,8 +1775,9 @@
                     if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos de facturacion para este periodo</td></tr>'; return; }
                     var html = '';
                     resp.rows.forEach(function (r, i) {
+                        var rfcBadge = r.rfc ? ' <span style="font-size:0.68rem;color:#8e8e93;font-weight:400;">(' + r.rfc + ')</span>' : '';
                         html += '<tr><td style="color:#8e8e93;font-size:0.75rem;">' + (i + 1) + '</td>' +
-                            '<td style="font-weight:500;">' + (r.cliente || '—') + '</td>' +
+                            '<td style="font-weight:500;">' + (r.nombre || r.cliente || '—') + rfcBadge + '</td>' +
                             '<td style="text-align:right;font-weight:700;color:#059669;">$' + Number(r.monto || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
                     });
                     if (tbody) tbody.innerHTML = html;

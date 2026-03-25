@@ -874,16 +874,34 @@ def api_crm_table_data(request):
             # Total desde ArchivoFacturacion
             facturado_por_cliente_obj = {}
 
-            def _extract_datos(datos_json):
-                """Extrae datos independiente del formato (plano o anidado)"""
+            def _extract_entries(datos_json):
+                """Extrae lista de {nombre, rfc, monto} del datos_json (soporta 3 formatos)"""
                 if not datos_json:
-                    return {}
-                if 'datos' in datos_json and isinstance(datos_json['datos'], dict):
-                    return datos_json['datos']
-                # Formato plano: {cliente: monto} directamente
-                return {k: v for k, v in datos_json.items() if k != 'datos'}
+                    return []
+                entries = []
+                for key, val in datos_json.items():
+                    if key == 'datos':
+                        continue
+                    if isinstance(val, dict) and 'monto' in val:
+                        # Formato nuevo: {rfc_or_name: {nombre, rfc, monto}}
+                        entries.append({
+                            'nombre': val.get('nombre', key),
+                            'rfc': val.get('rfc', ''),
+                            'monto': Decimal(str(val['monto'])),
+                        })
+                    else:
+                        # Formato viejo: {nombre: monto_str}
+                        try:
+                            entries.append({'nombre': key, 'rfc': '', 'monto': Decimal(str(val))})
+                        except Exception:
+                            pass
+                return entries
 
+            # Acumular facturado por RFC o nombre
+            _facturado_entries = []  # [{nombre, rfc, monto}]
             try:
+                def _load_af(af):
+                    return _extract_entries(af.datos_json)
                 if usando_periodo:
                     from datetime import date as _date
                     cur = _date.fromisoformat(desde_filter).replace(day=1)
@@ -891,52 +909,50 @@ def api_crm_table_data(request):
                     while cur <= end:
                         try:
                             af = ArchivoFacturacion.objects.get(mes=cur.strftime('%m'), anio=cur.year)
-                            for c_name, val in _extract_datos(af.datos_json).items():
-                                facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+                            _facturado_entries.extend(_load_af(af))
                         except ArchivoFacturacion.DoesNotExist:
                             pass
                         cur = cur.replace(month=cur.month % 12 + 1, day=1) if cur.month < 12 else cur.replace(year=cur.year + 1, month=1, day=1)
                 elif mes_filter == 'todos':
                     for af in ArchivoFacturacion.objects.filter(anio=anio_int):
-                        for c_name, val in _extract_datos(af.datos_json).items():
-                            facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+                        _facturado_entries.extend(_load_af(af))
                 else:
                     af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
-                    for c_name, val in _extract_datos(af.datos_json).items():
-                        facturado_por_cliente_obj[c_name] = Decimal(str(val))
+                    _facturado_entries.extend(_load_af(af))
             except ArchivoFacturacion.DoesNotExist:
                 pass
-            # Matching flexible de nombres XLS → Cliente CRM
+
+            # Match entries → Cliente: primero por RFC, luego por nombre
             _all_clientes_api = list(clientes_qs)
+            _rfc_map = {c.rfc.upper().strip(): c for c in _all_clientes_api if c.rfc}
             total_by_id = {}
-            for name, monto in facturado_por_cliente_obj.items():
-                cn_upper = name.upper().strip()
+            for entry in _facturado_entries:
                 c_obj = None
-                # 1) Exact
-                for c in _all_clientes_api:
-                    if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
-                        c_obj = c; break
-                # 2) Contains bidireccional
+                rfc = entry['rfc'].upper().strip() if entry['rfc'] else ''
+                nombre = entry['nombre']
+                monto = entry['monto']
+                # 1) Match por RFC (mas confiable)
+                if rfc and rfc in _rfc_map:
+                    c_obj = _rfc_map[rfc]
+                # 2) Match por nombre (fallback)
                 if not c_obj:
+                    cn_upper = nombre.upper().strip()
                     for c in _all_clientes_api:
-                        if not c.nombre_empresa: continue
-                        crm_u = c.nombre_empresa.upper().strip()
-                        if crm_u in cn_upper or cn_upper in crm_u:
+                        if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
                             c_obj = c; break
-                # 3) Primeras 2 palabras
-                if not c_obj:
-                    pw = [w for w in cn_upper.split() if len(w) > 2 and w not in ('DE','DEL','LA','LAS','LOS','EL','SA','CV','SAS','INC','MEXICO')]
-                    if len(pw) >= 2:
+                    if not c_obj:
                         for c in _all_clientes_api:
                             if not c.nombre_empresa: continue
-                            cu = c.nombre_empresa.upper()
-                            if pw[0] in cu and pw[1] in cu:
+                            crm_u = c.nombre_empresa.upper().strip()
+                            if crm_u in cn_upper or cn_upper in crm_u:
                                 c_obj = c; break
-                    elif len(pw) == 1 and len(pw[0]) >= 4:
-                        for c in _all_clientes_api:
-                            if not c.nombre_empresa: continue
-                            if pw[0] in c.nombre_empresa.upper():
-                                c_obj = c; break
+                    if not c_obj:
+                        pw = [w for w in cn_upper.split() if len(w) > 2 and w not in ('DE','DEL','LA','LAS','LOS','EL','SA','CV','SAS','INC','MEXICO')]
+                        if len(pw) >= 2:
+                            for c in _all_clientes_api:
+                                if not c.nombre_empresa: continue
+                                if pw[0] in c.nombre_empresa.upper() and pw[1] in c.nombre_empresa.upper():
+                                    c_obj = c; break
                 if c_obj:
                     total_by_id[c_obj.id] = total_by_id.get(c_obj.id, Decimal('0')) + monto
             prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs.filter(monto_facturacion__gt=0), 'monto_facturacion')}
@@ -947,7 +963,7 @@ def api_crm_table_data(request):
             if _pm:
                 try:
                     _paf = ArchivoFacturacion.objects.get(mes=_pm, anio=_pa)
-                    _prev_sum = sum(Decimal(str(v)) for v in _extract_datos(_paf.datos_json).values())
+                    _prev_sum = sum(e['monto'] for e in _extract_entries(_paf.datos_json))
                 except ArchivoFacturacion.DoesNotExist:
                     pass
 
@@ -1111,26 +1127,40 @@ def api_desglose_facturacion(request):
     try:
         mes = request.GET.get('mes', 'todos')
         anio = int(request.GET.get('anio', 2026))
-        datos = {}
+        acumulado = {}  # {key: {nombre, rfc, monto}}
+
+        def _procesar_af(af):
+            raw = af.datos_json or {}
+            for key, val in raw.items():
+                if key == 'datos':
+                    continue
+                if isinstance(val, dict) and 'monto' in val:
+                    nombre = val.get('nombre', key)
+                    rfc = val.get('rfc', '')
+                    monto = float(Decimal(str(val['monto'])))
+                else:
+                    nombre = key
+                    rfc = ''
+                    try:
+                        monto = float(Decimal(str(val)))
+                    except Exception:
+                        continue
+                k = rfc if rfc else nombre
+                if k in acumulado:
+                    acumulado[k]['monto'] += monto
+                else:
+                    acumulado[k] = {'nombre': nombre, 'rfc': rfc, 'monto': monto}
+
         if mes == 'todos':
             for af in ArchivoFacturacion.objects.filter(anio=anio):
-                raw = af.datos_json or {}
-                if 'datos' in raw and isinstance(raw['datos'], dict):
-                    raw = raw['datos']
-                for c, v in raw.items():
-                    datos[c] = float(Decimal(str(datos.get(c, 0))) + Decimal(str(v)))
+                _procesar_af(af)
         else:
             try:
-                af = ArchivoFacturacion.objects.get(mes=mes, anio=anio)
-                raw = af.datos_json or {}
-                if 'datos' in raw and isinstance(raw['datos'], dict):
-                    raw = raw['datos']
-                datos = {c: float(Decimal(str(v))) for c, v in raw.items()}
+                _procesar_af(ArchivoFacturacion.objects.get(mes=mes, anio=anio))
             except ArchivoFacturacion.DoesNotExist:
                 pass
 
-        # Ordenar por monto descendente
-        rows = sorted([{'cliente': c, 'monto': m} for c, m in datos.items()], key=lambda x: -x['monto'])
+        rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
         total = sum(r['monto'] for r in rows)
         return JsonResponse({'ok': True, 'rows': rows, 'total': total})
     except Exception as e:
@@ -1211,6 +1241,10 @@ def api_subir_facturacion(request):
                     descuento = Decimal('0')
                 monto = subtotal - descuento
 
+                # RFC del cliente (col G, idx 7)
+                rfc_raw = str(sheet.cell_value(row_idx, 7)).strip()
+                rfc = rfc_raw if rfc_raw and rfc_raw != '0.0' else ''
+
                 if monto > 0:
                     key = (row_mes, row_anio)
                     if key not in datos_por_mes:
@@ -1218,11 +1252,19 @@ def api_subir_facturacion(request):
                         totales_por_mes[key] = Decimal('0')
 
                     clientes_mes = datos_por_mes[key]
-                    # Usar nombre comercial si existe, sino cliente
+                    # Usar RFC como key si existe, sino nombre
                     nombre_final = nombre_comercial if nombre_comercial else cliente_name
-                    clientes_mes[nombre_final] = str(
-                        Decimal(clientes_mes.get(nombre_final, '0')) + monto
-                    )
+                    # Guardar con RFC para match preciso
+                    entry_key = rfc if rfc else nombre_final
+                    if entry_key in clientes_mes:
+                        existing = clientes_mes[entry_key]
+                        existing['monto'] = str(Decimal(existing['monto']) + monto)
+                    else:
+                        clientes_mes[entry_key] = {
+                            'nombre': nombre_final,
+                            'rfc': rfc,
+                            'monto': str(monto),
+                        }
                     totales_por_mes[key] += monto
             except (IndexError, ValueError):
                 continue

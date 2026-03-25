@@ -201,6 +201,7 @@ class Cliente(models.Model):
     ]
     
     nombre_empresa = models.CharField(max_length=200, verbose_name="Nombre de la Empresa")
+    rfc = models.CharField(max_length=20, blank=True, default='', verbose_name="RFC", db_index=True)
     contacto_principal = models.CharField(max_length=200, blank=True, null=True, verbose_name="Contacto Principal")
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
