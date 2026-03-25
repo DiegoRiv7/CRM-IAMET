@@ -408,9 +408,9 @@
 
                 var html = '';
                 items.forEach(function(item) {
-                    var totalCost = (item.costo_unitario || 0) * (item.cantidad || 0);
-                    var totalSale = (item.precio_venta_unitario || 0) * (item.cantidad || 0);
-                    var totalProfit = (item.ganancia || ((item.precio_venta_unitario || 0) - (item.costo_unitario || 0))) * (item.cantidad || 0);
+                    var totalCost = item.costo_total || ((item.costo_unitario || 0) * (item.cantidad || 0));
+                    var totalSale = item.precio_venta_total || ((item.precio_venta_unitario || 0) * (item.cantidad || 0));
+                    var totalProfit = item.ganancia || (totalSale - totalCost);
 
                     html += '<tr>' +
                         '<td>' + categoryDot(item.categoria) + (item.categoria || '\u2014') + '</td>' +
