@@ -1218,13 +1218,34 @@
     };
 
     window.proyectosRestaurarVersion = function(versionNum) {
-        if (!currentProjectId || !confirm('¿Restaurar a la version ' + versionNum + '? La version actual se guardara en el historial.')) return;
+        if (!currentProjectId) return;
+        // Widget de confirmacion
+        var existing = document.getElementById('proyRestaurarOverlay');
+        if (existing) existing.remove();
+        var ov = document.createElement('div');
+        ov.id = 'proyRestaurarOverlay';
+        ov.className = 'widget-overlay';
+        ov.style.cssText = 'z-index:10500;display:flex;';
+        ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+        ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:32px;text-align:center;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.2);">' +
+            '<svg width="40" height="40" fill="none" stroke="#FF9500" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+            '<div style="font-size:1.1rem;font-weight:700;color:#1D1D1F;margin:12px 0 8px;">Restaurar a Version ' + versionNum + '</div>' +
+            '<div style="font-size:0.85rem;color:#6E6E73;margin-bottom:20px;">La volumetria actual se guardara en el historial antes de restaurar. Esta accion se puede revertir.</div>' +
+            '<div style="display:flex;gap:10px;justify-content:center;">' +
+                '<button onclick="this.closest(\'.widget-overlay\').remove();" style="padding:10px 24px;border-radius:12px;border:1px solid #E5E5EA;background:#F5F5F7;color:#3C3C43;font-size:0.85rem;font-weight:600;cursor:pointer;">Cancelar</button>' +
+                '<button onclick="this.closest(\'.widget-overlay\').remove();proyectosEjecutarRestauracion(' + versionNum + ');" style="padding:10px 24px;border-radius:12px;border:none;background:#FF9500;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Restaurar</button>' +
+            '</div>' +
+        '</div>';
+        document.body.appendChild(ov);
+    };
+
+    window.proyectosEjecutarRestauracion = function(versionNum) {
         _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/restaurar-version/', {
             method: 'POST',
             body: { version: versionNum }
         }).then(function(resp) {
             if (resp.ok || resp.success) {
-                _showToast('Version restaurada', 'success');
+                _showImportResult(true, resp.restored || 0, 0, 0, 'Restaurado desde v' + versionNum);
                 renderPartidas(currentProjectId);
             } else {
                 _showToast(resp.error || 'Error al restaurar', 'error');
