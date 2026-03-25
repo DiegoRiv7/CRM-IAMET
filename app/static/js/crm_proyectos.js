@@ -434,9 +434,9 @@
 
                 // Totals — use API totals if available, otherwise calculate
                 var totals = apiTotales || {};
-                var totalsCost = totals.total_costo || 0;
-                var totalsSale = totals.total_venta || 0;
-                var totalsProfit = totals.total_ganancia || 0;
+                var totalsCost = totals.costo_total || totals.total_costo || 0;
+                var totalsSale = totals.precio_venta_total || totals.total_venta || 0;
+                var totalsProfit = totals.ganancia || totals.total_ganancia || 0;
 
                 if (!apiTotales) {
                     totalsCost = 0; totalsSale = 0; totalsProfit = 0;
