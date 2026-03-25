@@ -278,7 +278,7 @@
                 if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
                 if (hDesc) hDesc.textContent = project.descripcion || '';
 
-                renderKPIsFromAPI(projectId);
+                // KPIs se actualizan desde partidas al cargar el tab
 
                 // Render info tab if it's the current tab
                 if (currentTab === 'info') {
