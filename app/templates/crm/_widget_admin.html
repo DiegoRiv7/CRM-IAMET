@@ -585,6 +585,7 @@ window.admEditCliente = function(cid){
     +'<div class="admin-form-row">'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Asignado a</label><select class="admin-input" id="ceAsig-'+cid+'">'+opts+'</select></div>'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Categor&iacute;a</label><select class="admin-input" id="ceCat-'+cid+'"><option value="A"'+(c.categoria==='A'?' selected':'')+'>A</option><option value="B"'+(c.categoria==='B'?' selected':'')+'>B</option><option value="C"'+(c.categoria==='C'?' selected':'')+'>C</option></select></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">RFC</label><input class="admin-input" id="ceRFC-'+cid+'" type="text" value="'+(c.rfc||'')+'" placeholder="Ej: ABC123456XY7" style="text-transform:uppercase;"></div>'
     +'</div>'
     +'<div class="admin-form-row">'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Facturado</label><input class="admin-input" id="ceMF-'+cid+'" type="number" value="'+(c.meta_mensual||0)+'"></div>'
@@ -604,6 +605,7 @@ window.admGuardarCliente = function(cid){
   var body = {
     asignado_a_id:     asigEl&&asigEl.value ? parseInt(asigEl.value) : null,
     categoria:         (document.getElementById('ceCat-'+cid)||{}).value||'C',
+    rfc:               (document.getElementById('ceRFC-'+cid)||{}).value||'',
     meta_mensual:      (document.getElementById('ceMF-'+cid)||{}).value||0,
     meta_cobrado:      (document.getElementById('ceMC-'+cid)||{}).value||0,
     meta_oportunidades:(document.getElementById('ceMO-'+cid)||{}).value||0,

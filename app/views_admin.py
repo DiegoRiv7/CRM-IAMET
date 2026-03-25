@@ -168,6 +168,7 @@ def api_admin_clientes(request):
                 'meta_cobrado': str(c.meta_cobrado or 0),
                 'meta_oportunidades': str(c.meta_oportunidades or 0),
                 'meta_cotizado': str(c.meta_cotizado or 0),
+                'rfc': c.rfc or '',
             })
         return JsonResponse({'clientes': data})
 
@@ -201,6 +202,8 @@ def api_admin_cliente_detalle(request, cliente_id):
                 cliente.asignado_a = None
         if 'categoria' in data:
             cliente.categoria = data['categoria']
+        if 'rfc' in data:
+            cliente.rfc = (data['rfc'] or '').strip().upper()
         for campo in ('meta_mensual', 'meta_cobrado', 'meta_oportunidades', 'meta_cotizado'):
             if campo in data:
                 try:
