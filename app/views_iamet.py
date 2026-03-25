@@ -1243,10 +1243,14 @@ def api_proyecto_financieros(request, proyecto_id):
 
     # Calcular en Python para evitar problemas con Sum en MySQL
     _partidas = list(proyecto.partidas.all())
-    utilidad_presupuestada = sum(
-        ((p.precio_venta_unitario or Decimal('0')) - (p.costo_unitario or Decimal('0'))) * (p.cantidad or Decimal('0'))
-        for p in _partidas
-    )
+    utilidad_presupuestada = Decimal('0')
+    for p in _partidas:
+        vu = p.precio_venta_unitario if p.precio_venta_unitario else Decimal('0')
+        cu = p.costo_unitario if p.costo_unitario else Decimal('0')
+        q = p.cantidad if p.cantidad else Decimal('0')
+        g = (vu - cu) * q
+        utilidad_presupuestada += g
+    print(f'[FINANCIEROS] proyecto_id={proyecto_id} partidas={len(_partidas)} utilidad_presupuestada={utilidad_presupuestada}')
     ingresos = proyecto.facturas_ingreso.aggregate(total=Sum('monto'))['total'] or Decimal('0')
     costos = proyecto.facturas_proveedor.aggregate(total=Sum('monto'))['total'] or Decimal('0')
     gastos = proyecto.gastos.filter(estado_aprobacion='approved').aggregate(total=Sum('monto'))['total'] or Decimal('0')
