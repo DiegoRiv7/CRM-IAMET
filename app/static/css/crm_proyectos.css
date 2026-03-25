@@ -172,8 +172,9 @@
 .proy-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 0 8px;
+  gap: 16px;
+  padding: 16px 8px;
+  align-items: start;
 }
 
 .proy-card {

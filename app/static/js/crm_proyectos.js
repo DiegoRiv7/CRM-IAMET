@@ -311,6 +311,7 @@
         if (!kpiContainer) return;
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
+            console.log('[KPI FINANCIEROS]', JSON.stringify(resp.data));
             if (resp.ok || resp.success) {
                 var fin = resp.data;
                 var budgeted = fin.utilidad_presupuestada || 0;
