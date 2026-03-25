@@ -1335,6 +1335,10 @@ def api_importar_excel(request):
             col_c = row_values[2] if len(row_values) > 2 else None
             if not col_a or not str(col_a).strip():
                 return False, ''
+            text_a = str(col_a).strip()
+            # If col A matches a known section name, always treat as header
+            if classify_section(text_a) != 'otros':
+                return True, text_a
             # col C must be empty or non-numeric for a header
             if col_c is not None and col_c != '' and col_c != 0:
                 try:
@@ -1344,7 +1348,7 @@ def api_importar_excel(request):
                         return False, ''
                 except (ValueError, TypeError):
                     pass
-            return True, str(col_a).strip()
+            return True, text_a
 
         # --- Parse rows ---
         items_created = 0
@@ -1356,7 +1360,7 @@ def api_importar_excel(request):
 
         # Read all rows (skip first 4 metadata/header rows, start from row 5 onward)
         # Row 5 is column headers, data starts at row 6
-        for row_idx in range(6, min(max_row + 1, 81)):  # stop before summary (row 81+)
+        for row_idx in range(6, max_row + 1):
             try:
                 row_cells = []
                 for col_idx in range(1, 12):  # cols A-K (1-11)
@@ -1418,6 +1422,11 @@ def api_importar_excel(request):
                 # Use marca as default proveedor
                 proveedor = marca
 
+                # Pre-calculate totals to ensure they are stored
+                costo_total_calc = costo_mxn * cantidad
+                precio_venta_total_calc = precio_venta_mxn * cantidad
+                ganancia_calc = precio_venta_total_calc - costo_total_calc
+
                 ProyectoPartida.objects.create(
                     proyecto=proyecto,
                     categoria=current_category,
@@ -1430,6 +1439,9 @@ def api_importar_excel(request):
                     descuento=descuento_display,
                     costo_unitario=costo_mxn,
                     precio_venta_unitario=precio_venta_mxn,
+                    costo_total=costo_total_calc,
+                    precio_venta_total=precio_venta_total_calc,
+                    ganancia=ganancia_calc,
                     proveedor=proveedor,
                 )
                 items_created += 1

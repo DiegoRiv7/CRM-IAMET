@@ -5267,6 +5267,28 @@
     border: 1px solid rgba(0,0,0,0.06);
     padding: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    position: relative;
+    height: 320px;
+    overflow: hidden;
+}
+#ckDetalleSection th {
+    padding: 10px 14px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8E8E93;
+    text-align: left;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+#ckDetalleSection td {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: #3C3C43;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+#ckDetalleSection tr:hover {
+    background: rgba(0,122,255,0.03);
 }
 .ck-chart-title {
     font-size: 0.78rem;

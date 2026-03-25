@@ -265,21 +265,21 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                 <div class="ck-chart-card">
                     <div class="ck-chart-title">Facturado vs Meta por Cliente</div>
-                    <canvas id="ckChartFactVsMeta" height="250"></canvas>
+                    <canvas id="ckChartFactVsMeta"></canvas>
                 </div>
                 <div class="ck-chart-card">
                     <div class="ck-chart-title">Distribucion General</div>
-                    <canvas id="ckChartDistribucion" height="250"></canvas>
+                    <canvas id="ckChartDistribucion"></canvas>
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                 <div class="ck-chart-card">
                     <div class="ck-chart-title">Top 5 Clientes — Oportunidades</div>
-                    <canvas id="ckChartTopClientes" height="220"></canvas>
+                    <canvas id="ckChartTopClientes"></canvas>
                 </div>
                 <div class="ck-chart-card">
                     <div class="ck-chart-title">Cobrado vs Cotizado</div>
-                    <canvas id="ckChartCobVsCot" height="220"></canvas>
+                    <canvas id="ckChartCobVsCot"></canvas>
                 </div>
             </div>
         </div>
@@ -308,24 +308,26 @@
             </div>
         </div>
 
-        <!-- Overlay: Detalle de KPI -->
-        <div class="widget-overlay" id="widgetKpiDetalle" style="z-index:10200;display:none;" onclick="if(event.target===this)this.style.display='none';">
-            <div class="wco-card" style="width:min(900px,94vw);max-height:85vh;">
-                <div class="wco-header">
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div class="wco-icon" id="ckDetalleIcon" style="width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                            <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17H5a2 2 0 0 0-2 2 2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm12-2H17a2 2 0 0 0-2 2 2 2 0 0 0 2 2h2a2 2 0 0 0 2-2a2 2 0 0 0-2-2z"/></svg>
-                        </div>
-                        <h1 class="wco-title" id="ckDetalleTitulo" style="font-size:0.92rem;font-weight:800;">Detalle</h1>
-                    </div>
-                    <button class="wco-close" onclick="document.getElementById('widgetKpiDetalle').style.display='none';">&times;</button>
-                </div>
-                <div class="wco-list" style="flex:1;overflow-y:auto;">
-                    <table class="wco-table" style="width:100%;border-collapse:collapse;">
-                        <thead><tr class="wco-thead-row" id="ckDetalleHead" style="font-size:0.72rem;text-transform:uppercase;color:#8e8e93;border-bottom:1px solid #f0f0f0;"></tr></thead>
-                        <tbody id="ckDetalleTbody" style="font-size:0.78rem;"></tbody>
-                    </table>
-                </div>
+        <!-- Detail Section (replaces charts when KPI clicked) -->
+        <div id="ckDetalleSection" style="display:none;padding:0 12px 20px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <button onclick="ckVolverGraficas()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;border:1px solid #E5E5EA;background:#F5F5F7;color:#3C3C43;font-size:0.82rem;font-weight:600;cursor:pointer;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                    Volver a graficas
+                </button>
+                <h3 id="ckDetalleTitulo" style="font-size:1.1rem;font-weight:700;color:#1D1D1F;margin:0;">Detalle</h3>
+            </div>
+            <div style="background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr id="ckDetalleHead" style="background:#F5F5F7;">
+                            <!-- headers set by JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="ckDetalleTbody">
+                        <!-- rows set by JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
 

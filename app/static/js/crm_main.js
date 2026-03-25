@@ -2003,19 +2003,28 @@
             }
         }
 
-        // ═══ KPI DETAIL OVERLAY ═══
+        // ═══ KPI DETAIL (INLINE, REPLACES CHARTS) ═══
         window.ckAbrirDetalle = function(tipo) {
-            var overlay = document.getElementById('widgetKpiDetalle');
-            if (!overlay) return;
-            overlay.style.display = 'flex';
+            var charts = document.getElementById('ckChartsSection');
+            var detalle = document.getElementById('ckDetalleSection');
+            if (!detalle) return;
+
+            // Fade out charts
+            if (charts) {
+                charts.style.transition = 'opacity 0.2s';
+                charts.style.opacity = '0';
+                setTimeout(function(){ charts.style.display = 'none'; }, 200);
+            }
+            // Fade in detail
+            detalle.style.display = 'block';
+            detalle.style.opacity = '0';
+            detalle.style.transition = 'opacity 0.2s';
+            setTimeout(function(){ detalle.style.opacity = '1'; }, 50);
 
             var titles = { cobrado: 'Detalle de Cobrado', oportunidades: 'Detalle de Oportunidades', cotizado: 'Detalle de Cotizado' };
-            var colors = { cobrado: '#059669', oportunidades: '#2563EB', cotizado: '#D97706' };
 
             var tituloEl = document.getElementById('ckDetalleTitulo');
-            var iconEl = document.getElementById('ckDetalleIcon');
             if (tituloEl) tituloEl.textContent = titles[tipo] || 'Detalle';
-            if (iconEl) iconEl.style.background = 'linear-gradient(135deg,' + (colors[tipo] || '#007AFF') + ',' + (colors[tipo] || '#007AFF') + ')';
 
             var head = document.getElementById('ckDetalleHead');
             var tbody = document.getElementById('ckDetalleTbody');
@@ -2028,27 +2037,44 @@
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
 
             if (tipo === 'cobrado') {
-                if (head) head.innerHTML = '<th style="padding:8px 10px;">#</th><th style="padding:8px 10px;">Cliente</th><th style="padding:8px 10px;">Vendedor</th><th style="padding:8px 10px;text-align:right">Cobrado</th><th style="padding:8px 10px;text-align:right">Meta</th><th style="padding:8px 10px;text-align:right">Faltante</th>';
+                if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Vendedor</th><th style="text-align:right">Cobrado</th><th style="text-align:right">Meta</th><th style="text-align:right">Faltante</th>';
                 if (tbody) tbody.innerHTML = rows.map(function(r, i) {
                     var faltN = fN(r.faltante);
-                    return '<tr style="border-bottom:1px solid #f5f5f7;"><td style="padding:8px 10px;color:#8e8e93">' + (i+1) + '</td><td style="padding:8px 10px;font-weight:600">' + r.cliente + '</td><td style="padding:8px 10px;color:#6e6e73">' + (r.vendedor || '') + '</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:#059669">$' + (r.total || '0') + '</td><td style="padding:8px 10px;text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="padding:8px 10px;text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                    return '<tr><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#059669">$' + (r.total || '0') + '</td><td style="text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
                 }).join('');
             } else if (tipo === 'oportunidades') {
-                if (head) head.innerHTML = '<th style="padding:8px 10px;">#</th><th style="padding:8px 10px;">Cliente</th><th style="padding:8px 10px;">Vendedor</th><th style="padding:8px 10px;text-align:right">Oportunidades</th><th style="padding:8px 10px;text-align:right">Meta</th><th style="padding:8px 10px;text-align:right">Faltante</th>';
+                if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Vendedor</th><th style="text-align:right">Oportunidades</th><th style="text-align:right">Meta</th><th style="text-align:right">Faltante</th>';
                 if (tbody) tbody.innerHTML = rows.map(function(r, i) {
                     var faltN = fN(r.faltante);
-                    return '<tr style="border-bottom:1px solid #f5f5f7;"><td style="padding:8px 10px;color:#8e8e93">' + (i+1) + '</td><td style="padding:8px 10px;font-weight:600">' + r.cliente + '</td><td style="padding:8px 10px;color:#6e6e73">' + (r.vendedor || '') + '</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:#2563EB">$' + (r.total || '0') + '</td><td style="padding:8px 10px;text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="padding:8px 10px;text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                    return '<tr><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#2563EB">$' + (r.total || '0') + '</td><td style="text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
                 }).join('');
             } else if (tipo === 'cotizado') {
-                if (head) head.innerHTML = '<th style="padding:8px 10px;">#</th><th style="padding:8px 10px;">Cliente</th><th style="padding:8px 10px;">Vendedor</th><th style="padding:8px 10px;text-align:right">Cotizado</th><th style="padding:8px 10px;text-align:right">Meta</th><th style="padding:8px 10px;text-align:right">Faltante</th>';
+                if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Vendedor</th><th style="text-align:right">Cotizado</th><th style="text-align:right">Meta</th><th style="text-align:right">Faltante</th>';
                 if (tbody) tbody.innerHTML = rows.map(function(r, i) {
                     var faltN = fN(r.faltante);
-                    return '<tr style="border-bottom:1px solid #f5f5f7;"><td style="padding:8px 10px;color:#8e8e93">' + (i+1) + '</td><td style="padding:8px 10px;font-weight:600">' + r.cliente + '</td><td style="padding:8px 10px;color:#6e6e73">' + (r.vendedor || '') + '</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:#D97706">$' + (r.total || '0') + '</td><td style="padding:8px 10px;text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="padding:8px 10px;text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                    return '<tr><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#D97706">$' + (r.total || '0') + '</td><td style="text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
                 }).join('');
             }
 
             if (rows.length === 0 && tbody) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>';
+            }
+        };
+
+        window.ckVolverGraficas = function() {
+            var charts = document.getElementById('ckChartsSection');
+            var detalle = document.getElementById('ckDetalleSection');
+            if (detalle) {
+                detalle.style.transition = 'opacity 0.2s';
+                detalle.style.opacity = '0';
+                setTimeout(function(){ detalle.style.display = 'none'; }, 200);
+            }
+            if (charts) {
+                charts.style.display = '';
+                setTimeout(function(){
+                    charts.style.transition = 'opacity 0.2s';
+                    charts.style.opacity = '1';
+                }, 50);
             }
         };
 
