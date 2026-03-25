@@ -1631,14 +1631,13 @@
         }
 
         function renderClientesCombinedTable() {
-            var tbody = document.getElementById('clientesCombinedTbody');
-            if (!tbody) return;
             var merged = mergeClientesData();
 
             if (merged.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;font-size:0.82rem;color:#9CA3AF;font-style:italic;">Sin datos para este periodo.</td></tr>';
                 var kpiRow = document.getElementById('ckKpiRow');
                 if (kpiRow) kpiRow.style.display = 'none';
+                var chartsSection = document.getElementById('ckChartsSection');
+                if (chartsSection) chartsSection.style.display = 'none';
                 return;
             }
 
@@ -1708,21 +1707,11 @@
             var kpiRow = el('ckKpiRow');
             if (kpiRow) kpiRow.style.display = 'grid';
 
-            // Build rows
-            var html = '';
-            for (var i = 0; i < merged.length; i++) {
-                html += buildClientesCombinedRow(merged[i], i + 1);
-            }
-            tbody.innerHTML = html;
+            // Show charts section and render charts
+            var chartsSection = el('ckChartsSection');
+            if (chartsSection) chartsSection.style.display = 'block';
 
-            // Animate bars (defer to allow paint)
-            setTimeout(function () {
-                tbody.querySelectorAll('.ck-bar[data-pct]').forEach(function (bar) {
-                    bar.style.width = bar.getAttribute('data-pct') + '%';
-                });
-            }, 40);
-
-            bindTableEvents();
+            ckRenderCharts(merged, totFact, totCob, totOpp, totCot);
 
             if (_clientesPanelData.facturado) {
                 updateTopbarFromClientesPanel(_clientesPanelData.facturado);
@@ -1751,8 +1740,6 @@
 
         function loadAllClientesPanels() {
             _clientesCombinedLoading = _CLIENTES_VISTAS.length;
-            var tbody = document.getElementById('clientesCombinedTbody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>';
             _CLIENTES_VISTAS.forEach(function (v) { loadClientesPanel(v); });
         }
 
@@ -1840,6 +1827,229 @@
             document.body.style.overflow = '';
             // Volver topbar a facturado
             if (_clientesPanelData.facturado) updateTopbarFromClientesPanel(_clientesPanelData.facturado);
+        };
+
+        // ═══ CLIENTES CHARTS ═══
+        var _ckChartInstances = {};
+
+        function ckDestroyChart(id) {
+            if (_ckChartInstances[id]) {
+                _ckChartInstances[id].destroy();
+                delete _ckChartInstances[id];
+            }
+        }
+
+        function ckRenderCharts(merged, totFact, totCob, totOpp, totCot) {
+            if (typeof Chart === 'undefined') return;
+            var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
+
+            // Sort by facturado descending, top 8
+            var sorted = merged.slice().sort(function(a, b) { return fN(b.fact_total) - fN(a.fact_total); });
+            var top8 = sorted.slice(0, 8);
+            var labels8 = top8.map(function(r) { return r.cliente.length > 18 ? r.cliente.substring(0, 18) + '...' : r.cliente; });
+
+            // Chart defaults
+            Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif';
+            Chart.defaults.font.size = 11;
+            Chart.defaults.plugins.legend.labels.boxWidth = 10;
+            Chart.defaults.plugins.legend.labels.padding = 12;
+
+            // Chart 1: Facturado vs Meta (horizontal bar)
+            ckDestroyChart('ckChartFactVsMeta');
+            var ctx1 = document.getElementById('ckChartFactVsMeta');
+            if (ctx1) {
+                _ckChartInstances['ckChartFactVsMeta'] = new Chart(ctx1.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels8,
+                        datasets: [
+                            {
+                                label: 'Facturado',
+                                data: top8.map(function(r) { return fN(r.fact_total); }),
+                                backgroundColor: 'rgba(107,114,128,0.75)',
+                                borderRadius: 4,
+                                barPercentage: 0.6
+                            },
+                            {
+                                label: 'Meta',
+                                data: top8.map(function(r) { return fN(r.fact_meta); }),
+                                backgroundColor: 'rgba(209,213,219,0.5)',
+                                borderRadius: 4,
+                                barPercentage: 0.6
+                            }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: {
+                                ticks: { callback: function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; } },
+                                grid: { color: 'rgba(0,0,0,0.04)' }
+                            },
+                            y: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 2: Distribution donut
+            ckDestroyChart('ckChartDistribucion');
+            var ctx2 = document.getElementById('ckChartDistribucion');
+            if (ctx2) {
+                _ckChartInstances['ckChartDistribucion'] = new Chart(ctx2.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Facturado', 'Cobrado', 'Oportunidades', 'Cotizado'],
+                        datasets: [{
+                            data: [totFact, totCob, totOpp, totCot],
+                            backgroundColor: ['#9CA3AF', '#16A34A', '#2563EB', '#D97706'],
+                            borderWidth: 0,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '62%',
+                        plugins: {
+                            legend: { position: 'right', labels: { font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        var v = ctx.raw || 0;
+                                        return ' $' + v.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Chart 3: Top 5 by oportunidades (vertical bar)
+            var sortedOpp = merged.slice().sort(function(a, b) { return fN(b.opp_total) - fN(a.opp_total); });
+            var top5opp = sortedOpp.slice(0, 5);
+            ckDestroyChart('ckChartTopClientes');
+            var ctx3 = document.getElementById('ckChartTopClientes');
+            if (ctx3) {
+                _ckChartInstances['ckChartTopClientes'] = new Chart(ctx3.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: top5opp.map(function(r) { return r.cliente.length > 14 ? r.cliente.substring(0, 14) + '...' : r.cliente; }),
+                        datasets: [{
+                            label: 'Oportunidades',
+                            data: top5opp.map(function(r) { return fN(r.opp_total); }),
+                            backgroundColor: ['#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE'],
+                            borderRadius: 6,
+                            barPercentage: 0.55
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                ticks: { callback: function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; } },
+                                grid: { color: 'rgba(0,0,0,0.04)' }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 4: Cobrado vs Cotizado (grouped bar, top 8)
+            ckDestroyChart('ckChartCobVsCot');
+            var ctx4 = document.getElementById('ckChartCobVsCot');
+            if (ctx4) {
+                _ckChartInstances['ckChartCobVsCot'] = new Chart(ctx4.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels8,
+                        datasets: [
+                            {
+                                label: 'Cobrado',
+                                data: top8.map(function(r) { return fN(r.cob_total); }),
+                                backgroundColor: 'rgba(22,163,74,0.7)',
+                                borderRadius: 4,
+                                barPercentage: 0.5
+                            },
+                            {
+                                label: 'Cotizado',
+                                data: top8.map(function(r) { return fN(r.cot_total); }),
+                                backgroundColor: 'rgba(217,119,6,0.6)',
+                                borderRadius: 4,
+                                barPercentage: 0.5
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            y: {
+                                ticks: { callback: function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; } },
+                                grid: { color: 'rgba(0,0,0,0.04)' }
+                            },
+                            x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ═══ KPI DETAIL OVERLAY ═══
+        window.ckAbrirDetalle = function(tipo) {
+            var overlay = document.getElementById('widgetKpiDetalle');
+            if (!overlay) return;
+            overlay.style.display = 'flex';
+
+            var titles = { cobrado: 'Detalle de Cobrado', oportunidades: 'Detalle de Oportunidades', cotizado: 'Detalle de Cotizado' };
+            var colors = { cobrado: '#059669', oportunidades: '#2563EB', cotizado: '#D97706' };
+
+            var tituloEl = document.getElementById('ckDetalleTitulo');
+            var iconEl = document.getElementById('ckDetalleIcon');
+            if (tituloEl) tituloEl.textContent = titles[tipo] || 'Detalle';
+            if (iconEl) iconEl.style.background = 'linear-gradient(135deg,' + (colors[tipo] || '#007AFF') + ',' + (colors[tipo] || '#007AFF') + ')';
+
+            var head = document.getElementById('ckDetalleHead');
+            var tbody = document.getElementById('ckDetalleTbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93;">Cargando...</td></tr>';
+
+            // Use already-loaded data from _clientesPanelData
+            var data = _clientesPanelData[tipo];
+            var rows = (data && data.rows) ? data.rows : [];
+
+            var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
+
+            if (tipo === 'cobrado') {
+                if (head) head.innerHTML = '<th style="padding:8px 10px;">#</th><th style="padding:8px 10px;">Cliente</th><th style="padding:8px 10px;">Vendedor</th><th style="padding:8px 10px;text-align:right">Cobrado</th><th style="padding:8px 10px;text-align:right">Meta</th><th style="padding:8px 10px;text-align:right">Faltante</th>';
+                if (tbody) tbody.innerHTML = rows.map(function(r, i) {
+                    var faltN = fN(r.faltante);
+                    return '<tr style="border-bottom:1px solid #f5f5f7;"><td style="padding:8px 10px;color:#8e8e93">' + (i+1) + '</td><td style="padding:8px 10px;font-weight:600">' + r.cliente + '</td><td style="padding:8px 10px;color:#6e6e73">' + (r.vendedor || '') + '</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:#059669">$' + (r.total || '0') + '</td><td style="padding:8px 10px;text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="padding:8px 10px;text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                }).join('');
+            } else if (tipo === 'oportunidades') {
+                if (head) head.innerHTML = '<th style="padding:8px 10px;">#</th><th style="padding:8px 10px;">Cliente</th><th style="padding:8px 10px;">Vendedor</th><th style="padding:8px 10px;text-align:right">Oportunidades</th><th style="padding:8px 10px;text-align:right">Meta</th><th style="padding:8px 10px;text-align:right">Faltante</th>';
+                if (tbody) tbody.innerHTML = rows.map(function(r, i) {
+                    var faltN = fN(r.faltante);
+                    return '<tr style="border-bottom:1px solid #f5f5f7;"><td style="padding:8px 10px;color:#8e8e93">' + (i+1) + '</td><td style="padding:8px 10px;font-weight:600">' + r.cliente + '</td><td style="padding:8px 10px;color:#6e6e73">' + (r.vendedor || '') + '</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:#2563EB">$' + (r.total || '0') + '</td><td style="padding:8px 10px;text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="padding:8px 10px;text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                }).join('');
+            } else if (tipo === 'cotizado') {
+                if (head) head.innerHTML = '<th style="padding:8px 10px;">#</th><th style="padding:8px 10px;">Cliente</th><th style="padding:8px 10px;">Vendedor</th><th style="padding:8px 10px;text-align:right">Cotizado</th><th style="padding:8px 10px;text-align:right">Meta</th><th style="padding:8px 10px;text-align:right">Faltante</th>';
+                if (tbody) tbody.innerHTML = rows.map(function(r, i) {
+                    var faltN = fN(r.faltante);
+                    return '<tr style="border-bottom:1px solid #f5f5f7;"><td style="padding:8px 10px;color:#8e8e93">' + (i+1) + '</td><td style="padding:8px 10px;font-weight:600">' + r.cliente + '</td><td style="padding:8px 10px;color:#6e6e73">' + (r.vendedor || '') + '</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:#D97706">$' + (r.total || '0') + '</td><td style="padding:8px 10px;text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="padding:8px 10px;text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                }).join('');
+            }
+
+            if (rows.length === 0 && tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>';
+            }
         };
 
         function refreshCrmTable() {

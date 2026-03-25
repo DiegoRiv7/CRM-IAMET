@@ -225,7 +225,7 @@
                 <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--fact" id="ckProgFact" style="width:0%"></div></div>
                 <div class="ck-kpi-trend" id="ckTrendFact"></div>
             </div>
-            <div class="ck-kpi-card ck-kpi--cob">
+            <div class="ck-kpi-card ck-kpi--cob" style="cursor:pointer;" onclick="ckAbrirDetalle('cobrado')">
                 <div class="ck-kpi-header">
                     <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     <span class="ck-kpi-label">COBRADO</span>
@@ -236,7 +236,7 @@
                 <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--cob" id="ckProgCob" style="width:0%"></div></div>
                 <div class="ck-kpi-trend" id="ckTrendCob"></div>
             </div>
-            <div class="ck-kpi-card ck-kpi--opp">
+            <div class="ck-kpi-card ck-kpi--opp" style="cursor:pointer;" onclick="ckAbrirDetalle('oportunidades')">
                 <div class="ck-kpi-header">
                     <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                     <span class="ck-kpi-label">OPORTUNIDADES</span>
@@ -247,7 +247,7 @@
                 <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--opp" id="ckProgOpp" style="width:0%"></div></div>
                 <div class="ck-kpi-trend" id="ckTrendOpp"></div>
             </div>
-            <div class="ck-kpi-card ck-kpi--cot">
+            <div class="ck-kpi-card ck-kpi--cot" style="cursor:pointer;" onclick="ckAbrirDetalle('cotizado')">
                 <div class="ck-kpi-header">
                     <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                     <span class="ck-kpi-label">COTIZADO</span>
@@ -260,30 +260,32 @@
             </div>
         </div>
 
-        <!-- Pipeline table -->
-        <table class="ck-table">
-            <colgroup>
-                <col style="width:4%">
-                <col style="width:24%">
-                <col style="width:18%">
-                <col style="width:18%">
-                <col style="width:18%">
-                <col style="width:18%">
-            </colgroup>
-            <thead class="ck-thead">
-                <tr>
-                    <th class="ck-th ck-th--rank">#</th>
-                    <th class="ck-th ck-th--cliente">CLIENTE</th>
-                    <th class="ck-th ck-th--fact" onclick="clientesVistaAbrir('facturado')" title="Ver detalle por marcas">FACTURADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
-                    <th class="ck-th ck-th--cob" onclick="clientesVistaAbrir('cobrado')" title="Ver detalle por marcas">COBRADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
-                    <th class="ck-th ck-th--opp" onclick="clientesVistaAbrir('oportunidades')" title="Ver detalle por marcas">OPORTUNIDADES <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
-                    <th class="ck-th ck-th--cot" onclick="clientesVistaAbrir('cotizado')" title="Ver detalle por marcas">COTIZADO <svg width="7" height="7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="opacity:0.45;vertical-align:middle;margin-left:2px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></th>
-                </tr>
-            </thead>
-            <tbody id="clientesCombinedTbody">
-                <tr><td colspan="6" style="text-align:center;padding:40px;font-size:0.82rem;color:#9CA3AF;font-style:italic;">Cargando...</td></tr>
-            </tbody>
-        </table>
+        <!-- Charts Section (replaces the old table) -->
+        <div id="ckChartsSection" style="padding:0 12px 20px;display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Facturado vs Meta por Cliente</div>
+                    <canvas id="ckChartFactVsMeta" height="250"></canvas>
+                </div>
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Distribucion General</div>
+                    <canvas id="ckChartDistribucion" height="250"></canvas>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Top 5 Clientes — Oportunidades</div>
+                    <canvas id="ckChartTopClientes" height="220"></canvas>
+                </div>
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Cobrado vs Cotizado</div>
+                    <canvas id="ckChartCobVsCot" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden tbody for data merge (used by renderClientesCombinedTable) -->
+        <div id="clientesCombinedTbody" style="display:none;"></div>
 
         <!-- Overlay detalle de vista -->
         <div id="clientesDetalleOverlay" style="display:none;position:fixed;inset:0;z-index:10200;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
@@ -301,6 +303,27 @@
                         <tbody id="clientesDetalleTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
                             <tr><td colspan="14" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>
                         </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay: Detalle de KPI -->
+        <div class="widget-overlay" id="widgetKpiDetalle" style="z-index:10200;display:none;" onclick="if(event.target===this)this.style.display='none';">
+            <div class="wco-card" style="width:min(900px,94vw);max-height:85vh;">
+                <div class="wco-header">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="wco-icon" id="ckDetalleIcon" style="width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17H5a2 2 0 0 0-2 2 2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm12-2H17a2 2 0 0 0-2 2 2 2 0 0 0 2 2h2a2 2 0 0 0 2-2a2 2 0 0 0-2-2z"/></svg>
+                        </div>
+                        <h1 class="wco-title" id="ckDetalleTitulo" style="font-size:0.92rem;font-weight:800;">Detalle</h1>
+                    </div>
+                    <button class="wco-close" onclick="document.getElementById('widgetKpiDetalle').style.display='none';">&times;</button>
+                </div>
+                <div class="wco-list" style="flex:1;overflow-y:auto;">
+                    <table class="wco-table" style="width:100%;border-collapse:collapse;">
+                        <thead><tr class="wco-thead-row" id="ckDetalleHead" style="font-size:0.72rem;text-transform:uppercase;color:#8e8e93;border-bottom:1px solid #f0f0f0;"></tr></thead>
+                        <tbody id="ckDetalleTbody" style="font-size:0.78rem;"></tbody>
                     </table>
                 </div>
             </div>

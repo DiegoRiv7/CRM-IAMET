@@ -5260,6 +5260,26 @@
 /* Bar overachievement */
 .ck-bar--over { background: linear-gradient(to right, #4ADE80, #16A34A) !important; }
 
+/* Chart cards */
+.ck-chart-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.06);
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.ck-chart-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #636366;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 12px;
+}
+@media (max-width: 768px) {
+    #ckChartsSection > div { grid-template-columns: 1fr !important; }
+}
+
 /* Metas column */
 .ck-td--metas { padding: 8px 14px 8px 8px; }
 .ck-mini-meta-row {
