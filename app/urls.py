@@ -284,6 +284,7 @@ urlpatterns = [
     path('api/iamet/partidas/<int:partida_id>/actualizar/', views_iamet.api_partida_actualizar, name='api_iamet_partida_actualizar'),
     path('api/iamet/partidas/<int:partida_id>/eliminar/', views_iamet.api_partida_eliminar, name='api_iamet_partida_eliminar'),
     path('api/iamet/partidas/importar-excel/', views_iamet.api_importar_excel, name='api_iamet_importar_excel'),
+    path('api/iamet/proyectos/<int:proyecto_id>/volumetria-versiones/', views_iamet.api_volumetria_versiones, name='api_iamet_volumetria_versiones'),
     # Ordenes de Compra
     path('api/iamet/proyectos/<int:proyecto_id>/oc/', views_iamet.api_oc_lista, name='api_iamet_oc_lista'),
     path('api/iamet/oc/crear/', views_iamet.api_oc_crear, name='api_iamet_oc_crear'),

@@ -1067,6 +1067,59 @@
         input.click();
     };
 
+    // --- Historial de versiones de volumetria ---
+
+    window.proyectosVerHistorialVolumetria = function() {
+        if (!currentProjectId) return;
+
+        var overlay = document.getElementById('proyHistorialOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'proyHistorialOverlay';
+            overlay.className = 'widget-overlay';
+            overlay.style.cssText = 'z-index:10300;display:flex;';
+            overlay.onclick = function(e) { if (e.target === overlay) overlay.style.display = 'none'; };
+            overlay.innerHTML = '<div class="wco-card" style="width:min(800px,94vw);max-height:80vh;">' +
+                '<div class="wco-header"><div style="display:flex;align-items:center;gap:10px;">' +
+                '<div class="wco-icon"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>' +
+                '<h1 class="wco-title">Historial de Volumetria</h1></div>' +
+                '<button class="wco-close" onclick="document.getElementById(\'proyHistorialOverlay\').style.display=\'none\'">&times;</button></div>' +
+                '<div class="wco-list" style="flex:1;overflow-y:auto;"><table class="wco-table"><thead><tr class="wco-thead-row">' +
+                '<th>Version</th><th>Archivo</th><th>Subido por</th><th>Fecha</th><th style="text-align:right">Costo</th><th style="text-align:right">Venta</th><th style="text-align:right">Ganancia</th><th style="text-align:right">Margen</th><th>Partidas</th>' +
+                '</tr></thead><tbody id="proyHistorialTbody"></tbody></table></div></div>';
+            document.body.appendChild(overlay);
+        } else {
+            overlay.style.display = 'flex';
+        }
+
+        var tbody = document.getElementById('proyHistorialTbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
+
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/volumetria-versiones/').then(function(resp) {
+            if ((resp.ok || resp.success) && resp.data && resp.data.length > 0) {
+                var html = '';
+                resp.data.forEach(function(v) {
+                    var isCurrent = v.is_current;
+                    var rowStyle = isCurrent ? 'background:rgba(0,122,255,0.05);font-weight:600;' : '';
+                    html += '<tr style="' + rowStyle + '">' +
+                        '<td>' + (isCurrent ? '<span style="color:#007AFF;">Actual</span>' : 'v' + v.version) + '</td>' +
+                        '<td>' + (v.archivo || '') + '</td>' +
+                        '<td>' + (v.subido_por || '') + '</td>' +
+                        '<td style="color:#8e8e93;font-size:0.78rem;">' + (v.fecha ? fmtDate(v.fecha) : '') + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(v.total_costo) + '</td>' +
+                        '<td style="text-align:right">' + fmtMoney(v.total_venta) + '</td>' +
+                        '<td style="text-align:right;color:#10b981">' + fmtMoney(v.ganancia) + '</td>' +
+                        '<td style="text-align:right">' + Math.round(v.margen) + '%</td>' +
+                        '<td style="text-align:center">' + v.num_partidas + '</td>' +
+                    '</tr>';
+                });
+                if (tbody) tbody.innerHTML = html;
+            } else {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#8e8e93">No hay versiones anteriores</td></tr>';
+            }
+        });
+    };
+
     // --- Dialog form submissions ---
 
     window.proyectosGuardarProyecto = function() {

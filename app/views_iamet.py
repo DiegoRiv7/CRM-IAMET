@@ -15,7 +15,7 @@ from .models import (
     ProyectoIAMET as Proyecto, ProyectoPartida, ProyectoOrdenCompra,
     ProyectoFacturaProveedor, ProyectoFacturaIngreso,
     ProyectoGasto, ProyectoTarea, ProyectoAlerta,
-    ProyectoConfiguracion,
+    ProyectoConfiguracion, ProyectoVolumetriaVersion,
 )
 from .views_utils import is_supervisor
 from .views_grupos import get_usuarios_visibles_ids
@@ -1337,6 +1337,56 @@ def api_importar_excel(request):
             'mano de obra': 'mano_obra',
         }
 
+        # Archive current partidas as a new version before importing
+        existing_partidas = list(proyecto.partidas.all())
+        if existing_partidas:
+            last_version = ProyectoVolumetriaVersion.objects.filter(
+                proyecto=proyecto
+            ).order_by('-version').first()
+            next_version = (last_version.version + 1) if last_version else 1
+
+            snapshot = []
+            snap_costo = Decimal('0')
+            snap_venta = Decimal('0')
+            for p in existing_partidas:
+                cu = p.costo_unitario or Decimal('0')
+                vu = p.precio_venta_unitario or Decimal('0')
+                q = p.cantidad or Decimal('0')
+                snap_costo += cu * q
+                snap_venta += vu * q
+                snapshot.append({
+                    'categoria': p.categoria,
+                    'descripcion': p.descripcion,
+                    'marca': p.marca,
+                    'numero_parte': p.numero_parte,
+                    'cantidad': float(q),
+                    'precio_lista': float(p.precio_lista or 0),
+                    'descuento': float(p.descuento or 0),
+                    'costo_unitario': float(cu),
+                    'precio_venta_unitario': float(vu),
+                    'ganancia': float((vu - cu) * q),
+                    'proveedor': p.proveedor,
+                    'status': p.status,
+                })
+            snap_ganancia = snap_venta - snap_costo
+            snap_margen = (snap_ganancia / snap_venta * 100) if snap_venta > 0 else Decimal('0')
+
+            ProyectoVolumetriaVersion.objects.create(
+                proyecto=proyecto,
+                version=next_version,
+                archivo_nombre=archivo.name if hasattr(archivo, 'name') else '',
+                subido_por=request.user,
+                total_costo=snap_costo,
+                total_venta=snap_venta,
+                ganancia=snap_ganancia,
+                margen=snap_margen,
+                num_partidas=len(existing_partidas),
+                partidas_json=snapshot,
+            )
+
+            # Delete old partidas
+            proyecto.partidas.all().delete()
+
         current_category = 'equipamiento'  # default
         items_created = 0
         errors = []
@@ -1490,3 +1540,53 @@ def api_importar_excel(request):
         return JsonResponse({'ok': False, 'error': 'Proyecto no encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+# ─── Historial de versiones de volumetria ─────────────────────
+
+@login_required
+@require_http_methods(["GET"])
+def api_volumetria_versiones(request, proyecto_id):
+    """GET: Historial de versiones de volumetria"""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Proyecto no encontrado'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'ok': False, 'error': 'Sin acceso'}, status=403)
+
+    versiones = ProyectoVolumetriaVersion.objects.filter(proyecto=proyecto)
+    data = []
+    for v in versiones:
+        data.append({
+            'version': v.version,
+            'archivo': v.archivo_nombre,
+            'subido_por': (v.subido_por.first_name + ' ' + v.subido_por.last_name).strip() if v.subido_por else '',
+            'fecha': v.fecha.isoformat() if v.fecha else None,
+            'total_costo': float(v.total_costo),
+            'total_venta': float(v.total_venta),
+            'ganancia': float(v.ganancia),
+            'margen': float(v.margen),
+            'num_partidas': v.num_partidas,
+        })
+
+    # Add current version info
+    current = list(proyecto.partidas.all())
+    if current:
+        c_costo = sum((p.costo_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in current)
+        c_venta = sum((p.precio_venta_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in current)
+        c_gan = c_venta - c_costo
+        data.insert(0, {
+            'version': len(data) + 1,
+            'archivo': 'Actual',
+            'subido_por': '',
+            'fecha': None,
+            'total_costo': float(c_costo),
+            'total_venta': float(c_venta),
+            'ganancia': float(c_gan),
+            'margen': float((c_gan / c_venta * 100) if c_venta > 0 else 0),
+            'num_partidas': len(current),
+            'is_current': True,
+        })
+
+    return JsonResponse({'ok': True, 'data': data})

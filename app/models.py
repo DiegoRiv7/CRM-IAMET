@@ -4062,3 +4062,30 @@ class ProyectoEvidencia(models.Model):
 
     def __str__(self):
         return self.nombre_archivo
+
+
+class ProyectoVolumetriaVersion(models.Model):
+    """Historial de versiones de volumetria importada"""
+    proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='versiones_volumetria')
+    version = models.PositiveIntegerField()
+    archivo_nombre = models.CharField(max_length=255, blank=True, default='')
+    subido_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    # Snapshot of totals at this version
+    total_costo = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    total_venta = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    ganancia = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    margen = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0'))
+    num_partidas = models.PositiveIntegerField(default=0)
+    # JSON snapshot of all partidas at this version
+    partidas_json = models.JSONField(default=list, blank=True)
+    notas = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-version']
+        unique_together = ['proyecto', 'version']
+        verbose_name = 'Version de Volumetria'
+        verbose_name_plural = 'Versiones de Volumetria'
+
+    def __str__(self):
+        return f"v{self.version} — {self.proyecto.nombre}"
