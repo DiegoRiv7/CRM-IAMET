@@ -1055,17 +1055,46 @@
             }).then(function(resp) {
                 if (resp.ok || resp.success) {
                     renderPartidas(currentProjectId);
-                    alert('Partidas importadas correctamente');
+                    _showImportResult(true, resp.items_created || 0, resp.ganancia_mxn || 0, resp.exchange_rate || 0, file.name);
                 } else {
-                    alert('Error al importar: ' + (resp.error || 'Error desconocido'));
+                    _showImportResult(false, 0, 0, 0, '', resp.error || 'Error desconocido');
                 }
             }).catch(function(err) {
-                alert('Error de conexion al importar');
+                _showImportResult(false, 0, 0, 0, '', 'Error de conexion');
                 console.error('Error importando Excel:', err);
             });
         };
         input.click();
     };
+
+    // --- Widget de confirmacion de importacion ---
+    function _showImportResult(ok, items, ganancia, tc, filename, errorMsg) {
+        var existing = document.getElementById('proyImportResultOverlay');
+        if (existing) existing.remove();
+        var ov = document.createElement('div');
+        ov.id = 'proyImportResultOverlay';
+        ov.className = 'widget-overlay';
+        ov.style.cssText = 'z-index:10400;display:flex;';
+        ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+        var icon = ok
+            ? '<svg width="40" height="40" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>'
+            : '<svg width="40" height="40" fill="none" stroke="#FF3B30" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+        var body = ok
+            ? '<div style="font-size:1.1rem;font-weight:700;color:#1D1D1F;margin:12px 0 4px;">Importacion exitosa</div>' +
+              '<div style="font-size:0.85rem;color:#6E6E73;margin-bottom:16px;">' + filename + '</div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">' +
+                '<div style="background:#F5F5F7;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:0.7rem;color:#8E8E93;text-transform:uppercase;">Partidas</div><div style="font-size:1.3rem;font-weight:700;">' + items + '</div></div>' +
+                '<div style="background:#F5F5F7;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:0.7rem;color:#8E8E93;text-transform:uppercase;">Ganancia</div><div style="font-size:1.3rem;font-weight:700;color:#10B981;">' + fmtMoney(ganancia) + '</div></div>' +
+              '</div>' +
+              '<div style="font-size:0.75rem;color:#8E8E93;text-align:center;">T.C. USD→MXN: $' + Number(tc).toFixed(2) + '</div>'
+            : '<div style="font-size:1.1rem;font-weight:700;color:#FF3B30;margin:12px 0 4px;">Error en la importacion</div>' +
+              '<div style="font-size:0.85rem;color:#6E6E73;">' + (errorMsg || 'Error desconocido') + '</div>';
+        ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:32px;text-align:center;max-width:360px;box-shadow:0 24px 60px rgba(0,0,0,0.2);">' +
+            icon + body +
+            '<button onclick="this.closest(\'.widget-overlay\').remove();" style="margin-top:16px;padding:10px 32px;border-radius:12px;border:none;background:#007AFF;color:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;">Aceptar</button>' +
+        '</div>';
+        document.body.appendChild(ov);
+    }
 
     // --- Historial de versiones de volumetria ---
 
@@ -1100,12 +1129,13 @@
                 var html = '';
                 resp.data.forEach(function(v) {
                     var isCurrent = v.is_current;
-                    var rowStyle = isCurrent ? 'background:rgba(0,122,255,0.05);font-weight:600;' : '';
-                    html += '<tr style="' + rowStyle + '">' +
-                        '<td>' + (isCurrent ? '<span style="color:#007AFF;">Actual</span>' : 'v' + v.version) + '</td>' +
-                        '<td>' + (v.archivo || '') + '</td>' +
-                        '<td>' + (v.subido_por || '') + '</td>' +
-                        '<td style="color:#8e8e93;font-size:0.78rem;">' + (v.fecha ? fmtDate(v.fecha) : '') + '</td>' +
+                    var rowStyle = isCurrent ? 'background:rgba(0,122,255,0.05);font-weight:600;' : 'cursor:pointer;';
+                    var clickAttr = isCurrent ? '' : ' onclick="proyectosVerVersionDetalle(' + v.version + ')"';
+                    html += '<tr style="' + rowStyle + '"' + clickAttr + '>' +
+                        '<td>' + (isCurrent ? '<span style="color:#007AFF;">Actual</span>' : '<span style="color:#007AFF;">v' + v.version + '</span>') + '</td>' +
+                        '<td style="font-size:0.78rem;">' + (v.archivo || '—') + '</td>' +
+                        '<td>' + (v.subido_por || '—') + '</td>' +
+                        '<td style="color:#8e8e93;font-size:0.78rem;">' + (v.fecha ? fmtDate(v.fecha) : '—') + '</td>' +
                         '<td style="text-align:right">' + fmtMoney(v.total_costo) + '</td>' +
                         '<td style="text-align:right">' + fmtMoney(v.total_venta) + '</td>' +
                         '<td style="text-align:right;color:#10b981">' + fmtMoney(v.ganancia) + '</td>' +
@@ -1114,8 +1144,90 @@
                     '</tr>';
                 });
                 if (tbody) tbody.innerHTML = html;
+                // Store versions data for detail view
+                window._proyVersionesData = resp.data;
             } else {
                 if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#8e8e93">No hay versiones anteriores</td></tr>';
+            }
+        });
+    };
+
+    window.proyectosVerVersionDetalle = function(versionNum) {
+        // Find version data
+        var versions = window._proyVersionesData || [];
+        var ver = null;
+        for (var i = 0; i < versions.length; i++) {
+            if (versions[i].version === versionNum && !versions[i].is_current) {
+                ver = versions[i];
+                break;
+            }
+        }
+        if (!ver) return;
+
+        // Update the partidas table behind the overlay with version data
+        var container = el('proyPartidasBody');
+        if (container && ver.partidas_json && ver.partidas_json.length > 0) {
+            var html = '';
+            ver.partidas_json.forEach(function(item) {
+                var totalProfit = item.ganancia || ((item.precio_venta_unitario || 0) - (item.costo_unitario || 0)) * (item.cantidad || 0);
+                html += '<tr style="opacity:0.7;">' +
+                    '<td>' + categoryDot(item.categoria) + (item.categoria || '\u2014') + '</td>' +
+                    '<td title="' + (item.descripcion || '') + '">' + truncate(item.descripcion, 28) + '</td>' +
+                    '<td>' + (item.marca || '\u2014') + '</td>' +
+                    '<td style="font-size:0.72rem;color:#aeaeb2">' + (item.numero_parte || '\u2014') + '</td>' +
+                    '<td style="text-align:center">' + (item.cantidad || 0) + '</td>' +
+                    '<td style="text-align:center">' + (item.cantidad || 0) + '</td>' +
+                    '<td style="text-align:right">' + fmtMoney(item.precio_lista) + '</td>' +
+                    '<td style="text-align:center">' + (item.descuento || 0) + '%</td>' +
+                    '<td style="text-align:right">' + fmtMoney(item.costo_unitario) + '</td>' +
+                    '<td style="text-align:right">' + fmtMoney(item.precio_venta_unitario) + '</td>' +
+                    '<td style="text-align:right;color:#10b981">' + fmtMoney(totalProfit) + '</td>' +
+                    '<td>' + truncate(item.proveedor, 16) + '</td>' +
+                    '<td><span class="proy-badge proy-status-archived">' + statusLabel(item.status) + '</span></td>' +
+                '</tr>';
+            });
+            container.innerHTML = html;
+
+            // Update KPIs with version data
+            var kpiC = el('proyKPIs');
+            if (kpiC) {
+                var marginPct = ver.total_venta > 0 ? Math.round(ver.ganancia / ver.total_venta * 100) : 0;
+                kpiC.innerHTML =
+                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Version ' + ver.version + ' — Utilidad</div><div class="proy-kpi-value">' + fmtMoney(ver.ganancia) + '</div></div>' +
+                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Costo Total</div><div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(ver.total_costo) + '</div></div>' +
+                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Venta Total</div><div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(ver.total_venta) + '</div></div>' +
+                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Margen</div><div class="proy-kpi-value">' + marginPct + '%</div></div>';
+            }
+
+            // Update totals footer
+            var foot = el('proyPartidasFoot');
+            if (foot) {
+                foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
+                    '<td colspan="8" style="text-align:right;color:#8e8e93">Totales v' + ver.version + '</td>' +
+                    '<td style="text-align:right">' + fmtMoney(ver.total_costo) + '</td>' +
+                    '<td style="text-align:right">' + fmtMoney(ver.total_venta) + '</td>' +
+                    '<td style="text-align:right;color:#10b981">' + fmtMoney(ver.ganancia) + '</td>' +
+                    '<td colspan="2"><button style="font-size:0.72rem;padding:4px 10px;border-radius:6px;border:1px solid #007AFF;background:rgba(0,122,255,0.08);color:#007AFF;cursor:pointer;font-weight:600;" onclick="proyectosRestaurarVersion(' + ver.version + ')">Restaurar</button></td>' +
+                '</tr>';
+            }
+        }
+
+        // Close historial overlay
+        var histOverlay = document.getElementById('proyHistorialOverlay');
+        if (histOverlay) histOverlay.style.display = 'none';
+    };
+
+    window.proyectosRestaurarVersion = function(versionNum) {
+        if (!currentProjectId || !confirm('¿Restaurar a la version ' + versionNum + '? La version actual se guardara en el historial.')) return;
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/restaurar-version/', {
+            method: 'POST',
+            body: { version: versionNum }
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                _showToast('Version restaurada', 'success');
+                renderPartidas(currentProjectId);
+            } else {
+                _showToast(resp.error || 'Error al restaurar', 'error');
             }
         });
     };

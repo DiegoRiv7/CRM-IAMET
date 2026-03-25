@@ -1555,19 +1555,20 @@ def api_volumetria_versiones(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'ok': False, 'error': 'Sin acceso'}, status=403)
 
-    versiones = ProyectoVolumetriaVersion.objects.filter(proyecto=proyecto)
+    versiones = ProyectoVolumetriaVersion.objects.filter(proyecto=proyecto).select_related('subido_por')
     data = []
     for v in versiones:
         data.append({
             'version': v.version,
             'archivo': v.archivo_nombre,
-            'subido_por': (v.subido_por.first_name + ' ' + v.subido_por.last_name).strip() if v.subido_por else '',
+            'subido_por': (v.subido_por.first_name + ' ' + v.subido_por.last_name).strip() if v.subido_por else '—',
             'fecha': v.fecha.isoformat() if v.fecha else None,
             'total_costo': float(v.total_costo),
             'total_venta': float(v.total_venta),
             'ganancia': float(v.ganancia),
             'margen': float(v.margen),
             'num_partidas': v.num_partidas,
+            'partidas_json': v.partidas_json or [],
         })
 
     # Add current version info
@@ -1576,11 +1577,19 @@ def api_volumetria_versiones(request, proyecto_id):
         c_costo = sum((p.costo_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in current)
         c_venta = sum((p.precio_venta_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in current)
         c_gan = c_venta - c_costo
+        # Get last import info
+        last_ver = versiones.first()  # ordered by -version
+        last_user = ''
+        last_date = None
+        if last_ver:
+            # The current is the one AFTER the last version
+            last_user = (last_ver.subido_por.first_name + ' ' + last_ver.subido_por.last_name).strip() if last_ver.subido_por else '—'
+            last_date = last_ver.fecha.isoformat() if last_ver.fecha else None
         data.insert(0, {
             'version': len(data) + 1,
             'archivo': 'Actual',
-            'subido_por': '',
-            'fecha': None,
+            'subido_por': last_user,
+            'fecha': last_date,
             'total_costo': float(c_costo),
             'total_venta': float(c_venta),
             'ganancia': float(c_gan),
@@ -1590,3 +1599,88 @@ def api_volumetria_versiones(request, proyecto_id):
         })
 
     return JsonResponse({'ok': True, 'data': data})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_restaurar_version(request, proyecto_id):
+    """POST: Restaurar volumetria a una version anterior"""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Proyecto no encontrado'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'ok': False, 'error': 'Sin acceso'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'JSON invalido'}, status=400)
+
+    version_num = data.get('version')
+    if not version_num:
+        return JsonResponse({'ok': False, 'error': 'Version requerida'}, status=400)
+
+    try:
+        version = ProyectoVolumetriaVersion.objects.get(proyecto=proyecto, version=version_num)
+    except ProyectoVolumetriaVersion.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Version no encontrada'}, status=404)
+
+    # Archive current partidas first
+    existing = list(proyecto.partidas.all())
+    if existing:
+        last_ver = ProyectoVolumetriaVersion.objects.filter(proyecto=proyecto).order_by('-version').first()
+        next_ver = (last_ver.version + 1) if last_ver else 1
+        snapshot = []
+        sc = Decimal('0')
+        sv = Decimal('0')
+        for p in existing:
+            cu = p.costo_unitario or Decimal('0')
+            vu = p.precio_venta_unitario or Decimal('0')
+            q = p.cantidad or Decimal('0')
+            sc += cu * q
+            sv += vu * q
+            snapshot.append({
+                'categoria': p.categoria, 'descripcion': p.descripcion, 'marca': p.marca,
+                'numero_parte': p.numero_parte, 'cantidad': float(q),
+                'precio_lista': float(p.precio_lista or 0), 'descuento': float(p.descuento or 0),
+                'costo_unitario': float(cu), 'precio_venta_unitario': float(vu),
+                'ganancia': float((vu - cu) * q), 'proveedor': p.proveedor, 'status': p.status,
+            })
+        sg = sv - sc
+        ProyectoVolumetriaVersion.objects.create(
+            proyecto=proyecto, version=next_ver, archivo_nombre='Antes de restaurar v' + str(version_num),
+            subido_por=request.user, total_costo=sc, total_venta=sv, ganancia=sg,
+            margen=(sg / sv * 100) if sv > 0 else Decimal('0'),
+            num_partidas=len(existing), partidas_json=snapshot,
+        )
+        proyecto.partidas.all().delete()
+
+    # Restore partidas from version snapshot
+    restored = 0
+    for item in (version.partidas_json or []):
+        ProyectoPartida.objects.create(
+            proyecto=proyecto,
+            categoria=item.get('categoria', 'otros'),
+            descripcion=item.get('descripcion', ''),
+            marca=item.get('marca', ''),
+            numero_parte=item.get('numero_parte', ''),
+            cantidad=Decimal(str(item.get('cantidad', 0))),
+            cantidad_pendiente=Decimal(str(item.get('cantidad', 0))),
+            precio_lista=Decimal(str(item.get('precio_lista', 0))),
+            descuento=Decimal(str(item.get('descuento', 0))),
+            costo_unitario=Decimal(str(item.get('costo_unitario', 0))),
+            precio_venta_unitario=Decimal(str(item.get('precio_venta_unitario', 0))),
+            proveedor=item.get('proveedor', ''),
+        )
+        restored += 1
+
+    # Update project utilidad
+    total_g = sum(
+        ((p.precio_venta_unitario or Decimal('0')) - (p.costo_unitario or Decimal('0'))) * (p.cantidad or Decimal('0'))
+        for p in proyecto.partidas.all()
+    )
+    proyecto.utilidad_presupuestada = total_g
+    proyecto.save(update_fields=['utilidad_presupuestada'])
+
+    return JsonResponse({'ok': True, 'restored': restored})
