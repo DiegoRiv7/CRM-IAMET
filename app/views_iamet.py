@@ -459,9 +459,17 @@ def api_partidas_lista(request, proyecto_id):
     items = [_partida_to_dict(p) for p in partidas]
 
     # Calcular totales en Python (evita problemas con Sum/Decimal en MySQL)
-    t_costo = sum((p.costo_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in partidas)
-    t_venta = sum((p.precio_venta_unitario or Decimal('0')) * (p.cantidad or Decimal('0')) for p in partidas)
+    t_costo = Decimal('0')
+    t_venta = Decimal('0')
+    for p in partidas:
+        cu = p.costo_unitario if p.costo_unitario else Decimal('0')
+        vu = p.precio_venta_unitario if p.precio_venta_unitario else Decimal('0')
+        q = p.cantidad if p.cantidad else Decimal('0')
+        t_costo += cu * q
+        t_venta += vu * q
+        print(f'[PARTIDA] {p.descripcion[:30]} | cu={cu} vu={vu} q={q} | costo={cu*q} venta={vu*q} ganancia={(vu-cu)*q}')
     t_ganancia = t_venta - t_costo
+    print(f'[TOTALES] costo={t_costo} venta={t_venta} ganancia={t_ganancia}')
 
     return JsonResponse({
         'success': True,

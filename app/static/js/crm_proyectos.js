@@ -392,11 +392,13 @@
         container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/partidas/').then(function(resp) {
+            console.log('[PARTIDAS API] Full response:', JSON.stringify(resp).substring(0, 500));
             if (resp.ok || resp.success) {
                 // API returns {data: {partidas: [...], totales: {...}}}
                 var respData = resp.data || {};
                 var items = Array.isArray(respData) ? respData : (respData.partidas || []);
                 var apiTotales = Array.isArray(respData) ? null : (respData.totales || null);
+                console.log('[PARTIDAS API] apiTotales:', JSON.stringify(apiTotales));
 
                 if (items.length === 0) {
                     container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">No hay partidas registradas</td></tr>';
