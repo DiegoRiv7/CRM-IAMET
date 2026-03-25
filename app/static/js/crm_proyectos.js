@@ -446,8 +446,16 @@
                     });
                 }
 
-                // Also update KPIs from partidas data as backup
-                renderKPIsFromAPI(currentProjectId);
+                // Update KPIs directly from partidas totals
+                var kpiC = el('proyKPIs');
+                if (kpiC) {
+                    var marginPct = totalsSale > 0 ? Math.round(totalsProfit / totalsSale * 100) : 0;
+                    kpiC.innerHTML =
+                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Utilidad Presupuestada</div><div class="proy-kpi-value">' + fmtMoney(totalsProfit) + '</div></div>' +
+                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Costo Total</div><div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(totalsCost) + '</div></div>' +
+                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Venta Total</div><div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(totalsSale) + '</div></div>' +
+                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Margen</div><div class="proy-kpi-value">' + marginPct + '%</div></div>';
+                }
                 var foot = el('proyPartidasFoot');
                 if (foot) {
                     foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
