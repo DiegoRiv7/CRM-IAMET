@@ -311,14 +311,12 @@
         if (!kpiContainer) return;
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
-            console.log('[KPI FINANCIEROS]', JSON.stringify(resp.data));
             if (resp.ok || resp.success) {
                 var fin = resp.data;
                 var budgeted = fin.utilidad_presupuestada || 0;
-                var actual = fin.utilidad_real || 0;
-                var margin = fin.margen || 0;
-                var coverage = fin.cobertura || 0;
-                var profitOk = actual >= budgeted;
+                var costosTot = fin.costos || 0;
+                var ingresosTot = fin.ingresos || 0;
+                var margin = budgeted > 0 ? Math.round((budgeted / (budgeted + costosTot)) * 100) : 0;
 
                 kpiContainer.innerHTML =
                     '<div class="proy-kpi-card">' +
@@ -327,15 +325,15 @@
                     '</div>' +
                     '<div class="proy-kpi-card">' +
                         '<div class="proy-kpi-label">Utilidad Real</div>' +
-                        '<div class="proy-kpi-value" style="color:' + (profitOk ? '#10b981' : '#ef4444') + '">' + fmtMoney(actual) + '</div>' +
+                        '<div class="proy-kpi-value" style="color:' + (ingresosTot > 0 ? '#10b981' : '#ef4444') + '">' + fmtMoney(fin.utilidad_real || 0) + '</div>' +
                     '</div>' +
                     '<div class="proy-kpi-card">' +
                         '<div class="proy-kpi-label">Margen</div>' +
-                        '<div class="proy-kpi-value" style="color:' + (margin >= 100 ? '#10b981' : margin >= 70 ? '#f59e0b' : '#ef4444') + '">' + margin + '%</div>' +
+                        '<div class="proy-kpi-value">' + Math.round(fin.margen || 0) + '%</div>' +
                     '</div>' +
                     '<div class="proy-kpi-card">' +
                         '<div class="proy-kpi-label">Cobertura de Costos</div>' +
-                        '<div class="proy-kpi-value">' + coverage + '%</div>' +
+                        '<div class="proy-kpi-value">' + Math.round(fin.cobertura || 0) + '%</div>' +
                     '</div>';
             } else {
                 console.error('Error cargando financieros:', resp.error);
@@ -448,15 +446,8 @@
                     });
                 }
 
-                // Update KPIs from partidas data (more reliable than /financieros/)
-                var kpiC = el('proyKPIs');
-                if (kpiC) {
-                    kpiC.innerHTML =
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Utilidad Presupuestada</div><div class="proy-kpi-value">' + fmtMoney(totalsProfit) + '</div></div>' +
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Costo Total</div><div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(totalsCost) + '</div></div>' +
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Venta Total</div><div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(totalsSale) + '</div></div>' +
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Margen</div><div class="proy-kpi-value">' + (totalsSale > 0 ? Math.round(totalsProfit / totalsSale * 100) : 0) + '%</div></div>';
-                }
+                // Also update KPIs from partidas data as backup
+                renderKPIsFromAPI(currentProjectId);
                 var foot = el('proyPartidasFoot');
                 if (foot) {
                     foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
