@@ -1241,16 +1241,8 @@ def api_proyecto_financieros(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
-    # Calcular en Python para evitar problemas con Sum en MySQL
-    _partidas = list(proyecto.partidas.all())
-    utilidad_presupuestada = Decimal('0')
-    for p in _partidas:
-        vu = p.precio_venta_unitario if p.precio_venta_unitario else Decimal('0')
-        cu = p.costo_unitario if p.costo_unitario else Decimal('0')
-        q = p.cantidad if p.cantidad else Decimal('0')
-        g = (vu - cu) * q
-        utilidad_presupuestada += g
-    print(f'[FINANCIEROS] proyecto_id={proyecto_id} partidas={len(_partidas)} utilidad_presupuestada={utilidad_presupuestada}')
+    # Usar utilidad_presupuestada del proyecto (viene del resumen del Excel)
+    utilidad_presupuestada = proyecto.utilidad_presupuestada or Decimal('0')
     ingresos = proyecto.facturas_ingreso.aggregate(total=Sum('monto'))['total'] or Decimal('0')
     costos = proyecto.facturas_proveedor.aggregate(total=Sum('monto'))['total'] or Decimal('0')
     gastos = proyecto.gastos.filter(estado_aprobacion='approved').aggregate(total=Sum('monto'))['total'] or Decimal('0')
@@ -1523,9 +1515,22 @@ def api_importar_excel(request):
             except Exception as e:
                 errors.append(f'Fila {row_idx}: {str(e)}')
 
-        # Update project utilidad_presupuestada
-        ganancia_total = proyecto.partidas.aggregate(total=Sum('ganancia'))['total'] or Decimal('0')
-        proyecto.utilidad_presupuestada = ganancia_total
+        # Leer "Total de Ganancia" del resumen del Excel (mas confiable que sumar filas)
+        ganancia_excel = Decimal('0')
+        for r in range(max(ws.max_row - 30, 1), ws.max_row + 1):
+            cell_a = str(ws.cell(r, 1).value or '').strip().lower()
+            if 'total de ganancia' in cell_a:
+                val = ws.cell(r, 3).value
+                if val:
+                    try:
+                        ganancia_excel = _dec(val) * exchange_rate
+                    except Exception:
+                        pass
+                break
+        # Fallback: sumar ganancias de partidas si no encontro resumen
+        if ganancia_excel == 0:
+            ganancia_excel = proyecto.partidas.aggregate(total=Sum('ganancia'))['total'] or Decimal('0')
+        proyecto.utilidad_presupuestada = ganancia_excel.quantize(Decimal('0.01'))
         proyecto.save(update_fields=['utilidad_presupuestada'])
 
         ganancia_mxn = total_venta - total_costo
