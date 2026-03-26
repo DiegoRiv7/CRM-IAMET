@@ -1275,7 +1275,13 @@ def api_proyecto_financieros(request, proyecto_id):
 @login_required
 @require_http_methods(['POST'])
 def api_importar_excel(request):
-    """Import volumetria Excel — specific format used by IAMET engineers"""
+    """Import volumetria Excel — specific format used by IAMET engineers.
+
+    2-pass approach:
+      Pass 1: Pre-scan to find MO cost/venta totals and summary ganancia.
+      Pass 2: Import rows — material items get normal costo, MO VENTA items
+              get proportionally-distributed costo, MO COST items are skipped.
+    """
     try:
         proyecto_id = request.POST.get('proyecto_id')
         if not proyecto_id:
@@ -1329,7 +1335,44 @@ def api_importar_excel(request):
             'mano de obra': 'mano_obra',
         }
 
-        # Archive current partidas as a new version before importing
+        # ─── PASS 1: Pre-scan for MO totals and summary ─────────────
+        total_mo_venta = Decimal('0')
+        total_mo_costo = Decimal('0')
+        total_ganancia_resumen = Decimal('0')
+        mo_cost_header_row = None  # Row of the cost section header
+
+        for r in range(1, ws.max_row + 1):
+            cell_a = str(ws.cell(r, 1).value or '').strip().lower()
+            cell_d = str(ws.cell(r, 4).value or '').strip().lower()
+            cell_e = str(ws.cell(r, 5).value or '').strip().lower()
+            cell_h = ws.cell(r, 8).value
+            cell_c3 = ws.cell(r, 3).value
+
+            # "TOTAL MANO DE OBRA:" row — col H has total MO venta
+            if 'total mano de obra' in cell_a or 'total mano de obra' in cell_d:
+                total_mo_venta = _dec(cell_h)
+
+            # "COSTO MANO DE OBRA:" row — col H has total MO cost
+            if 'costo mano de obra' in cell_a or 'costo mano de obra' in cell_d:
+                total_mo_costo = _dec(cell_h)
+
+            # "Total de Ganancia" in the summary section
+            if 'total de ganancia' in cell_a:
+                total_ganancia_resumen = _dec(cell_c3)
+
+            # Detect cost header: row with "Descripcion" in col D and "Costo unit"/"Costo unitario" in col E
+            if cell_d in ('descripcion', 'descripción') and cell_e in ('costo unit', 'costo unitario'):
+                mo_cost_header_row = r
+
+        print(f'[IMPORT PRE-SCAN] MO venta={total_mo_venta}, MO costo={total_mo_costo}, '
+              f'ganancia_resumen={total_ganancia_resumen}, cost_header_row={mo_cost_header_row}')
+
+        # MO cost ratio: what fraction of MO venta is cost
+        mo_cost_ratio = Decimal('0')
+        if total_mo_venta > 0 and total_mo_costo > 0:
+            mo_cost_ratio = (total_mo_costo / total_mo_venta).quantize(Decimal('0.000001'))
+
+        # ─── Archive current partidas as a new version before importing ──
         existing_partidas = list(proyecto.partidas.all())
         if existing_partidas:
             last_version = ProyectoVolumetriaVersion.objects.filter(
@@ -1379,11 +1422,13 @@ def api_importar_excel(request):
             # Delete old partidas
             proyecto.partidas.all().delete()
 
+        # ─── PASS 2: Import rows with intelligence ──────────────────
         current_category = 'equipamiento'  # default
         items_created = 0
         errors = []
         total_venta = Decimal('0')
         total_costo = Decimal('0')
+        in_mo_cost_zone = False  # True after "TOTAL MANO DE OBRA:" row
 
         # Detect summary section start
         summary_keywords = ['analisis de costos', 'análisis de costos', 'precio de lista',
@@ -1404,16 +1449,29 @@ def api_importar_excel(request):
                 col_j = ws.cell(row_idx, 10).value  # Unitario (costo)
                 col_k = ws.cell(row_idx, 11).value  # Total (costo)
 
-                # Check for summary section — STOP processing
                 col_a_str = str(col_a or '').strip().lower()
                 col_d_str = str(col_d or '').strip().lower()
+
+                # Check for summary section — STOP processing
                 if any(kw in col_a_str for kw in summary_keywords) or \
                    any(kw in col_d_str for kw in summary_keywords):
                     break
 
+                # Detect "TOTAL MANO DE OBRA:" row — everything after is MO cost zone
+                if 'total mano de obra' in col_a_str or 'total mano de obra' in col_d_str:
+                    in_mo_cost_zone = True
+                    continue
+
+                # Skip all rows in MO cost zone (Tecnico, combustible, casetas, etc.)
+                if in_mo_cost_zone:
+                    continue
+
+                # Also skip rows that are clearly in the cost header zone
+                if mo_cost_header_row and row_idx >= mo_cost_header_row:
+                    continue
+
                 # Check for section header
                 if col_a and isinstance(col_a, str) and col_a.strip():
-                    # Check if this is a section name (no quantity, text in col A)
                     is_section = False
                     for section_name in SECTION_MAP:
                         if section_name in col_a_str:
@@ -1422,7 +1480,6 @@ def api_importar_excel(request):
                             break
                     if is_section:
                         continue
-                    # Also check col_d for "Mano de obra" type headers
 
                 if col_d and isinstance(col_d, str) and col_d.strip():
                     for section_name in SECTION_MAP:
@@ -1469,10 +1526,26 @@ def api_importar_excel(request):
                 descuento_dec = _dec(col_f)  # decimal like 0.3
                 precio_venta_unit = _dec(col_g)
                 costo_unit = _dec(col_j)
-                total_venta_excel = _dec(col_h)  # Total de la columna precio de lista
-                total_costo_excel = _dec(col_k)  # Total de la columna costo
+                total_venta_excel = _dec(col_h)
+                total_costo_excel = _dec(col_k)
 
-                # Fallbacks
+                # Determine if this is a MO VENTA item:
+                # category is mano_obra AND has venta but no costo columns
+                is_mo_venta = (
+                    current_category == 'mano_obra'
+                    and total_venta_excel > 0
+                    and total_costo_excel == 0
+                    and costo_unit == 0
+                )
+
+                if is_mo_venta:
+                    # Distribute MO cost proportionally across MO venta items
+                    # item_costo_total = item_venta_total * (total_mo_costo / total_mo_venta)
+                    total_costo_excel = (total_venta_excel * mo_cost_ratio).quantize(Decimal('0.01'))
+                    if cantidad > 0:
+                        costo_unit = (total_costo_excel / cantidad).quantize(Decimal('0.01'))
+
+                # Fallbacks (for material items)
                 if precio_venta_unit == 0 and precio_lista > 0:
                     precio_venta_unit = precio_lista
                 if total_venta_excel == 0 and precio_venta_unit > 0:
@@ -1480,13 +1553,12 @@ def api_importar_excel(request):
                 if total_costo_excel == 0 and costo_unit > 0:
                     total_costo_excel = costo_unit * cantidad
 
-                # Convert to MXN — usar totales del Excel directamente
+                # Convert to MXN
                 precio_lista_mxn = (precio_lista * exchange_rate).quantize(Decimal('0.01'))
                 precio_venta_mxn = (precio_venta_unit * exchange_rate).quantize(Decimal('0.01'))
                 costo_mxn = (costo_unit * exchange_rate).quantize(Decimal('0.01'))
                 descuento_pct = (descuento_dec * Decimal('100')).quantize(Decimal('0.01'))
 
-                # Ganancia = Total Precio Lista - Total Costo (del Excel, convertido a MXN)
                 venta_total = (total_venta_excel * exchange_rate).quantize(Decimal('0.01'))
                 costo_total = (total_costo_excel * exchange_rate).quantize(Decimal('0.01'))
                 ganancia = (venta_total - costo_total).quantize(Decimal('0.01'))
@@ -1515,24 +1587,31 @@ def api_importar_excel(request):
             except Exception as e:
                 errors.append(f'Fila {row_idx}: {str(e)}')
 
-        # Leer "Total de Ganancia" del resumen del Excel (mas confiable que sumar filas)
+        # ─── Read "Total de Ganancia" from summary ──────────────────
         ganancia_excel = Decimal('0')
-        for r in range(max(ws.max_row - 30, 1), ws.max_row + 1):
-            cell_a = str(ws.cell(r, 1).value or '').strip().lower()
-            if 'total de ganancia' in cell_a:
-                val = ws.cell(r, 3).value
-                if val:
-                    try:
-                        ganancia_excel = _dec(val) * exchange_rate
-                    except Exception:
-                        pass
-                break
-        # Fallback: sumar ganancias de partidas si no encontro resumen
+        if total_ganancia_resumen > 0:
+            ganancia_excel = total_ganancia_resumen * exchange_rate
+        else:
+            # Fallback: scan bottom of sheet
+            for r in range(max(ws.max_row - 30, 1), ws.max_row + 1):
+                cell_a = str(ws.cell(r, 1).value or '').strip().lower()
+                if 'total de ganancia' in cell_a:
+                    val = ws.cell(r, 3).value
+                    if val:
+                        try:
+                            ganancia_excel = _dec(val) * exchange_rate
+                        except Exception:
+                            pass
+                    break
+
+        # Fallback: sum partidas ganancia if no summary found
         if ganancia_excel == 0:
             ganancia_excel = proyecto.partidas.aggregate(total=Sum('ganancia'))['total'] or Decimal('0')
+
         proyecto.utilidad_presupuestada = ganancia_excel.quantize(Decimal('0.01'))
         proyecto.save(update_fields=['utilidad_presupuestada'])
-        print(f'[IMPORT] Utilidad guardada: {proyecto.utilidad_presupuestada} (ganancia_excel={ganancia_excel})')
+        print(f'[IMPORT] Utilidad guardada: {proyecto.utilidad_presupuestada} '
+              f'(ganancia_excel={ganancia_excel}, mo_ratio={mo_cost_ratio})')
 
         ganancia_mxn = total_venta - total_costo
 
@@ -1543,6 +1622,9 @@ def api_importar_excel(request):
             'total_costo_mxn': float(total_costo.quantize(Decimal('0.01'))),
             'ganancia_mxn': float(ganancia_mxn.quantize(Decimal('0.01'))),
             'exchange_rate': float(exchange_rate),
+            'mo_venta': float(total_mo_venta),
+            'mo_costo': float(total_mo_costo),
+            'mo_cost_ratio': float(mo_cost_ratio),
             'errors': errors,
         })
     except Proyecto.DoesNotExist:
