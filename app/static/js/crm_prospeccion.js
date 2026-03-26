@@ -72,12 +72,10 @@ document.addEventListener('click', function(ev) {
                         'software': 'SOFTWARE', 'runrate': 'RUNRATE', 'poliza': 'POLIZA', 'otros': ''
                     };
 
-                    // Client name cell — truncated for fixed layout
+                    // Client name cell — use inline onclick
+                    var clienteOnclick = 'onclick="window._prospeccionClickCliente(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + escapeHtml(row.rfc).replace(/'/g, "\\'") + '\')"';
                     var html = '<td class="px-2 py-4" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-                        '<span class="cliente-prospeccion-link" style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' +
-                            'data-cliente-id="' + row.cliente_id + '" ' +
-                            'data-cliente-nombre="' + escapeHtml(row.cliente) + '" ' +
-                            'data-cliente-rfc="' + escapeHtml(row.rfc) + '">' +
+                        '<span style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' + clienteOnclick + '>' +
                             escapeHtml(row.cliente) +
                         '</span>';
                     if (row.rfc) {
@@ -85,15 +83,18 @@ document.addEventListener('click', function(ev) {
                     }
                     html += '</td>';
 
-                    // Product columns — clickable to create prospecto with client+product
+                    // Product columns — use inline onclick for maximum compatibility
                     prodKeys.forEach(function(key) {
                         var val = row[key] || 0;
                         var prodValue = prodChoicesMap[key] || '';
-                        var clickAttr = ' style="cursor:pointer;" data-click-producto="' + prodValue + '" data-click-cliente-id="' + row.cliente_id + '" data-click-cliente-nombre="' + escapeHtml(row.cliente) + '"';
+                        var onclickCode = prodValue
+                            ? 'onclick="console.log(\'[PROSPECCION] ONCLICK producto\');window._prospeccionClickProducto(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + prodValue + '\')"'
+                            : '';
+                        var cursorStyle = prodValue ? 'cursor:pointer;' : '';
                         if (val === 0) {
-                            html += '<td class="py-4 pr-2 text-right"' + clickAttr + '><span class="money-zero">0</span></td>';
+                            html += '<td class="py-4 pr-2 text-right" style="' + cursorStyle + '" ' + onclickCode + '><span class="money-zero">0</span></td>';
                         } else {
-                            html += '<td class="py-4 pr-2 text-right"' + clickAttr + '><span class="text-blue-600 font-bold">' + val + '</span></td>';
+                            html += '<td class="py-4 pr-2 text-right" style="' + cursorStyle + '" ' + onclickCode + '><span class="text-blue-600 font-bold">' + val + '</span></td>';
                         }
                     });
 
@@ -173,6 +174,22 @@ document.addEventListener('click', function(ev) {
 
     // Expose for tab change and reload after creating prospecto
     window.cargarProspectos = cargarClientesProspeccion;
+
+    // Global onclick handlers (used by inline onclick in table cells)
+    window._prospeccionClickProducto = function(clienteId, clienteNombre, producto) {
+        console.log('[PROSPECCION] _prospeccionClickProducto:', clienteId, clienteNombre, producto);
+        abrirProspeccionConProducto(clienteId, clienteNombre, producto);
+    };
+    window._prospeccionClickCliente = function(clienteId, clienteNombre, clienteRfc) {
+        console.log('[PROSPECCION] _prospeccionClickCliente:', clienteId, clienteNombre);
+        abrirClienteProspectos(clienteId, clienteNombre, clienteRfc);
+    };
+    window._prospeccionClickCampana = function(clienteId, clienteNombre) {
+        console.log('[PROSPECCION] _prospeccionClickCampana:', clienteId, clienteNombre);
+        if (typeof abrirEditorCampana === 'function') {
+            abrirEditorCampana({ clienteId: clienteId, nombre: 'Campaña ' + clienteNombre });
+        }
+    };
 
     // Expose reload function for client widget (called from nuevo prospecto form)
     window._recargarProspectosCliente = function() {
