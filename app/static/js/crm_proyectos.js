@@ -446,12 +446,13 @@
                     });
                 }
 
-                // Update KPIs directly from partidas totals
+                // Update KPIs — utilidad viene del proyecto (resumen Excel), rest de partidas
                 var kpiC = el('proyKPIs');
                 if (kpiC) {
-                    var marginPct = totalsSale > 0 ? Math.round(totalsProfit / totalsSale * 100) : 0;
+                    var utilidadProy = (_cachedProjectDetail && _cachedProjectDetail.utilidad_presupuestada) ? _cachedProjectDetail.utilidad_presupuestada : totalsProfit;
+                    var marginPct = totalsSale > 0 ? Math.round(utilidadProy / totalsSale * 100) : 0;
                     kpiC.innerHTML =
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Utilidad Presupuestada</div><div class="proy-kpi-value">' + fmtMoney(totalsProfit) + '</div></div>' +
+                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Utilidad Presupuestada</div><div class="proy-kpi-value">' + fmtMoney(utilidadProy) + '</div></div>' +
                         '<div class="proy-kpi-card"><div class="proy-kpi-label">Costo Total</div><div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(totalsCost) + '</div></div>' +
                         '<div class="proy-kpi-card"><div class="proy-kpi-label">Venta Total</div><div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(totalsSale) + '</div></div>' +
                         '<div class="proy-kpi-card"><div class="proy-kpi-label">Margen</div><div class="proy-kpi-value">' + marginPct + '%</div></div>';
