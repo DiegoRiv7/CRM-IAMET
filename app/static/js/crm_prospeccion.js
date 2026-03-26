@@ -83,6 +83,9 @@
                     var total = row.total || 0;
                     html += '<td class="py-4 pr-2 text-right border-l border-gray-100"><span class="font-black text-gray-900">' + total + '</span></td>';
 
+                    // Campaign button column
+                    html += '<td class="py-4 text-center"><button class="btn-campana" data-cliente-id="' + row.cliente_id + '" style="background:none;border:1px solid #FF9500;border-radius:6px;padding:3px 8px;cursor:pointer;color:#FF9500;font-size:11px;" title="Campaña">&#128226;</button></td>';
+
                     tr.innerHTML = html;
                     tbody.appendChild(tr);
                 });
