@@ -1,7 +1,15 @@
-// crm_prospeccion.js — Modulo de Prospeccion CRM IAMET — v4
+// crm_prospeccion.js — Modulo de Prospeccion CRM IAMET — v5
+// OUTSIDE IIFE: test click handler
+document.addEventListener('click', function(ev) {
+    var t = ev.target.closest('#prospeccionTbody td');
+    if (t) {
+        console.log('[PROSPECCION-OUTSIDE] Click en td de prospeccionTbody!', t.textContent.substring(0, 20), t.dataset);
+    }
+});
+
 (function() {
     'use strict';
-    console.log('[PROSPECCION] ===== JS v4 cargado =====');
+    console.log('[PROSPECCION] ===== JS v5 cargado =====');
 
     var csrf = function() { return document.querySelector('[name=csrfmiddlewaretoken]').value; };
 
