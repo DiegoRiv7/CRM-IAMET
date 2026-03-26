@@ -1532,6 +1532,7 @@ def api_importar_excel(request):
             ganancia_excel = proyecto.partidas.aggregate(total=Sum('ganancia'))['total'] or Decimal('0')
         proyecto.utilidad_presupuestada = ganancia_excel.quantize(Decimal('0.01'))
         proyecto.save(update_fields=['utilidad_presupuestada'])
+        print(f'[IMPORT] Utilidad guardada: {proyecto.utilidad_presupuestada} (ganancia_excel={ganancia_excel})')
 
         ganancia_mxn = total_venta - total_costo
 

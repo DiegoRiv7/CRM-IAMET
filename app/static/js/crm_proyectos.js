@@ -1055,7 +1055,11 @@
                 body: formData
             }).then(function(resp) {
                 if (resp.ok || resp.success) {
-                    renderPartidas(currentProjectId);
+                    // Recargar detalle del proyecto para actualizar utilidad_presupuestada
+                    _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/').then(function(r2) {
+                        if (r2.ok || r2.success) _cachedProjectDetail = r2.data;
+                        renderPartidas(currentProjectId);
+                    });
                     _showImportResult(true, resp.items_created || 0, resp.ganancia_mxn || 0, resp.exchange_rate || 0, file.name);
                 } else {
                     _showImportResult(false, 0, 0, 0, '', resp.error || 'Error desconocido');
