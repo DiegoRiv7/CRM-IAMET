@@ -24,7 +24,7 @@ python manage.py migrate --noinput
 
 # Recolectar archivos estáticos (IMPORTANTE para el favicon)
 log "📁 Recolectando archivos estáticos..."
-python manage.py collectstatic --noinput --verbosity=1
+python manage.py collectstatic --noinput --clear --verbosity=1
 
 # Verificar que los archivos del favicon existan
 log "🎯 Verificando archivos de favicon..."
