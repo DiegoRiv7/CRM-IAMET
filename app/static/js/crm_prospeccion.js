@@ -60,7 +60,7 @@
                     var prodChoicesMap = {
                         'zebra': 'ZEBRA', 'panduit': 'PANDUIT', 'apc': 'APC',
                         'avigilon': 'AVIGILION', 'genetec': 'GENETEC', 'axis': 'AXIS',
-                        'software': 'SOFTWARE', 'runrate': 'RUNRATE', 'poliza': 'PÓLIZA', 'otros': ''
+                        'software': 'SOFTWARE', 'runrate': 'RUNRATE', 'poliza': 'POLIZA', 'otros': ''
                     };
 
                     // Client name cell — truncated for fixed layout
@@ -101,29 +101,37 @@
                     footer.style.padding = '8px 12px';
                 }
 
-                // Click handlers to open client widget
-                tbody.querySelectorAll('.cliente-prospeccion-link').forEach(function(el) {
-                    el.addEventListener('click', function() {
-                        abrirClienteProspectos(
-                            parseInt(this.dataset.clienteId),
-                            this.dataset.clienteNombre,
-                            this.dataset.clienteRfc
-                        );
-                    });
-                });
 
-                // Click handlers on product cells — open new prospecto form with client+product pre-filled
-                tbody.querySelectorAll('td[data-click-producto]').forEach(function(td) {
-                    td.addEventListener('click', function() {
-                        var clienteId = parseInt(this.dataset.clickClienteId);
-                        var clienteNombre = this.dataset.clickClienteNombre;
-                        var producto = this.dataset.clickProducto;
-                        if (!producto) return; // "otros" has no product value
-                        abrirProspeccionConProducto(clienteId, clienteNombre, producto);
-                    });
-                });
             });
     }
+
+    // ── Event delegation for product cell clicks (reliable even after DOM rebuild) ──
+    (function() {
+        var tbody = document.getElementById('prospeccionTbody');
+        if (!tbody) return;
+        tbody.addEventListener('click', function(e) {
+            // Handle product cell clicks
+            var td = e.target.closest('td[data-click-producto]');
+            if (td) {
+                var clienteId = parseInt(td.dataset.clickClienteId);
+                var clienteNombre = td.dataset.clickClienteNombre;
+                var producto = td.dataset.clickProducto;
+                if (producto) {
+                    abrirProspeccionConProducto(clienteId, clienteNombre, producto);
+                }
+                return;
+            }
+            // Handle client name clicks
+            var link = e.target.closest('.cliente-prospeccion-link');
+            if (link) {
+                abrirClienteProspectos(
+                    parseInt(link.dataset.clienteId),
+                    link.dataset.clienteNombre,
+                    link.dataset.clienteRfc
+                );
+            }
+        });
+    })();
 
     // Load clients if we are on the prospeccion tab
     if (new URLSearchParams(window.location.search).get('tab') === 'prospeccion') {
