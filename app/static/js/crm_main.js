@@ -1957,54 +1957,30 @@
             ckDestroyChart('ckChartTendencia');
             var ctx2 = document.getElementById('ckChartTendencia');
             if (ctx2) {
-                // Fetch vendedores param from URL
                 var urlParams = new URLSearchParams(window.location.search);
                 var vendParam = urlParams.get('vendedores') || '';
                 fetch('/app/api/tendencia-mensual/?vendedores=' + encodeURIComponent(vendParam))
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         var ctx2_2d = ctx2.getContext('2d');
-                        var makeGrad = function(color1, color2) {
-                            var g = ctx2_2d.createLinearGradient(0, 0, 0, 240);
-                            g.addColorStop(0, color1);
-                            g.addColorStop(1, color2);
-                            return g;
-                        };
 
-                        var colors = {
-                            fact: '#6B7280', cob: '#10B981', opp: '#3B82F6', cot: '#F59E0B'
-                        };
-
-                        var makeDataset = function(label, values, color, gradFill) {
-                            // Find annotation points (>30% change)
-                            var pointRadii = values.map(function(v, i) {
-                                if (i === 0) return 4;
-                                var prev = values[i - 1];
-                                if (prev > 0 && Math.abs((v - prev) / prev * 100) >= 30) return 8;
-                                return 4;
-                            });
-                            var pointBorders = values.map(function(v, i) {
-                                if (i === 0) return 2;
-                                var prev = values[i - 1];
-                                if (prev > 0 && Math.abs((v - prev) / prev * 100) >= 30) return 3;
-                                return 2;
-                            });
+                        var makeDataset = function(label, values, color) {
                             return {
                                 label: label,
                                 data: values,
                                 borderColor: color,
-                                backgroundColor: gradFill,
-                                borderWidth: 2.5,
-                                pointRadius: pointRadii,
-                                pointHoverRadius: 9,
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
                                 pointBackgroundColor: '#fff',
                                 pointBorderColor: color,
-                                pointBorderWidth: pointBorders,
+                                pointBorderWidth: 2,
                                 pointHoverBackgroundColor: color,
                                 pointHoverBorderColor: '#fff',
-                                pointHoverBorderWidth: 3,
-                                fill: true,
-                                tension: 0.35
+                                pointHoverBorderWidth: 2,
+                                fill: false,
+                                tension: 0.3
                             };
                         };
 
@@ -2013,23 +1989,17 @@
                             data: {
                                 labels: data.labels,
                                 datasets: [
-                                    makeDataset('Facturado', data.facturado, colors.fact, makeGrad('rgba(107,114,128,0.2)', 'rgba(107,114,128,0.01)')),
-                                    makeDataset('Cobrado', data.cobrado, colors.cob, makeGrad('rgba(16,185,129,0.2)', 'rgba(16,185,129,0.01)')),
-                                    makeDataset('Oportunidades', data.oportunidades, colors.opp, makeGrad('rgba(59,130,246,0.2)', 'rgba(59,130,246,0.01)')),
-                                    makeDataset('Cotizado', data.cotizado, colors.cot, makeGrad('rgba(245,158,11,0.2)', 'rgba(245,158,11,0.01)'))
+                                    makeDataset('Facturado', data.facturado, '#6B7280'),
+                                    makeDataset('Cobrado', data.cobrado, '#10B981'),
+                                    makeDataset('Oportunidades', data.oportunidades, '#3B82F6'),
+                                    makeDataset('Cotizado', data.cotizado, '#F59E0B')
                                 ]
                             },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                animation: {
-                                    duration: 1500,
-                                    easing: 'easeOutQuart'
-                                },
-                                interaction: {
-                                    mode: 'index',
-                                    intersect: false
-                                },
+                                animation: { duration: 1200, easing: 'easeOutQuart' },
+                                interaction: { mode: 'index', intersect: false },
                                 plugins: {
                                     legend: {
                                         position: 'top',
@@ -2038,7 +2008,7 @@
                                             pointStyle: 'circle',
                                             font: { size: 10, weight: '600' },
                                             color: '#86868B',
-                                            padding: 14
+                                            padding: 12
                                         }
                                     },
                                     tooltip: Object.assign({}, sharedTooltip, {
@@ -2046,7 +2016,6 @@
                                             label: function(ctx) {
                                                 var val = ctx.parsed.y || 0;
                                                 var txt = ' ' + ctx.dataset.label + ': $' + val.toLocaleString('en-US', { maximumFractionDigits: 0 });
-                                                // Show % change vs previous month
                                                 var idx = ctx.dataIndex;
                                                 if (idx > 0) {
                                                     var prev = ctx.dataset.data[idx - 1];
@@ -2063,49 +2032,14 @@
                                 scales: {
                                     y: {
                                         ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 10 }, color: '#86868B' },
-                                        grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false }
+                                        grid: { color: 'rgba(0,0,0,0.04)' }
                                     },
                                     x: {
-                                        grid: { color: 'rgba(0,0,0,0.03)' },
+                                        grid: { display: false },
                                         ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' }
                                     }
                                 }
-                            },
-                            plugins: [{
-                                // Draw annotation badges on notable points (>30% change)
-                                id: 'tendenciaAnnotations',
-                                afterDatasetsDraw: function(chart) {
-                                    if (!data.anotaciones || !data.anotaciones.length) return;
-                                    var cctx = chart.ctx;
-                                    var seriesMap = { 'Facturado': 0, 'Cobrado': 1, 'Oportunidades': 2, 'Cotizado': 3 };
-                                    data.anotaciones.forEach(function(a) {
-                                        var di = seriesMap[a.label];
-                                        if (di === undefined) return;
-                                        var meta = chart.getDatasetMeta(di);
-                                        if (!meta || !meta.data[a.index]) return;
-                                        var pt = meta.data[a.index];
-                                        var up = a.cambio >= 0;
-                                        var txt = (up ? '+' : '') + a.cambio + '%';
-                                        cctx.save();
-                                        cctx.font = '700 9px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
-                                        var w = cctx.measureText(txt).width + 8;
-                                        var h = 16;
-                                        var x = pt.x - w / 2;
-                                        var y = pt.y - 22;
-                                        // Badge background
-                                        cctx.fillStyle = up ? 'rgba(22,163,106,0.9)' : 'rgba(220,38,38,0.9)';
-                                        cctx.beginPath();
-                                        cctx.roundRect(x, y, w, h, 4);
-                                        cctx.fill();
-                                        // Badge text
-                                        cctx.fillStyle = '#fff';
-                                        cctx.textAlign = 'center';
-                                        cctx.textBaseline = 'middle';
-                                        cctx.fillText(txt, pt.x, y + h / 2);
-                                        cctx.restore();
-                                    });
-                                }
-                            }]
+                            }
                         });
                     })
                     .catch(function(err) { console.error('Tendencia fetch error:', err); });
