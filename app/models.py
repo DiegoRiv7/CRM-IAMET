@@ -4198,6 +4198,10 @@ class CampanaTemplate(models.Model):
     es_plantilla_sistema = models.BooleanField(default=False)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    # New fields for HTML import system
+    marca = models.CharField(max_length=100, blank=True, default='')
+    html_content = models.TextField(blank=True, default='')
+    activa = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['-fecha_actualizacion']

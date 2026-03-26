@@ -5466,46 +5466,4 @@
 }
 
 
-/* ── Campaign Editor ── */
-.camp-palette-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 12px; margin-bottom: 6px;
-    background: #fff; border: 1px solid #E5E5EA; border-radius: 8px;
-    font-size: 0.75rem; font-weight: 600; color: #3C3C43;
-    cursor: pointer; transition: all 0.15s;
-    user-select: none;
-}
-.camp-palette-item:hover {
-    border-color: #0052D4; background: #EBF5FF; color: #0052D4;
-    transform: translateX(2px);
-}
-.camp-palette-item svg { flex-shrink: 0; }
-
-.camp-block {
-    position: relative; margin: 4px 0;
-    border: 2px solid transparent; border-radius: 6px;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    cursor: pointer;
-}
-.camp-block:hover { border-color: #007AFF44; }
-.camp-block--selected {
-    border-color: #007AFF !important;
-    box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
-}
-.camp-block-content { pointer-events: none; }
-.camp-block-toolbar {
-    display: none; position: absolute; top: -1px; right: -1px;
-    background: #fff; border: 1px solid #E5E5EA; border-radius: 0 6px 0 6px;
-    padding: 2px 4px; gap: 2px; align-items: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 2;
-}
-.camp-block:hover .camp-block-toolbar,
-.camp-block--selected .camp-block-toolbar { display: flex; }
-.camp-tb-btn {
-    width: 24px; height: 24px; border: none; background: none;
-    cursor: pointer; font-size: 12px; border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    color: #86868B; transition: all 0.1s;
-}
-.camp-tb-btn:hover { background: #F2F2F7; color: #1D1D1F; }
-.camp-tb-btn--del:hover { background: #FF3B3022; color: #FF3B30; }
+/* ── Campaign Template Browser (old editor styles removed) ── */
