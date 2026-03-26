@@ -23,6 +23,125 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
+def api_prospeccion_clientes(request):
+    """GET: devuelve clientes con conteo de prospectos por producto."""
+    user = request.user
+    now = datetime.now()
+
+    mes_filter = request.GET.get('mes', str(now.month).zfill(2))
+    anio_filter = request.GET.get('anio', str(now.year))
+    vendedores_filter = request.GET.get('vendedores', '')
+    vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()] if vendedores_filter else []
+
+    try:
+        anio_int = int(anio_filter)
+    except ValueError:
+        anio_int = now.year
+
+    es_sup = is_supervisor(user)
+
+    # Get clients visible to this user
+    if es_sup:
+        if vendedores_ids:
+            clientes = Cliente.objects.filter(asignado_a_id__in=vendedores_ids)
+        else:
+            clientes = Cliente.objects.all()
+    else:
+        usuarios_visibles = get_usuarios_visibles_ids(user)
+        if usuarios_visibles and len(usuarios_visibles) > 1:
+            clientes = Cliente.objects.filter(asignado_a_id__in=usuarios_visibles)
+        else:
+            clientes = Cliente.objects.filter(asignado_a=user)
+
+    # Count prospectos per client per product
+    # Only count active (non-cerrado) prospectos
+    prospectos_qs = Prospecto.objects.filter(
+        fecha_creacion__year=anio_int,
+        cliente__in=clientes,
+    ).exclude(etapa__in=['cerrado_ganado', 'cerrado_perdido'])
+
+    if mes_filter and mes_filter != 'todos':
+        try:
+            prospectos_qs = prospectos_qs.filter(fecha_creacion__month=int(mes_filter))
+        except ValueError:
+            pass
+
+    PRODUCTS = ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'POLIZA']
+    PROD_KEYS = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza']
+
+    # Build counts dict: {client_id: {zebra: N, panduit: N, ...}}
+    counts = {}
+    for p in prospectos_qs:
+        cid = p.cliente_id
+        if cid not in counts:
+            counts[cid] = {k: 0 for k in PROD_KEYS + ['otros', 'total']}
+
+        prod = (p.producto or '').upper()
+        matched = False
+        for i, pname in enumerate(PRODUCTS):
+            if pname in prod or (pname == 'AVIGILION' and 'AVIGILON' in prod):
+                counts[cid][PROD_KEYS[i]] += 1
+                matched = True
+                break
+        if not matched:
+            counts[cid]['otros'] += 1
+        counts[cid]['total'] += 1
+
+    rows = []
+    for c in clientes.order_by('nombre_empresa'):
+        ct = counts.get(c.id, {})
+        total = ct.get('total', 0)
+        rows.append({
+            'cliente_id': c.id,
+            'cliente': c.nombre_empresa,
+            'rfc': c.rfc or '',
+            'zebra': ct.get('zebra', 0),
+            'panduit': ct.get('panduit', 0),
+            'apc': ct.get('apc', 0),
+            'avigilon': ct.get('avigilon', 0),
+            'genetec': ct.get('genetec', 0),
+            'axis': ct.get('axis', 0),
+            'software': ct.get('software', 0),
+            'runrate': ct.get('runrate', 0),
+            'poliza': ct.get('poliza', 0),
+            'otros': ct.get('otros', 0),
+            'total': total,
+        })
+
+    num_clientes = len(rows)
+    total_prospectos = sum(r['total'] for r in rows)
+
+    return JsonResponse({
+        'rows': rows,
+        'footer': {
+            'left': f'{num_clientes} clientes',
+            'right': f'{total_prospectos} prospectos activos',
+        }
+    })
+
+
+@login_required
+def api_prospectos_por_cliente(request, cliente_id):
+    """GET: prospectos de un cliente especifico."""
+    prospectos = Prospecto.objects.filter(cliente_id=cliente_id).select_related('contacto', 'usuario').order_by('-fecha_actualizacion')
+    rows = []
+    for p in prospectos:
+        rows.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'contacto': p.contacto.nombre if p.contacto else '-',
+            'producto': p.producto,
+            'area': p.area,
+            'tipo_pipeline': p.tipo_pipeline,
+            'etapa': p.etapa,
+            'reunion_tipo': p.reunion_tipo,
+            'fecha_iso': p.fecha_creacion.strftime('%d/%m/%Y'),
+            'oportunidad_creada_id': p.oportunidad_creada_id,
+        })
+    return JsonResponse({'rows': rows})
+
+
+@login_required
 def api_prospectos_lista(request):
     """GET: devuelve lista de prospectos como JSON para la tabla."""
     user = request.user

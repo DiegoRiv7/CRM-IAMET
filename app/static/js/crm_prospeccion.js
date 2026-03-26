@@ -18,7 +18,12 @@
         return (parts[0][0] || '?').toUpperCase();
     }
 
-    // ── Abrir widget nuevo prospecto ──
+    // Current client context for the widget
+    var _currentWidgetClienteId = null;
+    var _currentWidgetClienteNombre = '';
+    var _currentWidgetClienteRfc = '';
+
+    // ── Abrir widget nuevo prospecto (top bar button) ──
     var btnNuevo = document.getElementById('btnNuevoProspecto');
     if (btnNuevo) {
         btnNuevo.addEventListener('click', function() {
@@ -26,8 +31,10 @@
         });
     }
 
-    // ── Cargar tabla de prospectos ──
-    function cargarProspectos() {
+    // ══════════════════════════════════════════════════════════════
+    // A. MAIN TABLE: Load clients with prospecto counts
+    // ══════════════════════════════════════════════════════════════
+    function cargarClientesProspeccion() {
         var tbody = document.getElementById('prospeccionTbody');
         if (!tbody) return;
 
@@ -36,55 +43,47 @@
         var anio = params.get('anio') || '';
         var vendedores = params.get('vendedores') || '';
 
-        fetch('/app/api/prospectos/?mes=' + mes + '&anio=' + anio + '&vendedores=' + vendedores)
+        fetch('/app/api/prospeccion/clientes/?mes=' + mes + '&anio=' + anio + '&vendedores=' + vendedores)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.rows) return;
                 tbody.innerHTML = '';
+
+                var prodKeys = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza', 'otros'];
+
                 data.rows.forEach(function(row) {
                     var tr = document.createElement('tr');
                     tr.className = 'crm-data-row';
-                    tr.dataset.prospectoId = row.id;
+                    tr.dataset.clienteId = row.cliente_id;
 
-                    var etapaLabel = {
-                        'identificado': 'Identificado',
-                        'calificado': 'Calificado',
-                        'reunion': 'Reunion',
-                        'en_progreso': 'En Progreso',
-                        'procesado': 'Procesado',
-                        'cerrado_ganado': 'Ganado',
-                        'cerrado_perdido': 'Perdido'
-                    };
-                    var etapaColor = {
-                        'identificado': '#8E8E93',
-                        'calificado': '#007AFF',
-                        'reunion': '#5856D6',
-                        'en_progreso': '#FF9500',
-                        'procesado': '#34C759',
-                        'cerrado_ganado': '#30D158',
-                        'cerrado_perdido': '#FF3B30'
-                    };
+                    // Client name cell
+                    var html = '<td class="px-2 py-4">' +
+                        '<span class="cliente-prospeccion-link" style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' +
+                            'data-cliente-id="' + row.cliente_id + '" ' +
+                            'data-cliente-nombre="' + escapeHtml(row.cliente) + '" ' +
+                            'data-cliente-rfc="' + escapeHtml(row.rfc) + '">' +
+                            escapeHtml(row.cliente) +
+                        '</span>';
+                    if (row.rfc) {
+                        html += '<span style="display:block;font-size:9px;color:#86868B;font-weight:500;text-transform:uppercase;margin-top:2px;">RFC: ' + escapeHtml(row.rfc) + '</span>';
+                    }
+                    html += '</td>';
 
-                    var pipelineBadge = row.tipo_pipeline === 'proyecto'
-                        ? '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#5856D6;"><span>P</span><svg width="10" height="10" fill="#5856D6" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>'
-                        : '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#34C759;"><span>R</span><svg width="10" height="10" fill="#34C759" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>';
+                    // Product columns
+                    prodKeys.forEach(function(key) {
+                        var val = row[key] || 0;
+                        if (val === 0) {
+                            html += '<td class="py-4 pr-2 text-right"><span class="money-zero">0</span></td>';
+                        } else {
+                            html += '<td class="py-4 pr-2 text-right"><span class="text-blue-600 font-bold">' + val + '</span></td>';
+                        }
+                    });
 
-                    var eColor = etapaColor[row.etapa] || '#8E8E93';
-                    var eLabel = etapaLabel[row.etapa] || row.etapa;
+                    // Total column
+                    var total = row.total || 0;
+                    html += '<td class="py-4 pr-2 text-right border-l border-gray-100"><span class="font-black text-gray-900">' + total + '</span></td>';
 
-                    tr.innerHTML =
-                        '<td class="px-2 py-4">' +
-                            '<span class="prospecto-name-link" style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" data-prospecto-id="' + row.id + '">' + escapeHtml(row.nombre) + '</span>' +
-                            '<span style="display:block;font-size:9px;color:#86868B;font-weight:500;text-transform:uppercase;margin-top:2px;">' + escapeHtml(row.cliente) + '</span>' +
-                        '</td>' +
-                        '<td class="px-2 py-4" style="font-size:11px;color:#3C3C43;">' + escapeHtml(row.contacto || '-') + '</td>' +
-                        '<td class="px-2 py-4" style="font-size:10px;color:#86868B;font-style:italic;">' + escapeHtml(row.area || '-') + '</td>' +
-                        '<td class="px-2 py-4" style="font-size:11px;color:#3C3C43;">' + escapeHtml(row.producto || '-') + '</td>' +
-                        '<td class="px-2 py-4 text-center">' + pipelineBadge + '</td>' +
-                        '<td class="px-2 py-4"><span style="background:' + eColor + '22;color:' + eColor + ';padding:2px 10px;border-radius:9999px;font-size:10px;font-weight:600;white-space:nowrap;">' + eLabel + '</span></td>' +
-                        '<td class="px-2 py-4" style="font-size:10px;color:#86868B;">' + escapeHtml(row.fecha_iso || '') + '</td>' +
-                        '<td class="px-2 py-4 text-center"><button class="btn-campana" data-prospecto-id="' + row.id + '" style="background:none;border:1px solid #FF9500;border-radius:6px;padding:3px 8px;cursor:pointer;color:#FF9500;font-size:11px;" title="Campana">&#128226;</button></td>';
-
+                    tr.innerHTML = html;
                     tbody.appendChild(tr);
                 });
 
@@ -97,21 +96,171 @@
                     footer.style.padding = '8px 12px';
                 }
 
-                // Click handlers para abrir widget detalle
-                tbody.querySelectorAll('.prospecto-name-link').forEach(function(el) {
+                // Click handlers to open client widget
+                tbody.querySelectorAll('.cliente-prospeccion-link').forEach(function(el) {
                     el.addEventListener('click', function() {
+                        abrirClienteProspectos(
+                            parseInt(this.dataset.clienteId),
+                            this.dataset.clienteNombre,
+                            this.dataset.clienteRfc
+                        );
+                    });
+                });
+            });
+    }
+
+    // Load clients if we are on the prospeccion tab
+    if (new URLSearchParams(window.location.search).get('tab') === 'prospeccion') {
+        cargarClientesProspeccion();
+    }
+
+    // Expose for tab change and reload after creating prospecto
+    window.cargarProspectos = cargarClientesProspeccion;
+
+    // Expose reload function for client widget (called from nuevo prospecto form)
+    window._recargarProspectosCliente = function() {
+        if (_currentWidgetClienteId) {
+            cargarProspectosDeCliente(_currentWidgetClienteId);
+        }
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // B. CLIENT WIDGET: Open and load prospectos for a client
+    // ══════════════════════════════════════════════════════════════
+    function abrirClienteProspectos(clienteId, clienteNombre, clienteRfc) {
+        _currentWidgetClienteId = clienteId;
+        _currentWidgetClienteNombre = clienteNombre;
+        _currentWidgetClienteRfc = clienteRfc;
+
+        var w = document.getElementById('widgetClienteProspectos');
+        if (!w) return;
+        w.classList.add('active');
+
+        document.getElementById('wcpClienteName').textContent = clienteNombre || '';
+        document.getElementById('wcpClienteRfc').textContent = clienteRfc ? 'RFC: ' + clienteRfc : '';
+
+        cargarProspectosDeCliente(clienteId);
+    }
+
+    function cargarProspectosDeCliente(clienteId) {
+        var tbody = document.getElementById('wcpProspectosTbody');
+        var empty = document.getElementById('wcpEmpty');
+        if (!tbody) return;
+
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#86868B;">Cargando...</td></tr>';
+        if (empty) empty.style.display = 'none';
+
+        fetch('/app/api/prospeccion/cliente/' + clienteId + '/prospectos/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                tbody.innerHTML = '';
+                var rows = data.rows || [];
+
+                if (!rows.length) {
+                    if (empty) empty.style.display = 'block';
+                    return;
+                }
+                if (empty) empty.style.display = 'none';
+
+                var etapaLabel = {
+                    'identificado': 'Identificado',
+                    'calificado': 'Calificado',
+                    'reunion': 'Reunion',
+                    'en_progreso': 'En Progreso',
+                    'procesado': 'Procesado',
+                    'cerrado_ganado': 'Ganado',
+                    'cerrado_perdido': 'Perdido'
+                };
+                var etapaColor = {
+                    'identificado': '#8E8E93',
+                    'calificado': '#007AFF',
+                    'reunion': '#5856D6',
+                    'en_progreso': '#FF9500',
+                    'procesado': '#34C759',
+                    'cerrado_ganado': '#30D158',
+                    'cerrado_perdido': '#FF3B30'
+                };
+
+                rows.forEach(function(row) {
+                    var tr = document.createElement('tr');
+                    tr.className = 'crm-data-row';
+                    tr.style.cursor = 'pointer';
+
+                    var pipelineBadge = row.tipo_pipeline === 'proyecto'
+                        ? '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#5856D6;"><span>P</span><svg width="10" height="10" fill="#5856D6" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>'
+                        : '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#34C759;"><span>R</span><svg width="10" height="10" fill="#34C759" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>';
+
+                    var eColor = etapaColor[row.etapa] || '#8E8E93';
+                    var eLabel = etapaLabel[row.etapa] || row.etapa;
+
+                    // Reunion type suffix
+                    if (row.etapa === 'reunion' && row.reunion_tipo) {
+                        eLabel += ' (' + row.reunion_tipo + ')';
+                    }
+
+                    tr.innerHTML =
+                        '<td class="px-2 py-4">' +
+                            '<span class="wcp-prospecto-link" style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" data-prospecto-id="' + row.id + '">' + escapeHtml(row.nombre) + '</span>' +
+                            (row.oportunidad_creada_id ? '<span style="display:inline-block;margin-left:6px;font-size:8px;padding:1px 5px;border-radius:4px;background:#34C75922;color:#34C759;font-weight:700;">OPP</span>' : '') +
+                        '</td>' +
+                        '<td class="px-2 py-4" style="font-size:11px;color:#3C3C43;">' + escapeHtml(row.contacto || '-') + '</td>' +
+                        '<td class="px-2 py-4" style="font-size:11px;color:#3C3C43;">' + escapeHtml(row.producto || '-') + '</td>' +
+                        '<td class="px-2 py-4" style="font-size:10px;color:#86868B;font-style:italic;">' + escapeHtml(row.area || '-') + '</td>' +
+                        '<td class="px-2 py-4 text-center">' + pipelineBadge + '</td>' +
+                        '<td class="px-2 py-4"><span style="background:' + eColor + '22;color:' + eColor + ';padding:2px 10px;border-radius:9999px;font-size:10px;font-weight:600;white-space:nowrap;">' + eLabel + '</span></td>' +
+                        '<td class="px-2 py-4" style="font-size:10px;color:#86868B;">' + escapeHtml(row.fecha_iso || '') + '</td>';
+
+                    tbody.appendChild(tr);
+                });
+
+                // Click handlers for prospecto names
+                tbody.querySelectorAll('.wcp-prospecto-link').forEach(function(el) {
+                    el.addEventListener('click', function(e) {
+                        e.stopPropagation();
                         abrirWidgetProspecto(parseInt(this.dataset.prospectoId));
                     });
                 });
             });
     }
 
-    // Cargar prospectos si estamos en el tab
-    if (new URLSearchParams(window.location.search).get('tab') === 'prospeccion') {
-        cargarProspectos();
+    // ── "Nuevo Prospecto" button inside client widget ──
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'wcpNuevoProspecto' || e.target.closest('#wcpNuevoProspecto')) {
+            if (!_currentWidgetClienteId) return;
+
+            // Pre-fill client in the new prospecto form
+            var clienteInput = document.getElementById('wpfCliente');
+            var clienteIdField = document.getElementById('wpfClienteId');
+            if (clienteInput) clienteInput.value = _currentWidgetClienteNombre;
+            if (clienteIdField) clienteIdField.value = _currentWidgetClienteId;
+
+            // Open the new prospecto widget
+            var w = document.getElementById('widgetNuevoProspecto');
+            if (w) w.classList.add('active');
+        }
+    });
+
+    // ── Close client widget ──
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'wcpClose') {
+            var w = document.getElementById('widgetClienteProspectos');
+            if (w) w.classList.remove('active');
+        }
+    });
+
+    // Close on overlay click
+    var wcpOverlay = document.getElementById('widgetClienteProspectos');
+    if (wcpOverlay) {
+        wcpOverlay.addEventListener('click', function(e) {
+            if (e.target === wcpOverlay) {
+                wcpOverlay.classList.remove('active');
+            }
+        });
     }
 
-    // ── Widget detalle prospecto ──
+    // ══════════════════════════════════════════════════════════════
+    // C. PROSPECTO DETAIL WIDGET (existing logic preserved)
+    // ══════════════════════════════════════════════════════════════
     function abrirWidgetProspecto(id) {
         var w = document.getElementById('widgetProspecto');
         if (!w) return;
@@ -324,7 +473,11 @@
                     }
                 }
                 abrirWidgetProspecto(id);
-                cargarProspectos();
+                // Reload client widget if open
+                if (_currentWidgetClienteId) {
+                    cargarProspectosDeCliente(_currentWidgetClienteId);
+                }
+                cargarClientesProspeccion();
             }
         });
     }
@@ -612,8 +765,11 @@
                     if (res.success) {
                         // Update local data
                         window._currentProspectoData.oportunidad_creada_id = res.oportunidad_id;
-                        // Reload table
-                        cargarProspectos();
+                        // Reload tables
+                        cargarClientesProspeccion();
+                        if (_currentWidgetClienteId) {
+                            cargarProspectosDeCliente(_currentWidgetClienteId);
+                        }
                         // Close prospecto widget
                         var w = document.getElementById('widgetProspecto');
                         if (w) w.classList.remove('active');
@@ -644,10 +800,7 @@
         }
     }
 
-    // Expose for tab change
-    window.cargarProspectos = cargarProspectos;
-
-    // ── Close widget ──
+    // ── Close prospecto detail widget ──
     document.addEventListener('click', function(e) {
         if (e.target.id === 'prospectoClose') {
             var w = document.getElementById('widgetProspecto');
@@ -675,10 +828,16 @@
                 actPanel.classList.remove('active');
                 return;
             }
-            // Close main widget
+            // Close prospecto detail widget
             var w = document.getElementById('widgetProspecto');
             if (w && w.classList.contains('active')) {
                 w.classList.remove('active');
+                return;
+            }
+            // Close client widget
+            var wc = document.getElementById('widgetClienteProspectos');
+            if (wc && wc.classList.contains('active')) {
+                wc.classList.remove('active');
             }
         }
     });

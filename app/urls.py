@@ -228,6 +228,8 @@ urlpatterns = [
     path('api/estado-usuario-navidad/', views.estado_usuario_navidad, name='estado_usuario_navidad'),
 
     # ── Prospección ──────────────────────────────────────────────────────────
+    path('api/prospeccion/clientes/', views.api_prospeccion_clientes, name='api_prospeccion_clientes'),
+    path('api/prospeccion/cliente/<int:cliente_id>/prospectos/', views.api_prospectos_por_cliente, name='api_prospectos_por_cliente'),
     path('api/prospectos/', views.api_prospectos_lista, name='api_prospectos_lista'),
     path('api/crear-prospecto/', views.api_crear_prospecto, name='api_crear_prospecto'),
     path('api/prospecto/<int:prospecto_id>/detalle/', views.api_prospecto_detalle, name='api_prospecto_detalle'),

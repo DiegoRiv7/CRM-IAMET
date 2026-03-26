@@ -203,3 +203,65 @@
         </div>
     </div>
 </div>
+
+<!-- ═══ WIDGET: PROSPECTOS DE CLIENTE ═══ -->
+<div class="widget-overlay" id="widgetClienteProspectos" style="z-index:10100;">
+    <div class="widget-card widget-card-lg">
+        <div id="clienteProspectosContent" style="display:flex;flex-direction:column;height:100%;">
+            <!-- Header -->
+            <div class="wo-header">
+                <div class="wo-header-top">
+                    <div>
+                        <div class="wo-type-badge" style="background:#FF950022;color:#FF9500;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                            <span>PROSPECCION</span>
+                        </div>
+                        <h1 class="wo-title" id="wcpClienteName"></h1>
+                        <p style="font-size:0.75rem;color:#86868B;margin:2px 0 0;" id="wcpClienteRfc"></p>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <button class="wo-btn-new" id="wcpNuevoProspecto">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Nuevo Prospecto
+                        </button>
+                        <button type="button" class="widget-close" id="wcpClose">&times;</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table of prospectos for this client -->
+            <div style="flex:1;overflow-y:auto;padding:0 1.5rem 1.5rem;">
+                <table class="w-full" style="border-collapse:collapse;">
+                    <thead>
+                        <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-200">
+                            <th class="px-2 py-3 text-left font-black" style="width:25%">Prospecto</th>
+                            <th class="px-2 py-3 text-left font-black" style="width:12%">Contacto</th>
+                            <th class="px-2 py-3 text-left font-black" style="width:10%">Producto</th>
+                            <th class="px-2 py-3 text-left font-black" style="width:10%">Area</th>
+                            <th class="px-2 py-3 text-center font-black" style="width:8%">Pipeline</th>
+                            <th class="px-2 py-3 text-left font-black" style="width:14%">Etapa</th>
+                            <th class="px-2 py-3 text-left font-black" style="width:12%">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wcpProspectosTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                    </tbody>
+                </table>
+                <div id="wcpEmpty" style="display:none;text-align:center;padding:3rem;color:#C7C7CC;">
+                    <svg width="40" height="40" fill="none" stroke="#D1D1D6" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 0.8rem;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                    </svg>
+                    <p style="font-size:0.85rem;">Sin prospectos para este cliente</p>
+                    <p style="font-size:0.75rem;color:#86868B;margin-top:4px;">Crea uno con el boton "Nuevo Prospecto"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

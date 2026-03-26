@@ -329,9 +329,13 @@
                     document.getElementById('wpfContactoId').value = '';
                     _wpSelectedClienteId = null;
 
-                    // Recargar tabla si estamos en tab prospeccion
+                    // Recargar tabla de clientes si estamos en tab prospeccion
                     if (typeof window.cargarProspectos === 'function') {
                         window.cargarProspectos();
+                    }
+                    // Recargar prospectos del cliente en el widget si esta abierto
+                    if (typeof window._recargarProspectosCliente === 'function') {
+                        window._recargarProspectosCliente();
                     }
 
                     // Toast

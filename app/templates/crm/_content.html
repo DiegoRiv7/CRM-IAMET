@@ -209,27 +209,35 @@
             </tbody>
         </table>
         {% elif tab_activo == 'prospeccion' %}
-        <table id="prospeccionTable" class="w-full crm-table">
+        <table class="w-full crm-table">
             <colgroup>
-                <col style="width:20%"><!-- Prospecto -->
-                <col style="width:12%"><!-- Contacto -->
-                <col style="width:12%"><!-- Área -->
-                <col style="width:12%"><!-- Producto -->
-                <col style="width:8%"><!-- Pipeline -->
-                <col style="width:14%"><!-- Etapa -->
-                <col style="width:14%"><!-- Fecha -->
-                <col style="width:8%"><!-- Campaña -->
+                <col style="width:20%"><!-- Cliente -->
+                <col style="width:6%"> <!-- Zebra -->
+                <col style="width:6%"> <!-- Panduit -->
+                <col style="width:6%"> <!-- APC -->
+                <col style="width:6%"> <!-- Avig -->
+                <col style="width:6%"> <!-- Genet -->
+                <col style="width:6%"> <!-- Axis -->
+                <col style="width:6%"> <!-- Soft -->
+                <col style="width:6%"> <!-- RR -->
+                <col style="width:6%"> <!-- Pol -->
+                <col style="width:6%"> <!-- Otros -->
+                <col style="width:6%"> <!-- Total -->
             </colgroup>
             <thead class="bg-gray-50/80">
                 <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th class="px-2 py-3 text-left font-black">Prospecto</th>
-                    <th class="px-2 py-3 text-left font-black">Contacto</th>
-                    <th class="px-2 py-3 text-left font-black">Area</th>
-                    <th class="px-2 py-3 text-left font-black">Producto</th>
-                    <th class="px-2 py-3 text-center font-black">Pipeline</th>
-                    <th class="px-2 py-3 text-left font-black">Etapa</th>
-                    <th class="px-2 py-3 text-left font-black">Fecha</th>
-                    <th class="px-2 py-3 text-center font-black">Camp.</th>
+                    <th class="px-2 py-3 text-left font-black">Cliente</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Avig.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Genet.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Pol.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>
+                    <th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>
                 </tr>
             </thead>
             <tbody id="prospeccionTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
