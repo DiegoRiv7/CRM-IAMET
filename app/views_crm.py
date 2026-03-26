@@ -1122,6 +1122,125 @@ def api_crm_table_data(request):
 
 @login_required
 @require_http_methods(["GET"])
+def api_tendencia_mensual(request):
+    """Devuelve totales mensuales de Facturado, Cobrado, Oportunidades y Cotizado
+    para los últimos 6 meses, usado por la gráfica de tendencia."""
+    from datetime import datetime
+    from decimal import Decimal
+
+    user = request.user
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    from .views_utils import is_supervisor as _is_sup
+    es_supervisor = _is_sup(user)
+
+    # Determinar vendedores a filtrar
+    vendedores_ids = None
+    if es_supervisor:
+        vf = request.GET.get('vendedores', '')
+        if vf and vf != 'todos':
+            vendedores_ids = [int(x) for x in vf.split(',') if x.isdigit()]
+
+    now = datetime.now()
+    meses = []
+    for i in range(5, -1, -1):
+        m = now.month - i
+        a = now.year
+        while m <= 0:
+            m += 12
+            a -= 1
+        meses.append((str(m).zfill(2), a))
+
+    _zero = Decimal('0')
+    labels = []
+    data_fact = []
+    data_cob = []
+    data_opp = []
+    data_cot = []
+
+    nombres_mes = {
+        '01': 'Ene', '02': 'Feb', '03': 'Mar', '04': 'Abr',
+        '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Ago',
+        '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dic'
+    }
+
+    for mes_str, anio in meses:
+        labels.append(f"{nombres_mes[mes_str]} {anio}")
+
+        # Facturado — desde ArchivoFacturacion
+        fact_total = _zero
+        try:
+            af = ArchivoFacturacion.objects.get(mes=mes_str, anio=anio)
+            datos = af.datos_json or {}
+            for key, val in datos.items():
+                if key == 'datos':
+                    continue
+                if isinstance(val, dict) and 'monto' in val:
+                    fact_total += Decimal(str(val['monto']))
+                else:
+                    try:
+                        fact_total += Decimal(str(val))
+                    except Exception:
+                        pass
+        except ArchivoFacturacion.DoesNotExist:
+            pass
+        data_fact.append(float(fact_total))
+
+        # Base queryset para oportunidades del mes
+        opp_qs = TodoItem.objects.filter(anio_cierre=anio, mes_cierre=mes_str)
+        if not es_supervisor:
+            opp_qs = opp_qs.filter(usuario=user)
+        elif vendedores_ids:
+            opp_qs = opp_qs.filter(usuario_id__in=vendedores_ids)
+
+        # Cobrado — probabilidad 100%
+        cob = opp_qs.filter(probabilidad_cierre=100).aggregate(
+            t=Coalesce(Sum('monto'), _zero))['t'] or _zero
+        data_cob.append(float(cob))
+
+        # Oportunidades — todas
+        opp = opp_qs.aggregate(t=Coalesce(Sum('monto'), _zero))['t'] or _zero
+        data_opp.append(float(opp))
+
+        # Cotizado
+        opp_ids = opp_qs.values_list('id', flat=True)
+        cot = Cotizacion.objects.filter(
+            Q(oportunidad_id__in=opp_ids) |
+            Q(oportunidad__isnull=True, fecha_creacion__year=anio, fecha_creacion__month=int(mes_str))
+        ).aggregate(t=Coalesce(Sum('total'), _zero))['t'] or _zero
+        data_cot.append(float(cot))
+
+    # Detectar puntos notables (cambios > 30% respecto al mes anterior)
+    def find_annotations(data, label):
+        annotations = []
+        for i in range(1, len(data)):
+            if data[i - 1] > 0:
+                cambio = (data[i] - data[i - 1]) / data[i - 1] * 100
+                if abs(cambio) >= 30:
+                    annotations.append({
+                        'index': i,
+                        'cambio': round(cambio),
+                        'label': label
+                    })
+        return annotations
+
+    anotaciones = []
+    anotaciones.extend(find_annotations(data_fact, 'Facturado'))
+    anotaciones.extend(find_annotations(data_cob, 'Cobrado'))
+    anotaciones.extend(find_annotations(data_opp, 'Oportunidades'))
+    anotaciones.extend(find_annotations(data_cot, 'Cotizado'))
+
+    return JsonResponse({
+        'labels': labels,
+        'facturado': data_fact,
+        'cobrado': data_cob,
+        'oportunidades': data_opp,
+        'cotizado': data_cot,
+        'anotaciones': anotaciones,
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
 def api_desglose_facturacion(request):
     """Desglose completo de facturación del Excel por cliente (sin filtro de match)"""
     try:
