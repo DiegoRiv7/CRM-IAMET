@@ -1561,6 +1561,9 @@
                     if (v === 'oportunidades') {
                         map[cid]['opp_prev'] = r ? (r.prev_total || '0') : '0';
                     }
+                    if (v === 'cotizado') {
+                        map[cid]['num_cotizaciones'] = r ? (r.num_cotizaciones || 0) : 0;
+                    }
                 });
             });
             // Compute total pipeline per client
@@ -1614,6 +1617,11 @@
                 return '<td class="ck-td ck-td--metric">' + inner + '</td>';
             }
 
+            function cotNumTd(nc) {
+                if (nc === 0) return '<td class="ck-td ck-td--metric"><span class="ck-dash">—</span></td>';
+                return '<td class="ck-td ck-td--metric"><div class="ck-metric-val ck-metric--cot">' + nc + '</div></td>';
+            }
+
             return '<tr class="ck-row">' +
                 '<td class="ck-td ck-td--rank">' + rankHtml + '</td>' +
                 '<td class="ck-td ck-td--cliente">' +
@@ -1626,7 +1634,7 @@
                 metricTd(r.fact_total, r.fact_meta, 'ck-metric--fact', 'ck-bar--fact') +
                 metricTd(r.cob_total,  r.cob_meta,  'ck-metric--cob',  'ck-bar--cob')  +
                 metricTd(r.opp_total,  r.opp_meta,  'ck-metric--opp',  'ck-bar--opp')  +
-                metricTd(r.cot_total,  r.cot_meta,  'ck-metric--cot',  'ck-bar--cot')  +
+                cotNumTd(r.num_cotizaciones || 0) +
                 '</tr>';
         }
 
@@ -2245,11 +2253,17 @@
                     return '<tr><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#2563EB">$' + (r.total || '0') + '</td><td style="text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
                 }).join('');
             } else if (tipo === 'cotizado') {
-                if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Vendedor</th><th style="text-align:right">Cotizado</th><th style="text-align:right">Meta</th><th style="text-align:right">Faltante</th>';
+                if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Vendedor</th><th style="text-align:right"># Cotizaciones</th>';
+                var totalCotNum = 0;
                 if (tbody) tbody.innerHTML = rows.map(function(r, i) {
-                    var faltN = fN(r.faltante);
-                    return '<tr><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#D97706">$' + (r.total || '0') + '</td><td style="text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                    var nc = r.num_cotizaciones || 0;
+                    totalCotNum += nc;
+                    return '<tr><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#D97706">' + nc + '</td></tr>';
                 }).join('');
+                // Append footer row with total
+                if (tbody && rows.length > 0) {
+                    tbody.innerHTML += '<tr style="border-top:2px solid #e5e7eb;font-weight:700"><td></td><td colspan="2" style="color:#6e6e73">Total</td><td style="text-align:right;color:#D97706">' + totalCotNum + '</td></tr>';
+                }
             }
 
             if (rows.length === 0 && tbody) {
