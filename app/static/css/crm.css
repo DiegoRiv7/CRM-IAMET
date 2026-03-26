@@ -5464,3 +5464,31 @@
 .crm-table-footer {
     display: none;
 }
+
+/* ═══ PROSPECCIÓN TABLE OVERRIDES ═══ */
+/* The shared .crm-table rules target 14-column CRM layout (right-aligned
+   product cols from col 4+, translateX on cols 4-5, etc.).  The prospection
+   table has only 8 columns with different alignment, so we override here. */
+#prospeccionTable {
+    table-layout: auto !important;
+}
+
+/* Undo right-align and transforms that .crm-table applies to col 4+ headers */
+#prospeccionTable thead th {
+    text-align: left !important;
+    transform: none !important;
+    padding: 8px 6px !important;
+}
+
+/* Pipeline (col 5) and Camp. (col 8) are centered */
+#prospeccionTable thead th:nth-child(5),
+#prospeccionTable thead th:nth-child(8) {
+    text-align: center !important;
+}
+
+/* Undo overflow:hidden / text-overflow:ellipsis that .crm-table td sets */
+#prospeccionTable td {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+}
