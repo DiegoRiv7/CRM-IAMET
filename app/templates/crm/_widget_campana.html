@@ -15,8 +15,8 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px;">
                 <!-- Import button (admin only, controlled by JS) -->
-                <button id="campBtnImportar" style="display:none;padding:8px 16px;border:1px solid #34C759;border-radius:8px;background:#34C75911;color:#34C759;font-size:0.8rem;font-weight:700;cursor:pointer;">
-                    📁 Importar Plantilla
+                <button id="campBtnImportar" style="display:none;padding:8px 16px;border:1px solid #0052D4;border-radius:8px;background:#0052D411;color:#0052D4;font-size:0.8rem;font-weight:700;cursor:pointer;">
+                    ⬆ Subir Campaña
                 </button>
                 <button type="button" class="widget-close" id="campClose">&times;</button>
             </div>
@@ -43,40 +43,56 @@
     </div>
 </div>
 
-<!-- Import dialog (admin) -->
+<!-- Import dialog (admin) — with drag & drop -->
 <div id="campImportDialog" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10500;display:none;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:16px;padding:28px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-        <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700;color:#1D1D1F;">Importar Plantilla HTML</h3>
+    <div style="background:#fff;border-radius:16px;padding:28px;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h3 style="margin:0;font-size:1.1rem;font-weight:700;color:#1D1D1F;">Subir Plantilla de Campaña</h3>
+            <button onclick="document.getElementById('campImportDialog').style.display='none'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#86868B;">&times;</button>
+        </div>
         <form id="campImportForm" enctype="multipart/form-data">
-            <div style="margin-bottom:12px;">
-                <label style="font-size:0.75rem;font-weight:600;color:#86868B;display:block;margin-bottom:4px;">Nombre de la plantilla</label>
-                <input type="text" id="campImpNombre" required placeholder="Ej: Panduit Seguimiento Comercial" style="width:100%;padding:10px 12px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.85rem;outline:none;">
-            </div>
-            <div style="margin-bottom:12px;">
-                <label style="font-size:0.75rem;font-weight:600;color:#86868B;display:block;margin-bottom:4px;">Marca / Producto</label>
-                <select id="campImpMarca" required style="width:100%;padding:10px 12px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.85rem;outline:none;background:#fff;">
-                    <option value="">Selecciona marca...</option>
-                    <option value="ZEBRA">Zebra</option>
-                    <option value="PANDUIT">Panduit</option>
-                    <option value="APC">APC</option>
-                    <option value="AVIGILION">Avigilon</option>
-                    <option value="GENETEC">Genetec</option>
-                    <option value="AXIS">Axis</option>
-                    <option value="SOFTWARE">Software</option>
-                    <option value="RUNRATE">Runrate</option>
-                    <option value="POLIZA">Poliza</option>
-                    <option value="CISCO">Cisco</option>
-                    <option value="SERVICIO">Servicio</option>
-                    <option value="GENERAL">General</option>
-                </select>
-            </div>
+            <!-- Marca selector -->
             <div style="margin-bottom:16px;">
-                <label style="font-size:0.75rem;font-weight:600;color:#86868B;display:block;margin-bottom:4px;">Archivo HTML</label>
-                <input type="file" id="campImpFile" accept=".html,.htm" required style="width:100%;padding:10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.8rem;">
+                <label style="font-size:0.78rem;font-weight:700;color:#3C3C43;display:block;margin-bottom:6px;">¿Para qué marca es esta plantilla?</label>
+                <div id="campImpMarcaGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                    <button type="button" class="camp-marca-opt" data-marca="ZEBRA" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">Zebra</button>
+                    <button type="button" class="camp-marca-opt" data-marca="PANDUIT" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">Panduit</button>
+                    <button type="button" class="camp-marca-opt" data-marca="APC" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">APC</button>
+                    <button type="button" class="camp-marca-opt" data-marca="AVIGILION" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">Avigilon</button>
+                    <button type="button" class="camp-marca-opt" data-marca="GENETEC" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">Genetec</button>
+                    <button type="button" class="camp-marca-opt" data-marca="AXIS" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">Axis</button>
+                    <button type="button" class="camp-marca-opt" data-marca="CISCO" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">Cisco</button>
+                    <button type="button" class="camp-marca-opt" data-marca="GENERAL" style="padding:8px 4px;border:2px solid #E5E5EA;border-radius:8px;background:#fff;font-size:0.72rem;font-weight:700;color:#3C3C43;cursor:pointer;transition:all 0.15s;">General</button>
+                </div>
+                <input type="hidden" id="campImpMarca" value="">
             </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;">
-                <button type="button" onclick="document.getElementById('campImportDialog').style.display='none'" style="padding:10px 18px;border:none;background:#F2F2F7;border-radius:8px;color:#86868B;font-size:0.85rem;cursor:pointer;">Cancelar</button>
-                <button type="submit" id="campImpSubmit" style="padding:10px 20px;border:none;background:#34C759;border-radius:8px;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">Importar</button>
+
+            <!-- Nombre -->
+            <div style="margin-bottom:16px;">
+                <label style="font-size:0.78rem;font-weight:700;color:#3C3C43;display:block;margin-bottom:6px;">Nombre de la plantilla</label>
+                <input type="text" id="campImpNombre" required placeholder="Ej: Panduit — Seguimiento Comercial v2" style="width:100%;padding:10px 14px;border:1px solid #E5E5EA;border-radius:10px;font-size:0.85rem;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#0052D4'" onblur="this.style.borderColor='#E5E5EA'">
+            </div>
+
+            <!-- Drag & drop zone -->
+            <div style="margin-bottom:20px;">
+                <label style="font-size:0.78rem;font-weight:700;color:#3C3C43;display:block;margin-bottom:6px;">Archivo HTML</label>
+                <div id="campDropArea" style="border:2px dashed #D1D1D6;border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.2s;background:#FAFAFA;">
+                    <svg width="36" height="36" fill="none" stroke="#86868B" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p style="margin:0;font-size:0.85rem;font-weight:600;color:#3C3C43;" id="campDropText">Arrastra tu archivo .html aquí</p>
+                    <p style="margin:4px 0 0;font-size:0.75rem;color:#86868B;">o haz click para seleccionar</p>
+                    <input type="file" id="campImpFile" accept=".html,.htm" required style="display:none;">
+                </div>
+                <p id="campFileName" style="display:none;margin:8px 0 0;font-size:0.8rem;color:#34C759;font-weight:600;"></p>
+            </div>
+
+            <!-- Submit -->
+            <div style="display:flex;gap:10px;">
+                <button type="button" onclick="document.getElementById('campImportDialog').style.display='none'" style="flex:1;padding:12px;border:none;background:#F2F2F7;border-radius:10px;color:#86868B;font-size:0.85rem;font-weight:600;cursor:pointer;">Cancelar</button>
+                <button type="submit" id="campImpSubmit" style="flex:1;padding:12px;border:none;background:#0052D4;border-radius:10px;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;transition:background 0.2s;">Subir Plantilla</button>
             </div>
         </form>
     </div>

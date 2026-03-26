@@ -189,18 +189,111 @@
     };
 
     // ══════════════════════════════════════
-    // IMPORT (admin)
+    // IMPORT (admin) — with drag & drop + marca grid
     // ══════════════════════════════════════
+    var _selectedImportMarca = '';
+
     var importBtn = document.getElementById('campBtnImportar');
     if (importBtn) {
         importBtn.addEventListener('click', function() {
-            // Pre-select current marca
-            var marcaSelect = document.getElementById('campImpMarca');
-            if (marcaSelect && currentMarca) marcaSelect.value = currentMarca;
+            // Pre-select current marca in the grid
+            _selectedImportMarca = currentMarca || '';
+            highlightMarcaGrid();
+            // Reset form state
+            document.getElementById('campImpNombre').value = '';
+            document.getElementById('campImpFile').value = '';
+            document.getElementById('campFileName').style.display = 'none';
+            document.getElementById('campDropText').textContent = 'Arrastra tu archivo .html aquí';
+            document.getElementById('campDropArea').style.borderColor = '#D1D1D6';
+            document.getElementById('campDropArea').style.background = '#FAFAFA';
             document.getElementById('campImportDialog').style.display = 'flex';
         });
     }
 
+    // Marca grid buttons
+    document.querySelectorAll('.camp-marca-opt').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            _selectedImportMarca = this.dataset.marca;
+            document.getElementById('campImpMarca').value = _selectedImportMarca;
+            highlightMarcaGrid();
+        });
+    });
+
+    function highlightMarcaGrid() {
+        document.querySelectorAll('.camp-marca-opt').forEach(function(b) {
+            if (b.dataset.marca === _selectedImportMarca) {
+                b.style.borderColor = '#0052D4';
+                b.style.background = '#0052D4';
+                b.style.color = '#fff';
+            } else {
+                b.style.borderColor = '#E5E5EA';
+                b.style.background = '#fff';
+                b.style.color = '#3C3C43';
+            }
+        });
+        document.getElementById('campImpMarca').value = _selectedImportMarca;
+    }
+
+    // Drag & drop zone
+    var dropArea = document.getElementById('campDropArea');
+    var fileInput = document.getElementById('campImpFile');
+
+    if (dropArea && fileInput) {
+        // Click to select file
+        dropArea.addEventListener('click', function() { fileInput.click(); });
+
+        // File selected via input
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) showSelectedFile(this.files[0]);
+        });
+
+        // Drag events
+        dropArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#0052D4';
+            this.style.background = '#EBF5FF';
+        });
+        dropArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#D1D1D6';
+            this.style.background = '#FAFAFA';
+        });
+        dropArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#D1D1D6';
+            this.style.background = '#FAFAFA';
+            var files = e.dataTransfer.files;
+            if (files.length && (files[0].name.endsWith('.html') || files[0].name.endsWith('.htm'))) {
+                // Transfer file to the input
+                var dt = new DataTransfer();
+                dt.items.add(files[0]);
+                fileInput.files = dt.files;
+                showSelectedFile(files[0]);
+            }
+        });
+    }
+
+    function showSelectedFile(file) {
+        var dropText = document.getElementById('campDropText');
+        var fileName = document.getElementById('campFileName');
+        if (dropText) dropText.textContent = '✓ Archivo seleccionado';
+        if (fileName) {
+            fileName.textContent = '📄 ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+            fileName.style.display = 'block';
+        }
+        if (dropArea) {
+            dropArea.style.borderColor = '#34C759';
+            dropArea.style.background = '#34C75908';
+        }
+        // Auto-fill name if empty
+        var nombreInput = document.getElementById('campImpNombre');
+        if (nombreInput && !nombreInput.value) {
+            var name = file.name.replace(/\.html?$/i, '').replace(/[-_]/g, ' ');
+            nombreInput.value = name.charAt(0).toUpperCase() + name.slice(1);
+        }
+    }
+
+    // Form submit
     var importForm = document.getElementById('campImportForm');
     if (importForm) {
         importForm.addEventListener('submit', function(e) {
@@ -208,18 +301,20 @@
 
             var nombre = document.getElementById('campImpNombre').value.trim();
             var marca = document.getElementById('campImpMarca').value;
-            var fileInput = document.getElementById('campImpFile');
+            var fileInp = document.getElementById('campImpFile');
 
-            if (!nombre || !marca || !fileInput.files.length) return;
+            if (!marca) { alert('Selecciona una marca'); return; }
+            if (!nombre) { document.getElementById('campImpNombre').focus(); return; }
+            if (!fileInp.files.length) { alert('Selecciona un archivo HTML'); return; }
 
             var submitBtn = document.getElementById('campImpSubmit');
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Importando...';
+            submitBtn.textContent = 'Subiendo...';
 
             var formData = new FormData();
             formData.append('nombre', nombre);
             formData.append('marca', marca);
-            formData.append('html_file', fileInput.files[0]);
+            formData.append('html_file', fileInp.files[0]);
 
             fetch('/app/api/campana/templates/', {
                 method: 'POST',
@@ -227,28 +322,28 @@
                 body: formData
             }).then(function(r) { return r.json(); }).then(function(data) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Importar';
+                submitBtn.textContent = 'Subir Plantilla';
 
                 if (data.success) {
                     document.getElementById('campImportDialog').style.display = 'none';
                     importForm.reset();
-                    // Reload with the new marca
+                    _selectedImportMarca = '';
                     currentMarca = data.marca || currentMarca;
                     renderMarcaTabs();
                     loadTemplates();
 
                     var toast = document.getElementById('widgetToast');
                     if (toast) {
-                        toast.textContent = 'Plantilla "' + data.nombre + '" importada exitosamente';
+                        toast.textContent = 'Plantilla "' + data.nombre + '" subida exitosamente';
                         toast.classList.add('show');
                         setTimeout(function() { toast.classList.remove('show'); }, 3000);
                     }
                 } else {
-                    alert(data.error || 'Error al importar');
+                    alert(data.error || 'Error al subir');
                 }
             }).catch(function() {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Importar';
+                submitBtn.textContent = 'Subir Plantilla';
             });
         });
     }
