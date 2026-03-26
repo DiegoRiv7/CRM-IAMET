@@ -1,6 +1,7 @@
-// crm_prospeccion.js — Modulo de Prospeccion CRM IAMET
+// crm_prospeccion.js — Modulo de Prospeccion CRM IAMET — v4
 (function() {
     'use strict';
+    console.log('[PROSPECCION] ===== JS v4 cargado =====');
 
     var csrf = function() { return document.querySelector('[name=csrfmiddlewaretoken]').value; };
 
