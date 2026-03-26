@@ -239,6 +239,15 @@ urlpatterns = [
     path('api/prospecto/<int:prospecto_id>/actividades/', views.api_prospecto_actividades, name='api_prospecto_actividades'),
     path('api/prospecto-actividad/<int:actividad_id>/toggle/', views.api_prospecto_actividad_toggle, name='api_prospecto_actividad_toggle'),
 
+    # ── Campañas ────────────────────────────────────────────────────────
+    path('api/campana/templates/', views.api_campana_templates, name='api_campana_templates'),
+    path('api/campana/template/<int:template_id>/', views.api_campana_template_detalle, name='api_campana_template_detalle'),
+    path('api/campana/template/<int:template_id>/render/', views.api_campana_template_render, name='api_campana_template_render'),
+    path('api/campanas/', views.api_campanas, name='api_campanas'),
+    path('api/campana/<int:campana_id>/', views.api_campana_detalle, name='api_campana_detalle'),
+    path('api/campana/<int:campana_id>/preview/', views.api_campana_preview, name='api_campana_preview'),
+    path('api/campana/<int:campana_id>/destinatarios/', views.api_campana_destinatarios, name='api_campana_destinatarios'),
+
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='user_login'),

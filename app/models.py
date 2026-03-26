@@ -4177,3 +4177,70 @@ class ProspectoActividad(models.Model):
 
     def __str__(self):
         return f'{self.tipo}: {self.descripcion[:50]}'
+
+class CampanaTemplate(models.Model):
+    """Template reutilizable de campaña de email"""
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, default='')
+    # JSON structure: lista de bloques del editor
+    # Each block: {type: 'header'|'text'|'image'|'button'|'divider'|'product'|'footer',
+    #              content: {...}, styles: {...}}
+    bloques_json = models.JSONField(default=list, blank=True)
+    # Rendered HTML (generated from bloques_json)
+    html_rendered = models.TextField(blank=True, default='')
+    # Template settings
+    color_primario = models.CharField(max_length=7, default='#0052D4')
+    color_fondo = models.CharField(max_length=7, default='#F5F5F7')
+    logo_url = models.CharField(max_length=500, blank=True, default='')
+    asunto = models.CharField(max_length=200, blank=True, default='')
+    # Metadata
+    creado_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='campana_templates')
+    es_plantilla_sistema = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_actualizacion']
+        verbose_name = 'Template de Campaña'
+        verbose_name_plural = 'Templates de Campaña'
+
+    def __str__(self):
+        return self.nombre
+
+
+class Campana(models.Model):
+    """Una campaña enviada o por enviar"""
+    ESTADO_CHOICES = [
+        ('borrador', 'Borrador'),
+        ('programada', 'Programada'),
+        ('enviando', 'Enviando'),
+        ('enviada', 'Enviada'),
+        ('cancelada', 'Cancelada'),
+    ]
+    nombre = models.CharField(max_length=200)
+    asunto = models.CharField(max_length=200)
+    template = models.ForeignKey(CampanaTemplate, on_delete=models.SET_NULL, null=True, blank=True)
+    html_final = models.TextField(blank=True, default='')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='borrador')
+    # Recipients
+    destinatarios_json = models.JSONField(default=list, blank=True)
+    # Stats
+    total_enviados = models.IntegerField(default=0)
+    total_abiertos = models.IntegerField(default=0)
+    total_clicks = models.IntegerField(default=0)
+    # Context
+    prospecto = models.ForeignKey('Prospecto', on_delete=models.SET_NULL, null=True, blank=True, related_name='campanas')
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True, related_name='campanas')
+    producto = models.CharField(max_length=100, blank=True, default='')
+    # Metadata
+    creado_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='campanas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_envio = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+        verbose_name = 'Campaña'
+        verbose_name_plural = 'Campañas'
+
+    def __str__(self):
+        return self.nombre
