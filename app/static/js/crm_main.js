@@ -1711,7 +1711,7 @@
             var chartsSection = el('ckChartsSection');
             if (chartsSection) chartsSection.style.display = 'block';
 
-            ckRenderCharts(merged, totFact, totCob, totOpp, totCot);
+            ckRenderCharts(merged, totFact, totCob, totOpp, totCot, prevFact, prevCob, prevOpp, prevCot);
 
             if (_clientesPanelData.facturado) {
                 updateTopbarFromClientesPanel(_clientesPanelData.facturado);
@@ -1845,7 +1845,7 @@
             }
         }
 
-        function ckRenderCharts(merged, totFact, totCob, totOpp, totCot) {
+        function ckRenderCharts(merged, totFact, totCob, totOpp, totCot, prevFact, prevCob, prevOpp, prevCot) {
             if (typeof Chart === 'undefined') return;
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
             var fmtCurrency = function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; };
@@ -1861,23 +1861,39 @@
             Chart.defaults.plugins.legend.labels.boxWidth = 10;
             Chart.defaults.plugins.legend.labels.padding = 12;
 
-            // Shared tooltip config
+            // Shared tooltip config — Liquid Glass style
             var sharedTooltip = {
-                backgroundColor: 'rgba(0,0,0,0.8)',
-                titleFont: { size: 12, weight: '600' },
-                bodyFont: { size: 11 },
-                padding: 10,
-                cornerRadius: 8
+                backgroundColor: 'rgba(255,255,255,0.85)',
+                titleColor: '#1D1D1F',
+                bodyColor: '#3C3C43',
+                titleFont: { size: 12, weight: '700' },
+                bodyFont: { size: 11, weight: '500' },
+                padding: 12,
+                cornerRadius: 14,
+                borderColor: 'rgba(255,255,255,0.6)',
+                borderWidth: 1,
+                displayColors: true,
+                boxPadding: 4
             };
 
-            // Chart 1: Facturado vs Meta (horizontal bar)
+            // Shared animation config
+            var sharedAnimation = {
+                duration: 1200,
+                easing: 'easeOutQuart',
+                delay: function(ctx) { return ctx.dataIndex * 80; }
+            };
+
+            // ── Chart 1: Facturado vs Meta (horizontal bar) ──
             ckDestroyChart('ckChartFactVsMeta');
             var ctx1 = document.getElementById('ckChartFactVsMeta');
             if (ctx1) {
                 var ctx1_2d = ctx1.getContext('2d');
                 var gradBlue = ctx1_2d.createLinearGradient(0, 0, ctx1.width, 0);
-                gradBlue.addColorStop(0, '#0052D4');
-                gradBlue.addColorStop(1, '#007AFF');
+                gradBlue.addColorStop(0, 'rgba(0,122,255,0.9)');
+                gradBlue.addColorStop(1, 'rgba(88,176,255,0.75)');
+                var gradMeta = ctx1_2d.createLinearGradient(0, 0, ctx1.width, 0);
+                gradMeta.addColorStop(0, 'rgba(200,200,210,0.5)');
+                gradMeta.addColorStop(1, 'rgba(220,220,230,0.3)');
                 _ckChartInstances['ckChartFactVsMeta'] = new Chart(ctx1_2d, {
                     type: 'bar',
                     data: {
@@ -1887,15 +1903,15 @@
                                 label: 'Facturado',
                                 data: top8.map(function(r) { return fN(r.fact_total); }),
                                 backgroundColor: gradBlue,
-                                borderRadius: 6,
-                                barPercentage: 0.6
+                                borderRadius: 8,
+                                barPercentage: 0.55
                             },
                             {
                                 label: 'Meta',
                                 data: top8.map(function(r) { return fN(r.fact_meta); }),
-                                backgroundColor: '#E5E5EA',
-                                borderRadius: 6,
-                                barPercentage: 0.6
+                                backgroundColor: gradMeta,
+                                borderRadius: 8,
+                                barPercentage: 0.55
                             }
                         ]
                     },
@@ -1903,14 +1919,15 @@
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
+                        animation: sharedAnimation,
                         plugins: {
                             legend: {
                                 position: 'top',
                                 labels: {
                                     usePointStyle: true,
                                     pointStyle: 'circle',
-                                    font: { size: 11 },
-                                    color: '#8E8E93',
+                                    font: { size: 10, weight: '600' },
+                                    color: '#86868B',
                                     padding: 16
                                 }
                             },
@@ -1924,103 +1941,142 @@
                         },
                         scales: {
                             x: {
-                                ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 11 }, color: '#8E8E93' },
-                                grid: { color: 'rgba(0,0,0,0.04)' }
+                                ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 10 }, color: '#86868B' },
+                                grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false }
                             },
                             y: {
                                 grid: { display: false },
-                                ticks: { font: { size: 11 }, color: '#8E8E93' }
+                                ticks: { font: { size: 10, weight: '500' }, color: '#86868B' }
                             }
                         }
                     }
                 });
             }
 
-            // Chart 2: Distribution donut
-            ckDestroyChart('ckChartDistribucion');
-            var ctx2 = document.getElementById('ckChartDistribucion');
+            // ── Chart 2: Tendencia Mensual (line chart) ──
+            ckDestroyChart('ckChartTendencia');
+            var ctx2 = document.getElementById('ckChartTendencia');
             if (ctx2) {
-                var donutTotal = totFact + totCob + totOpp + totCot;
-                _ckChartInstances['ckChartDistribucion'] = new Chart(ctx2.getContext('2d'), {
-                    type: 'doughnut',
+                var ctx2_2d = ctx2.getContext('2d');
+                // Gradient fills for each line
+                var makeGrad = function(color1, color2) {
+                    var g = ctx2_2d.createLinearGradient(0, 0, 0, 240);
+                    g.addColorStop(0, color1);
+                    g.addColorStop(1, color2);
+                    return g;
+                };
+                var gradFact = makeGrad('rgba(107,114,128,0.25)', 'rgba(107,114,128,0.02)');
+                var gradCob  = makeGrad('rgba(16,185,129,0.25)', 'rgba(16,185,129,0.02)');
+                var gradOpp  = makeGrad('rgba(59,130,246,0.25)', 'rgba(59,130,246,0.02)');
+                var gradCotL = makeGrad('rgba(245,158,11,0.25)', 'rgba(245,158,11,0.02)');
+
+                var now = new Date();
+                var mesActual = now.toLocaleString('es-MX', { month: 'short' }).replace('.', '');
+                var mesPrev = new Date(now.getFullYear(), now.getMonth() - 1).toLocaleString('es-MX', { month: 'short' }).replace('.', '');
+                mesActual = mesActual.charAt(0).toUpperCase() + mesActual.slice(1);
+                mesPrev = mesPrev.charAt(0).toUpperCase() + mesPrev.slice(1);
+
+                var makeDataset = function(label, prev, curr, color, gradFill) {
+                    return {
+                        label: label,
+                        data: [prev || 0, curr || 0],
+                        borderColor: color,
+                        backgroundColor: gradFill,
+                        borderWidth: 2.5,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: color,
+                        pointBorderWidth: 2.5,
+                        pointHoverBackgroundColor: color,
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    };
+                };
+
+                _ckChartInstances['ckChartTendencia'] = new Chart(ctx2_2d, {
+                    type: 'line',
                     data: {
-                        labels: ['Facturado', 'Cobrado', 'Oportunidades', 'Cotizado'],
-                        datasets: [{
-                            data: [totFact, totCob, totOpp, totCot],
-                            backgroundColor: ['#6B7280', '#10B981', '#3B82F6', '#F59E0B'],
-                            borderWidth: 2,
-                            borderColor: '#ffffff',
-                            hoverOffset: 8,
-                            hoverBorderWidth: 0
-                        }]
+                        labels: [mesPrev, mesActual],
+                        datasets: [
+                            makeDataset('Facturado', prevFact, totFact, '#6B7280', gradFact),
+                            makeDataset('Cobrado', prevCob, totCob, '#10B981', gradCob),
+                            makeDataset('Oportunidades', prevOpp, totOpp, '#3B82F6', gradOpp),
+                            makeDataset('Cotizado', prevCot, totCot, '#F59E0B', gradCotL)
+                        ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '55%',
+                        animation: {
+                            duration: 1500,
+                            easing: 'easeOutQuart'
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
                         plugins: {
                             legend: {
-                                position: 'right',
+                                position: 'top',
                                 labels: {
                                     usePointStyle: true,
                                     pointStyle: 'circle',
-                                    font: { size: 11 },
-                                    color: '#374151',
+                                    font: { size: 10, weight: '600' },
+                                    color: '#86868B',
                                     padding: 14
                                 }
                             },
                             tooltip: Object.assign({}, sharedTooltip, {
                                 callbacks: {
                                     label: function(ctx) {
-                                        var v = ctx.raw || 0;
-                                        var pct = donutTotal > 0 ? ((v / donutTotal) * 100).toFixed(1) : 0;
-                                        return ' ' + ctx.label + ': $' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' (' + pct + '%)';
+                                        return ' ' + ctx.dataset.label + ': $' + (ctx.parsed.y || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
                                     }
                                 }
                             })
+                        },
+                        scales: {
+                            y: {
+                                ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 10 }, color: '#86868B' },
+                                grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11, weight: '600' }, color: '#3C3C43' }
+                            }
                         }
-                    },
-                    plugins: [{
-                        id: 'donutCenterText',
-                        beforeDraw: function(chart) {
-                            var width = chart.width, height = chart.height, ctx = chart.ctx;
-                            ctx.save();
-                            var fontSize = Math.min(width, height) / 10;
-                            ctx.font = '600 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
-                            ctx.fillStyle = '#1F2937';
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            var centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
-                            var centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
-                            ctx.fillText(fmtCurrency(donutTotal), centerX, centerY);
-                            ctx.restore();
-                        }
-                    }]
+                    }
                 });
             }
 
-            // Chart 3: Top 5 by oportunidades (vertical bar)
+            // ── Chart 3: Top 5 by oportunidades (vertical bar) ──
             var sortedOpp = merged.slice().sort(function(a, b) { return fN(b.opp_total) - fN(a.opp_total); });
             var top5opp = sortedOpp.slice(0, 5);
             ckDestroyChart('ckChartTopClientes');
             var ctx3 = document.getElementById('ckChartTopClientes');
             if (ctx3) {
-                var top5colors = ['#007AFF', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE'];
-                _ckChartInstances['ckChartTopClientes'] = new Chart(ctx3.getContext('2d'), {
+                var ctx3_2d = ctx3.getContext('2d');
+                var gradBar = ctx3_2d.createLinearGradient(0, 0, 0, 280);
+                gradBar.addColorStop(0, 'rgba(0,122,255,0.85)');
+                gradBar.addColorStop(1, 'rgba(88,176,255,0.55)');
+                _ckChartInstances['ckChartTopClientes'] = new Chart(ctx3_2d, {
                     type: 'bar',
                     data: {
                         labels: top5opp.map(function(r) { return r.cliente.length > 15 ? r.cliente.substring(0, 15) + '...' : r.cliente; }),
                         datasets: [{
                             label: 'Oportunidades',
                             data: top5opp.map(function(r) { return fN(r.opp_total); }),
-                            backgroundColor: top5colors,
-                            borderRadius: 8,
-                            barPercentage: 0.55
+                            backgroundColor: gradBar,
+                            borderRadius: 10,
+                            barPercentage: 0.5
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        animation: sharedAnimation,
                         plugins: {
                             legend: { display: false },
                             tooltip: Object.assign({}, sharedTooltip, {
@@ -2033,12 +2089,12 @@
                         },
                         scales: {
                             y: {
-                                ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 11 }, color: '#8E8E93' },
-                                grid: { color: 'rgba(0,0,0,0.04)' }
+                                ticks: { callback: function(v) { return fmtCurrency(v); }, font: { size: 10 }, color: '#86868B' },
+                                grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false }
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { font: { size: 11 }, color: '#8E8E93' }
+                                ticks: { font: { size: 10, weight: '500' }, color: '#86868B' }
                             }
                         }
                     },
@@ -2052,11 +2108,11 @@
                                     var value = dataset.data[index];
                                     if (value > 0) {
                                         ctx.save();
-                                        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
-                                        ctx.fillStyle = '#374151';
+                                        ctx.font = '700 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
+                                        ctx.fillStyle = '#1D1D1F';
                                         ctx.textAlign = 'center';
                                         ctx.textBaseline = 'bottom';
-                                        ctx.fillText(fmtCurrency(value), bar.x, bar.y - 4);
+                                        ctx.fillText(fmtCurrency(value), bar.x, bar.y - 6);
                                         ctx.restore();
                                     }
                                 });
@@ -2066,7 +2122,7 @@
                 });
             }
 
-            // Chart 4: Facturado por Vendedor (horizontal bar)
+            // ── Chart 4: Facturado por Vendedor (horizontal bar) ──
             var vendedorTotals = {};
             merged.forEach(function(c) {
                 var v = c.vendedor || 'Sin asignar';
@@ -2078,26 +2134,37 @@
             ckDestroyChart('ckChartPorVendedor');
             var ctx4 = document.getElementById('ckChartPorVendedor');
             if (ctx4 && topVend.length > 0) {
-                var vendColors = ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5', '#ECFDF5'];
-                _ckChartInstances['ckChartPorVendedor'] = new Chart(ctx4.getContext('2d'), {
+                var ctx4_2d = ctx4.getContext('2d');
+                var gradGreen = ctx4_2d.createLinearGradient(0, 0, ctx4.width, 0);
+                gradGreen.addColorStop(0, 'rgba(16,185,129,0.85)');
+                gradGreen.addColorStop(1, 'rgba(52,211,153,0.55)');
+                _ckChartInstances['ckChartPorVendedor'] = new Chart(ctx4_2d, {
                     type: 'bar',
                     data: {
                         labels: topVend.map(function(v) { return v.name.length > 15 ? v.name.substring(0,15)+'...' : v.name; }),
                         datasets: [{
                             data: topVend.map(function(v) { return v.total; }),
-                            backgroundColor: vendColors.slice(0, topVend.length),
-                            borderRadius: 8,
-                            barPercentage: 0.6
+                            backgroundColor: gradGreen,
+                            borderRadius: 10,
+                            barPercentage: 0.55
                         }]
                     },
                     options: {
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { return ' $' + c.parsed.x.toLocaleString(); } } } },
+                        animation: sharedAnimation,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: Object.assign({}, sharedTooltip, {
+                                callbacks: {
+                                    label: function(c) { return ' $' + c.parsed.x.toLocaleString(); }
+                                }
+                            })
+                        },
                         scales: {
-                            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, color: '#8E8E93', callback: function(v) { return fmtCurrency(v); } } },
-                            y: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#3C3C43' } }
+                            x: { grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false }, ticks: { font: { size: 10 }, color: '#86868B', callback: function(v) { return fmtCurrency(v); } } },
+                            y: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' }, color: '#3C3C43' } }
                         }
                     }
                 });
