@@ -345,6 +345,29 @@
                         toast.classList.add('show');
                         setTimeout(function() { toast.classList.remove('show'); }, 3000);
                     }
+
+                    // Flujo automático desde click en marca:
+                    // 1. Abrir widget de cliente con tabla de prospectos
+                    // 2. Abrir editor de campaña encima
+                    var ctx = window._prospeccionProductoContext;
+                    if (ctx && ctx.clienteId) {
+                        // Abrir widget de prospectos del cliente
+                        if (typeof window._prospeccionClickCliente === 'function') {
+                            window._prospeccionClickCliente(ctx.clienteId, ctx.clienteNombre, '');
+                        }
+                        // Después de un breve delay, abrir editor de campaña encima
+                        setTimeout(function() {
+                            if (typeof abrirEditorCampana === 'function') {
+                                abrirEditorCampana({
+                                    producto: ctx.producto || '',
+                                    nombre: 'Campaña ' + (data.nombre || ''),
+                                    clienteId: ctx.clienteId
+                                });
+                            }
+                        }, 400);
+                        // Limpiar contexto
+                        window._prospeccionProductoContext = null;
+                    }
                 } else {
                     alert(data.error || 'Error al crear prospecto');
                 }
