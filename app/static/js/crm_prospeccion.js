@@ -102,28 +102,54 @@
                 }
 
 
+                // Re-bind event delegation after data loads
+                bindProspeccionTableEvents();
+                console.log('[PROSPECCION] Tabla cargada con', data.rows.length, 'clientes');
             });
     }
 
-    // ── Event delegation for product cell clicks (reliable even after DOM rebuild) ──
-    (function() {
+    // ── Event delegation for clicks in prospeccion table ──
+    function bindProspeccionTableEvents() {
         var tbody = document.getElementById('prospeccionTbody');
+        console.log('[PROSPECCION] bindProspeccionTableEvents, tbody:', tbody ? 'FOUND' : 'NOT FOUND');
         if (!tbody) return;
+        if (tbody._prospeccionBound) return; // Avoid double-binding
+        tbody._prospeccionBound = true;
+
         tbody.addEventListener('click', function(e) {
+            console.log('[PROSPECCION] Click en tbody, target:', e.target.tagName, e.target.className);
+
             // Handle product cell clicks
             var td = e.target.closest('td[data-click-producto]');
             if (td) {
                 var clienteId = parseInt(td.dataset.clickClienteId);
                 var clienteNombre = td.dataset.clickClienteNombre;
                 var producto = td.dataset.clickProducto;
+                console.log('[PROSPECCION] Click en producto:', producto, 'cliente:', clienteNombre, 'id:', clienteId);
                 if (producto) {
                     abrirProspeccionConProducto(clienteId, clienteNombre, producto);
                 }
                 return;
             }
+
+            // Handle campaign button clicks
+            var campBtn = e.target.closest('.btn-campana');
+            if (campBtn) {
+                var cId = parseInt(campBtn.dataset.clienteId);
+                var cNombre = campBtn.closest('tr') ? campBtn.closest('tr').querySelector('.cliente-prospeccion-link') : null;
+                console.log('[PROSPECCION] Click en campaña, clienteId:', cId);
+                if (typeof abrirEditorCampana === 'function') {
+                    abrirEditorCampana({ clienteId: cId, nombre: cNombre ? cNombre.dataset.clienteNombre : '' });
+                } else {
+                    console.error('[PROSPECCION] abrirEditorCampana no existe');
+                }
+                return;
+            }
+
             // Handle client name clicks
             var link = e.target.closest('.cliente-prospeccion-link');
             if (link) {
+                console.log('[PROSPECCION] Click en cliente:', link.dataset.clienteNombre);
                 abrirClienteProspectos(
                     parseInt(link.dataset.clienteId),
                     link.dataset.clienteNombre,
@@ -131,7 +157,11 @@
                 );
             }
         });
-    })();
+    }
+    // Bind immediately if tbody exists
+    bindProspeccionTableEvents();
+    // Also bind after loading data (in case tbody was empty on first load)
+    window._bindProspeccionEvents = bindProspeccionTableEvents;
 
     // Load clients if we are on the prospeccion tab
     if (new URLSearchParams(window.location.search).get('tab') === 'prospeccion') {
@@ -152,8 +182,10 @@
     // A2. CLICK ON PRODUCT CELL: Open new prospecto form with client+product pre-filled
     // ══════════════════════════════════════════════════════════════
     function abrirProspeccionConProducto(clienteId, clienteNombre, producto) {
+        console.log('[PROSPECCION] abrirProspeccionConProducto:', clienteId, clienteNombre, producto);
         // Open the new prospecto form
         var widget = document.getElementById('widgetNuevoProspecto');
+        console.log('[PROSPECCION] widgetNuevoProspecto:', widget ? 'FOUND' : 'NOT FOUND');
         if (!widget) return;
         widget.classList.add('active');
 
@@ -269,7 +301,7 @@
                         '<td class="px-2 py-4 text-center">' + pipelineBadge + '</td>' +
                         '<td class="px-2 py-4"><span style="background:' + eColor + '22;color:' + eColor + ';padding:2px 10px;border-radius:9999px;font-size:10px;font-weight:600;white-space:nowrap;">' + eLabel + '</span></td>' +
                         '<td class="px-2 py-4" style="font-size:10px;color:#86868B;">' + escapeHtml(row.fecha_iso || '') + '</td>' +
-                        '<td class="px-2 py-4 text-center"><button class="btn-campana" data-prospecto-id="' + row.id + '" style="background:none;border:1px solid #FF9500;border-radius:6px;padding:3px 8px;cursor:pointer;color:#FF9500;font-size:11px;" title="Campaña" onclick="event.stopPropagation()">&#128226;</button></td>';
+                        '<td class="px-2 py-4 text-center"><button class="btn-campana" data-prospecto-id="' + row.id + '" style="background:none;border:1px solid #FF9500;border-radius:6px;padding:3px 8px;cursor:pointer;color:#FF9500;font-size:11px;" title="Campaña" onclick="event.stopPropagation();if(typeof abrirEditorCampana===\'function\')abrirEditorCampana({producto:\'' + escapeHtml(row.producto||'') + '\',nombre:\'Campaña ' + escapeHtml(row.nombre||'') + '\'});">&#128226;</button></td>';
 
                     tbody.appendChild(tr);
                 });
