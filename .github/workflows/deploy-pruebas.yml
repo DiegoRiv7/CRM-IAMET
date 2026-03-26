@@ -21,3 +21,6 @@ jobs:
             git config --global --add safe.directory /home/iamet2026/crm-pruebas
             git pull origin pruebas
             sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml up -d --force-recreate web
+            sleep 5
+            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec -T web python manage.py migrate --noinput
+            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec -T web python manage.py collectstatic --noinput
