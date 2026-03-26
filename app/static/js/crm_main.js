@@ -1702,11 +1702,47 @@
             setKpi('ckKpiFact', totFact, metaFact || _ckGlobalMetas.fact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckTrendFact', prevFact);
             setKpi('ckKpiCob',  totCob,  metaCob  || _ckGlobalMetas.cob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckTrendCob',  prevCob);
             setKpi('ckKpiOpp',  totOpp,  metaOpp  || _ckGlobalMetas.opp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckTrendOpp',  prevOpp);
-            setKpi('ckKpiCot',  totCot,  metaCot  || _ckGlobalMetas.cot,  'ckProgCot',  'ckPctCot',  'ckMetaCot',  'ckTrendCot',  prevCot);
+
+            // Cotizado KPI: show NUMBER of cotizaciones instead of money
+            var cotData = _clientesPanelData.cotizado || {};
+            var numTotalCot = cotData.num_total_cotizaciones || 0;
+            var cotMeta = fN(cotData.meta || '0');
+            var cotProg = cotData.progreso || 0;
+            if (el('ckKpiCot')) el('ckKpiCot').textContent = numTotalCot + ' cotizaciones';
+            if (el('ckPctCot')) el('ckPctCot').textContent = cotProg + '%';
+            if (el('ckMetaCot')) {
+                var montoRef = cotData.total_monto_cotizado || '0';
+                el('ckMetaCot').textContent = 'Monto: $' + montoRef;
+            }
+            setTimeout(function() {
+                var fillCot = el('ckProgCot');
+                if (fillCot) fillCot.style.width = Math.min(100, cotProg) + '%';
+            }, 50);
+            // Trend for cotizado
+            var trendCotEl = el('ckTrendCot');
+            if (trendCotEl && prevCot > 0 && totCot !== prevCot) {
+                var tPctCot = Math.round((totCot - prevCot) / prevCot * 100);
+                var upCot = tPctCot >= 0;
+                trendCotEl.innerHTML = '<span style="color:' + (upCot ? '#16A34A' : '#DC2626') + ';font-weight:700;font-size:0.60rem;">' +
+                    (upCot ? '↑' : '↓') + ' ' + Math.abs(tPctCot) + '% vs mes ant.</span>';
+            } else if (trendCotEl) {
+                trendCotEl.innerHTML = '';
+            }
 
             // Show KPI row
             var kpiRow = el('ckKpiRow');
             if (kpiRow) kpiRow.style.display = 'grid';
+
+            // Add click handler on cotizado KPI card for desglose
+            var cotCard = document.querySelector('.ck-kpi--cot');
+            if (cotCard && !cotCard._desgloseBound) {
+                cotCard.style.cursor = 'pointer';
+                cotCard.title = 'Click para ver desglose de cotizaciones';
+                cotCard.addEventListener('click', function() {
+                    abrirDesgloseCotizaciones();
+                });
+                cotCard._desgloseBound = true;
+            }
 
             // Build rows
             var html = '';
@@ -1774,7 +1810,13 @@
                 for (var i = 0; i < data.rows.length; i++) { html += buildClientesFullRow(data.rows[i]); }
                 if (tbody) tbody.innerHTML = html;
             }
-            if (statsEl && data) statsEl.textContent = 'Total: $' + (data.total_facturado || '0') + '  ·  ' + (data.progreso || 0) + '% de meta';
+            if (statsEl && data) {
+                if (vista === 'cotizado') {
+                    statsEl.textContent = 'Total: ' + (data.num_total_cotizaciones || data.total_facturado || '0') + ' cotizaciones  ·  Monto: $' + (data.total_monto_cotizado || '0') + '  ·  ' + (data.progreso || 0) + '% de meta';
+                } else {
+                    statsEl.textContent = 'Total: $' + (data.total_facturado || '0') + '  ·  ' + (data.progreso || 0) + '% de meta';
+                }
+            }
             overlay.style.display = 'flex';
             document.body.style.overflow = 'hidden';
             if (typeof bindTableEvents === 'function') bindTableEvents();
@@ -1789,6 +1831,60 @@
             // Volver topbar a facturado
             if (_clientesPanelData.facturado) updateTopbarFromClientesPanel(_clientesPanelData.facturado);
         };
+
+        function abrirDesgloseCotizaciones() {
+            var vendedores = getVendedoresParam();
+            var url = '/app/api/desglose-cotizaciones/?mes=' + currentMes + '&anio=' + currentAnio;
+            if (vendedores) url += '&vendedores=' + vendedores;
+
+            // Use the clientesDetalleOverlay to show desglose
+            var overlay = document.getElementById('clientesDetalleOverlay');
+            if (!overlay) return;
+            var titulo = document.getElementById('clientesDetalleTitulo');
+            var statsEl = document.getElementById('clientesDetalleStats');
+            var thead = document.getElementById('clientesDetalleThead');
+            var tbody = document.getElementById('clientesDetalleTbody');
+
+            if (titulo) titulo.textContent = 'Cotizaciones Creadas — Desglose por Cliente';
+            if (thead) thead.innerHTML =
+                '<tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">' +
+                '<th class="px-2 py-3 text-left font-black" style="width:5%">#</th>' +
+                '<th class="px-2 py-3 text-left font-black" style="width:45%">Cliente</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-blue-600" style="width:25%">Cotizaciones</th>' +
+                '<th class="py-3 pr-2 text-right font-black text-gray-700" style="width:25%">Monto Total</th>' +
+                '</tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>';
+            if (statsEl) statsEl.textContent = 'Cargando desglose...';
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            fetch(url)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.ok || !data.rows || data.rows.length === 0) {
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center py-20 text-gray-400 italic">Sin datos.</td></tr>';
+                        if (statsEl) statsEl.textContent = '0 cotizaciones';
+                        return;
+                    }
+                    var html = '';
+                    for (var i = 0; i < data.rows.length; i++) {
+                        var r = data.rows[i];
+                        var fmtMonto = '$' + Number(r.monto_total).toLocaleString('en-US', { maximumFractionDigits: 0 });
+                        html += '<tr class="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">' +
+                            '<td class="px-2 py-3 text-gray-400 text-xs">' + (i + 1) + '</td>' +
+                            '<td class="px-2 py-3 font-semibold text-gray-800 text-xs">' + (r.cliente || 'Sin Cliente') + '</td>' +
+                            '<td class="py-3 pr-2 text-right font-black text-blue-600 text-sm">' + r.num_cotizaciones + '</td>' +
+                            '<td class="py-3 pr-2 text-right font-medium text-gray-600 text-xs">' + fmtMonto + '</td>' +
+                            '</tr>';
+                    }
+                    if (tbody) tbody.innerHTML = html;
+                    if (statsEl) statsEl.textContent = 'Total: ' + data.total + ' cotizaciones';
+                })
+                .catch(function(err) {
+                    console.error('Error fetching desglose cotizaciones:', err);
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center py-20 text-red-400 italic">Error al cargar.</td></tr>';
+                });
+        }
 
         function refreshCrmTable() {
             if (currentTab === 'clientes') {

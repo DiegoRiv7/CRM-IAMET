@@ -47,6 +47,7 @@ class UserProfile(models.Model):
     meta_mensual = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('1500000'), verbose_name="Meta Facturado")
     meta_oportunidades = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Oportunidades")
     meta_cotizado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cotizado")
+    meta_cotizado_numero = models.IntegerField(default=0, verbose_name="Meta Cotizado (Numero)")
     meta_cobrado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cobrado")
 
     ROL_CHOICES = [
@@ -230,6 +231,7 @@ class Cliente(models.Model):
     meta_cobrado = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name="Meta Cobrado")
     meta_oportunidades = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name="Meta Oportunidades")
     meta_cotizado = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name="Meta Cotizado")
+    meta_cotizado_numero = models.IntegerField(default=0, verbose_name="Meta Cotizado (Numero)")
 
     def __str__(self):
         """

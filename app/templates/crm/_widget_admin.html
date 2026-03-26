@@ -590,7 +590,7 @@ window.admEditCliente = function(cid){
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Facturado</label><input class="admin-input" id="ceMF-'+cid+'" type="number" value="'+(c.meta_mensual||0)+'"></div>'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cobrado</label><input class="admin-input" id="ceMC-'+cid+'" type="number" value="'+(c.meta_cobrado||0)+'"></div>'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Opor.</label><input class="admin-input" id="ceMO-'+cid+'" type="number" value="'+(c.meta_oportunidades||0)+'"></div>'
-    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cotizado</label><input class="admin-input" id="ceMQ-'+cid+'" type="number" value="'+(c.meta_cotizado||0)+'"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cotizaciones</label><input class="admin-input" id="ceMQN-'+cid+'" type="number" min="0" step="1" value="'+(c.meta_cotizado_numero||0)+'"></div>'
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:4px;">'
     +'<button class="admin-btn admin-btn-primary" onclick="admGuardarCliente('+cid+')">Guardar</button>'
@@ -607,7 +607,7 @@ window.admGuardarCliente = function(cid){
     meta_mensual:      (document.getElementById('ceMF-'+cid)||{}).value||0,
     meta_cobrado:      (document.getElementById('ceMC-'+cid)||{}).value||0,
     meta_oportunidades:(document.getElementById('ceMO-'+cid)||{}).value||0,
-    meta_cotizado:     (document.getElementById('ceMQ-'+cid)||{}).value||0
+    meta_cotizado_numero: (document.getElementById('ceMQN-'+cid)||{}).value||0
   };
   fetch('/app/api/admin/clientes/'+cid+'/',{
     method:'PUT',
@@ -699,12 +699,12 @@ window.loadMetas = function(){
     var h = '<div class="admin-card-inner">';
     h += '<div class="admin-content-header"><span class="admin-content-title">Metas por Vendedor</span></div>';
     h += '<p class="admin-help">Define las metas mensuales de cada vendedor. Haz clic en Guardar por fila para aplicar los cambios.</p>';
-    h += '<table class="admin-table"><thead><tr><th>Vendedor</th><th>Meta Facturado</th><th>Meta Cotizado</th><th>Meta Cobrado</th><th>Meta Opor.</th><th></th></tr></thead><tbody>';
+    h += '<table class="admin-table"><thead><tr><th>Vendedor</th><th>Meta Facturado</th><th>Meta Cotizaciones</th><th>Meta Cobrado</th><th>Meta Opor.</th><th></th></tr></thead><tbody>';
     vendedores.forEach(function(u){
       h += '<tr>';
       h += '<td><strong>'+((u.first_name+' '+u.last_name).trim()||u.username)+'</strong><br><span style="color:#8E8E93;font-size:0.72rem;">@'+u.username+'</span></td>';
       h += '<td><input class="admin-input" id="mMF-'+u.id+'" type="number" value="'+(u.meta_mensual||0)+'" style="max-width:120px;text-align:right;"></td>';
-      h += '<td><input class="admin-input" id="mMQ-'+u.id+'" type="number" value="'+(u.meta_cotizado||0)+'" style="max-width:120px;text-align:right;"></td>';
+      h += '<td><input class="admin-input" id="mMQN-'+u.id+'" type="number" min="0" step="1" value="'+(u.meta_cotizado_numero||0)+'" style="max-width:120px;text-align:right;"></td>';
       h += '<td><input class="admin-input" id="mMC-'+u.id+'" type="number" value="'+(u.meta_cobrado||0)+'" style="max-width:120px;text-align:right;"></td>';
       h += '<td><input class="admin-input" id="mMO-'+u.id+'" type="number" value="'+(u.meta_oportunidades||0)+'" style="max-width:100px;text-align:right;"></td>';
       h += '<td><button class="admin-btn admin-btn-primary" onclick="admGuardarMeta('+u.id+')" style="white-space:nowrap;">Guardar</button></td>';
@@ -717,15 +717,17 @@ window.loadMetas = function(){
 
 window.admGuardarMeta = function(uid){
   var metas = {
-    meta_mensual:      (document.getElementById('mMF-'+uid)||{}).value||0,
-    meta_cotizado:     (document.getElementById('mMQ-'+uid)||{}).value||0,
-    meta_cobrado:      (document.getElementById('mMC-'+uid)||{}).value||0,
-    meta_oportunidades:(document.getElementById('mMO-'+uid)||{}).value||0
+    mensual:            (document.getElementById('mMF-'+uid)||{}).value||0,
+    cotizado_numero:    (document.getElementById('mMQN-'+uid)||{}).value||0,
+    cobrado:            (document.getElementById('mMC-'+uid)||{}).value||0,
+    oportunidades:      (document.getElementById('mMO-'+uid)||{}).value||0
   };
+  var payload = {};
+  payload[uid] = metas;
   fetch('/app/api/admin/metas/',{
     method:'PUT',
     headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
-    body:JSON.stringify({user_id: uid, metas: metas})
+    body:JSON.stringify({metas: payload})
   }).then(function(r){return r.json();}).then(function(res){
     if(res.success) _showAdminToast('Meta guardada');
     else _showAdminToast(res.error||'Error al guardar', false);
