@@ -17,10 +17,8 @@
 
         currentMarca = (options.producto || options.marca || '').toUpperCase();
 
-        // Check if user is admin
-        isAdmin = document.body.classList.contains('is-supervisor') ||
-                  document.querySelector('.admin-badge') !== null ||
-                  (typeof window._CRM_CONFIG !== 'undefined' && window._CRM_CONFIG.es_supervisor);
+        // Check if user is supervisor or superuser
+        isAdmin = (typeof window._CRM_CONFIG !== 'undefined' && (window._CRM_CONFIG.esSupervisor || window._CRM_CONFIG.isSuperuser));
 
         // Show/hide import button
         var importBtn = document.getElementById('campBtnImportar');
