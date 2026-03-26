@@ -564,34 +564,85 @@
         }
     }
 
-    // Nueva cotizacion button — open the full cotizacion creation page
+    // Nueva cotizacion button — confirm conversion to oportunidad, then open cotizador
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpNuevaCot' || e.target.closest('#wpNuevaCot')) {
             var data = window._currentProspectoData;
-            if (data && data.cliente_id) {
-                // Open cotizador in the existing iframe widget
-                if (typeof openCotizador === 'function') {
-                    // Close prospecto widget first
-                    var w = document.getElementById('widgetProspecto');
-                    if (w) w.classList.remove('active');
-                    // Open cotizador with client pre-selected
-                    var cotizadorOverlay = document.getElementById('widgetCotizador');
-                    var cotizadorIframe = document.getElementById('cotizadorIframe');
-                    if (cotizadorOverlay && cotizadorIframe) {
-                        cotizadorOverlay.classList.add('active');
-                        cotizadorOverlay.classList.remove('closing');
-                        cotizadorIframe.src = '/app/cliente/' + data.cliente_id + '/crear-cotizacion/?widget_mode=1';
-                    }
-                } else {
-                    // Fallback: open in new tab
-                    window.open('/app/cliente/' + data.cliente_id + '/crear-cotizacion/', '_blank');
-                }
-            } else {
-                // No client, open generic cotizacion page
-                window.open('/app/crear-cotizacion/', '_blank');
+            if (!data) return;
+
+            // If already converted, go straight to cotizador
+            if (data.oportunidad_creada_id) {
+                abrirCotizadorConOpp(data.oportunidad_creada_id, data.cliente_id);
+                return;
             }
+
+            // Show confirmation dialog
+            var html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10500;display:flex;align-items:center;justify-content:center;" id="wpConvertirDialog">' +
+                '<div style="background:#fff;border-radius:16px;padding:28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">' +
+                    '<div style="width:40px;height:40px;border-radius:10px;background:#FF950022;display:flex;align-items:center;justify-content:center;">' +
+                        '<svg width="20" height="20" fill="none" stroke="#FF9500" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+                    '</div>' +
+                    '<div>' +
+                        '<h3 style="margin:0;font-size:15px;font-weight:700;color:#1C1C1E;">Convertir a Oportunidad</h3>' +
+                        '<p style="margin:2px 0 0;font-size:12px;color:#86868B;">Para cotizar, este prospecto se convertira en oportunidad</p>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="background:#F9FAFB;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#3C3C43;">' +
+                    '<strong>' + escapeHtml(data.nombre) + '</strong> pasara a la tabla de Oportunidades como <strong>' + (data.tipo_pipeline === 'proyecto' ? 'Proyecto' : 'Runrate') + '</strong>. Los comentarios se migraran a la conversacion.' +
+                '</div>' +
+                '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+                    '<button onclick="document.getElementById(\'wpConvertirDialog\').remove()" style="padding:10px 18px;border:none;background:#F2F2F7;border-radius:8px;color:#86868B;font-size:13px;cursor:pointer;">Cancelar</button>' +
+                    '<button id="wpConfirmarConvertir" style="padding:10px 20px;border:none;background:#0052D4;border-radius:8px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Convertir y Cotizar</button>' +
+                '</div>' +
+                '</div></div>';
+            document.body.insertAdjacentHTML('beforeend', html);
+
+            document.getElementById('wpConfirmarConvertir').addEventListener('click', function() {
+                var btn = this;
+                btn.disabled = true;
+                btn.textContent = 'Convirtiendo...';
+
+                fetch('/app/api/prospecto/' + data.id + '/convertir/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body: '{}'
+                }).then(function(r) { return r.json(); }).then(function(res) {
+                    document.getElementById('wpConvertirDialog').remove();
+                    if (res.success) {
+                        // Update local data
+                        window._currentProspectoData.oportunidad_creada_id = res.oportunidad_id;
+                        // Reload table
+                        cargarProspectos();
+                        // Close prospecto widget
+                        var w = document.getElementById('widgetProspecto');
+                        if (w) w.classList.remove('active');
+                        // Open cotizador with oportunidad pre-selected
+                        abrirCotizadorConOpp(res.oportunidad_id, res.cliente_id);
+                        // Toast
+                        var toast = document.getElementById('widgetToast');
+                        if (toast) {
+                            toast.textContent = 'Prospecto convertido a oportunidad #' + res.oportunidad_id;
+                            toast.classList.add('show');
+                            setTimeout(function() { toast.classList.remove('show'); }, 3000);
+                        }
+                    }
+                });
+            });
         }
     });
+
+    function abrirCotizadorConOpp(oppId, clienteId) {
+        var cotizadorOverlay = document.getElementById('widgetCotizador');
+        var cotizadorIframe = document.getElementById('cotizadorIframe');
+        if (cotizadorOverlay && cotizadorIframe) {
+            cotizadorOverlay.classList.add('active');
+            cotizadorOverlay.classList.remove('closing');
+            cotizadorIframe.src = '/app/crear-cotizacion/oportunidad/' + oppId + '/?widget_mode=1';
+        } else {
+            window.open('/app/crear-cotizacion/oportunidad/' + oppId + '/', '_blank');
+        }
+    }
 
     // Expose for tab change
     window.cargarProspectos = cargarProspectos;

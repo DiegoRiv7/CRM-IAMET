@@ -16,6 +16,7 @@ from .views_grupos import get_usuarios_visibles_ids
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
+    MensajeOportunidad,
 )
 
 logger = logging.getLogger(__name__)
@@ -227,6 +228,71 @@ def api_prospecto_etapa(request, prospecto_id):
         'success': True,
         'etapa': prospecto.etapa,
         'oportunidad_id': oportunidad_id,
+    })
+
+
+@login_required
+def api_prospecto_convertir(request, prospecto_id):
+    """POST: Convierte prospecto a oportunidad (sin importar etapa).
+    Migra comentarios a la conversación de la oportunidad."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requerido'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.select_related('cliente', 'contacto', 'usuario').get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    # Si ya tiene oportunidad creada, devolver esa
+    if prospecto.oportunidad_creada_id:
+        return JsonResponse({
+            'success': True,
+            'oportunidad_id': prospecto.oportunidad_creada_id,
+            'cliente_id': prospecto.cliente_id,
+            'ya_existia': True,
+        })
+
+    # Crear oportunidad con datos del prospecto
+    opp = TodoItem.objects.create(
+        usuario=prospecto.usuario,
+        oportunidad=prospecto.nombre,
+        cliente=prospecto.cliente,
+        contacto=prospecto.contacto,
+        producto=prospecto.producto,
+        area=prospecto.area,
+        tipo_negociacion=prospecto.tipo_pipeline,
+        monto=Decimal('0.00'),
+        probabilidad_cierre=5,
+        mes_cierre=str(timezone.now().month).zfill(2),
+        anio_cierre=timezone.now().year,
+        comentarios=prospecto.comentarios,
+        estado_crm='nueva',
+    )
+
+    # Migrar comentarios del prospecto a la conversación de la oportunidad
+    if prospecto.comentarios:
+        MensajeOportunidad.objects.create(
+            oportunidad=opp,
+            usuario=prospecto.usuario,
+            texto=f'[Comentario inicial del prospecto] {prospecto.comentarios}',
+        )
+    for com in ProspectoComentario.objects.filter(prospecto=prospecto).select_related('usuario').order_by('fecha_creacion'):
+        MensajeOportunidad.objects.create(
+            oportunidad=opp,
+            usuario=com.usuario,
+            texto=com.texto,
+        )
+
+    # Marcar prospecto como ganado y vincular
+    prospecto.oportunidad_creada = opp
+    prospecto.etapa = 'cerrado_ganado'
+    prospecto.save()
+
+    return JsonResponse({
+        'success': True,
+        'oportunidad_id': opp.id,
+        'cliente_id': prospecto.cliente_id,
+        'ya_existia': False,
     })
 
 

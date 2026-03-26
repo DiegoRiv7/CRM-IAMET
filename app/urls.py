@@ -232,6 +232,7 @@ urlpatterns = [
     path('api/crear-prospecto/', views.api_crear_prospecto, name='api_crear_prospecto'),
     path('api/prospecto/<int:prospecto_id>/detalle/', views.api_prospecto_detalle, name='api_prospecto_detalle'),
     path('api/prospecto/<int:prospecto_id>/etapa/', views.api_prospecto_etapa, name='api_prospecto_etapa'),
+    path('api/prospecto/<int:prospecto_id>/convertir/', views.api_prospecto_convertir, name='api_prospecto_convertir'),
     path('api/prospecto/<int:prospecto_id>/comentarios/', views.api_prospecto_comentarios, name='api_prospecto_comentarios'),
     path('api/prospecto/<int:prospecto_id>/actividades/', views.api_prospecto_actividades, name='api_prospecto_actividades'),
     path('api/prospecto-actividad/<int:actividad_id>/toggle/', views.api_prospecto_actividad_toggle, name='api_prospecto_actividad_toggle'),
