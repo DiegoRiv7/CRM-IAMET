@@ -4,7 +4,7 @@
         <!-- Loading -->
         <div id="prospectoLoading" style="text-align:center;padding:4rem;color:#86868B;">
             <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;"
-                viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="2">
+                viewBox="0 0 24 24" fill="none" stroke="#5856D6" stroke-width="2">
                 <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
             </svg>
             Cargando prospecto...
@@ -31,93 +31,174 @@
             </div>
 
             <!-- Pipeline -->
-            <div class="wo-pipeline" style="padding:0 1.5rem;">
-                <div style="display:flex;align-items:center;gap:4px;overflow-x:auto;padding:12px 0;scrollbar-width:none;" id="wpPipelineStages" class="wp-pipeline-container">
+            <div class="wo-pipeline">
+                <div class="wo-pipeline-container">
+                    <!-- Left Arrow -->
+                    <div class="wo-scroll-btn"
+                        onclick="document.getElementById('wpPipelineScroll').scrollBy({left:-150, behavior:'smooth'})">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                    </div>
+
+                    <div class="wo-pipeline-scroll" id="wpPipelineScroll">
+                        <div class="wo-pipeline-stages" id="wpPipelineStages"></div>
+                    </div>
+
+                    <!-- Right Arrow -->
+                    <div class="wo-scroll-btn"
+                        onclick="document.getElementById('wpPipelineScroll').scrollBy({left:150, behavior:'smooth'})">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
                 </div>
             </div>
 
             <!-- Content Grid -->
-            <div style="flex:1;overflow-y:auto;padding:0 1.5rem 1.5rem;">
-                <!-- Info Card -->
-                <div class="wo-card" style="margin-bottom:16px;">
-                    <div class="wo-info-grid" style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;">
-                        <div class="wo-info-item">
-                            <span class="wo-info-label">Cliente</span>
-                            <span class="wo-info-value medium" id="wpCliente">-</span>
-                        </div>
-                        <div class="wo-info-item">
-                            <span class="wo-info-label">Contacto</span>
-                            <span class="wo-info-value medium" id="wpContacto">-</span>
-                        </div>
-                        <div class="wo-info-item">
-                            <span class="wo-info-label">Producto</span>
-                            <span class="wo-info-value medium" id="wpProducto">-</span>
-                        </div>
-                        <div class="wo-info-item">
-                            <span class="wo-info-label">Area</span>
-                            <span class="wo-info-value medium" id="wpArea">-</span>
-                        </div>
-                        <div class="wo-info-item">
-                            <span class="wo-info-label">Tipo Pipeline</span>
-                            <span class="wo-info-value medium" id="wpTipoPipeline">-</span>
-                        </div>
-                        <div class="wo-info-item">
-                            <span class="wo-info-label">Comentario Inicial</span>
-                            <span class="wo-info-value" id="wpComentarioInicial" style="font-size:0.82rem;color:#3C3C43;">-</span>
+            <div class="wo-content">
+                <div class="wo-grid">
+                    <!-- DOM ITEM 1: Info card (Row 1, Col 1) -->
+                    <div class="wo-card" style="display:flex;flex-direction:column;">
+                        <div class="wo-info-grid" style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;flex:1;">
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Cliente</span>
+                                <span class="wo-info-value" id="wpCliente">-</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Contacto</span>
+                                <span class="wo-info-value medium" id="wpContacto">-</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Tipo Pipeline</span>
+                                <span class="wo-info-value medium" id="wpTipoPipeline">-</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Producto</span>
+                                <span class="wo-info-value medium" id="wpProducto">-</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Area</span>
+                                <span class="wo-info-value medium" id="wpArea">-</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Comentario Inicial</span>
+                                <span class="wo-info-value" id="wpComentarioInicial" style="font-size:0.82rem;color:#3C3C43;">-</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Two-column layout: Comments + Activities -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <!-- DOM ITEM 2: Cotizaciones card (Row 1, Col 2) -->
+                    <div class="wo-card" style="display:flex;flex-direction:column;">
+                        <div class="wo-section-header">
+                            <h3 class="wo-section-title">Cotizaciones</h3>
+                            <button class="wo-btn-new" id="wpNuevaCot">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                Nueva
+                            </button>
+                        </div>
+                        <div class="wo-quote-list" id="wpQuoteList" style="flex:1;max-height:180px;">
+                            <div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Sin cotizaciones aun</div>
+                        </div>
+                    </div>
 
-                    <!-- Comentarios / Seguimiento -->
-                    <div class="wp-comments-section">
-                        <div class="wp-comments-header">
-                            Comentarios / Seguimiento
+                    <!-- DOM ITEM 3: Comentarios / Seguimiento (Row 2, Col 1) -->
+                    <div class="wo-card wp-chat-card" style="display:flex;flex-direction:column;">
+                        <div class="wo-section-header">
+                            <h3 class="wo-section-title">Comentarios / Seguimiento</h3>
                         </div>
-                        <div class="wp-comments-list" id="wpComentariosList">
+                        <div class="wp-chat-messages" id="wpComentariosList">
                         </div>
-                        <div class="wp-comments-input">
+                        <div class="wp-chat-input">
                             <textarea id="wpNuevoComentario" placeholder="Escribe un comentario..." rows="2"></textarea>
-                            <button type="button" id="wpBtnAgregarComentario">Enviar</button>
+                            <button type="button" id="wpBtnAgregarComentario">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13" />
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Actividades Programadas -->
-                    <div class="wp-comments-section">
-                        <div class="wp-comments-header">
-                            Actividades Programadas
-                        </div>
-                        <div class="wp-comments-list" id="wpActividadesList">
-                        </div>
-                        <div style="padding:10px 14px;border-top:1px solid #E5E5EA;">
-                            <div style="display:flex;gap:6px;margin-bottom:6px;">
-                                <select id="wpActTipo" style="flex:0 0 auto;padding:6px 8px;border:1px solid #E5E5EA;border-radius:6px;font-size:11px;background:#F9FAFB;">
-                                    <option value="llamada">Llamada</option>
-                                    <option value="correo">Correo</option>
-                                    <option value="reunion">Reunion</option>
-                                    <option value="tarea" selected>Tarea</option>
-                                    <option value="otro">Otro</option>
-                                </select>
-                                <input type="datetime-local" id="wpActFecha" style="flex:1;padding:6px 8px;border:1px solid #E5E5EA;border-radius:6px;font-size:11px;">
+                    <!-- DOM ITEM 4: Right column (Row 2, Col 2) -->
+                    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+                        <!-- Actividad Programada card -->
+                        <div class="wo-card" id="wpActividadCard" style="padding:0.85rem 1rem;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                                <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">ACTIVIDAD PROGRAMADA</span>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <button id="wpBtnNuevaActividad" style="width:20px;height:20px;border-radius:50%;background:#5856D6;border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Nueva actividad">+</button>
+                                    <div id="wpActividadChevron" style="cursor:pointer;" onclick="wpAbrirPanelActividades()">
+                                        <svg width="14" height="14" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;display:block;"><path d="M9 18l6-6-6-6"/></svg>
+                                    </div>
+                                </div>
                             </div>
-                            <div style="display:flex;gap:6px;">
-                                <input type="text" id="wpActDescripcion" placeholder="Descripcion de la actividad..." style="flex:1;padding:6px 8px;border:1px solid #E5E5EA;border-radius:6px;font-size:11px;">
-                                <button type="button" id="wpBtnAgregarActividad" style="padding:6px 14px;background:#007AFF;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Agregar</button>
+                            <div id="wpActividadRecienteBody" style="display:flex;align-items:center;gap:0.5rem;">
+                                <div style="font-size:0.82rem;color:#9CA3AF;">Sin actividades</div>
+                            </div>
+                        </div>
+
+                        <!-- Vendedor / Cliente card -->
+                        <div class="wo-card">
+                            <div class="wo-stakeholder">
+                                <div class="wo-stakeholder-label">Vendedor</div>
+                                <div class="wo-stakeholder-info">
+                                    <div class="wo-avatar blue" id="wpVendedorAvatar"></div>
+                                    <div>
+                                        <div class="wo-stakeholder-name" id="wpVendedorName"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="wo-divider"></div>
+                            <div class="wo-stakeholder">
+                                <div class="wo-stakeholder-label">Cliente</div>
+                                <div class="wo-stakeholder-info">
+                                    <div class="wo-avatar purple" id="wpClienteAvatar"></div>
+                                    <div>
+                                        <div class="wo-stakeholder-name" id="wpClienteName"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                 </div>
+            </div>
 
-                <!-- Cotizar rapido button -->
-                <div style="margin-top:16px;text-align:center;">
-                    <button type="button" onclick="if(typeof cotizarRapidoAbrir==='function')cotizarRapidoAbrir();"
-                        style="padding:10px 24px;background:#FF950022;color:#FF9500;border:2px solid #FF9500;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">
-                        Cotizar Rapido
-                    </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PANEL: ACTIVIDADES DEL PROSPECTO ═══ -->
+<div class="widget-overlay" id="widgetProspectoActividades" style="z-index:10200;display:none;">
+    <div class="widget-card widget-card-md" style="width:600px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;">
+        <div class="wo-header" style="border-bottom:1px solid #E5E5EA;">
+            <div class="wo-header-top">
+                <div>
+                    <h1 class="wo-title" style="font-size:1.1rem;">Actividades del Prospecto</h1>
                 </div>
+                <button type="button" class="widget-close" onclick="document.getElementById('widgetProspectoActividades').style.display='none';">&times;</button>
+            </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:1rem;" id="wpActividadesFullList">
+        </div>
+        <div style="padding:1rem;border-top:1px solid #E5E5EA;background:#F9FAFB;">
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+                <select id="wpActTipo" style="flex:0 0 auto;padding:6px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.75rem;background:#fff;">
+                    <option value="llamada">Llamada</option>
+                    <option value="correo">Correo</option>
+                    <option value="reunion">Reunion</option>
+                    <option value="tarea" selected>Tarea</option>
+                    <option value="otro">Otro</option>
+                </select>
+                <input type="datetime-local" id="wpActFecha" style="flex:1;padding:6px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.75rem;">
+            </div>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="wpActDescripcion" placeholder="Descripcion de la actividad..." style="flex:1;padding:6px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.75rem;">
+                <button type="button" id="wpBtnAgregarActividad" style="padding:6px 16px;background:#5856D6;color:#fff;border:none;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">Agregar</button>
             </div>
         </div>
     </div>

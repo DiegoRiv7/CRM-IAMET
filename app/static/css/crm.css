@@ -5354,36 +5354,110 @@
 }
 
 /* ── Prospeccion ── */
-#widgetProspecto .wp-pipeline-container {
-    display: flex; align-items: center; gap: 4px;
-    overflow-x: auto; padding: 12px 0;
-    scrollbar-width: none;
-}
-#widgetProspecto .wp-pipeline-container::-webkit-scrollbar { display: none; }
 
-.wp-comments-section {
-    flex: 1; display: flex; flex-direction: column;
-    border: 1px solid #E5E5EA; border-radius: 12px; overflow: hidden;
+/* Chat-style comments for prospecto widget */
+.wp-chat-card {
+    min-height: 280px;
 }
-.wp-comments-header {
-    padding: 10px 14px; background: #F9F9FB; border-bottom: 1px solid #E5E5EA;
-    font-size: 12px; font-weight: 700; color: #1C1C1E;
+.wp-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 320px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
 }
-.wp-comments-list {
-    flex: 1; overflow-y: auto; max-height: 300px;
+.wp-chat-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
-.wp-comments-input {
-    display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #E5E5EA;
+.wp-chat-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0052D422;
+    color: #0052D4;
+    font-size: 0.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
-.wp-comments-input textarea {
-    flex: 1; border: 1px solid #E5E5EA; border-radius: 8px; padding: 8px;
-    font-size: 12px; resize: none; font-family: inherit;
+.wp-chat-bubble {
+    flex: 1;
+    min-width: 0;
+    background: #F2F2F7;
+    border-radius: 0 12px 12px 12px;
+    padding: 0.5rem 0.75rem;
 }
-.wp-comments-input button {
-    padding: 8px 16px; background: #007AFF; color: #fff; border: none;
-    border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
+.wp-chat-bubble--system {
+    background: #5856D60D;
+    border-left: 3px solid #5856D6;
+    border-radius: 0 12px 12px 0;
 }
-.wp-comments-input button:hover { background: #0066DD; }
+.wp-chat-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+.wp-chat-author {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #1C1C1E;
+}
+.wp-chat-time {
+    font-size: 0.62rem;
+    color: #86868B;
+}
+.wp-chat-text {
+    font-size: 0.8rem;
+    color: #3C3C43;
+    line-height: 1.45;
+    word-break: break-word;
+}
+.wp-chat-input {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-top: 1px solid #E5E5EA;
+    align-items: flex-end;
+}
+.wp-chat-input textarea {
+    flex: 1;
+    border: 1px solid #E5E5EA;
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+    max-height: 80px;
+}
+.wp-chat-input textarea:focus {
+    outline: none;
+    border-color: #5856D6;
+}
+.wp-chat-input button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #5856D6;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.wp-chat-input button:hover {
+    background: #4240B0;
+}
 
 .btn-campana:hover { background: #FF950022 !important; }
 
