@@ -697,6 +697,7 @@ def api_crm_table_data(request):
             'meta': format_money(api_meta),
             'progreso': api_progreso_cot,
             'widget_left_stat': f'{num_cotizaciones} Cotizaciones Creadas',
+            'num_total_cotizaciones': num_cotizaciones,
         })
 
     elif tab_activo == 'cobrado':
@@ -1023,6 +1024,7 @@ def api_crm_table_data(request):
                     Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
                 )
             total_by_id = {}
+            count_by_id = {}
             prod_dict_raw = {}
             PRODS = ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA']
             PROD_KEYS = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza']
@@ -1032,6 +1034,7 @@ def api_crm_table_data(request):
                 cid = cot.cliente_id
                 t = cot.total or Decimal('0')
                 total_by_id[cid] = total_by_id.get(cid, Decimal('0')) + t
+                count_by_id[cid] = count_by_id.get(cid, 0) + 1
                 prod = (cot.oportunidad.producto if cot.oportunidad else '') or ''
                 prod_upper = prod.upper()
                 if cid not in prod_dict_raw:
@@ -1096,10 +1099,34 @@ def api_crm_table_data(request):
                 'meta': format_money(meta_c),
                 'faltante': format_money(faltante),
                 'prev_total': format_money(_prev_by_id_cl.get(c.id, Decimal('0'))),
+                'num_cotizaciones': count_by_id.get(c.id, 0) if vista == 'cotizado' else 0,
             })
             total_acum += total_c
 
         num_clientes_c = clientes_qs.count()
+
+        # For cotizado vista, return number-based KPI
+        if vista == 'cotizado':
+            total_num_cot = sum(count_by_id.values())
+            return JsonResponse({
+                'tab': 'clientes',
+                'vista': vista,
+                'vista_label': vista_label,
+                'rows': rows,
+                'footer': {
+                    'left': f'{num_clientes_c} clientes',
+                    'right': f'Total: {total_num_cot} cotizaciones',
+                },
+                'total_facturado': str(total_num_cot),
+                'total_monto_cotizado': format_money(total_acum),
+                'widget_label': 'Cotizaciones Creadas',
+                'meta': format_money(api_meta),
+                'progreso': int((total_num_cot / int(api_meta) * 100)) if api_meta > 0 else 0,
+                'widget_left_stat': f'{num_clientes_c} Clientes',
+                'prev_sum': format_money(_prev_sum),
+                'num_total_cotizaciones': total_num_cot,
+            })
+
         return JsonResponse({
             'tab': 'clientes',
             'vista': vista,
@@ -3916,4 +3943,72 @@ def api_quick_crear_contacto(request):
         'success': True,
         'id': contacto.id,
         'nombre_completo': f"{contacto.nombre} {contacto.apellido}".strip(),
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_desglose_cotizaciones(request):
+    """Desglose de numero de cotizaciones por cliente."""
+    from datetime import datetime
+    from collections import Counter
+    user = request.user
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    es_supervisor = is_supervisor(user)
+
+    now = datetime.now()
+    mes_filter = request.GET.get('mes', str(now.month).zfill(2))
+    anio_filter = request.GET.get('anio', str(now.year))
+    vendedores_filter = request.GET.get('vendedores', '')
+    vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()] if vendedores_filter else []
+
+    try:
+        anio_int = int(anio_filter)
+    except ValueError:
+        anio_int = now.year
+
+    # Base queryset
+    base_qs = TodoItem.objects.filter(anio_cierre=anio_int)
+    if mes_filter != 'todos':
+        base_qs = base_qs.filter(mes_cierre=mes_filter)
+    if not es_supervisor:
+        usuarios_visibles = get_usuarios_visibles_ids(user)
+        if usuarios_visibles and len(usuarios_visibles) > 1:
+            base_qs = base_qs.filter(usuario_id__in=usuarios_visibles)
+        else:
+            base_qs = base_qs.filter(usuario=user)
+    elif vendedores_ids:
+        base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
+
+    opp_ids = base_qs.values_list('id', flat=True)
+    cot_qs = Cotizacion.objects.select_related('cliente').filter(
+        Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+    )
+
+    # Contar por cliente
+    count_by_client = Counter()
+    monto_by_client = {}
+    client_names = {}
+
+    for cot in cot_qs:
+        if not cot.cliente_id:
+            continue
+        count_by_client[cot.cliente_id] += 1
+        monto_by_client[cot.cliente_id] = monto_by_client.get(cot.cliente_id, Decimal('0')) + (cot.total or Decimal('0'))
+        if cot.cliente_id not in client_names:
+            client_names[cot.cliente_id] = cot.cliente.nombre_empresa if cot.cliente else 'Sin Cliente'
+
+    rows = []
+    for cid, count in count_by_client.most_common():
+        rows.append({
+            'cliente': client_names.get(cid, 'Sin Cliente'),
+            'cliente_id': cid,
+            'num_cotizaciones': count,
+            'monto_total': str(monto_by_client.get(cid, Decimal('0'))),
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'rows': rows,
+        'total': sum(count_by_client.values()),
     })

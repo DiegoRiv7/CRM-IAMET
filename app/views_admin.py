@@ -65,6 +65,7 @@ def api_admin_usuarios(request):
                 'meta_mensual': str(profile.meta_mensual) if profile else '0',
                 'meta_oportunidades': str(getattr(profile, 'meta_oportunidades', 0)) if profile else '0',
                 'meta_cotizado': str(getattr(profile, 'meta_cotizado', 0)) if profile else '0',
+                'meta_cotizado_numero': getattr(profile, 'meta_cotizado_numero', 0) if profile else 0,
                 'meta_cobrado': str(getattr(profile, 'meta_cobrado', 0)) if profile else '0',
                 'rol': getattr(profile, 'rol', 'vendedor') if profile else 'vendedor',
             })
@@ -168,6 +169,7 @@ def api_admin_clientes(request):
                 'meta_cobrado': str(c.meta_cobrado or 0),
                 'meta_oportunidades': str(c.meta_oportunidades or 0),
                 'meta_cotizado': str(c.meta_cotizado or 0),
+                'meta_cotizado_numero': c.meta_cotizado_numero or 0,
                 'rfc': c.rfc or '',
             })
         return JsonResponse({'clientes': data})
@@ -210,6 +212,11 @@ def api_admin_cliente_detalle(request, cliente_id):
                     setattr(cliente, campo, Decimal(str(data[campo])))
                 except Exception:
                     pass
+        if 'meta_cotizado_numero' in data:
+            try:
+                cliente.meta_cotizado_numero = int(data['meta_cotizado_numero'])
+            except (ValueError, TypeError):
+                pass
         cliente.save()
 
         return JsonResponse({'success': True})
@@ -294,6 +301,7 @@ def api_admin_metas(request):
                     if 'mensual' in meta_data: profile.meta_mensual = Decimal(str(meta_data['mensual']))
                     if 'oportunidades' in meta_data: profile.meta_oportunidades = Decimal(str(meta_data['oportunidades']))
                     if 'cotizado' in meta_data: profile.meta_cotizado = Decimal(str(meta_data['cotizado']))
+                    if 'cotizado_numero' in meta_data: profile.meta_cotizado_numero = int(meta_data['cotizado_numero'])
                     if 'cobrado' in meta_data: profile.meta_cobrado = Decimal(str(meta_data['cobrado']))
                 else:
                     # Legacy flat value = mensual

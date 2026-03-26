@@ -124,6 +124,7 @@ urlpatterns = [
     path('api/eliminar-comentario-oportunidad/<int:comentario_id>/', views.eliminar_comentario_oportunidad, name='eliminar_comentario_oportunidad'),
     path('api/descargar-archivo-oportunidad/<int:archivo_id>/', views.descargar_archivo_oportunidad, name='descargar_archivo_oportunidad'),
     path('api/vista-previa-archivo-oportunidad/<int:archivo_id>/', views.vista_previa_archivo_oportunidad, name='vista_previa_archivo_oportunidad'),
+    path('api/desglose-cotizaciones/', views.api_desglose_cotizaciones, name='api_desglose_cotizaciones'),
     path('api/buscar-clientes/', views.api_buscar_clientes, name='api_buscar_clientes'),
     path('api/buscar-contactos/', views.api_buscar_contactos, name='api_buscar_contactos'),
     path('api/quick-crear-cliente/', views.api_quick_crear_cliente, name='api_quick_crear_cliente'),
