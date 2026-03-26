@@ -102,66 +102,60 @@
                 }
 
 
-                // Re-bind event delegation after data loads
-                bindProspeccionTableEvents();
                 console.log('[PROSPECCION] Tabla cargada con', data.rows.length, 'clientes');
             });
     }
 
-    // ── Event delegation for clicks in prospeccion table ──
-    function bindProspeccionTableEvents() {
-        var tbody = document.getElementById('prospeccionTbody');
-        console.log('[PROSPECCION] bindProspeccionTableEvents, tbody:', tbody ? 'FOUND' : 'NOT FOUND');
+    // ── Global event delegation for ALL clicks in prospeccion table ──
+    // Using document-level delegation — works regardless of DOM timing
+    document.addEventListener('click', function(e) {
+        // Only process if we're inside prospeccionTbody
+        var tbody = e.target.closest('#prospeccionTbody');
         if (!tbody) return;
-        if (tbody._prospeccionBound) return; // Avoid double-binding
-        tbody._prospeccionBound = true;
 
-        tbody.addEventListener('click', function(e) {
-            console.log('[PROSPECCION] Click en tbody, target:', e.target.tagName, e.target.className);
+        console.log('[PROSPECCION] Click dentro de prospeccionTbody, target:', e.target.tagName, e.target.className, e.target.textContent.substring(0, 30));
 
-            // Handle product cell clicks
-            var td = e.target.closest('td[data-click-producto]');
-            if (td) {
-                var clienteId = parseInt(td.dataset.clickClienteId);
-                var clienteNombre = td.dataset.clickClienteNombre;
-                var producto = td.dataset.clickProducto;
-                console.log('[PROSPECCION] Click en producto:', producto, 'cliente:', clienteNombre, 'id:', clienteId);
-                if (producto) {
-                    abrirProspeccionConProducto(clienteId, clienteNombre, producto);
-                }
-                return;
+        // Handle campaign button clicks
+        var campBtn = e.target.closest('.btn-campana');
+        if (campBtn) {
+            e.stopPropagation();
+            var cId = campBtn.dataset.clienteId;
+            var linkEl = campBtn.closest('tr') ? campBtn.closest('tr').querySelector('.cliente-prospeccion-link') : null;
+            console.log('[PROSPECCION] Click campaña, clienteId:', cId);
+            if (typeof abrirEditorCampana === 'function') {
+                abrirEditorCampana({
+                    clienteId: cId ? parseInt(cId) : null,
+                    nombre: linkEl ? linkEl.dataset.clienteNombre : ''
+                });
             }
+            return;
+        }
 
-            // Handle campaign button clicks
-            var campBtn = e.target.closest('.btn-campana');
-            if (campBtn) {
-                var cId = parseInt(campBtn.dataset.clienteId);
-                var cNombre = campBtn.closest('tr') ? campBtn.closest('tr').querySelector('.cliente-prospeccion-link') : null;
-                console.log('[PROSPECCION] Click en campaña, clienteId:', cId);
-                if (typeof abrirEditorCampana === 'function') {
-                    abrirEditorCampana({ clienteId: cId, nombre: cNombre ? cNombre.dataset.clienteNombre : '' });
-                } else {
-                    console.error('[PROSPECCION] abrirEditorCampana no existe');
-                }
-                return;
-            }
+        // Handle client name clicks
+        var link = e.target.closest('.cliente-prospeccion-link');
+        if (link) {
+            console.log('[PROSPECCION] Click cliente:', link.dataset.clienteNombre, link.dataset.clienteId);
+            abrirClienteProspectos(
+                parseInt(link.dataset.clienteId),
+                link.dataset.clienteNombre,
+                link.dataset.clienteRfc
+            );
+            return;
+        }
 
-            // Handle client name clicks
-            var link = e.target.closest('.cliente-prospeccion-link');
-            if (link) {
-                console.log('[PROSPECCION] Click en cliente:', link.dataset.clienteNombre);
-                abrirClienteProspectos(
-                    parseInt(link.dataset.clienteId),
-                    link.dataset.clienteNombre,
-                    link.dataset.clienteRfc
-                );
+        // Handle product cell clicks (any td with data-click-producto)
+        var td = e.target.closest('td[data-click-producto]');
+        if (td) {
+            var clienteId = parseInt(td.dataset.clickClienteId);
+            var clienteNombre = td.dataset.clickClienteNombre || '';
+            var producto = td.dataset.clickProducto || '';
+            console.log('[PROSPECCION] Click producto:', producto, 'cliente:', clienteNombre, 'id:', clienteId);
+            if (producto) {
+                abrirProspeccionConProducto(clienteId, clienteNombre, producto);
             }
-        });
-    }
-    // Bind immediately if tbody exists
-    bindProspeccionTableEvents();
-    // Also bind after loading data (in case tbody was empty on first load)
-    window._bindProspeccionEvents = bindProspeccionTableEvents;
+            return;
+        }
+    });
 
     // Load clients if we are on the prospeccion tab
     if (new URLSearchParams(window.location.search).get('tab') === 'prospeccion') {
