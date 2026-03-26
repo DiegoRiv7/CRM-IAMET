@@ -1736,16 +1736,7 @@
             var chartsSection = el('ckChartsSection');
             if (chartsSection) chartsSection.style.display = 'block';
 
-            // Add click handler on cotizado KPI card for desglose
-            var cotCard = document.querySelector('.ck-kpi--cot');
-            if (cotCard && !cotCard._desgloseBound) {
-                cotCard.style.cursor = 'pointer';
-                cotCard.title = 'Click para ver desglose de cotizaciones';
-                cotCard.addEventListener('click', function() {
-                    abrirDesgloseCotizaciones();
-                });
-                cotCard._desgloseBound = true;
-            }
+            // Cotizado KPI card uses ckAbrirDetalle('cotizado') via onclick in HTML template
 
             ckRenderCharts(merged, totFact, totCob, totOpp, totCot, prevFact, prevCob, prevOpp, prevCot);
 
