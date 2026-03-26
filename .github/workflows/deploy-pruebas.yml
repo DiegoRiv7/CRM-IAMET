@@ -17,7 +17,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            cd ~/crm-pruebas
+            cd /home/iamet2026/crm-pruebas
             git pull origin pruebas
             sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec -T web python manage.py collectstatic --noinput
             sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restart web
