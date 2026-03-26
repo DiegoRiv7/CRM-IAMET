@@ -19,6 +19,5 @@ jobs:
           script: |
             cd /home/iamet2026/crm-pruebas
             git pull origin pruebas
-            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restart web
-            sleep 5
             sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec -T web python manage.py collectstatic --noinput --clear
+            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml up -d --force-recreate web
