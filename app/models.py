@@ -3711,3 +3711,85 @@ class LecturaGrupo(models.Model):
     class Meta:
         unique_together = ('usuario', 'grupo')
         verbose_name = 'Lectura de Grupo'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# PROSPECCIÓN
+# ══════════════════════════════════════════════════════════════════════
+
+class Prospecto(models.Model):
+    ETAPA_CHOICES = [
+        ('identificado', 'Identificado'),
+        ('calificado', 'Calificado'),
+        ('reunion', 'Reunión'),
+        ('en_progreso', 'En Progreso'),
+        ('procesado', 'Procesado'),
+        ('cerrado_ganado', 'Cerrado - Ganado'),
+        ('cerrado_perdido', 'Cerrado - Perdido'),
+    ]
+    REUNION_TIPO_CHOICES = [
+        ('virtual', 'Virtual'),
+        ('presencial', 'Presencial'),
+    ]
+    TIPO_PIPELINE_CHOICES = [
+        ('runrate', 'Runrate'),
+        ('proyecto', 'Proyecto'),
+    ]
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prospectos')
+    nombre = models.CharField(max_length=200, verbose_name="Nombre del Prospecto")
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='prospectos')
+    contacto = models.ForeignKey('Contacto', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospectos')
+    producto = models.CharField(max_length=100, choices=TodoItem.PRODUCTO_CHOICES, default='ZEBRA')
+    area = models.CharField(max_length=50, choices=TodoItem.AREA_CHOICES, default='SISTEMAS')
+    tipo_pipeline = models.CharField(max_length=20, choices=TIPO_PIPELINE_CHOICES, default='runrate', verbose_name="Pipeline (Runrate/Proyecto)")
+    comentarios = models.TextField(blank=True, default='')
+    etapa = models.CharField(max_length=20, choices=ETAPA_CHOICES, default='identificado')
+    reunion_tipo = models.CharField(max_length=15, choices=REUNION_TIPO_CHOICES, blank=True, default='')
+    oportunidad_creada = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospecto_origen')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Prospecto"
+        verbose_name_plural = "Prospectos"
+        ordering = ['-fecha_actualizacion']
+
+    def __str__(self):
+        return self.nombre
+
+
+class ProspectoComentario(models.Model):
+    prospecto = models.ForeignKey(Prospecto, on_delete=models.CASCADE, related_name='comentarios_list')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    texto = models.TextField()
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'Comentario de {self.usuario} en {self.prospecto}'
+
+
+class ProspectoActividad(models.Model):
+    TIPO_CHOICES = [
+        ('llamada', 'Llamada'),
+        ('correo', 'Correo'),
+        ('reunion', 'Reunión'),
+        ('tarea', 'Tarea'),
+        ('otro', 'Otro'),
+    ]
+    prospecto = models.ForeignKey(Prospecto, on_delete=models.CASCADE, related_name='actividades')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='tarea')
+    descripcion = models.TextField()
+    fecha_programada = models.DateTimeField()
+    completada = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_programada']
+
+    def __str__(self):
+        return f'{self.tipo}: {self.descripcion[:50]}'

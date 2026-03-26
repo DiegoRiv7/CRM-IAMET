@@ -222,6 +222,15 @@ urlpatterns = [
     path('api/actualizar-evento-navidad/', views.actualizar_evento_navidad, name='actualizar_evento_navidad'),
     path('api/estado-usuario-navidad/', views.estado_usuario_navidad, name='estado_usuario_navidad'),
 
+    # ── Prospección ──────────────────────────────────────────────────────────
+    path('api/prospectos/', views.api_prospectos_lista, name='api_prospectos_lista'),
+    path('api/crear-prospecto/', views.api_crear_prospecto, name='api_crear_prospecto'),
+    path('api/prospecto/<int:prospecto_id>/detalle/', views.api_prospecto_detalle, name='api_prospecto_detalle'),
+    path('api/prospecto/<int:prospecto_id>/etapa/', views.api_prospecto_etapa, name='api_prospecto_etapa'),
+    path('api/prospecto/<int:prospecto_id>/comentarios/', views.api_prospecto_comentarios, name='api_prospecto_comentarios'),
+    path('api/prospecto/<int:prospecto_id>/actividades/', views.api_prospecto_actividades, name='api_prospecto_actividades'),
+    path('api/prospecto-actividad/<int:actividad_id>/toggle/', views.api_prospecto_actividad_toggle, name='api_prospecto_actividad_toggle'),
+
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='user_login'),

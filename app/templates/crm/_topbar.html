@@ -69,7 +69,9 @@
 
             <!-- Navegación principal -->
             <nav class="island-nav">
-                {% if tab_activo == 'facturado' and es_supervisor %}
+                {% if tab_activo == 'prospeccion' %}
+                <button type="button" class="island-nav-btn" id="btnNuevoProspecto">PROSPECTO</button>
+                {% elif tab_activo == 'facturado' and es_supervisor %}
                 <button type="button" class="island-nav-btn" id="btnUploadXls"
                     style="background:#1D6F42;color:#fff;border-color:#1D6F42;">
                     &#8593; Excel
