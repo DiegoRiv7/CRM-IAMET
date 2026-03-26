@@ -34,3 +34,5 @@ from .views_tarea_comentarios import (
     api_eliminar_comentario_tarea,
     api_tarea_archivo,
 )
+
+from .views_prospeccion import *

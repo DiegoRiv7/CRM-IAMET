@@ -10,6 +10,10 @@
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
                 </a>
+                <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
+                    Prospeccion
+                </a>
                 <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'clientes' %}active{% endif %}">
                     Clientes
@@ -204,6 +208,34 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% elif tab_activo == 'prospeccion' %}
+        <table class="w-full crm-table">
+            <colgroup>
+                <col style="width:25%"><!-- Prospecto -->
+                <col style="width:12%"><!-- Contacto -->
+                <col style="width:10%"><!-- Area -->
+                <col style="width:10%"><!-- Producto -->
+                <col style="width:8%"><!-- Pipeline -->
+                <col style="width:12%"><!-- Etapa -->
+                <col style="width:12%"><!-- Fecha -->
+                <col style="width:5%"><!-- Campana -->
+            </colgroup>
+            <thead class="bg-gray-50/80">
+                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <th class="px-2 py-3 text-left font-black">Prospecto</th>
+                    <th class="px-2 py-3 text-left font-black">Contacto</th>
+                    <th class="px-2 py-3 text-left font-black">Area</th>
+                    <th class="px-2 py-3 text-left font-black">Producto</th>
+                    <th class="px-2 py-3 text-center font-black">Pipeline</th>
+                    <th class="px-2 py-3 text-left font-black">Etapa</th>
+                    <th class="px-2 py-3 text-left font-black">Fecha</th>
+                    <th class="px-2 py-3 text-center font-black">Camp.</th>
+                </tr>
+            </thead>
+            <tbody id="prospeccionTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+            </tbody>
+        </table>
+        <div class="crm-table-footer" id="prospeccionFooter"></div>
         {% elif tab_activo == 'clientes' %}
         <!-- KPI Cards -->
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">

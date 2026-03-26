@@ -17,7 +17,9 @@
     {% include "crm/_widget_mail.html" %}
     {% if not es_ingeniero %}
     {% include "crm/_widget_negociacion.html" %}
+    {% include "crm/_widget_nuevo_prospecto.html" %}
     {% endif %}
+    {% include "crm/_widget_prospecto.html" %}
     {% include "crm/_widget_oportunidad.html" %}
     {% include "crm/_widget_extras.html" %}
     {% if not es_ingeniero or es_supervisor %}
@@ -56,5 +58,6 @@
 <script>
     var ES_INGENIERO = {{ es_ingeniero|yesno:"true,false" }};
 </script>
+<script src="{% static 'js/crm_prospeccion.js' %}"></script>
 
 {% endblock %}
