@@ -18,5 +18,6 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd /home/iamet2026/crm-pruebas
+            git config --global --add safe.directory /home/iamet2026/crm-pruebas
             git pull origin pruebas
             sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml up -d --force-recreate web
