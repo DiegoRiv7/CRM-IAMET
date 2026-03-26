@@ -177,8 +177,9 @@
         var clienteAvatar = document.getElementById('wpClienteAvatar');
         var clienteName = document.getElementById('wpClienteName');
 
-        if (vendedorAvatar) vendedorAvatar.textContent = getInitials(data.vendedor || '');
-        if (vendedorName) vendedorName.textContent = data.vendedor || '-';
+        var vendedorNombre = data.usuario || data.vendedor || '-';
+        if (vendedorAvatar) vendedorAvatar.textContent = getInitials(vendedorNombre);
+        if (vendedorName) vendedorName.textContent = vendedorNombre;
         if (clienteAvatar) clienteAvatar.textContent = getInitials(data.cliente || '');
         if (clienteName) clienteName.textContent = data.cliente || '-';
     }
@@ -236,6 +237,8 @@
                 btn.style.boxShadow = '0 2px 12px rgba(255,59,48,0.35)';
             }
 
+            btn.style.padding = '7px 16px';
+            btn.style.fontSize = '0.7rem';
             btn.textContent = labelText;
 
             // Click handler
@@ -257,6 +260,7 @@
             if (i < stages.length - 1) {
                 var connector = document.createElement('div');
                 connector.className = 'wo-stage-connector';
+                connector.style.width = '20px';
                 if (i < etapaIndex) connector.classList.add('completed');
                 container.appendChild(connector);
             }
@@ -498,15 +502,17 @@
         }
     };
 
-    // Nueva actividad button in compact card
+    // Nueva actividad button — open the existing activity creation widget
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpBtnNuevaActividad' || e.target.closest('#wpBtnNuevaActividad')) {
-            wpAbrirPanelActividades();
-            // Focus the description input
-            setTimeout(function() {
-                var input = document.getElementById('wpActDescripcion');
-                if (input) input.focus();
-            }, 200);
+            // Use the existing oportunidad activity widget
+            var crearWidget = document.getElementById('widgetOppCrearActividad');
+            if (crearWidget) {
+                crearWidget.style.display = 'flex';
+            } else {
+                // Fallback to our panel
+                wpAbrirPanelActividades();
+            }
         }
     });
 
@@ -558,16 +564,31 @@
         }
     }
 
-    // Nueva cotizacion button
+    // Nueva cotizacion button — open the full cotizacion creation page
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpNuevaCot' || e.target.closest('#wpNuevaCot')) {
-            if (typeof cotizarRapidoAbrir === 'function') {
-                // Preselect client from prospecto
-                var data = window._currentProspectoData;
-                if (data && data.cliente_id) {
-                    window._cotRapidoClientePreselect = data.cliente_id;
+            var data = window._currentProspectoData;
+            if (data && data.cliente_id) {
+                // Open cotizador in the existing iframe widget
+                if (typeof openCotizador === 'function') {
+                    // Close prospecto widget first
+                    var w = document.getElementById('widgetProspecto');
+                    if (w) w.classList.remove('active');
+                    // Open cotizador with client pre-selected
+                    var cotizadorOverlay = document.getElementById('widgetCotizador');
+                    var cotizadorIframe = document.getElementById('cotizadorIframe');
+                    if (cotizadorOverlay && cotizadorIframe) {
+                        cotizadorOverlay.classList.add('active');
+                        cotizadorOverlay.classList.remove('closing');
+                        cotizadorIframe.src = '/app/cliente/' + data.cliente_id + '/crear-cotizacion/?widget_mode=1';
+                    }
+                } else {
+                    // Fallback: open in new tab
+                    window.open('/app/cliente/' + data.cliente_id + '/crear-cotizacion/', '_blank');
                 }
-                cotizarRapidoAbrir();
+            } else {
+                // No client, open generic cotizacion page
+                window.open('/app/crear-cotizacion/', '_blank');
             }
         }
     });
