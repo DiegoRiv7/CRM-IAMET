@@ -79,12 +79,7 @@
                         }
                     });
 
-                    // Total column
-                    var total = row.total || 0;
-                    html += '<td class="py-4 pr-2 text-right border-l border-gray-100"><span class="font-black text-gray-900">' + total + '</span></td>';
-
-                    // Campaign button column
-                    html += '<td class="py-4 text-center"><button class="btn-campana" data-cliente-id="' + row.cliente_id + '" style="background:none;border:1px solid #FF9500;border-radius:6px;padding:3px 8px;cursor:pointer;color:#FF9500;font-size:11px;" title="Campaña">&#128226;</button></td>';
+                    // No Total or Campaign columns — just product counts
 
                     tr.innerHTML = html;
                     tbody.appendChild(tr);
@@ -150,7 +145,7 @@
         var empty = document.getElementById('wcpEmpty');
         if (!tbody) return;
 
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#86868B;">Cargando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:#86868B;">Cargando...</td></tr>';
         if (empty) empty.style.display = 'none';
 
         fetch('/app/api/prospeccion/cliente/' + clienteId + '/prospectos/')
@@ -211,7 +206,8 @@
                         '<td class="px-2 py-4" style="font-size:10px;color:#86868B;font-style:italic;">' + escapeHtml(row.area || '-') + '</td>' +
                         '<td class="px-2 py-4 text-center">' + pipelineBadge + '</td>' +
                         '<td class="px-2 py-4"><span style="background:' + eColor + '22;color:' + eColor + ';padding:2px 10px;border-radius:9999px;font-size:10px;font-weight:600;white-space:nowrap;">' + eLabel + '</span></td>' +
-                        '<td class="px-2 py-4" style="font-size:10px;color:#86868B;">' + escapeHtml(row.fecha_iso || '') + '</td>';
+                        '<td class="px-2 py-4" style="font-size:10px;color:#86868B;">' + escapeHtml(row.fecha_iso || '') + '</td>' +
+                        '<td class="px-2 py-4 text-center"><button class="btn-campana" data-prospecto-id="' + row.id + '" style="background:none;border:1px solid #FF9500;border-radius:6px;padding:3px 8px;cursor:pointer;color:#FF9500;font-size:11px;" title="Campaña" onclick="event.stopPropagation()">&#128226;</button></td>';
 
                     tbody.appendChild(tr);
                 });
