@@ -56,8 +56,15 @@
                     tr.className = 'crm-data-row';
                     tr.dataset.clienteId = row.cliente_id;
 
-                    // Client name cell
-                    var html = '<td class="px-2 py-4">' +
+                    // Product key to PRODUCTO_CHOICES value mapping
+                    var prodChoicesMap = {
+                        'zebra': 'ZEBRA', 'panduit': 'PANDUIT', 'apc': 'APC',
+                        'avigilon': 'AVIGILION', 'genetec': 'GENETEC', 'axis': 'AXIS',
+                        'software': 'SOFTWARE', 'runrate': 'RUNRATE', 'poliza': 'PÓLIZA', 'otros': ''
+                    };
+
+                    // Client name cell — truncated for fixed layout
+                    var html = '<td class="px-2 py-4" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
                         '<span class="cliente-prospeccion-link" style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' +
                             'data-cliente-id="' + row.cliente_id + '" ' +
                             'data-cliente-nombre="' + escapeHtml(row.cliente) + '" ' +
@@ -65,21 +72,21 @@
                             escapeHtml(row.cliente) +
                         '</span>';
                     if (row.rfc) {
-                        html += '<span style="display:block;font-size:9px;color:#86868B;font-weight:500;text-transform:uppercase;margin-top:2px;">RFC: ' + escapeHtml(row.rfc) + '</span>';
+                        html += '<span style="display:block;font-size:9px;color:#86868B;font-weight:500;text-transform:uppercase;margin-top:2px;overflow:hidden;text-overflow:ellipsis;">RFC: ' + escapeHtml(row.rfc) + '</span>';
                     }
                     html += '</td>';
 
-                    // Product columns
+                    // Product columns — clickable to create prospecto with client+product
                     prodKeys.forEach(function(key) {
                         var val = row[key] || 0;
+                        var prodValue = prodChoicesMap[key] || '';
+                        var clickAttr = ' style="cursor:pointer;" data-click-producto="' + prodValue + '" data-click-cliente-id="' + row.cliente_id + '" data-click-cliente-nombre="' + escapeHtml(row.cliente) + '"';
                         if (val === 0) {
-                            html += '<td class="py-4 pr-2 text-right"><span class="money-zero">0</span></td>';
+                            html += '<td class="py-4 pr-2 text-right"' + clickAttr + '><span class="money-zero">0</span></td>';
                         } else {
-                            html += '<td class="py-4 pr-2 text-right"><span class="text-blue-600 font-bold">' + val + '</span></td>';
+                            html += '<td class="py-4 pr-2 text-right"' + clickAttr + '><span class="text-blue-600 font-bold">' + val + '</span></td>';
                         }
                     });
-
-                    // No Total or Campaign columns — just product counts
 
                     tr.innerHTML = html;
                     tbody.appendChild(tr);
@@ -104,6 +111,17 @@
                         );
                     });
                 });
+
+                // Click handlers on product cells — open new prospecto form with client+product pre-filled
+                tbody.querySelectorAll('td[data-click-producto]').forEach(function(td) {
+                    td.addEventListener('click', function() {
+                        var clienteId = parseInt(this.dataset.clickClienteId);
+                        var clienteNombre = this.dataset.clickClienteNombre;
+                        var producto = this.dataset.clickProducto;
+                        if (!producto) return; // "otros" has no product value
+                        abrirProspeccionConProducto(clienteId, clienteNombre, producto);
+                    });
+                });
             });
     }
 
@@ -121,6 +139,42 @@
             cargarProspectosDeCliente(_currentWidgetClienteId);
         }
     };
+
+    // ══════════════════════════════════════════════════════════════
+    // A2. CLICK ON PRODUCT CELL: Open new prospecto form with client+product pre-filled
+    // ══════════════════════════════════════════════════════════════
+    function abrirProspeccionConProducto(clienteId, clienteNombre, producto) {
+        // Open the new prospecto form
+        var widget = document.getElementById('widgetNuevoProspecto');
+        if (!widget) return;
+        widget.classList.add('active');
+
+        // Pre-fill client name and hidden ID
+        var clienteInput = document.getElementById('wpfCliente');
+        var clienteHiddenId = document.getElementById('wpfClienteId');
+        if (clienteInput) {
+            clienteInput.value = clienteNombre;
+        }
+        if (clienteHiddenId) {
+            clienteHiddenId.value = clienteId;
+        }
+        // Store selected client id for the form's autocomplete logic
+        window._wpfSelectedClienteId = clienteId;
+
+        // Pre-fill product select
+        var productoSelect = document.getElementById('wpfProducto');
+        if (productoSelect) {
+            productoSelect.value = producto;
+        }
+
+        // Store context so after creation we open the client widget + prospecto detail
+        window._prospeccionProductoContext = {
+            clienteId: clienteId,
+            clienteNombre: clienteNombre,
+            producto: producto
+        };
+    }
+    window.abrirProspeccionConProducto = abrirProspeccionConProducto;
 
     // ══════════════════════════════════════════════════════════════
     // B. CLIENT WIDGET: Open and load prospectos for a client
