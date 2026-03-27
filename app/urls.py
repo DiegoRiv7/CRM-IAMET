@@ -243,6 +243,7 @@ urlpatterns = [
     path('api/campana/templates/', views.api_campana_templates, name='api_campana_templates'),
     path('api/campana/template/<int:template_id>/', views.api_campana_template_detalle, name='api_campana_template_detalle'),
     path('api/campana/template/<int:template_id>/render/', views.api_campana_template_render, name='api_campana_template_render'),
+    path('api/campana/registrar-envio/', views.api_campana_registrar_envio, name='api_campana_registrar_envio'),
 
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),

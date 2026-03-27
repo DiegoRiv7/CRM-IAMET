@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 
-from .models import CampanaTemplate
+from .models import CampanaTemplate, CampanaEnvio, Cliente
 from .views_utils import is_supervisor
 
 logger = logging.getLogger(__name__)
@@ -111,3 +111,51 @@ def api_campana_template_render(request, template_id):
         'nombre': template.nombre,
         'marca': template.marca,
     })
+
+
+@login_required
+def api_campana_registrar_envio(request):
+    """POST: registra un envío de campaña por correo."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requerido'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+    template_id = data.get('template_id')
+    contacto_email = data.get('contacto_email', '').strip()
+    message_id = data.get('message_id', '')
+
+    if not template_id or not contacto_email:
+        return JsonResponse({'error': 'template_id y contacto_email requeridos'}, status=400)
+
+    try:
+        template = CampanaTemplate.objects.get(id=template_id)
+    except CampanaTemplate.DoesNotExist:
+        return JsonResponse({'error': 'Template no encontrado'}, status=404)
+
+    # Try to find client by email
+    cliente = None
+    try:
+        from .models import Contacto
+        contacto = Contacto.objects.filter(email__iexact=contacto_email).first()
+        if contacto and contacto.cliente_id:
+            cliente = contacto.cliente
+        else:
+            # Try matching by client email
+            cliente = Cliente.objects.filter(email__iexact=contacto_email).first()
+    except Exception:
+        pass
+
+    envio = CampanaEnvio.objects.create(
+        template=template,
+        cliente=cliente,
+        contacto_email=contacto_email,
+        contacto_nombre=contacto_email.split('@')[0],
+        enviado_por=request.user,
+        mail_message_id=message_id,
+    )
+
+    return JsonResponse({'ok': True, 'envio_id': envio.id})

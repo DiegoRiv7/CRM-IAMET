@@ -548,6 +548,20 @@
                 .then(function (data) {
                     if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar'; }
                     if (data.ok) {
+                        // If this was a campaign email, register it
+                        if (window._campanaEnvioContext && window._campanaEnvioContext.templateId) {
+                            var ctx = window._campanaEnvioContext;
+                            fetch('/app/api/campana/registrar-envio/', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                                body: JSON.stringify({
+                                    template_id: ctx.templateId,
+                                    contacto_email: para,
+                                    message_id: data.message_id || ''
+                                })
+                            }).catch(function() {});
+                            window._campanaEnvioContext = null;
+                        }
                         mailCerrarCompose();
                         _showToastMail('Correo enviado', true);
                     }

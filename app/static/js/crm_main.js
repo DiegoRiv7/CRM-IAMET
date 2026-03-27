@@ -1936,7 +1936,7 @@
                     _prospChartInstances['ckChartProspTopClientes'] = new Chart(c3_2d, {
                         type: 'bar',
                         data: {
-                            labels: pRows.map(function(r){ return r.cliente.length > 12 ? r.cliente.substring(0,12) + '...' : r.cliente; }),
+                            labels: pRows.map(function(r){ return r.cliente.length > 10 ? r.cliente.substring(0,10) + '..' : r.cliente; }),
                             datasets: [{
                                 label: 'Prospectos',
                                 data: pRows.map(function(r){ return r.num_prospectos; }),
@@ -1952,8 +1952,9 @@
                             },
                             scales: {
                                 y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
-                                x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#1D1D1F', maxRotation: 45, minRotation: 0 } }
-                            }
+                                x: { grid: { display: false }, ticks: { font: { size: 9, weight: '600' }, color: '#1D1D1F', maxRotation: 35, minRotation: 0 } }
+                            },
+                            layout: { padding: { bottom: 10 } }
                         }
                     });
                 }

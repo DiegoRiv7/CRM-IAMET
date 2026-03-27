@@ -211,6 +211,12 @@
                     if (asunto && data.nombre) {
                         asunto.value = data.nombre;
                     }
+                    // Store campaign context so when email is sent, we register it
+                    window._campanaEnvioContext = {
+                        templateId: templateId,
+                        nombre: data.nombre || '',
+                        marca: data.marca || ''
+                    };
                 }, 200);
             }, 300);
         });
