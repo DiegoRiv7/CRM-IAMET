@@ -111,8 +111,9 @@
                             '<div style="font-size:0.85rem;font-weight:700;color:#1D1D1F;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(t.nombre) + '</div>' +
                             '<div style="font-size:0.7rem;color:#86868B;">' + escapeHtml(t.fecha) + ' · ' + escapeHtml(t.creado_por) + '</div>' +
                             '<div style="display:flex;gap:6px;margin-top:8px;">' +
-                                '<button onclick="event.stopPropagation();window._campPreview(' + t.id + ',\'' + escapeHtml(t.nombre).replace(/'/g, "\\'") + '\')" style="flex:1;padding:6px;border:1px solid #007AFF;border-radius:6px;background:#007AFF11;color:#007AFF;font-size:0.7rem;font-weight:600;cursor:pointer;">👁 Vista Previa</button>' +
-                                (isAdmin ? '<button onclick="event.stopPropagation();window._campDelete(' + t.id + ')" style="padding:6px 10px;border:1px solid #FF3B30;border-radius:6px;background:#FF3B3011;color:#FF3B30;font-size:0.7rem;font-weight:600;cursor:pointer;">🗑</button>' : '') +
+                                '<button onclick="event.stopPropagation();window._campPreview(' + t.id + ',\'' + escapeHtml(t.nombre).replace(/'/g, "\\'") + '\')" style="flex:1;padding:7px;border:1px solid #007AFF;border-radius:6px;background:#007AFF11;color:#007AFF;font-size:0.72rem;font-weight:600;cursor:pointer;">Vista Previa</button>' +
+                                '<button onclick="event.stopPropagation();window._campEnviarCorreo(' + t.id + ')" style="flex:1;padding:7px;border:1px solid #34C759;border-radius:6px;background:#34C75911;color:#34C759;font-size:0.72rem;font-weight:600;cursor:pointer;">Correo</button>' +
+                                (isAdmin ? '<button onclick="event.stopPropagation();window._campDelete(' + t.id + ')" style="padding:7px 10px;border:1px solid #FF3B30;border-radius:6px;background:#FF3B3011;color:#FF3B30;font-size:0.72rem;font-weight:600;cursor:pointer;">X</button>' : '') +
                             '</div>' +
                         '</div>';
 
@@ -170,6 +171,44 @@
                     };
                 }
             }
+        });
+    };
+
+    // ══════════════════════════════════════
+    // ENVIAR POR CORREO — abre widget de mail con HTML embebido
+    // ══════════════════════════════════════
+    window._campEnviarCorreo = function(templateId) {
+        fetch('/app/api/campana/template/' + templateId + '/render/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: '{}'
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (!data.html) return;
+
+            // Cerrar widget de campañas
+            var campWidget = document.getElementById('widgetCampana');
+            if (campWidget) campWidget.classList.remove('active');
+
+            // Abrir widget de mail
+            if (typeof mailAbrir === 'function') mailAbrir();
+
+            // Esperar a que el widget se abra, luego activar redacción
+            setTimeout(function() {
+                if (typeof mailRedactar === 'function') mailRedactar();
+
+                // Insertar el HTML del template en el editor
+                setTimeout(function() {
+                    var editor = document.getElementById('mailCompEditor');
+                    if (editor) {
+                        editor.innerHTML = data.html;
+                    }
+                    // Pre-llenar asunto con el nombre del template
+                    var asunto = document.getElementById('mailCompAsunto');
+                    if (asunto && data.nombre) {
+                        asunto.value = data.nombre;
+                    }
+                }, 200);
+            }, 300);
         });
     };
 
