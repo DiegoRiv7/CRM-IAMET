@@ -1885,136 +1885,96 @@
             Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif';
             Chart.defaults.font.size = 11;
 
-            // ── Chart 1: Prospectos por Marca (horizontal bar with gradients) ──
+            // ── Chart 1: Prospectos por Marca (horizontal bar — same style as Facturado vs Meta) ──
             _destroyProspChart('ckChartProspMarca');
             var ctx1 = document.getElementById('ckChartProspMarca');
             if (ctx1) {
                 var marcas = data.chart_marcas || {};
                 var labels = Object.keys(marcas).sort(function(a,b) { return marcas[b] - marcas[a]; });
                 var values = labels.map(function(l) { return marcas[l]; });
-
                 var ctx1_2d = ctx1.getContext('2d');
-                var gradients = labels.map(function(_, i) {
-                    var g = ctx1_2d.createLinearGradient(0, 0, ctx1.width, 0);
-                    var c = appleColors[i % appleColors.length];
-                    g.addColorStop(0, c.solid);
-                    g.addColorStop(1, c.solid + '88');
-                    return g;
-                });
+                var gradBlue1 = ctx1_2d.createLinearGradient(0, 0, ctx1.width, 0);
+                gradBlue1.addColorStop(0, 'rgba(0,122,255,0.9)');
+                gradBlue1.addColorStop(1, 'rgba(88,176,255,0.75)');
 
-                _prospChartInstances['ckChartProspMarca'] = new Chart(ctx1, {
+                _prospChartInstances['ckChartProspMarca'] = new Chart(ctx1_2d, {
                     type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: values,
-                            backgroundColor: gradients,
-                            borderRadius: 8,
-                            borderSkipped: false,
-                            barThickness: 22
-                        }]
-                    },
+                    data: { labels: labels, datasets: [{ label: 'Prospectos', data: values, backgroundColor: gradBlue1, borderRadius: 8, barPercentage: 0.55 }] },
                     options: {
-                        indexAxis: 'y',
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                         animation: sharedAnimation,
                         plugins: { legend: { display: false }, tooltip: sharedTooltip },
                         scales: {
                             x: { display: false, grid: { display: false } },
-                            y: {
-                                grid: { display: false },
-                                ticks: { font: { size: 11, weight: '600' }, color: '#3C3C43' }
-                            }
+                            y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' }, color: '#3C3C43' } }
                         }
                     }
                 });
             }
 
-            // ── Chart 2: Pipeline / Funnel de Etapas (bar with stage colors) ──
+            // ── Chart 2: Pipeline / Funnel (vertical bar — same style as Top Clientes) ──
             _destroyProspChart('ckChartProspFunnel');
             var ctx2 = document.getElementById('ckChartProspFunnel');
             if (ctx2) {
                 var etapas = data.chart_etapas || {};
                 var etapaOrder = ['identificado','calificado','reunion','en_progreso','procesado','cerrado_ganado','cerrado_perdido'];
                 var etapaLabels = { identificado:'Identificado', calificado:'Calificado', reunion:'Reunión', en_progreso:'En Progreso', procesado:'Procesado', cerrado_ganado:'Ganado', cerrado_perdido:'Perdido' };
-                var stageColors = {
-                    identificado: '#8E8E93', calificado: '#007AFF', reunion: '#5856D6',
-                    en_progreso: '#FF9500', procesado: '#34C759', cerrado_ganado: '#30D158', cerrado_perdido: '#FF3B30'
-                };
-
                 var eLabels = etapaOrder.filter(function(e) { return (etapas[e] || 0) > 0; });
                 var eValues = eLabels.map(function(e) { return etapas[e] || 0; });
                 var ctx2_2d = ctx2.getContext('2d');
-                var eGradients = eLabels.map(function(e) {
-                    var g = ctx2_2d.createLinearGradient(0, 0, 0, ctx2.height);
-                    var c = stageColors[e] || '#8E8E93';
-                    g.addColorStop(0, c);
-                    g.addColorStop(1, c + '44');
-                    return g;
-                });
+                var gradBar2 = ctx2_2d.createLinearGradient(0, 0, 0, 280);
+                gradBar2.addColorStop(0, 'rgba(0,122,255,0.85)');
+                gradBar2.addColorStop(1, 'rgba(88,176,255,0.55)');
 
-                _prospChartInstances['ckChartProspFunnel'] = new Chart(ctx2, {
+                _prospChartInstances['ckChartProspFunnel'] = new Chart(ctx2_2d, {
                     type: 'bar',
-                    data: {
-                        labels: eLabels.map(function(e) { return etapaLabels[e] || e; }),
-                        datasets: [{
-                            data: eValues,
-                            backgroundColor: eGradients,
-                            borderRadius: { topLeft: 10, topRight: 10 },
-                            borderSkipped: false,
-                            barThickness: 32
-                        }]
-                    },
+                    data: { labels: eLabels.map(function(e) { return etapaLabels[e] || e; }), datasets: [{ label: 'Prospectos', data: eValues, backgroundColor: gradBar2, borderRadius: 10, barPercentage: 0.5 }] },
                     options: {
+                        responsive: true, maintainAspectRatio: false,
                         animation: sharedAnimation,
                         plugins: { legend: { display: false }, tooltip: sharedTooltip },
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { stepSize: 1, font: { size: 10 }, color: '#86868B' },
-                                grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' }
-                            }
+                            y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 }, color: '#86868B' }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
+                            x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' } }
                         }
                     }
                 });
             }
 
-            // ── Chart 3: Top Clientes (horizontal bar, purple gradient) ──
+            // ── Chart 3: Top Clientes (vertical bar — matches Top 5 Clientes style) ──
             _destroyProspChart('ckChartProspTopClientes');
             var ctx3 = document.getElementById('ckChartProspTopClientes');
             if (ctx3) {
-                var rows = (data.rows || []).filter(function(r) { return r.num_prospectos > 0; }).sort(function(a,b) { return b.num_prospectos - a.num_prospectos; }).slice(0, 6);
+                var rows = (data.rows || []).filter(function(r) { return r.num_prospectos > 0; }).sort(function(a,b) { return b.num_prospectos - a.num_prospectos; }).slice(0, 8);
                 if (rows.length) {
                     var ctx3_2d = ctx3.getContext('2d');
-                    var g3 = ctx3_2d.createLinearGradient(0, 0, ctx3.width, 0);
-                    g3.addColorStop(0, '#5856D6');
-                    g3.addColorStop(1, '#AF52DE');
+                    var gradBar3 = ctx3_2d.createLinearGradient(0, 0, 0, 280);
+                    gradBar3.addColorStop(0, 'rgba(0,122,255,0.85)');
+                    gradBar3.addColorStop(1, 'rgba(88,176,255,0.55)');
 
                     _prospChartInstances['ckChartProspTopClientes'] = new Chart(ctx3, {
                         type: 'bar',
                         data: {
-                            labels: rows.map(function(r) { return r.cliente.length > 18 ? r.cliente.substring(0,18) + '\u2026' : r.cliente; }),
+                            labels: rows.map(function(r) { return r.cliente.length > 15 ? r.cliente.substring(0,15) + '...' : r.cliente; }),
                             datasets: [{
+                                label: 'Prospectos',
                                 data: rows.map(function(r) { return r.num_prospectos; }),
-                                backgroundColor: g3,
-                                borderRadius: 8,
-                                borderSkipped: false,
-                                barThickness: 20
+                                backgroundColor: gradBar3,
+                                borderRadius: 10,
+                                barPercentage: 0.5
                             }]
                         },
                         options: {
-                            indexAxis: 'y',
+                            responsive: true, maintainAspectRatio: false,
                             animation: sharedAnimation,
-                            plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: sharedTooltip,
+                                datalabels: false
+                            },
                             scales: {
-                                x: { display: false, grid: { display: false } },
-                                y: {
-                                    grid: { display: false },
-                                    ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' }
-                                }
+                                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 }, color: '#86868B' }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
+                                x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' } }
                             }
                         }
                     });
@@ -2057,8 +2017,8 @@
                         datasets: [{
                             data: [ganados, activos > 0 ? activos : (ganados === 0 ? 1 : 0)],
                             backgroundColor: [
-                                'rgba(52,199,89,0.85)',
-                                'rgba(229,229,234,0.5)'
+                                'rgba(0,122,255,0.85)',
+                                'rgba(200,200,210,0.3)'
                             ],
                             borderWidth: 0,
                             spacing: 2
