@@ -5466,4 +5466,11 @@
 }
 
 
+/* Prospección KPIs */
+.ck-kpi--prosp { border-color: #5856D622; }
+.ck-kpi--prosp .ck-kpi-icon { color: #5856D6; }
+.ck-kpi--prosp .ck-kpi-value { color: #5856D6; }
+.ck-kpi--prosp .ck-kpi-label { color: #5856D6; }
+.ck-kpi--prosp:hover { border-color: #5856D6; box-shadow: 0 4px 16px rgba(88,86,214,0.15); }
+
 /* ── Campaign Template Browser (old editor styles removed) ── */

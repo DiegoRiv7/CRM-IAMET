@@ -1315,7 +1315,41 @@
             var currentTab = _CRM_CONFIG.tabActivo;
             var _clientesPanelData = {};
             var _clientesExpanded = null;
-            var _CLIENTES_VISTAS = ['facturado', 'cobrado', 'oportunidades', 'cotizado'];
+            var _CLIENTES_VISTAS = ['facturado', 'cobrado', 'oportunidades', 'cotizado', 'prospeccion'];
+
+            var _crmClientesMode = 'oportunidades';
+
+            window._crmSetMode = function(mode) {
+                _crmClientesMode = mode;
+                var btnOpp = document.getElementById('crmModeOpp');
+                var btnProsp = document.getElementById('crmModeProsp');
+                if (btnOpp && btnProsp) {
+                    if (mode === 'oportunidades') {
+                        btnOpp.style.background = '#0052D4'; btnOpp.style.color = '#fff';
+                        btnProsp.style.background = 'transparent'; btnProsp.style.color = '#86868B';
+                    } else {
+                        btnProsp.style.background = '#5856D6'; btnProsp.style.color = '#fff';
+                        btnOpp.style.background = 'transparent'; btnOpp.style.color = '#86868B';
+                    }
+                }
+                var kpiOpp = document.getElementById('ckKpiRow');
+                var kpiProsp = document.getElementById('ckKpiRowProsp');
+                var charts = document.getElementById('ckChartsSection');
+                var detalle = document.getElementById('ckDetalleSection');
+
+                if (mode === 'oportunidades') {
+                    if (kpiOpp) kpiOpp.style.display = 'grid';
+                    if (kpiProsp) kpiProsp.style.display = 'none';
+                    if (charts) { charts.style.display = ''; charts.style.opacity = '1'; }
+                    if (detalle) detalle.style.display = 'none';
+                } else {
+                    if (kpiOpp) kpiOpp.style.display = 'none';
+                    if (kpiProsp) kpiProsp.style.display = 'grid';
+                    if (charts) charts.style.display = 'none';
+                    if (detalle) detalle.style.display = 'none';
+                    _renderProspKPIs();
+                }
+            };
             var _CLIENTES_THEAD_MINI =
                 '<tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">' +
                 '<th class="px-2 py-2 text-left font-black">Cliente</th>' +
@@ -1540,6 +1574,7 @@
             var order = [];
             var prefixMap = { facturado: 'fact', cobrado: 'cob', oportunidades: 'opp', cotizado: 'cot' };
             _CLIENTES_VISTAS.forEach(function (v) {
+                if (!prefixMap[v]) return;
                 var rows = (_clientesPanelData[v] || {}).rows || [];
                 rows.forEach(function (r) {
                     if (!map[r.cliente_id]) {
@@ -1550,6 +1585,7 @@
             });
             _CLIENTES_VISTAS.forEach(function (v) {
                 var p = prefixMap[v];
+                if (!p) return;
                 var rows = (_clientesPanelData[v] || {}).rows || [];
                 var byId = {};
                 rows.forEach(function (r) { byId[r.cliente_id] = r; });
@@ -1753,6 +1789,30 @@
                 document.getElementById('footerLeft').textContent = _clientesPanelData.facturado.footer.left;
                 document.getElementById('footerRight').textContent = _clientesPanelData.facturado.footer.right;
             }
+        }
+
+        function _renderProspKPIs() {
+            var data = _clientesPanelData.prospeccion;
+            if (!data) return;
+
+            var el = function(id) { return document.getElementById(id); };
+
+            // KPI 1: Prospecciones
+            if (el('ckKpiProspGen')) el('ckKpiProspGen').textContent = data.total_prospectos || 0;
+            if (el('ckMetaProspGen')) el('ckMetaProspGen').textContent = 'prospecciones creadas';
+            if (el('ckSubProspCamp')) el('ckSubProspCamp').textContent = (data.total_campanas || 0) + ' campañas enviadas';
+
+            // KPI 2: Convertidas
+            if (el('ckKpiProspOpps')) el('ckKpiProspOpps').textContent = data.total_ganados || 0;
+            if (el('ckMetaProspOpps')) el('ckMetaProspOpps').textContent = (data.total_opps_from_prosp || 0) + ' oportunidades activas';
+
+            // KPI 3: Ventas
+            if (el('ckKpiProspVentas')) el('ckKpiProspVentas').textContent = '$' + (data.ventas_generadas || '0');
+            if (el('ckMetaProspVentas')) el('ckMetaProspVentas').textContent = 'desde prospecciones';
+
+            // KPI 4: Tasa contacto
+            if (el('ckKpiProspTasa')) el('ckKpiProspTasa').textContent = (data.tasa_contacto || 0) + '%';
+            if (el('ckMetaProspTasa')) el('ckMetaProspTasa').textContent = (data.total_respondidos || 0) + '/' + (data.total_envios || 0) + ' respondidos';
         }
 
         function loadClientesPanel(vista) {
@@ -2264,6 +2324,44 @@
                 if (tbody && rows.length > 0) {
                     tbody.innerHTML += '<tr style="border-top:2px solid #e5e7eb;font-weight:700"><td></td><td colspan="2" style="color:#6e6e73">Total</td><td style="text-align:right;color:#D97706">' + totalCotNum + '</td></tr>';
                 }
+            }
+
+            else if (tipo === 'prosp_generadas') {
+                var titulo = document.getElementById('ckDetalleTitulo');
+                if (titulo) titulo.textContent = 'Prospecciones Generadas por Cliente';
+                if (head) head.innerHTML = '<th class="px-2 py-3 text-left" style="width:5%">#</th><th class="px-2 py-3 text-left" style="width:35%">Cliente</th><th class="px-2 py-3 text-left" style="width:20%">Vendedor</th><th class="py-3 pr-2 text-right" style="width:20%">Campañas</th><th class="py-3 pr-2 text-right" style="width:20%">Prospecciones</th>';
+                var pRows = ((_clientesPanelData.prospeccion || {}).rows || []).filter(function(r) { return r.num_prospectos > 0 || r.num_campanas > 0; });
+                if (tbody) tbody.innerHTML = pRows.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>' : pRows.map(function(r, i) {
+                    return '<tr class="border-b border-gray-50 hover:bg-blue-50/30"><td class="px-2 py-3 text-gray-400 text-xs">' + (i+1) + '</td><td class="px-2 py-3 font-semibold text-gray-800 text-xs">' + r.cliente + '</td><td class="px-2 py-3 text-gray-600 text-xs">' + r.vendedor + '</td><td class="py-3 pr-2 text-right font-bold text-orange-500 text-sm">' + r.num_campanas + '</td><td class="py-3 pr-2 text-right font-black text-purple-600 text-sm">' + r.num_prospectos + '</td></tr>';
+                }).join('');
+                rows = pRows; // prevent "no data" fallback below
+            }
+            else if (tipo === 'prosp_opps') {
+                var titulo = document.getElementById('ckDetalleTitulo');
+                if (titulo) titulo.textContent = 'Oportunidades desde Prospección';
+                if (head) head.innerHTML = '<th class="px-2 py-3 text-left" style="width:5%">#</th><th class="px-2 py-3 text-left" style="width:30%">Cliente</th><th class="py-3 pr-2 text-right" style="width:20%">Prospectos</th><th class="py-3 pr-2 text-right" style="width:20%">Convertidas</th><th class="py-3 pr-2 text-right" style="width:25%">% Conversión</th>';
+                var pRows = ((_clientesPanelData.prospeccion || {}).rows || []).filter(function(r) { return r.num_prospectos > 0; });
+                if (tbody) tbody.innerHTML = pRows.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>' : pRows.map(function(r, i) {
+                    var pct = r.num_prospectos > 0 ? Math.round(r.num_ganados / r.num_prospectos * 100) : 0;
+                    return '<tr class="border-b border-gray-50 hover:bg-blue-50/30"><td class="px-2 py-3 text-gray-400 text-xs">' + (i+1) + '</td><td class="px-2 py-3 font-semibold text-gray-800 text-xs">' + r.cliente + '</td><td class="py-3 pr-2 text-right text-sm">' + r.num_prospectos + '</td><td class="py-3 pr-2 text-right font-bold text-green-600 text-sm">' + r.num_ganados + '</td><td class="py-3 pr-2 text-right font-bold text-sm">' + pct + '%</td></tr>';
+                }).join('');
+                rows = pRows;
+            }
+            else if (tipo === 'prosp_ventas') {
+                var titulo = document.getElementById('ckDetalleTitulo');
+                if (titulo) titulo.textContent = 'Ventas Generadas desde Prospección';
+                var pData = _clientesPanelData.prospeccion || {};
+                if (head) head.innerHTML = '<th class="px-2 py-3 text-left">Métrica</th><th class="py-3 pr-2 text-right">Valor</th>';
+                if (tbody) tbody.innerHTML = '<tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Monto total vendido desde prospecciones</td><td class="py-3 pr-2 text-right font-black text-green-600 text-lg">$' + (pData.ventas_generadas || '0') + '</td></tr><tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Oportunidades originadas de prospectos</td><td class="py-3 pr-2 text-right font-bold text-blue-600 text-lg">' + (pData.total_opps_from_prosp || 0) + '</td></tr><tr><td class="px-2 py-3 text-gray-800 font-semibold">Prospectos convertidos (ganados)</td><td class="py-3 pr-2 text-right font-bold text-purple-600 text-lg">' + (pData.total_ganados || 0) + '</td></tr>';
+                rows = [1]; // prevent "no data" fallback
+            }
+            else if (tipo === 'prosp_tasa') {
+                var titulo = document.getElementById('ckDetalleTitulo');
+                if (titulo) titulo.textContent = 'Tasa de Contacto — Campañas';
+                var pData = _clientesPanelData.prospeccion || {};
+                if (head) head.innerHTML = '<th class="px-2 py-3 text-left">Métrica</th><th class="py-3 pr-2 text-right">Valor</th>';
+                if (tbody) tbody.innerHTML = '<tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Campañas enviadas</td><td class="py-3 pr-2 text-right font-bold text-blue-600 text-lg">' + (pData.total_envios || 0) + '</td></tr><tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Respondidas</td><td class="py-3 pr-2 text-right font-bold text-green-600 text-lg">' + (pData.total_respondidos || 0) + '</td></tr><tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Respuestas favorables</td><td class="py-3 pr-2 text-right font-bold text-green-700 text-lg">' + (pData.total_favorables || 0) + '</td></tr><tr><td class="px-2 py-3 text-gray-800 font-semibold">Tasa de contacto</td><td class="py-3 pr-2 text-right font-black text-purple-600 text-xl">' + (pData.tasa_contacto || 0) + '%</td></tr>';
+                rows = [1]; // prevent "no data" fallback
             }
 
             if (rows.length === 0 && tbody) {

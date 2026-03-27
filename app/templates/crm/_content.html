@@ -21,13 +21,16 @@
             </div>
             <div class="crm-bar-right">
                 <div class="crm-bar-stats">
-                    <strong>{{ num_clientes }}</strong>
-                    {% if request.user.userprofile.language == 'en' %}
-                    {% if es_supervisor %}Total Clients{% else %}Assigned Clients{% endif %}
+                    {% if tab_activo == 'clientes' %}
+                    <div style="background:#F2F2F7;border-radius:20px;padding:2px;display:inline-flex;gap:2px;">
+                        <button id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:#0052D4;color:#fff;">Oportunidades</button>
+                        <button id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:#86868B;">Prospectos</button>
+                    </div>
                     {% else %}
+                    <strong>{{ num_clientes }}</strong>
                     {% if es_supervisor %}Clientes Totales{% else %}Clientes Asignados{% endif %}
-                    {% endif %}
                     &nbsp;|&nbsp; <strong>{{ num_deals }}</strong> Deals
+                    {% endif %}
                 </div>
                 <!-- Panel de filtros inline: se expande entre los stats y el botón -->
                 <div class="crm-filter-dropdown" id="crmFilterPanel">
@@ -295,6 +298,42 @@
                 <div class="ck-kpi-of-meta" id="ckMetaCot">de — meta</div>
                 <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--cot" id="ckProgCot" style="width:0%"></div></div>
                 <div class="ck-kpi-trend" id="ckTrendCot"></div>
+            </div>
+        </div>
+
+        <div id="ckKpiRowProsp" class="ck-kpi-row" style="display:none;">
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_generadas')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span class="ck-kpi-label">PROSPECCIONES</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspGen">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspGen">prospecciones creadas</div>
+                <div class="ck-kpi-of-meta" id="ckSubProspCamp" style="font-size:0.6rem;color:#86868B;margin-top:2px;"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_opps')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span class="ck-kpi-label">CONVERTIDAS</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspOpps">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspOpps">oportunidades creadas</div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_ventas')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <span class="ck-kpi-label">VENTAS GENERADAS</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspVentas">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspVentas">desde prospecciones</div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_tasa')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span class="ck-kpi-label">TASA DE CONTACTO</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspTasa">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspTasa">de respuesta</div>
             </div>
         </div>
 
