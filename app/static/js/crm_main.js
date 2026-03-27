@@ -1885,57 +1885,74 @@
                 });
             }
 
-            // ── Chart 2: Pipeline (vertical bar, EACH stage its own color) ──
+            // ── Chart 2: Tasa de Contacto (enviados vs respondidos, grouped bar) ──
             _destroyProspChart('ckChartProspFunnel');
             var c2 = document.getElementById('ckChartProspFunnel');
             if (c2) {
-                var etapas = data.chart_etapas || {};
-                var eOrder = ['identificado','calificado','reunion','en_progreso','procesado','cerrado_ganado','cerrado_perdido'];
-                var eName = { identificado:'Identificado', calificado:'Calificado', reunion:'Reunión', en_progreso:'En Progreso', procesado:'Procesado', cerrado_ganado:'Ganado', cerrado_perdido:'Perdido' };
-                var eColor = { identificado:'#8E8E93', calificado:'#007AFF', reunion:'#5856D6', en_progreso:'#FF9500', procesado:'#34C759', cerrado_ganado:'#30D158', cerrado_perdido:'#FF3B30' };
-                var eLabels = eOrder.filter(function(e){ return (etapas[e]||0)>0; });
-                var eValues = eLabels.map(function(e){ return etapas[e]||0; });
+                var tEnviados = data.total_envios || 0;
+                var tRespondidos = data.total_respondidos || 0;
+                var tFavorables = data.total_favorables || 0;
                 var c2_2d = c2.getContext('2d');
-                var eGrads = eLabels.map(function(e) {
-                    var g = c2_2d.createLinearGradient(0, 0, 0, 280);
-                    var col = eColor[e]||'#8E8E93';
-                    g.addColorStop(0, col); g.addColorStop(1, col + '44');
-                    return g;
-                });
+                var gEnv = c2_2d.createLinearGradient(0, 0, 0, 280);
+                gEnv.addColorStop(0, 'rgba(0,122,255,0.85)'); gEnv.addColorStop(1, 'rgba(88,176,255,0.55)');
+                var gResp = c2_2d.createLinearGradient(0, 0, 0, 280);
+                gResp.addColorStop(0, 'rgba(52,199,89,0.85)'); gResp.addColorStop(1, 'rgba(52,199,89,0.45)');
+                var gFav = c2_2d.createLinearGradient(0, 0, 0, 280);
+                gFav.addColorStop(0, 'rgba(255,149,0,0.85)'); gFav.addColorStop(1, 'rgba(255,149,0,0.45)');
                 _prospChartInstances['ckChartProspFunnel'] = new Chart(c2_2d, {
                     type: 'bar',
-                    data: { labels: eLabels.map(function(e){ return eName[e]||e; }), datasets: [{ data: eValues, backgroundColor: eGrads, borderRadius: 10, barPercentage: 0.5 }] },
+                    data: {
+                        labels: ['Enviados', 'Respondidos', 'Favorables'],
+                        datasets: [{
+                            data: [tEnviados, tRespondidos, tFavorables],
+                            backgroundColor: [gEnv, gResp, gFav],
+                            borderRadius: 10, barPercentage: 0.45
+                        }]
+                    },
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         animation: sharedAnimation,
-                        plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                        plugins: {
+                            legend: { display: false }, tooltip: sharedTooltip,
+                            datalabels: false
+                        },
                         scales: {
                             y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
-                            x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' } }
+                            x: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' }, color: '#1D1D1F' } }
                         }
                     }
                 });
             }
 
-            // ── Chart 3: Top Clientes (vertical bar, blue→turquoise gradient, values on top) ──
+            // ── Chart 3: Top Clientes (vertical bar with client names on x-axis) ──
             _destroyProspChart('ckChartProspTopClientes');
             var c3 = document.getElementById('ckChartProspTopClientes');
             if (c3) {
-                var pRows = (data.rows||[]).filter(function(r){ return r.num_prospectos>0; }).sort(function(a,b){ return b.num_prospectos-a.num_prospectos; }).slice(0,8);
+                var pRows = (data.rows||[]).filter(function(r){ return r.num_prospectos>0; }).sort(function(a,b){ return b.num_prospectos-a.num_prospectos; }).slice(0,5);
                 if (pRows.length) {
                     var c3_2d = c3.getContext('2d');
                     var g3 = c3_2d.createLinearGradient(0, 0, 0, 280);
                     g3.addColorStop(0, 'rgba(0,122,255,0.85)'); g3.addColorStop(1, 'rgba(88,176,255,0.55)');
                     _prospChartInstances['ckChartProspTopClientes'] = new Chart(c3_2d, {
                         type: 'bar',
-                        data: { labels: pRows.map(function(r){ return r.cliente.length>15?r.cliente.substring(0,15)+'...':r.cliente; }), datasets: [{ label:'Prospectos', data: pRows.map(function(r){ return r.num_prospectos; }), backgroundColor: g3, borderRadius: 10, barPercentage: 0.5 }] },
+                        data: {
+                            labels: pRows.map(function(r){ return r.cliente.length > 12 ? r.cliente.substring(0,12) + '...' : r.cliente; }),
+                            datasets: [{
+                                label: 'Prospectos',
+                                data: pRows.map(function(r){ return r.num_prospectos; }),
+                                backgroundColor: g3, borderRadius: 10, barPercentage: 0.5
+                            }]
+                        },
                         options: {
                             responsive: true, maintainAspectRatio: false,
                             animation: sharedAnimation,
-                            plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                            plugins: {
+                                legend: { display: false }, tooltip: sharedTooltip,
+                                datalabels: false
+                            },
                             scales: {
                                 y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
-                                x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' } }
+                                x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#1D1D1F', maxRotation: 45, minRotation: 0 } }
                             }
                         }
                     });
