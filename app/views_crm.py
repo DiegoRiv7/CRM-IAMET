@@ -1068,6 +1068,112 @@ def api_crm_table_data(request):
                     _prev_sum = _prev_cot_qs.aggregate(t=Coalesce(Sum('total'), _zero))['t'] or _zero
                 except Exception:
                     pass
+        elif vista == 'prospeccion':
+            from .models import Prospecto, CampanaEnvio
+
+            prospectos_qs = Prospecto.objects.filter(fecha_creacion__year=anio_int)
+            if mes_filter and mes_filter != 'todos':
+                try:
+                    prospectos_qs = prospectos_qs.filter(fecha_creacion__month=int(mes_filter))
+                except ValueError:
+                    pass
+            if not es_supervisor:
+                prospectos_qs = prospectos_qs.filter(usuario=user)
+            elif vendedores_ids:
+                prospectos_qs = prospectos_qs.filter(usuario_id__in=vendedores_ids)
+
+            prosp_by_client = {}
+            ganados_by_client = {}
+            for p in prospectos_qs.select_related('cliente'):
+                cid = p.cliente_id
+                if not cid:
+                    continue
+                prosp_by_client[cid] = prosp_by_client.get(cid, 0) + 1
+                if p.etapa == 'cerrado_ganado':
+                    ganados_by_client[cid] = ganados_by_client.get(cid, 0) + 1
+
+            # Campañas enviadas por cliente
+            camp_by_client = {}
+            envios_qs = CampanaEnvio.objects.filter(fecha_envio__year=anio_int)
+            if mes_filter and mes_filter != 'todos':
+                try:
+                    envios_qs = envios_qs.filter(fecha_envio__month=int(mes_filter))
+                except ValueError:
+                    pass
+            if not es_supervisor:
+                envios_qs = envios_qs.filter(enviado_por=user)
+            elif vendedores_ids:
+                envios_qs = envios_qs.filter(enviado_por_id__in=vendedores_ids)
+            for env in envios_qs:
+                cid = env.cliente_id
+                if cid:
+                    camp_by_client[cid] = camp_by_client.get(cid, 0) + 1
+
+            # Ventas generadas desde prospeccion
+            ventas_prosp = _zero
+            opps_from_prosp = base_qs.filter(prospecto_origen__isnull=False)
+            opps_vendidas = opps_from_prosp.filter(
+                Q(etapa_corta__icontains='vendido') | Q(etapa_corta__icontains='comprando') |
+                Q(etapa_corta__icontains='transito') | Q(etapa_corta__icontains='entregado') |
+                Q(etapa_corta__icontains='facturado') | Q(etapa_corta__icontains='cobrado') |
+                Q(probabilidad_cierre=100)
+            )
+            ventas_prosp = opps_vendidas.aggregate(t=Coalesce(Sum('monto'), _zero))['t'] or _zero
+
+            # Tasa de contacto
+            total_envios = envios_qs.count()
+            total_respondidos = envios_qs.filter(respondido=True).count()
+            total_favorables = envios_qs.filter(respuesta_favorable=True).count()
+
+            all_client_ids = set(list(prosp_by_client.keys()) + list(camp_by_client.keys()))
+            prosp_rows = []
+            total_prosp = 0
+            total_camp = 0
+            total_ganados = 0
+            for cid in sorted(all_client_ids, key=lambda x: next((c.nombre_empresa for c in clientes_qs if c.id == x), '')):
+                c_obj = next((c for c in clientes_qs if c.id == cid), None)
+                n_prosp = prosp_by_client.get(cid, 0)
+                n_camp = camp_by_client.get(cid, 0)
+                n_ganados = ganados_by_client.get(cid, 0)
+                total_prosp += n_prosp
+                total_camp += n_camp
+                total_ganados += n_ganados
+                prosp_rows.append({
+                    'cliente_id': cid,
+                    'cliente': (c_obj.nombre_empresa if c_obj else 'Sin nombre')[:35],
+                    'vendedor': (c_obj.asignado_a.get_full_name() if c_obj and c_obj.asignado_a else ''),
+                    'num_prospectos': n_prosp,
+                    'num_campanas': n_camp,
+                    'num_ganados': n_ganados,
+                })
+
+            total_opps_from_prosp = opps_from_prosp.count()
+            num_clientes_prosp = len([r for r in prosp_rows if r['num_prospectos'] > 0])
+            tasa_contacto = round(total_respondidos / total_envios * 100) if total_envios > 0 else 0
+
+            return JsonResponse({
+                'tab': 'clientes',
+                'vista': 'prospeccion',
+                'vista_label': 'Prospección',
+                'rows': prosp_rows,
+                'footer': {
+                    'left': f'{num_clientes_prosp} clientes prospectados',
+                    'right': f'{total_prosp} prospectos',
+                },
+                'total_prospectos': total_prosp,
+                'total_campanas': total_camp,
+                'total_ganados': total_ganados,
+                'total_opps_from_prosp': total_opps_from_prosp,
+                'ventas_generadas': format_money(ventas_prosp),
+                'ventas_generadas_raw': float(ventas_prosp),
+                'tasa_contacto': tasa_contacto,
+                'total_envios': total_envios,
+                'total_respondidos': total_respondidos,
+                'total_favorables': total_favorables,
+                'meta': '0',
+                'progreso': 0,
+            })
+
         else:
             return JsonResponse({'tab': 'clientes', 'rows': [], 'footer': {'left': '', 'right': ''}, 'vista': vista})
 

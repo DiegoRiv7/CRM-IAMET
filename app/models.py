@@ -4248,3 +4248,26 @@ class Campana(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class CampanaEnvio(models.Model):
+    """Registro de cada envio de campana a un contacto"""
+    template = models.ForeignKey(CampanaTemplate, on_delete=models.CASCADE, related_name='envios')
+    prospecto = models.ForeignKey('Prospecto', on_delete=models.SET_NULL, null=True, blank=True)
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
+    contacto_email = models.EmailField()
+    contacto_nombre = models.CharField(max_length=200, blank=True, default='')
+    enviado_por = models.ForeignKey(User, on_delete=models.CASCADE)
+    mail_message_id = models.CharField(max_length=500, blank=True, default='')
+    respondido = models.BooleanField(default=False)
+    respuesta_favorable = models.BooleanField(null=True, blank=True)
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+    fecha_respuesta = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_envio']
+        verbose_name = 'Envio de Campana'
+        verbose_name_plural = 'Envios de Campana'
+
+    def __str__(self):
+        return f'{self.template.nombre} -> {self.contacto_email}'
