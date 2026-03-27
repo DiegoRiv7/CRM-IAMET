@@ -263,6 +263,7 @@ urlpatterns = [
     path('api/mail/crear-oportunidad/<int:correo_id>/', views_mail.api_mail_crear_oportunidad_desde_correo, name='api_mail_crear_oportunidad'),
     path('api/mail/adjunto/<int:adjunto_id>/', views_mail.api_mail_descargar_adjunto, name='api_mail_descargar_adjunto'),
     path('api/mail/check/', views_mail.api_mail_check_nuevos, name='api_mail_check_nuevos'),
+    path('api/mail/auto-sync/', views_mail.api_mail_auto_sync, name='api_mail_auto_sync'),
     path('api/mail/destacar/<int:correo_id>/', views_mail.api_mail_destacar, name='api_mail_destacar'),
     path('api/mail/eliminar/<int:correo_id>/', views_mail.api_mail_eliminar, name='api_mail_eliminar'),
     path('api/mail/reenviar/<int:correo_id>/', views_mail.api_mail_reenviar, name='api_mail_reenviar'),

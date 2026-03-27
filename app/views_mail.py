@@ -373,7 +373,7 @@ def api_mail_sincronizar(request):
         imap.select(sent_folder, readonly=True)
         typ, data = imap.uid('SEARCH', None, 'ALL')
         all_uids = data[0].split() if data[0] else []
-        uids_to_fetch = [u.decode() for u in all_uids[-20:]]
+        uids_to_fetch = [u.decode() for u in all_uids[-30:]]
 
         existing_sent_uids = set(
             MailCorreo.objects.filter(
@@ -434,7 +434,7 @@ def api_mail_lista(request):
     carpeta = request.GET.get('carpeta', 'INBOX')
     conexion_id = request.GET.get('conexion_id')
     pagina = max(1, int(request.GET.get('pagina', 1)))
-    por_pagina = 25
+    por_pagina = 50
 
     qs = MailCorreo.objects.filter(usuario=request.user)
     if conexion_id:
@@ -1065,7 +1065,13 @@ def api_mail_check_nuevos(request):
             ).values_list('uid_imap', flat=True)
         )
         new_count = sum(1 for u in uids_to_check if u not in existing)
-        return JsonResponse({'ok': True, 'nuevos': new_count})
+        total_no_leidos = MailCorreo.objects.filter(
+            usuario=request.user,
+            carpeta_display='INBOX',
+            leido=False,
+            eliminado=False
+        ).count()
+        return JsonResponse({'ok': True, 'nuevos': new_count, 'total_no_leidos': total_no_leidos})
     except Exception as e:
         return JsonResponse({'ok': False, 'nuevos': 0, 'error': str(e)})
 
@@ -1189,3 +1195,57 @@ def api_mail_eliminar_conexion(request, conexion_id):
         return JsonResponse({'ok': False, 'error': 'Conexión no encontrada'}, status=404)
     conexion.delete()
     return JsonResponse({'ok': True})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_mail_auto_sync(request):
+    """Lightweight auto-sync: checks for new emails and syncs headers only."""
+    try:
+        conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+        if not conexion:
+            return JsonResponse({'ok': False, 'error': 'Sin conexión'})
+
+        password = _decrypt_password(conexion.password_encriptado)
+
+        # Quick IMAP check
+        ctx = ssl.create_default_context()
+        if conexion.imap_usar_ssl:
+            imap = imaplib.IMAP4_SSL(conexion.imap_servidor, conexion.imap_puerto, ssl_context=ctx)
+        else:
+            imap = imaplib.IMAP4(conexion.imap_servidor, conexion.imap_puerto)
+            imap.starttls(ssl_context=ctx)
+
+        imap.login(conexion.correo_electronico, password)
+        imap.select('INBOX', readonly=True)
+
+        status, data = imap.uid('search', None, 'ALL')
+        all_uids = data[0].split() if data[0] else []
+        recent_uids = [u.decode() for u in all_uids[-50:]]
+
+        # Check which UIDs we don't have yet
+        existing_uids = set(MailCorreo.objects.filter(
+            usuario=request.user,
+            carpeta_imap='INBOX'
+        ).values_list('uid_imap', flat=True))
+
+        new_uids = [u for u in recent_uids if u not in existing_uids]
+
+        imap.logout()
+
+        nuevos = len(new_uids)
+        total_no_leidos = MailCorreo.objects.filter(
+            usuario=request.user, carpeta_display='INBOX', leido=False, eliminado=False
+        ).count()
+
+        # If there are new emails, trigger a full sync
+        should_sync = nuevos > 0
+
+        return JsonResponse({
+            'ok': True,
+            'nuevos': nuevos,
+            'total_no_leidos': total_no_leidos + nuevos,
+            'should_sync': should_sync,
+        })
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})

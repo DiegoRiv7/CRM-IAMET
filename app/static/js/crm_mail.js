@@ -328,7 +328,8 @@
                     var iframe = document.getElementById('mailDetailIframe');
                     var plain = document.getElementById('mailDetailPlain');
                     if (d.cuerpo_html) {
-                        iframe.srcdoc = d.cuerpo_html;
+                        var cspMeta = '<meta http-equiv="Content-Security-Policy" content="default-src * \'unsafe-inline\' \'unsafe-eval\' data: blob:;">';
+                        iframe.srcdoc = cspMeta + d.cuerpo_html;
                         iframe.style.display = 'block';
                         plain.style.display = 'none';
                     } else {
@@ -1120,19 +1121,73 @@
         /* ── Polling & Badges ──────────────────────── */
         function _mailStartPolling() {
             if (_mailPollInterval) return;
-            _mailPollInterval = setInterval(_mailPollUnreadCount, 120000);
+            _mailPollInterval = setInterval(_mailPollUnreadCount, 30000);
         }
 
         function _mailPollUnreadCount() {
-            var url = '/app/api/mail/lista/?carpeta=INBOX&pagina=1';
-            if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
-            fetch(url)
+            fetch('/app/api/mail/auto-sync/')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    var unread = (data.correos || []).filter(function (c) { return !c.leido; }).length;
-                    _mailPendingBadge = unread;
+                    if (!data.ok) return;
+
+                    // Update badge
+                    _mailPendingBadge = data.total_no_leidos || 0;
                     _mailUpdateNavBadge();
-                });
+
+                    // If new emails, auto-sync and show notification
+                    if (data.should_sync && data.nuevos > 0) {
+                        // Show Mac-style notification
+                        _showMailNotification(data.nuevos);
+
+                        // Auto-trigger sync
+                        fetch('/app/api/mail/sincronizar/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrf() }
+                        }).then(function (r) { return r.json(); }).then(function (syncData) {
+                            // If mail widget is open, refresh the list
+                            var widget = document.getElementById('widgetMail');
+                            if (widget && widget.classList.contains('active')) {
+                                mailCargarLista(_mailCarpeta);
+                            }
+                        });
+                    }
+                })
+                .catch(function () {});
+        }
+
+        function _showMailNotification(count) {
+            // Don't show if mail widget is already open
+            var widget = document.getElementById('widgetMail');
+            if (widget && widget.classList.contains('active')) return;
+
+            // Create notification element
+            var notif = document.createElement('div');
+            notif.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15),0 0 0 1px rgba(0,0,0,0.05);padding:14px 18px;display:flex;align-items:center;gap:12px;max-width:340px;cursor:pointer;transform:translateX(400px);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);';
+
+            notif.innerHTML =
+                '<div style="width:36px;height:36px;border-radius:8px;background:#007AFF22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                    '<svg width="18" height="18" fill="none" stroke="#007AFF" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
+                '</div>' +
+                '<div>' +
+                    '<div style="font-size:13px;font-weight:700;color:#1D1D1F;">Nuevo' + (count > 1 ? 's' : '') + ' correo' + (count > 1 ? 's' : '') + '</div>' +
+                    '<div style="font-size:12px;color:#86868B;">' + count + ' correo' + (count > 1 ? 's' : '') + ' sin leer en tu bandeja</div>' +
+                '</div>';
+
+            notif.addEventListener('click', function () {
+                notif.remove();
+                if (typeof mailAbrir === 'function') mailAbrir();
+            });
+
+            document.body.appendChild(notif);
+
+            // Slide in
+            setTimeout(function () { notif.style.transform = 'translateX(0)'; }, 50);
+
+            // Auto-dismiss after 5 seconds
+            setTimeout(function () {
+                notif.style.transform = 'translateX(400px)';
+                setTimeout(function () { if (notif.parentNode) notif.remove(); }, 400);
+            }, 5000);
         }
 
         function _mailUpdateNavBadge() {
