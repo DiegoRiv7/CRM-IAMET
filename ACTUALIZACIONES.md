@@ -201,6 +201,56 @@ Formato: `[YYYY-MM-DD]` · Tipo: `MEJORA` / `NUEVO` / `FIX` / `TÉCNICO`
 - Los usuarios que pertenecen a un grupo pueden ver las oportunidades de su supervisor.
 
 
+## [2026-03-26] — Módulo de Prospección + Campañas de Email
+
+### NUEVO — Módulo de Prospección completo
+- Se creó un módulo completo de prospección que convierte el CRM en una herramienta de generación de ventas.
+- La sección de Prospección muestra una tabla de clientes con conteo de prospectos por marca (Zebra, Panduit, APC, etc.).
+- Al dar click en una marca se abre el formulario de nuevo prospecto con cliente y producto pre-seleccionados.
+- Al dar click en un cliente se abre un widget con la tabla de prospectos de ese cliente, botón de crear nuevo y botón de campaña.
+
+### NUEVO — Pipeline de prospección con 7 etapas
+- Las prospecciones pasan por: Identificado → Calificado → Reunión (virtual/presencial) → En Progreso → Procesado → Cerrar (Ganado/Perdido).
+- Al cerrar como ganado, el prospecto se convierte automáticamente en oportunidad con todos los datos migrados.
+- Los comentarios del prospecto se migran a la conversación de la oportunidad creada.
+
+### NUEVO — Widget detalle de prospecto
+- Widget con pipeline visual de etapas (pills clickeables), info card, comentarios tipo chat con avatares, actividades programadas, cotizaciones y vendedor/cliente.
+- Diseñado idéntico al widget de oportunidad para consistencia visual.
+
+### NUEVO — Conversión prospecto a oportunidad al cotizar
+- Al dar "Nueva" en cotizaciones del prospecto, el sistema confirma la conversión a oportunidad.
+- Crea la oportunidad, migra comentarios, y abre el cotizador con cliente y oportunidad pre-seleccionados.
+- El monto de la oportunidad se actualiza automáticamente con el subtotal (sin IVA) de la cotización.
+
+### NUEVO — Campañas de email marketing
+- Nuevo módulo donde el admin/supervisor sube plantillas HTML de email asignadas a una marca.
+- Importación con drag & drop: grid visual de marcas, zona para arrastrar archivos .html, auto-llenado del nombre.
+- Los usuarios ven un grid de plantillas filtradas por marca con mini-preview, botones Vista Previa y Correo.
+
+### NUEVO — Enviar campaña por correo
+- Al dar "Correo" en una plantilla: se abre el widget de correo con el HTML de la plantilla ya insertado en el cuerpo.
+- El asunto se pre-llena con el nombre de la plantilla. El usuario solo elige destinatario y envía.
+
+### NUEVO — Flujo automático marca → prospecto → campaña
+- Al crear un prospecto desde click en marca: se abre formulario pre-llenado → al crear se abre widget de cliente → automáticamente se abre el selector de campañas filtrado por la marca.
+
+### MEJORA — KPI cotizado cambia de monto a número de cotizaciones
+- En la vista de Clientes, el KPI de cotizado ahora muestra el número de cotizaciones creadas (no el monto).
+- La tabla de detalle muestra # cotizaciones por cliente. La meta se edita como número entero en el panel admin.
+
+### MEJORA — Deploy automático con migraciones
+- El workflow de GitHub Actions ahora ejecuta migrate y collectstatic después del deploy como safety net.
+
+### FIX — Z-index de widgets de prospección
+- Jerarquía corregida para que los widgets hijos se abran encima de los padres correctamente.
+
+### FIX — Click en celdas de marca
+- Resuelto problema de event delegation usando onclick inline con funciones globales.
+
+### FIX — KPI cotizado mostraba overlay en vez de tabla
+- Corregido para que actualice la tabla de abajo igual que cobrado.
+
 ## [2026-03-23] — grupos de trabajo
 
 

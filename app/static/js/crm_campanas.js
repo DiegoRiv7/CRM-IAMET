@@ -185,9 +185,13 @@
         }).then(function(r) { return r.json(); }).then(function(data) {
             if (!data.html) return;
 
-            // Cerrar widget de campañas
+            // Cerrar TODOS los widgets de prospección y campañas
             var campWidget = document.getElementById('widgetCampana');
             if (campWidget) campWidget.classList.remove('active');
+            var clienteWidget = document.getElementById('widgetClienteProspectos');
+            if (clienteWidget) clienteWidget.classList.remove('active');
+            var prospectoWidget = document.getElementById('widgetProspecto');
+            if (prospectoWidget) prospectoWidget.classList.remove('active');
 
             // Abrir widget de mail
             if (typeof mailAbrir === 'function') mailAbrir();
