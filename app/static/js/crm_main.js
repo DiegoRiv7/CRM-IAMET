@@ -1319,6 +1319,19 @@
 
             var _crmClientesMode = localStorage.getItem('crm_clientes_mode') || 'oportunidades';
 
+            // Immediately hide opp KPIs/charts if saved mode is prospeccion (prevents flash)
+            if (_crmClientesMode === 'prospeccion') {
+                var _earlyKpi = document.getElementById('ckKpiRow');
+                var _earlyCharts = document.getElementById('ckChartsSection');
+                if (_earlyKpi) _earlyKpi.style.display = 'none';
+                if (_earlyCharts) _earlyCharts.style.display = 'none';
+                // Update selector buttons immediately
+                var _eOpp = document.getElementById('crmModeOpp');
+                var _eProsp = document.getElementById('crmModeProsp');
+                if (_eOpp) { _eOpp.style.background = 'transparent'; _eOpp.style.color = '#86868B'; }
+                if (_eProsp) { _eProsp.style.background = '#5856D6'; _eProsp.style.color = '#fff'; }
+            }
+
             window._crmSetMode = function(mode) {
                 _crmClientesMode = mode;
                 localStorage.setItem('crm_clientes_mode', mode);
@@ -1791,28 +1804,15 @@
                 trendCotEl.innerHTML = '';
             }
 
-            // Show KPI row
-            var kpiRow = el('ckKpiRow');
-            if (kpiRow) kpiRow.style.display = 'grid';
-
-            // Show charts section and render charts
-            var chartsSection = el('ckChartsSection');
-            if (chartsSection) chartsSection.style.display = 'block';
-
-            // Cotizado KPI card uses ckAbrirDetalle('cotizado') via onclick in HTML template
-
+            // Render opp charts (always, they'll be hidden if mode is prospeccion)
             ckRenderCharts(merged, totFact, totCob, totOpp, totCot, prevFact, prevCob, prevOpp, prevCot);
 
             if (_clientesPanelData.facturado) {
                 updateTopbarFromClientesPanel(_clientesPanelData.facturado);
-                document.getElementById('footerLeft').textContent = _clientesPanelData.facturado.footer.left;
-                document.getElementById('footerRight').textContent = _clientesPanelData.facturado.footer.right;
             }
 
-            // Restore saved mode (prospeccion/oportunidades) from localStorage
-            if (_crmClientesMode === 'prospeccion') {
-                window._crmSetMode('prospeccion');
-            }
+            // Apply saved mode — this controls which KPIs, charts, and footer are visible
+            window._crmSetMode(_crmClientesMode);
         }
 
         function _renderProspKPIs() {
