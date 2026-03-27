@@ -1317,10 +1317,11 @@
             var _clientesExpanded = null;
             var _CLIENTES_VISTAS = ['facturado', 'cobrado', 'oportunidades', 'cotizado', 'prospeccion'];
 
-            var _crmClientesMode = 'oportunidades';
+            var _crmClientesMode = localStorage.getItem('crm_clientes_mode') || 'oportunidades';
 
             window._crmSetMode = function(mode) {
                 _crmClientesMode = mode;
+                localStorage.setItem('crm_clientes_mode', mode);
                 var btnOpp = document.getElementById('crmModeOpp');
                 var btnProsp = document.getElementById('crmModeProsp');
                 if (btnOpp && btnProsp) {
@@ -1806,6 +1807,11 @@
                 updateTopbarFromClientesPanel(_clientesPanelData.facturado);
                 document.getElementById('footerLeft').textContent = _clientesPanelData.facturado.footer.left;
                 document.getElementById('footerRight').textContent = _clientesPanelData.facturado.footer.right;
+            }
+
+            // Restore saved mode (prospeccion/oportunidades) from localStorage
+            if (_crmClientesMode === 'prospeccion') {
+                window._crmSetMode('prospeccion');
             }
         }
 
@@ -2668,11 +2674,17 @@
             var detalle = document.getElementById('ckDetalleSection');
             if (!detalle) return;
 
-            // Fade out charts
+            // Fade out charts (both oportunidades and prospeccion)
             if (charts) {
                 charts.style.transition = 'opacity 0.2s';
                 charts.style.opacity = '0';
                 setTimeout(function(){ charts.style.display = 'none'; }, 200);
+            }
+            var chartsProsp = document.getElementById('ckChartsSectionProsp');
+            if (chartsProsp) {
+                chartsProsp.style.transition = 'opacity 0.2s';
+                chartsProsp.style.opacity = '0';
+                setTimeout(function(){ chartsProsp.style.display = 'none'; }, 200);
             }
             // Fade in detail
             detalle.style.display = 'block';
@@ -2765,19 +2777,26 @@
         };
 
         window.ckVolverGraficas = function() {
-            var charts = document.getElementById('ckChartsSection');
             var detalle = document.getElementById('ckDetalleSection');
             if (detalle) {
                 detalle.style.transition = 'opacity 0.2s';
                 detalle.style.opacity = '0';
                 setTimeout(function(){ detalle.style.display = 'none'; }, 200);
             }
-            if (charts) {
-                charts.style.display = '';
-                setTimeout(function(){
-                    charts.style.transition = 'opacity 0.2s';
-                    charts.style.opacity = '1';
-                }, 50);
+            // Show correct charts based on current mode
+            if (_crmClientesMode === 'prospeccion') {
+                var chartsProsp = document.getElementById('ckChartsSectionProsp');
+                if (chartsProsp) {
+                    chartsProsp.style.display = 'block';
+                    chartsProsp.style.opacity = '0';
+                    setTimeout(function(){ chartsProsp.style.transition = 'opacity 0.2s'; chartsProsp.style.opacity = '1'; }, 50);
+                }
+            } else {
+                var charts = document.getElementById('ckChartsSection');
+                if (charts) {
+                    charts.style.display = '';
+                    setTimeout(function(){ charts.style.transition = 'opacity 0.2s'; charts.style.opacity = '1'; }, 50);
+                }
             }
         };
 
