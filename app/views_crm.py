@@ -1069,6 +1069,7 @@ def api_crm_table_data(request):
                 except Exception:
                     pass
         elif vista == 'prospeccion':
+          try:
             from .models import Prospecto, CampanaEnvio
 
             # Define clientes queryset for this scope
@@ -1125,7 +1126,7 @@ def api_crm_table_data(request):
                 pass  # Table may not exist yet
 
             # Ventas generadas desde prospeccion
-            ventas_prosp = _zero
+            ventas_prosp = Decimal('0')
             try:
                 opps_from_prosp = base_qs.filter(prospecto_origen__isnull=False)
                 opps_vendidas = opps_from_prosp.filter(
@@ -1134,7 +1135,7 @@ def api_crm_table_data(request):
                     Q(etapa_corta__icontains='facturado') | Q(etapa_corta__icontains='cobrado') |
                     Q(probabilidad_cierre=100)
                 )
-                ventas_prosp = opps_vendidas.aggregate(t=Coalesce(Sum('monto'), _zero))['t'] or _zero
+                ventas_prosp = opps_vendidas.aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t'] or Decimal('0')
                 total_opps_from_prosp_count = opps_from_prosp.count()
             except Exception:
                 opps_from_prosp = TodoItem.objects.none()
@@ -1198,6 +1199,17 @@ def api_crm_table_data(request):
                 'chart_etapas': etapa_counts,
                 'meta': '0',
                 'progreso': 0,
+            })
+          except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'tab': 'clientes', 'vista': 'prospeccion',
+                'rows': [], 'footer': {'left': 'Error', 'right': str(e)},
+                'total_prospectos': 0, 'total_campanas': 0, 'total_ganados': 0,
+                'total_opps_from_prosp': 0, 'ventas_generadas': '0', 'ventas_generadas_raw': 0,
+                'tasa_contacto': 0, 'total_envios': 0, 'total_respondidos': 0, 'total_favorables': 0,
+                'chart_marcas': {}, 'chart_etapas': {}, 'meta': '0', 'progreso': 0,
             })
 
         else:
