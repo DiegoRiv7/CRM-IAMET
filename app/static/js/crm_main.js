@@ -1337,17 +1337,35 @@
                 var charts = document.getElementById('ckChartsSection');
                 var detalle = document.getElementById('ckDetalleSection');
 
+                var chartsProsp = document.getElementById('ckChartsSectionProsp');
+
                 if (mode === 'oportunidades') {
                     if (kpiOpp) kpiOpp.style.display = 'grid';
                     if (kpiProsp) kpiProsp.style.display = 'none';
                     if (charts) { charts.style.display = ''; charts.style.opacity = '1'; }
+                    if (chartsProsp) chartsProsp.style.display = 'none';
                     if (detalle) detalle.style.display = 'none';
+                    // Restore footer from facturado data
+                    var footerLeft = document.getElementById('footerLeft');
+                    var footerRight = document.getElementById('footerRight');
+                    if (_clientesPanelData.facturado) {
+                        if (footerLeft) footerLeft.textContent = (_clientesPanelData.facturado.footer || {}).left || '';
+                        if (footerRight) footerRight.textContent = (_clientesPanelData.facturado.footer || {}).right || '';
+                    }
                 } else {
                     if (kpiOpp) kpiOpp.style.display = 'none';
                     if (kpiProsp) kpiProsp.style.display = 'grid';
                     if (charts) charts.style.display = 'none';
+                    if (chartsProsp) chartsProsp.style.display = 'block';
                     if (detalle) detalle.style.display = 'none';
                     _renderProspKPIs();
+                    _renderProspCharts();
+                    // Update footer for prospeccion
+                    var footerLeft = document.getElementById('footerLeft');
+                    var footerRight = document.getElementById('footerRight');
+                    var pData = _clientesPanelData.prospeccion || {};
+                    if (footerLeft) footerLeft.textContent = (pData.footer || {}).left || '';
+                    if (footerRight) footerRight.textContent = (pData.footer || {}).right || '';
                 }
             };
             var _CLIENTES_THEAD_MINI =
@@ -1813,6 +1831,87 @@
             // KPI 4: Tasa contacto
             if (el('ckKpiProspTasa')) el('ckKpiProspTasa').textContent = (data.tasa_contacto || 0) + '%';
             if (el('ckMetaProspTasa')) el('ckMetaProspTasa').textContent = (data.total_respondidos || 0) + '/' + (data.total_envios || 0) + ' respondidos';
+        }
+
+        var _prospChartInstances = {};
+        function _destroyProspChart(id) {
+            if (_prospChartInstances[id]) { _prospChartInstances[id].destroy(); delete _prospChartInstances[id]; }
+        }
+
+        function _renderProspCharts() {
+            if (typeof Chart === 'undefined') return;
+            var data = _clientesPanelData.prospeccion;
+            if (!data) return;
+
+            var sharedTooltip = {
+                backgroundColor: 'rgba(255,255,255,0.92)', titleColor: '#1D1D1F', bodyColor: '#3C3C43',
+                titleFont: { size: 12, weight: '700' }, bodyFont: { size: 11 },
+                padding: 12, cornerRadius: 10, borderColor: 'rgba(0,0,0,0.08)', borderWidth: 1
+            };
+
+            // Chart 1: Prospectos por Marca (horizontal bar)
+            _destroyProspChart('ckChartProspMarca');
+            var ctx1 = document.getElementById('ckChartProspMarca');
+            if (ctx1) {
+                var marcas = data.chart_marcas || {};
+                var labels = Object.keys(marcas).sort(function(a,b) { return marcas[b] - marcas[a]; });
+                var values = labels.map(function(l) { return marcas[l]; });
+                var colors = ['#5856D6','#007AFF','#34C759','#FF9500','#FF3B30','#AF52DE','#FF2D55','#5AC8FA','#FFCC00','#8E8E93'];
+                _prospChartInstances['ckChartProspMarca'] = new Chart(ctx1, {
+                    type: 'bar',
+                    data: { labels: labels, datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length), borderRadius: 6 }] },
+                    options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: sharedTooltip }, scales: { x: { display: false }, y: { grid: { display: false } } } }
+                });
+            }
+
+            // Chart 2: Funnel de Etapas (bar)
+            _destroyProspChart('ckChartProspFunnel');
+            var ctx2 = document.getElementById('ckChartProspFunnel');
+            if (ctx2) {
+                var etapas = data.chart_etapas || {};
+                var etapaOrder = ['identificado','calificado','reunion','en_progreso','procesado','cerrado_ganado','cerrado_perdido'];
+                var etapaLabels = { identificado:'Identificado', calificado:'Calificado', reunion:'Reunión', en_progreso:'En Progreso', procesado:'Procesado', cerrado_ganado:'Ganado', cerrado_perdido:'Perdido' };
+                var eLabels = etapaOrder.filter(function(e) { return etapas[e] > 0; });
+                var eValues = eLabels.map(function(e) { return etapas[e] || 0; });
+                var eColors = { identificado:'#8E8E93', calificado:'#007AFF', reunion:'#5856D6', en_progreso:'#FF9500', procesado:'#34C759', cerrado_ganado:'#30D158', cerrado_perdido:'#FF3B30' };
+                _prospChartInstances['ckChartProspFunnel'] = new Chart(ctx2, {
+                    type: 'bar',
+                    data: { labels: eLabels.map(function(e) { return etapaLabels[e] || e; }), datasets: [{ data: eValues, backgroundColor: eLabels.map(function(e) { return eColors[e]; }), borderRadius: 6 }] },
+                    options: { plugins: { legend: { display: false }, tooltip: sharedTooltip }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+                });
+            }
+
+            // Chart 3: Top Clientes (horizontal bar)
+            _destroyProspChart('ckChartProspTopClientes');
+            var ctx3 = document.getElementById('ckChartProspTopClientes');
+            if (ctx3) {
+                var rows = (data.rows || []).filter(function(r) { return r.num_prospectos > 0; }).sort(function(a,b) { return b.num_prospectos - a.num_prospectos; }).slice(0, 8);
+                _prospChartInstances['ckChartProspTopClientes'] = new Chart(ctx3, {
+                    type: 'bar',
+                    data: { labels: rows.map(function(r) { return r.cliente.length > 15 ? r.cliente.substring(0,15) + '...' : r.cliente; }), datasets: [{ data: rows.map(function(r) { return r.num_prospectos; }), backgroundColor: '#5856D6', borderRadius: 6 }] },
+                    options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: sharedTooltip }, scales: { x: { display: false }, y: { grid: { display: false } } } }
+                });
+            }
+
+            // Chart 4: Conversión (doughnut)
+            _destroyProspChart('ckChartProspConversion');
+            var ctx4 = document.getElementById('ckChartProspConversion');
+            if (ctx4) {
+                var totalP = data.total_prospectos || 0;
+                var ganados = data.total_ganados || 0;
+                var activos = totalP - ganados;
+                _prospChartInstances['ckChartProspConversion'] = new Chart(ctx4, {
+                    type: 'doughnut',
+                    data: { labels: ['Convertidos', 'En progreso'], datasets: [{ data: [ganados, activos > 0 ? activos : 0], backgroundColor: ['#34C759', '#E5E5EA'], borderWidth: 0 }] },
+                    options: {
+                        cutout: '65%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } },
+                            tooltip: sharedTooltip
+                        }
+                    }
+                });
+            }
         }
 
         function loadClientesPanel(vista) {

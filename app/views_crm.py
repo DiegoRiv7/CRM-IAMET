@@ -1071,6 +1071,12 @@ def api_crm_table_data(request):
         elif vista == 'prospeccion':
             from .models import Prospecto, CampanaEnvio
 
+            # Define clientes queryset for this scope
+            if es_supervisor:
+                clientes_qs = Cliente.objects.filter(asignado_a_id__in=vendedores_ids) if vendedores_ids else Cliente.objects.all()
+            else:
+                clientes_qs = Cliente.objects.filter(asignado_a=user)
+
             prospectos_qs = Prospecto.objects.filter(fecha_creacion__year=anio_int)
             if mes_filter and mes_filter != 'todos':
                 try:
@@ -1151,6 +1157,17 @@ def api_crm_table_data(request):
             num_clientes_prosp = len([r for r in prosp_rows if r['num_prospectos'] > 0])
             tasa_contacto = round(total_respondidos / total_envios * 100) if total_envios > 0 else 0
 
+            # Chart data: prospectos por marca
+            marca_counts = {}
+            for p in prospectos_qs:
+                marca = (p.producto or 'OTRO').upper()
+                marca_counts[marca] = marca_counts.get(marca, 0) + 1
+
+            # Chart data: funnel de etapas
+            etapa_counts = {}
+            for p in prospectos_qs:
+                etapa_counts[p.etapa] = etapa_counts.get(p.etapa, 0) + 1
+
             return JsonResponse({
                 'tab': 'clientes',
                 'vista': 'prospeccion',
@@ -1170,6 +1187,8 @@ def api_crm_table_data(request):
                 'total_envios': total_envios,
                 'total_respondidos': total_respondidos,
                 'total_favorables': total_favorables,
+                'chart_marcas': marca_counts,
+                'chart_etapas': etapa_counts,
                 'meta': '0',
                 'progreso': 0,
             })
