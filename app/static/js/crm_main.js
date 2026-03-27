@@ -1842,8 +1842,158 @@
             if (typeof Chart === 'undefined') return;
             var data = _clientesPanelData.prospeccion;
             if (!data) return;
+            // Use the same shared tooltip from ckRenderCharts
+            var sharedTooltip = {
+                backgroundColor: 'rgba(255,255,255,0.85)',
+                titleColor: '#1D1D1F', bodyColor: '#3C3C43',
+                titleFont: { size: 12, weight: '700' }, bodyFont: { size: 11, weight: '500' },
+                padding: 12, cornerRadius: 14,
+                borderColor: 'rgba(255,255,255,0.6)', borderWidth: 1,
+                displayColors: true, boxPadding: 4
+            };
+            var sharedAnimation = { duration: 1200, easing: 'easeOutQuart', delay: function(ctx) { return ctx.dataIndex * 80; } };
 
-            // Apple-inspired color palette with gradients
+            // ── Chart 1: Prospectos por Marca (horizontal bar, EACH bar different color) ──
+            _destroyProspChart('ckChartProspMarca');
+            var c1 = document.getElementById('ckChartProspMarca');
+            if (c1) {
+                var marcas = data.chart_marcas || {};
+                var mLabels = Object.keys(marcas).sort(function(a,b){ return marcas[b]-marcas[a]; });
+                var mValues = mLabels.map(function(l){ return marcas[l]; });
+                var brandColors = {
+                    'ZEBRA': '#007AFF', 'PANDUIT': '#0e2745', 'APC': '#FF3B30', 'AVIGILION': '#5856D6',
+                    'GENETEC': '#34C759', 'AXIS': '#FF9500', 'SOFTWARE': '#AF52DE', 'RUNRATE': '#5AC8FA',
+                    'CISCO': '#007AFF', 'POLIZA': '#FF2D55', 'SERVICIO': '#FFCC00'
+                };
+                var c1_2d = c1.getContext('2d');
+                var mGrads = mLabels.map(function(l) {
+                    var g = c1_2d.createLinearGradient(0, 0, c1.width, 0);
+                    var base = brandColors[l] || '#007AFF';
+                    g.addColorStop(0, base);
+                    g.addColorStop(1, base + '66');
+                    return g;
+                });
+                _prospChartInstances['ckChartProspMarca'] = new Chart(c1_2d, {
+                    type: 'bar',
+                    data: { labels: mLabels, datasets: [{ data: mValues, backgroundColor: mGrads, borderRadius: 8, barPercentage: 0.6 }] },
+                    options: {
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        animation: sharedAnimation,
+                        plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                        scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' }, color: '#1D1D1F' } } }
+                    }
+                });
+            }
+
+            // ── Chart 2: Pipeline (vertical bar, EACH stage its own color) ──
+            _destroyProspChart('ckChartProspFunnel');
+            var c2 = document.getElementById('ckChartProspFunnel');
+            if (c2) {
+                var etapas = data.chart_etapas || {};
+                var eOrder = ['identificado','calificado','reunion','en_progreso','procesado','cerrado_ganado','cerrado_perdido'];
+                var eName = { identificado:'Identificado', calificado:'Calificado', reunion:'Reunión', en_progreso:'En Progreso', procesado:'Procesado', cerrado_ganado:'Ganado', cerrado_perdido:'Perdido' };
+                var eColor = { identificado:'#8E8E93', calificado:'#007AFF', reunion:'#5856D6', en_progreso:'#FF9500', procesado:'#34C759', cerrado_ganado:'#30D158', cerrado_perdido:'#FF3B30' };
+                var eLabels = eOrder.filter(function(e){ return (etapas[e]||0)>0; });
+                var eValues = eLabels.map(function(e){ return etapas[e]||0; });
+                var c2_2d = c2.getContext('2d');
+                var eGrads = eLabels.map(function(e) {
+                    var g = c2_2d.createLinearGradient(0, 0, 0, 280);
+                    var col = eColor[e]||'#8E8E93';
+                    g.addColorStop(0, col); g.addColorStop(1, col + '44');
+                    return g;
+                });
+                _prospChartInstances['ckChartProspFunnel'] = new Chart(c2_2d, {
+                    type: 'bar',
+                    data: { labels: eLabels.map(function(e){ return eName[e]||e; }), datasets: [{ data: eValues, backgroundColor: eGrads, borderRadius: 10, barPercentage: 0.5 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        animation: sharedAnimation,
+                        plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
+                            x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' } }
+                        }
+                    }
+                });
+            }
+
+            // ── Chart 3: Top Clientes (vertical bar, blue→turquoise gradient, values on top) ──
+            _destroyProspChart('ckChartProspTopClientes');
+            var c3 = document.getElementById('ckChartProspTopClientes');
+            if (c3) {
+                var pRows = (data.rows||[]).filter(function(r){ return r.num_prospectos>0; }).sort(function(a,b){ return b.num_prospectos-a.num_prospectos; }).slice(0,8);
+                if (pRows.length) {
+                    var c3_2d = c3.getContext('2d');
+                    var g3 = c3_2d.createLinearGradient(0, 0, 0, 280);
+                    g3.addColorStop(0, 'rgba(0,122,255,0.85)'); g3.addColorStop(1, 'rgba(88,176,255,0.55)');
+                    _prospChartInstances['ckChartProspTopClientes'] = new Chart(c3_2d, {
+                        type: 'bar',
+                        data: { labels: pRows.map(function(r){ return r.cliente.length>15?r.cliente.substring(0,15)+'...':r.cliente; }), datasets: [{ label:'Prospectos', data: pRows.map(function(r){ return r.num_prospectos; }), backgroundColor: g3, borderRadius: 10, barPercentage: 0.5 }] },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            animation: sharedAnimation,
+                            plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
+                                x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#3C3C43' } }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // ── Chart 4: Tasa de Conversión (doughnut centered, multicolor) ──
+            _destroyProspChart('ckChartProspConversion');
+            var c4 = document.getElementById('ckChartProspConversion');
+            if (c4) {
+                var totalP = data.total_prospectos||0;
+                var ganados = data.total_ganados||0;
+                var perdidos = 0;
+                var et = data.chart_etapas||{};
+                if (et.cerrado_perdido) perdidos = et.cerrado_perdido;
+                var activos = Math.max(0, totalP - ganados - perdidos);
+                var pct = totalP>0 ? Math.round(ganados/totalP*100) : 0;
+                var centerPlugin = {
+                    id: 'prospCenter',
+                    afterDraw: function(chart) {
+                        if (chart.canvas.id !== 'ckChartProspConversion') return;
+                        var cx = chart.ctx, w = chart.width, h = chart.chartArea ? (chart.chartArea.top + chart.chartArea.bottom)/2 : h/2;
+                        cx.save();
+                        cx.font = '700 32px -apple-system, BlinkMacSystemFont, sans-serif';
+                        cx.fillStyle = '#1D1D1F'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+                        cx.fillText(pct + '%', w/2, h);
+                        cx.font = '500 12px -apple-system, BlinkMacSystemFont, sans-serif';
+                        cx.fillStyle = '#86868B';
+                        cx.fillText('conversión', w/2, h + 22);
+                        cx.restore();
+                    }
+                };
+                _prospChartInstances['ckChartProspConversion'] = new Chart(c4, {
+                    type: 'doughnut',
+                    plugins: [centerPlugin],
+                    data: {
+                        labels: ['Convertidos', 'Activos', 'Perdidos'],
+                        datasets: [{
+                            data: [ganados, activos > 0 ? activos : (totalP === 0 ? 1 : 0), perdidos],
+                            backgroundColor: ['rgba(52,199,89,0.85)', 'rgba(0,122,255,0.7)', 'rgba(255,59,48,0.6)'],
+                            borderWidth: 0, spacing: 3
+                        }]
+                    },
+                    options: {
+                        cutout: '68%', responsive: true, maintainAspectRatio: false,
+                        animation: { duration: 1200, easing: 'easeOutQuart', animateRotate: true },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, padding: 16, usePointStyle: true, font: { size: 11, weight: '600' }, color: '#3C3C43' } },
+                            tooltip: sharedTooltip
+                        },
+                        layout: { padding: { bottom: 5 } }
+                    }
+                });
+            }
+        } // end _renderProspCharts
+
+        // Dead code removed — all chart logic is above
+        if (false) { // placeholder to keep indentation consistent
             var appleColors = [
                 { solid: '#007AFF', light: 'rgba(0,122,255,0.15)' },
                 { solid: '#5856D6', light: 'rgba(88,86,214,0.15)' },
