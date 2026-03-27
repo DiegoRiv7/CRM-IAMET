@@ -1859,30 +1859,29 @@
             };
             var sharedAnimation = { duration: 1200, easing: 'easeOutQuart', delay: function(ctx) { return ctx.dataIndex * 80; } };
 
-            // ── Chart 1: Prospectos por Marca (polar area — clean, single-tone blue) ──
+            // ── Chart 1: Prospectos por Marca (vertical bar, blue gradient, names below) ──
             _destroyProspChart('ckChartProspMarca');
             var c1 = document.getElementById('ckChartProspMarca');
             if (c1) {
                 var marcas = data.chart_marcas || {};
                 var mLabels = Object.keys(marcas).sort(function(a,b){ return marcas[b]-marcas[a]; });
                 var mValues = mLabels.map(function(l){ return marcas[l]; });
-                // Graduated blue opacities — darkest for highest value
-                var blueShades = mLabels.map(function(_, i) {
-                    var opacity = 0.85 - (i * 0.1);
-                    if (opacity < 0.2) opacity = 0.2;
-                    return 'rgba(0,122,255,' + opacity.toFixed(2) + ')';
-                });
-                _prospChartInstances['ckChartProspMarca'] = new Chart(c1, {
-                    type: 'polarArea',
-                    data: { labels: mLabels, datasets: [{ data: mValues, backgroundColor: blueShades, borderWidth: 0 }] },
+                var c1_2d = c1.getContext('2d');
+                var g1 = c1_2d.createLinearGradient(0, 0, 0, 280);
+                g1.addColorStop(0, 'rgba(0,122,255,0.85)');
+                g1.addColorStop(1, 'rgba(88,176,255,0.55)');
+                _prospChartInstances['ckChartProspMarca'] = new Chart(c1_2d, {
+                    type: 'bar',
+                    data: { labels: mLabels, datasets: [{ label: 'Prospectos', data: mValues, backgroundColor: g1, borderRadius: 10, barPercentage: 0.5 }] },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        animation: { duration: 1200, easing: 'easeOutQuart', animateRotate: true },
-                        plugins: {
-                            legend: { position: 'right', labels: { boxWidth: 10, boxHeight: 10, padding: 10, usePointStyle: true, font: { size: 10, weight: '600' }, color: '#3C3C43' } },
-                            tooltip: sharedTooltip
+                        animation: sharedAnimation,
+                        plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
+                            x: { grid: { display: false }, ticks: { font: { size: 9, weight: '600' }, color: '#1D1D1F', maxRotation: 35 } }
                         },
-                        scales: { r: { display: false } }
+                        layout: { padding: { bottom: 5 } }
                     }
                 });
             }
