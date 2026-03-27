@@ -1859,34 +1859,30 @@
             };
             var sharedAnimation = { duration: 1200, easing: 'easeOutQuart', delay: function(ctx) { return ctx.dataIndex * 80; } };
 
-            // ── Chart 1: Prospectos por Marca (horizontal bar, EACH bar different color) ──
+            // ── Chart 1: Prospectos por Marca (polar area — clean, single-tone blue) ──
             _destroyProspChart('ckChartProspMarca');
             var c1 = document.getElementById('ckChartProspMarca');
             if (c1) {
                 var marcas = data.chart_marcas || {};
                 var mLabels = Object.keys(marcas).sort(function(a,b){ return marcas[b]-marcas[a]; });
                 var mValues = mLabels.map(function(l){ return marcas[l]; });
-                var brandColors = {
-                    'ZEBRA': '#007AFF', 'PANDUIT': '#0e2745', 'APC': '#FF3B30', 'AVIGILION': '#5856D6',
-                    'GENETEC': '#34C759', 'AXIS': '#FF9500', 'SOFTWARE': '#AF52DE', 'RUNRATE': '#5AC8FA',
-                    'CISCO': '#007AFF', 'POLIZA': '#FF2D55', 'SERVICIO': '#FFCC00'
-                };
-                var c1_2d = c1.getContext('2d');
-                var mGrads = mLabels.map(function(l) {
-                    var g = c1_2d.createLinearGradient(0, 0, c1.width, 0);
-                    var base = brandColors[l] || '#007AFF';
-                    g.addColorStop(0, base);
-                    g.addColorStop(1, base + '66');
-                    return g;
+                // Graduated blue opacities — darkest for highest value
+                var blueShades = mLabels.map(function(_, i) {
+                    var opacity = 0.85 - (i * 0.1);
+                    if (opacity < 0.2) opacity = 0.2;
+                    return 'rgba(0,122,255,' + opacity.toFixed(2) + ')';
                 });
-                _prospChartInstances['ckChartProspMarca'] = new Chart(c1_2d, {
-                    type: 'bar',
-                    data: { labels: mLabels, datasets: [{ data: mValues, backgroundColor: mGrads, borderRadius: 8, barPercentage: 0.6 }] },
+                _prospChartInstances['ckChartProspMarca'] = new Chart(c1, {
+                    type: 'polarArea',
+                    data: { labels: mLabels, datasets: [{ data: mValues, backgroundColor: blueShades, borderWidth: 0 }] },
                     options: {
-                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                        animation: sharedAnimation,
-                        plugins: { legend: { display: false }, tooltip: sharedTooltip },
-                        scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' }, color: '#1D1D1F' } } }
+                        responsive: true, maintainAspectRatio: false,
+                        animation: { duration: 1200, easing: 'easeOutQuart', animateRotate: true },
+                        plugins: {
+                            legend: { position: 'right', labels: { boxWidth: 10, boxHeight: 10, padding: 10, usePointStyle: true, font: { size: 10, weight: '600' }, color: '#3C3C43' } },
+                            tooltip: sharedTooltip
+                        },
+                        scales: { r: { display: false } }
                     }
                 });
             }
