@@ -5473,4 +5473,33 @@
 .ck-kpi--prosp .ck-kpi-label { color: #5856D6; }
 .ck-kpi--prosp:hover { border-color: #5856D6; box-shadow: 0 4px 16px rgba(88,86,214,0.15); }
 
+/* ── Prospección Charts — Apple Liquid Glass ── */
+.prosp-chart-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 18px;
+    padding: 20px 22px;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.prosp-chart-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.06),
+        0 12px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.prosp-chart-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1D1D1F;
+    margin: 0 0 14px 0;
+    letter-spacing: -0.01em;
+}
+
 /* ── Campaign Template Browser (old editor styles removed) ── */
