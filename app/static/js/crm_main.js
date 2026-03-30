@@ -4273,6 +4273,21 @@
             var descHtml = tarea.descripcion_html || (tarea.descripcion ? tarea.descripcion.replace(/\n/g, '<br>') : 'Sin descripción');
             crmTaskSetHTML('crm-task-descripcion', descHtml);
 
+            // Collapse long descriptions
+            var descEl = document.getElementById('crm-task-descripcion');
+            var toggleBtn = document.getElementById('crm-task-desc-toggle');
+            if (descEl && toggleBtn) {
+                descEl.classList.remove('collapsed');
+                toggleBtn.style.display = 'none';
+                requestAnimationFrame(function () {
+                    if (descEl.scrollHeight > 140) {
+                        descEl.classList.add('collapsed');
+                        toggleBtn.style.display = 'inline';
+                        toggleBtn.textContent = 'Mostrar más';
+                    }
+                });
+            }
+
             // Breadcrumb: Cliente / Proyecto
             var bcCliente = document.getElementById('crm-task-breadcrumb-cliente');
             var bcProyecto = document.getElementById('crm-task-breadcrumb-proyecto');
@@ -5722,6 +5737,21 @@
         window.crmTaskCerrarModal = crmTaskCerrarModal;
         window.crmTaskToggleTimer = crmTaskToggleTimer;
         window.crmTaskMakeEditable = crmTaskMakeEditable;
+        function crmTaskToggleDesc() {
+            var descEl = document.getElementById('crm-task-descripcion');
+            var toggleBtn = document.getElementById('crm-task-desc-toggle');
+            if (!descEl || !toggleBtn) return;
+            var isCollapsed = descEl.classList.contains('collapsed');
+            if (isCollapsed) {
+                descEl.classList.remove('collapsed');
+                toggleBtn.textContent = 'Mostrar menos';
+            } else {
+                descEl.classList.add('collapsed');
+                toggleBtn.textContent = 'Mostrar más';
+            }
+        }
+        window.crmTaskToggleDesc = crmTaskToggleDesc;
+
         window.crmTaskAbrirCrear = crmTaskAbrirCrear;
         window.crmTaskCerrarCrear = crmTaskCerrarCrear;
         window.crmTaskCrear = crmTaskCrear;
