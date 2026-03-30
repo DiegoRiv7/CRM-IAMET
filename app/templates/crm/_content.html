@@ -573,37 +573,22 @@
     <div class="crm-task-modal">
         <!-- ── MAIN ── -->
         <div class="crm-task-main">
-            <!-- Header -->
-            <div class="crm-task-detail-header">
-                <div style="flex:1;min-width:0;">
-                    <span id="crm-task-prioridad-badge" class="crm-task-badge priority"
-                        style="margin-bottom:6px;display:inline-flex;">
-                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" />
-                        </svg>
-                        <span>Prioridad <span id="crm-task-prioridad-text">--</span></span>
-                    </span>
-                    <h1 id="crm-task-titulo" class="crm-task-title"></h1>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                    <button class="crm-task-btn-terminar" id="crmTaskBtnTerminar" onclick="crmTaskCompletar()">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            stroke-width="2.5">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        Terminar tarea
-                    </button>
-                    <button id="crmTaskBtnReabrir" onclick="crmTaskReabrir()" style="display:none;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #FF9500;background:rgba(255,149,0,0.08);color:#CC7600;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
-                        Reabrir
-                    </button>
-                    <button class="crm-task-close-btn" onclick="crmTaskCerrarModal()">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+            <!-- Breadcrumb -->
+            <div class="crm-task-breadcrumb">
+                <span id="crm-task-breadcrumb-cliente"></span>
+                <span class="crm-task-breadcrumb-sep">/</span>
+                <span id="crm-task-breadcrumb-proyecto"></span>
+            </div>
+            <!-- Title -->
+            <h1 id="crm-task-titulo" class="crm-task-title"></h1>
+            <!-- Status badges row -->
+            <div class="crm-task-status-row">
+                <span id="crm-task-estado-badge" class="crm-task-status-pill estado">Pendiente</span>
+                <span id="crm-task-prioridad-badge" class="crm-task-status-pill prioridad" style="display:none;">
+                    <svg width="7" height="7" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                    <span id="crm-task-prioridad-text">Alta prioridad</span>
+                </span>
+                <span id="crm-task-vence-badge" class="crm-task-status-pill vence"></span>
             </div>
             <!-- Save bar for inline editing -->
             <div id="crmTaskSaveBar"
@@ -616,69 +601,64 @@
             </div>
 
             <!-- Descripción -->
-            <div class="crm-task-detail-card">
-                <div class="crm-task-desc-label">Descripción</div>
-                <div id="crm-task-descripcion" class="crm-task-desc-content"></div>
-            </div>
+            <div class="crm-task-desc-label">Descripción</div>
+            <div id="crm-task-descripcion" class="crm-task-desc-content"></div>
 
-
-            <!-- Comentarios -->
+            <!-- Actividad (comentarios) -->
             <div class="crm-task-comments-section">
-                <div class="crm-task-desc-label">Comentarios</div>
+                <div class="crm-task-desc-label">Actividad</div>
                 <div class="crm-task-comment-form">
-                    <form id="crm-task-comment-form" style="display:flex;flex-direction:column;gap:0.75rem;">
+                    <form id="crm-task-comment-form" style="display:flex;flex-direction:column;gap:0.6rem;">
                         <div style="position:relative;">
-                            <textarea id="crm-task-comment-input" class="crm-task-comment-textarea" rows="3"
+                            <textarea id="crm-task-comment-input" class="crm-task-comment-textarea" rows="2"
                                 placeholder="Escribe un comentario... usa @ para mencionar a alguien"></textarea>
                             <div id="crm-mention-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);max-height:180px;overflow-y:auto;z-index:300;"></div>
                         </div>
-                        <div id="crm-task-drop-zone" style="border:2px dashed #D1D5DB;border-radius:8px;padding:12px;text-align:center;color:#9CA3AF;font-size:0.8rem;cursor:pointer;transition:border-color .15s,background .15s;">
+                        <div id="crm-task-drop-zone" style="display:none;border:2px dashed #D1D5DB;border-radius:8px;padding:10px;text-align:center;color:#9CA3AF;font-size:0.78rem;cursor:pointer;transition:border-color .15s,background .15s;">
                             Arrastra archivos aquí o <span style="color:#4f6ef7;text-decoration:underline;cursor:pointer;" onclick="document.getElementById('crm-task-file-input').click()">selecciona</span>
                             <input type="file" id="crm-task-file-input" multiple style="display:none;">
                         </div>
                         <div id="crm-task-files-preview" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-                        <div style="display:flex;justify-content:flex-end;">
-                            <button type="submit" class="crm-task-comment-submit" id="crm-task-btn-enviar">
-                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg> Enviar
+                        <div style="display:flex;justify-content:flex-end;gap:8px;">
+                            <button type="button" class="crm-task-btn-adjuntar" onclick="var dz=document.getElementById('crm-task-drop-zone');dz.style.display=dz.style.display==='none'?'block':'none';">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                Adjuntar
                             </button>
+                            <button type="submit" class="crm-task-comment-submit" id="crm-task-btn-enviar">Enviar</button>
                         </div>
                     </form>
                 </div>
-                <div id="crm-task-activity-feed" style="display:flex;flex-direction:column;gap:1rem;"></div>
+                <div id="crm-task-activity-feed" style="display:flex;flex-direction:column;gap:0;"></div>
             </div>
         </div>
 
         <!-- ── SIDEBAR ── -->
         <div class="crm-task-sidebar">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-                <div class="crm-task-sidebar-section">
-                    <h3>Estado</h3>
-                    <div id="crm-task-estado"></div>
-                </div>
-                <div class="crm-task-sidebar-section" id="crmTaskPrioridadSidebarWrap">
-                    <h3>Alta Prioridad</h3>
-                    <div id="crm-task-prioridad" style="color:#EF4444;font-weight:600;font-size:0.85rem;">Alta</div>
-                </div>
+            <!-- Close button -->
+            <button class="crm-task-close-btn" onclick="crmTaskCerrarModal()" style="position:absolute;top:12px;right:12px;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <!-- Action button -->
+            <div style="padding-top:8px;">
+                <button class="crm-task-btn-terminar" id="crmTaskBtnTerminar" onclick="crmTaskCompletar()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Completar tarea
+                </button>
+                <button id="crmTaskBtnReabrir" onclick="crmTaskReabrir()" class="crm-task-btn-reabrir" style="display:none;">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                    Reabrir
+                </button>
             </div>
+            <!-- Detalles -->
             <div class="crm-task-sidebar-section crm-task-sidebar-divider">
-                <h3>Responsable</h3>
-                <div id="crm-task-responsable-container"
-                    style="display:flex;align-items:center;gap:0.6rem;padding:4px 0;"></div>
-            </div>
-            <div class="crm-task-sidebar-section crm-task-sidebar-divider">
-                <h3>Información</h3>
+                <h3>Detalles</h3>
                 <div class="crm-task-info-row">
-                    <span class="crm-task-info-label">Fecha Límite</span>
-                    <span class="crm-task-info-value" id="crm-task-fecha-limite"></span>
+                    <span class="crm-task-info-label">Responsable</span>
+                    <div id="crm-task-responsable-container" class="crm-task-info-value" style="display:flex;align-items:center;gap:6px;"></div>
                 </div>
                 <div class="crm-task-info-row" id="crmTaskClienteRow" style="display:none;">
                     <span class="crm-task-info-label">Cliente</span>
-                    <span class="crm-task-info-value" id="crm-task-cliente-nombre"
-                        style="color:#0052D4;font-weight:600;"></span>
+                    <span class="crm-task-info-value" id="crm-task-cliente-nombre" style="color:#0052D4;font-weight:600;"></span>
                 </div>
                 <div class="crm-task-info-row">
                     <span class="crm-task-info-label">Creador</span>
@@ -688,62 +668,47 @@
                     <span class="crm-task-info-label">Creación</span>
                     <span class="crm-task-info-value" id="crm-task-fecha-creacion"></span>
                 </div>
+                <div class="crm-task-info-row">
+                    <span class="crm-task-info-label">Fecha límite</span>
+                    <span class="crm-task-info-value" id="crm-task-fecha-limite"></span>
+                </div>
             </div>
+            <!-- Hidden elements for JS compat -->
+            <div id="crm-task-estado" style="display:none;"></div>
+            <div id="crm-task-prioridad" style="display:none;"></div>
+            <div id="crmTaskPrioridadSidebarWrap" style="display:none;"></div>
+            <!-- Observadores -->
             <div class="crm-task-sidebar-section crm-task-sidebar-divider">
-                <h3>Involucrados</h3>
-                <div style="margin-bottom:8px;">
-                    <div
-                        style="font-size:0.68rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:5px;">
-                        Participantes</div>
-                    <div id="crm-task-participantes-container"
-                        style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
-                </div>
-                <div>
-                    <div
-                        style="font-size:0.68rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:5px;">
-                        Observadores</div>
-                    <div id="crm-task-observadores-container"
-                        style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
-                </div>
+                <h3>Observadores</h3>
+                <div id="crm-task-observadores-container" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
             </div>
-            <!-- Oportunidad + Drive en sidebar -->
-            <div class="crm-task-sidebar-section crm-task-sidebar-divider" id="crmTaskSidebarLinks"
-                style="display:none;">
-                <div class="crm-task-link-card crm-task-opp-card" id="crmTaskOppCard"
-                    onclick="crmTaskAbrirOportunidad()" style="display:none;margin-bottom:6px;">
+            <!-- Participantes -->
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider">
+                <h3>Participantes</h3>
+                <div id="crm-task-participantes-container" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
+            </div>
+            <!-- Oportunidad + Drive -->
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider" id="crmTaskSidebarLinks" style="display:none;">
+                <div class="crm-task-link-card crm-task-opp-card" id="crmTaskOppCard" onclick="crmTaskAbrirOportunidad()" style="display:none;margin-bottom:6px;">
                     <div class="crm-task-link-card-icon" style="background:rgba(0,82,212,0.08);color:#0052D4;">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                     </div>
                     <div style="flex:1;min-width:0;">
                         <div class="crm-task-link-card-label">Oportunidad</div>
                         <div class="crm-task-link-card-value" id="crmTaskOppNombre">--</div>
                         <div class="crm-task-link-card-sub" id="crmTaskOppCliente"></div>
                     </div>
-                    <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2"
-                        style="flex-shrink:0;">
-                        <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                    <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
-                <div class="crm-task-link-card crm-task-drive-card" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()"
-                    style="display:none;">
+                <div class="crm-task-link-card crm-task-drive-card" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()" style="display:none;">
                     <div class="crm-task-link-card-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            stroke-width="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                        </svg>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                     </div>
                     <div style="flex:1;min-width:0;">
                         <div class="crm-task-link-card-label">Drive</div>
                         <div class="crm-task-link-card-value">Documentos</div>
                     </div>
-                    <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2"
-                        style="flex-shrink:0;">
-                        <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                    <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
             </div>
         </div>

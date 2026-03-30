@@ -4273,41 +4273,84 @@
             var descHtml = tarea.descripcion_html || (tarea.descripcion ? tarea.descripcion.replace(/\n/g, '<br>') : 'Sin descripción');
             crmTaskSetHTML('crm-task-descripcion', descHtml);
 
-            // Prioridad badge (solo mostrar si es alta)
+            // Breadcrumb: Cliente / Proyecto
+            var bcCliente = document.getElementById('crm-task-breadcrumb-cliente');
+            var bcProyecto = document.getElementById('crm-task-breadcrumb-proyecto');
+            var bcSep = document.querySelector('.crm-task-breadcrumb-sep');
+            if (bcCliente) bcCliente.textContent = tarea.cliente_nombre || '';
+            if (bcProyecto) bcProyecto.textContent = tarea.proyecto_nombre || '';
+            if (bcSep) bcSep.style.display = (tarea.cliente_nombre && tarea.proyecto_nombre) ? '' : 'none';
+            if (bcCliente) bcCliente.style.display = tarea.cliente_nombre ? '' : 'none';
+            if (bcProyecto) bcProyecto.style.display = tarea.proyecto_nombre ? '' : 'none';
+
+            // Status pill: estado
+            var estadoBadge = document.getElementById('crm-task-estado-badge');
+            if (estadoBadge) {
+                var estadoLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
+                var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
+                var ec = estadoColors[tarea.estado] || ['#F3F4F6','#6B7280'];
+                estadoBadge.textContent = estadoLabels[tarea.estado] || tarea.estado;
+                estadoBadge.style.background = ec[0];
+                estadoBadge.style.color = ec[1];
+                estadoBadge.className = 'crm-task-status-pill estado' + (tarea.estado === 'completada' ? ' completada' : '');
+            }
+
+            // Status pill: prioridad
             var prioBadge = document.getElementById('crm-task-prioridad-badge');
             if (prioBadge) {
-                if (tarea.prioridad === 'alta') {
-                    prioBadge.style.display = 'inline-flex';
-                    prioBadge.style.background = '#EF444412';
-                    prioBadge.style.color = '#EF4444';
-                    prioBadge.style.borderColor = '#EF444425';
-                    crmTaskSetText('crm-task-prioridad-text', 'Alta');
+                prioBadge.style.display = tarea.prioridad === 'alta' ? 'inline-flex' : 'none';
+                crmTaskSetText('crm-task-prioridad-text', 'Alta prioridad');
+            }
+
+            // Status pill: vence
+            var venceBadge = document.getElementById('crm-task-vence-badge');
+            if (venceBadge) {
+                if (tarea.fecha_limite) {
+                    var fl = new Date(tarea.fecha_limite);
+                    var ahora = new Date();
+                    var vencida = fl < ahora && tarea.estado !== 'completada';
+                    venceBadge.textContent = 'Vence ' + formatearFechaCRM(tarea.fecha_limite);
+                    venceBadge.className = 'crm-task-status-pill vence' + (vencida ? ' vencida' : '');
+                    venceBadge.style.display = '';
                 } else {
-                    prioBadge.style.display = 'none';
+                    venceBadge.style.display = 'none';
                 }
             }
 
-            // Estado
+            // Estado (hidden, for JS compat)
             var estadoEl = document.getElementById('crm-task-estado');
             if (estadoEl) estadoEl.innerHTML = getEstadoBadgeCRM(tarea.estado);
 
-            // Prioridad sidebar
+            // Prioridad sidebar (hidden)
             var prioSidebarWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
-            if (prioSidebarWrap) prioSidebarWrap.style.display = tarea.prioridad === 'alta' ? '' : 'none';
+            if (prioSidebarWrap) prioSidebarWrap.style.display = 'none';
 
             // Botón terminar / reabrir
             var btnTerminar = document.getElementById('crmTaskBtnTerminar');
             var btnReabrir = document.getElementById('crmTaskBtnReabrir');
             if (tarea.estado === 'completada') {
                 if (btnTerminar) { btnTerminar.classList.add('completada'); btnTerminar.textContent = 'Completada'; btnTerminar.disabled = true; btnTerminar.style.display = 'none'; }
-                if (btnReabrir) btnReabrir.style.display = 'inline-flex';
+                if (btnReabrir) btnReabrir.style.display = 'flex';
             } else {
-                if (btnTerminar) { btnTerminar.classList.remove('completada'); btnTerminar.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; btnTerminar.disabled = false; btnTerminar.style.display = ''; }
+                if (btnTerminar) { btnTerminar.classList.remove('completada'); btnTerminar.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Completar tarea'; btnTerminar.disabled = false; btnTerminar.style.display = ''; }
                 if (btnReabrir) btnReabrir.style.display = 'none';
             }
 
             // Info sidebar
-            crmTaskSetText('crm-task-fecha-limite', tarea.fecha_limite ? formatearFechaCRM(tarea.fecha_limite) : 'Sin fecha');
+            var fechaLimiteEl = document.getElementById('crm-task-fecha-limite');
+            if (fechaLimiteEl) {
+                var flText = tarea.fecha_limite ? formatearFechaCRM(tarea.fecha_limite) : 'Sin fecha';
+                fechaLimiteEl.textContent = flText;
+                if (tarea.fecha_limite) {
+                    var flDate = new Date(tarea.fecha_limite);
+                    var esVencida = flDate < new Date() && tarea.estado !== 'completada';
+                    fechaLimiteEl.style.color = esVencida ? '#DC2626' : '';
+                    fechaLimiteEl.style.fontWeight = esVencida ? '600' : '';
+                } else {
+                    fechaLimiteEl.style.color = '';
+                    fechaLimiteEl.style.fontWeight = '';
+                }
+            }
             crmTaskSetText('crm-task-creado-por', tarea.creado_por_data ? tarea.creado_por_data.nombre : tarea.creado_por);
             crmTaskSetText('crm-task-fecha-creacion', tarea.fecha_creacion ? formatearFechaCRM(tarea.fecha_creacion) : '--');
 
@@ -4343,9 +4386,9 @@
                 if (tarea.responsable_data) {
                     var rd = tarea.responsable_data;
                     var initials = crmTaskGetInitials(rd.nombre);
-                    respContainer.innerHTML = '<div class="crm-task-avatar" style="background:#0052D4;">' + (rd.avatar_url ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">' : initials) + '</div><span style="font-weight:500;font-size:0.85rem;">' + rd.nombre + '</span>';
+                    respContainer.innerHTML = '<div class="crm-task-avatar" style="width:26px;height:26px;font-size:0.62rem;background:#0052D4;">' + (rd.avatar_url ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">' : initials) + '</div><span style="font-weight:500;font-size:0.82rem;">' + rd.nombre + '</span>';
                 } else {
-                    respContainer.innerHTML = '<span style="color:#9CA3AF;font-size:0.85rem;">Sin asignar</span>';
+                    respContainer.innerHTML = '<span style="color:#9CA3AF;font-size:0.82rem;">Sin asignar</span>';
                 }
             }
 
