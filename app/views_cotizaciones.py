@@ -3,6 +3,7 @@
 # ----------------------------------------------------------------------
 
 import base64
+import time
 from django.template.loader import render_to_string
 from weasyprint import HTML
 import json
@@ -40,6 +41,35 @@ from django.utils.html import json_script
 # Helper function to detect lost opportunities
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from .views_utils import *
+
+# ── Tipo de cambio USD→MXN en tiempo real (cache 1 hora) ──
+_tc_cache = {'rate': None, 'ts': 0}
+
+def get_tipo_cambio_usd_mxn():
+    """Obtiene tipo de cambio USD→MXN. Cache de 1 hora, fallback a settings."""
+    now = time.time()
+    if _tc_cache['rate'] and (now - _tc_cache['ts']) < 3600:
+        return _tc_cache['rate']
+    fallback = Decimal(str(getattr(settings, 'TIPO_CAMBIO_USD_MXN', '20.00')))
+    try:
+        r = requests.get('https://api.frankfurter.app/latest?from=USD&to=MXN', timeout=5)
+        if r.status_code == 200:
+            rate = Decimal(str(r.json()['rates']['MXN']))
+            _tc_cache['rate'] = rate
+            _tc_cache['ts'] = now
+            return rate
+    except Exception:
+        pass
+    try:
+        r = requests.get('https://open.er-api.com/v6/latest/USD', timeout=5)
+        if r.status_code == 200:
+            rate = Decimal(str(r.json()['rates']['MXN']))
+            _tc_cache['rate'] = rate
+            _tc_cache['ts'] = now
+            return rate
+    except Exception:
+        pass
+    return fallback
 
 @login_required
 def api_cliente_cotizaciones(request, cliente_id):
@@ -605,7 +635,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 opp = cotizacion.oportunidad
                 monto_mxn = cotizacion.subtotal
                 if cotizacion.moneda and cotizacion.moneda.upper() == 'USD':
-                    tc = Decimal(str(getattr(settings, 'TIPO_CAMBIO_USD_MXN', '20.00')))
+                    tc = get_tipo_cambio_usd_mxn()
                     monto_mxn = (cotizacion.subtotal * tc).quantize(Decimal('0.01'))
                 opp.monto = monto_mxn
                 opp.save(update_fields=['monto', 'fecha_actualizacion'])

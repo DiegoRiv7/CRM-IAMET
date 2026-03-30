@@ -1,5 +1,4 @@
 from decimal import Decimal
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from app.models import TodoItem, Cotizacion
 
@@ -8,7 +7,8 @@ class Command(BaseCommand):
     help = 'Actualiza el monto de cada oportunidad con el subtotal de su última cotización (convertido a MXN si es USD)'
 
     def handle(self, *args, **options):
-        tc = Decimal(str(getattr(settings, 'TIPO_CAMBIO_USD_MXN', '20.00')))
+        from app.views_cotizaciones import get_tipo_cambio_usd_mxn
+        tc = get_tipo_cambio_usd_mxn()
         self.stdout.write(f'Tipo de cambio USD→MXN: {tc}')
 
         oportunidades_con_cotizacion = TodoItem.objects.filter(
