@@ -4269,6 +4269,29 @@
         var _crmTaskCurrentOppId = null;
 
         function crmTaskRenderData(tarea) {
+            // Restore elements that may have been replaced by edit inputs
+            var titleEl = document.getElementById('crm-task-titulo');
+            if (titleEl && titleEl.tagName !== 'H1') {
+                var h1 = document.createElement('h1');
+                h1.id = 'crm-task-titulo';
+                h1.className = 'crm-task-title';
+                titleEl.replaceWith(h1);
+            }
+            var descEl = document.getElementById('crm-task-descripcion');
+            if (descEl && descEl.tagName === 'TEXTAREA') {
+                var div = document.createElement('div');
+                div.id = 'crm-task-descripcion';
+                div.className = 'crm-task-desc-content';
+                descEl.replaceWith(div);
+            }
+            var fechaEl = document.getElementById('crm-task-fecha-limite');
+            if (fechaEl && fechaEl.tagName === 'INPUT') {
+                var sp = document.createElement('span');
+                sp.id = 'crm-task-fecha-limite';
+                sp.className = 'crm-task-info-value';
+                fechaEl.replaceWith(sp);
+            }
+
             crmTaskSetText('crm-task-titulo', tarea.titulo);
             var descHtml = tarea.descripcion_html || (tarea.descripcion ? tarea.descripcion.replace(/\n/g, '<br>') : 'Sin descripción');
             crmTaskSetHTML('crm-task-descripcion', descHtml);
