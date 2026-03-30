@@ -1,50 +1,67 @@
 from django.core.management.base import BaseCommand
-from app.models import TodoItem, EtapaPipeline
+from app.models import EtapaPipeline
+
+
+ETAPAS = {
+    'runrate': [
+        ('En Solicitud', '#FFFFFF'),
+        ('Cotizando', '#FFEB3B'),
+        ('Enviada', '#2196F3'),
+        ('Seguimiento', '#FF9800'),
+        ('Vendido s/PO', '#9C27B0'),
+        ('Vendido c/PO', '#9C27B0'),
+        ('En Tránsito', '#673AB7'),
+        ('Facturado', '#00BCD4'),
+        ('Programado', '#03DAC6'),
+        ('Entregado', '#4CAF50'),
+        ('Esperando Pago', '#8BC34A'),
+        ('Sin Respuesta', '#607D8B'),
+        ('Ganado', '#4CAF50'),
+        ('Perdido', '#F44336'),
+    ],
+    'proyecto': [
+        ('Oportunidad', '#FFFFFF'),
+        ('Levantamiento', '#FF5C5A'),
+        ('Base Cotización', '#55D0E0'),
+        ('Cotizando', '#2FC6F6'),
+        ('Enviada', '#2FC6F6'),
+        ('Seguimiento', '#39A8EF'),
+        ('Vendido s/PO', '#FF00FF'),
+        ('Vendido c/PO', '#FF00FF'),
+        ('Cotiz. Proveedor', '#a861ab'),
+        ('Comprando', '#2FC6F6'),
+        ('En Tránsito', '#2FC6F6'),
+        ('Ejecutando', '#FFFF00'),
+        ('Entregado', '#2FC6F6'),
+        ('Facturado', '#55D0E0'),
+        ('Reportes', '#47E4C2'),
+        ('Pagado', '#7BD500'),
+        ('Perdido', '#FF0000'),
+    ],
+}
 
 
 class Command(BaseCommand):
-    help = 'Pobla EtapaPipeline con las etapas existentes en las oportunidades'
+    help = 'Limpia y pobla EtapaPipeline con las etapas definidas por pipeline'
 
     def handle(self, *args, **options):
-        # Obtener combinaciones únicas de tipo_negociacion + etapa_corta + etapa_color
-        etapas_existentes = (
-            TodoItem.objects
-            .exclude(etapa_corta__isnull=True)
-            .exclude(etapa_corta='')
-            .values('tipo_negociacion', 'etapa_corta', 'etapa_color')
-            .distinct()
-        )
+        # Limpiar tabla
+        deleted, _ = EtapaPipeline.objects.all().delete()
+        if deleted:
+            self.stdout.write(f'Eliminadas {deleted} etapas existentes.')
 
         creadas = 0
-        existentes = 0
+        for pipeline, etapas in ETAPAS.items():
+            self.stdout.write(f'\n  Pipeline: {pipeline}')
+            for orden, (nombre, color) in enumerate(etapas, 1):
+                EtapaPipeline.objects.create(
+                    pipeline=pipeline,
+                    nombre=nombre,
+                    color=color,
+                    orden=orden,
+                    activo=True,
+                )
+                creadas += 1
+                self.stdout.write(f'    #{orden} {nombre} ({color})')
 
-        for row in etapas_existentes:
-            pipeline = row['tipo_negociacion'] or 'runrate'
-            nombre = row['etapa_corta']
-            color = row['etapa_color'] or '#6B7280'
-
-            ya_existe = EtapaPipeline.objects.filter(
-                pipeline=pipeline, nombre=nombre
-            ).exists()
-
-            if ya_existe:
-                existentes += 1
-                self.stdout.write(f'  Ya existe: {pipeline} → {nombre}')
-                continue
-
-            # Determinar orden basado en cuántas etapas ya tiene este pipeline
-            orden = EtapaPipeline.objects.filter(pipeline=pipeline).count() + 1
-
-            EtapaPipeline.objects.create(
-                pipeline=pipeline,
-                nombre=nombre,
-                color=color,
-                orden=orden,
-                activo=True,
-            )
-            creadas += 1
-            self.stdout.write(f'  Creada: {pipeline} → {nombre} (color: {color}, orden: {orden})')
-
-        self.stdout.write(self.style.SUCCESS(
-            f'\nListo: {creadas} etapas creadas, {existentes} ya existían.'
-        ))
+        self.stdout.write(self.style.SUCCESS(f'\nListo: {creadas} etapas creadas.'))
