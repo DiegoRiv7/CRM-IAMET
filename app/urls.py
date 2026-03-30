@@ -148,6 +148,9 @@ urlpatterns = [
     path('api/admin/contactos/', views.api_admin_contactos, name='api_admin_contactos'),
     path('api/admin/metas/', views.api_admin_metas, name='api_admin_metas'),
     path('api/admin/permisos/<int:user_id>/', views.api_admin_permisos, name='api_admin_permisos'),
+    path('api/admin/oportunidades/', views.api_admin_oportunidades, name='api_admin_oportunidades'),
+    path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),
+    path('api/admin/etapas-pipeline/', views.api_admin_etapas_pipeline, name='api_admin_etapas_pipeline'),
 
     # ── APIs Ingeniero / Programación ─────────────────────────────────────────
     path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),

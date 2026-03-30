@@ -1904,3 +1904,150 @@ def api_procesar_solicitud_perfil(request, solicitud_id):
     except Exception as e:
         logger.error(f"Error en api_procesar_solicitud_perfil: {e}")
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+# ── Oportunidades Admin ──────────────────────────────────────────────
+
+@login_required
+def api_admin_oportunidades(request):
+    """CRUD de oportunidades para el panel admin."""
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+
+    if request.method == 'GET':
+        q = request.GET.get('q', '').strip()
+        qs = TodoItem.objects.select_related('cliente', 'usuario').order_by('-fecha_actualizacion')
+        if q:
+            qs = qs.filter(
+                Q(oportunidad__icontains=q) | Q(cliente__nombre_empresa__icontains=q) | Q(po_number__icontains=q)
+            )
+        opps = qs[:100]
+        data = []
+        for o in opps:
+            data.append({
+                'id': o.id,
+                'oportunidad': o.oportunidad,
+                'cliente': o.cliente.nombre_empresa if o.cliente else '',
+                'cliente_id': o.cliente_id,
+                'monto': float(o.monto),
+                'etapa_corta': o.etapa_corta or '',
+                'etapa_color': o.etapa_color or '#6B7280',
+                'probabilidad_cierre': o.probabilidad_cierre,
+                'usuario': o.usuario.get_full_name() or o.usuario.username if o.usuario else '',
+                'usuario_id': o.usuario_id,
+                'tipo_negociacion': o.tipo_negociacion,
+                'mes_cierre': o.mes_cierre,
+                'anio_cierre': o.anio_cierre,
+                'po_number': o.po_number or '',
+                'factura_numero': o.factura_numero or '',
+                'fecha_creacion': o.fecha_creacion.strftime('%d/%m/%Y') if o.fecha_creacion else '',
+            })
+        return JsonResponse({'oportunidades': data})
+
+    elif request.method == 'DELETE':
+        opp_id = request.GET.get('id')
+        if not opp_id:
+            return JsonResponse({'error': 'ID requerido'}, status=400)
+        try:
+            opp = TodoItem.objects.get(id=opp_id)
+            opp.delete()
+            return JsonResponse({'ok': True})
+        except TodoItem.DoesNotExist:
+            return JsonResponse({'error': 'No encontrada'}, status=404)
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_oportunidad_detalle(request, opp_id):
+    """Editar una oportunidad específica."""
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+
+    try:
+        opp = TodoItem.objects.get(id=opp_id)
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'No encontrada'}, status=404)
+
+    if request.method == 'GET':
+        return JsonResponse({
+            'id': opp.id, 'oportunidad': opp.oportunidad,
+            'cliente_id': opp.cliente_id, 'monto': float(opp.monto),
+            'etapa_corta': opp.etapa_corta or '', 'etapa_color': opp.etapa_color or '',
+            'probabilidad_cierre': opp.probabilidad_cierre,
+            'usuario_id': opp.usuario_id, 'tipo_negociacion': opp.tipo_negociacion,
+            'mes_cierre': opp.mes_cierre, 'anio_cierre': opp.anio_cierre,
+            'po_number': opp.po_number or '', 'factura_numero': opp.factura_numero or '',
+            'comentarios': opp.comentarios or '',
+        })
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        for field in ['oportunidad', 'etapa_corta', 'etapa_color', 'tipo_negociacion', 'mes_cierre', 'po_number', 'factura_numero', 'comentarios']:
+            if field in data:
+                setattr(opp, field, data[field])
+        if 'probabilidad_cierre' in data:
+            opp.probabilidad_cierre = int(data['probabilidad_cierre'])
+        if 'monto' in data:
+            opp.monto = Decimal(str(data['monto']))
+        if 'anio_cierre' in data:
+            opp.anio_cierre = int(data['anio_cierre'])
+        if 'usuario_id' in data:
+            opp.usuario_id = int(data['usuario_id'])
+        if 'cliente_id' in data:
+            opp.cliente_id = int(data['cliente_id'])
+        opp.save()
+        return JsonResponse({'ok': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_etapas_pipeline(request):
+    """CRUD de etapas del pipeline."""
+    from .models import EtapaPipeline
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+
+    if request.method == 'GET':
+        etapas = EtapaPipeline.objects.all()
+        data = [{'id': e.id, 'pipeline': e.pipeline, 'nombre': e.nombre, 'color': e.color, 'orden': e.orden, 'activo': e.activo} for e in etapas]
+        return JsonResponse({'etapas': data})
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        action = data.get('action', 'create')
+
+        if action == 'create':
+            e = EtapaPipeline.objects.create(
+                pipeline=data.get('pipeline', 'runrate'),
+                nombre=data.get('nombre', ''),
+                color=data.get('color', '#6B7280'),
+                orden=data.get('orden', 0),
+            )
+            return JsonResponse({'ok': True, 'id': e.id})
+
+        elif action == 'update':
+            try:
+                e = EtapaPipeline.objects.get(id=data['id'])
+                for f in ['pipeline', 'nombre', 'color', 'orden', 'activo']:
+                    if f in data:
+                        setattr(e, f, data[f])
+                e.save()
+                return JsonResponse({'ok': True})
+            except EtapaPipeline.DoesNotExist:
+                return JsonResponse({'error': 'Etapa no encontrada'}, status=404)
+
+        elif action == 'delete':
+            try:
+                EtapaPipeline.objects.get(id=data['id']).delete()
+                return JsonResponse({'ok': True})
+            except EtapaPipeline.DoesNotExist:
+                return JsonResponse({'error': 'Etapa no encontrada'}, status=404)
+
+        elif action == 'reorder':
+            for item in data.get('items', []):
+                EtapaPipeline.objects.filter(id=item['id']).update(orden=item['orden'])
+            return JsonResponse({'ok': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

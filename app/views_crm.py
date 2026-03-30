@@ -362,9 +362,9 @@ def crm_home(request):
         )
         tabla_data = cotizaciones_qs
 
-    # ── Tab Cobrado: Oportunidades con 100% probabilidad ──
+    # ── Tab Cobrado: Oportunidades con etapa Ganado/Pagado ──
     elif tab_activo == 'cobrado':
-        tabla_data = base_qs.filter(probabilidad_cierre=100).order_by('-monto')
+        tabla_data = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado']).order_by('-monto')
 
     else:
         tabla_data = []
@@ -373,7 +373,7 @@ def crm_home(request):
     total_general = base_qs.aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
     num_clientes = Cliente.objects.count() if es_supervisor else base_qs.values('cliente').distinct().count()
     num_deals = base_qs.count()
-    num_cobradas = base_qs.filter(probabilidad_cierre=100).count()
+    num_cobradas = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado']).count()
 
     # ── Total facturado desde XLS (siempre el total real del Excel) ──
     total_facturado = Decimal('0')
@@ -392,7 +392,7 @@ def crm_home(request):
     # Stats para tab Cobrado
     total_cobrado = Decimal('0')
     if tab_activo == 'cobrado':
-        total_cobrado = base_qs.filter(probabilidad_cierre=100).aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
+        total_cobrado = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado']).aggregate(t=Coalesce(Sum('monto'), Value(Decimal('0'))))['t']
 
     # Stats para tab Cotizado
     num_cotizaciones = 0
@@ -704,7 +704,7 @@ def api_crm_table_data(request):
         })
 
     elif tab_activo == 'cobrado':
-        items = base_qs.filter(probabilidad_cierre=100).order_by('-monto')
+        items = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado']).order_by('-monto')
         rows = []
         for op in items:
             rows.append({
@@ -972,7 +972,7 @@ def api_crm_table_data(request):
                     pass
 
         elif vista == 'cobrado':
-            cobrado_qs = base_qs.filter(probabilidad_cierre=100)
+            cobrado_qs = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado'])
             total_by_id = {item['cliente']: item['t'] for item in cobrado_qs.values('cliente').annotate(t=Coalesce(Sum('monto'), _zero)) if item['cliente']}
             prod_dict = {item['cliente']: item for item in _prod_annotate(cobrado_qs, 'monto')}
             meta_field_c = 'meta_cobrado'
@@ -981,7 +981,7 @@ def api_crm_table_data(request):
             _pm, _pa = _get_prev_params()
             if _pm:
                 try:
-                    _prev_cob_qs = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm, probabilidad_cierre=100)
+                    _prev_cob_qs = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm, etapa_corta__in=['Ganado', 'Pagado'])
                     if not es_supervisor:
                         _gids = get_usuarios_visibles_ids(user)
                         _prev_cob_qs = _prev_cob_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else _prev_cob_qs.filter(usuario=user)
@@ -1371,8 +1371,8 @@ def api_tendencia_mensual(request):
         elif vendedores_ids:
             opp_qs = opp_qs.filter(usuario_id__in=vendedores_ids)
 
-        # Cobrado — probabilidad 100%
-        cob = opp_qs.filter(probabilidad_cierre=100).aggregate(
+        # Cobrado — etapa Ganado/Pagado
+        cob = opp_qs.filter(etapa_corta__in=['Ganado', 'Pagado']).aggregate(
             t=Coalesce(Sum('monto'), _zero))['t'] or _zero
         data_cob.append(float(cob))
 
@@ -1640,7 +1640,7 @@ def api_cliente_oportunidades(request, cliente_id):
     # Filtrar por tipo si se especifica
     tipo = request.GET.get('tipo', '')
     if tipo == 'cobrado':
-        qs = qs.filter(probabilidad_cierre=100)
+        qs = qs.filter(etapa_corta__in=['Ganado', 'Pagado'])
 
     qs = qs.order_by('-fecha_actualizacion')
 
@@ -1785,7 +1785,7 @@ def reporte_ventas_por_cliente(request):
     if is_supervisor(request.user):
         reporte_data = Cliente.objects.annotate(
             total_monto=Coalesce(
-                Sum('oportunidades__monto', filter=Q(oportunidades__probabilidad_cierre=100)),
+                Sum('oportunidades__monto', filter=Q(oportunidades__etapa_corta__in=['Ganado', 'Pagado'])),
                 Value(Decimal('0.00'))
             )
         ).values(
@@ -1793,14 +1793,14 @@ def reporte_ventas_por_cliente(request):
             'nombre_empresa',
             'total_monto'
         ).order_by('nombre_empresa')
-        total_general = TodoItem.objects.filter(probabilidad_cierre=100).aggregate(
+        total_general = TodoItem.objects.filter(etapa_corta__in=['Ganado', 'Pagado']).aggregate(
             sum_monto=Sum('monto')
         )['sum_monto'] or Decimal('0.00')
         usuarios = User.objects.filter(is_active=True)
     else:
         reporte_data = Cliente.objects.filter(asignado_a=request.user).annotate(
             total_monto=Coalesce(
-                Sum('oportunidades__monto', filter=Q(oportunidades__probabilidad_cierre=100, oportunidades__usuario=request.user)),
+                Sum('oportunidades__monto', filter=Q(oportunidades__etapa_corta__in=['Ganado', 'Pagado'], oportunidades__usuario=request.user)),
                 Value(Decimal('0.00'))
             )
         ).values(
@@ -1809,7 +1809,7 @@ def reporte_ventas_por_cliente(request):
             'total_monto'
         ).order_by('nombre_empresa')
         total_general = TodoItem.objects.filter(
-            usuario=request.user, probabilidad_cierre=100
+            usuario=request.user, etapa_corta__in=['Ganado', 'Pagado']
         ).aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
         usuarios = None
     context = {
@@ -1898,8 +1898,8 @@ def producto_dashboard_detail(request, producto_val):
     for op in oportunidades:
         print(f"DEBUG:   - ID: {op.id}, Oportunidad: {op.oportunidad}, Producto: {op.producto}, Usuario ID: {op.usuario.id}")
 
-    # --- Ventas Cerradas (probabilidad 100%) para este producto ---
-    ventas_cerradas = oportunidades.filter(probabilidad_cierre=100)
+    # --- Ventas Cerradas (etapa Ganado/Pagado) para este producto ---
+    ventas_cerradas = oportunidades.filter(etapa_corta__in=['Ganado', 'Pagado'])
     total_vendido_cerrado = ventas_cerradas.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
     total_vendido_cerrado_count = ventas_cerradas.count() # Conteo de oportunidades cerradas
     print(f"DEBUG: Ventas Cerradas (100%) para '{producto_val_upper}': {total_vendido_cerrado_count} oportunidades, Monto: {total_vendido_cerrado}")
@@ -2499,15 +2499,8 @@ def editar_oportunidad_api(request, oportunidad_id):
             oportunidad.producto = request.POST['producto']
             updated_values['producto'] = oportunidad.get_producto_display()
         
-        # Actualizar monto
-        if 'monto' in request.POST:
-            try:
-                monto = float(request.POST['monto'])
-                oportunidad.monto = monto
-                updated_values['monto'] = f"${monto:,.2f}"
-            except (ValueError, TypeError):
-                return JsonResponse({'success': False, 'error': 'Monto inválido'})
-        
+        # Monto ya no es editable manualmente - se actualiza desde cotizaciones
+
         # Actualizar probabilidad
         if 'probabilidad' in request.POST:
             try:

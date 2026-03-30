@@ -600,13 +600,11 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion', 'oportunidad'])
             print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
 
-            # Si la oportunidad tiene monto $0 (ej: recién convertida de prospecto),
-            # actualizar con el subtotal (sin IVA) de la cotización
+            # Actualizar siempre el monto de la oportunidad con el subtotal (sin IVA) de la cotización
             if cotizacion.oportunidad and cotizacion.subtotal > 0:
                 opp = cotizacion.oportunidad
-                if opp.monto == Decimal('0.00') or opp.monto == 0:
-                    opp.monto = cotizacion.subtotal
-                    opp.save(update_fields=['monto', 'fecha_actualizacion'])
+                opp.monto = cotizacion.subtotal
+                opp.save(update_fields=['monto', 'fecha_actualizacion'])
             
             # Guardar elementos en orden correcto (títulos Y productos)
             for elemento in elementos_combinados:

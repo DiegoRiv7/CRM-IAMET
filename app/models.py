@@ -4271,3 +4271,24 @@ class CampanaEnvio(models.Model):
 
     def __str__(self):
         return f'{self.template.nombre} -> {self.contacto_email}'
+
+
+class EtapaPipeline(models.Model):
+    """Etapas configurables para el pipeline de oportunidades."""
+    PIPELINE_CHOICES = [
+        ('runrate', 'Runrate'),
+        ('proyecto', 'Proyecto'),
+    ]
+    pipeline = models.CharField(max_length=20, choices=PIPELINE_CHOICES, default='runrate')
+    nombre = models.CharField(max_length=100, verbose_name="Nombre de la etapa")
+    color = models.CharField(max_length=7, default='#6B7280', verbose_name="Color hex")
+    orden = models.IntegerField(default=0, verbose_name="Orden en el pipeline")
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['pipeline', 'orden']
+        verbose_name = "Etapa de Pipeline"
+        verbose_name_plural = "Etapas de Pipeline"
+
+    def __str__(self):
+        return f"{self.get_pipeline_display()} — {self.nombre}"

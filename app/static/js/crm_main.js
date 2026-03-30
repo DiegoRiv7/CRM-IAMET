@@ -883,31 +883,17 @@
 
                 // Title is set up in renderDetalle already
 
-                // ── Monto ──
+                // ── Monto (solo lectura - se actualiza con la última cotización) ──
                 var montoEl = document.getElementById('woMonto');
-                montoEl.classList.add('editable');
-                montoEl.onclick = function () {
-                    if (montoEl.querySelector('input')) return;
-                    var current = woEditedFields.monto !== undefined ? woEditedFields.monto : (d.monto || 0);
-                    var inp = document.createElement('input');
-                    inp.type = 'number';
-                    inp.className = 'wo-inline-input large';
-                    inp.value = current;
-                    inp.step = '0.01';
-                    montoEl.textContent = '';
-                    montoEl.appendChild(inp);
-                    inp.focus();
-                    inp.select();
-                    function commit() {
-                        var val = parseFloat(inp.value) || 0;
-                        montoEl.textContent = '$' + val.toLocaleString('es-MX', { minimumFractionDigits: 0 });
-                        if (val !== (woOriginalData.monto || 0)) {
-                            woFieldChanged('monto', val);
-                        }
-                    }
-                    inp.addEventListener('blur', commit);
-                    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
-                };
+                montoEl.classList.remove('editable');
+                montoEl.onclick = null;
+                montoEl.style.cursor = 'default';
+                // Agregar tooltip indicando que se actualiza desde cotizaciones
+                montoEl.title = 'Se actualiza con la última cotización';
+                var montoHint = document.createElement('span');
+                montoHint.style.cssText = 'display:block;font-size:0.6rem;color:#8e8e93;font-weight:400;margin-top:2px;';
+                montoHint.textContent = 'Se actualiza con la última cotización';
+                montoEl.parentNode.appendChild(montoHint);
 
                 // ── Producto ──
                 var prodEl = document.getElementById('woProducto');
