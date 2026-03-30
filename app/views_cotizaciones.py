@@ -115,7 +115,9 @@ def api_oportunidades_rapido(request):
             return JsonResponse({'opps': []})
         qs = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-id')
         if not is_supervisor(request.user):
-            qs = qs.filter(usuario=request.user)
+            from .views_grupos import get_usuarios_visibles_ids
+            _gids = get_usuarios_visibles_ids(request.user)
+            qs = qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else qs.filter(usuario=request.user)
         data = [{'id': o.id, 'nombre': o.oportunidad} for o in qs[:50]]
         return JsonResponse({'opps': data})
     elif request.method == 'POST':
@@ -663,6 +665,21 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # Los títulos ya se procesaron en orden combinado arriba
             print(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
             
+            # Notificar al chat de grupo si la cotización es de un cliente asignado a otro miembro
+            try:
+                cliente_cot = cotizacion.cliente
+                if cliente_cot and hasattr(cliente_cot, 'asignado_a') and cliente_cot.asignado_a and cliente_cot.asignado_a != request.user:
+                    from .views_grupos import registrar_accion_grupo
+                    actor_nombre = request.user.get_full_name() or request.user.username
+                    registrar_accion_grupo(
+                        request.user, cliente_cot.asignado_a, 'crear_cotizacion',
+                        f'{actor_nombre} creó la cotización "{cotizacion.titulo or f"COT-{cotizacion.id}"}" para el cliente {cliente_cot.nombre_empresa}',
+                        objeto_tipo='cotizacion', objeto_id=cotizacion.id,
+                        objeto_titulo=cotizacion.titulo or f'COT-{cotizacion.id}',
+                    )
+            except Exception:
+                pass
+
             # Check if this is a widget_mode request (AJAX from iframe)
             is_widget_mode = request.POST.get('widget_mode') == '1' or request.GET.get('widget_mode') == '1'
 

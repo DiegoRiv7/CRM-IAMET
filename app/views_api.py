@@ -82,8 +82,13 @@ def spotlight_search_api(request):
     
     # Filtrar por permisos de usuario
     if not is_supervisor(request.user):
-        cotizaciones = cotizaciones.filter(created_by=request.user)
-    
+        from .views_grupos import get_usuarios_visibles_ids
+        _gids = get_usuarios_visibles_ids(request.user)
+        if _gids and len(_gids) > 1:
+            cotizaciones = cotizaciones.filter(Q(created_by_id__in=_gids) | Q(oportunidad__usuario_id__in=_gids))
+        else:
+            cotizaciones = cotizaciones.filter(created_by=request.user)
+
     for cotizacion in cotizaciones[:10]:  # Limitar a 10 resultados
         # Marcar si es una coincidencia exacta de número para priorizar
         is_exact_match = is_numeric_search and str(cotizacion.id) == numeric_query
@@ -126,8 +131,13 @@ def spotlight_search_api(request):
     
     # Filtrar por permisos de usuario
     if not is_supervisor(request.user):
-        oportunidades = oportunidades.filter(usuario=request.user)
-    
+        from .views_grupos import get_usuarios_visibles_ids
+        _gids = get_usuarios_visibles_ids(request.user)
+        if _gids and len(_gids) > 1:
+            oportunidades = oportunidades.filter(usuario_id__in=_gids)
+        else:
+            oportunidades = oportunidades.filter(usuario=request.user)
+
     for oportunidad in oportunidades[:8]:  # Limitar a 8 resultados
         anio = oportunidad.anio_cierre or oportunidad.fecha_creacion.year
         mes = oportunidad.mes_cierre or str(oportunidad.fecha_creacion.month).zfill(2)

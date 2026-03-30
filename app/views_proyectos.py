@@ -2492,10 +2492,13 @@ def api_tarea_detalle(request, tarea_id):
                 tarea = Tarea.objects.get(id=tarea_id)
                 print(f"🔍 Tarea encontrada: {tarea.titulo} (ID: {tarea.id})")
                 
-                # Verificar permisos - solo el creador o admin puede modificar participantes
+                # Verificar permisos - creador, admin o compañero de grupo
+                from .views_grupos import comparten_grupo as _cg
+                involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
                 user_can_edit = (
                     tarea.creado_por == request.user or
-                    request.user.is_superuser
+                    request.user.is_superuser or
+                    any(_cg(request.user, u) for u in involucrados)
                 )
                 
                 print(f"🔍 Permisos - Creador: {tarea.creado_por.username}, Current: {request.user.username}, Can edit: {user_can_edit}")
@@ -2885,10 +2888,13 @@ def api_reabrir_tarea(request, tarea_id):
 
         tarea = get_object_or_404(Tarea, id=tarea_id)
 
-        # Solo el creador, asignado o supervisor puede reabrir
+        # Solo el creador, asignado, supervisor o compañero de grupo puede reabrir
         es_supervisor_user = is_supervisor(request.user)
         if request.user != tarea.asignado_a and request.user != tarea.creado_por and not es_supervisor_user:
-            return JsonResponse({'error': 'Sin permiso para reabrir esta tarea'}, status=403)
+            from .views_grupos import comparten_grupo
+            involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
+            if not any(comparten_grupo(request.user, u) for u in involucrados):
+                return JsonResponse({'error': 'Sin permiso para reabrir esta tarea'}, status=403)
 
         if tarea.estado != 'completada':
             return JsonResponse({'error': 'La tarea no está completada'}, status=400)
@@ -2919,6 +2925,19 @@ def api_reabrir_tarea(request, tarea_id):
                 tarea_id=tarea.id,
                 tarea_titulo=tarea.titulo,
             )
+
+        # Notificar al chat de grupo
+        try:
+            from .views_grupos import registrar_accion_grupo
+            for prop in [tarea.asignado_a, tarea.creado_por]:
+                if prop and prop != request.user:
+                    registrar_accion_grupo(
+                        request.user, prop, 'reabrir_tarea',
+                        f'{reabridor} reabrió la tarea "{tarea.titulo}". Motivo: {razon}',
+                        objeto_tipo='tarea', objeto_id=tarea.id, objeto_titulo=tarea.titulo,
+                    )
+        except Exception:
+            pass
 
         return JsonResponse({'success': True})
     except Exception as e:
@@ -3389,6 +3408,22 @@ def api_actualizar_tarea_real(request, tarea_id):
                         tarea_id=tarea.id,
                         tarea_titulo=tarea.titulo,
                     )
+
+        # Notificar al chat de grupo si se editó tarea ajena
+        try:
+            from .views_grupos import registrar_accion_grupo
+            actor_nombre = request.user.get_full_name() or request.user.username
+            campos_cambiados = [k for k in data.keys() if k not in ('razon_reprogramacion',)]
+            resumen = ', '.join(campos_cambiados)
+            for prop in [tarea.asignado_a, tarea.creado_por]:
+                if prop and prop != request.user:
+                    registrar_accion_grupo(
+                        request.user, prop, 'editar_tarea',
+                        f'{actor_nombre} editó la tarea "{tarea.titulo}" ({resumen})',
+                        objeto_tipo='tarea', objeto_id=tarea.id, objeto_titulo=tarea.titulo,
+                    )
+        except Exception:
+            pass
 
         # Log para debugging
         print(f"✅ Tarea {tarea_id} actualizada: {tarea.titulo}")

@@ -53,12 +53,15 @@ def get_oportunidades_por_cliente(request):
             # If no client_id, return the 20 most recent opportunities for supervisors
             oportunidades = TodoItem.objects.all().order_by('-fecha_creacion')[:20]
     else:
-        if cliente_id:
-            # Solo las 10 oportunidades más recientes del cliente del usuario actual
-            oportunidades = TodoItem.objects.filter(cliente_id=cliente_id, usuario=request.user).order_by('-fecha_creacion')[:10]
+        ids_visibles = get_usuarios_visibles_ids(request.user)
+        if ids_visibles and len(ids_visibles) > 1:
+            user_filter = Q(usuario_id__in=ids_visibles)
         else:
-            # If no client_id, return the 20 most recent opportunities for the current user
-            oportunidades = TodoItem.objects.filter(usuario=request.user).order_by('-fecha_creacion')[:20]
+            user_filter = Q(usuario=request.user)
+        if cliente_id:
+            oportunidades = TodoItem.objects.filter(Q(cliente_id=cliente_id) & user_filter).order_by('-fecha_creacion')[:10]
+        else:
+            oportunidades = TodoItem.objects.filter(user_filter).order_by('-fecha_creacion')[:20]
 
     # Si hay una oportunidad inicial específica, asegurar que esté incluida
     if oportunidad_inicial_id:
@@ -980,7 +983,8 @@ def api_crm_table_data(request):
                 try:
                     _prev_cob_qs = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm, probabilidad_cierre=100)
                     if not es_supervisor:
-                        _prev_cob_qs = _prev_cob_qs.filter(usuario=user)
+                        _gids = get_usuarios_visibles_ids(user)
+                        _prev_cob_qs = _prev_cob_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else _prev_cob_qs.filter(usuario=user)
                     elif vendedores_ids:
                         _prev_cob_qs = _prev_cob_qs.filter(usuario_id__in=vendedores_ids)
                     _prev_sum = _prev_cob_qs.aggregate(t=Coalesce(Sum('monto'), _zero))['t'] or _zero
@@ -1001,7 +1005,8 @@ def api_crm_table_data(request):
                     _prev_anio = anio_int if _pm > 1 else anio_int - 1
                     _prev_qs = TodoItem.objects.filter(anio_cierre=_prev_anio, mes_cierre=_prev_mes)
                     if not es_supervisor:
-                        _prev_qs = _prev_qs.filter(usuario=user)
+                        _gids = get_usuarios_visibles_ids(user)
+                        _prev_qs = _prev_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else _prev_qs.filter(usuario=user)
                     elif vendedores_ids:
                         _prev_qs = _prev_qs.filter(usuario_id__in=vendedores_ids)
                     _prev_by_id_cl = {
@@ -1058,7 +1063,8 @@ def api_crm_table_data(request):
                 try:
                     _prev_opp_ids = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm)
                     if not es_supervisor:
-                        _prev_opp_ids = _prev_opp_ids.filter(usuario=user)
+                        _gids = get_usuarios_visibles_ids(user)
+                        _prev_opp_ids = _prev_opp_ids.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else _prev_opp_ids.filter(usuario=user)
                     elif vendedores_ids:
                         _prev_opp_ids = _prev_opp_ids.filter(usuario_id__in=vendedores_ids)
                     _prev_cot_qs = Cotizacion.objects.filter(
@@ -1085,7 +1091,8 @@ def api_crm_table_data(request):
                 except ValueError:
                     pass
             if not es_supervisor:
-                prospectos_qs = prospectos_qs.filter(usuario=user)
+                _gids = get_usuarios_visibles_ids(user)
+                prospectos_qs = prospectos_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else prospectos_qs.filter(usuario=user)
             elif vendedores_ids:
                 prospectos_qs = prospectos_qs.filter(usuario_id__in=vendedores_ids)
 
@@ -1359,7 +1366,8 @@ def api_tendencia_mensual(request):
         # Base queryset para oportunidades del mes
         opp_qs = TodoItem.objects.filter(anio_cierre=anio, mes_cierre=mes_str)
         if not es_supervisor:
-            opp_qs = opp_qs.filter(usuario=user)
+            _gids = get_usuarios_visibles_ids(user)
+            opp_qs = opp_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else opp_qs.filter(usuario=user)
         elif vendedores_ids:
             opp_qs = opp_qs.filter(usuario_id__in=vendedores_ids)
 
@@ -1626,7 +1634,8 @@ def api_cliente_oportunidades(request, cliente_id):
         qs = qs.filter(mes_cierre=mes_filter)
 
     if not es_supervisor:
-        qs = qs.filter(usuario=user)
+        _gids = get_usuarios_visibles_ids(user)
+        qs = qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else qs.filter(usuario=user)
 
     # Filtrar por tipo si se especifica
     tipo = request.GET.get('tipo', '')
@@ -2033,7 +2042,11 @@ def exportar_oportunidades_csv(request):
     if is_supervisor(request.user):
         items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').all()
     else:
-        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user)
+        _gids = get_usuarios_visibles_ids(request.user)
+        if _gids and len(_gids) > 1:
+            items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario_id__in=_gids)
+        else:
+            items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user)
 
     # 2. Apply filters (supporting multiple values)
     oportunidad_filter = request.GET.get('filterOportunidad', '').strip()
@@ -3220,6 +3233,19 @@ def api_crear_oportunidad(request):
                 usuario=request.user,
                 texto=todo.comentarios
             )
+
+        # Notificar al chat de grupo si el cliente está asignado a otro miembro
+        try:
+            if cliente and hasattr(cliente, 'asignado_a') and cliente.asignado_a and cliente.asignado_a != request.user:
+                from .views_grupos import registrar_accion_grupo
+                actor_nombre = request.user.get_full_name() or request.user.username
+                registrar_accion_grupo(
+                    request.user, cliente.asignado_a, 'crear_oportunidad',
+                    f'{actor_nombre} creó la oportunidad "{oportunidad_nombre}" en el cliente {cliente.nombre_empresa}',
+                    objeto_tipo='oportunidad', objeto_id=todo.id, objeto_titulo=oportunidad_nombre,
+                )
+        except Exception:
+            pass
 
         return JsonResponse({
             'ok': True,

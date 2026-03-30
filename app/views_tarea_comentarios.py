@@ -201,10 +201,24 @@ def api_agregar_comentario_tarea(request, tarea_id):
                 usuario_remitente=request.user
             )
         
+        # Notificar al chat de grupo si comentó en tarea ajena
+        try:
+            from .views_grupos import registrar_accion_grupo
+            actor_nombre = request.user.get_full_name() or request.user.username
+            for prop in [tarea.asignado_a, tarea.creado_por]:
+                if prop and prop != request.user:
+                    registrar_accion_grupo(
+                        request.user, prop, 'comentar_tarea',
+                        f'{actor_nombre} comentó en la tarea "{tarea.titulo}"',
+                        objeto_tipo='tarea', objeto_id=tarea.id, objeto_titulo=tarea.titulo,
+                    )
+        except Exception:
+            pass
+
         # Obtener datos del usuario para la respuesta
         user_profile = getattr(request.user, 'userprofile', None)
         avatar_url = user_profile.get_avatar_url() if user_profile else None
-        
+
         return JsonResponse({
             'success': True,
             'comentario': {
@@ -223,7 +237,7 @@ def api_agregar_comentario_tarea(request, tarea_id):
                 'archivos': archivos_data
             }
         })
-        
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
