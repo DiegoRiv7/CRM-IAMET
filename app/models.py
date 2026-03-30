@@ -4275,11 +4275,7 @@ class CampanaEnvio(models.Model):
 
 class EtapaPipeline(models.Model):
     """Etapas configurables para el pipeline de oportunidades."""
-    PIPELINE_CHOICES = [
-        ('runrate', 'Runrate'),
-        ('proyecto', 'Proyecto'),
-    ]
-    pipeline = models.CharField(max_length=20, choices=PIPELINE_CHOICES, default='runrate')
+    pipeline = models.CharField(max_length=50, default='runrate')
     nombre = models.CharField(max_length=100, verbose_name="Nombre de la etapa")
     color = models.CharField(max_length=7, default='#6B7280', verbose_name="Color hex")
     orden = models.IntegerField(default=0, verbose_name="Orden en el pipeline")
@@ -4291,4 +4287,4 @@ class EtapaPipeline(models.Model):
         verbose_name_plural = "Etapas de Pipeline"
 
     def __str__(self):
-        return f"{self.get_pipeline_display()} — {self.nombre}"
+        return f"{self.pipeline} — {self.nombre}"

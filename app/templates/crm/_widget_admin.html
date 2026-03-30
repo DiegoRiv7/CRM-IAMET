@@ -765,15 +765,15 @@ window.loadPermisos = function(){
   });
 };
 
-/* ── Oportunidades ──────────────────────────────────── */
-var _admOppSubTab = 'lista';
-var _admOppData = [];
+/* ── Oportunidades (Etapas + Pipelines) ─────────────── */
+var _admOppSubTab = 'etapas';
 var _admEtapasData = [];
+var _admSelectedPipeline = '';
 
 window.loadOportunidades = function(){
-  _admOppSubTab = 'lista';
+  _admOppSubTab = 'etapas';
   _renderOppShell();
-  _loadOppLista();
+  _loadOppEtapas();
 };
 
 function _renderOppShell(){
@@ -781,8 +781,8 @@ function _renderOppShell(){
   var h = '<div class="admin-card-inner">';
   h += '<div class="admin-content-header"><span class="admin-content-title">Oportunidades</span>';
   h += '<div style="display:flex;gap:6px;">';
-  h += '<button class="admin-btn '+(_admOppSubTab==='lista'?'admin-btn-primary':'admin-btn-secondary')+'" onclick="_admOppSwitchTab(\'lista\')">Lista</button>';
-  h += '<button class="admin-btn '+(_admOppSubTab==='etapas'?'admin-btn-primary':'admin-btn-secondary')+'" onclick="_admOppSwitchTab(\'etapas\')">Pipeline / Etapas</button>';
+  h += '<button class="admin-btn '+(_admOppSubTab==='etapas'?'admin-btn-primary':'admin-btn-secondary')+'" onclick="_admOppSwitchTab(\'etapas\')">Etapas</button>';
+  h += '<button class="admin-btn '+(_admOppSubTab==='pipelines'?'admin-btn-primary':'admin-btn-secondary')+'" onclick="_admOppSwitchTab(\'pipelines\')">Pipelines</button>';
   h += '</div></div>';
   h += '<div id="admOppContent"></div>';
   h += '</div>';
@@ -792,152 +792,70 @@ function _renderOppShell(){
 window._admOppSwitchTab = function(tab){
   _admOppSubTab = tab;
   _renderOppShell();
-  if(tab==='lista') _loadOppLista();
-  else _loadOppEtapas();
-};
-
-function _loadOppLista(q){
-  var el = document.getElementById('admOppContent');
-  if(!el) return;
-  el.innerHTML = '<div style="color:#8E8E93;text-align:center;padding:30px;">Cargando...</div>';
-  var url = '/app/api/admin/oportunidades/';
-  if(q) url += '?q='+encodeURIComponent(q);
-  fetch(url).then(function(r){return r.json();}).then(function(data){
-    _admOppData = data.oportunidades||[];
-    var h = '<div class="admin-search" style="margin-bottom:12px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-    h += '<input id="admOppSearch" placeholder="Buscar oportunidad, cliente, PO..." value="'+(q||'')+'" style="border:none;outline:none;background:transparent;flex:1;font-size:0.82rem;"></div>';
-    h += '<div style="font-size:0.72rem;color:#8E8E93;margin-bottom:8px;">Mostrando '+_admOppData.length+' oportunidades</div>';
-    h += '<table class="admin-table"><thead><tr><th>Oportunidad</th><th>Cliente</th><th>Monto</th><th>Etapa</th><th>Prob.</th><th>Tipo</th><th>Vendedor</th><th>Cierre</th><th>Acciones</th></tr></thead><tbody>';
-    _admOppData.forEach(function(o){
-      var etBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;background:'+o.etapa_color+'22;color:'+o.etapa_color+';">'+(o.etapa_corta||'Sin etapa')+'</span>';
-      var tipoBadge = o.tipo_negociacion==='proyecto' ? '<span class="admin-badge admin-badge-purple">Proyecto</span>' : '<span class="admin-badge admin-badge-blue">Runrate</span>';
-      h += '<tr id="admOppRow-'+o.id+'">';
-      h += '<td><strong style="font-size:0.8rem;">'+o.oportunidad+'</strong>';
-      if(o.po_number) h += '<br><span style="color:#8E8E93;font-size:0.7rem;">PO: '+o.po_number+'</span>';
-      h += '</td>';
-      h += '<td style="font-size:0.78rem;">'+o.cliente+'</td>';
-      h += '<td style="font-weight:600;">'+_fmtCurrency(o.monto)+'</td>';
-      h += '<td>'+etBadge+'</td>';
-      h += '<td>'+o.probabilidad_cierre+'%</td>';
-      h += '<td>'+tipoBadge+'</td>';
-      h += '<td style="font-size:0.78rem;">'+o.usuario+'</td>';
-      h += '<td style="font-size:0.78rem;">'+(o.mes_cierre||'')+'/'+(o.anio_cierre||'')+'</td>';
-      h += '<td><button class="admin-btn-icon" onclick="_admOppEdit('+o.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
-      h += '<button class="admin-btn-icon" onclick="_admOppDelete('+o.id+')" title="Eliminar" style="color:#FF3B30;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>';
-      h += '</tr>';
-      h += '<tr id="admOppEditRow-'+o.id+'" style="display:none;"><td colspan="9"><div id="admOppEditForm-'+o.id+'"></div></td></tr>';
-    });
-    h += '</tbody></table>';
-    el.innerHTML = h;
-    var s = document.getElementById('admOppSearch');
-    if(s){
-      var _debounce;
-      s.addEventListener('input',function(){
-        clearTimeout(_debounce);
-        var v = this.value;
-        _debounce = setTimeout(function(){ _loadOppLista(v); },350);
-      });
-    }
-  });
-}
-
-window._admOppEdit = function(id){
-  var row = document.getElementById('admOppEditRow-'+id);
-  var form = document.getElementById('admOppEditForm-'+id);
-  if(!row || !form) return;
-  if(row.style.display !== 'none'){ row.style.display='none'; return; }
-  row.style.display = '';
-  form.innerHTML = '<div style="color:#8E8E93;font-size:0.8rem;">Cargando...</div>';
-  fetch('/app/api/admin/oportunidades/'+id+'/').then(function(r){return r.json();}).then(function(o){
-    var h = '<div class="admin-inline-form" style="padding:12px;">';
-    h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Editar Oportunidad #'+o.id+'</div>';
-    h += '<div class="admin-form-row"><input class="admin-input" id="oeNombre-'+id+'" value="'+_escH(o.oportunidad)+'" placeholder="Nombre oportunidad"><input class="admin-input" id="oeMonto-'+id+'" type="number" step="0.01" value="'+o.monto+'" placeholder="Monto"></div>';
-    h += '<div class="admin-form-row"><input class="admin-input" id="oeEtapa-'+id+'" value="'+_escH(o.etapa_corta)+'" placeholder="Etapa"><input class="admin-input" id="oeColor-'+id+'" type="color" value="'+(o.etapa_color||'#6B7280')+'" style="max-width:60px;padding:2px;"><input class="admin-input" id="oeProb-'+id+'" type="number" min="0" max="100" value="'+o.probabilidad_cierre+'" placeholder="Prob. %" style="max-width:80px;"></div>';
-    h += '<div class="admin-form-row"><select class="admin-input" id="oeTipo-'+id+'" style="max-width:140px;"><option value="runrate"'+(o.tipo_negociacion==='runrate'?' selected':'')+'>Runrate</option><option value="proyecto"'+(o.tipo_negociacion==='proyecto'?' selected':'')+'>Proyecto</option></select>';
-    h += '<input class="admin-input" id="oeMes-'+id+'" value="'+_escH(o.mes_cierre||'')+'" placeholder="Mes cierre" style="max-width:100px;">';
-    h += '<input class="admin-input" id="oeAnio-'+id+'" type="number" value="'+(o.anio_cierre||'')+'" placeholder="A&ntilde;o" style="max-width:80px;"></div>';
-    h += '<div class="admin-form-row"><input class="admin-input" id="oePO-'+id+'" value="'+_escH(o.po_number||'')+'" placeholder="PO Number"><input class="admin-input" id="oeFactura-'+id+'" value="'+_escH(o.factura_numero||'')+'" placeholder="Factura"></div>';
-    h += '<div style="display:flex;gap:8px;margin-top:6px;"><button class="admin-btn admin-btn-primary" onclick="_admOppSave('+id+')">Guardar</button><button class="admin-btn admin-btn-secondary" onclick="document.getElementById(\'admOppEditRow-'+id+'\').style.display=\'none\'">Cancelar</button></div>';
-    h += '</div>';
-    form.innerHTML = h;
-  });
+  if(tab==='etapas') _loadOppEtapas();
+  else _loadOppPipelines();
 };
 
 function _escH(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-window._admOppSave = function(id){
-  var body = {
-    oportunidad: (document.getElementById('oeNombre-'+id)||{}).value||'',
-    monto: parseFloat((document.getElementById('oeMonto-'+id)||{}).value)||0,
-    etapa_corta: (document.getElementById('oeEtapa-'+id)||{}).value||'',
-    etapa_color: (document.getElementById('oeColor-'+id)||{}).value||'#6B7280',
-    probabilidad_cierre: parseInt((document.getElementById('oeProb-'+id)||{}).value)||0,
-    tipo_negociacion: (document.getElementById('oeTipo-'+id)||{}).value||'runrate',
-    mes_cierre: (document.getElementById('oeMes-'+id)||{}).value||'',
-    anio_cierre: parseInt((document.getElementById('oeAnio-'+id)||{}).value)||0,
-    po_number: (document.getElementById('oePO-'+id)||{}).value||'',
-    factura_numero: (document.getElementById('oeFactura-'+id)||{}).value||''
-  };
-  fetch('/app/api/admin/oportunidades/'+id+'/',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
-    body:JSON.stringify(body)
-  }).then(function(r){return r.json();}).then(function(res){
-    if(res.ok){ _showAdminToast('Oportunidad actualizada'); _loadOppLista(); }
-    else _showAdminToast(res.error||'Error al guardar',false);
-  });
-};
-
-window._admOppDelete = function(id){
-  adminConfirm('Eliminar oportunidad', 'Esta acci\u00f3n no se puede deshacer.', function(){
-    fetch('/app/api/admin/oportunidades/?id='+id,{
-      method:'DELETE',
-      headers:{'X-CSRFToken':getCsrf()}
-    }).then(function(r){return r.json();}).then(function(res){
-      if(res.ok){ _showAdminToast('Oportunidad eliminada'); _loadOppLista(); }
-      else _showAdminToast(res.error||'Error',false);
-    });
-  });
-};
-
-/* ── Pipeline / Etapas ────────────────────────────────── */
+/* ── Sub-tab: Etapas ──────────────────────────────────── */
 function _loadOppEtapas(){
   var el = document.getElementById('admOppContent');
   if(!el) return;
   el.innerHTML = '<div style="color:#8E8E93;text-align:center;padding:30px;">Cargando etapas...</div>';
   fetch('/app/api/admin/etapas-pipeline/').then(function(r){return r.json();}).then(function(data){
     _admEtapasData = data.etapas||[];
-    var runrate = _admEtapasData.filter(function(e){return e.pipeline==='runrate';});
-    var proyecto = _admEtapasData.filter(function(e){return e.pipeline==='proyecto';});
-    var h = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">';
-    h += _renderPipelineCol('runrate','Runrate',runrate);
-    h += _renderPipelineCol('proyecto','Proyecto',proyecto);
+    var pipelines = data.pipelines||[];
+    if(!pipelines.length){
+      el.innerHTML = '<div style="color:#AEAEB2;text-align:center;padding:40px;font-size:0.85rem;">No hay pipelines creados.<br><span style="font-size:0.78rem;">Ve a la pesta\u00f1a "Pipelines" para crear uno.</span></div>';
+      return;
+    }
+    if(!_admSelectedPipeline || pipelines.indexOf(_admSelectedPipeline)===-1){
+      _admSelectedPipeline = pipelines[0];
+    }
+    var h = '';
+    /* Pipeline selector */
+    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">';
+    h += '<span style="font-size:0.78rem;font-weight:600;color:#636366;">Pipeline:</span>';
+    h += '<select class="admin-input" id="admEtapaPipelineSel" style="max-width:220px;" onchange="_admSelectedPipeline=this.value;_renderEtapasForPipeline();">';
+    pipelines.forEach(function(p){
+      h += '<option value="'+_escH(p)+'"'+(p===_admSelectedPipeline?' selected':'')+'>'+_escH(p.charAt(0).toUpperCase()+p.slice(1))+'</option>';
+    });
+    h += '</select>';
     h += '</div>';
+    /* Etapas container */
+    h += '<div id="admEtapasContainer"></div>';
     el.innerHTML = h;
+    _renderEtapasForPipeline();
   });
 }
 
-function _renderPipelineCol(pipeline, label, etapas){
-  var h = '<div style="background:rgba(248,249,252,0.6);border-radius:14px;padding:16px;">';
-  h += '<div style="font-size:0.85rem;font-weight:600;color:#1C1C1E;margin-bottom:12px;">'+label+'</div>';
-  /* Add new form */
-  h += '<div style="display:flex;gap:6px;margin-bottom:12px;">';
-  h += '<input class="admin-input" id="epNombre-'+pipeline+'" placeholder="Nueva etapa..." style="flex:1;">';
-  h += '<input type="color" id="epColor-'+pipeline+'" value="#6B7280" style="width:34px;height:34px;border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:2px;cursor:pointer;">';
-  h += '<button class="admin-btn admin-btn-primary" onclick="_admEtapaAdd(\''+pipeline+'\')" style="white-space:nowrap;">+ Agregar</button>';
+window._renderEtapasForPipeline = function(){
+  var container = document.getElementById('admEtapasContainer');
+  if(!container) return;
+  var pipeline = _admSelectedPipeline;
+  var etapas = _admEtapasData.filter(function(e){return e.pipeline===pipeline;});
+  etapas.sort(function(a,b){return a.orden-b.orden;});
+  var h = '';
+  /* Add new etapa form */
+  h += '<div style="display:flex;gap:6px;margin-bottom:14px;align-items:center;">';
+  h += '<input class="admin-input" id="epNuevoNombre" placeholder="Nueva etapa..." style="flex:1;">';
+  h += '<input type="color" id="epNuevoColor" value="#6B7280" style="width:34px;height:34px;border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:2px;cursor:pointer;">';
+  h += '<button class="admin-btn admin-btn-primary" onclick="_admEtapaAdd()" style="white-space:nowrap;">+ Agregar</button>';
   h += '</div>';
-  /* List */
-  h += '<div id="epList-'+pipeline+'">';
-  etapas.forEach(function(e, idx){
-    h += _renderEtapaItem(e, idx);
+  /* Etapas list */
+  h += '<div id="epListEtapas">';
+  if(!etapas.length){
+    h += '<div style="color:#AEAEB2;font-size:0.78rem;text-align:center;padding:20px;">Sin etapas configuradas para este pipeline</div>';
+  }
+  etapas.forEach(function(e){
+    h += _renderEtapaItem(e);
   });
-  if(!etapas.length) h += '<div style="color:#AEAEB2;font-size:0.78rem;text-align:center;padding:20px;">Sin etapas configuradas</div>';
   h += '</div>';
-  h += '</div>';
-  return h;
-}
+  container.innerHTML = h;
+};
 
-function _renderEtapaItem(e, idx){
+function _renderEtapaItem(e){
   var opacity = e.activo ? '1' : '0.45';
   var h = '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.7);border-radius:10px;margin-bottom:4px;opacity:'+opacity+';" data-etapa-id="'+e.id+'">';
   h += '<span style="color:#AEAEB2;font-size:0.72rem;cursor:grab;user-select:none;">&#9776;</span>';
@@ -951,7 +869,7 @@ function _renderEtapaItem(e, idx){
   /* Inline edit row (hidden) */
   h += '<div id="epEditRow-'+e.id+'" style="display:none;padding:6px 10px;background:rgba(0,122,255,0.04);border-radius:10px;margin-bottom:4px;">';
   h += '<div style="display:flex;gap:6px;align-items:center;">';
-  h += '<input class="admin-input" id="epEditNombre-'+e.id+'" value="'+e.nombre+'" style="flex:1;">';
+  h += '<input class="admin-input" id="epEditNombre-'+e.id+'" value="'+_escH(e.nombre)+'" style="flex:1;">';
   h += '<input type="color" id="epEditColor-'+e.id+'" value="'+e.color+'" style="width:34px;height:34px;border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:2px;">';
   h += '<input class="admin-input" id="epEditOrden-'+e.id+'" type="number" value="'+e.orden+'" style="max-width:60px;" placeholder="Orden">';
   h += '<button class="admin-btn admin-btn-primary" onclick="_admEtapaSave('+e.id+')" style="font-size:0.76rem;">OK</button>';
@@ -960,9 +878,10 @@ function _renderEtapaItem(e, idx){
   return h;
 }
 
-window._admEtapaAdd = function(pipeline){
-  var nombre = (document.getElementById('epNombre-'+pipeline)||{}).value||'';
-  var color = (document.getElementById('epColor-'+pipeline)||{}).value||'#6B7280';
+window._admEtapaAdd = function(){
+  var pipeline = _admSelectedPipeline;
+  var nombre = (document.getElementById('epNuevoNombre')||{}).value||'';
+  var color = (document.getElementById('epNuevoColor')||{}).value||'#6B7280';
   if(!nombre.trim()){ _showAdminToast('Escribe un nombre',false); return; }
   var maxOrden = 0;
   _admEtapasData.forEach(function(e){ if(e.pipeline===pipeline && e.orden>maxOrden) maxOrden=e.orden; });
@@ -1015,6 +934,108 @@ window._admEtapaDelete = function(id){
     }).then(function(r){return r.json();}).then(function(res){
       if(res.ok){ _showAdminToast('Etapa eliminada'); _loadOppEtapas(); }
       else _showAdminToast(res.error||'Error',false);
+    });
+  });
+};
+
+/* ── Sub-tab: Pipelines ───────────────────────────────── */
+function _loadOppPipelines(){
+  var el = document.getElementById('admOppContent');
+  if(!el) return;
+  el.innerHTML = '<div style="color:#8E8E93;text-align:center;padding:30px;">Cargando pipelines...</div>';
+  fetch('/app/api/admin/etapas-pipeline/?mode=pipelines').then(function(r){return r.json();}).then(function(data){
+    var pipelines = data.pipelines||[];
+    var h = '';
+    /* Create new pipeline form */
+    h += '<div class="admin-inline-form" style="margin-bottom:16px;">';
+    h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:8px;">Crear Nuevo Pipeline</div>';
+    h += '<div style="display:flex;gap:8px;align-items:center;">';
+    h += '<input class="admin-input" id="admNewPipelineName" placeholder="Nombre del pipeline..." style="flex:1;max-width:300px;">';
+    h += '<button class="admin-btn admin-btn-primary" onclick="_admPipelineCreate()">+ Crear Pipeline</button>';
+    h += '</div>';
+    h += '<div style="font-size:0.7rem;color:#8E8E93;margin-top:6px;">El nombre se guardar\u00e1 en min\u00fasculas. Se crear\u00e1 con una etapa inicial por defecto.</div>';
+    h += '</div>';
+    /* Pipelines list */
+    if(!pipelines.length){
+      h += '<div style="color:#AEAEB2;text-align:center;padding:30px;font-size:0.85rem;">No hay pipelines creados a\u00fan.</div>';
+    } else {
+      h += '<table class="admin-table"><thead><tr><th>Pipeline</th><th>Etapas</th><th>Oportunidades</th><th>Acciones</th></tr></thead><tbody>';
+      pipelines.forEach(function(p){
+        var nombre = p.nombre;
+        var displayName = nombre.charAt(0).toUpperCase()+nombre.slice(1);
+        h += '<tr id="admPipRow-'+nombre+'">';
+        h += '<td><strong style="font-size:0.82rem;">'+_escH(displayName)+'</strong></td>';
+        h += '<td><span class="admin-badge admin-badge-blue">'+p.etapas_count+' etapas</span></td>';
+        h += '<td>';
+        if(p.oportunidades_count > 0){
+          h += '<span class="admin-badge admin-badge-green">'+p.oportunidades_count+' oportunidades</span>';
+        } else {
+          h += '<span class="admin-badge admin-badge-gray">Sin oportunidades</span>';
+        }
+        h += '</td>';
+        h += '<td style="display:flex;gap:4px;">';
+        h += '<button class="admin-btn-icon" onclick="_admPipelineRename(\''+_escH(nombre)+'\')" title="Renombrar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+        if(p.oportunidades_count === 0){
+          h += '<button class="admin-btn-icon" onclick="_admPipelineDelete(\''+_escH(nombre)+'\')" title="Eliminar" style="color:#FF3B30;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>';
+        } else {
+          h += '<button class="admin-btn-icon" disabled title="No se puede eliminar: tiene oportunidades" style="color:#AEAEB2;cursor:not-allowed;opacity:0.5;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>';
+        }
+        h += '</td>';
+        h += '</tr>';
+        /* Inline rename row (hidden) */
+        h += '<tr id="admPipRenameRow-'+nombre+'" style="display:none;"><td colspan="4">';
+        h += '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;">';
+        h += '<input class="admin-input" id="admPipNewName-'+nombre+'" value="'+_escH(nombre)+'" placeholder="Nuevo nombre..." style="flex:1;max-width:260px;">';
+        h += '<button class="admin-btn admin-btn-primary" onclick="_admPipelineRenameSave(\''+_escH(nombre)+'\')" style="font-size:0.78rem;">Guardar</button>';
+        h += '<button class="admin-btn admin-btn-secondary" onclick="document.getElementById(\'admPipRenameRow-'+nombre+'\').style.display=\'none\';" style="font-size:0.78rem;">Cancelar</button>';
+        h += '</div></td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    el.innerHTML = h;
+  });
+}
+
+window._admPipelineCreate = function(){
+  var nombre = (document.getElementById('admNewPipelineName')||{}).value||'';
+  if(!nombre.trim()){ _showAdminToast('Escribe un nombre para el pipeline',false); return; }
+  fetch('/app/api/admin/etapas-pipeline/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({action:'create_pipeline',nombre:nombre.trim()})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.ok){ _showAdminToast('Pipeline creado'); _loadOppPipelines(); }
+    else _showAdminToast(res.error||'Error al crear pipeline',false);
+  });
+};
+
+window._admPipelineRename = function(nombre){
+  var row = document.getElementById('admPipRenameRow-'+nombre);
+  if(row) row.style.display = row.style.display==='none' ? '' : 'none';
+};
+
+window._admPipelineRenameSave = function(oldName){
+  var newName = (document.getElementById('admPipNewName-'+oldName)||{}).value||'';
+  if(!newName.trim()){ _showAdminToast('Escribe un nombre',false); return; }
+  fetch('/app/api/admin/etapas-pipeline/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({action:'rename_pipeline',old_name:oldName,new_name:newName.trim()})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.ok){ _showAdminToast('Pipeline renombrado'); _admSelectedPipeline=''; _loadOppPipelines(); }
+    else _showAdminToast(res.error||'Error al renombrar',false);
+  });
+};
+
+window._admPipelineDelete = function(nombre){
+  adminConfirm('Eliminar pipeline','Se eliminar\u00e1n todas las etapas de "'+nombre+'". Esta acci\u00f3n no se puede deshacer.',function(){
+    fetch('/app/api/admin/etapas-pipeline/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+      body:JSON.stringify({action:'delete_pipeline',nombre:nombre})
+    }).then(function(r){return r.json();}).then(function(res){
+      if(res.ok){ _showAdminToast('Pipeline eliminado'); _admSelectedPipeline=''; _loadOppPipelines(); }
+      else _showAdminToast(res.error||'Error al eliminar',false);
     });
   });
 };

@@ -2004,15 +2004,37 @@ def api_admin_oportunidad_detalle(request, opp_id):
 
 @login_required
 def api_admin_etapas_pipeline(request):
-    """CRUD de etapas del pipeline."""
-    from .models import EtapaPipeline
+    """CRUD de etapas del pipeline y gestión de pipelines."""
+    from .models import EtapaPipeline, Oportunidad
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
 
     if request.method == 'GET':
-        etapas = EtapaPipeline.objects.all()
-        data = [{'id': e.id, 'pipeline': e.pipeline, 'nombre': e.nombre, 'color': e.color, 'orden': e.orden, 'activo': e.activo} for e in etapas]
-        return JsonResponse({'etapas': data})
+        mode = request.GET.get('mode', 'etapas')
+        if mode == 'pipelines':
+            # Return unique pipelines with their etapa counts
+            pipelines_qs = EtapaPipeline.objects.values('pipeline').annotate(
+                etapas_count=models.Count('id')
+            ).order_by('pipeline')
+            pipelines = []
+            for p in pipelines_qs:
+                # Check if any oportunidades use this pipeline
+                opp_count = Oportunidad.objects.filter(tipo_negociacion=p['pipeline']).count()
+                pipelines.append({
+                    'nombre': p['pipeline'],
+                    'etapas_count': p['etapas_count'],
+                    'oportunidades_count': opp_count,
+                })
+            return JsonResponse({'pipelines': pipelines})
+        else:
+            pipeline_filter = request.GET.get('pipeline', '')
+            etapas = EtapaPipeline.objects.all()
+            if pipeline_filter:
+                etapas = etapas.filter(pipeline=pipeline_filter)
+            data = [{'id': e.id, 'pipeline': e.pipeline, 'nombre': e.nombre, 'color': e.color, 'orden': e.orden, 'activo': e.activo} for e in etapas]
+            # Also return unique pipeline names for the dropdown
+            all_pipelines = list(EtapaPipeline.objects.values_list('pipeline', flat=True).distinct().order_by('pipeline'))
+            return JsonResponse({'etapas': data, 'pipelines': all_pipelines})
 
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -2048,6 +2070,40 @@ def api_admin_etapas_pipeline(request):
         elif action == 'reorder':
             for item in data.get('items', []):
                 EtapaPipeline.objects.filter(id=item['id']).update(orden=item['orden'])
+            return JsonResponse({'ok': True})
+
+        elif action == 'create_pipeline':
+            nombre = (data.get('nombre') or '').strip().lower()
+            if not nombre:
+                return JsonResponse({'error': 'Nombre requerido'}, status=400)
+            # Check if already exists
+            if EtapaPipeline.objects.filter(pipeline=nombre).exists():
+                return JsonResponse({'error': 'Ya existe un pipeline con ese nombre'}, status=400)
+            # Create pipeline with a default first stage
+            EtapaPipeline.objects.create(pipeline=nombre, nombre='Nueva Etapa', color='#6B7280', orden=1)
+            return JsonResponse({'ok': True})
+
+        elif action == 'rename_pipeline':
+            old_name = data.get('old_name', '')
+            new_name = (data.get('new_name') or '').strip().lower()
+            if not old_name or not new_name:
+                return JsonResponse({'error': 'Nombres requeridos'}, status=400)
+            if old_name != new_name and EtapaPipeline.objects.filter(pipeline=new_name).exists():
+                return JsonResponse({'error': 'Ya existe un pipeline con ese nombre'}, status=400)
+            # Update all etapas and oportunidades
+            EtapaPipeline.objects.filter(pipeline=old_name).update(pipeline=new_name)
+            Oportunidad.objects.filter(tipo_negociacion=old_name).update(tipo_negociacion=new_name)
+            return JsonResponse({'ok': True})
+
+        elif action == 'delete_pipeline':
+            nombre = data.get('nombre', '')
+            if not nombre:
+                return JsonResponse({'error': 'Nombre requerido'}, status=400)
+            # Check if oportunidades reference this pipeline
+            opp_count = Oportunidad.objects.filter(tipo_negociacion=nombre).count()
+            if opp_count > 0:
+                return JsonResponse({'error': f'No se puede eliminar: {opp_count} oportunidades usan este pipeline'}, status=400)
+            EtapaPipeline.objects.filter(pipeline=nombre).delete()
             return JsonResponse({'ok': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
