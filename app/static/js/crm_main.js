@@ -4386,7 +4386,7 @@
                 if (tarea.responsable_data) {
                     var rd = tarea.responsable_data;
                     var initials = crmTaskGetInitials(rd.nombre);
-                    respContainer.innerHTML = '<div class="crm-task-avatar" style="width:26px;height:26px;font-size:0.62rem;background:#0052D4;">' + (rd.avatar_url ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">' : initials) + '</div><span style="font-weight:500;font-size:0.82rem;">' + rd.nombre + '</span>';
+                    respContainer.innerHTML = '<div class="crm-task-avatar" style="width:30px;height:30px;font-size:0.65rem;background:#0052D4;">' + (rd.avatar_url ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">' : initials) + '</div><span style="font-weight:500;font-size:0.82rem;flex:1;min-width:0;">' + rd.nombre + '</span>';
                 } else {
                     respContainer.innerHTML = '<span style="color:#9CA3AF;font-size:0.82rem;">Sin asignar</span>';
                 }
@@ -4456,15 +4456,11 @@
 
         function crmTaskShowSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
-            if (bar) {
-                bar.style.display = 'flex';
-                // Add a small animation effect
-                bar.style.animation = 'crmFadeInDown 0.3s ease';
-            }
+            if (bar) bar.classList.add('active');
         }
         function crmTaskHideSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
-            if (bar) bar.style.display = 'none';
+            if (bar) bar.classList.remove('active');
             _crmTaskEdits = {};
         }
 
@@ -5240,8 +5236,27 @@
         var fileInput = document.getElementById('crm-task-file-input');
         if (fileInput) { fileInput.addEventListener('change', function () { _crmFilesAdd(this.files); this.value = ''; }); }
 
-        // Also allow drop on textarea
+        // Allow drop on textarea + comment form — show drop zone and visual hint
         var commentInput = document.getElementById('crm-task-comment-input');
+        var commentForm = document.getElementById('crm-task-comment-form');
+        var _dragCounter = 0;
+        function _showDropHint() {
+            if (dropZone) dropZone.style.display = 'block';
+            if (commentForm) { commentForm.style.borderColor = '#4f6ef7'; commentForm.style.background = '#F8FAFF'; }
+        }
+        function _hideDropHint() {
+            if (dropZone && !_crmCommentFiles.length) dropZone.style.display = 'none';
+            if (commentForm) { commentForm.style.borderColor = ''; commentForm.style.background = ''; }
+        }
+        if (commentForm) {
+            commentForm.addEventListener('dragenter', function (e) { e.preventDefault(); _dragCounter++; _showDropHint(); });
+            commentForm.addEventListener('dragover', function (e) { e.preventDefault(); });
+            commentForm.addEventListener('dragleave', function (e) { _dragCounter--; if (_dragCounter <= 0) { _dragCounter = 0; _hideDropHint(); } });
+            commentForm.addEventListener('drop', function (e) {
+                e.preventDefault(); _dragCounter = 0; _hideDropHint();
+                if (e.dataTransfer.files && e.dataTransfer.files.length) { _crmFilesAdd(e.dataTransfer.files); }
+            });
+        }
         if (commentInput) {
             commentInput.addEventListener('dragover', function (e) { e.preventDefault(); });
             commentInput.addEventListener('drop', function (e) {
