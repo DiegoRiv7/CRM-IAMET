@@ -3077,49 +3077,16 @@
         font-weight: 600;
     }
 
-    .crm-task-save-bar {
-        display: none;
+    #crmTaskSaveBar {
         position: sticky;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        top: -2rem;
         z-index: 1100;
-        margin: auto -2rem -2.5rem -2rem;
-        padding: 12px 2rem;
-        background: rgba(255, 255, 255, 0.88);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-top: 1px solid #E5E7EB;
-        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+        margin: -2rem -2rem 0.5rem -2rem;
+        border-radius: 0;
+        backdrop-filter: blur(12px);
+        background: rgba(240, 247, 255, 0.9);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-    .crm-task-save-bar.active { display: block; }
-    .crm-task-save-bar-inner {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: #1D1D1F;
-    }
-    .crm-task-save-btn {
-        padding: 7px 16px;
-        border-radius: 8px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        cursor: pointer;
-        font-family: inherit;
-        transition: all 0.15s;
-    }
-    .crm-task-save-btn.cancel {
-        background: none;
-        border: 1px solid #D1D5DB;
-        color: #6B7280;
-    }
-    .crm-task-save-btn.cancel:hover { background: #F3F4F6; }
-    .crm-task-save-btn.save {
-        background: #1D1D1F;
-        border: none;
-        color: white;
-    }
-    .crm-task-save-btn.save:hover { background: #374151; }
 
     @keyframes crmFadeInDown {
         from { opacity: 0; transform: translateY(-10px); }

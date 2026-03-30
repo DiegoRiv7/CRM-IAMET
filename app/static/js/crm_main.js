@@ -4471,11 +4471,11 @@
 
         function crmTaskShowSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
-            if (bar) bar.classList.add('active');
+            if (bar) bar.style.display = 'flex';
         }
         function crmTaskHideSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
-            if (bar) bar.classList.remove('active');
+            if (bar) bar.style.display = 'none';
             _crmTaskEdits = {};
         }
 
