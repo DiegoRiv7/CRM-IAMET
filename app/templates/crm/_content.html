@@ -610,27 +610,32 @@
             <!-- Actividad (comentarios) -->
             <div class="crm-task-comments-section">
                 <div class="crm-task-desc-label">Actividad</div>
-                <div class="crm-task-comment-form">
-                    <form id="crm-task-comment-form" style="display:flex;flex-direction:column;gap:0.6rem;">
-                        <div style="position:relative;">
-                            <textarea id="crm-task-comment-input" class="crm-task-comment-textarea" rows="2"
-                                placeholder="Escribe un comentario... usa @ para mencionar a alguien"></textarea>
-                            <div id="crm-mention-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);max-height:180px;overflow-y:auto;z-index:300;"></div>
-                        </div>
-                        <div id="crm-task-drop-zone" style="display:none;border:2px dashed #D1D5DB;border-radius:8px;padding:10px;text-align:center;color:#9CA3AF;font-size:0.78rem;cursor:pointer;transition:border-color .15s,background .15s;">
-                            Arrastra archivos aquí o <span style="color:#4f6ef7;text-decoration:underline;cursor:pointer;" onclick="document.getElementById('crm-task-file-input').click()">selecciona</span>
-                            <input type="file" id="crm-task-file-input" multiple style="display:none;">
-                        </div>
-                        <div id="crm-task-files-preview" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-                        <div style="display:flex;justify-content:flex-end;gap:8px;">
-                            <button type="button" class="crm-task-btn-adjuntar" onclick="var dz=document.getElementById('crm-task-drop-zone');dz.style.display=dz.style.display==='none'?'block':'none';">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                                Adjuntar
-                            </button>
-                            <button type="submit" class="crm-task-comment-submit" id="crm-task-btn-enviar">Enviar</button>
-                        </div>
-                    </form>
+                <!-- Comment form with avatar -->
+                <div class="crm-task-comment-row">
+                    <div id="crm-task-comment-avatar" class="crm-task-avatar" style="width:30px;height:30px;font-size:0.62rem;background:#0052D4;flex-shrink:0;margin-top:2px;"></div>
+                    <div class="crm-task-comment-form" style="flex:1;">
+                        <form id="crm-task-comment-form" style="display:flex;flex-direction:column;gap:0.5rem;">
+                            <div style="position:relative;">
+                                <textarea id="crm-task-comment-input" class="crm-task-comment-textarea" rows="2"
+                                    placeholder="Escribe un comentario..."></textarea>
+                                <div id="crm-mention-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);max-height:180px;overflow-y:auto;z-index:300;"></div>
+                            </div>
+                            <div id="crm-task-drop-zone" style="display:none;border:2px dashed #D1D5DB;border-radius:8px;padding:10px;text-align:center;color:#9CA3AF;font-size:0.78rem;cursor:pointer;transition:border-color .15s,background .15s;">
+                                Arrastra archivos aquí o <span style="color:#4f6ef7;text-decoration:underline;cursor:pointer;" onclick="document.getElementById('crm-task-file-input').click()">selecciona</span>
+                                <input type="file" id="crm-task-file-input" multiple style="display:none;">
+                            </div>
+                            <div id="crm-task-files-preview" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+                            <div style="display:flex;justify-content:flex-end;gap:8px;">
+                                <button type="button" class="crm-task-btn-adjuntar" onclick="var dz=document.getElementById('crm-task-drop-zone');dz.style.display=dz.style.display==='none'?'block':'none';">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                    Adjuntar
+                                </button>
+                                <button type="submit" class="crm-task-comment-submit" id="crm-task-btn-enviar">Enviar</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
+                <!-- Activity feed -->
                 <div id="crm-task-activity-feed" style="display:flex;flex-direction:column;gap:0;"></div>
             </div>
         </div>

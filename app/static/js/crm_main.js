@@ -5065,6 +5065,12 @@
         // ── Comentarios ──
         var _crmCurrentUserId = _CRM_CONFIG.userId;
 
+        // Set current user avatar in comment form
+        (function () {
+            var av = document.getElementById('crm-task-comment-avatar');
+            if (av) av.textContent = crmTaskGetInitials(_CRM_CONFIG.usuarioNombre || '');
+        })();
+
         function crmTaskCargarComentarios(tareaId) {
             var feed = document.getElementById('crm-task-activity-feed');
             if (!feed) return;
@@ -5105,15 +5111,15 @@
                                         return '<a href="' + a.url + '" target="_blank" style="display:flex;align-items:center;gap:5px;background:#F3F4F6;border:1px solid #E5E5EA;border-radius:6px;padding:4px 8px;font-size:0.78rem;color:#374151;text-decoration:none;">&#128196; ' + (a.nombre_original || 'archivo') + '</a>';
                                     }).join('') + '</div>';
                             }
-                            return '<div data-comment-id="' + c.id + '" style="display:flex;gap:0.75rem;padding:0.75rem;background:#F9FAFB;border-radius:10px;border:1px solid #F3F4F6;">' +
-                                '<div class="crm-task-avatar" style="background:#0052D4;width:32px;height:32px;font-size:0.65rem;flex-shrink:0;">' + avatarHtml + '</div>' +
+                            return '<div data-comment-id="' + c.id + '" style="display:flex;gap:10px;padding:12px 0;border-top:1px solid #F0F0F0;">' +
+                                '<div class="crm-task-avatar" style="background:#0052D4;width:30px;height:30px;font-size:0.62rem;flex-shrink:0;margin-top:1px;">' + avatarHtml + '</div>' +
                                 '<div style="flex:1;min-width:0;">' +
-                                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">' +
-                                '<span style="font-weight:600;font-size:0.85rem;color:#1D1D1F;">' + nombreUsuario + '</span>' +
+                                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">' +
+                                '<span style="font-weight:600;font-size:0.84rem;color:#1D1D1F;">' + nombreUsuario + '</span>' +
                                 '<div style="display:flex;align-items:center;gap:4px;">' +
                                 '<span style="font-size:0.7rem;color:#9CA3AF;">' + (fecha ? formatearFechaCRM(fecha) : '') + '</span>' +
                                 menuHtml + '</div></div>' +
-                                '<div class="crm-comment-content" style="font-size:0.85rem;color:#374151;line-height:1.5;">' + (c.contenido_con_menciones || c.contenido || '') + '</div>' +
+                                '<div class="crm-comment-content" style="font-size:0.84rem;color:#4B5563;line-height:1.55;">' + (c.contenido_con_menciones || c.contenido || '') + '</div>' +
                                 archivosHtml +
                                 '</div></div>';
                         }).join('');

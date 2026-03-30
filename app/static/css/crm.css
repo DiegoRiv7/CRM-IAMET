@@ -3160,12 +3160,18 @@
         border-top: 1px solid #F0F0F0;
     }
 
+    .crm-task-comment-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 1.25rem;
+    }
+
     .crm-task-comment-form {
         background: #fff;
         border: 1px solid #E5E7EB;
         border-radius: 10px;
         padding: 0.85rem;
-        margin-bottom: 1.25rem;
     }
 
     .crm-task-comment-textarea {
