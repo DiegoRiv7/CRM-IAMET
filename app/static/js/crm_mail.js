@@ -514,6 +514,11 @@
             var panel = document.getElementById('mailComposePanel');
             var empty = document.getElementById('mailDetailEmpty');
             if (panel) panel.style.display = 'none';
+            _mailComposeAttachments = [];
+            var chips = document.getElementById('mailComposeAttachChips');
+            if (chips) { chips.innerHTML = ''; chips.style.display = 'none'; }
+            var fi = document.getElementById('mailComposeFileInput');
+            if (fi) fi.value = '';
             if (_mailCorreoActual) {
                 var content = document.getElementById('mailDetailContent');
                 if (content) content.style.display = 'flex';
@@ -539,10 +544,17 @@
             if (!para || !asunto) return;
             if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
+            var fd = new FormData();
+            fd.append('para', para);
+            fd.append('asunto', asunto);
+            fd.append('cuerpo_html', cuerpo_html);
+            fd.append('cuerpo_texto', cuerpo_texto);
+            _mailComposeAttachments.forEach(function (f) { fd.append('adjuntos', f); });
+
             fetch('/app/api/mail/enviar/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({ para: para, asunto: asunto, cuerpo_html: cuerpo_html, cuerpo_texto: cuerpo_texto })
+                headers: { 'X-CSRFToken': csrf() },
+                body: fd
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
@@ -562,6 +574,7 @@
                             }).catch(function() {});
                             window._campanaEnvioContext = null;
                         }
+                        _mailComposeAttachments = [];
                         mailCerrarCompose();
                         _showToastMail('Correo enviado', true);
                     }
@@ -641,6 +654,11 @@
             var backBtn = document.getElementById('mailBodyBackBtn');
             if (panel) panel.style.display = 'none';
             if (backBtn) backBtn.style.display = 'none';
+            _mailReplyAttachments = [];
+            var chips = document.getElementById('mailReplyAttachChips');
+            if (chips) { chips.innerHTML = ''; chips.style.display = 'none'; }
+            var fi = document.getElementById('mailReplyFileInput');
+            if (fi) fi.value = '';
         };
 
         window.mailRestoreEmailBody = function () {
@@ -702,19 +720,24 @@
 
             if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
-            var payload = { cuerpo_html: cuerpoHtml, cuerpo_texto: cuerpoTexto, conexion_id: _mailConexionId };
-            if (ccVal) payload.cc = ccVal;
-            if (bccVal) payload.bcc = bccVal;
+            var fd = new FormData();
+            fd.append('cuerpo_html', cuerpoHtml);
+            fd.append('cuerpo_texto', cuerpoTexto);
+            if (_mailConexionId) fd.append('conexion_id', _mailConexionId);
+            if (ccVal) fd.append('cc', ccVal);
+            if (bccVal) fd.append('bcc', bccVal);
+            _mailReplyAttachments.forEach(function (f) { fd.append('adjuntos', f); });
 
             fetch('/app/api/mail/responder/' + _mailCorreoActual.id + '/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify(payload)
+                headers: { 'X-CSRFToken': csrf() },
+                body: fd
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (btn) { btn.disabled = false; btn.textContent = 'Enviar respuesta'; }
                     if (data.ok) {
+                        _mailReplyAttachments = [];
                         mailCerrarReply();
                         _showToastMail('Respuesta enviada', true);
                     } else {
@@ -884,6 +907,11 @@
             var backBtn = document.getElementById('mailBodyBackBtn');
             if (p) p.style.display = 'none';
             if (backBtn) backBtn.style.display = 'none';
+            _mailFwdAttachments = [];
+            var chips = document.getElementById('mailFwdAttachChips');
+            if (chips) { chips.innerHTML = ''; chips.style.display = 'none'; }
+            var fi = document.getElementById('mailFwdFileInput');
+            if (fi) fi.value = '';
         };
 
         window.mailEditorFwdCmd = function (cmd) {
@@ -898,20 +926,23 @@
             var ed = document.getElementById('mailFwdEditor');
             if (!para.trim()) { _showToastMail('Indica un destinatario', false); return; }
             if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+            var fd = new FormData();
+            fd.append('para', para.trim());
+            fd.append('cuerpo_html', ed ? ed.innerHTML : '');
+            fd.append('cuerpo_texto', ed ? ed.innerText : '');
+            if (_mailConexionId) fd.append('conexion_id', _mailConexionId);
+            _mailFwdAttachments.forEach(function (f) { fd.append('adjuntos', f); });
+
             fetch('/app/api/mail/reenviar/' + _mailCorreoActual.id + '/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({
-                    para: para.trim(),
-                    cuerpo_html: ed ? ed.innerHTML : '',
-                    cuerpo_texto: ed ? ed.innerText : '',
-                    conexion_id: _mailConexionId
-                })
+                headers: { 'X-CSRFToken': csrf() },
+                body: fd
             })
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
                     if (btn) { btn.disabled = false; btn.textContent = 'Reenviar'; }
-                    if (d.ok) { mailCerrarForward(); _showToastMail('Correo reenviado', true); }
+                    if (d.ok) { _mailFwdAttachments = []; mailCerrarForward(); _showToastMail('Correo reenviado', true); }
                     else _showToastMail(d.error || 'Error al reenviar', false);
                 })
                 .catch(function () { if (btn) { btn.disabled = false; btn.textContent = 'Reenviar'; } });
@@ -990,41 +1021,62 @@
             });
         })();
 
-        /* ── Drag & drop attachments ────────────────── */
+        /* ── Attachments system (compose, reply, forward) ── */
+        var _mailComposeAttachments = [];
         var _mailReplyAttachments = [];
+        var _mailFwdAttachments = [];
 
-        window.mailHandleAttachFiles = function (files) {
+        // Generic handler: context = 'compose' | 'reply' | 'fwd'
+        function _getAttachContext(context) {
+            if (context === 'compose') return { arr: _mailComposeAttachments, chipsId: 'mailComposeAttachChips', setArr: function(a) { _mailComposeAttachments = a; } };
+            if (context === 'fwd') return { arr: _mailFwdAttachments, chipsId: 'mailFwdAttachChips', setArr: function(a) { _mailFwdAttachments = a; } };
+            return { arr: _mailReplyAttachments, chipsId: 'mailReplyAttachChips', setArr: function(a) { _mailReplyAttachments = a; } };
+        }
+
+        function _handleAttachFiles(files, context) {
             if (!files) return;
+            var ctx = _getAttachContext(context);
             for (var i = 0; i < files.length; i++) {
-                _mailReplyAttachments.push(files[i]);
+                ctx.arr.push(files[i]);
             }
-            _renderAttachChips();
-        };
+            _renderAttachChipsFor(context);
+        }
 
-        function _renderAttachChips() {
-            var container = document.getElementById('mailReplyAttachChips');
+        function _renderAttachChipsFor(context) {
+            var ctx = _getAttachContext(context);
+            var container = document.getElementById(ctx.chipsId);
             if (!container) return;
-            if (!_mailReplyAttachments.length) {
+            if (!ctx.arr.length) {
                 container.style.display = 'none';
                 return;
             }
             container.style.display = 'flex';
             container.innerHTML = '';
-            _mailReplyAttachments.forEach(function (f, idx) {
+            ctx.arr.forEach(function (f, idx) {
                 var chip = document.createElement('div');
                 chip.className = 'mail-attach-chip';
-                chip.innerHTML = _esc(f.name) + ' <button onclick="mailRemoveAttach(' + idx + ')">✕</button>';
+                chip.innerHTML = _esc(f.name) + ' <button onclick="mailRemoveAttachFrom(\'' + context + '\',' + idx + ')">✕</button>';
                 container.appendChild(chip);
             });
         }
 
-        window.mailRemoveAttach = function (idx) {
-            _mailReplyAttachments.splice(idx, 1);
-            _renderAttachChips();
+        window.mailRemoveAttachFrom = function (context, idx) {
+            var ctx = _getAttachContext(context);
+            ctx.arr.splice(idx, 1);
+            _renderAttachChipsFor(context);
         };
 
-        function _setupReplyDropZone() {
-            var editor = document.getElementById('mailRespEditor');
+        // Backward compat for existing reply file input
+        window.mailHandleAttachFiles = function (files) { _handleAttachFiles(files, 'reply'); };
+        window.mailRemoveAttach = function (idx) { window.mailRemoveAttachFrom('reply', idx); };
+
+        // Compose attach handler
+        window.mailHandleComposeAttach = function (files) { _handleAttachFiles(files, 'compose'); };
+        // Forward attach handler
+        window.mailHandleFwdAttach = function (files) { _handleAttachFiles(files, 'fwd'); };
+
+        function _setupDropZone(editorId, panelId, context) {
+            var editor = document.getElementById(editorId);
             if (!editor) return;
             editor.addEventListener('dragover', function (e) {
                 e.preventDefault();
@@ -1038,20 +1090,27 @@
                 editor.style.background = '';
                 var files = e.dataTransfer.files;
                 if (files && files.length) {
-                    mailHandleAttachFiles(files);
+                    _handleAttachFiles(files, context);
                     e.stopPropagation();
                 }
             });
-            // Also whole panel
-            var panel = document.getElementById('mailReplyPanel');
-            if (panel) {
-                panel.addEventListener('dragover', function (e) { e.preventDefault(); });
-                panel.addEventListener('drop', function (e) {
-                    e.preventDefault();
-                    var files = e.dataTransfer.files;
-                    if (files && files.length) mailHandleAttachFiles(files);
-                });
+            if (panelId) {
+                var panel = document.getElementById(panelId);
+                if (panel) {
+                    panel.addEventListener('dragover', function (e) { e.preventDefault(); });
+                    panel.addEventListener('drop', function (e) {
+                        e.preventDefault();
+                        var files = e.dataTransfer.files;
+                        if (files && files.length) _handleAttachFiles(files, context);
+                    });
+                }
             }
+        }
+
+        function _setupReplyDropZone() {
+            _setupDropZone('mailRespEditor', 'mailReplyPanel', 'reply');
+            _setupDropZone('mailCompEditor', 'mailComposePanel', 'compose');
+            _setupDropZone('mailFwdEditor', 'mailFwdPanel', 'fwd');
         }
 
         /* ── Account menu ────────────────────────────── */

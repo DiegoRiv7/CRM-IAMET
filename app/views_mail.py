@@ -607,14 +607,51 @@ def api_mail_detalle(request, correo_id):
     })
 
 
+def _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos):
+    """Build a MIMEMultipart message with text/html body and optional file attachments."""
+    if archivos:
+        msg = email.mime.multipart.MIMEMultipart('mixed')
+        body_part = email.mime.multipart.MIMEMultipart('alternative')
+        if cuerpo_texto:
+            body_part.attach(email.mime.text.MIMEText(cuerpo_texto, 'plain', 'utf-8'))
+        body_part.attach(email.mime.text.MIMEText(cuerpo_html or cuerpo_texto, 'html', 'utf-8'))
+        msg.attach(body_part)
+        for f in archivos:
+            part = email.mime.base.MIMEBase('application', 'octet-stream')
+            part.set_payload(f.read())
+            encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment', filename=f.name)
+            msg.attach(part)
+    else:
+        msg = email.mime.multipart.MIMEMultipart('alternative')
+        if cuerpo_texto:
+            msg.attach(email.mime.text.MIMEText(cuerpo_texto, 'plain', 'utf-8'))
+        msg.attach(email.mime.text.MIMEText(cuerpo_html or cuerpo_texto, 'html', 'utf-8'))
+    return msg
+
+
+def _parse_mail_request(request):
+    """Parse POST data from either JSON or multipart/form-data, returning (data_dict, files_list)."""
+    content_type = request.content_type or ''
+    if 'multipart/form-data' in content_type:
+        data = request.POST.dict()
+        archivos = request.FILES.getlist('adjuntos')
+        return data, archivos
+    else:
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            data = {}
+        return data, []
+
+
 @login_required
 @csrf_exempt
 @require_http_methods(['POST'])
 def api_mail_enviar(request):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    data, archivos = _parse_mail_request(request)
+    if not data:
+        return JsonResponse({'ok': False, 'error': 'Datos inválidos'}, status=400)
 
     try:
         conexion_id = data.get('conexion_id')
@@ -636,15 +673,12 @@ def api_mail_enviar(request):
     if not para or not asunto:
         return JsonResponse({'ok': False, 'error': 'Destinatario y asunto son requeridos'}, status=400)
 
-    msg = email.mime.multipart.MIMEMultipart('alternative')
+    msg = _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos)
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
     msg['To'] = para
     if cc:
         msg['CC'] = cc
-    if cuerpo_texto:
-        msg.attach(email.mime.text.MIMEText(cuerpo_texto, 'plain', 'utf-8'))
-    msg.attach(email.mime.text.MIMEText(cuerpo_html or cuerpo_texto, 'html', 'utf-8'))
 
     try:
         smtp = _get_smtp(conexion)
@@ -657,7 +691,7 @@ def api_mail_enviar(request):
         return JsonResponse({'ok': False, 'error': f'Error al enviar: {e}'}, status=500)
 
     # Save to sent cache
-    MailCorreo.objects.create(
+    correo_sent = MailCorreo.objects.create(
         usuario=request.user,
         conexion=conexion,
         uid_imap=f'sent_{django_tz.now().timestamp()}',
@@ -672,7 +706,19 @@ def api_mail_enviar(request):
         fecha_envio=django_tz.now(),
         leido=True,
         cuerpo_cargado=True,
+        tiene_adjuntos=bool(archivos),
     )
+
+    # Save attachments metadata
+    for f in archivos:
+        f.seek(0)
+        MailAdjunto.objects.create(
+            correo=correo_sent,
+            nombre_archivo=f.name,
+            content_type=f.content_type or 'application/octet-stream',
+            tamanio_bytes=f.size,
+            datos_b64=base64.b64encode(f.read()).decode(),
+        )
 
     return JsonResponse({'ok': True})
 
@@ -686,10 +732,9 @@ def api_mail_responder(request, correo_id):
     except MailCorreo.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
 
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    data, archivos = _parse_mail_request(request)
+    if not data:
+        return JsonResponse({'ok': False, 'error': 'Datos inválidos'}, status=400)
 
     try:
         conexion_id = data.get('conexion_id')
@@ -709,7 +754,7 @@ def api_mail_responder(request, correo_id):
     asunto = f"Re: {original.asunto}" if not original.asunto.startswith('Re:') else original.asunto
     para = original.remitente_email
 
-    msg = email.mime.multipart.MIMEMultipart('alternative')
+    msg = _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos)
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
     msg['To'] = para
@@ -718,9 +763,6 @@ def api_mail_responder(request, correo_id):
     if original.message_id:
         msg['In-Reply-To'] = original.message_id
         msg['References'] = original.message_id
-    if cuerpo_texto:
-        msg.attach(email.mime.text.MIMEText(cuerpo_texto, 'plain', 'utf-8'))
-    msg.attach(email.mime.text.MIMEText(cuerpo_html or cuerpo_texto, 'html', 'utf-8'))
 
     try:
         smtp = _get_smtp(conexion)
@@ -751,8 +793,20 @@ def api_mail_responder(request, correo_id):
         fecha_envio=django_tz.now(),
         leido=True,
         cuerpo_cargado=True,
-        oportunidad=original.oportunidad,  # Inherit opp link from original
+        oportunidad=original.oportunidad,
+        tiene_adjuntos=bool(archivos),
     )
+
+    # Save attachments metadata
+    for f in archivos:
+        f.seek(0)
+        MailAdjunto.objects.create(
+            correo=reply,
+            nombre_archivo=f.name,
+            content_type=f.content_type or 'application/octet-stream',
+            tamanio_bytes=f.size,
+            datos_b64=base64.b64encode(f.read()).decode(),
+        )
 
     # Add reply to opportunity conversation if linked
     if reply.oportunidad:
@@ -1118,10 +1172,9 @@ def api_mail_reenviar(request, correo_id):
     except MailCorreo.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
 
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    data, archivos = _parse_mail_request(request)
+    if not data:
+        return JsonResponse({'ok': False, 'error': 'Datos inválidos'}, status=400)
 
     try:
         conexion_id = data.get('conexion_id')
@@ -1156,13 +1209,10 @@ def api_mail_reenviar(request, correo_id):
     full_html = (cuerpo_html or cuerpo_texto) + fwd_header_html + orig_html
     full_texto = (cuerpo_texto or '') + fwd_header_txt + orig_texto
 
-    msg = email.mime.multipart.MIMEMultipart('alternative')
+    msg = _build_msg_with_attachments(full_html, full_texto, archivos)
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
     msg['To'] = para
-    if full_texto:
-        msg.attach(email.mime.text.MIMEText(full_texto, 'plain', 'utf-8'))
-    msg.attach(email.mime.text.MIMEText(full_html, 'html', 'utf-8'))
 
     try:
         smtp = _get_smtp(conexion)
@@ -1171,7 +1221,7 @@ def api_mail_reenviar(request, correo_id):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': f'Error al reenviar: {e}'}, status=500)
 
-    MailCorreo.objects.create(
+    correo_fwd = MailCorreo.objects.create(
         usuario=request.user, conexion=conexion,
         uid_imap=f'fwd_{django_tz.now().timestamp()}',
         carpeta_imap='SENT', carpeta_display='SENT',
@@ -1181,7 +1231,19 @@ def api_mail_reenviar(request, correo_id):
         destinatarios_json=json.dumps([{'nombre': '', 'email': e.strip()} for e in para.split(',')], ensure_ascii=False),
         cuerpo_html=full_html, cuerpo_texto=full_texto,
         fecha_envio=django_tz.now(), leido=True, cuerpo_cargado=True,
+        tiene_adjuntos=bool(archivos),
     )
+
+    for f in archivos:
+        f.seek(0)
+        MailAdjunto.objects.create(
+            correo=correo_fwd,
+            nombre_archivo=f.name,
+            content_type=f.content_type or 'application/octet-stream',
+            tamanio_bytes=f.size,
+            datos_b64=base64.b64encode(f.read()).decode(),
+        )
+
     return JsonResponse({'ok': True})
 
 
