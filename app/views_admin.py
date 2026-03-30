@@ -2005,7 +2005,7 @@ def api_admin_oportunidad_detalle(request, opp_id):
 @login_required
 def api_admin_etapas_pipeline(request):
     """CRUD de etapas del pipeline y gestión de pipelines."""
-    from .models import EtapaPipeline, Oportunidad
+    from .models import EtapaPipeline, TodoItem as Oportunidad
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
 
