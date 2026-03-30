@@ -5240,27 +5240,34 @@
         function _crmFilesAdd(files) {
             for (var i = 0; i < files.length; i++) { _crmCommentFiles.push(files[i]); }
             _crmFilesRender();
+            // Hide drop zone once files are added
+            var dz = document.getElementById('crm-task-drop-zone');
+            if (dz) dz.style.display = 'none';
         }
 
         var dropZone = document.getElementById('crm-task-drop-zone');
         if (dropZone) {
             dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.style.background = '#EEF2FF'; dropZone.style.borderColor = '#4f6ef7'; });
             dropZone.addEventListener('dragleave', function () { dropZone.style.background = ''; dropZone.style.borderColor = '#D1D5DB'; });
-            dropZone.addEventListener('drop', function (e) { e.preventDefault(); dropZone.style.background = ''; dropZone.style.borderColor = '#D1D5DB'; _crmFilesAdd(e.dataTransfer.files); });
+            dropZone.addEventListener('drop', function (e) {
+                e.preventDefault(); e.stopPropagation();
+                dropZone.style.background = ''; dropZone.style.borderColor = '#D1D5DB';
+                _crmFilesAdd(e.dataTransfer.files);
+            });
         }
         var fileInput = document.getElementById('crm-task-file-input');
         if (fileInput) { fileInput.addEventListener('change', function () { _crmFilesAdd(this.files); this.value = ''; }); }
 
-        // Allow drop on textarea + comment form — show drop zone and visual hint
+        // Allow drop on textarea + comment form — show drop zone hint while dragging
         var commentInput = document.getElementById('crm-task-comment-input');
         var commentForm = document.getElementById('crm-task-comment-form');
         var _dragCounter = 0;
         function _showDropHint() {
-            if (dropZone) dropZone.style.display = 'block';
+            if (dropZone && !_crmCommentFiles.length) dropZone.style.display = 'block';
             if (commentForm) { commentForm.style.borderColor = '#4f6ef7'; commentForm.style.background = '#F8FAFF'; }
         }
         function _hideDropHint() {
-            if (dropZone && !_crmCommentFiles.length) dropZone.style.display = 'none';
+            if (dropZone) dropZone.style.display = 'none';
             if (commentForm) { commentForm.style.borderColor = ''; commentForm.style.background = ''; }
         }
         if (commentForm) {
@@ -5270,12 +5277,6 @@
             commentForm.addEventListener('drop', function (e) {
                 e.preventDefault(); _dragCounter = 0; _hideDropHint();
                 if (e.dataTransfer.files && e.dataTransfer.files.length) { _crmFilesAdd(e.dataTransfer.files); }
-            });
-        }
-        if (commentInput) {
-            commentInput.addEventListener('dragover', function (e) { e.preventDefault(); });
-            commentInput.addEventListener('drop', function (e) {
-                if (e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); _crmFilesAdd(e.dataTransfer.files); }
             });
         }
 
