@@ -638,7 +638,7 @@
 
             // Reset attachments
             _mailReplyAttachments = [];
-            _renderAttachChips();
+            _renderAttachChipsFor('reply');
 
             // Close forward if open
             var fp = document.getElementById('mailForwardPanel');
