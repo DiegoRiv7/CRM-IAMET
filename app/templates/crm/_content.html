@@ -656,10 +656,13 @@
             <!-- Detalles -->
             <div class="crm-task-sidebar-section crm-task-sidebar-divider">
                 <h3>Detalles</h3>
-                <div id="crm-task-responsable-container" style="display:flex;align-items:center;gap:8px;padding:2px 0;flex-wrap:wrap;"></div>
                 <div class="crm-task-info-row" id="crmTaskClienteRow" style="display:none;">
                     <span class="crm-task-info-label">Cliente</span>
                     <span class="crm-task-info-value" id="crm-task-cliente-nombre" style="color:#0052D4;font-weight:600;"></span>
+                </div>
+                <div class="crm-task-info-row">
+                    <span class="crm-task-info-label">Creador</span>
+                    <span class="crm-task-info-value" id="crm-task-creado-por"></span>
                 </div>
                 <div class="crm-task-info-row">
                     <span class="crm-task-info-label">Creación</span>
@@ -674,10 +677,10 @@
             <div id="crm-task-estado" style="display:none;"></div>
             <div id="crm-task-prioridad" style="display:none;"></div>
             <div id="crmTaskPrioridadSidebarWrap" style="display:none;"></div>
-            <!-- Creador -->
+            <!-- Responsable -->
             <div class="crm-task-sidebar-section crm-task-sidebar-divider">
-                <h3>Creador</h3>
-                <div id="crm-task-creado-por" style="font-size:0.82rem;font-weight:500;color:#1D1D1F;"></div>
+                <h3>Responsable</h3>
+                <div id="crm-task-responsable-container" style="display:flex;align-items:center;gap:8px;padding:2px 0;flex-wrap:wrap;"></div>
             </div>
             <!-- Observadores -->
             <div class="crm-task-sidebar-section crm-task-sidebar-divider">
