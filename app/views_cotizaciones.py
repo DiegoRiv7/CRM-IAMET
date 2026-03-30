@@ -600,10 +600,14 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion', 'oportunidad'])
             print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
 
-            # Actualizar siempre el monto de la oportunidad con el subtotal (sin IVA) de la cotización
+            # Actualizar siempre el monto de la oportunidad con el subtotal (sin IVA) en MXN
             if cotizacion.oportunidad and cotizacion.subtotal > 0:
                 opp = cotizacion.oportunidad
-                opp.monto = cotizacion.subtotal
+                monto_mxn = cotizacion.subtotal
+                if cotizacion.moneda and cotizacion.moneda.upper() == 'USD':
+                    tc = Decimal(str(getattr(settings, 'TIPO_CAMBIO_USD_MXN', '20.00')))
+                    monto_mxn = (cotizacion.subtotal * tc).quantize(Decimal('0.01'))
+                opp.monto = monto_mxn
                 opp.save(update_fields=['monto', 'fecha_actualizacion'])
             
             # Guardar elementos en orden correcto (títulos Y productos)

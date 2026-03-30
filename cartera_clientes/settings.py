@@ -32,6 +32,9 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%bvhvsoqj7(y%n
 # Encryption key for storing email passwords (generate with Fernet.generate_key())
 MAIL_ENCRYPTION_KEY = os.environ.get('MAIL_ENCRYPTION_KEY', '')
 
+# Tipo de cambio USD → MXN para conversión de cotizaciones a monto de oportunidad
+TIPO_CAMBIO_USD_MXN = os.environ.get('TIPO_CAMBIO_USD_MXN', '20.00')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las variables de entorno
 
