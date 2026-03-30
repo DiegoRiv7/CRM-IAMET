@@ -1247,12 +1247,16 @@ def api_crm_table_data(request):
                 'poliza': format_money(p.get('poliza', 0)),
                 'otros': format_money((p.get('total_prod', Decimal('0')) or Decimal('0')) - sum((p.get(k, Decimal('0')) or Decimal('0')) for k in ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza'])),
                 'total': format_money(total_c),
+                '_total_raw': float(total_c),
                 'meta': format_money(meta_c),
                 'faltante': format_money(faltante),
                 'prev_total': format_money(_prev_by_id_cl.get(c.id, Decimal('0'))),
                 'num_cotizaciones': count_by_id.get(c.id, 0) if vista == 'cotizado' else 0,
             })
             total_acum += total_c
+
+        # Ordenar por total de mayor a menor
+        rows.sort(key=lambda r: r.get('_total_raw', 0), reverse=True)
 
         num_clientes_c = clientes_qs.count()
 

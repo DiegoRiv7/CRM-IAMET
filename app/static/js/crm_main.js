@@ -883,17 +883,11 @@
 
                 // Title is set up in renderDetalle already
 
-                // ── Monto (solo lectura - se actualiza con la última cotización) ──
+                // ── Monto (solo lectura) ──
                 var montoEl = document.getElementById('woMonto');
                 montoEl.classList.remove('editable');
                 montoEl.onclick = null;
                 montoEl.style.cursor = 'default';
-                // Agregar tooltip indicando que se actualiza desde cotizaciones
-                montoEl.title = 'Se actualiza con la última cotización';
-                var montoHint = document.createElement('span');
-                montoHint.style.cssText = 'display:block;font-size:0.6rem;color:#8e8e93;font-weight:400;margin-top:2px;';
-                montoHint.textContent = 'Se actualiza con la última cotización';
-                montoEl.parentNode.appendChild(montoHint);
 
                 // ── Producto ──
                 var prodEl = document.getElementById('woProducto');
