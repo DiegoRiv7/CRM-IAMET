@@ -64,7 +64,7 @@ document.addEventListener('click', function(ev) {
                 // Rebuild thead from JS to guarantee alignment
                 var thead = tbody.parentElement.querySelector('thead');
                 if (thead) {
-                    var hStyle = 'text-align:right;padding:12px 8px 12px 40px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;';
+                    var hStyle = 'text-align:right;padding:12px 8px 12px 80px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;';
                     var hRow = '<tr style="border-bottom:1px solid #F3F4F6;">';
                     hRow += '<td style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;">Cliente</td>';
                     prodLabels.forEach(function(l){ hRow += '<td style="' + hStyle + '">' + l + '</td>'; });
