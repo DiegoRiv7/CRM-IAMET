@@ -384,35 +384,48 @@
     //  RENDER: PARTIDAS (Line Items)
     // =========================================
 
+    // --- Cached OCs for inline display under partidas ---
+    var _cachedOCsForPartidas = [];
+
     function renderPartidas(projectId) {
         var container = el('proyPartidasBody');
         if (!container) return;
 
-        container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
+        container.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
 
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/partidas/').then(function(resp) {
-            console.log('[PARTIDAS API] Full response:', JSON.stringify(resp).substring(0, 500));
+        // Fetch partidas and OCs in parallel
+        var partidasPromise = _fetch('/app/api/iamet/proyectos/' + projectId + '/partidas/');
+        var ocsPromise = _fetch('/app/api/iamet/proyectos/' + projectId + '/oc/');
+
+        Promise.all([partidasPromise, ocsPromise]).then(function(results) {
+            var resp = results[0];
+            var ocResp = results[1];
+
+            // Cache OCs
+            _cachedOCsForPartidas = (ocResp.ok || ocResp.success) ? (ocResp.data || []) : [];
+
             if (resp.ok || resp.success) {
-                // API returns {data: {partidas: [...], totales: {...}}}
                 var respData = resp.data || {};
                 var items = Array.isArray(respData) ? respData : (respData.partidas || []);
                 var apiTotales = Array.isArray(respData) ? null : (respData.totales || null);
-                console.log('[PARTIDAS API] apiTotales:', JSON.stringify(apiTotales));
 
                 if (items.length === 0) {
-                    container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#8e8e93">No hay partidas registradas</td></tr>';
+                    container.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#8e8e93">No hay partidas registradas</td></tr>';
                     var foot = el('proyPartidasFoot');
                     if (foot) foot.innerHTML = '';
                     return;
                 }
 
                 var html = '';
-                items.forEach(function(item) {
+                items.forEach(function(item, idx) {
                     var totalCost = item.costo_total || ((item.costo_unitario || 0) * (item.cantidad || 0));
                     var totalSale = item.precio_venta_total || ((item.precio_venta_unitario || 0) * (item.cantidad || 0));
                     var totalProfit = item.ganancia || (totalSale - totalCost);
 
-                    html += '<tr>' +
+                    // Encode item data as JSON attribute for menu actions
+                    var itemJson = encodeURIComponent(JSON.stringify(item));
+
+                    html += '<tr class="proy-partida-row" data-partida-idx="' + idx + '">' +
                         '<td>' + categoryDot(item.categoria) + (item.categoria || '\u2014') + '</td>' +
                         '<td title="' + (item.descripcion || '') + '">' + truncate(item.descripcion, 28) + '</td>' +
                         '<td>' + (item.marca || '\u2014') + '</td>' +
@@ -426,12 +439,39 @@
                         '<td style="text-align:right;color:#10b981">' + fmtMoney(totalProfit) + '</td>' +
                         '<td>' + truncate(item.proveedor, 16) + '</td>' +
                         '<td><span class="proy-badge ' + statusClass(item.status) + '">' + statusLabel(item.status) + '</span></td>' +
+                        '<td style="text-align:center;width:36px;position:relative;">' +
+                            '<button class="proy-partida-menu-btn" data-partida="' + itemJson + '" onclick="event.stopPropagation();proyectosPartidaMenuToggle(this)" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:#8e8e93;padding:4px 8px;border-radius:6px;line-height:1;" title="Opciones">' +
+                                '\u22EF' +
+                            '</button>' +
+                        '</td>' +
                     '</tr>';
+
+                    // Sub-row for OCs of this partida
+                    var partidaOCs = _cachedOCsForPartidas.filter(function(oc) {
+                        return oc.partida_id === item.id;
+                    });
+                    if (partidaOCs.length > 0) {
+                        html += '<tr class="proy-partida-oc-row">' +
+                            '<td colspan="14" style="padding:0 0 0 28px;background:rgba(0,122,255,0.03);border-top:none;">' +
+                                '<div style="display:flex;flex-direction:column;gap:4px;padding:8px 0;">';
+                        partidaOCs.forEach(function(oc) {
+                            var ocAmount = oc.monto_total || ((oc.cantidad || 0) * (oc.precio_unitario || 0));
+                            html += '<div style="display:flex;align-items:center;gap:12px;font-size:0.75rem;color:#636366;padding:4px 8px;border-radius:6px;background:rgba(0,122,255,0.04);">' +
+                                '<span style="color:#007aff;font-weight:600;">' + (oc.numero_oc || 'OC') + '</span>' +
+                                '<span>' + (oc.cantidad || 0) + ' uds</span>' +
+                                '<span>' + (oc.proveedor || '\u2014') + '</span>' +
+                                '<span class="proy-badge ' + statusClass(oc.status) + '" style="font-size:0.68rem;padding:1px 6px;">' + statusLabel(oc.status) + '</span>' +
+                                '<span style="color:#8e8e93;">' + fmtDate(oc.fecha_emision) + '</span>' +
+                                '<span style="margin-left:auto;font-weight:600;">' + fmtMoney(ocAmount) + '</span>' +
+                            '</div>';
+                        });
+                        html += '</div></td></tr>';
+                    }
                 });
 
                 container.innerHTML = html;
 
-                // Totals — use API totals if available, otherwise calculate
+                // Totals -- use API totals if available, otherwise calculate
                 var totals = apiTotales || {};
                 var totalsCost = totals.costo_total || totals.total_costo || 0;
                 var totalsSale = totals.precio_venta_total || totals.total_venta || 0;
@@ -446,7 +486,7 @@
                     });
                 }
 
-                // Update KPIs — utilidad viene del proyecto (resumen Excel), rest de partidas
+                // Update KPIs
                 var kpiC = el('proyKPIs');
                 if (kpiC) {
                     var utilidadProy = (_cachedProjectDetail && _cachedProjectDetail.utilidad_presupuestada) ? _cachedProjectDetail.utilidad_presupuestada : totalsProfit;
@@ -464,16 +504,356 @@
                         '<td style="text-align:right">' + fmtMoney(totalsCost) + '</td>' +
                         '<td style="text-align:right">' + fmtMoney(totalsSale) + '</td>' +
                         '<td style="text-align:right;color:#10b981">' + fmtMoney(totalsProfit) + '</td>' +
-                        '<td colspan="2"></td>' +
+                        '<td colspan="3"></td>' +
                     '</tr>';
                 }
             } else {
-                container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#ef4444">Error al cargar partidas</td></tr>';
+                container.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#ef4444">Error al cargar partidas</td></tr>';
                 console.error('Error cargando partidas:', resp.error);
             }
         }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
+            container.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
             console.error('Error de red cargando partidas:', err);
+        });
+    }
+
+
+    // =========================================
+    //  PARTIDA CONTEXT MENU
+    // =========================================
+
+    window.proyectosPartidaMenuToggle = function(btn) {
+        // Remove any existing menu
+        _closePartidaMenu();
+
+        var item = JSON.parse(decodeURIComponent(btn.getAttribute('data-partida')));
+
+        var menu = document.createElement('div');
+        menu.id = 'proyPartidaContextMenu';
+        menu.style.cssText = 'position:absolute;right:0;top:100%;z-index:10600;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.18);padding:6px 0;min-width:190px;animation:fadeIn 0.12s ease;';
+
+        var menuItems = [
+            { icon: '\uD83D\uDCDD', label: 'Editar', color: '#1d1d1f', action: 'edit' },
+            { icon: '\uD83D\uDED2', label: 'Mandar a comprar', color: '#007AFF', action: 'buy' },
+            { icon: '\uD83D\uDDD1', label: 'Eliminar', color: '#EF4444', action: 'delete' }
+        ];
+
+        var menuHtml = '';
+        menuItems.forEach(function(mi) {
+            menuHtml += '<button class="proy-ctx-menu-item" data-action="' + mi.action + '" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;border:none;background:none;cursor:pointer;font-size:0.82rem;color:' + mi.color + ';text-align:left;transition:background 0.15s;" onmouseover="this.style.background=\'#f5f5f7\'" onmouseout="this.style.background=\'none\'">' +
+                '<span style="font-size:1rem;width:20px;text-align:center;">' + mi.icon + '</span>' +
+                '<span style="font-weight:500;">' + mi.label + '</span>' +
+            '</button>';
+        });
+        menu.innerHTML = menuHtml;
+
+        // Position relative to button
+        btn.parentElement.style.position = 'relative';
+        btn.parentElement.appendChild(menu);
+
+        // Bind actions
+        menu.querySelectorAll('.proy-ctx-menu-item').forEach(function(menuBtn) {
+            menuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var action = menuBtn.getAttribute('data-action');
+                _closePartidaMenu();
+                if (action === 'edit') {
+                    _openEditPartidaDialog(item);
+                } else if (action === 'buy') {
+                    _openComprarPartidaDialog(item);
+                } else if (action === 'delete') {
+                    _confirmDeletePartida(item);
+                }
+            });
+        });
+    };
+
+    function _closePartidaMenu() {
+        var existing = document.getElementById('proyPartidaContextMenu');
+        if (existing) existing.remove();
+    }
+
+    // Close menu on outside click
+    document.addEventListener('click', function() {
+        _closePartidaMenu();
+    });
+
+
+    // =========================================
+    //  DIALOG: EDITAR PARTIDA
+    // =========================================
+
+    function _openEditPartidaDialog(item) {
+        var existing = document.getElementById('proyDialogoEditarPartida');
+        if (existing) existing.remove();
+
+        var ov = document.createElement('div');
+        ov.id = 'proyDialogoEditarPartida';
+        ov.className = 'proy-dialog-overlay';
+        ov.style.cssText = 'display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:10500;align-items:center;justify-content:center;';
+        ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+
+        ov.innerHTML =
+            '<div style="background:#fff;border-radius:16px;padding:28px;width:min(480px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.25);">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
+                    '<h3 style="margin:0;font-size:1.05rem;font-weight:700;color:#1d1d1f;">Editar Partida</h3>' +
+                    '<button onclick="document.getElementById(\'proyDialogoEditarPartida\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#8e8e93;padding:4px;">&times;</button>' +
+                '</div>' +
+                '<div style="display:flex;flex-direction:column;gap:14px;">' +
+                    '<div>' +
+                        '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Descripcion</label>' +
+                        '<input type="text" id="proyEditPartDesc" class="proy-info-input" value="' + (item.descripcion || '').replace(/"/g, '&quot;') + '">' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+                        '<div>' +
+                            '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Marca</label>' +
+                            '<input type="text" id="proyEditPartMarca" class="proy-info-input" value="' + (item.marca || '').replace(/"/g, '&quot;') + '">' +
+                        '</div>' +
+                        '<div>' +
+                            '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Numero de parte</label>' +
+                            '<input type="text" id="proyEditPartNumParte" class="proy-info-input" value="' + (item.numero_parte || '').replace(/"/g, '&quot;') + '">' +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">' +
+                        '<div>' +
+                            '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Cantidad</label>' +
+                            '<input type="number" id="proyEditPartCantidad" class="proy-info-input" value="' + (item.cantidad || 0) + '" min="1">' +
+                        '</div>' +
+                        '<div>' +
+                            '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Costo unitario</label>' +
+                            '<input type="number" id="proyEditPartCostoUnit" class="proy-info-input" value="' + (item.costo_unitario || 0) + '" step="0.01">' +
+                        '</div>' +
+                        '<div>' +
+                            '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Precio venta unit.</label>' +
+                            '<input type="number" id="proyEditPartVentaUnit" class="proy-info-input" value="' + (item.precio_venta_unitario || 0) + '" step="0.01">' +
+                        '</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Proveedor</label>' +
+                        '<input type="text" id="proyEditPartProveedor" class="proy-info-input" value="' + (item.proveedor || '').replace(/"/g, '&quot;') + '">' +
+                    '</div>' +
+                '</div>' +
+                '<div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">' +
+                    '<button onclick="document.getElementById(\'proyDialogoEditarPartida\').remove()" style="padding:10px 20px;border-radius:10px;border:1px solid #e5e5ea;background:#f5f5f7;color:#3c3c43;font-size:0.85rem;font-weight:600;cursor:pointer;">Cancelar</button>' +
+                    '<button id="proyEditPartGuardarBtn" style="padding:10px 20px;border-radius:10px;border:none;background:#007AFF;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Guardar</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(ov);
+
+        // Bind save
+        document.getElementById('proyEditPartGuardarBtn').addEventListener('click', function() {
+            var desc = (document.getElementById('proyEditPartDesc') || {}).value || '';
+            var marca = (document.getElementById('proyEditPartMarca') || {}).value || '';
+            var numParte = (document.getElementById('proyEditPartNumParte') || {}).value || '';
+            var cantidad = parseInt((document.getElementById('proyEditPartCantidad') || {}).value) || 0;
+            var costoUnit = parseFloat((document.getElementById('proyEditPartCostoUnit') || {}).value) || 0;
+            var ventaUnit = parseFloat((document.getElementById('proyEditPartVentaUnit') || {}).value) || 0;
+            var proveedor = (document.getElementById('proyEditPartProveedor') || {}).value || '';
+
+            if (!desc.trim()) {
+                _showToast('La descripcion es obligatoria');
+                return;
+            }
+
+            _fetch('/app/api/iamet/partidas/' + item.id + '/actualizar/', {
+                method: 'POST',
+                body: {
+                    descripcion: desc.trim(),
+                    marca: marca.trim(),
+                    numero_parte: numParte.trim(),
+                    cantidad: cantidad,
+                    costo_unitario: costoUnit,
+                    precio_venta_unitario: ventaUnit,
+                    proveedor: proveedor.trim()
+                }
+            }).then(function(resp) {
+                if (resp.ok || resp.success) {
+                    document.getElementById('proyDialogoEditarPartida').remove();
+                    _showToast('Partida actualizada');
+                    renderPartidas(currentProjectId);
+                } else {
+                    _showToast(resp.error || 'Error al actualizar partida');
+                }
+            }).catch(function(err) {
+                _showToast('Error de conexion');
+                console.error('Error actualizando partida:', err);
+            });
+        });
+    }
+
+
+    // =========================================
+    //  DIALOG: MANDAR A COMPRAR (Crear OC desde partida)
+    // =========================================
+
+    function _openComprarPartidaDialog(item) {
+        var existing = document.getElementById('proyDialogoComprarPartida');
+        if (existing) existing.remove();
+
+        var pendiente = item.cantidad_pendiente || 0;
+        if (pendiente <= 0) {
+            _showToast('Esta partida no tiene cantidad pendiente');
+            return;
+        }
+
+        var ov = document.createElement('div');
+        ov.id = 'proyDialogoComprarPartida';
+        ov.className = 'proy-dialog-overlay';
+        ov.style.cssText = 'display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:10500;align-items:center;justify-content:center;';
+        ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+
+        var precioUnit = item.costo_unitario || 0;
+
+        ov.innerHTML =
+            '<div style="background:#fff;border-radius:16px;padding:28px;width:min(440px,92vw);box-shadow:0 24px 60px rgba(0,0,0,0.25);">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                    '<h3 style="margin:0;font-size:1.05rem;font-weight:700;color:#1d1d1f;">Mandar a Comprar</h3>' +
+                    '<button onclick="document.getElementById(\'proyDialogoComprarPartida\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#8e8e93;padding:4px;">&times;</button>' +
+                '</div>' +
+                '<div style="font-size:0.82rem;color:#636366;margin-bottom:20px;padding:8px 12px;background:#f5f5f7;border-radius:8px;">' +
+                    '<strong style="color:#1d1d1f;">' + (item.descripcion || '\u2014') + '</strong>' +
+                    (item.marca ? ' <span style="color:#8e8e93;">\u2014 ' + item.marca + '</span>' : '') +
+                '</div>' +
+                '<div style="display:flex;flex-direction:column;gap:14px;">' +
+                    '<div>' +
+                        '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Cantidad</label>' +
+                        '<input type="number" id="proyComprarCantidad" class="proy-info-input" value="' + pendiente + '" min="1" max="' + pendiente + '">' +
+                        '<div style="font-size:0.72rem;color:#8e8e93;margin-top:3px;">Disponible: ' + pendiente + ' unidades</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Proveedor</label>' +
+                        '<input type="text" id="proyComprarProveedor" class="proy-info-input" value="' + (item.proveedor || '').replace(/"/g, '&quot;') + '">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="font-size:0.75rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Precio unitario</label>' +
+                        '<input type="number" id="proyComprarPrecioUnit" class="proy-info-input" value="' + precioUnit + '" step="0.01">' +
+                    '</div>' +
+                    '<div style="padding:12px;background:#f0f9ff;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">' +
+                        '<span style="font-size:0.82rem;font-weight:600;color:#636366;">Monto total</span>' +
+                        '<span id="proyComprarTotal" style="font-size:1.1rem;font-weight:700;color:#007AFF;">' + fmtMoney(pendiente * precioUnit) + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">' +
+                    '<button onclick="document.getElementById(\'proyDialogoComprarPartida\').remove()" style="padding:10px 20px;border-radius:10px;border:1px solid #e5e5ea;background:#f5f5f7;color:#3c3c43;font-size:0.85rem;font-weight:600;cursor:pointer;">Cancelar</button>' +
+                    '<button id="proyComprarCrearBtn" style="padding:10px 20px;border-radius:10px;border:none;background:#007AFF;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Crear Orden de Compra</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(ov);
+
+        // Update total in real time
+        var cantInput = document.getElementById('proyComprarCantidad');
+        var precioInput = document.getElementById('proyComprarPrecioUnit');
+        var totalSpan = document.getElementById('proyComprarTotal');
+
+        function updateTotal() {
+            var c = parseInt(cantInput.value) || 0;
+            var p = parseFloat(precioInput.value) || 0;
+            totalSpan.textContent = fmtMoney(c * p);
+        }
+        cantInput.addEventListener('input', updateTotal);
+        precioInput.addEventListener('input', updateTotal);
+
+        // Validate max on cantidad
+        cantInput.addEventListener('input', function() {
+            var val = parseInt(cantInput.value) || 0;
+            if (val > pendiente) cantInput.value = pendiente;
+            if (val < 1 && cantInput.value !== '') cantInput.value = 1;
+        });
+
+        // Bind create
+        document.getElementById('proyComprarCrearBtn').addEventListener('click', function() {
+            var cantidad = parseInt(cantInput.value) || 0;
+            var proveedor = (document.getElementById('proyComprarProveedor') || {}).value || '';
+            var precioUnitario = parseFloat(precioInput.value) || 0;
+
+            if (cantidad <= 0 || cantidad > pendiente) {
+                _showToast('Cantidad invalida (max: ' + pendiente + ')');
+                return;
+            }
+            if (!proveedor.trim()) {
+                _showToast('El proveedor es obligatorio');
+                return;
+            }
+
+            var btn = document.getElementById('proyComprarCrearBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creando...';
+
+            _fetch('/app/api/iamet/oc/crear/', {
+                method: 'POST',
+                body: {
+                    proyecto_id: currentProjectId,
+                    partida_id: item.id,
+                    cantidad: cantidad,
+                    proveedor: proveedor.trim(),
+                    precio_unitario: precioUnitario
+                }
+            }).then(function(resp) {
+                if (resp.ok || resp.success) {
+                    document.getElementById('proyDialogoComprarPartida').remove();
+                    _showToast('Orden de compra creada exitosamente');
+                    renderPartidas(currentProjectId);
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Crear Orden de Compra';
+                    _showToast(resp.error || 'Error al crear OC');
+                }
+            }).catch(function(err) {
+                btn.disabled = false;
+                btn.textContent = 'Crear Orden de Compra';
+                _showToast('Error de conexion');
+                console.error('Error creando OC desde partida:', err);
+            });
+        });
+    }
+
+
+    // =========================================
+    //  CONFIRM DELETE PARTIDA (from context menu)
+    // =========================================
+
+    function _confirmDeletePartida(item) {
+        var existing = document.getElementById('proyDialogoEliminarPartida');
+        if (existing) existing.remove();
+
+        var ov = document.createElement('div');
+        ov.id = 'proyDialogoEliminarPartida';
+        ov.className = 'proy-dialog-overlay';
+        ov.style.cssText = 'display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:10500;align-items:center;justify-content:center;';
+        ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+
+        ov.innerHTML =
+            '<div style="background:#fff;border-radius:16px;padding:28px;width:min(380px,90vw);text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.25);">' +
+                '<div style="width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">' +
+                    '<svg width="24" height="24" fill="none" stroke="#EF4444" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>' +
+                '</div>' +
+                '<div style="font-size:1rem;font-weight:700;color:#1d1d1f;margin-bottom:8px;">Eliminar partida</div>' +
+                '<div style="font-size:0.85rem;color:#636366;margin-bottom:20px;">Se eliminara <strong>"' + truncate(item.descripcion, 40) + '"</strong>. Esta accion no se puede deshacer.</div>' +
+                '<div style="display:flex;gap:10px;justify-content:center;">' +
+                    '<button onclick="document.getElementById(\'proyDialogoEliminarPartida\').remove()" style="padding:10px 20px;border-radius:10px;border:1px solid #e5e5ea;background:#f5f5f7;color:#3c3c43;font-size:0.85rem;font-weight:600;cursor:pointer;">Cancelar</button>' +
+                    '<button id="proyElimPartConfirmBtn" style="padding:10px 20px;border-radius:10px;border:none;background:#EF4444;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Eliminar</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(ov);
+
+        document.getElementById('proyElimPartConfirmBtn').addEventListener('click', function() {
+            _fetch('/app/api/iamet/partidas/' + item.id + '/eliminar/', {
+                method: 'POST'
+            }).then(function(resp) {
+                if (resp.ok || resp.success) {
+                    document.getElementById('proyDialogoEliminarPartida').remove();
+                    _showToast('Partida eliminada');
+                    if (currentProjectId) renderPartidas(currentProjectId);
+                } else {
+                    _showToast(resp.error || 'Error al eliminar partida');
+                }
+            }).catch(function(err) {
+                _showToast('Error de conexion');
+                console.error('Error eliminando partida:', err);
+            });
         });
     }
 
@@ -1189,6 +1569,7 @@
                     '<td style="text-align:right;color:#10b981">' + fmtMoney(totalProfit) + '</td>' +
                     '<td>' + truncate(item.proveedor, 16) + '</td>' +
                     '<td><span class="proy-badge proy-status-archived">' + statusLabel(item.status) + '</span></td>' +
+                    '<td></td>' +
                 '</tr>';
             });
             container.innerHTML = html;
@@ -1212,7 +1593,7 @@
                     '<td style="text-align:right">' + fmtMoney(ver.total_costo) + '</td>' +
                     '<td style="text-align:right">' + fmtMoney(ver.total_venta) + '</td>' +
                     '<td style="text-align:right;color:#10b981">' + fmtMoney(ver.ganancia) + '</td>' +
-                    '<td colspan="2"><button style="font-size:0.72rem;padding:4px 10px;border-radius:6px;border:1px solid #007AFF;background:rgba(0,122,255,0.08);color:#007AFF;cursor:pointer;font-weight:600;" onclick="proyectosRestaurarVersion(' + ver.version + ')">Restaurar</button></td>' +
+                    '<td colspan="3"><button style="font-size:0.72rem;padding:4px 10px;border-radius:6px;border:1px solid #007AFF;background:rgba(0,122,255,0.08);color:#007AFF;cursor:pointer;font-weight:600;" onclick="proyectosRestaurarVersion(' + ver.version + ')">Restaurar</button></td>' +
                 '</tr>';
             }
         }
