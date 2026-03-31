@@ -1156,7 +1156,12 @@
                 var esResponsable = woOriginalData && woOriginalData.usuario_id &&
                     String(woOriginalData.usuario_id) === String(_CRM_CONFIG.userId);
 
-                if (!forceClose && currentOppId && esResponsable) {
+                // Etapas que no requieren actividad pendiente (oportunidad ya cerrada)
+                var etapaSinActividad = ['Ganado', 'Perdido', 'Pagado'];
+                var etapaActual = woOriginalData && woOriginalData.etapa_corta ? woOriginalData.etapa_corta : '';
+                var esEtapaCerrada = etapaSinActividad.indexOf(etapaActual) !== -1;
+
+                if (!forceClose && currentOppId && esResponsable && !esEtapaCerrada) {
                     // Verificar si la oportunidad tiene al menos una actividad pendiente
                     fetch('/app/api/oportunidad/' + currentOppId + '/tareas/')
                         .then(function (r) { return r.json(); })
