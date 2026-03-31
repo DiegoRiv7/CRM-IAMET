@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 30 de Marzo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --info: #0ea5e9;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+            --border: #E5E5EA;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+        .header-meta {
+            text-align: right;
+            font-size: 13px;
+            color: var(--secondary);
+        }
+        h2 {
+            font-size: 19px;
+            margin-top: 25px;
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+        .achievement-box {
+            background: rgba(0, 82, 212, 0.04);
+            border: 1px solid rgba(0, 82, 212, 0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .achievement-title {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 17px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .achievement-title svg {
+            margin-right: 10px;
+        }
+        .badge {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-right: 10px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .badge-tecnico { background: #e0e7ff; color: #4338ca; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+
+        .update-item {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f8f8f8;
+        }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+
+        .btn-pdf {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(0,82,212,0.2);
+        }
+        .btn-pdf:hover { background: #0041a8; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 0; }
+            .btn-pdf { display: none; }
+            .page-break { page-break-before: always; break-before: page; margin-top: 0; padding-top: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 30 de Marzo, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas en esta quincena, enfocadas en la finalización del módulo de prospección, mejoras de UX en tareas, automatización de montos y optimización de la gestión de pipelines.</p>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Módulo de Prospección Completado
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se finalizó de manera exitosa el <strong>módulo completo de prospección comercial</strong>. El sistema ahora cuenta con un flujo profesional de prospección con etapas definidas (desde la captación hasta el cierre), un área dedicada de reportes y KPIs para medir la efectividad de cada vendedor, y la herramienta de <strong>campañas de marketing por correo electrónico</strong> que permite enviar comunicaciones masivas personalizadas, rastrear respuestas y medir resultados favorables. Este módulo transforma la forma en que el equipo comercial genera y gestiona nuevas oportunidades de negocio.</p>
+    </div>
+
+    <h2>1. Mejoras en Correo Electrónico</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Envío de Documentos e Imágenes</span>
+        <div class="update-desc">El módulo de correo ahora permite adjuntar archivos (documentos, imágenes, PDFs) al enviar, responder y reenviar correos. Soporte completo de drag & drop y botón de adjuntar en los tres paneles.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Notificaciones de Correos Recientes</span>
+        <div class="update-desc">Ahora las notificaciones solo muestran los correos más recientes, evitando saturación de alertas con mensajes antiguos.</div>
+    </div>
+
+    <h2>2. Rediseño del Widget de Tareas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Nuevo Diseño y UX del Widget de Tarea</span>
+        <div class="update-desc">Rediseño completo del widget de detalle de tarea: breadcrumb con contexto (Cliente / Proyecto), pills de estado y prioridad con color, descripción colapsable para textos largos, sidebar reorganizado con secciones claras (Detalles, Responsable, Observadores, Participantes), y sección de actividad con timeline de avatares tipo chat.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Drag & Drop de Archivos en Comentarios</span>
+        <div class="update-desc">Los usuarios ahora pueden arrastrar archivos directamente sobre el área de comentarios para adjuntarlos, con indicador visual durante el arrastre.</div>
+    </div>
+
+    <h2 class="page-break">3. Automatización de Oportunidades</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Monto Automático desde Cotizaciones</span>
+        <div class="update-desc">El monto de cada oportunidad se actualiza automáticamente con el subtotal (sin IVA) de la última cotización generada. Si la cotización está en USD, se convierte a pesos mexicanos usando el tipo de cambio en tiempo real. El campo de monto ya no es editable manualmente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Gestión Dinámica de Pipelines y Etapas</span>
+        <div class="update-desc">Nueva sección en el panel de administración para gestionar pipelines y etapas. Los supervisores pueden crear nuevos pipelines, renombrar o eliminar existentes, y agregar, editar o eliminar etapas de cada pipeline. Los cambios se reflejan automáticamente en el widget de oportunidades y el formulario de creación.</div>
+    </div>
+
+    <h2>4. Correcciones de Grupos de Trabajo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Visibilidad de Oportunidades entre Miembros</span>
+        <div class="update-desc">Se corrigió que algunos miembros del grupo no podían ver las oportunidades de otros miembros. Se arreglaron 11 puntos de filtrado en búsqueda global, estadísticas, gráficas y exportación.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Reapertura de Tareas entre Miembros</span>
+        <div class="update-desc">Se corrigió que miembros del mismo grupo no podían reabrir tareas de otros compañeros. Ahora cualquier miembro del grupo puede reabrir, editar participantes y comentar en tareas de otros miembros.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Notificaciones al Chat de Grupo</span>
+        <div class="update-desc">Cada acción de un miembro sobre contenido de otro (reabrir tarea, comentar, crear cotización, crear oportunidad) genera una notificación automática al chat del grupo de trabajo.</div>
+    </div>
+
+    <h2>5. Mejoras en KPIs y Métricas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">KPI de Cobrado por Etapa</span>
+        <div class="update-desc">El indicador de cobrado ahora toma las oportunidades cuya etapa sea <strong>Ganado</strong> o <strong>Pagado</strong>, en lugar de filtrar por probabilidad al 100%. Esto refleja con mayor precisión el estado real del pipeline comercial.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tabla de Clientes Ordenada por Total</span>
+        <div class="update-desc">La tabla de clientes en todas las vistas (cobrado, oportunidades, cotizado, facturado) ahora se ordena de mayor a menor por monto total.</div>
+    </div>
+
+    <div style="margin-top:20px; padding-top:15px; border-top:1px solid #eee; text-align:center; font-size:11px; color:var(--secondary);">
+        Generado por el Departamento de Ingeniería CRM IAMET.
+    </div>
+
+</div>
+
+</body>
+</html>
