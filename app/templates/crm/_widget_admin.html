@@ -817,7 +817,7 @@ function _loadOppEtapas(){
     /* Pipeline selector */
     h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">';
     h += '<span style="font-size:0.78rem;font-weight:600;color:#636366;">Pipeline:</span>';
-    h += '<select class="admin-input" id="admEtapaPipelineSel" style="max-width:220px;" onchange="_admSelectedPipeline=this.value;_renderEtapasForPipeline();">';
+    h += '<select class="admin-input" id="admEtapaPipelineSel" style="max-width:220px;" onchange="_renderEtapasForPipeline();">';
     pipelines.forEach(function(p){
       h += '<option value="'+_escH(p)+'"'+(p===_admSelectedPipeline?' selected':'')+'>'+_escH(p.charAt(0).toUpperCase()+p.slice(1))+'</option>';
     });
@@ -833,6 +833,8 @@ function _loadOppEtapas(){
 window._renderEtapasForPipeline = function(){
   var container = document.getElementById('admEtapasContainer');
   if(!container) return;
+  var sel = document.getElementById('admEtapaPipelineSel');
+  if(sel) _admSelectedPipeline = sel.value;
   var pipeline = _admSelectedPipeline;
   var etapas = _admEtapasData.filter(function(e){return e.pipeline===pipeline;});
   etapas.sort(function(a,b){return a.orden-b.orden;});
