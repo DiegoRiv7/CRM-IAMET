@@ -138,8 +138,12 @@
                         <div class="wn-field">
                             <label class="wn-label">Tipo</label>
                             <select class="wn-input wn-select" id="wfTipo">
+                                {% for pipeline_key in pipelines_list %}
+                                <option value="{{ pipeline_key }}">{{ pipeline_key|title }}</option>
+                                {% empty %}
                                 <option value="runrate">Runrate</option>
                                 <option value="proyecto">Proyecto</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>

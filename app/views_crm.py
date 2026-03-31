@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -37,6 +37,20 @@ from django.utils.html import json_script
 # Helper function to detect lost opportunities
 from .views_utils import *
 from .views_grupos import get_usuarios_visibles_ids
+
+
+def _get_etapas_pipeline_json():
+    """Retorna JSON con etapas agrupadas por pipeline y lista de pipelines."""
+    import json as _json
+    from .models import EtapaPipeline
+    etapas = EtapaPipeline.objects.filter(activo=True).order_by('pipeline', 'orden')
+    result = {}
+    for e in etapas:
+        if e.pipeline not in result:
+            result[e.pipeline] = []
+        result[e.pipeline].append({'nombre': e.nombre, 'color': e.color})
+    return _json.dumps(result, ensure_ascii=False)
+
 
 @login_required
 def get_oportunidades_por_cliente(request):
@@ -448,6 +462,8 @@ def crm_home(request):
         'novedades_config': NovedadesConfig.get(),
         'mis_grupos': _get_mis_grupos_ctx(user),
         'es_supervisor_de_grupo': _es_supervisor_de_grupo(user),
+        'etapas_pipeline_json': _get_etapas_pipeline_json(),
+        'pipelines_list': list(EtapaPipeline.objects.values_list('pipeline', flat=True).distinct().order_by('pipeline')) if EtapaPipeline.objects.exists() else ['runrate', 'proyecto'],
     }
     return render(request, 'crm_home.html', context)
 
@@ -3176,8 +3192,13 @@ def api_crear_oportunidad(request):
             )
 
         tipo_neg = data.get('tipo_negociacion', 'runrate')
-        # Asignar etapa inicial según tipo de negociación
-        if tipo_neg == 'proyecto':
+        # Asignar etapa inicial desde la BD (primera etapa activa del pipeline)
+        primera_etapa = EtapaPipeline.objects.filter(pipeline=tipo_neg, activo=True).order_by('orden').first()
+        if primera_etapa:
+            etapa_corta_init = primera_etapa.nombre
+            etapa_completa_init = primera_etapa.nombre
+            etapa_color_init = primera_etapa.color
+        elif tipo_neg == 'proyecto':
             etapa_corta_init = 'Oportunidad'
             etapa_completa_init = 'Oportunidad'
             etapa_color_init = '#FFFFFF'

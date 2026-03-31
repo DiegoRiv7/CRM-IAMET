@@ -407,19 +407,21 @@
             var detalleContent = document.getElementById('detalleContent');
             var currentOppId = null;
 
-            // Etapas definitions
-            var ETAPAS_RUNRATE = [
-                'En Solicitud', 'Cotizando', 'Enviada', 'Seguimiento',
-                'Vendido s/PO', 'Vendido c/PO', 'En Tránsito', 'Facturado',
-                'Programado', 'Entregado', 'Esperando Pago', 'Sin Respuesta',
-                'Ganado', 'Perdido'
-            ];
-            var ETAPAS_PROYECTO = [
-                'Oportunidad', 'Levantamiento', 'Base Cotización', 'Cotizando',
-                'Enviada', 'Seguimiento', 'Vendido s/PO', 'Vendido c/PO',
-                'Cotiz. Proveedor', 'Comprando', 'En Tránsito', 'Ejecutando',
-                'Entregado', 'Facturado', 'Reportes', 'Pagado', 'Perdido'
-            ];
+            // Etapas definitions — dinámicas desde la BD via _CRM_CONFIG
+            var _etapasPipeline = _CRM_CONFIG.etapasPipeline || {};
+            var ETAPAS_RUNRATE = (_etapasPipeline['runrate'] || []).map(function(e){ return e.nombre; });
+            var ETAPAS_PROYECTO = (_etapasPipeline['proyecto'] || []).map(function(e){ return e.nombre; });
+            // Fallback si no hay datos en BD
+            if (!ETAPAS_RUNRATE.length) ETAPAS_RUNRATE = ['En Solicitud', 'Cotizando', 'Enviada', 'Seguimiento', 'Vendido s/PO', 'Vendido c/PO', 'En Tránsito', 'Facturado', 'Programado', 'Entregado', 'Esperando Pago', 'Sin Respuesta', 'Ganado', 'Perdido'];
+            if (!ETAPAS_PROYECTO.length) ETAPAS_PROYECTO = ['Oportunidad', 'Levantamiento', 'Base Cotización', 'Cotizando', 'Enviada', 'Seguimiento', 'Vendido s/PO', 'Vendido c/PO', 'Cotiz. Proveedor', 'Comprando', 'En Tránsito', 'Ejecutando', 'Entregado', 'Facturado', 'Reportes', 'Pagado', 'Perdido'];
+
+            // Helper: obtener etapas por tipo de negociación (soporta pipelines dinámicos)
+            function getEtapasForTipo(tipo) {
+                var pipelineData = _etapasPipeline[tipo];
+                if (pipelineData) return pipelineData.map(function(e){ return e.nombre; });
+                if (tipo === 'proyecto') return ETAPAS_PROYECTO;
+                return ETAPAS_RUNRATE;
+            }
 
             function openDetalle(oppId) {
                 // Sanitize: strip any non-digit characters (e.g. locale thousands separators)
@@ -591,7 +593,7 @@
                             var formData = new FormData();
                             formData.append('tipo_negociacion', newTipo);
                             // Also reset etapa to first stage of new type
-                            var newEtapas = newTipo === 'proyecto' ? ETAPAS_PROYECTO : ETAPAS_RUNRATE;
+                            var newEtapas = getEtapasForTipo(newTipo);
                             formData.append('etapa_corta', newEtapas[0]);
                             btnAccept.textContent = 'Cambiando...';
                             fetch('/app/api/editar-oportunidad/' + d.id + '/', {
@@ -648,7 +650,7 @@
                 } else {
                     if (pipelineWrap) pipelineWrap.style.display = '';
                 }
-                var etapas = tipo === 'proyecto' ? ETAPAS_PROYECTO : ETAPAS_RUNRATE;
+                var etapas = getEtapasForTipo(tipo);
                 var currentEtapa = d.etapa_corta || etapas[0];
                 var currentIdx = -1;
                 // Fuzzy match

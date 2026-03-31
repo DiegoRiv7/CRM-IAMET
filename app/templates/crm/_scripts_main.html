@@ -8,7 +8,8 @@ var _CRM_CONFIG = {
     usuarioNombre:    '{{ usuario.get_full_name|default:usuario.username|escapejs }}',
     userId:           parseInt("{{ user.id }}") || -1,
     isSuperuser:      "{{ user.is_superuser|yesno:'true,false' }}" === "true",
-    esSupervisor:     "{{ es_supervisor|yesno:'true,false' }}" === "true"
+    esSupervisor:     "{{ es_supervisor|yesno:'true,false' }}" === "true",
+    etapasPipeline:   {{ etapas_pipeline_json|safe }}
 };
 </script>
 <script src="{% static 'js/crm_main.js' %}"></script>
