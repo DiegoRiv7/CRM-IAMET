@@ -92,9 +92,9 @@ document.addEventListener('click', function(ev) {
                             : '';
                         var cursorStyle = prodValue ? 'cursor:pointer;' : '';
                         if (val === 0) {
-                            html += '<td class="py-4 pr-2 text-right" style="' + cursorStyle + '" ' + onclickCode + '><span class="money-zero">0</span></td>';
+                            html += '<td style="text-align:right;padding:16px 8px;' + cursorStyle + '" ' + onclickCode + '><span style="color:#D1D5DB;">0</span></td>';
                         } else {
-                            html += '<td class="py-4 pr-2 text-right" style="' + cursorStyle + '" ' + onclickCode + '><span class="text-blue-600 font-bold">' + val + '</span></td>';
+                            html += '<td style="text-align:right;padding:16px 8px;' + cursorStyle + '" ' + onclickCode + '><span style="color:#2563EB;font-weight:700;">' + val + '</span></td>';
                         }
                     });
 
