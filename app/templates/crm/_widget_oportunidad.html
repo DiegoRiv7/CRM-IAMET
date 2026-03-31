@@ -334,6 +334,18 @@
     </div>
 </div>
 
+<!-- Visor Universal de Archivos -->
+<div id="woFileViewer" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;flex-direction:column;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;padding:12px 20px;flex-shrink:0;">
+        <span id="woFileViewerName" style="flex:1;color:#fff;font-size:0.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+        <a id="woFileViewerDl" href="#" style="color:#fff;text-decoration:none;font-size:0.78rem;border:1px solid rgba(255,255,255,0.3);padding:5px 14px;border-radius:6px;margin-right:12px;">Descargar</a>
+        <button onclick="woFileViewerClose()" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px 8px;">&times;</button>
+    </div>
+    <!-- Content -->
+    <div id="woFileViewerContent" style="flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:10px;"></div>
+</div>
+
 <!-- ═══ WIDGET: CONVERSACION ═══ -->
 <div class="widget-overlay" id="widgetOppConversacion" style="z-index:10800;display:none;"><!-- CAPA TOP: siempre encima -->
     <div class="widget-card widget-card-md"
@@ -686,6 +698,77 @@
             if (w) { w.style.display = 'none'; }
         };
 
+        window.woFileViewerOpen = function(url, nombre, tipo, extension) {
+            var viewer = document.getElementById('woFileViewer');
+            var content = document.getElementById('woFileViewerContent');
+            var nameEl = document.getElementById('woFileViewerName');
+            var dlBtn = document.getElementById('woFileViewerDl');
+            if (!viewer || !content) return;
+
+            nameEl.textContent = nombre;
+            dlBtn.href = url + (url.indexOf('?') > -1 ? '&' : '?') + 'dl=1';
+            content.innerHTML = '<div style="color:#fff;">Cargando...</div>';
+            viewer.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            var ext = (extension || '').toLowerCase();
+
+            // PDF
+            if (tipo === 'pdf' || ext === 'pdf') {
+                content.innerHTML = '<iframe src="' + url + '" style="width:100%;height:100%;border:none;border-radius:8px;background:#fff;"></iframe>';
+            }
+            // Imagenes
+            else if (tipo === 'imagen' || ['jpg','jpeg','png','gif','bmp','svg','webp','ico'].indexOf(ext) > -1) {
+                content.innerHTML = '<img src="' + url + '" style="max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;box-shadow:0 4px 30px rgba(0,0,0,0.3);">';
+            }
+            // Video
+            else if (tipo === 'video' || ['mp4','webm','ogg','mov'].indexOf(ext) > -1) {
+                content.innerHTML = '<video controls autoplay style="max-width:95%;max-height:95%;border-radius:8px;"><source src="' + url + '">Tu navegador no soporta video.</video>';
+            }
+            // Audio
+            else if (tipo === 'audio' || ['mp3','wav','ogg','aac','flac'].indexOf(ext) > -1) {
+                content.innerHTML = '<div style="text-align:center;"><div style="font-size:4rem;margin-bottom:1rem;">&#127925;</div><audio controls autoplay style="width:400px;max-width:90%;"><source src="' + url + '">Tu navegador no soporta audio.</audio></div>';
+            }
+            // Texto plano / codigo
+            else if (['txt','csv','json','xml','html','css','js','py','log','md','yml','yaml','ini','conf','sh','bat'].indexOf(ext) > -1) {
+                fetch(url).then(function(r){ return r.text(); }).then(function(text){
+                    content.innerHTML = '<pre style="background:#1e1e1e;color:#d4d4d4;padding:20px;border-radius:8px;max-width:90%;max-height:90%;overflow:auto;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
+                }).catch(function(){ content.innerHTML = '<div style="color:#fff;">No se pudo cargar el archivo</div>'; });
+            }
+            // Office docs (Word, Excel, PowerPoint) - usar Microsoft Office Online Viewer
+            else if (['doc','docx','xls','xlsx','ppt','pptx','odt','ods','odp'].indexOf(ext) > -1) {
+                var fullUrl = window.location.origin + url;
+                content.innerHTML = '<iframe src="https://view.officeapps.live.com/op/embed.ashx?src=' + encodeURIComponent(fullUrl) + '" style="width:100%;height:100%;border:none;border-radius:8px;background:#fff;"></iframe>';
+            }
+            // Fallback - no se puede previsualizar
+            else {
+                content.innerHTML = '<div style="text-align:center;color:#fff;">' +
+                    '<div style="font-size:4rem;margin-bottom:1rem;">&#128196;</div>' +
+                    '<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">' + nombre + '</div>' +
+                    '<div style="font-size:0.85rem;color:#9CA3AF;margin-bottom:1.5rem;">Este tipo de archivo no se puede previsualizar</div>' +
+                    '<a href="' + url + (url.indexOf('?')>-1?'&':'?') + 'dl=1" style="display:inline-flex;align-items:center;gap:6px;background:#0052D4;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem;">Descargar archivo</a>' +
+                    '</div>';
+            }
+        };
+
+        window.woFileViewerClose = function() {
+            var viewer = document.getElementById('woFileViewer');
+            if (viewer) viewer.style.display = 'none';
+            var content = document.getElementById('woFileViewerContent');
+            if (content) content.innerHTML = '';
+            document.body.style.overflow = '';
+        };
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var viewer = document.getElementById('woFileViewer');
+                if (viewer && viewer.style.display !== 'none') {
+                    e.stopPropagation();
+                    woFileViewerClose();
+                }
+            }
+        });
+
         window.woAbrirGestorConversacion = function () {
             var w = document.getElementById('widgetOppConversacion');
             if (!w || !_woCurrentOppId) return;
@@ -880,10 +963,10 @@
             var nombre = woEscape(a.nombre || a.nombre_original || '');
             var acciones = streamUrl
                 ? '<div style="display:flex;gap:4px;justify-content:center;margin-top:0.3rem;position:relative;z-index:3;">' +
-                  '<a href="' + woEscape(streamUrl) + '" target="_blank" style="font-size:0.65rem;color:#0052D4;text-decoration:none;background:#F0F5FF;border-radius:4px;padding:2px 6px;" onclick="event.stopPropagation();">Ver</a>' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();woFileViewerOpen(\'' + woEscape(streamUrl) + '\', \'' + nombre + '\', \'' + tipoArchivo + '\', \'' + (a.extension||'') + '\')" style="font-size:0.65rem;color:#0052D4;text-decoration:none;background:#F0F5FF;border-radius:4px;padding:2px 6px;">Ver</a>' +
                   '<a href="' + woEscape(dlUrl) + '" style="font-size:0.65rem;color:#34C759;text-decoration:none;background:#F0FFF5;border-radius:4px;padding:2px 6px;" onclick="event.stopPropagation();">Descargar</a>' +
                   '</div>' : '';
-            return '<div onclick="if(\'' + woEscape(streamUrl) + '\') window.open(\'' + woEscape(streamUrl) + '\', \'_blank\')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;cursor:pointer;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+            return '<div onclick="if(\'' + woEscape(streamUrl) + '\') woFileViewerOpen(\'' + woEscape(streamUrl) + '\', \'' + nombre + '\', \'' + tipoArchivo + '\', \'' + (a.extension||'') + '\')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;cursor:pointer;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
                 badge + menu +
                 '<div style="text-align:center;">' +
                 '<svg width="42" height="42" fill="none" stroke="' + iconColor + '" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;">' + iconInfo.svg + '</svg>' +
