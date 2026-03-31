@@ -64,9 +64,9 @@ document.addEventListener('click', function(ev) {
                 // Rebuild thead from JS to guarantee alignment
                 var thead = tbody.parentElement.querySelector('thead');
                 if (thead) {
-                    var hStyle = 'text-align:right;padding:12px 8px 12px 80px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;';
+                    var hStyle = 'text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;';
                     var hRow = '<tr style="border-bottom:1px solid #F3F4F6;">';
-                    hRow += '<td style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;">Cliente</td>';
+                    hRow += '<td style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;width:150px;max-width:150px;">Cliente</td>';
                     prodLabels.forEach(function(l){ hRow += '<td style="' + hStyle + '">' + l + '</td>'; });
                     hRow += '</tr>';
                     thead.innerHTML = hRow;
@@ -86,7 +86,7 @@ document.addEventListener('click', function(ev) {
 
                     // Client name cell — use inline onclick
                     var clienteOnclick = 'onclick="window._prospeccionClickCliente(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + escapeHtml(row.rfc).replace(/'/g, "\\'") + '\')"';
-                    var html = '<td class="px-2 py-4" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+                    var html = '<td style="padding:16px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:150px;max-width:150px;">' +
                         '<span style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' + clienteOnclick + '>' +
                             escapeHtml(row.cliente) +
                         '</span>';
