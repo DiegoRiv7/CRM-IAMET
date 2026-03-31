@@ -635,7 +635,7 @@
 
 <!-- ═══ WIDGET: MODAL DIALOGS (Custom prompts/confirms) ═══ -->
 <div class="widget-overlay" id="widgetOppDialog"
-    style="z-index:10500;display:none;align-items:center;justify-content:center;"><!-- CAPA 5 -->
+    style="z-index:10900;display:none;align-items:center;justify-content:center;"><!-- CAPA: encima de Drive (10800) -->
     <div
         style="background:#fff;border-radius:12px;width:340px;box-shadow:0 10px 40px rgba(0,0,0,0.2);overflow:hidden;animation: scaleIn 0.2s ease forwards;">
         <div style="padding:1.5rem;text-align:center;">
@@ -735,10 +735,20 @@
                     content.innerHTML = '<pre style="background:#1e1e1e;color:#d4d4d4;padding:20px;border-radius:8px;max-width:90%;max-height:90%;overflow:auto;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
                 }).catch(function(){ content.innerHTML = '<div style="color:#fff;">No se pudo cargar el archivo</div>'; });
             }
-            // Office docs (Word, Excel, PowerPoint) - usar Microsoft Office Online Viewer
+            // Office docs (Word, Excel, PowerPoint) - mostrar info y botón de descarga
             else if (['doc','docx','xls','xlsx','ppt','pptx','odt','ods','odp'].indexOf(ext) > -1) {
-                var fullUrl = window.location.origin + url;
-                content.innerHTML = '<iframe src="https://view.officeapps.live.com/op/embed.ashx?src=' + encodeURIComponent(fullUrl) + '" style="width:100%;height:100%;border:none;border-radius:8px;background:#fff;"></iframe>';
+                var officeIcon = '&#128196;'; // default doc icon
+                var officeLabel = 'Documento de Office';
+                if (['xls','xlsx','ods'].indexOf(ext) > -1) { officeIcon = '&#128202;'; officeLabel = 'Archivo de Excel'; }
+                else if (['ppt','pptx','odp'].indexOf(ext) > -1) { officeIcon = '&#128253;'; officeLabel = 'Presentación de PowerPoint'; }
+                else if (['doc','docx','odt'].indexOf(ext) > -1) { officeIcon = '&#128196;'; officeLabel = 'Documento de Word'; }
+                var dlUrl = url + (url.indexOf('?') > -1 ? '&' : '?') + 'dl=1';
+                content.innerHTML = '<div style="text-align:center;color:#fff;">' +
+                    '<div style="font-size:4rem;margin-bottom:1rem;">' + officeIcon + '</div>' +
+                    '<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">' + nombre + '</div>' +
+                    '<div style="font-size:0.85rem;color:#9CA3AF;margin-bottom:1.5rem;">' + officeLabel + '</div>' +
+                    '<a href="' + dlUrl + '" style="display:inline-flex;align-items:center;gap:8px;background:#0052D4;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">Descargar para ver/editar</a>' +
+                    '</div>';
             }
             // Fallback - no se puede previsualizar
             else {
