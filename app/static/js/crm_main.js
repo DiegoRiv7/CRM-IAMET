@@ -1376,22 +1376,23 @@
                 '<th class="py-2 pr-2 text-right font-black text-orange-500">Faltante</th>' +
                 '<th class="py-2 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>' +
                 '</tr>';
+            var _thStyle = 'text-align:right;padding:12px 8px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;';
             var _CLIENTES_THEAD_FULL =
-                '<tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">' +
-                '<th class="px-2 py-3 text-left font-black">Cliente</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Avig.</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Genet.</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Pol.</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-gray-700 border-l border-gray-100">Meta</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-orange-500">Faltante</th>' +
-                '<th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>' +
+                '<tr style="border-bottom:1px solid #F3F4F6;">' +
+                '<th style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;">Cliente</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Zebra</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Panduit</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">APC</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Avig.</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Genet.</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Axis</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Soft.</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">RR</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Pol.</th>' +
+                '<th style="' + _thStyle + 'color:#3B82F6;">Otros</th>' +
+                '<th style="' + _thStyle + 'color:#374151;border-left:1px solid #F3F4F6;">Meta</th>' +
+                '<th style="' + _thStyle + 'color:#F97316;">Faltante</th>' +
+                '<th style="' + _thStyle + 'color:#1F2937;border-left:1px solid #F3F4F6;">Total</th>' +
                 '</tr>';
             var currentMes = _CRM_CONFIG.mesFiltro;
             var currentAnio = _CRM_CONFIG.anioFiltro;
@@ -1427,15 +1428,15 @@
                     // Pipeline Bitrix24: todas las celdas de producto muestran —, sin importes
                     var totalCols = PRODUCT_COLS.length + 1; // +1 por "Otros"
                     for (var i = 0; i < totalCols; i++) {
-                        prodCells += '<td class="px-2 py-4 text-right"><span class="money-zero">—</span></td>';
+                        prodCells += '<td style="text-align:right;padding:16px 8px;"><span class="money-zero">—</span></td>';
                     }
                 } else {
                     for (var i = 0; i < PRODUCT_COLS.length; i++) {
                         var match = productMatch(r.producto, PRODUCT_COLS[i]);
-                        prodCells += '<td class="px-2 py-4 text-right">' + (match ? '<span class="text-blue-600 font-bold">$' + fmtShort(r.monto) + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
+                        prodCells += '<td style="text-align:right;padding:16px 8px;">' + (match ? '<span style="color:#2563EB;font-weight:700;">$' + fmtShort(r.monto) + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
                     }
                     // Otros
-                    prodCells += '<td class="px-2 py-4 text-right">' + (isOtherProduct(r.producto) && r.producto ? '<span class="text-blue-600 font-bold">$' + fmtShort(r.monto) + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
+                    prodCells += '<td style="text-align:right;padding:16px 8px;">' + (isOtherProduct(r.producto) && r.producto ? '<span style="color:#2563EB;font-weight:700;">$' + fmtShort(r.monto) + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
                 }
 
                 var nameStyle = '';
@@ -1453,7 +1454,7 @@
                     : '';
 
                 var totalCell = esBitrix
-                    ? '<td class="px-2 py-4 text-right font-black border-l border-gray-100 bg-gray-50/20"><span class="money-zero">$0</span></td>'
+                    ? '<td style="text-align:right;padding:16px 8px;font-weight:900;border-left:1px solid #F3F4F6;"><span style="color:#D1D5DB;">$0</span></td>'
                     : '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.monto + '</td>';
 
                 return '<tr class="crm-data-row' + rowExtraClass + '" data-opp-id="' + r.id + '" data-tipo="' + (r.tipo_negociacion || '') + '" data-etapa="' + (r.etapa || '') + '" data-fecha="' + (r.fecha_ts || '0') + '">' +
@@ -1471,7 +1472,7 @@
                 var cols = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza', 'otros'];
                 cols.forEach(function (c) {
                     var val = r[c] || '0';
-                    prodCells += '<td class="px-2 py-4 text-right">' + (val !== '0' ? '<span class="text-blue-600 font-bold">$' + val + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
+                    prodCells += '<td style="text-align:right;padding:16px 8px;">' + (val !== '0' ? '<span style="color:#2563EB;font-weight:700;">$' + val + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
                 });
                 return '<tr class="crm-data-row">' +
                     '<td class="px-2 py-4"><span class="client-name-link font-bold text-gray-900 leading-tight cursor-pointer hover:text-blue-600 transition-colors" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</span></td>' +
@@ -1529,7 +1530,7 @@
                 var prodCells = '';
                 cols.forEach(function (c) {
                     var val = r[c] || '0';
-                    prodCells += '<td class="px-2 py-4 text-right">' + (val !== '0' ? '<span class="text-blue-600 font-bold">$' + val + '</span>' : '<span class="money-zero">$0</span>') + '</td>';
+                    prodCells += '<td style="text-align:right;padding:16px 8px;">' + (val !== '0' ? '<span style="color:#2563EB;font-weight:700;">$' + val + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
                 });
                 var vendedor = r.vendedor ? '<div class="text-[9px] text-gray-400 font-medium mt-0.5">' + r.vendedor + '</div>' : '';
                 var faltanteStyle = (parseFloat((r.faltante || '0').replace(/,/g, '')) > 0) ? 'color:#F97316;font-weight:700;' : 'color:#22C55E;font-weight:700;';
