@@ -850,17 +850,29 @@ window._renderEtapasForPipeline = function(){
   if(!etapas.length){
     h += '<div style="color:#AEAEB2;font-size:0.78rem;text-align:center;padding:20px;">Sin etapas configuradas para este pipeline</div>';
   }
-  etapas.forEach(function(e){
-    h += _renderEtapaItem(e);
+  etapas.forEach(function(e, idx){
+    h += _renderEtapaItem(e, idx, etapas.length);
   });
   h += '</div>';
   container.innerHTML = h;
 };
 
-function _renderEtapaItem(e){
+function _renderEtapaItem(e, idx, total){
   var opacity = e.activo ? '1' : '0.45';
   var h = '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.7);border-radius:10px;margin-bottom:4px;opacity:'+opacity+';" data-etapa-id="'+e.id+'">';
-  h += '<span style="color:#AEAEB2;font-size:0.72rem;cursor:grab;user-select:none;">&#9776;</span>';
+  /* Flechas subir/bajar */
+  h += '<div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;">';
+  if(idx > 0){
+    h += '<button onclick="_admEtapaMover('+e.id+',\'up\')" style="background:none;border:none;cursor:pointer;color:#9CA3AF;padding:0;line-height:1;font-size:0.7rem;" title="Subir">&#9650;</button>';
+  } else {
+    h += '<span style="font-size:0.7rem;color:transparent;">&#9650;</span>';
+  }
+  if(idx < total - 1){
+    h += '<button onclick="_admEtapaMover('+e.id+',\'down\')" style="background:none;border:none;cursor:pointer;color:#9CA3AF;padding:0;line-height:1;font-size:0.7rem;" title="Bajar">&#9660;</button>';
+  } else {
+    h += '<span style="font-size:0.7rem;color:transparent;">&#9660;</span>';
+  }
+  h += '</div>';
   h += '<span style="width:16px;height:16px;border-radius:4px;background:'+e.color+';flex-shrink:0;"></span>';
   h += '<span style="flex:1;font-size:0.82rem;font-weight:500;color:#1C1C1E;">'+e.nombre+'</span>';
   h += '<span style="font-size:0.68rem;color:#AEAEB2;">#'+e.orden+'</span>';
@@ -893,6 +905,30 @@ window._admEtapaAdd = function(){
     body:JSON.stringify({action:'create',pipeline:pipeline,nombre:nombre.trim(),color:color,orden:maxOrden+1})
   }).then(function(r){return r.json();}).then(function(res){
     if(res.ok){ _showAdminToast('Etapa creada'); _loadOppEtapas(); }
+    else _showAdminToast(res.error||'Error',false);
+  });
+};
+
+window._admEtapaMover = function(id, dir){
+  var pipeline = _admSelectedPipeline;
+  var etapas = _admEtapasData.filter(function(e){return e.pipeline===pipeline;});
+  etapas.sort(function(a,b){return a.orden-b.orden;});
+  var idx = -1;
+  for(var i=0;i<etapas.length;i++){ if(etapas[i].id===id){ idx=i; break; } }
+  if(idx===-1) return;
+  var swapIdx = dir==='up' ? idx-1 : idx+1;
+  if(swapIdx<0||swapIdx>=etapas.length) return;
+  // Swap orders
+  var ordenA = etapas[idx].orden;
+  var ordenB = etapas[swapIdx].orden;
+  if(ordenA===ordenB) ordenB = dir==='up' ? ordenA-1 : ordenA+1;
+  var items = [{id:etapas[idx].id, orden:ordenB},{id:etapas[swapIdx].id, orden:ordenA}];
+  fetch('/app/api/admin/etapas-pipeline/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({action:'reorder',items:items})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.ok){ _loadOppEtapas(); }
     else _showAdminToast(res.error||'Error',false);
   });
 };
