@@ -74,7 +74,7 @@ document.addEventListener('click', function(ev) {
 
                     // Client name cell — use inline onclick
                     var clienteOnclick = 'onclick="window._prospeccionClickCliente(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + escapeHtml(row.rfc).replace(/'/g, "\\'") + '\')"';
-                    var html = '<td class="px-2 py-4" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+                    var html = '<td class="px-2 py-4" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
                         '<span style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' + clienteOnclick + '>' +
                             escapeHtml(row.cliente) +
                         '</span>';
