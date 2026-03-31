@@ -38,6 +38,14 @@ ETAPAS = {
         ('Pagado', '#7BD500'),
         ('Perdido', '#FF0000'),
     ],
+    'prospeccion': [
+        ('Identificado', '#6366F1'),
+        ('Calificado', '#3B82F6'),
+        ('Reunion', '#0EA5E9'),
+        ('En Progreso', '#F59E0B'),
+        ('Procesado', '#10B981'),
+        ('Cerrar Prospecto', '#6B7280'),
+    ],
 }
 
 
