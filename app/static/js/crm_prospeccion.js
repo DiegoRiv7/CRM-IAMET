@@ -66,7 +66,7 @@ document.addEventListener('click', function(ev) {
                 if (thead) {
                     var hStyle = 'text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;';
                     var hRow = '<tr style="border-bottom:1px solid #E5E7EB;background:rgba(249,250,251,0.8);">';
-                    hRow += '<td style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;width:150px;max-width:150px;">Cliente</td>';
+                    hRow += '<td style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;width:150px;min-width:150px;max-width:150px;">Cliente</td>';
                     prodLabels.forEach(function(l){ hRow += '<td style="' + hStyle + '">' + l + '</td>'; });
                     hRow += '</tr>';
                     thead.innerHTML = hRow;
@@ -86,12 +86,13 @@ document.addEventListener('click', function(ev) {
 
                     // Client name cell — use inline onclick
                     var clienteOnclick = 'onclick="window._prospeccionClickCliente(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + escapeHtml(row.rfc).replace(/'/g, "\\'") + '\')"';
-                    var html = '<td style="padding:16px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:150px;max-width:150px;">' +
+                    var html = '<td style="padding:16px 8px;width:150px;min-width:150px;max-width:150px;">' +
+                        '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
                         '<span style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' + clienteOnclick + '>' +
                             escapeHtml(row.cliente) +
-                        '</span>';
+                        '</span></div>';
                     if (row.rfc) {
-                        html += '<span style="display:block;font-size:9px;color:#86868B;font-weight:500;text-transform:uppercase;margin-top:2px;overflow:hidden;text-overflow:ellipsis;">RFC: ' + escapeHtml(row.rfc) + '</span>';
+                        html += '<div style="font-size:9px;color:#86868B;font-weight:500;text-transform:uppercase;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">RFC: ' + escapeHtml(row.rfc) + '</div>';
                     }
                     html += '</td>';
 
