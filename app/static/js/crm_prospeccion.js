@@ -61,11 +61,11 @@ document.addEventListener('click', function(ev) {
                 var prodKeys = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza', 'otros'];
                 var prodLabels = ['Zebra', 'Panduit', 'APC', 'Avig.', 'Genet.', 'Axis', 'Soft.', 'RR', 'Pol.', 'Otros'];
 
-                // Rebuild thead from JS to guarantee alignment
-                var thead = tbody.parentElement.querySelector('thead');
+                // Build thead from JS to guarantee alignment with data cells
+                var thead = document.getElementById('prospeccionThead');
                 if (thead) {
                     var hStyle = 'text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;';
-                    var hRow = '<tr style="border-bottom:1px solid #F3F4F6;">';
+                    var hRow = '<tr style="border-bottom:1px solid #E5E7EB;background:rgba(249,250,251,0.8);">';
                     hRow += '<td style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;width:150px;max-width:150px;">Cliente</td>';
                     prodLabels.forEach(function(l){ hRow += '<td style="' + hStyle + '">' + l + '</td>'; });
                     hRow += '</tr>';

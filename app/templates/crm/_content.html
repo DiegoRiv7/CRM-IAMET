@@ -212,24 +212,9 @@
             </tbody>
         </table>
         {% elif tab_activo == 'prospeccion' %}
-        <table class="w-full crm-table" style="table-layout:fixed;">
-            <thead class="bg-gray-50/80">
-                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th style="width:14%;text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;">Cliente</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px 12px 60px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Zebra</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px 12px 50px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Panduit</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">APC</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Avig.</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Genet.</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Axis</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Soft.</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">RR</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Pól.</th>
-                    <th style="width:8.6%;text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;">Otros</th>
-                </tr>
-            </thead>
-            <tbody id="prospeccionTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
-            </tbody>
+        <table id="prospeccionTable" class="w-full crm-table" style="table-layout:fixed;">
+            <thead id="prospeccionThead"></thead>
+            <tbody id="prospeccionTbody"></tbody>
         </table>
         <div class="crm-table-footer" id="prospeccionFooter"></div>
         {% elif tab_activo == 'clientes' %}
