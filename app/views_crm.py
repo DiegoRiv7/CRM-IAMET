@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, ArchivoCobrado, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, ArchivoCobrado, AliasCliente, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -1746,13 +1746,27 @@ def api_subir_cobrado(request):
         return JsonResponse({'success': False, 'error': f'Error procesando archivo: {str(e)}'})
 
 
-def _match_clientes_cobrado(nombre_csv, clientes_list):
+def _match_clientes_cobrado(nombre_csv, clientes_list, alias_map=None):
     """
-    Match inteligente: devuelve TODOS los clientes de la BD que matchean
-    con el nombre del CSV. Ej: "EATON INDUSTRIES" → [Eaton Otay, EATON PACIFICO, Eaton Valle Bonito]
+    Match inteligente: devuelve TODOS los clientes de la BD que matchean.
+    Primero revisa alias manuales, luego match por nombre.
+    alias_map: {PALABRA_CLAVE_UPPER: BUSCAR_COMO_UPPER}
     """
     cn_upper = nombre_csv.upper().strip()
     stop = {'DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'SA', 'CV', 'SAS', 'INC', 'MEXICO', 'S', 'RL', 'INDUSTRIES'}
+
+    # 0) Alias manuales: si alguna palabra_clave está contenida en el nombre CSV, usar buscar_como
+    if alias_map:
+        for keyword, buscar in alias_map.items():
+            if keyword in cn_upper:
+                matches = []
+                for c in clientes_list:
+                    if not c.nombre_empresa:
+                        continue
+                    if buscar in c.nombre_empresa.upper():
+                        matches.append(c)
+                if matches:
+                    return matches
 
     # 1) Exact match — devolver solo ese
     for c in clientes_list:
@@ -1821,11 +1835,15 @@ def api_desglose_cobrado(request):
             except ArchivoCobrado.DoesNotExist:
                 pass
 
+        # Cargar alias manuales
+        alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
+                     for a in AliasCliente.objects.all()}
+
         # Match con clientes de la BD — busca TODAS las variantes
         all_clientes = list(Cliente.objects.select_related('asignado_a').all())
         rows = []
         for entry in sorted(acumulado.values(), key=lambda x: -x['monto']):
-            matches = _match_clientes_cobrado(entry['nombre'], all_clientes)
+            matches = _match_clientes_cobrado(entry['nombre'], all_clientes, alias_map)
             vendedor = ''
             meta_cobrado = 0
             if matches:

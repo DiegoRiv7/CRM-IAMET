@@ -265,6 +265,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Permisos
         </button>
+        <button class="admin-nav-item" id="admNav-alias" onclick="adminNavClick(this,'alias')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+          Alias Clientes
+        </button>
         <div class="admin-sidebar-spacer"></div>
         <div class="admin-sidebar-footer">CRM v2.0 &mdash; Solo supervisores</div>
       </nav>
@@ -379,6 +383,7 @@ window.loadAdminSection = function(section){
   else if(section==='grupos')    loadGrupos();
   else if(section==='oportunidades') loadOportunidades();
   else if(section==='permisos')  loadPermisos();
+  else if(section==='alias')    loadAlias();
 };
 
 /* ── Usuarios ────────────────────────────────────────── */
@@ -1097,6 +1102,65 @@ window._admPipelineDelete = function(nombre){
       if(res.ok){ _showAdminToast('Pipeline eliminado'); _admSelectedPipeline=''; _loadOppPipelines(); }
       else _showAdminToast(res.error||'Error al eliminar',false);
     });
+  });
+};
+
+/* ── Alias Clientes ─────────────────────────────────── */
+window.loadAlias = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/alias-clientes/', { credentials: 'same-origin' })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var aliases = data.aliases || [];
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Alias de Clientes</span></div>';
+    h += '<p class="admin-help">Cuando un nombre del Excel/CSV contenga la <strong>palabra clave</strong>, se buscar&aacute; como el <strong>nombre destino</strong> en el CRM. Ejemplo: SCHLAGE &rarr; ALLEGION</p>';
+    h += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
+    h += '<input class="admin-input" id="aliasKeyword" type="text" placeholder="Palabra clave (ej: SCHLAGE)" style="flex:1;">';
+    h += '<input class="admin-input" id="aliasBuscar" type="text" placeholder="Buscar como (ej: ALLEGION)" style="flex:1;">';
+    h += '<input class="admin-input" id="aliasNotas" type="text" placeholder="Notas (opcional)" style="flex:1;">';
+    h += '<button class="admin-btn admin-btn-primary" onclick="admCrearAlias()">Agregar</button>';
+    h += '</div>';
+    h += '<table class="admin-table"><thead><tr><th>Palabra Clave</th><th>Buscar Como</th><th>Notas</th><th></th></tr></thead><tbody>';
+    if(aliases.length === 0){
+      h += '<tr><td colspan="4" style="text-align:center;color:#8E8E93;padding:20px;">No hay alias configurados</td></tr>';
+    }
+    aliases.forEach(function(a){
+      h += '<tr>';
+      h += '<td><strong>' + a.palabra_clave + '</strong></td>';
+      h += '<td>' + a.buscar_como + '</td>';
+      h += '<td style="color:#636366;font-size:0.8rem;">' + (a.notas || '') + '</td>';
+      h += '<td><button class="admin-btn-icon" onclick="admEliminarAlias(' + a.id + ')" title="Eliminar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    ac.innerHTML = h;
+  });
+};
+
+window.admCrearAlias = function(){
+  var keyword = (document.getElementById('aliasKeyword') || {}).value || '';
+  var buscar = (document.getElementById('aliasBuscar') || {}).value || '';
+  var notas = (document.getElementById('aliasNotas') || {}).value || '';
+  if(!keyword.trim() || !buscar.trim()){ _showAdminToast('Completa palabra clave y buscar como', false); return; }
+  fetch('/app/api/admin/alias-clientes/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+    body: JSON.stringify({palabra_clave: keyword.trim(), buscar_como: buscar.trim(), notas: notas.trim()})
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if(res.success){ _showAdminToast('Alias creado'); loadAlias(); }
+    else _showAdminToast(res.error || 'Error', false);
+  });
+};
+
+window.admEliminarAlias = function(id){
+  fetch('/app/api/admin/alias-clientes/', {
+    method: 'DELETE',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+    body: JSON.stringify({id: id})
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if(res.success){ _showAdminToast('Alias eliminado'); loadAlias(); }
+    else _showAdminToast(res.error || 'Error', false);
   });
 };
 

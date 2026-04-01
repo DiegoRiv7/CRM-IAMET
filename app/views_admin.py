@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, AliasCliente, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -2105,5 +2105,36 @@ def api_admin_etapas_pipeline(request):
                 return JsonResponse({'error': f'No se puede eliminar: {opp_count} oportunidades usan este pipeline'}, status=400)
             EtapaPipeline.objects.filter(pipeline=nombre).delete()
             return JsonResponse({'ok': True})
+
+    return JsonResponse({'error': 'Método no permitido (etapas)'}, status=405)
+
+
+@login_required
+def api_admin_alias_clientes(request):
+    """CRUD para alias de clientes (GET=listar, POST=crear, DELETE=eliminar)"""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'GET':
+        aliases = list(AliasCliente.objects.all().order_by('palabra_clave').values('id', 'palabra_clave', 'buscar_como', 'notas'))
+        return JsonResponse({'aliases': aliases})
+
+    elif request.method == 'POST':
+        data = json.loads(request.body)
+        palabra = data.get('palabra_clave', '').strip()
+        buscar = data.get('buscar_como', '').strip()
+        notas = data.get('notas', '').strip()
+        if not palabra or not buscar:
+            return JsonResponse({'success': False, 'error': 'Faltan campos'})
+        if AliasCliente.objects.filter(palabra_clave__iexact=palabra).exists():
+            return JsonResponse({'success': False, 'error': f'Ya existe un alias para "{palabra}"'})
+        AliasCliente.objects.create(palabra_clave=palabra, buscar_como=buscar, notas=notas)
+        return JsonResponse({'success': True})
+
+    elif request.method == 'DELETE':
+        data = json.loads(request.body)
+        alias_id = data.get('id')
+        AliasCliente.objects.filter(id=alias_id).delete()
+        return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)

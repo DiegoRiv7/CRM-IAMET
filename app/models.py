@@ -404,6 +404,24 @@ class ArchivoFacturacion(models.Model):
         return f"Facturación {self.mes}/{self.anio} - ${self.total_facturado}"
 
 
+class AliasCliente(models.Model):
+    """
+    Mapeo manual: cuando un nombre del Excel/CSV contenga 'palabra_clave',
+    buscar clientes que coincidan con 'buscar_como' en la BD.
+    Ej: palabra_clave='SCHLAGE', buscar_como='ALLEGION'
+    """
+    palabra_clave = models.CharField(max_length=100, unique=True, help_text="Nombre o palabra que aparece en el Excel/CSV")
+    buscar_como = models.CharField(max_length=100, help_text="Nombre del cliente en el CRM para hacer el match")
+    notas = models.CharField(max_length=255, blank=True, default='')
+
+    class Meta:
+        verbose_name = "Alias de Cliente"
+        verbose_name_plural = "Alias de Clientes"
+
+    def __str__(self):
+        return f"{self.palabra_clave} → {self.buscar_como}"
+
+
 class ArchivoCobrado(models.Model):
     """
     Almacena el CSV de ingresos (cobrado) subido por administración
