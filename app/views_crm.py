@@ -463,6 +463,8 @@ def crm_home(request):
         'mes_choices': mes_choices,
         'total_general': total_general,
         'total_facturado': total_facturado,
+        'debug_num_afs': len(afs),
+        'debug_num_keys': _debug_count,
         'num_clientes': num_clientes,
         'num_deals': num_deals,
         'num_cobradas': num_cobradas,
