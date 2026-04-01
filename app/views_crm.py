@@ -921,6 +921,8 @@ def api_crm_table_data(request):
             except (ValueError, TypeError):
                 return None, None
 
+        _total_facturado_excel = Decimal('0')
+
         if vista == 'facturado':
             # Total desde ArchivoFacturacion
             facturado_por_cliente_obj = {}
@@ -1006,6 +1008,8 @@ def api_crm_table_data(request):
                                     c_obj = c; break
                 if c_obj:
                     total_by_id[c_obj.id] = total_by_id.get(c_obj.id, Decimal('0')) + monto
+            # Total real del Excel (todos los entries, no solo los matcheados)
+            _total_facturado_excel = sum(e['monto'] for e in _facturado_entries)
             prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs.filter(monto_facturacion__gt=0), 'monto_facturacion')}
             meta_field_c = 'meta_mensual'
             vista_label = 'Facturado'
@@ -1329,6 +1333,8 @@ def api_crm_table_data(request):
                 'num_total_cotizaciones': total_num_cot,
             })
 
+        # Para vista facturado, usar el total real del Excel (incluye clientes sin match)
+        _kpi_total = _total_facturado_excel if vista == 'facturado' else total_acum
         return JsonResponse({
             'tab': 'clientes',
             'vista': vista,
@@ -1336,12 +1342,12 @@ def api_crm_table_data(request):
             'rows': rows,
             'footer': {
                 'left': f'{num_clientes_c} clientes',
-                'right': f'Total {vista_label}: ${format_money(total_acum)}',
+                'right': f'Total {vista_label}: ${format_money(_kpi_total)}',
             },
-            'total_facturado': format_money(total_acum),
+            'total_facturado': format_money(_kpi_total),
             'widget_label': f'Total {vista_label}',
             'meta': format_money(api_meta),
-            'progreso': int((total_acum / api_meta * 100)) if api_meta > 0 else 0,
+            'progreso': int((_kpi_total / api_meta * 100)) if api_meta > 0 else 0,
             'widget_left_stat': f'{num_clientes_c} Clientes',
             'prev_sum': format_money(_prev_sum),
         })
