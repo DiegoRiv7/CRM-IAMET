@@ -1732,7 +1732,7 @@
                 metaOpp    += fN(r.opp_meta);
                 metaCot    += fN(r.cot_meta);
             });
-            var fmtKpi = function(n) { return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+            var fmtKpi = function(n) { return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' MXN'; };
             var fmtPct = function(val, meta) { return meta > 0 ? Math.round(val / meta * 100) : 0; };
 
             // Helper: set KPI card content
