@@ -1361,6 +1361,10 @@ def api_crm_table_data(request):
             'progreso': int((_kpi_total / api_meta * 100)) if api_meta > 0 else 0,
             'widget_left_stat': f'{num_clientes_c} Clientes',
             'prev_sum': format_money(_prev_sum),
+            # DEBUG — borrar después
+            '_debug_total_excel': str(_total_facturado_excel),
+            '_debug_total_acum': str(total_acum),
+            '_debug_num_entries': len(_facturado_entries) if vista == 'facturado' else 0,
         })
 
     return JsonResponse({'tab': tab_activo, 'rows': [], 'footer': {'left': '', 'right': ''}})
