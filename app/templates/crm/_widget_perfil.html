@@ -258,6 +258,25 @@
     </div>
 </div>
 
+<!-- Modal Crop Avatar -->
+<div id="avatarCropModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:99999;align-items:center;justify-content:center;flex-direction:column;">
+    <div style="background:#fff;border-radius:20px;padding:24px;max-width:400px;width:90%;text-align:center;">
+        <h3 style="margin:0 0 16px;font-size:1.1rem;font-weight:700;color:#1D1D1F;">Ajusta tu foto</h3>
+        <div id="cropContainer" style="position:relative;width:280px;height:280px;margin:0 auto;overflow:hidden;border-radius:50%;background:#000;cursor:grab;">
+            <img id="cropImage" src="" style="position:absolute;user-select:none;-webkit-user-drag:none;" draggable="false">
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:16px auto;max-width:260px;">
+            <svg width="16" height="16" fill="#9CA3AF" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
+            <input type="range" id="cropZoom" min="100" max="300" value="100" style="flex:1;accent-color:#007AFF;">
+            <svg width="20" height="20" fill="#9CA3AF" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+            <button onclick="closeCropModal()" style="padding:10px 24px;border:1px solid #E5E7EB;border-radius:10px;background:#fff;color:#6B7280;font-weight:600;cursor:pointer;font-family:inherit;">Cancelar</button>
+            <button onclick="saveCroppedAvatar()" style="padding:10px 24px;border:none;border-radius:10px;background:#007AFF;color:#fff;font-weight:600;cursor:pointer;font-family:inherit;">Guardar foto</button>
+        </div>
+    </div>
+</div>
+
 <style>
     .theme-swatch.active {
         border: 3px solid #007AFF !important;
@@ -541,28 +560,148 @@
             document.body.setAttribute('data-theme', theme);
         }
 
-        window.handleNewAvatarSelection = function (input) {
-            if (input.files && input.files[0]) {
-                selectedAvatarFile = input.files[0];
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const display = document.getElementById('userAvatarWidgetDisplay');
-                    display.innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
-                };
-                reader.readAsDataURL(selectedAvatarFile);
+        // Variables para el crop
+        var _cropImg = null;
+        var _cropX = 0, _cropY = 0, _cropScale = 1;
+        var _cropDragging = false, _cropStartX = 0, _cropStartY = 0;
+        var _cropFile = null;
 
-                // Si selecciona un avatar, abrimos configuración para que pueda enviar el cambio
-                {% if request.user.is_superuser %}
-                if (confirm("¿Deseas actualizar tu foto de perfil ahora mismo?")) {
-                    // Si es admin, puede enviarlo ya
-                    document.getElementById('profileChangeForm').dispatchEvent(new Event('submit'));
-                }
-                {% else %}
-                if (confirm("¿Deseas enviar este nuevo avatar para autorización junto con tu información?")) {
-                    openConfigWidget();
-                }
-                {% endif %}
-            }
+        window.handleNewAvatarSelection = function (input) {
+            if (!input.files || !input.files[0]) return;
+            _cropFile = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                openCropModal(e.target.result);
+            };
+            reader.readAsDataURL(_cropFile);
+            input.value = ''; // Reset para poder seleccionar el mismo archivo
+        };
+
+        function openCropModal(src) {
+            var modal = document.getElementById('avatarCropModal');
+            var img = document.getElementById('cropImage');
+            var zoom = document.getElementById('cropZoom');
+            if (!modal || !img) return;
+
+            img.src = src;
+            _cropX = 0; _cropY = 0; _cropScale = 1;
+            zoom.value = 100;
+            modal.style.display = 'flex';
+
+            img.onload = function () {
+                // Center image initially
+                var container = document.getElementById('cropContainer');
+                var cw = container.offsetWidth, ch = container.offsetHeight;
+                var iw = img.naturalWidth, ih = img.naturalHeight;
+                // Scale to cover the container
+                var coverScale = Math.max(cw / iw, ch / ih);
+                _cropScale = coverScale;
+                zoom.min = Math.round(coverScale * 100);
+                zoom.max = Math.round(coverScale * 300);
+                zoom.value = Math.round(coverScale * 100);
+                _cropX = (cw - iw * _cropScale) / 2;
+                _cropY = (ch - ih * _cropScale) / 2;
+                updateCropPosition();
+            };
+
+            // Drag handlers
+            var container = document.getElementById('cropContainer');
+            container.onmousedown = function (e) { e.preventDefault(); _cropDragging = true; _cropStartX = e.clientX - _cropX; _cropStartY = e.clientY - _cropY; container.style.cursor = 'grabbing'; };
+            document.onmousemove = function (e) { if (!_cropDragging) return; _cropX = e.clientX - _cropStartX; _cropY = e.clientY - _cropStartY; updateCropPosition(); };
+            document.onmouseup = function () { _cropDragging = false; if (container) container.style.cursor = 'grab'; };
+
+            // Touch handlers
+            container.ontouchstart = function (e) { var t = e.touches[0]; _cropDragging = true; _cropStartX = t.clientX - _cropX; _cropStartY = t.clientY - _cropY; };
+            container.ontouchmove = function (e) { if (!_cropDragging) return; e.preventDefault(); var t = e.touches[0]; _cropX = t.clientX - _cropStartX; _cropY = t.clientY - _cropStartY; updateCropPosition(); };
+            container.ontouchend = function () { _cropDragging = false; };
+
+            // Zoom handler
+            zoom.oninput = function () {
+                var container = document.getElementById('cropContainer');
+                var img = document.getElementById('cropImage');
+                var cw = container.offsetWidth, ch = container.offsetHeight;
+                var oldScale = _cropScale;
+                _cropScale = parseInt(zoom.value) / 100;
+                // Zoom toward center
+                var cx = cw / 2, cy = ch / 2;
+                _cropX = cx - (_cropScale / oldScale) * (cx - _cropX);
+                _cropY = cy - (_cropScale / oldScale) * (cy - _cropY);
+                updateCropPosition();
+            };
+        }
+
+        function updateCropPosition() {
+            var img = document.getElementById('cropImage');
+            if (!img) return;
+            img.style.width = (img.naturalWidth * _cropScale) + 'px';
+            img.style.height = (img.naturalHeight * _cropScale) + 'px';
+            img.style.left = _cropX + 'px';
+            img.style.top = _cropY + 'px';
+        }
+
+        window.closeCropModal = function () {
+            var modal = document.getElementById('avatarCropModal');
+            if (modal) modal.style.display = 'none';
+            _cropFile = null;
+            var container = document.getElementById('cropContainer');
+            if (container) { container.onmousedown = null; container.ontouchstart = null; container.ontouchmove = null; container.ontouchend = null; }
+        };
+
+        window.saveCroppedAvatar = function () {
+            var container = document.getElementById('cropContainer');
+            var img = document.getElementById('cropImage');
+            if (!container || !img) return;
+
+            var size = 400; // Output size
+            var canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            var ctx = canvas.getContext('2d');
+
+            // Draw circular clip
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.clip();
+
+            // Calculate source coordinates
+            var cw = container.offsetWidth;
+            var ratio = size / cw;
+            var sx = -_cropX * ratio;
+            var sy = -_cropY * ratio;
+            var sw = img.naturalWidth * _cropScale * ratio;
+            var sh = img.naturalHeight * _cropScale * ratio;
+
+            ctx.drawImage(img, -sx, -sy, sw, sh);
+
+            // Convert to blob and upload
+            canvas.toBlob(function (blob) {
+                var formData = new FormData();
+                formData.append('avatar', blob, 'avatar.jpg');
+
+                var csrf = crmGetCookie('csrftoken');
+
+                fetch('/app/api/actualizar-avatar/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf },
+                    body: formData
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        // Update all avatar displays on the page
+                        var url = data.avatar_url + '?t=' + Date.now();
+                        var display = document.getElementById('userAvatarWidgetDisplay');
+                        if (display) display.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;">';
+                        // Also update topbar avatar if exists
+                        var topAvatar = document.querySelector('.topbar-avatar img, .crm-user-avatar img');
+                        if (topAvatar) topAvatar.src = url;
+                        closeCropModal();
+                    } else {
+                        alert(data.error || 'Error al subir avatar');
+                    }
+                })
+                .catch(function () { alert('Error de conexión'); });
+            }, 'image/jpeg', 0.9);
         };
 
         window.submitProfileChange = async function (e) {
