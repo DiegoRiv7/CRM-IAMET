@@ -834,7 +834,7 @@ def _muro_post_dict(post, request_user):
         'etiquetados': etiquetados,
         'es_anuncio': post.es_anuncio,
         'programado_para': programado_str,
-        'fecha': post.fecha_creacion.strftime('%d %b %Y %H:%M'),
+        'fecha': convert_to_tijuana_time(post.fecha_creacion).strftime('%d %b %Y %H:%M'),
         'editado': post.editado,
         'num_likes': num_likes,
         'yo_like': yo_like,
@@ -843,8 +843,11 @@ def _muro_post_dict(post, request_user):
     }
 
     # Sobrescribir autor si es un anuncio del sistema (como Empleado del Mes)
-    if post.es_anuncio and ("EMPLEADO DEL MES" in post.contenido or "IAMET" in post.contenido):
+    contenido_upper = (post.contenido or '').upper()
+    if post.es_anuncio and ("EMPLEADO DEL MES" in contenido_upper or "empleado del mes" in post.contenido or "IAMET" in contenido_upper):
         res['autor_nombre'] = "IAMET"
+        res['autor_iniciales'] = "IA"
+        res['autor_avatar'] = None
         res['autor_avatar'] = "/static/images/apple-touch-icon.png"  # Logo corporativo
         res['autor_iniciales'] = "IA"
 

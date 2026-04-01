@@ -61,10 +61,11 @@
         div.className = 'muro-post-card' + (p.es_anuncio ? ' muro-post-anuncio' : '');
         div.id = 'muro-post-' + p.id;
 
-        var isSystem = p.autor_nombre === 'IAMET';
+        var isSystem = p.autor_nombre === 'IAMET' || (p.es_anuncio && p.contenido.indexOf('empleado del mes') !== -1);
         var anuncioBanner = p.es_anuncio ? '<div style="background:linear-gradient(90deg,#0052D4,#4364F7);color:#fff;font-size:0.75rem;font-weight:700;padding:5px 14px;letter-spacing:0.08em;">📢 ANUNCIO OFICIAL</div>' : '';
 
-        var esEmpleadoMes = isSystem && (p.contenido.indexOf('EMPLEADO DEL MES') !== -1 || p.contenido.indexOf('seleccionado como el empleado del mes') !== -1);
+        var _contenidoLower = p.contenido.toLowerCase();
+        var esEmpleadoMes = (p.es_anuncio && (_contenidoLower.indexOf('empleado del mes') !== -1));
 
         var finalContent = isSystem ? p.contenido : _muroEscapeHtml(p.contenido);
         var cardBodyStyle = 'padding:1.2rem 1.1rem;';
