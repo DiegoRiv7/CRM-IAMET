@@ -399,18 +399,27 @@ def crm_home(request):
             afs = [ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)]
     except ArchivoFacturacion.DoesNotExist:
         afs = []
+    _debug_count = 0
     for af in afs:
         raw = af.datos_json or {}
+        print(f"[DEBUG FACTURADO] AF mes={af.mes} anio={af.anio} total_facturado_campo={af.total_facturado} num_keys={len(raw)}")
         for key, val in raw.items():
             if key == 'datos':
+                print(f"[DEBUG FACTURADO]   Skipping key='datos', val type={type(val)}")
                 continue
             try:
                 if isinstance(val, dict) and 'monto' in val:
-                    total_facturado += Decimal(str(val['monto']))
+                    monto_entry = Decimal(str(val['monto']))
+                    total_facturado += monto_entry
+                    _debug_count += 1
                 else:
-                    total_facturado += Decimal(str(val))
-            except Exception:
+                    monto_entry = Decimal(str(val))
+                    total_facturado += monto_entry
+                    _debug_count += 1
+            except Exception as e:
+                print(f"[DEBUG FACTURADO]   ERROR key={key} val={val} err={e}")
                 continue
+    print(f"[DEBUG FACTURADO] TOTAL CALCULADO={total_facturado} entries={_debug_count} num_afs={len(afs)}")
 
     progreso = min(int((total_facturado / meta * 100)) if meta > 0 else 0, 100)
 
