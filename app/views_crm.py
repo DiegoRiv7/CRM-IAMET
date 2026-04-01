@@ -389,17 +389,28 @@ def crm_home(request):
     num_deals = base_qs.count()
     num_cobradas = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado']).count()
 
-    # ── Total facturado desde XLS (siempre el total real del Excel) ──
+    # ── Total facturado: sumar montos de datos_json (misma fuente que la tabla) ──
     total_facturado = Decimal('0')
     try:
+        afs = []
         if mes_filter == 'todos':
-            for af in ArchivoFacturacion.objects.filter(anio=anio_int):
-                total_facturado += af.total_facturado
+            afs = list(ArchivoFacturacion.objects.filter(anio=anio_int))
         else:
-            archivo_fact = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
-            total_facturado = archivo_fact.total_facturado
+            afs = [ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)]
     except ArchivoFacturacion.DoesNotExist:
-        total_facturado = Decimal('0')
+        afs = []
+    for af in afs:
+        raw = af.datos_json or {}
+        for key, val in raw.items():
+            if key == 'datos':
+                continue
+            try:
+                if isinstance(val, dict) and 'monto' in val:
+                    total_facturado += Decimal(str(val['monto']))
+                else:
+                    total_facturado += Decimal(str(val))
+            except Exception:
+                continue
 
     progreso = min(int((total_facturado / meta * 100)) if meta > 0 else 0, 100)
 
@@ -811,17 +822,27 @@ def api_crm_table_data(request):
             clientes_qs = Cliente.objects.filter(asignado_a=user)
 
         rows = []
-        # Usar total real del Excel (no solo los matcheados)
+        # Total facturado: sumar montos de datos_json (misma fuente que la tabla desglose)
         total_facturado_acum = Decimal('0')
         try:
             if mes_filter == 'todos' or usando_periodo:
-                for af in ArchivoFacturacion.objects.filter(anio=anio_int):
-                    total_facturado_acum += af.total_facturado or Decimal('0')
+                _afs = list(ArchivoFacturacion.objects.filter(anio=anio_int))
             else:
-                af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
-                total_facturado_acum = af.total_facturado or Decimal('0')
+                _afs = [ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)]
         except ArchivoFacturacion.DoesNotExist:
-            pass
+            _afs = []
+        for _af in _afs:
+            _raw = _af.datos_json or {}
+            for _k, _v in _raw.items():
+                if _k == 'datos':
+                    continue
+                try:
+                    if isinstance(_v, dict) and 'monto' in _v:
+                        total_facturado_acum += Decimal(str(_v['monto']))
+                    else:
+                        total_facturado_acum += Decimal(str(_v))
+                except Exception:
+                    continue
 
         for c in clientes_qs.order_by('nombre_empresa'):
             p = prod_dict.get(c.id, {})
