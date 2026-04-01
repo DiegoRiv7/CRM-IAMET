@@ -7,13 +7,13 @@
     }
 
     /* ── Auto-cambio de mes en día 1 ── */
+    /* Solo aplica cuando no hay ?mes= en la URL (carga inicial sin filtro manual) */
     (function () {
         var today = new Date();
         if (today.getDate() === 1) {
-            var currentMes = String(today.getMonth() + 1).padStart(2, '0');
             var params = new URLSearchParams(window.location.search);
-            var urlMes = params.get('mes');
-            if (urlMes && urlMes !== 'todos' && urlMes !== currentMes) {
+            if (!params.has('mes')) {
+                var currentMes = String(today.getMonth() + 1).padStart(2, '0');
                 params.set('mes', currentMes);
                 window.location.replace(window.location.pathname + '?' + params.toString());
             }
