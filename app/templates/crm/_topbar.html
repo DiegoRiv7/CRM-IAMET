@@ -6,8 +6,12 @@
             <!-- Avatar + usuario + meta + efectividad ayer -->
             <div style="display:flex;align-items:center;gap:6px;cursor:pointer;"
                 onclick="var wp=document.getElementById('widgetPerfil'); if(wp) wp.classList.add('active');">
-                <div class="crm-avatar crm-avatar-lg">
+                <div class="crm-avatar crm-avatar-lg" style="overflow:hidden;">
+                    {% if request.user.userprofile.avatar %}
+                    <img src="{{ request.user.userprofile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                    {% else %}
                     {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+                    {% endif %}
                 </div>
                 <div style="font-size:0.70rem;color:#4A6FA5;font-weight:700;white-space:nowrap;line-height:1.5;">
                     {{ usuario.get_full_name|default:usuario.username }}&nbsp;<span id="islandEfectAyer"

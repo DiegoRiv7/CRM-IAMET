@@ -4474,6 +4474,16 @@
             return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
         }
 
+        function crmAvatarHtml(nombre, avatarUrl, size, bg) {
+            size = size || 32;
+            bg = bg || '#0052D4';
+            var initials = crmTaskGetInitials(nombre);
+            if (avatarUrl) {
+                return '<img src="' + avatarUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            }
+            return initials;
+        }
+
         // ── Inline edit state ──
         var _crmTaskCanEdit = false;
         var _crmTaskEdits = {};
@@ -4499,7 +4509,7 @@
                 var parts = tarea.participantes || [];
                 var html = parts.map(function (p) {
                     var rm = _crmTaskCanEdit ? '<span onclick="crmTaskRemoverInvolucrado(\'participantes\',' + p.id + ')" style="position:absolute;top:-3px;right:-3px;background:#EF4444;color:white;border-radius:50%;width:13px;height:13px;font-size:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;">x</span>' : '';
-                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#6366f1;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;" title="' + p.nombre + '">' + crmTaskGetInitials(p.nombre) + rm + '</div>';
+                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#6366f1;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;overflow:hidden;" title="' + p.nombre + '">' + crmAvatarHtml(p.nombre, p.avatar_url) + rm + '</div>';
                 }).join('');
                 if (_crmTaskCanEdit) html += '<button onclick="crmTaskAgregarInvolucrado(\'participantes\')" style="width:28px;height:28px;border-radius:50%;border:1.5px dashed #D1D5DB;background:none;color:#9CA3AF;cursor:pointer;font-size:1rem;line-height:1;vertical-align:middle;">+</button>';
                 partContainer.innerHTML = html || '<span style="color:#9CA3AF;font-size:0.78rem;">Ninguno</span>';
@@ -4510,7 +4520,7 @@
                 var obs = tarea.observadores || [];
                 var html2 = obs.map(function (o) {
                     var rm = _crmTaskCanEdit ? '<span onclick="crmTaskRemoverInvolucrado(\'observadores\',' + o.id + ')" style="position:absolute;top:-3px;right:-3px;background:#EF4444;color:white;border-radius:50%;width:13px;height:13px;font-size:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;">x</span>' : '';
-                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#8B5CF6;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;" title="' + o.nombre + '">' + crmTaskGetInitials(o.nombre) + rm + '</div>';
+                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#8B5CF6;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;overflow:hidden;" title="' + o.nombre + '">' + crmAvatarHtml(o.nombre, o.avatar_url) + rm + '</div>';
                 }).join('');
                 if (_crmTaskCanEdit) html2 += '<button onclick="crmTaskAgregarInvolucrado(\'observadores\')" style="width:28px;height:28px;border-radius:50%;border:1.5px dashed #D1D5DB;background:none;color:#9CA3AF;cursor:pointer;font-size:1rem;line-height:1;vertical-align:middle;">+</button>';
                 obsContainer.innerHTML = html2 || '<span style="color:#9CA3AF;font-size:0.78rem;">Ninguno</span>';
@@ -4653,7 +4663,7 @@
                             _crmTaskEdits.asignado_a_nombre = nombre;
                             _crmTaskEdits.asignado_a_avatar = u.avatar_url || null;
                             crmTaskShowSaveBar();
-                            respContainer.innerHTML = '<div class="crm-task-avatar" style="background:#0052D4;">' + crmTaskGetInitials(nombre) + '</div><span style="font-weight:500;font-size:0.85rem;">' + nombre + '</span>';
+                            respContainer.innerHTML = '<div class="crm-task-avatar" style="background:#0052D4;overflow:hidden;">' + crmAvatarHtml(nombre, u.avatar_url) + '</div><span style="font-weight:500;font-size:0.85rem;">' + nombre + '</span>';
                             var eb = document.createElement('button'); eb.className = 'crm-resp-edit-btn'; eb.onclick = crmTaskEditarResponsable;
                             eb.style.cssText = 'margin-left:auto;background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:1px 7px;border-radius:4px;'; eb.textContent = 'editar';
                             respContainer.appendChild(eb);
@@ -5056,7 +5066,13 @@
         // Set current user avatar in comment form
         (function () {
             var av = document.getElementById('crm-task-comment-avatar');
-            if (av) av.textContent = crmTaskGetInitials(_CRM_CONFIG.usuarioNombre || '');
+            if (av) {
+                if (_CRM_CONFIG.usuarioAvatar) {
+                    av.innerHTML = '<img src="' + _CRM_CONFIG.usuarioAvatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                } else {
+                    av.textContent = crmTaskGetInitials(_CRM_CONFIG.usuarioNombre || '');
+                }
+            }
         })();
 
         function crmTaskCargarComentarios(tareaId) {
