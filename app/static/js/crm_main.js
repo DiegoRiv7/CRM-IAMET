@@ -1771,6 +1771,9 @@
                 }
             }
 
+            // Usar total real del API (incluye clientes sin match en BD)
+            var _apiFactTotal = fN((_clientesPanelData.facturado || {}).total_facturado || '0');
+            if (_apiFactTotal > 0) totFact = _apiFactTotal;
             setKpi('ckKpiFact', totFact, metaFact || _ckGlobalMetas.fact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckTrendFact', prevFact);
             setKpi('ckKpiCob',  totCob,  metaCob  || _ckGlobalMetas.cob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckTrendCob',  prevCob);
             setKpi('ckKpiOpp',  totOpp,  metaOpp  || _ckGlobalMetas.opp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckTrendOpp',  prevOpp);

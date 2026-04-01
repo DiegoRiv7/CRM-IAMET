@@ -133,6 +133,31 @@ def get_bitrix_contacts_api(request):
     return JsonResponse(data, safe=False)
 
 
+def _calcular_total_desglose(mes, anio):
+    """Calcula el total facturado sumando datos_json — misma lógica que api_desglose_facturacion."""
+    total = Decimal('0')
+    try:
+        if mes == 'todos':
+            afs = list(ArchivoFacturacion.objects.filter(anio=anio))
+        else:
+            afs = [ArchivoFacturacion.objects.get(mes=mes, anio=anio)]
+    except ArchivoFacturacion.DoesNotExist:
+        return total
+    for af in afs:
+        raw = af.datos_json or {}
+        for key, val in raw.items():
+            if key == 'datos':
+                continue
+            try:
+                if isinstance(val, dict) and 'monto' in val:
+                    total += Decimal(str(val['monto']))
+                else:
+                    total += Decimal(str(val))
+            except Exception:
+                continue
+    return total
+
+
 @login_required
 def crm_home(request):
     """
@@ -389,28 +414,8 @@ def crm_home(request):
     num_deals = base_qs.count()
     num_cobradas = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado']).count()
 
-    # ── Total facturado: sumar montos de datos_json (misma fuente que la tabla) ──
-    total_facturado = Decimal('0')
-    try:
-        afs = []
-        if mes_filter == 'todos':
-            afs = list(ArchivoFacturacion.objects.filter(anio=anio_int))
-        else:
-            afs = [ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)]
-    except ArchivoFacturacion.DoesNotExist:
-        afs = []
-    for af in afs:
-        raw = af.datos_json or {}
-        for key, val in raw.items():
-            if key == 'datos':
-                continue
-            try:
-                if isinstance(val, dict) and 'monto' in val:
-                    total_facturado += Decimal(str(val['monto']))
-                else:
-                    total_facturado += Decimal(str(val))
-            except Exception:
-                continue
+    # ── Total facturado: usar misma lógica que api_desglose_facturacion ──
+    total_facturado = _calcular_total_desglose(mes_filter, anio_int)
 
     progreso = min(int((total_facturado / meta * 100)) if meta > 0 else 0, 100)
 
@@ -822,27 +827,7 @@ def api_crm_table_data(request):
             clientes_qs = Cliente.objects.filter(asignado_a=user)
 
         rows = []
-        # Total facturado: sumar montos de datos_json (misma fuente que la tabla desglose)
-        total_facturado_acum = Decimal('0')
-        try:
-            if mes_filter == 'todos' or usando_periodo:
-                _afs = list(ArchivoFacturacion.objects.filter(anio=anio_int))
-            else:
-                _afs = [ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)]
-        except ArchivoFacturacion.DoesNotExist:
-            _afs = []
-        for _af in _afs:
-            _raw = _af.datos_json or {}
-            for _k, _v in _raw.items():
-                if _k == 'datos':
-                    continue
-                try:
-                    if isinstance(_v, dict) and 'monto' in _v:
-                        total_facturado_acum += Decimal(str(_v['monto']))
-                    else:
-                        total_facturado_acum += Decimal(str(_v))
-                except Exception:
-                    continue
+        total_facturado_acum = _calcular_total_desglose(mes_filter, anio_int)
 
         for c in clientes_qs.order_by('nombre_empresa'):
             p = prod_dict.get(c.id, {})
