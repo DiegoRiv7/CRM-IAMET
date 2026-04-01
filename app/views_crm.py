@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, ArchivoCobrado, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -1635,6 +1635,146 @@ def api_subir_facturacion(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Error procesando archivo: {str(e)}'})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_subir_cobrado(request):
+    """
+    API para subir CSV de ingresos (cobrado).
+    Parsea el CSV y extrae total de cobros por cliente, agrupado por mes.
+    """
+    if not is_supervisor(request.user):
+        return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+
+    from datetime import datetime as dt_now
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Falta el archivo'})
+
+    try:
+        import io
+        content = archivo.read().decode('utf-8-sig')
+        reader = csv.DictReader(io.StringIO(content))
+
+        datos_por_mes = {}   # {(mes, anio): {cliente: {nombre, monto}}}
+        totales_por_mes = {}  # {(mes, anio): Decimal}
+
+        for row in reader:
+            try:
+                cliente_name = (row.get('Cliente') or '').strip()
+                if not cliente_name:
+                    continue
+
+                # Fecha: DD/MM/YYYY HH:MM:SS AM/PM
+                fecha_str = (row.get('Fecha') or '').strip()
+                if not fecha_str:
+                    continue
+                try:
+                    fecha = dt_now.strptime(fecha_str, '%d/%m/%Y %I:%M:%S %p')
+                except ValueError:
+                    try:
+                        fecha = dt_now.strptime(fecha_str, '%d/%m/%Y %H:%M:%S')
+                    except ValueError:
+                        continue
+
+                row_mes = str(fecha.month).zfill(2)
+                row_anio = fecha.year
+
+                # Total en MXN
+                total_str = (row.get('Total') or '0').replace(',', '').strip()
+                try:
+                    monto = Decimal(total_str)
+                except Exception:
+                    continue
+
+                if monto <= 0:
+                    continue
+
+                key = (row_mes, row_anio)
+                if key not in datos_por_mes:
+                    datos_por_mes[key] = {}
+                    totales_por_mes[key] = Decimal('0')
+
+                clientes_mes = datos_por_mes[key]
+                if cliente_name in clientes_mes:
+                    existing = clientes_mes[cliente_name]
+                    existing['monto'] = str(Decimal(existing['monto']) + monto)
+                else:
+                    clientes_mes[cliente_name] = {
+                        'nombre': cliente_name,
+                        'monto': str(monto),
+                    }
+                totales_por_mes[key] += monto
+            except (IndexError, ValueError, KeyError):
+                continue
+
+        archivo.seek(0)
+        meses_guardados = []
+        for (m, a), clientes_data in datos_por_mes.items():
+            obj, created = ArchivoCobrado.objects.update_or_create(
+                mes=m, anio=a,
+                defaults={
+                    'archivo': archivo,
+                    'total_cobrado': totales_por_mes[(m, a)],
+                    'datos_json': clientes_data,
+                    'subido_por': request.user,
+                }
+            )
+            meses_guardados.append(f"{m}/{a}")
+
+        total_general = sum(totales_por_mes.values())
+        return JsonResponse({
+            'success': True,
+            'total_cobrado': str(total_general),
+            'num_clientes': sum(len(v) for v in datos_por_mes.values()),
+            'meses': meses_guardados,
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error procesando archivo: {str(e)}'})
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_desglose_cobrado(request):
+    """Desglose completo de cobrado del CSV por cliente (sin filtro de match)"""
+    try:
+        mes = request.GET.get('mes', 'todos')
+        anio = int(request.GET.get('anio', 2026))
+        acumulado = {}
+
+        def _procesar(ac):
+            raw = ac.datos_json or {}
+            for key, val in raw.items():
+                if isinstance(val, dict) and 'monto' in val:
+                    nombre = val.get('nombre', key)
+                    monto = float(Decimal(str(val['monto'])))
+                else:
+                    nombre = key
+                    try:
+                        monto = float(Decimal(str(val)))
+                    except Exception:
+                        continue
+                if nombre in acumulado:
+                    acumulado[nombre]['monto'] += monto
+                else:
+                    acumulado[nombre] = {'nombre': nombre, 'monto': monto}
+
+        if mes == 'todos':
+            for ac in ArchivoCobrado.objects.filter(anio=anio):
+                _procesar(ac)
+        else:
+            try:
+                _procesar(ArchivoCobrado.objects.get(mes=mes, anio=anio))
+            except ArchivoCobrado.DoesNotExist:
+                pass
+
+        rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
+        total = sum(r['monto'] for r in rows)
+        return JsonResponse({'ok': True, 'rows': rows, 'total': total})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
 @login_required

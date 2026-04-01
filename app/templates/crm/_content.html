@@ -238,11 +238,18 @@
                 <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--fact" id="ckProgFact" style="width:0%"></div></div>
                 <div class="ck-kpi-trend" id="ckTrendFact"></div>
             </div>
-            <div class="ck-kpi-card ck-kpi--cob" style="cursor:pointer;" onclick="ckAbrirDetalle('cobrado')">
+            <div class="ck-kpi-card ck-kpi--cob" style="cursor:pointer;" onclick="ckAbrirDesgloseCobrado()">
                 <div class="ck-kpi-header">
                     <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     <span class="ck-kpi-label">COBRADO</span>
                     <span class="ck-kpi-pct-badge ck-pct--cob" id="ckPctCob"></span>
+                    {% if es_supervisor %}
+                    <button onclick="event.stopPropagation();document.getElementById('ckCobradoInput').click();" style="margin-left:auto;padding:3px 8px;border-radius:6px;border:1px solid #059669;background:rgba(5,150,105,0.08);color:#059669;font-size:0.65rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Subir CSV de cobrado">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        CSV
+                    </button>
+                    <input type="file" id="ckCobradoInput" accept=".csv" style="display:none;" onchange="ckSubirCsvCobrado(this)">
+                    {% endif %}
                 </div>
                 <div class="ck-kpi-value ck-kpi-value--cob" id="ckKpiCob">—</div>
                 <div class="ck-kpi-of-meta" id="ckMetaCob">de — meta</div>

@@ -404,6 +404,28 @@ class ArchivoFacturacion(models.Model):
         return f"Facturación {self.mes}/{self.anio} - ${self.total_facturado}"
 
 
+class ArchivoCobrado(models.Model):
+    """
+    Almacena el CSV de ingresos (cobrado) subido por administración
+    y el desglose de cobros por cliente.
+    """
+    archivo = models.FileField(upload_to='cobrado/')
+    mes = models.CharField(max_length=2)
+    anio = models.IntegerField()
+    total_cobrado = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    datos_json = models.JSONField(default=dict, blank=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    subido_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ['mes', 'anio']
+        verbose_name = "Archivo de Cobrado"
+        verbose_name_plural = "Archivos de Cobrado"
+
+    def __str__(self):
+        return f"Cobrado {self.mes}/{self.anio} - ${self.total_cobrado}"
+
+
 class Cotizacion(models.Model):
     """
     Modelo para representar una cotización.

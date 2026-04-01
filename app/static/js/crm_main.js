@@ -1775,6 +1775,8 @@
             var _apiFactTotal = fN((_clientesPanelData.facturado || {}).total_facturado || '0');
             if (_apiFactTotal > 0) totFact = _apiFactTotal;
             setKpi('ckKpiFact', totFact, metaFact || _ckGlobalMetas.fact, 'ckProgFact', 'ckPctFact', 'ckMetaFact', 'ckTrendFact', prevFact);
+            // Cobrado: si hay CSV subido, usar ese total
+            if (window._desgloseCobTotal !== undefined && window._desgloseCobTotal > 0) totCob = window._desgloseCobTotal;
             setKpi('ckKpiCob',  totCob,  metaCob  || _ckGlobalMetas.cob,  'ckProgCob',  'ckPctCob',  'ckMetaCob',  'ckTrendCob',  prevCob);
             setKpi('ckKpiOpp',  totOpp,  metaOpp  || _ckGlobalMetas.opp,  'ckProgOpp',  'ckPctOpp',  'ckMetaOpp',  'ckTrendOpp',  prevOpp);
 
@@ -2246,6 +2248,15 @@
                     }
                 })
                 .catch(function () {});
+            // También cargar total de cobrado del CSV
+            fetch('/app/api/desglose-cobrado/?mes=' + _m + '&anio=' + _a, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (resp) {
+                    if (resp.ok && resp.total !== undefined) {
+                        window._desgloseCobTotal = resp.total;
+                    }
+                })
+                .catch(function () {});
         }
 
         window.ckAbrirDesgloseFacturacion = function () {
@@ -2304,6 +2315,62 @@
                 }
             }).catch(function () { showToast('Error de conexion', 'error'); });
             input.value = '';
+        };
+
+        window.ckSubirCsvCobrado = function (input) {
+            if (!input.files || !input.files[0]) return;
+            var file = input.files[0];
+            var formData = new FormData();
+            formData.append('archivo', file);
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            fetch('/app/api/subir-cobrado/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken ? csrfToken.value : '' },
+                body: formData,
+                credentials: 'same-origin'
+            }).then(function (r) { return r.json(); })
+            .then(function (resp) {
+                if (resp.success) {
+                    showToast('Cobrado importado: ' + (resp.num_clientes || 0) + ' clientes, meses: ' + (resp.meses || []).join(', '), 'success');
+                    if (typeof refreshCrmTable === 'function') refreshCrmTable();
+                } else {
+                    showToast(resp.error || 'Error al importar', 'error');
+                }
+            }).catch(function () { showToast('Error de conexion', 'error'); });
+            input.value = '';
+        };
+
+        window.ckAbrirDesgloseCobrado = function () {
+            var charts = document.getElementById('ckChartsSection');
+            var detalle = document.getElementById('ckDetalleSection');
+            if (charts) { charts.style.opacity = '0'; charts.style.transition = 'opacity 0.2s'; setTimeout(function(){ charts.style.display = 'none'; }, 200); }
+
+            var titulo = document.getElementById('ckDetalleTitulo');
+            var head = document.getElementById('ckDetalleHead');
+            var tbody = document.getElementById('ckDetalleTbody');
+            if (titulo) titulo.textContent = 'Desglose de Cobrado';
+            if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th style="text-align:right">Monto Cobrado</th>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
+            if (detalle) { detalle.style.display = 'block'; detalle.style.opacity = '0'; detalle.style.transition = 'opacity 0.2s'; setTimeout(function(){ detalle.style.opacity = '1'; }, 50); }
+
+            var params = new URLSearchParams(window.location.search);
+            var mes = params.get('mes') || 'todos';
+            var anio = params.get('anio') || new Date().getFullYear();
+            fetch('/app/api/desglose-cobrado/?mes=' + mes + '&anio=' + anio, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (resp) {
+                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
+                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos</td></tr>'; return; }
+                    var html = '';
+                    resp.rows.forEach(function (r, i) {
+                        html += '<tr><td style="color:#8e8e93;font-size:0.75rem;">' + (i + 1) + '</td>' +
+                            '<td style="font-weight:600;">' + (r.nombre || '—') + '</td>' +
+                            '<td style="text-align:right;font-weight:700;color:#059669;">$' + Number(r.monto || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
+                    });
+                    html += '<tr style="background:#F5F5F7;font-weight:700;"><td colspan="2" style="text-align:right;padding:10px 14px;">Total</td><td style="text-align:right;padding:10px 14px;color:#059669;">$' + Number(resp.total || 0).toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
+                    if (tbody) tbody.innerHTML = html;
+                })
+                .catch(function () { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#FF3B30;">Error de conexion</td></tr>'; });
         };
 
         window.clientesVistaAbrir = function (vista) {
