@@ -758,8 +758,9 @@ def api_proyectos(request):
     """
     API para obtener proyectos con paginación
     """
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    from .views_utils import is_supervisor
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'Sección en desarrollo. Solo supervisores por ahora.'}, status=403)
     
     # Obtener parámetros de paginación
     page = int(request.GET.get('page', 1))

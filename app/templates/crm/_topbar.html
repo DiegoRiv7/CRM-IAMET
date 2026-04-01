@@ -92,7 +92,7 @@
                 <button type="button" class="island-nav-btn" id="btnTareas">
                     {% if request.user.userprofile.language == 'en' %}TASKS{% else %}TAREAS{% endif %}
                 </button>
-                <button type="button" class="island-nav-btn" id="btnProyectos" onclick="proyectosAbrir()">PROYECTOS</button>
+                {% if es_supervisor %}<button type="button" class="island-nav-btn" id="btnProyectos" onclick="proyectosAbrir()">PROYECTOS</button>{% endif %}
                 <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">
                     {% if request.user.userprofile.language == 'en' %}WALL{% else %}MURO{% endif %}
                 </button>
