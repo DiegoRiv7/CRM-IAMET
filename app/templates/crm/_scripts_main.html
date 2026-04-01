@@ -14,3 +14,20 @@ var _CRM_CONFIG = {
 };
 </script>
 <script src="{% static 'js/crm_main.js' %}"></script>
+<script>
+/* KPI facturado: siempre usar el total real del endpoint desglose */
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var mes = params.get('mes') || '{{ mes_filter|escapejs }}';
+    var anio = params.get('anio') || '{{ anio_filter|escapejs }}';
+    fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio, { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.ok && resp.total !== undefined) {
+                var fa = document.getElementById('facturadoAmount');
+                if (fa) fa.textContent = '$' + Number(resp.total).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            }
+        })
+        .catch(function() {});
+})();
+</script>
