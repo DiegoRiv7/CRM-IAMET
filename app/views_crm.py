@@ -1642,7 +1642,8 @@ def api_subir_facturacion(request):
 def api_subir_cobrado(request):
     """
     API para subir CSV de ingresos (cobrado).
-    Parsea el CSV y extrae total de cobros por cliente, agrupado por mes.
+    Parsea el CSV y extrae cobros por cliente con detalle de facturas.
+    datos_json: {cliente_name: {nombre, monto, facturas: [{factura, monto, fecha}]}}
     """
     if not is_supervisor(request.user):
         return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
@@ -1657,8 +1658,8 @@ def api_subir_cobrado(request):
         content = archivo.read().decode('utf-8-sig')
         reader = csv.DictReader(io.StringIO(content))
 
-        datos_por_mes = {}   # {(mes, anio): {cliente: {nombre, monto}}}
-        totales_por_mes = {}  # {(mes, anio): Decimal}
+        datos_por_mes = {}   # {(mes, anio): {cliente: {nombre, monto, facturas:[]}}}
+        totales_por_mes = {}
 
         for row in reader:
             try:
@@ -1666,7 +1667,6 @@ def api_subir_cobrado(request):
                 if not cliente_name:
                     continue
 
-                # Fecha: DD/MM/YYYY HH:MM:SS AM/PM
                 fecha_str = (row.get('Fecha') or '').strip()
                 if not fecha_str:
                     continue
@@ -1681,15 +1681,16 @@ def api_subir_cobrado(request):
                 row_mes = str(fecha.month).zfill(2)
                 row_anio = fecha.year
 
-                # Total en MXN
                 total_str = (row.get('Total') or '0').replace(',', '').strip()
                 try:
                     monto = Decimal(total_str)
                 except Exception:
                     continue
-
                 if monto <= 0:
                     continue
+
+                facturas_str = (row.get('Facturas') or '').strip()
+                fecha_corta = fecha.strftime('%d/%m/%Y')
 
                 key = (row_mes, row_anio)
                 if key not in datos_por_mes:
@@ -1700,10 +1701,20 @@ def api_subir_cobrado(request):
                 if cliente_name in clientes_mes:
                     existing = clientes_mes[cliente_name]
                     existing['monto'] = str(Decimal(existing['monto']) + monto)
+                    existing['facturas'].append({
+                        'factura': facturas_str,
+                        'monto': str(monto),
+                        'fecha': fecha_corta,
+                    })
                 else:
                     clientes_mes[cliente_name] = {
                         'nombre': cliente_name,
                         'monto': str(monto),
+                        'facturas': [{
+                            'factura': facturas_str,
+                            'monto': str(monto),
+                            'fecha': fecha_corta,
+                        }],
                     }
                 totales_por_mes[key] += monto
             except (IndexError, ValueError, KeyError):
@@ -1735,14 +1746,47 @@ def api_subir_cobrado(request):
         return JsonResponse({'success': False, 'error': f'Error procesando archivo: {str(e)}'})
 
 
+def _match_cliente_cobrado(nombre_csv, clientes_list):
+    """Match inteligente de nombre del CSV con clientes de la BD."""
+    cn_upper = nombre_csv.upper().strip()
+    # 1) Exact match
+    for c in clientes_list:
+        if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
+            return c
+    # 2) Contiene o está contenido
+    for c in clientes_list:
+        if not c.nombre_empresa:
+            continue
+        crm_upper = c.nombre_empresa.upper().strip()
+        if crm_upper in cn_upper or cn_upper in crm_upper:
+            return c
+    # 3) Match por primeras 2 palabras significativas
+    stop = {'DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'SA', 'CV', 'SAS', 'INC', 'MEXICO', 'S', 'RL'}
+    palabras = [w for w in cn_upper.split() if len(w) > 2 and w not in stop]
+    if len(palabras) >= 2:
+        for c in clientes_list:
+            if not c.nombre_empresa:
+                continue
+            crm_u = c.nombre_empresa.upper()
+            if palabras[0] in crm_u and palabras[1] in crm_u:
+                return c
+    elif len(palabras) == 1 and len(palabras[0]) >= 4:
+        for c in clientes_list:
+            if not c.nombre_empresa:
+                continue
+            if palabras[0] in c.nombre_empresa.upper():
+                return c
+    return None
+
+
 @login_required
 @require_http_methods(["GET"])
 def api_desglose_cobrado(request):
-    """Desglose completo de cobrado del CSV por cliente (sin filtro de match)"""
+    """Desglose de cobrado con match a clientes, vendedor, meta y facturas."""
     try:
         mes = request.GET.get('mes', 'todos')
         anio = int(request.GET.get('anio', 2026))
-        acumulado = {}
+        acumulado = {}  # {nombre: {nombre, monto, facturas[]}}
 
         def _procesar(ac):
             raw = ac.datos_json or {}
@@ -1750,16 +1794,14 @@ def api_desglose_cobrado(request):
                 if isinstance(val, dict) and 'monto' in val:
                     nombre = val.get('nombre', key)
                     monto = float(Decimal(str(val['monto'])))
+                    facturas = val.get('facturas', [])
                 else:
-                    nombre = key
-                    try:
-                        monto = float(Decimal(str(val)))
-                    except Exception:
-                        continue
+                    continue
                 if nombre in acumulado:
                     acumulado[nombre]['monto'] += monto
+                    acumulado[nombre]['facturas'].extend(facturas)
                 else:
-                    acumulado[nombre] = {'nombre': nombre, 'monto': monto}
+                    acumulado[nombre] = {'nombre': nombre, 'monto': monto, 'facturas': facturas}
 
         if mes == 'todos':
             for ac in ArchivoCobrado.objects.filter(anio=anio):
@@ -1770,7 +1812,29 @@ def api_desglose_cobrado(request):
             except ArchivoCobrado.DoesNotExist:
                 pass
 
-        rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
+        # Match con clientes de la BD
+        all_clientes = list(Cliente.objects.select_related('asignado_a').all())
+        rows = []
+        for entry in sorted(acumulado.values(), key=lambda x: -x['monto']):
+            cliente_obj = _match_cliente_cobrado(entry['nombre'], all_clientes)
+            vendedor = ''
+            meta_cobrado = 0
+            if cliente_obj:
+                if cliente_obj.asignado_a:
+                    vendedor = (cliente_obj.asignado_a.get_full_name() or cliente_obj.asignado_a.username)
+                meta_cobrado = float(cliente_obj.meta_cobrado or 0)
+                if mes == 'todos':
+                    meta_cobrado = meta_cobrado * 12
+            faltante = meta_cobrado - entry['monto']
+            rows.append({
+                'nombre': entry['nombre'],
+                'monto': entry['monto'],
+                'vendedor': vendedor,
+                'meta': meta_cobrado,
+                'faltante': faltante,
+                'facturas': entry.get('facturas', []),
+            })
+
         total = sum(r['monto'] for r in rows)
         return JsonResponse({'ok': True, 'rows': rows, 'total': total})
     except Exception as e:

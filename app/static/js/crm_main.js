@@ -2349,28 +2349,52 @@
             var head = document.getElementById('ckDetalleHead');
             var tbody = document.getElementById('ckDetalleTbody');
             if (titulo) titulo.textContent = 'Desglose de Cobrado';
-            if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th style="text-align:right">Monto Cobrado</th>';
-            if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
+            if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Empleado</th><th style="text-align:right">Cobrado</th><th style="text-align:right">Meta</th><th style="text-align:right">Faltante</th>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
             if (detalle) { detalle.style.display = 'block'; detalle.style.opacity = '0'; detalle.style.transition = 'opacity 0.2s'; setTimeout(function(){ detalle.style.opacity = '1'; }, 50); }
 
             var params = new URLSearchParams(window.location.search);
             var mes = params.get('mes') || 'todos';
             var anio = params.get('anio') || new Date().getFullYear();
+            var _fmtM = function(n) { return '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }); };
             fetch('/app/api/desglose-cobrado/?mes=' + mes + '&anio=' + anio, { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (resp) {
-                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
-                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos</td></tr>'; return; }
+                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
+                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos. Sube un CSV de ingresos.</td></tr>'; return; }
                     var html = '';
                     resp.rows.forEach(function (r, i) {
-                        html += '<tr><td style="color:#8e8e93;font-size:0.75rem;">' + (i + 1) + '</td>' +
-                            '<td style="font-weight:600;">' + (r.nombre || '—') + '</td>' +
-                            '<td style="text-align:right;font-weight:700;color:#059669;">$' + Number(r.monto || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
+                        var faltante = r.faltante || 0;
+                        var faltColor = faltante <= 0 ? '#059669' : '#DC2626';
+                        var rowId = 'cobRow-' + i;
+                        html += '<tr style="cursor:pointer;" onclick="(function(){var d=document.getElementById(\'' + rowId + '\');d.style.display=d.style.display===\'none\'?\'table-row\':\'none\';})()">' +
+                            '<td style="color:#8e8e93;font-size:0.75rem;">' + (i + 1) + '</td>' +
+                            '<td style="font-weight:600;">' + (r.nombre || '—') + ' <span style="color:#8e8e93;font-size:0.7rem;">▼</span></td>' +
+                            '<td style="color:#636366;font-size:0.8rem;">' + (r.vendedor || '—') + '</td>' +
+                            '<td style="text-align:right;font-weight:700;color:#059669;">' + _fmtM(r.monto) + '</td>' +
+                            '<td style="text-align:right;color:#636366;">' + (r.meta ? _fmtM(r.meta) : '—') + '</td>' +
+                            '<td style="text-align:right;font-weight:600;color:' + faltColor + ';">' + _fmtM(faltante) + '</td>' +
+                            '</tr>';
+                        // Facturas expandibles
+                        html += '<tr id="' + rowId + '" style="display:none;background:#F9FAFB;"><td></td><td colspan="5">';
+                        if (r.facturas && r.facturas.length > 0) {
+                            html += '<table style="width:100%;font-size:0.75rem;margin:4px 0;">';
+                            html += '<tr style="color:#8e8e93;"><td style="padding:2px 8px;">Factura</td><td style="padding:2px 8px;">Fecha</td><td style="padding:2px 8px;text-align:right;">Monto</td></tr>';
+                            r.facturas.forEach(function (f) {
+                                html += '<tr><td style="padding:2px 8px;">' + (f.factura || '—') + '</td>' +
+                                    '<td style="padding:2px 8px;">' + (f.fecha || '—') + '</td>' +
+                                    '<td style="padding:2px 8px;text-align:right;font-weight:600;">' + _fmtM(f.monto) + '</td></tr>';
+                            });
+                            html += '</table>';
+                        } else {
+                            html += '<span style="color:#8e8e93;font-size:0.75rem;">Sin detalle de facturas</span>';
+                        }
+                        html += '</td></tr>';
                     });
-                    html += '<tr style="background:#F5F5F7;font-weight:700;"><td colspan="2" style="text-align:right;padding:10px 14px;">Total</td><td style="text-align:right;padding:10px 14px;color:#059669;">$' + Number(resp.total || 0).toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
+                    html += '<tr style="background:#F5F5F7;font-weight:700;"><td colspan="3" style="text-align:right;padding:10px 14px;">Total</td><td style="text-align:right;padding:10px 14px;color:#059669;">' + _fmtM(resp.total) + '</td><td colspan="2"></td></tr>';
                     if (tbody) tbody.innerHTML = html;
                 })
-                .catch(function () { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:#FF3B30;">Error de conexion</td></tr>'; });
+                .catch(function () { if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#FF3B30;">Error de conexion</td></tr>'; });
         };
 
         window.clientesVistaAbrir = function (vista) {
