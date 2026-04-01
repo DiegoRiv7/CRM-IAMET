@@ -1746,37 +1746,46 @@ def api_subir_cobrado(request):
         return JsonResponse({'success': False, 'error': f'Error procesando archivo: {str(e)}'})
 
 
-def _match_cliente_cobrado(nombre_csv, clientes_list):
-    """Match inteligente de nombre del CSV con clientes de la BD."""
+def _match_clientes_cobrado(nombre_csv, clientes_list):
+    """
+    Match inteligente: devuelve TODOS los clientes de la BD que matchean
+    con el nombre del CSV. Ej: "EATON INDUSTRIES" → [Eaton Otay, EATON PACIFICO, Eaton Valle Bonito]
+    """
     cn_upper = nombre_csv.upper().strip()
-    # 1) Exact match
+    stop = {'DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'SA', 'CV', 'SAS', 'INC', 'MEXICO', 'S', 'RL', 'INDUSTRIES'}
+
+    # 1) Exact match — devolver solo ese
     for c in clientes_list:
         if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
-            return c
-    # 2) Contiene o está contenido
+            return [c]
+
+    # 2) Extraer palabra clave principal del CSV (primera palabra significativa de 4+ chars)
+    palabras = [w for w in cn_upper.split() if len(w) >= 4 and w not in stop]
+    if not palabras:
+        palabras = [w for w in cn_upper.split() if len(w) >= 3 and w not in stop]
+
+    # 3) Buscar TODOS los clientes que contengan la palabra clave principal
+    matches = []
+    if palabras:
+        keyword = palabras[0]
+        for c in clientes_list:
+            if not c.nombre_empresa:
+                continue
+            if keyword in c.nombre_empresa.upper():
+                matches.append(c)
+
+    if matches:
+        return matches
+
+    # 4) Fallback: contiene o está contenido
     for c in clientes_list:
         if not c.nombre_empresa:
             continue
         crm_upper = c.nombre_empresa.upper().strip()
         if crm_upper in cn_upper or cn_upper in crm_upper:
-            return c
-    # 3) Match por primeras 2 palabras significativas
-    stop = {'DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'SA', 'CV', 'SAS', 'INC', 'MEXICO', 'S', 'RL'}
-    palabras = [w for w in cn_upper.split() if len(w) > 2 and w not in stop]
-    if len(palabras) >= 2:
-        for c in clientes_list:
-            if not c.nombre_empresa:
-                continue
-            crm_u = c.nombre_empresa.upper()
-            if palabras[0] in crm_u and palabras[1] in crm_u:
-                return c
-    elif len(palabras) == 1 and len(palabras[0]) >= 4:
-        for c in clientes_list:
-            if not c.nombre_empresa:
-                continue
-            if palabras[0] in c.nombre_empresa.upper():
-                return c
-    return None
+            return [c]
+
+    return []
 
 
 @login_required
@@ -1812,19 +1821,25 @@ def api_desglose_cobrado(request):
             except ArchivoCobrado.DoesNotExist:
                 pass
 
-        # Match con clientes de la BD
+        # Match con clientes de la BD — busca TODAS las variantes
         all_clientes = list(Cliente.objects.select_related('asignado_a').all())
         rows = []
         for entry in sorted(acumulado.values(), key=lambda x: -x['monto']):
-            cliente_obj = _match_cliente_cobrado(entry['nombre'], all_clientes)
+            matches = _match_clientes_cobrado(entry['nombre'], all_clientes)
             vendedor = ''
             meta_cobrado = 0
-            if cliente_obj:
-                if cliente_obj.asignado_a:
-                    vendedor = (cliente_obj.asignado_a.get_full_name() or cliente_obj.asignado_a.username)
-                meta_cobrado = float(cliente_obj.meta_cobrado or 0)
-                if mes == 'todos':
-                    meta_cobrado = meta_cobrado * 12
+            if matches:
+                # Vendedor: tomar del primer match que tenga asignado
+                for m in matches:
+                    if m.asignado_a:
+                        vendedor = (m.asignado_a.get_full_name() or m.asignado_a.username)
+                        break
+                # Meta: sumar meta_cobrado de TODAS las variantes
+                for m in matches:
+                    mc = float(m.meta_cobrado or 0)
+                    if mes == 'todos':
+                        mc = mc * 12
+                    meta_cobrado += mc
             faltante = meta_cobrado - entry['monto']
             rows.append({
                 'nombre': entry['nombre'],
