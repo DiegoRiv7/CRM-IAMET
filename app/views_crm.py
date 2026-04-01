@@ -811,7 +811,18 @@ def api_crm_table_data(request):
             clientes_qs = Cliente.objects.filter(asignado_a=user)
 
         rows = []
+        # Usar total real del Excel (no solo los matcheados)
         total_facturado_acum = Decimal('0')
+        try:
+            if mes_filter == 'todos' or usando_periodo:
+                for af in ArchivoFacturacion.objects.filter(anio=anio_int):
+                    total_facturado_acum += af.total_facturado or Decimal('0')
+            else:
+                af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
+                total_facturado_acum = af.total_facturado or Decimal('0')
+        except ArchivoFacturacion.DoesNotExist:
+            pass
+
         for c in clientes_qs.order_by('nombre_empresa'):
             p = prod_dict.get(c.id, {})
             fact = fact_by_id.get(c.id, Decimal('0'))
@@ -835,7 +846,6 @@ def api_crm_table_data(request):
                 'meta_cliente': format_money(meta_c),
                 'meta_restante': format_money(meta_c - fact),
             })
-            total_facturado_acum += fact
 
         api_progreso_fact = int((total_facturado_acum / api_meta * 100)) if api_meta > 0 else 0
         num_clientes_fact = clientes_qs.count()
