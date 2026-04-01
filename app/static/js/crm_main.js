@@ -29,7 +29,11 @@
             var params = new URLSearchParams(window.location.search);
             if (mesFilter) params.set('mes', mesFilter.value);
             if (anioFilter) params.set('anio', anioFilter.value);
-            if (!params.get('tab')) params.set('tab', 'crm');
+            // Preservar tab actual — detectar desde URL o desde tab activo visible
+            if (!params.get('tab')) {
+                var activeTab = document.querySelector('.crm-tab-btn.active, [data-tab].active');
+                params.set('tab', activeTab ? (activeTab.dataset.tab || 'crm') : 'crm');
+            }
             // Preserve vendor filter
             var vfChecks = document.querySelectorAll('.vf-user:checked');
             var vfAllCheck = document.getElementById('vfAll');
