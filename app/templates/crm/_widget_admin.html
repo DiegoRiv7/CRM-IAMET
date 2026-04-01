@@ -332,6 +332,26 @@ function _fmtCurrency(val){
   var n = parseFloat(String(val).replace(/,/g,''))||0;
   return n.toLocaleString('en-US',{maximumFractionDigits:0});
 }
+function _fmtMXN(val){
+  var n = parseFloat(String(val).replace(/[^0-9.\-]/g,''))||0;
+  return '$' + n.toLocaleString('en-US',{maximumFractionDigits:0}) + ' MXN';
+}
+function _parseMXN(str){
+  return parseFloat(String(str).replace(/[^0-9.\-]/g,''))||0;
+}
+function _initMoneyInput(el){
+  if(!el) return;
+  var raw = parseFloat(el.value)||0;
+  if(raw) el.value = _fmtMXN(raw);
+  el.addEventListener('focus', function(){
+    var n = _parseMXN(this.value);
+    this.value = n || '';
+  });
+  el.addEventListener('blur', function(){
+    var n = _parseMXN(this.value);
+    this.value = n ? _fmtMXN(n) : '$0 MXN';
+  });
+}
 
 function _admClose(){
   var el = document.getElementById('widgetAdmin');
@@ -545,7 +565,7 @@ window.loadClientes = function(){
       h += '<td><strong>'+c.nombre_empresa+'</strong></td>';
       h += '<td>'+catBadge+'</td>';
       h += '<td style="color:#636366;">'+(asig||'&mdash;')+'</td>';
-      h += '<td>'+(c.meta_mensual ? '$'+_fmtCurrency(c.meta_mensual) : '&mdash;')+'</td>';
+      h += '<td>'+(c.meta_mensual ? _fmtMXN(c.meta_mensual) : '&mdash;')+'</td>';
       h += '<td><button class="admin-btn-icon" onclick="admEditCliente('+c.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>';
       h += '</tr>';
       h += '<tr id="admCEditRow-'+c.id+'" style="display:none;"><td colspan="5"><div class="admin-inline-form" id="admCEditForm-'+c.id+'"></div></td></tr>';
@@ -594,9 +614,9 @@ window.admEditCliente = function(cid){
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">RFC</label><input class="admin-input" id="ceRFC-'+cid+'" type="text" value="'+(c.rfc||'')+'" placeholder="Ej: ABC123456XY7" style="text-transform:uppercase;"></div>'
     +'</div>'
     +'<div class="admin-form-row">'
-    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Facturado</label><input class="admin-input" id="ceMF-'+cid+'" type="number" value="'+(c.meta_mensual||0)+'"></div>'
-    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cobrado</label><input class="admin-input" id="ceMC-'+cid+'" type="number" value="'+(c.meta_cobrado||0)+'"></div>'
-    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Opor.</label><input class="admin-input" id="ceMO-'+cid+'" type="number" value="'+(c.meta_oportunidades||0)+'"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Facturado</label><input class="admin-input admin-money" id="ceMF-'+cid+'" type="text" value="'+(c.meta_mensual||0)+'" inputmode="numeric"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cobrado</label><input class="admin-input admin-money" id="ceMC-'+cid+'" type="text" value="'+(c.meta_cobrado||0)+'" inputmode="numeric"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Opor.</label><input class="admin-input admin-money" id="ceMO-'+cid+'" type="text" value="'+(c.meta_oportunidades||0)+'" inputmode="numeric"></div>'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Meta Cotizaciones</label><input class="admin-input" id="ceMQN-'+cid+'" type="number" min="0" step="1" value="'+(c.meta_cotizado_numero||0)+'"></div>'
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:4px;">'
@@ -604,6 +624,7 @@ window.admEditCliente = function(cid){
     +'<button class="admin-btn admin-btn-secondary" onclick="document.getElementById(\'admCEditRow-'+cid+'\').style.display=\'none\'">Cancelar</button>'
     +'</div>';
   editRow.style.display='';
+  document.querySelectorAll('#admCEditForm-'+cid+' .admin-money').forEach(function(el){ _initMoneyInput(el); });
 };
 
 window.admGuardarCliente = function(cid){
@@ -612,9 +633,9 @@ window.admGuardarCliente = function(cid){
     asignado_a_id:     asigEl&&asigEl.value ? parseInt(asigEl.value) : null,
     categoria:         (document.getElementById('ceCat-'+cid)||{}).value||'C',
     rfc:               (document.getElementById('ceRFC-'+cid)||{}).value||'',
-    meta_mensual:      (document.getElementById('ceMF-'+cid)||{}).value||0,
-    meta_cobrado:      (document.getElementById('ceMC-'+cid)||{}).value||0,
-    meta_oportunidades:(document.getElementById('ceMO-'+cid)||{}).value||0,
+    meta_mensual:      _parseMXN((document.getElementById('ceMF-'+cid)||{}).value),
+    meta_cobrado:      _parseMXN((document.getElementById('ceMC-'+cid)||{}).value),
+    meta_oportunidades:_parseMXN((document.getElementById('ceMO-'+cid)||{}).value),
     meta_cotizado_numero: (document.getElementById('ceMQN-'+cid)||{}).value||0
   };
   fetch('/app/api/admin/clientes/'+cid+'/',{
@@ -711,24 +732,25 @@ window.loadMetas = function(){
     vendedores.forEach(function(u){
       h += '<tr>';
       h += '<td><strong>'+((u.first_name+' '+u.last_name).trim()||u.username)+'</strong><br><span style="color:#8E8E93;font-size:0.72rem;">@'+u.username+'</span></td>';
-      h += '<td><input class="admin-input" id="mMF-'+u.id+'" type="number" value="'+(u.meta_mensual||0)+'" style="max-width:120px;text-align:right;"></td>';
+      h += '<td><input class="admin-input admin-money" id="mMF-'+u.id+'" type="text" value="'+(u.meta_mensual||0)+'" inputmode="numeric" style="max-width:140px;text-align:right;"></td>';
       h += '<td><input class="admin-input" id="mMQN-'+u.id+'" type="number" min="0" step="1" value="'+(u.meta_cotizado_numero||0)+'" style="max-width:120px;text-align:right;"></td>';
-      h += '<td><input class="admin-input" id="mMC-'+u.id+'" type="number" value="'+(u.meta_cobrado||0)+'" style="max-width:120px;text-align:right;"></td>';
-      h += '<td><input class="admin-input" id="mMO-'+u.id+'" type="number" value="'+(u.meta_oportunidades||0)+'" style="max-width:100px;text-align:right;"></td>';
+      h += '<td><input class="admin-input admin-money" id="mMC-'+u.id+'" type="text" value="'+(u.meta_cobrado||0)+'" inputmode="numeric" style="max-width:140px;text-align:right;"></td>';
+      h += '<td><input class="admin-input admin-money" id="mMO-'+u.id+'" type="text" value="'+(u.meta_oportunidades||0)+'" inputmode="numeric" style="max-width:140px;text-align:right;"></td>';
       h += '<td><button class="admin-btn admin-btn-primary" onclick="admGuardarMeta('+u.id+')" style="white-space:nowrap;">Guardar</button></td>';
       h += '</tr>';
     });
     h += '</tbody></table></div>';
     ac.innerHTML = h;
+    document.querySelectorAll('#adminContent .admin-money').forEach(function(el){ _initMoneyInput(el); });
   });
 };
 
 window.admGuardarMeta = function(uid){
   var metas = {
-    mensual:            (document.getElementById('mMF-'+uid)||{}).value||0,
+    mensual:            _parseMXN((document.getElementById('mMF-'+uid)||{}).value),
     cotizado_numero:    (document.getElementById('mMQN-'+uid)||{}).value||0,
-    cobrado:            (document.getElementById('mMC-'+uid)||{}).value||0,
-    oportunidades:      (document.getElementById('mMO-'+uid)||{}).value||0
+    cobrado:            _parseMXN((document.getElementById('mMC-'+uid)||{}).value),
+    oportunidades:      _parseMXN((document.getElementById('mMO-'+uid)||{}).value)
   };
   var payload = {};
   payload[uid] = metas;
