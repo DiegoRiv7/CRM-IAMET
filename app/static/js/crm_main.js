@@ -1571,8 +1571,13 @@
             return ids.join(',');
         }
 
+        var _desgloseFactTotal = null; // Total real del Excel (del endpoint desglose)
         function updateTopbarFromClientesPanel(data) {
-            if (data.total_facturado !== undefined) {
+            if (_desgloseFactTotal !== null) {
+                // Usar siempre el total del desglose (incluye clientes sin match)
+                var fa = document.getElementById('facturadoAmount');
+                if (fa) fa.textContent = '$' + Number(_desgloseFactTotal).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            } else if (data.total_facturado !== undefined) {
                 var fa = document.getElementById('facturadoAmount');
                 if (fa) fa.textContent = '$' + data.total_facturado;
             }
@@ -2224,6 +2229,20 @@
         function loadAllClientesPanels() {
             _clientesCombinedLoading = _CLIENTES_VISTAS.length;
             _CLIENTES_VISTAS.forEach(function (v) { loadClientesPanel(v); });
+            // Cargar total real de facturación del Excel para el KPI
+            var params = new URLSearchParams(window.location.search);
+            var _m = params.get('mes') || currentMes;
+            var _a = params.get('anio') || currentAnio;
+            fetch('/app/api/desglose-facturacion/?mes=' + _m + '&anio=' + _a, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (resp) {
+                    if (resp.ok && resp.total !== undefined) {
+                        _desgloseFactTotal = resp.total;
+                        var fa = document.getElementById('facturadoAmount');
+                        if (fa) fa.textContent = '$' + Number(resp.total).toLocaleString('en-US', { maximumFractionDigits: 0 });
+                    }
+                })
+                .catch(function () {});
         }
 
         window.ckAbrirDesgloseFacturacion = function () {

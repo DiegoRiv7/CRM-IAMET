@@ -142,8 +142,6 @@
                     {% if tab_activo == 'crm' %}Oportunidades{% else %}Total{% endif %}
                 </span>
                 <span id="facturadoAmount" style="font-size:0.65rem;color:#1D1D1F;font-weight:700;">${{ total_facturado|floatformat:0 }}</span>
-                <!-- DEBUG: borrar después -->
-                <span style="font-size:0.5rem;color:red;">DBG: tf={{ total_facturado|floatformat:0 }} num_afs={{ debug_num_afs }} keys={{ debug_num_keys }}</span>
                 <span class="crm-stats-pct {% if progreso >= 100 %}green{% endif %}" id="progressPct">{{ progreso|floatformat:0 }}%</span>
             </div>
 

@@ -399,27 +399,18 @@ def crm_home(request):
             afs = [ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)]
     except ArchivoFacturacion.DoesNotExist:
         afs = []
-    _debug_count = 0
     for af in afs:
         raw = af.datos_json or {}
-        print(f"[DEBUG FACTURADO] AF mes={af.mes} anio={af.anio} total_facturado_campo={af.total_facturado} num_keys={len(raw)}")
         for key, val in raw.items():
             if key == 'datos':
-                print(f"[DEBUG FACTURADO]   Skipping key='datos', val type={type(val)}")
                 continue
             try:
                 if isinstance(val, dict) and 'monto' in val:
-                    monto_entry = Decimal(str(val['monto']))
-                    total_facturado += monto_entry
-                    _debug_count += 1
+                    total_facturado += Decimal(str(val['monto']))
                 else:
-                    monto_entry = Decimal(str(val))
-                    total_facturado += monto_entry
-                    _debug_count += 1
-            except Exception as e:
-                print(f"[DEBUG FACTURADO]   ERROR key={key} val={val} err={e}")
+                    total_facturado += Decimal(str(val))
+            except Exception:
                 continue
-    print(f"[DEBUG FACTURADO] TOTAL CALCULADO={total_facturado} entries={_debug_count} num_afs={len(afs)}")
 
     progreso = min(int((total_facturado / meta * 100)) if meta > 0 else 0, 100)
 
@@ -463,8 +454,6 @@ def crm_home(request):
         'mes_choices': mes_choices,
         'total_general': total_general,
         'total_facturado': total_facturado,
-        'debug_num_afs': len(afs),
-        'debug_num_keys': _debug_count,
         'num_clientes': num_clientes,
         'num_deals': num_deals,
         'num_cobradas': num_cobradas,
@@ -1361,10 +1350,6 @@ def api_crm_table_data(request):
             'progreso': int((_kpi_total / api_meta * 100)) if api_meta > 0 else 0,
             'widget_left_stat': f'{num_clientes_c} Clientes',
             'prev_sum': format_money(_prev_sum),
-            # DEBUG — borrar después
-            '_debug_total_excel': str(_total_facturado_excel),
-            '_debug_total_acum': str(total_acum),
-            '_debug_num_entries': len(_facturado_entries) if vista == 'facturado' else 0,
         })
 
     return JsonResponse({'tab': tab_activo, 'rows': [], 'footer': {'left': '', 'right': ''}})
