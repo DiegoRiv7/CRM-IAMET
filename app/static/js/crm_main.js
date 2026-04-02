@@ -1693,7 +1693,7 @@
                     '<div class="ck-client-row">' +
                     '<span class="ck-health-dot ck-health--' + health + '"></span>' +
                     '<div style="min-width:0;flex:1;">' +
-                    '<div class="ck-client-name" data-cliente-id="' + r.cliente_id + '">' + r.cliente + '</div>' +
+                    '<div class="ck-client-name" data-cliente-id="' + r.cliente_id + '" style="cursor:pointer;color:#007AFF;">' + r.cliente + '</div>' +
                     '<div class="ck-client-meta">' + (r.vendedor || '') + (trendHtml ? ' ' + trendHtml : '') + '</div>' +
                     '</div></div></td>' +
                 metricTd(r.fact_total, r.fact_meta, 'ck-metric--fact', 'ck-bar--fact') +
@@ -1714,8 +1714,9 @@
                 return;
             }
 
-            // Sort by pipeline descending
-            merged.sort(function (a, b) { return b._pipeline - a._pipeline; });
+            // Sort by opp_total descending (cliente con más oportunidades primero)
+            var fNs = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
+            merged.sort(function (a, b) { return fNs(b.opp_total) - fNs(a.opp_total); });
 
             // KPI totals + metas (sumadas de cada cliente)
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
@@ -3226,6 +3227,13 @@
                     var clienteNombre = e.target.textContent.trim();
                     openClienteModal(clienteId, clienteNombre, tab);
                 }
+                // Click en nombre de cliente desde tabla KPIs Clientes
+                if (e.target.classList.contains('ck-client-name')) {
+                    var clienteId = e.target.getAttribute('data-cliente-id');
+                    if (!clienteId) return;
+                    var clienteNombre = e.target.textContent.trim();
+                    openClienteModal(clienteId, clienteNombre, 'crm', true);
+                }
             });
 
             // ── Cerrar widget ──
@@ -3246,7 +3254,7 @@
             }
 
             // ── Abrir widget ──
-            function openClienteModal(clienteId, clienteNombre, tab) {
+            function openClienteModal(clienteId, clienteNombre, tab, porCreacion) {
                 currentClienteId = clienteId;
                 allClienteData = [];
                 var modeMap = { crm: 'oportunidades', cobrado: 'cobrado', cotizado: 'cotizado' };
@@ -3266,6 +3274,18 @@
                 var url = mode === 'cotizado'
                     ? '/app/api/cliente-cotizaciones/' + clienteId + '/'
                     : '/app/api/cliente-oportunidades/' + clienteId + '/' + (mode === 'cobrado' ? '?tipo=cobrado' : '');
+
+                // Si viene del tab Clientes, filtrar por fecha_creacion y mes/año actual
+                if (porCreacion) {
+                    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+                    var mesEl = document.getElementById('mesFilter');
+                    var anioEl = document.getElementById('anioFilter');
+                    var mesF = mesEl ? mesEl.value : '';
+                    var anioF = anioEl ? anioEl.value : '';
+                    url += sep + 'por_creacion=1';
+                    if (mesF) url += '&mes=' + mesF;
+                    if (anioF) url += '&anio=' + anioF;
+                }
 
                 fetch(url)
                     .then(function (r) { return r.json(); })

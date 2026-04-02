@@ -2031,17 +2031,26 @@ def api_cliente_oportunidades(request, cliente_id):
         return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
 
     qs = TodoItem.objects.select_related('cliente', 'contacto', 'usuario').filter(cliente=cliente)
-    
+
+    # Filtrar por fecha_creacion si se indica (usado en tab Clientes)
+    por_creacion = request.GET.get('por_creacion', '')
+
     # Aplicar filtros solo si no son 'todos'
     if anio_filter != 'todos':
         try:
             anio_int = int(anio_filter)
-            qs = qs.filter(anio_cierre=anio_int)
+            if por_creacion:
+                qs = qs.filter(fecha_creacion__year=anio_int)
+            else:
+                qs = qs.filter(anio_cierre=anio_int)
         except (ValueError, TypeError):
             pass
 
     if mes_filter != 'todos':
-        qs = qs.filter(mes_cierre=mes_filter)
+        if por_creacion:
+            qs = qs.filter(fecha_creacion__month=int(mes_filter))
+        else:
+            qs = qs.filter(mes_cierre=mes_filter)
 
     if not es_supervisor:
         _gids = get_usuarios_visibles_ids(user)
