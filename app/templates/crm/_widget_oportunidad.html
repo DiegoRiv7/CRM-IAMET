@@ -746,12 +746,60 @@
                     content.innerHTML = '<pre style="background:#1e1e1e;color:#d4d4d4;padding:20px;border-radius:8px;max-width:90%;max-height:90%;overflow:auto;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
                 }).catch(function(){ content.innerHTML = '<div style="color:#fff;">No se pudo cargar el archivo</div>'; });
             }
-            // Office docs - download with file type info (files are behind auth, so external viewers cannot access them)
+            // Excel - render as HTML table using SheetJS (lazy load)
+            else if (['xls','xlsx','ods'].indexOf(ext) > -1) {
+                content.innerHTML = '<div style="color:#fff;font-size:0.85rem;">Cargando hoja de cálculo...</div>';
+                var loadAndRender = function(){
+                    fetch(url).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
+                    var wb = XLSX.read(buf, {type:'array'});
+                    // Sheet tabs
+                    var tabs = '';
+                    wb.SheetNames.forEach(function(sn, i){
+                        tabs += '<button class="wo-sheet-tab' + (i===0?' wo-sheet-active':'') + '" data-sheet="'+i+'" style="padding:4px 14px;border:none;border-radius:6px 6px 0 0;font-size:0.75rem;cursor:pointer;margin-right:2px;' + (i===0?'background:#fff;color:#1D1D1F;font-weight:600;':'background:rgba(255,255,255,0.15);color:#ccc;') + '">'+sn.replace(/</g,'&lt;')+'</button>';
+                    });
+                    var sheetsHtml = '';
+                    wb.SheetNames.forEach(function(sn, i){
+                        var html = XLSX.utils.sheet_to_html(wb.Sheets[sn], {editable:false});
+                        sheetsHtml += '<div class="wo-sheet-content" data-sheet="'+i+'" style="'+(i>0?'display:none;':'')+'overflow:auto;max-height:calc(100vh - 120px);">'+html+'</div>';
+                    });
+                    content.innerHTML = '<div style="width:95%;max-width:1200px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 30px rgba(0,0,0,0.3);">' +
+                        '<div style="background:#f3f4f6;padding:4px 8px;display:flex;flex-wrap:wrap;">'+tabs+'</div>' +
+                        '<div style="overflow:auto;max-height:calc(100vh - 120px);">'+sheetsHtml+'</div></div>';
+                    // Style the table
+                    content.querySelectorAll('table').forEach(function(t){
+                        t.style.cssText = 'border-collapse:collapse;width:100%;font-size:0.75rem;';
+                        t.querySelectorAll('td,th').forEach(function(c){
+                            c.style.cssText = 'border:1px solid #e5e7eb;padding:4px 8px;white-space:nowrap;max-width:250px;overflow:hidden;text-overflow:ellipsis;';
+                        });
+                        t.querySelectorAll('th').forEach(function(c){ c.style.background = '#f9fafb'; c.style.fontWeight = '600'; });
+                    });
+                    // Tab switching
+                    content.querySelectorAll('.wo-sheet-tab').forEach(function(tab){
+                        tab.onclick = function(){
+                            var idx = this.getAttribute('data-sheet');
+                            content.querySelectorAll('.wo-sheet-tab').forEach(function(t){ t.style.background='rgba(255,255,255,0.15)'; t.style.color='#ccc'; t.style.fontWeight='400'; t.classList.remove('wo-sheet-active'); });
+                            this.style.background='#fff'; this.style.color='#1D1D1F'; this.style.fontWeight='600'; this.classList.add('wo-sheet-active');
+                            content.querySelectorAll('.wo-sheet-content').forEach(function(s){ s.style.display = s.getAttribute('data-sheet')===idx?'':'none'; });
+                        };
+                    });
+                }).catch(function(){ content.innerHTML = '<div style="color:#FF3B30;">Error al leer el archivo Excel</div>'; });
+                };
+                // Lazy load SheetJS if not already loaded
+                if (typeof XLSX !== 'undefined') { loadAndRender(); }
+                else {
+                    var s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+                    s.onload = loadAndRender;
+                    s.onerror = function(){ content.innerHTML = '<div style="color:#FF3B30;">Error cargando visor de Excel</div>'; };
+                    document.head.appendChild(s);
+                }
+            }
+            // Other Office docs - download with file type info
             else if (officeExts.indexOf(ext) > -1 || tipo === 'documento') {
-                var officeIcons = {'doc':'&#128196;','docx':'&#128196;','xls':'&#128202;','xlsx':'&#128202;','ppt':'&#128253;','pptx':'&#128253;','odt':'&#128196;','ods':'&#128202;','odp':'&#128253;','rtf':'&#128196;'};
-                var officeLabels = {'doc':'Word','docx':'Word','xls':'Excel','xlsx':'Excel','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Writer','ods':'Calc','odp':'Impress','rtf':'Texto enriquecido'};
+                var officeIcons = {'doc':'&#128196;','docx':'&#128196;','ppt':'&#128253;','pptx':'&#128253;','odt':'&#128196;','odp':'&#128253;','rtf':'&#128196;'};
+                var officeLabels = {'doc':'Word','docx':'Word','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Writer','odp':'Impress','rtf':'Texto enriquecido'};
                 var icon = officeIcons[ext] || '&#128196;';
-                var label = officeLabels[ext] || 'Office';
+                var label = officeLabels[ext] || 'Documento';
                 content.innerHTML = '<div style="text-align:center;color:#fff;">' +
                     '<div style="font-size:4rem;margin-bottom:1rem;">' + icon + '</div>' +
                     '<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">' + nombre + '</div>' +
