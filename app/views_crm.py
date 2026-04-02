@@ -160,7 +160,7 @@ def _get_empleado_mes_data():
             'eficiencia': int(ganador.promedio_eficiencia),
             'tareas': ganador.tareas_completadas,
             'cobradas': ganador.oportunidades_cobradas,
-            'mes_nombre': f"{MESES_ES.get(ganador.mes, '')} {ganador.anio}",
+            'mes_nombre': f"{MESES_ES.get(int(ganador.mes), str(ganador.mes))} {ganador.anio}",
         }
     except Exception:
         return None
