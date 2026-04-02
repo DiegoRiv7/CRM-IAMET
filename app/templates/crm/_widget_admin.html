@@ -1195,9 +1195,14 @@ window.getAC            = getAC;
   var _taAutoUsuarios = [];
   var _taAutoEditandoId = null;
 
-  var ETAPAS_RUNRATE_TA = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta','Ganado','Perdido'];
-  var ETAPAS_PROYECTO_TA = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes','Pagado','Perdido'];
-  var TODAS_ETAPAS_TA = Array.from(new Set(ETAPAS_RUNRATE_TA.concat(ETAPAS_PROYECTO_TA))).sort();
+  // Etapas dinámicas desde la BD (EtapaPipeline)
+  var _epData = (window._CRM_CONFIG || {}).etapasPipeline || {};
+  var ETAPAS_RUNRATE_TA = (_epData.runrate || []).map(function(e){ return e.nombre; });
+  var ETAPAS_PROYECTO_TA = (_epData.proyecto || []).map(function(e){ return e.nombre; });
+  // Incluir etapas de todos los pipelines (no solo runrate/proyecto)
+  var _allNames = [];
+  Object.keys(_epData).forEach(function(p){ (_epData[p] || []).forEach(function(e){ _allNames.push(e.nombre); }); });
+  var TODAS_ETAPAS_TA = Array.from(new Set(_allNames));
 
   var PRIO_COLORS = {baja:'#8E8E93',normal:'#007AFF',alta:'#FF9500',urgente:'#FF3B30'};
   var TIPO_LABEL = {ambos:'Runrate & Proyecto',runrate:'Runrate',proyecto:'Proyecto'};
@@ -1341,9 +1346,9 @@ window.getAC            = getAC;
   function _getAdminCsrf(){ return window._getAdminCsrf(); }
 
   function _getEtapasPorTipo(tipo) {
-    if (tipo === 'runrate') return ETAPAS_RUNRATE_TA;
-    if (tipo === 'proyecto') return ETAPAS_PROYECTO_TA;
-    return TODAS_ETAPAS_TA;
+    if (tipo === 'ambos' || !tipo) return TODAS_ETAPAS_TA;
+    var ep = (_epData[tipo] || []).map(function(e){ return e.nombre; });
+    return ep.length ? ep : TODAS_ETAPAS_TA;
   }
 
   window._taFiltrarEtapas = function() {
