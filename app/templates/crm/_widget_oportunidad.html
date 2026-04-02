@@ -706,60 +706,67 @@
             if (!viewer || !content) return;
 
             nameEl.textContent = nombre;
-            dlBtn.href = url + (url.indexOf('?') > -1 ? '&' : '?') + 'dl=1';
+            var dlUrl = url + (url.indexOf('?') > -1 ? '&' : '?') + 'dl=1';
+            dlBtn.href = dlUrl;
             content.innerHTML = '<div style="color:#fff;">Cargando...</div>';
             viewer.style.display = 'flex';
             document.body.style.overflow = 'hidden';
 
-            var ext = (extension || '').toLowerCase();
+            // Determine extension: use param first, then extract from filename
+            var ext = (extension || '').toLowerCase().replace(/^\./,'');
+            if (!ext && nombre) {
+                var parts = nombre.split('.');
+                if (parts.length > 1) ext = parts.pop().toLowerCase();
+            }
 
-            // PDF
-            if (tipo === 'pdf' || ext === 'pdf') {
+            // Extension-based lists for detection (checked regardless of tipo)
+            var pdfExts = ['pdf'];
+            var imgExts = ['jpg','jpeg','png','gif','bmp','svg','webp','ico','tiff','tif'];
+            var vidExts = ['mp4','webm','ogg','mov','avi','mkv'];
+            var audExts = ['mp3','wav','aac','flac','m4a','wma'];
+            var txtExts = ['txt','csv','json','xml','html','css','js','py','log','md','yml','yaml','ini','conf','sh','bat','sql','env','cfg','toml'];
+            var officeExts = ['doc','docx','xls','xlsx','ppt','pptx','odt','ods','odp','rtf'];
+
+            // Always detect by extension first, then fall back to tipo
+            // This ensures files with tipo='otro' still preview correctly
+            if (pdfExts.indexOf(ext) > -1) {
                 content.innerHTML = '<iframe src="' + url + '" style="width:100%;height:100%;border:none;border-radius:8px;background:#fff;"></iframe>';
             }
-            // Imagenes
-            else if (tipo === 'imagen' || ['jpg','jpeg','png','gif','bmp','svg','webp','ico'].indexOf(ext) > -1) {
+            else if (imgExts.indexOf(ext) > -1 || (tipo === 'imagen' && !ext)) {
                 content.innerHTML = '<img src="' + url + '" style="max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;box-shadow:0 4px 30px rgba(0,0,0,0.3);">';
             }
-            // Video
-            else if (tipo === 'video' || ['mp4','webm','ogg','mov'].indexOf(ext) > -1) {
+            else if (vidExts.indexOf(ext) > -1 || (tipo === 'video' && !ext)) {
                 content.innerHTML = '<video controls autoplay style="max-width:95%;max-height:95%;border-radius:8px;"><source src="' + url + '">Tu navegador no soporta video.</video>';
             }
-            // Audio
-            else if (tipo === 'audio' || ['mp3','wav','ogg','aac','flac'].indexOf(ext) > -1) {
+            else if (audExts.indexOf(ext) > -1 || (tipo === 'audio' && !ext)) {
                 content.innerHTML = '<div style="text-align:center;"><div style="font-size:4rem;margin-bottom:1rem;">&#127925;</div><audio controls autoplay style="width:400px;max-width:90%;"><source src="' + url + '">Tu navegador no soporta audio.</audio></div>';
             }
-            // Texto plano / codigo
-            else if (['txt','csv','json','xml','html','css','js','py','log','md','yml','yaml','ini','conf','sh','bat'].indexOf(ext) > -1) {
+            else if (txtExts.indexOf(ext) > -1) {
                 fetch(url).then(function(r){ return r.text(); }).then(function(text){
                     content.innerHTML = '<pre style="background:#1e1e1e;color:#d4d4d4;padding:20px;border-radius:8px;max-width:90%;max-height:90%;overflow:auto;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
                 }).catch(function(){ content.innerHTML = '<div style="color:#fff;">No se pudo cargar el archivo</div>'; });
             }
-            // Office docs (Word, Excel, PowerPoint) - Microsoft Office Online viewer (HTTPS) o descarga (HTTP)
-            else if (['doc','docx','xls','xlsx','ppt','pptx','odt','ods','odp'].indexOf(ext) > -1) {
-                var fullUrl = window.location.origin + url;
-                var officeIcons = {'doc':'📄','docx':'📄','xls':'📊','xlsx':'📊','ppt':'📽','pptx':'📽','odt':'📄','ods':'📊','odp':'📽'};
-                var officeLabels = {'doc':'Word','docx':'Word','xls':'Excel','xlsx':'Excel','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Word','ods':'Excel','odp':'PowerPoint'};
-                var icon = officeIcons[ext] || '📄';
+            // Office docs - download with file type info (files are behind auth, so external viewers cannot access them)
+            else if (officeExts.indexOf(ext) > -1 || tipo === 'documento') {
+                var officeIcons = {'doc':'&#128196;','docx':'&#128196;','xls':'&#128202;','xlsx':'&#128202;','ppt':'&#128253;','pptx':'&#128253;','odt':'&#128196;','ods':'&#128202;','odp':'&#128253;','rtf':'&#128196;'};
+                var officeLabels = {'doc':'Word','docx':'Word','xls':'Excel','xlsx':'Excel','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Writer','ods':'Calc','odp':'Impress','rtf':'Texto enriquecido'};
+                var icon = officeIcons[ext] || '&#128196;';
                 var label = officeLabels[ext] || 'Office';
-                if (window.location.protocol === 'https:') {
-                    content.innerHTML = '<iframe src="https://view.officeapps.live.com/op/embed.ashx?src=' + encodeURIComponent(fullUrl) + '" style="width:100%;height:100%;border:none;border-radius:8px;background:#fff;"></iframe>';
-                } else {
-                    content.innerHTML = '<div style="text-align:center;color:#fff;">' +
-                        '<div style="font-size:4rem;margin-bottom:1rem;">' + icon + '</div>' +
-                        '<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">' + nombre + '</div>' +
-                        '<div style="font-size:0.85rem;color:#9CA3AF;margin-bottom:1.5rem;">Archivo de ' + label + '</div>' +
-                        '<a href="' + url + (url.indexOf('?')>-1?'&':'?') + 'dl=1" style="display:inline-flex;align-items:center;gap:6px;background:#0052D4;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem;">Descargar para ver/editar</a>' +
-                        '</div>';
-                }
+                content.innerHTML = '<div style="text-align:center;color:#fff;">' +
+                    '<div style="font-size:4rem;margin-bottom:1rem;">' + icon + '</div>' +
+                    '<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">' + nombre + '</div>' +
+                    '<div style="font-size:0.85rem;color:#9CA3AF;margin-bottom:1.5rem;">Archivo de ' + label + '</div>' +
+                    '<a href="' + dlUrl + '" style="display:inline-flex;align-items:center;gap:6px;background:#0052D4;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">&#11015; Descargar para ver/editar</a>' +
+                    '</div>';
             }
-            // Fallback - no se puede previsualizar
+            // Fallback - show download with extension info if available
             else {
+                var fallbackInfo = ext ? ('Archivo .' + ext.toUpperCase()) : 'Tipo de archivo desconocido';
                 content.innerHTML = '<div style="text-align:center;color:#fff;">' +
                     '<div style="font-size:4rem;margin-bottom:1rem;">&#128196;</div>' +
                     '<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">' + nombre + '</div>' +
-                    '<div style="font-size:0.85rem;color:#9CA3AF;margin-bottom:1.5rem;">Este tipo de archivo no se puede previsualizar</div>' +
-                    '<a href="' + url + (url.indexOf('?')>-1?'&':'?') + 'dl=1" style="display:inline-flex;align-items:center;gap:6px;background:#0052D4;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem;">Descargar archivo</a>' +
+                    '<div style="font-size:0.85rem;color:#9CA3AF;margin-bottom:1.5rem;">' + fallbackInfo + '</div>' +
+                    '<a href="' + dlUrl + '" style="display:inline-flex;align-items:center;gap:6px;background:#0052D4;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">&#11015; Descargar archivo</a>' +
                     '</div>';
             }
         };

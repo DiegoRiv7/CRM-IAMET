@@ -195,8 +195,9 @@ def get_user_clients_api(request):
         else:
             # Si no es supervisor, obtener solo los clientes asignados a este usuario
             # Usamos 'asignado_a' que es el campo correcto en tu modelo Cliente
-            clients_queryset = Cliente.objects.filter(asignado_a=request.user)
-            print(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo sus clientes.")
+            from .views_grupos import get_clientes_visibles_q
+            clients_queryset = Cliente.objects.filter(get_clientes_visibles_q(request.user))
+            print(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo clientes visibles (propios + grupo).")
 
         # Serializar los clientes a un formato que pueda ser convertido a JSON
         clients_data = []
@@ -1097,8 +1098,13 @@ def cotizaciones_view(request):
         if is_supervisor_flag:
             cotizaciones_qs = Cotizacion.objects.filter(cliente=cliente)
         else:
-            cotizaciones_qs = Cotizacion.objects.filter(cliente=cliente, created_by=request.user)
-        
+            from .views_grupos import get_usuarios_visibles_ids as _get_vis_ids
+            _vis_ids = _get_vis_ids(request.user)
+            if _vis_ids is None:
+                cotizaciones_qs = Cotizacion.objects.filter(cliente=cliente)
+            else:
+                cotizaciones_qs = Cotizacion.objects.filter(cliente=cliente, created_by__in=_vis_ids)
+
         from django.urls import reverse
         cotizaciones_list = [
             {
@@ -1285,7 +1291,12 @@ def cotizaciones_por_cliente_view(request, cliente_id):
     if is_supervisor:
         cotizaciones = Cotizacion.objects.filter(cliente=cliente)
     else:
-        cotizaciones = Cotizacion.objects.filter(cliente=cliente, created_by=user)
+        from .views_grupos import get_usuarios_visibles_ids as _get_vis_ids
+        _vis_ids = _get_vis_ids(user)
+        if _vis_ids is None:
+            cotizaciones = Cotizacion.objects.filter(cliente=cliente)
+        else:
+            cotizaciones = Cotizacion.objects.filter(cliente=cliente, created_by__in=_vis_ids)
     cotizaciones_list = [
         {
             'id': c.id,

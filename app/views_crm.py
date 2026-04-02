@@ -36,7 +36,7 @@ from django.utils.html import json_script
 
 # Helper function to detect lost opportunities
 from .views_utils import *
-from .views_grupos import get_usuarios_visibles_ids
+from .views_grupos import get_usuarios_visibles_ids, get_clientes_visibles_q
 
 
 def _get_etapas_pipeline_json():
@@ -384,7 +384,7 @@ def crm_home(request):
             else:
                 clientes_qs = Cliente.objects.all().order_by('nombre_empresa')
         else:
-            clientes_qs = Cliente.objects.filter(asignado_a=user).order_by('nombre_empresa')
+            clientes_qs = Cliente.objects.filter(get_clientes_visibles_q(user)).order_by('nombre_empresa')
 
         raw_data = []
         for c in clientes_qs:
@@ -858,7 +858,7 @@ def api_crm_table_data(request):
         if es_supervisor:
             clientes_qs = Cliente.objects.filter(asignado_a_id__in=vendedores_ids) if vendedores_ids else Cliente.objects.all()
         else:
-            clientes_qs = Cliente.objects.filter(asignado_a=user)
+            clientes_qs = Cliente.objects.filter(get_clientes_visibles_q(user))
 
         rows = []
         total_facturado_acum = _calcular_total_desglose(mes_filter, anio_int)
@@ -1244,7 +1244,7 @@ def api_crm_table_data(request):
             if es_supervisor:
                 clientes_qs = Cliente.objects.filter(asignado_a_id__in=vendedores_ids) if vendedores_ids else Cliente.objects.all()
             else:
-                clientes_qs = Cliente.objects.filter(asignado_a=user)
+                clientes_qs = Cliente.objects.filter(get_clientes_visibles_q(user))
 
             prospectos_qs = Prospecto.objects.filter(fecha_creacion__year=anio_int)
             if mes_filter and mes_filter != 'todos':
@@ -2217,9 +2217,10 @@ def reporte_ventas_por_cliente(request):
         )['sum_monto'] or Decimal('0.00')
         usuarios = User.objects.filter(is_active=True)
     else:
-        reporte_data = Cliente.objects.filter(asignado_a=request.user).annotate(
+        _visible_ids = get_usuarios_visibles_ids(request.user)
+        reporte_data = Cliente.objects.filter(get_clientes_visibles_q(request.user)).annotate(
             total_monto=Coalesce(
-                Sum('oportunidades__monto', filter=Q(oportunidades__etapa_corta__in=['Ganado', 'Pagado'], oportunidades__usuario=request.user)),
+                Sum('oportunidades__monto', filter=Q(oportunidades__etapa_corta__in=['Ganado', 'Pagado'], oportunidades__usuario__in=_visible_ids) if _visible_ids else Q(oportunidades__etapa_corta__in=['Ganado', 'Pagado'])),
                 Value(Decimal('0.00'))
             )
         ).values(
@@ -2227,9 +2228,14 @@ def reporte_ventas_por_cliente(request):
             'nombre_empresa',
             'total_monto'
         ).order_by('nombre_empresa')
-        total_general = TodoItem.objects.filter(
-            usuario=request.user, etapa_corta__in=['Ganado', 'Pagado']
-        ).aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
+        if _visible_ids:
+            total_general = TodoItem.objects.filter(
+                usuario__in=_visible_ids, etapa_corta__in=['Ganado', 'Pagado']
+            ).aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
+        else:
+            total_general = TodoItem.objects.filter(
+                etapa_corta__in=['Ganado', 'Pagado']
+            ).aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
         usuarios = None
     context = {
         'reporte_data': reporte_data,
@@ -2248,9 +2254,15 @@ def oportunidades_por_cliente(request, cliente_id):
         oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado) # Todas las oportunidades del cliente
         print("DEBUG: Supervisor viendo oportunidades de cliente.")
     else:
-        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id, asignado_a=request.user) # Usar asignado_a
-        oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado, usuario=request.user)
-        print(f"DEBUG: Vendedor {request.user.username} viendo sus propias oportunidades de cliente.")
+        _visible_ids = get_usuarios_visibles_ids(request.user)
+        _visible_q = get_clientes_visibles_q(request.user)
+        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id)
+        # Verify the client is visible to this user
+        if not Cliente.objects.filter(_visible_q, pk=cliente_id).exists():
+            from django.http import Http404
+            raise Http404
+        oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado, usuario__in=_visible_ids) if _visible_ids else TodoItem.objects.filter(cliente=cliente_seleccionado)
+        print(f"DEBUG: Vendedor {request.user.username} viendo oportunidades de grupo de cliente.")
 
     # El formulario de filtro no necesita el usuario para sus querysets de clientes en este contexto
     # ya que los clientes ya vienen filtrados por la vista o se obtienen todos.
