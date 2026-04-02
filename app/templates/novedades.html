@@ -321,6 +321,19 @@ body { background:#F5F5F7 !important; }
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             <span id="novToggleBtnLabel">{% if novedades_config.widget_activo %}Desactivar{% else %}Activar{% endif %}</span>
         </button>
+        <div class="nov-admin-label" style="margin-left:20px;">
+            <svg width="15" height="15" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Empleado Mes &mdash;
+            <span id="emWidgetStatus" class="nov-toggle-status {% if novedades_config.em_widget_activo %}on{% else %}off{% endif %}">
+                {% if novedades_config.em_widget_activo %}Activo{% else %}Inactivo{% endif %}
+            </span>
+        </div>
+        <button id="emToggleBtn"
+            class="nov-toggle-btn {% if novedades_config.em_widget_activo %}activo{% else %}inactivo{% endif %}"
+            onclick="emToggleWidget()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span id="emToggleBtnLabel">{% if novedades_config.em_widget_activo %}Desactivar{% else %}Activar{% endif %}</span>
+        </button>
         {% endif %}
         <span class="nov-date-sep">Actualizaciones:</span>
         <button class="nov-date-chip active" data-date="2026-03-23" onclick="novSelectDate(this)">
@@ -1082,6 +1095,35 @@ body { background:#F5F5F7 !important; }
             }
         })
         .catch(function(){ if(btn){btn.disabled=false;btn.style.opacity='1';} alert('Error al cambiar el estado.'); });
+    };
+
+    var emActivo = {{ novedades_config.em_widget_activo|yesno:"true,false" }};
+    window.emToggleWidget = function () {
+        var btn = document.getElementById('emToggleBtn');
+        var lbl = document.getElementById('emToggleBtnLabel');
+        var sta = document.getElementById('emWidgetStatus');
+        if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+        fetch('/app/api/novedades/toggle-empleado-mes/', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+            body:JSON.stringify({activo:!emActivo})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d) {
+            emActivo = d.activo;
+            if (!btn) return;
+            btn.disabled = false; btn.style.opacity = '1';
+            if (d.activo) {
+                btn.className = 'nov-toggle-btn activo';
+                lbl.textContent = 'Desactivar';
+                if (sta) { sta.textContent = 'Activo'; sta.className = 'nov-toggle-status on'; }
+            } else {
+                btn.className = 'nov-toggle-btn inactivo';
+                lbl.textContent = 'Activar';
+                if (sta) { sta.textContent = 'Inactivo'; sta.className = 'nov-toggle-status off'; }
+            }
+        })
+        .catch(function(){ if(btn){btn.disabled=false;btn.style.opacity='1';} });
     };
 })();
 </script>

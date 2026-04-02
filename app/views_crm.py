@@ -133,6 +133,39 @@ def get_bitrix_contacts_api(request):
     return JsonResponse(data, safe=False)
 
 
+def _get_empleado_mes_data():
+    """Obtiene datos del empleado del mes más reciente para el widget."""
+    try:
+        ganador = EficienciaMensual.objects.filter(
+            empleado_del_mes=True
+        ).order_by('-anio', '-mes').first()
+        if not ganador:
+            return None
+
+        from datetime import date
+        MESES_ES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+                    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'}
+
+        user = ganador.usuario
+        nombre = user.get_full_name() or user.username
+        initials = ''.join(w[0].upper() for w in nombre.split() if w)[:2]
+        profile = getattr(user, 'userprofile', None)
+        avatar_url = profile.get_avatar_url() if profile and hasattr(profile, 'get_avatar_url') else ''
+
+        return {
+            'nombre': nombre,
+            'username': f'@{user.username}',
+            'initials': initials,
+            'avatar_url': avatar_url,
+            'eficiencia': int(ganador.promedio_eficiencia),
+            'tareas': ganador.tareas_completadas,
+            'cobradas': ganador.oportunidades_cobradas,
+            'mes_nombre': f"{MESES_ES.get(ganador.mes, '')} {ganador.anio}",
+        }
+    except Exception:
+        return None
+
+
 def _calcular_total_desglose(mes, anio):
     """Calcula el total facturado sumando datos_json — misma lógica que api_desglose_facturacion."""
     total = Decimal('0')
@@ -476,6 +509,7 @@ def crm_home(request):
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
         'novedades_config': NovedadesConfig.get(),
+        'empleado_mes_data': _get_empleado_mes_data(),
         'mis_grupos': _get_mis_grupos_ctx(user),
         'es_supervisor_de_grupo': _es_supervisor_de_grupo(user),
         'etapas_pipeline_json': _get_etapas_pipeline_json(),
@@ -4329,6 +4363,25 @@ def api_toggle_novedades_widget(request):
         'ok': True,
         'activo': config.widget_activo,
         'activation_count': config.activation_count,
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_toggle_empleado_mes_widget(request):
+    """Activa o desactiva el widget de empleado del mes (solo supervisores)."""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No permitido'}, status=403)
+    data = json.loads(request.body)
+    config = NovedadesConfig.get()
+    activando = bool(data.get('activo', False))
+    config.em_widget_activo = activando
+    if activando:
+        config.em_activation_count += 1
+    config.save()
+    return JsonResponse({
+        'ok': True,
+        'activo': config.em_widget_activo,
     })
 
 

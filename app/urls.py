@@ -198,6 +198,7 @@ urlpatterns = [
     # ── Novedades ─────────────────────────────────────────────────────────────
     path('novedades/', views.novedades_view, name='novedades'),
     path('api/novedades/toggle-widget/', views.api_toggle_novedades_widget, name='api_toggle_novedades_widget'),
+    path('api/novedades/toggle-empleado-mes/', views.api_toggle_empleado_mes_widget, name='api_toggle_empleado_mes_widget'),
 
     # ── Spotlight Search ──────────────────────────────────────────────────────
     path('api/spotlight-search/', views.spotlight_search_api, name='spotlight_search_api'),

@@ -3444,7 +3444,11 @@ class NovedadesConfig(models.Model):
     """Configuración singleton para el widget de novedades."""
     widget_activo = models.BooleanField(default=False)
     version = models.CharField(max_length=30, default='2026-03-13')
-    activation_count = models.IntegerField(default=0)  # Se incrementa cada vez que el admin activa
+    activation_count = models.IntegerField(default=0)
+
+    # Empleado del mes widget
+    em_widget_activo = models.BooleanField(default=False)
+    em_activation_count = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = 'Configuración de Novedades'
