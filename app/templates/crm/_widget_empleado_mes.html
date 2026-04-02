@@ -1,4 +1,4 @@
-<!-- ═══ WIDGET EMPLEADO DEL MES — Champions League Style ═══ -->
+<!-- ═══ WIDGET EMPLEADO DEL MES — Champions Style Light ═══ -->
 {% if novedades_config.em_widget_activo and empleado_mes_data %}
 
 <style>
@@ -7,9 +7,9 @@
     position: fixed;
     inset: 0;
     z-index: 10200;
-    background: rgba(0,0,20,0.6);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     align-items: center;
     justify-content: center;
     padding: 16px;
@@ -19,112 +19,141 @@
 @keyframes emIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes emOut  { from { opacity: 1; } to { opacity: 0; } }
 
+/* ── Estrellas en el FONDO (fuera del card) ── */
+.em-bg-stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+.em-bg-star {
+    position: absolute;
+    border-radius: 50%;
+    animation: emBgStarRise linear infinite;
+    opacity: 0;
+}
+@keyframes emBgStarRise {
+    0%   { opacity: 0; transform: translateY(0) scale(0); }
+    8%   { opacity: 1; transform: scale(1); }
+    80%  { opacity: 0.6; }
+    100% { opacity: 0; transform: translateY(-100vh) scale(0.2); }
+}
+.em-bg-sparkle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    animation: emBgSparkle ease-in-out infinite;
+    opacity: 0;
+}
+.em-bg-sparkle::before, .em-bg-sparkle::after {
+    content: '';
+    position: absolute;
+    background: #D4AF37;
+    border-radius: 2px;
+}
+.em-bg-sparkle::before { width: 10px; height: 2px; top: 4px; left: 0; }
+.em-bg-sparkle::after  { width: 2px; height: 10px; top: 0; left: 4px; }
+@keyframes emBgSparkle {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+    40%      { opacity: 0.9; transform: scale(1.3) rotate(30deg); }
+    60%      { opacity: 0.7; transform: scale(1) rotate(50deg); }
+}
+/* Confetti burst */
+.em-confetti {
+    position: absolute;
+    width: 6px;
+    height: 10px;
+    border-radius: 2px;
+    animation: emConfettiFall linear forwards;
+    opacity: 0;
+}
+@keyframes emConfettiFall {
+    0%   { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translateY(80vh) rotate(720deg) scale(0.3); }
+}
+
 /* ── Card ── */
 #em-card {
-    background: #0a0a1a;
+    background: #fff;
     border-radius: 24px;
-    max-width: 400px;
+    max-width: 390px;
     width: 100%;
     overflow: hidden;
-    box-shadow: 0 0 80px rgba(212,175,55,0.25), 0 25px 60px rgba(0,0,0,0.4);
+    box-shadow: 0 0 60px rgba(212,175,55,0.15), 0 20px 50px rgba(0,0,0,0.08);
     border: 1px solid rgba(212,175,55,0.2);
-    animation: emCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-    transform: translateY(50px) scale(0.9);
+    animation: emCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+    transform: translateY(40px) scale(0.92);
     opacity: 0;
     position: relative;
+    z-index: 1;
 }
 .em-closing #em-card { animation: emCardOut 0.25s ease forwards; }
 @keyframes emCardIn  { to { transform: translateY(0) scale(1); opacity: 1; } }
-@keyframes emCardOut { to { transform: translateY(30px) scale(0.95); opacity: 0; } }
+@keyframes emCardOut { to { transform: translateY(25px) scale(0.96); opacity: 0; } }
 
-/* ── Estrellas / Particulas ── */
-.em-stars {
+/* ── Banner ── */
+.em-banner {
+    background: linear-gradient(165deg, #FEF9E7 0%, #FFF8E1 30%, #FFFDE7 100%);
+    padding: 32px 30px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(212,175,55,0.15);
+}
+.em-banner-glow {
+    position: absolute;
+    top: -40%;
+    left: 15%;
+    width: 70%;
+    height: 140%;
+    background: radial-gradient(ellipse, rgba(212,175,55,0.1) 0%, transparent 70%);
+    animation: emGlow 3s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+@keyframes emGlow {
+    0%   { opacity: 0.4; transform: scale(1); }
+    100% { opacity: 0.9; transform: scale(1.15); }
+}
+
+/* Estrellas dentro del banner */
+.em-banner-stars {
     position: absolute;
     inset: 0;
     overflow: hidden;
     pointer-events: none;
-    z-index: 0;
 }
-.em-star {
+.em-b-star {
     position: absolute;
-    width: 3px;
-    height: 3px;
+    width: 4px;
+    height: 4px;
     background: #D4AF37;
     border-radius: 50%;
-    animation: emStarFloat linear infinite;
+    animation: emBStar 2.5s ease-in-out infinite;
     opacity: 0;
 }
-@keyframes emStarFloat {
-    0%   { opacity: 0; transform: translateY(0) scale(0); }
-    10%  { opacity: 1; transform: scale(1); }
-    90%  { opacity: 0.8; }
-    100% { opacity: 0; transform: translateY(-200px) scale(0.3); }
-}
-.em-sparkle {
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    background: transparent;
-    animation: emSparkle 2s ease-in-out infinite;
-    opacity: 0;
-}
-.em-sparkle::before, .em-sparkle::after {
-    content: '';
-    position: absolute;
-    background: #D4AF37;
-}
-.em-sparkle::before {
-    width: 6px; height: 2px; top: 2px; left: 0;
-    border-radius: 1px;
-}
-.em-sparkle::after {
-    width: 2px; height: 6px; top: 0; left: 2px;
-    border-radius: 1px;
-}
-@keyframes emSparkle {
-    0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-    50%      { opacity: 1; transform: scale(1.2) rotate(45deg); }
-}
-
-/* ── Banner ── */
-.em-banner {
-    background: linear-gradient(165deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
-    padding: 35px 30px 25px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-.em-banner::before {
-    content: '';
-    position: absolute;
-    top: -60%;
-    left: 20%;
-    width: 60%;
-    height: 160%;
-    background: radial-gradient(ellipse, rgba(212,175,55,0.12) 0%, transparent 70%);
-    animation: emGlow 4s ease-in-out infinite alternate;
-}
-@keyframes emGlow {
-    0% { opacity: 0.5; transform: scale(1); }
-    100% { opacity: 1; transform: scale(1.2); }
+@keyframes emBStar {
+    0%, 100% { opacity: 0; transform: scale(0); }
+    50%      { opacity: 0.7; transform: scale(1); }
 }
 
 .em-trophy {
-    font-size: 52px;
-    margin-bottom: 6px;
+    font-size: 50px;
+    margin-bottom: 4px;
     position: relative;
     z-index: 1;
-    filter: drop-shadow(0 0 20px rgba(212,175,55,0.5));
-    animation: emTrophyPulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 4px 15px rgba(212,175,55,0.4));
+    animation: emTrophy 2.5s ease-in-out infinite;
 }
-@keyframes emTrophyPulse {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(212,175,55,0.5)); }
-    50%      { transform: scale(1.06); filter: drop-shadow(0 0 35px rgba(212,175,55,0.8)); }
+@keyframes emTrophy {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25%  { transform: scale(1.05) rotate(-2deg); }
+    75%  { transform: scale(1.05) rotate(2deg); }
 }
 
 .em-banner-title {
-    color: #D4AF37;
-    font-size: 11px;
+    color: #B8860B;
+    font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 4px;
@@ -132,39 +161,36 @@
     z-index: 1;
 }
 .em-banner-month {
-    color: #fff;
-    font-size: 22px;
+    color: #92722A;
+    font-size: 20px;
     font-weight: 800;
-    margin-top: 4px;
+    margin-top: 3px;
     position: relative;
     z-index: 1;
-    text-shadow: 0 0 30px rgba(212,175,55,0.3);
 }
 .em-banner-line {
-    width: 60px;
+    width: 50px;
     height: 2px;
     background: linear-gradient(90deg, transparent, #D4AF37, transparent);
-    margin: 10px auto 0;
+    margin: 8px auto 0;
     position: relative;
     z-index: 1;
 }
 
 /* ── Body ── */
 .em-body {
-    padding: 24px 28px 22px;
+    padding: 22px 26px 22px;
     text-align: center;
-    position: relative;
-    z-index: 1;
-    background: linear-gradient(180deg, #0a0a1a 0%, #111127 100%);
+    background: #fff;
 }
 .em-avatar {
-    width: 95px;
-    height: 95px;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
-    margin: -68px auto 14px;
+    margin: -66px auto 12px;
     border: 3px solid #D4AF37;
-    box-shadow: 0 0 25px rgba(212,175,55,0.3), 0 4px 15px rgba(0,0,0,0.3);
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    box-shadow: 0 0 20px rgba(212,175,55,0.2), 0 4px 12px rgba(0,0,0,0.08);
+    background: linear-gradient(135deg, #FEF9E7, #FFF8E1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -173,44 +199,44 @@
     z-index: 2;
 }
 .em-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.em-avatar-initials { color: #D4AF37; font-size: 30px; font-weight: 800; }
+.em-avatar-initials { color: #B8860B; font-size: 28px; font-weight: 800; }
 
 .em-name {
-    font-size: 22px;
+    font-size: 21px;
     font-weight: 800;
-    color: #fff;
-    margin-bottom: 2px;
+    color: #1D1D1F;
+    margin-bottom: 1px;
 }
 .em-role {
     font-size: 12px;
-    color: #D4AF37;
+    color: #B8860B;
     font-weight: 600;
-    margin-bottom: 18px;
-    letter-spacing: 0.5px;
+    margin-bottom: 16px;
 }
 
 /* ── Stats ── */
-.em-stats { display: flex; gap: 8px; margin-bottom: 20px; }
+.em-stats { display: flex; gap: 8px; margin-bottom: 18px; }
 .em-stat {
     flex: 1;
-    background: rgba(212,175,55,0.06);
-    border: 1px solid rgba(212,175,55,0.12);
+    background: #FFFBEB;
+    border: 1px solid rgba(212,175,55,0.15);
     border-radius: 14px;
-    padding: 12px 6px;
+    padding: 10px 6px;
+    transition: transform 0.2s;
 }
+.em-stat:hover { transform: translateY(-2px); }
 .em-stat-value {
     font-size: 22px;
     font-weight: 800;
-    color: #D4AF37;
-    text-shadow: 0 0 15px rgba(212,175,55,0.3);
+    color: #B8860B;
 }
 .em-stat-label {
     font-size: 9px;
-    color: rgba(255,255,255,0.5);
+    color: #8E8E93;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    letter-spacing: 0.5px;
+    margin-top: 1px;
 }
 
 /* ── Buttons ── */
@@ -226,26 +252,27 @@
     transition: all 0.2s;
 }
 .em-btn-secondary {
-    background: rgba(255,255,255,0.06);
-    color: rgba(255,255,255,0.6);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #F3F4F6;
+    color: #636366;
 }
-.em-btn-secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.em-btn-secondary:hover { background: #E5E7EB; }
 .em-btn-primary {
     background: linear-gradient(135deg, #D4AF37, #B8860B);
-    color: #0a0a1a;
-    box-shadow: 0 4px 20px rgba(212,175,55,0.3);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(212,175,55,0.25);
     font-weight: 800;
 }
-.em-btn-primary:hover { box-shadow: 0 6px 25px rgba(212,175,55,0.5); transform: translateY(-1px); }
+.em-btn-primary:hover { box-shadow: 0 6px 20px rgba(212,175,55,0.4); transform: translateY(-1px); }
 </style>
 
 <div id="em-overlay" onclick="if(event.target===this)emCerrar()">
-    <div id="em-card">
-        <!-- Estrellas animadas -->
-        <div class="em-stars" id="emStars"></div>
+    <!-- Estrellas y confetti en todo el fondo -->
+    <div class="em-bg-stars" id="emBgStars"></div>
 
+    <div id="em-card">
         <div class="em-banner">
+            <div class="em-banner-glow"></div>
+            <div class="em-banner-stars" id="emBannerStars"></div>
             <div class="em-trophy">&#127942;</div>
             <div class="em-banner-title">Empleado del Mes</div>
             <div class="em-banner-month">{{ empleado_mes_data.mes_nombre }}</div>
@@ -292,29 +319,64 @@
 <script>
 (function () {
     var KEY = 'crm_empleado_mes_{{ novedades_config.em_activation_count }}';
+    var COLORS = ['#D4AF37','#F5D76E','#C49B30','#E8C547','#A67C00','#0052D4','#3B82F6','#059669','#F97316','#EC4899'];
 
-    // Generar estrellas y sparkles
-    function emGenerateStars() {
-        var container = document.getElementById('emStars');
-        if (!container) return;
-        for (var i = 0; i < 25; i++) {
-            var star = document.createElement('div');
-            star.className = 'em-star';
-            star.style.left = Math.random() * 100 + '%';
-            star.style.top = (40 + Math.random() * 60) + '%';
-            star.style.animationDuration = (2 + Math.random() * 3) + 's';
-            star.style.animationDelay = Math.random() * 4 + 's';
-            star.style.width = star.style.height = (2 + Math.random() * 3) + 'px';
-            container.appendChild(star);
+    function emGenBgEffects() {
+        var bg = document.getElementById('emBgStars');
+        if (!bg) return;
+        // Estrellas doradas subiendo
+        for (var i = 0; i < 40; i++) {
+            var s = document.createElement('div');
+            s.className = 'em-bg-star';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.bottom = '-5%';
+            var size = 3 + Math.random() * 5;
+            s.style.width = s.style.height = size + 'px';
+            s.style.background = COLORS[Math.floor(Math.random() * 5)]; // dorados
+            s.style.boxShadow = '0 0 ' + (4 + Math.random() * 6) + 'px ' + s.style.background;
+            s.style.animationDuration = (3 + Math.random() * 5) + 's';
+            s.style.animationDelay = Math.random() * 6 + 's';
+            bg.appendChild(s);
         }
-        for (var j = 0; j < 8; j++) {
+        // Sparkles (cruces de luz)
+        for (var j = 0; j < 12; j++) {
             var sp = document.createElement('div');
-            sp.className = 'em-sparkle';
-            sp.style.left = (10 + Math.random() * 80) + '%';
-            sp.style.top = (5 + Math.random() * 40) + '%';
-            sp.style.animationDelay = (0.5 + Math.random() * 3) + 's';
-            sp.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
-            container.appendChild(sp);
+            sp.className = 'em-bg-sparkle';
+            sp.style.left = (5 + Math.random() * 90) + '%';
+            sp.style.top = (5 + Math.random() * 90) + '%';
+            sp.style.animationDelay = Math.random() * 4 + 's';
+            sp.style.animationDuration = (1.8 + Math.random() * 2) + 's';
+            var sc = Math.random() * 0.6 + 0.6;
+            sp.style.transform = 'scale(' + sc + ')';
+            bg.appendChild(sp);
+        }
+        // Confetti burst
+        for (var k = 0; k < 30; k++) {
+            var c = document.createElement('div');
+            c.className = 'em-confetti';
+            c.style.left = (35 + Math.random() * 30) + '%';
+            c.style.top = '30%';
+            c.style.background = COLORS[Math.floor(Math.random() * COLORS.length)];
+            c.style.animationDuration = (2 + Math.random() * 3) + 's';
+            c.style.animationDelay = (0.2 + Math.random() * 1.5) + 's';
+            c.style.width = (4 + Math.random() * 4) + 'px';
+            c.style.height = (6 + Math.random() * 8) + 'px';
+            c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            bg.appendChild(c);
+        }
+    }
+
+    function emGenBannerStars() {
+        var bs = document.getElementById('emBannerStars');
+        if (!bs) return;
+        for (var i = 0; i < 10; i++) {
+            var s = document.createElement('div');
+            s.className = 'em-b-star';
+            s.style.left = (5 + Math.random() * 90) + '%';
+            s.style.top = (5 + Math.random() * 90) + '%';
+            s.style.animationDelay = Math.random() * 3 + 's';
+            s.style.animationDuration = (2 + Math.random() * 2) + 's';
+            bs.appendChild(s);
         }
     }
 
@@ -323,7 +385,8 @@
         if (!el) return;
         el.classList.remove('em-closing');
         el.classList.add('em-visible');
-        emGenerateStars();
+        emGenBgEffects();
+        emGenBannerStars();
     }
 
     window.emCerrar = function () {
