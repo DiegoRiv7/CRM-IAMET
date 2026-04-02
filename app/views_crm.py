@@ -913,6 +913,30 @@ def api_crm_table_data(request):
         else:
             clientes_qs = Cliente.objects.select_related('asignado_a').filter(asignado_a=user)
 
+        # Para oportunidades y cotizado en Clientes: filtrar por fecha_creacion
+        # en vez de mes_cierre, así no muestra datos de meses futuros
+        if vista in ('oportunidades', 'cotizado') and not q_search:
+            if usando_periodo:
+                base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
+                    fecha_creacion__date__gte=desde_filter,
+                    fecha_creacion__date__lte=hasta_filter,
+                )
+            else:
+                base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
+                    fecha_creacion__year=anio_int
+                )
+                if mes_filter != 'todos':
+                    base_qs = base_qs.filter(fecha_creacion__month=int(mes_filter))
+            # Re-aplicar filtros de usuario/vendedor
+            if not es_supervisor:
+                usuarios_visibles_r = get_usuarios_visibles_ids(user)
+                if usuarios_visibles_r and len(usuarios_visibles_r) > 1:
+                    base_qs = base_qs.filter(usuario_id__in=usuarios_visibles_r)
+                else:
+                    base_qs = base_qs.filter(usuario=user)
+            elif vendedores_ids:
+                base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
+
         def _prod_annotate(qs, monto_field):
             return qs.values('cliente').annotate(
                 zebra=Coalesce(Sum(monto_field, filter=Q(producto='ZEBRA')), _zero),
@@ -941,6 +965,7 @@ def api_crm_table_data(request):
                 return None, None
 
         _total_facturado_excel = Decimal('0')
+        _total_cobrado_csv = Decimal('0')
 
         if vista == 'facturado':
             # Total desde ArchivoFacturacion
@@ -1042,23 +1067,87 @@ def api_crm_table_data(request):
                     pass
 
         elif vista == 'cobrado':
-            cobrado_qs = base_qs.filter(etapa_corta__in=['Ganado', 'Pagado'])
-            total_by_id = {item['cliente']: item['t'] for item in cobrado_qs.values('cliente').annotate(t=Coalesce(Sum('monto'), _zero)) if item['cliente']}
-            prod_dict = {item['cliente']: item for item in _prod_annotate(cobrado_qs, 'monto')}
+            # Cobrado viene EXCLUSIVAMENTE del CSV (ArchivoCobrado), no de oportunidades
+            _cobrado_entries = []  # [{nombre, monto}]
+            _total_cobrado_csv = Decimal('0')
+            try:
+                def _extract_cobrado_entries(datos_json):
+                    if not datos_json:
+                        return []
+                    entries = []
+                    for key, val in datos_json.items():
+                        if isinstance(val, dict) and 'monto' in val:
+                            entries.append({
+                                'nombre': val.get('nombre', key),
+                                'monto': Decimal(str(val['monto'])),
+                            })
+                    return entries
+
+                if usando_periodo:
+                    from datetime import date as _date
+                    cur = _date.fromisoformat(desde_filter).replace(day=1)
+                    end = _date.fromisoformat(hasta_filter).replace(day=1)
+                    while cur <= end:
+                        try:
+                            ac = ArchivoCobrado.objects.get(mes=cur.strftime('%m'), anio=cur.year)
+                            _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
+                        except ArchivoCobrado.DoesNotExist:
+                            pass
+                        cur = cur.replace(month=cur.month % 12 + 1, day=1) if cur.month < 12 else cur.replace(year=cur.year + 1, month=1, day=1)
+                elif mes_filter == 'todos':
+                    for ac in ArchivoCobrado.objects.filter(anio=anio_int):
+                        _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
+                else:
+                    ac = ArchivoCobrado.objects.get(mes=mes_filter, anio=anio_int)
+                    _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
+            except ArchivoCobrado.DoesNotExist:
+                pass
+
+            # Cargar alias manuales
+            alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
+                         for a in AliasCliente.objects.all()}
+
+            # Match entries → Cliente por nombre (usando misma lógica que facturado)
+            _all_clientes_cob = list(clientes_qs)
+            total_by_id = {}
+            for entry in _cobrado_entries:
+                c_obj = None
+                nombre = entry['nombre']
+                monto = entry['monto']
+                cn_upper = nombre.upper().strip()
+                # Aplicar alias si existe
+                if cn_upper in alias_map:
+                    cn_upper = alias_map[cn_upper]
+                # Match por nombre
+                for c in _all_clientes_cob:
+                    if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
+                        c_obj = c; break
+                if not c_obj:
+                    for c in _all_clientes_cob:
+                        if not c.nombre_empresa: continue
+                        crm_u = c.nombre_empresa.upper().strip()
+                        if crm_u in cn_upper or cn_upper in crm_u:
+                            c_obj = c; break
+                if not c_obj:
+                    pw = [w for w in cn_upper.split() if len(w) > 2 and w not in ('DE','DEL','LA','LAS','LOS','EL','SA','CV','SAS','INC','MEXICO')]
+                    if len(pw) >= 2:
+                        for c in _all_clientes_cob:
+                            if not c.nombre_empresa: continue
+                            if pw[0] in c.nombre_empresa.upper() and pw[1] in c.nombre_empresa.upper():
+                                c_obj = c; break
+                if c_obj:
+                    total_by_id[c_obj.id] = total_by_id.get(c_obj.id, Decimal('0')) + monto
+            _total_cobrado_csv = sum(e['monto'] for e in _cobrado_entries)
+            prod_dict = {}
             meta_field_c = 'meta_cobrado'
             vista_label = 'Cobrado'
-            # Prev month cobrado sum
+            # Prev month cobrado sum (también del CSV)
             _pm, _pa = _get_prev_params()
             if _pm:
                 try:
-                    _prev_cob_qs = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm, etapa_corta__in=['Ganado', 'Pagado'])
-                    if not es_supervisor:
-                        _gids = get_usuarios_visibles_ids(user)
-                        _prev_cob_qs = _prev_cob_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else _prev_cob_qs.filter(usuario=user)
-                    elif vendedores_ids:
-                        _prev_cob_qs = _prev_cob_qs.filter(usuario_id__in=vendedores_ids)
-                    _prev_sum = _prev_cob_qs.aggregate(t=Coalesce(Sum('monto'), _zero))['t'] or _zero
-                except Exception:
+                    _prev_ac = ArchivoCobrado.objects.get(mes=_pm, anio=_pa)
+                    _prev_sum = sum(e['monto'] for e in _extract_cobrado_entries(_prev_ac.datos_json))
+                except ArchivoCobrado.DoesNotExist:
                     pass
 
         elif vista == 'oportunidades':
@@ -1066,14 +1155,14 @@ def api_crm_table_data(request):
             prod_dict = {item['cliente']: item for item in _prod_annotate(base_qs, 'monto')}
             meta_field_c = 'meta_oportunidades'
             vista_label = 'Oportunidades'
-            # Previous month totals per client (for trend badge)
+            # Previous month totals per client (for trend badge) — usa fecha_creacion
             _prev_by_id_cl = {}
             if mes_filter not in ('todos',) and not usando_periodo and not q_search:
                 try:
                     _pm = int(mes_filter)
-                    _prev_mes = str(_pm - 1 if _pm > 1 else 12).zfill(2)
+                    _prev_mes = _pm - 1 if _pm > 1 else 12
                     _prev_anio = anio_int if _pm > 1 else anio_int - 1
-                    _prev_qs = TodoItem.objects.filter(anio_cierre=_prev_anio, mes_cierre=_prev_mes)
+                    _prev_qs = TodoItem.objects.filter(fecha_creacion__year=_prev_anio, fecha_creacion__month=_prev_mes)
                     if not es_supervisor:
                         _gids = get_usuarios_visibles_ids(user)
                         _prev_qs = _prev_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else _prev_qs.filter(usuario=user)
@@ -1095,8 +1184,11 @@ def api_crm_table_data(request):
                     Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__date__gte=desde_filter, fecha_creacion__date__lte=hasta_filter)
                 )
             else:
+                _cot_sueltas_q = Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+                if mes_filter != 'todos':
+                    _cot_sueltas_q &= Q(fecha_creacion__month=int(mes_filter))
                 cot_qs = Cotizacion.objects.select_related('cliente', 'oportunidad').filter(
-                    Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+                    Q(oportunidad_id__in=opp_ids) | _cot_sueltas_q
                 )
             total_by_id = {}
             count_by_id = {}
@@ -1127,11 +1219,11 @@ def api_crm_table_data(request):
             prod_dict = prod_dict_raw
             meta_field_c = 'meta_cotizado'
             vista_label = 'Cotizado'
-            # Prev month cotizado sum
+            # Prev month cotizado sum — usa fecha_creacion
             _pm, _pa = _get_prev_params()
             if _pm:
                 try:
-                    _prev_opp_ids = TodoItem.objects.filter(anio_cierre=_pa, mes_cierre=_pm)
+                    _prev_opp_ids = TodoItem.objects.filter(fecha_creacion__year=_pa, fecha_creacion__month=int(_pm))
                     if not es_supervisor:
                         _gids = get_usuarios_visibles_ids(user)
                         _prev_opp_ids = _prev_opp_ids.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else _prev_opp_ids.filter(usuario=user)
@@ -1352,8 +1444,13 @@ def api_crm_table_data(request):
                 'num_total_cotizaciones': total_num_cot,
             })
 
-        # Para vista facturado, usar el total real del Excel (incluye clientes sin match)
-        _kpi_total = _total_facturado_excel if vista == 'facturado' else total_acum
+        # Para vista facturado/cobrado, usar el total real del archivo (incluye clientes sin match)
+        if vista == 'facturado':
+            _kpi_total = _total_facturado_excel
+        elif vista == 'cobrado':
+            _kpi_total = _total_cobrado_csv
+        else:
+            _kpi_total = total_acum
         return JsonResponse({
             'tab': 'clientes',
             'vista': vista,
