@@ -2818,7 +2818,7 @@
                 if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Vendedor</th><th style="text-align:right">Oportunidades</th><th style="text-align:right">Meta</th><th style="text-align:right">Faltante</th>';
                 if (tbody) tbody.innerHTML = rows.map(function(r, i) {
                     var faltN = fN(r.faltante);
-                    return '<tr><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#2563EB">$' + (r.total || '0') + '</td><td style="text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
+                    return '<tr class="ck-detalle-row" data-cliente-id="' + r.cliente_id + '" data-cliente-nombre="' + (r.cliente || '').replace(/"/g, '&quot;') + '" style="cursor:pointer;" onmouseover="this.style.backgroundColor=\'#f0f7ff\'" onmouseout="this.style.backgroundColor=\'\'"><td style="color:#8e8e93">' + (i+1) + '</td><td style="font-weight:600;color:#007AFF">' + r.cliente + '</td><td style="color:#6e6e73">' + (r.vendedor || '') + '</td><td style="text-align:right;font-weight:700;color:#2563EB">$' + (r.total || '0') + '</td><td style="text-align:right;color:#8e8e93">$' + (r.meta || '0') + '</td><td style="text-align:right;color:' + (faltN > 0 ? '#FF3B30' : '#059669') + '">$' + (r.faltante || '0') + '</td></tr>';
                 }).join('');
             } else if (tipo === 'cotizado') {
                 if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>Vendedor</th><th style="text-align:right"># Cotizaciones</th>';
@@ -3233,6 +3233,15 @@
                     if (!clienteId) return;
                     var clienteNombre = e.target.textContent.trim();
                     openClienteModal(clienteId, clienteNombre, 'crm', true);
+                }
+                // Click en fila de Detalle de Oportunidades
+                var detalleRow = e.target.closest('.ck-detalle-row');
+                if (detalleRow) {
+                    var clienteId = detalleRow.getAttribute('data-cliente-id');
+                    var clienteNombre = detalleRow.getAttribute('data-cliente-nombre');
+                    if (clienteId && clienteNombre) {
+                        openClienteModal(clienteId, clienteNombre, 'crm', true);
+                    }
                 }
             });
 
