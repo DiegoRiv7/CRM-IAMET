@@ -1911,7 +1911,7 @@ def api_procesar_solicitud_perfil(request, solicitud_id):
 @login_required
 def api_admin_oportunidades(request):
     """CRUD de oportunidades para el panel admin."""
-    if not request.user.is_superuser:
+    if not is_supervisor(request.user):
         return JsonResponse({'error': 'Sin permisos'}, status=403)
 
     if request.method == 'GET':
@@ -1961,7 +1961,7 @@ def api_admin_oportunidades(request):
 @login_required
 def api_admin_oportunidad_detalle(request, opp_id):
     """Editar una oportunidad específica."""
-    if not request.user.is_superuser:
+    if not is_supervisor(request.user):
         return JsonResponse({'error': 'Sin permisos'}, status=403)
 
     try:
@@ -2006,7 +2006,7 @@ def api_admin_oportunidad_detalle(request, opp_id):
 def api_admin_etapas_pipeline(request):
     """CRUD de etapas del pipeline y gestión de pipelines."""
     from .models import EtapaPipeline, TodoItem as Oportunidad
-    if not request.user.is_superuser:
+    if not is_supervisor(request.user):
         return JsonResponse({'error': 'Sin permisos'}, status=403)
 
     if request.method == 'GET':
