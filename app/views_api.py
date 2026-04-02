@@ -1483,8 +1483,10 @@ def api_verificar_empleado_mes(request):
         
         # Muro Post (Anuncio automático)
         nombre_ganador = ganador_em.usuario.get_full_name() or ganador_em.usuario.username
-        mes_nombre = mes_target_date.strftime('%B %Y')
-        
+        MESES_ES = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+                    7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'}
+        mes_nombre = f"{MESES_ES.get(m, str(m))} {y}"
+
         mensaje = f"¡Es un honor anunciar que <b>@{ganador_em.usuario.username} ({nombre_ganador})</b> ha sido seleccionado como el empleado del mes de <b>{mes_nombre}</b>! 🎉\n\n"
         mensaje += f"Su compromiso ha sido pieza clave en nuestro éxito:\n\n"
         mensaje += f"✨ <b>Eficiencia General:</b> {ganador_em.promedio_eficiencia}%\n"
@@ -1492,16 +1494,13 @@ def api_verificar_empleado_mes(request):
         mensaje += f"🛠 <b>Actividades finalizadas:</b> {ganador_em.actividades_completadas}\n"
         mensaje += f"💰 <b>Ventas cobradas:</b> {ganador_em.oportunidades_cobradas}\n\n"
         mensaje += f"¡Gracias por dar siempre el 100%! 🚀🔥"
-        
-        # Intentar que el autor sea un Admin, pero se mostrará como IAMET en el muro
-        admin_user = User.objects.filter(is_superuser=True).first() or request.user
-        
-        # Obtener la foto del ganador para ponerla como imagen principal del post
+
+        # El autor es el ganador para que su avatar aparezca en el post
         ganador_profile = getattr(ganador_em.usuario, 'userprofile', None)
         foto_ganador = ganador_profile.avatar if ganador_profile and ganador_profile.avatar else None
 
         PostMuro.objects.create(
-            autor=admin_user,
+            autor=ganador_em.usuario,
             contenido=mensaje,
             es_anuncio=True,
             imagen=foto_ganador
