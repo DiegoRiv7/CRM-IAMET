@@ -799,30 +799,38 @@
                 content.innerHTML = '<div style="color:#fff;font-size:0.85rem;">Cargando documento...</div>';
                 var renderDocx = function(){
                     fetch(url).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
-                        var container = document.createElement('div');
-                        container.style.cssText = 'width:95%;max-width:950px;max-height:calc(100vh - 80px);overflow:auto;border-radius:8px;box-shadow:0 4px 30px rgba(0,0,0,0.3);background:#e8e8e8;';
+                        // Render inside an iframe to isolate from Tailwind CSS
+                        var iframe = document.createElement('iframe');
+                        iframe.style.cssText = 'width:95%;max-width:950px;height:calc(100vh - 80px);border:none;border-radius:8px;box-shadow:0 4px 30px rgba(0,0,0,0.3);background:#e8e8e8;';
                         content.innerHTML = '';
-                        content.appendChild(container);
-                        docx.renderAsync(buf, container, null, {
-                            className: 'docx-preview',
-                            inWrapper: true,
-                            ignoreWidth: false,
-                            ignoreHeight: false,
-                            renderHeaders: true,
-                            renderFooters: true,
-                            renderFootnotes: true,
-                            useBase64URL: true
-                        }).then(function(){
-                            // Estilizar el wrapper generado por docx-preview
-                            var wrapper = container.querySelector('.docx-wrapper');
-                            if (wrapper) {
-                                wrapper.style.cssText = 'background:#e8e8e8;padding:20px;';
-                            }
-                            // Estilizar cada página/sección
-                            container.querySelectorAll('section.docx').forEach(function(sec){
-                                sec.style.cssText += 'box-shadow:0 2px 8px rgba(0,0,0,0.15);margin-bottom:15px;background:#fff;';
-                            });
-                        });
+                        content.appendChild(iframe);
+                        var iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        iDoc.open();
+                        iDoc.write('<!DOCTYPE html><html><head><style>body{margin:0;background:#e8e8e8;} .docx-wrapper{background:#e8e8e8 !important;padding:20px !important;} section.docx{box-shadow:0 2px 8px rgba(0,0,0,0.15) !important;margin-bottom:15px !important;}</style></head><body><div id="docx-container"></div></body></html>');
+                        iDoc.close();
+                        // Load JSZip + docx-preview inside the iframe
+                        var iWin = iframe.contentWindow;
+                        var s1 = iDoc.createElement('script');
+                        s1.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+                        s1.onload = function(){
+                            var s2 = iDoc.createElement('script');
+                            s2.src = 'https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js';
+                            s2.onload = function(){
+                                var container = iDoc.getElementById('docx-container');
+                                iWin.docx.renderAsync(buf, container, null, {
+                                    className: 'docx-preview',
+                                    inWrapper: true,
+                                    ignoreWidth: false,
+                                    ignoreHeight: false,
+                                    renderHeaders: true,
+                                    renderFooters: true,
+                                    renderFootnotes: true,
+                                    useBase64URL: true
+                                });
+                            };
+                            iDoc.head.appendChild(s2);
+                        };
+                        iDoc.head.appendChild(s1);
                     }).catch(function(e){ console.error('DOCX error:', e); content.innerHTML = '<div style="color:#FF3B30;">Error al leer el documento Word</div>'; });
                 };
                 if (typeof docx !== 'undefined' && docx.renderAsync) { renderDocx(); }
