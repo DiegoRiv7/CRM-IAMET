@@ -1195,19 +1195,27 @@ window.getAC            = getAC;
   var _taAutoUsuarios = [];
   var _taAutoEditandoId = null;
 
-  // Etapas dinámicas desde la BD (EtapaPipeline)
-  var _epData = (window._CRM_CONFIG || {}).etapasPipeline || {};
-  var ETAPAS_RUNRATE_TA = (_epData.runrate || []).map(function(e){ return e.nombre; });
-  var ETAPAS_PROYECTO_TA = (_epData.proyecto || []).map(function(e){ return e.nombre; });
-  // Incluir etapas de todos los pipelines (no solo runrate/proyecto)
-  var _allNames = [];
-  Object.keys(_epData).forEach(function(p){ (_epData[p] || []).forEach(function(e){ _allNames.push(e.nombre); }); });
-  var TODAS_ETAPAS_TA = Array.from(new Set(_allNames));
+  // Etapas dinámicas desde la BD (se leen lazy porque _CRM_CONFIG se define después)
+  var _epData = null;
+  var ETAPAS_RUNRATE_TA = [];
+  var ETAPAS_PROYECTO_TA = [];
+  var TODAS_ETAPAS_TA = [];
+
+  function _cargarEtapasPipeline() {
+    if (_epData) return; // ya cargadas
+    _epData = (window._CRM_CONFIG || {}).etapasPipeline || {};
+    ETAPAS_RUNRATE_TA = (_epData.runrate || []).map(function(e){ return e.nombre; });
+    ETAPAS_PROYECTO_TA = (_epData.proyecto || []).map(function(e){ return e.nombre; });
+    var _allNames = [];
+    Object.keys(_epData).forEach(function(p){ (_epData[p] || []).forEach(function(e){ _allNames.push(e.nombre); }); });
+    TODAS_ETAPAS_TA = Array.from(new Set(_allNames));
+  }
 
   var PRIO_COLORS = {baja:'#8E8E93',normal:'#007AFF',alta:'#FF9500',urgente:'#FF3B30'};
   var TIPO_LABEL = {ambos:'Runrate & Proyecto',runrate:'Runrate',proyecto:'Proyecto'};
 
   window.loadTareasAuto = function() {
+    _cargarEtapasPipeline();
     var ac = getAC();
     ac.style.overflow = '';  /* Restore scroll */
     ac.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:120px;color:#8E8E93;font-size:0.85rem;">Cargando...</div>';
@@ -1346,6 +1354,7 @@ window.getAC            = getAC;
   function _getAdminCsrf(){ return window._getAdminCsrf(); }
 
   function _getEtapasPorTipo(tipo) {
+    _cargarEtapasPipeline();
     if (tipo === 'ambos' || !tipo) return TODAS_ETAPAS_TA;
     var ep = (_epData[tipo] || []).map(function(e){ return e.nombre; });
     return ep.length ? ep : TODAS_ETAPAS_TA;
