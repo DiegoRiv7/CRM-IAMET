@@ -1411,12 +1411,17 @@ window.getAC            = getAC;
     var participantesIds = regla ? (regla.participantes||[]).map(function(p){return p.id;}) : [];
     var observadoresIds  = regla ? (regla.observadores||[]).map(function(o){return o.id;}) : [];
 
-    var chkPartic = _taAutoUsuarios.map(function(u){
+    var duenoPartChk = regla && regla.incluir_dueno_participante ? ' checked' : '';
+    var duenoObsChk  = regla && regla.incluir_dueno_observador ? ' checked' : '';
+
+    var chkPartic = '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;border-bottom:1px solid rgba(0,0,0,0.06);margin-bottom:4px;"><input type="checkbox" id="ta_dueno_participante"'+duenoPartChk+' style="accent-color:#FF9500;"> <span style="font-size:0.82rem;color:#E65100;font-weight:600;">Dueño de la oportunidad</span></label>';
+    chkPartic += _taAutoUsuarios.map(function(u){
       var chk = participantesIds.indexOf(u.id)!==-1?' checked':'';
       return '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;"><input type="checkbox" class="ta-chk-p" value="'+u.id+'"'+chk+' style="accent-color:#007AFF;"> <span style="font-size:0.82rem;color:#1C1C1E;">'+(u.first_name+' '+u.last_name).trim()+'</span></label>';
     }).join('');
 
-    var chkObs = _taAutoUsuarios.map(function(u){
+    var chkObs = '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;border-bottom:1px solid rgba(0,0,0,0.06);margin-bottom:4px;"><input type="checkbox" id="ta_dueno_observador"'+duenoObsChk+' style="accent-color:#FF9500;"> <span style="font-size:0.82rem;color:#E65100;font-weight:600;">Dueño de la oportunidad</span></label>';
+    chkObs += _taAutoUsuarios.map(function(u){
       var chk = observadoresIds.indexOf(u.id)!==-1?' checked':'';
       return '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;"><input type="checkbox" class="ta-chk-o" value="'+u.id+'"'+chk+' style="accent-color:#007AFF;"> <span style="font-size:0.82rem;color:#1C1C1E;">'+(u.first_name+' '+u.last_name).trim()+'</span></label>';
     }).join('');
@@ -1535,6 +1540,8 @@ window.getAC            = getAC;
     document.querySelectorAll('.ta-chk-o:checked').forEach(function(c){obs.push(parseInt(c.value));});
 
     var avanzarEtapa = document.getElementById('ta_avanzar_etapa');
+    var duenoPartic = document.getElementById('ta_dueno_participante');
+    var duenoObs = document.getElementById('ta_dueno_observador');
     var body = {
       nombre: nombre, activa: true, etapa_disparadora: etapa,
       tipo_negociacion: document.getElementById('ta_tipo_neg').value,
@@ -1543,7 +1550,9 @@ window.getAC            = getAC;
       offset_tipo: offsetTipo, offset_valor: offsetValor, fecha_fija: fechaFija,
       responsable_id: respId ? parseInt(respId) : null,
       participantes_ids: partic, observadores_ids: obs, orden: 0,
-      avanzar_etapa_al_completar: avanzarEtapa ? avanzarEtapa.checked : false
+      avanzar_etapa_al_completar: avanzarEtapa ? avanzarEtapa.checked : false,
+      incluir_dueno_participante: duenoPartic ? duenoPartic.checked : false,
+      incluir_dueno_observador: duenoObs ? duenoObs.checked : false
     };
 
     var url = _taAutoEditandoId ? '/app/api/automatizacion/reglas/'+_taAutoEditandoId+'/' : '/app/api/automatizacion/reglas/crear/';
