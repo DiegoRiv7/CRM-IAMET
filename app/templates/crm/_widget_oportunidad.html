@@ -794,10 +794,36 @@
                     document.head.appendChild(s);
                 }
             }
+            // DOCX - render with docx-preview (lazy load)
+            else if (['docx'].indexOf(ext) > -1) {
+                content.innerHTML = '<div style="color:#fff;font-size:0.85rem;">Cargando documento...</div>';
+                var renderDocx = function(){
+                    fetch(url).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
+                        var container = document.createElement('div');
+                        container.style.cssText = 'width:95%;max-width:900px;max-height:calc(100vh - 80px);overflow:auto;background:#fff;border-radius:8px;box-shadow:0 4px 30px rgba(0,0,0,0.3);padding:20px 30px;';
+                        content.innerHTML = '';
+                        content.appendChild(container);
+                        docx.renderAsync(buf, container, null, {
+                            className: 'docx-preview',
+                            inWrapper: false,
+                            ignoreWidth: true,
+                            ignoreHeight: true
+                        });
+                    }).catch(function(){ content.innerHTML = '<div style="color:#FF3B30;">Error al leer el documento Word</div>'; });
+                };
+                if (typeof docx !== 'undefined' && docx.renderAsync) { renderDocx(); }
+                else {
+                    var s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js';
+                    s.onload = renderDocx;
+                    s.onerror = function(){ content.innerHTML = '<div style="color:#FF3B30;">Error cargando visor de Word</div>'; };
+                    document.head.appendChild(s);
+                }
+            }
             // Other Office docs - download with file type info
             else if (officeExts.indexOf(ext) > -1 || tipo === 'documento') {
-                var officeIcons = {'doc':'&#128196;','docx':'&#128196;','ppt':'&#128253;','pptx':'&#128253;','odt':'&#128196;','odp':'&#128253;','rtf':'&#128196;'};
-                var officeLabels = {'doc':'Word','docx':'Word','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Writer','odp':'Impress','rtf':'Texto enriquecido'};
+                var officeIcons = {'doc':'&#128196;','ppt':'&#128253;','pptx':'&#128253;','odt':'&#128196;','odp':'&#128253;','rtf':'&#128196;'};
+                var officeLabels = {'doc':'Word (.doc)','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Writer','odp':'Impress','rtf':'Texto enriquecido'};
                 var icon = officeIcons[ext] || '&#128196;';
                 var label = officeLabels[ext] || 'Documento';
                 content.innerHTML = '<div style="text-align:center;color:#fff;">' +
