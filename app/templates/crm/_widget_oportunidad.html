@@ -813,11 +813,22 @@
                 };
                 if (typeof docx !== 'undefined' && docx.renderAsync) { renderDocx(); }
                 else {
-                    var s = document.createElement('script');
-                    s.src = 'https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js';
-                    s.onload = renderDocx;
-                    s.onerror = function(){ content.innerHTML = '<div style="color:#FF3B30;">Error cargando visor de Word</div>'; };
-                    document.head.appendChild(s);
+                    // Cargar JSZip primero (dependencia de docx-preview), luego docx-preview
+                    var loadDocxLib = function(){
+                        var s2 = document.createElement('script');
+                        s2.src = 'https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js';
+                        s2.onload = renderDocx;
+                        s2.onerror = function(){ content.innerHTML = '<div style="color:#FF3B30;">Error cargando visor de Word</div>'; };
+                        document.head.appendChild(s2);
+                    };
+                    if (typeof JSZip !== 'undefined') { loadDocxLib(); }
+                    else {
+                        var s1 = document.createElement('script');
+                        s1.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+                        s1.onload = loadDocxLib;
+                        s1.onerror = function(){ content.innerHTML = '<div style="color:#FF3B30;">Error cargando dependencias</div>'; };
+                        document.head.appendChild(s1);
+                    }
                 }
             }
             // Other Office docs - download with file type info
