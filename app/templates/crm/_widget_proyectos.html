@@ -4,44 +4,90 @@
 <div class="proyectos-section" id="proyectosSection">
 
   <!-- Header -->
-  <div class="proy-section-header">
-    <div style="display:flex;align-items:center;gap:10px;">
+  <div style="padding:20px 24px 0;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#007aff;">
         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
       </svg>
-      <h2 class="proy-section-title">Proyectos</h2>
+      <h2 style="font-size:1.3rem;font-weight:700;margin:0;">Proyectos</h2>
     </div>
-    <div class="proy-header-actions">
-      <button class="proy-filter-pill active" data-filter="todos" onclick="proyectosFilterStatus('todos')">Todos</button>
-      <button class="proy-filter-pill" data-filter="active" onclick="proyectosFilterStatus('active')">Activos</button>
-      <button class="proy-filter-pill" data-filter="completed" onclick="proyectosFilterStatus('completed')">Completados</button>
-      <button class="proy-filter-pill" data-filter="planning" onclick="proyectosFilterStatus('planning')">Planificacion</button>
-      <!-- Search -->
-      <div class="proy-search-wrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-search-icon">
-          <circle cx="11" cy="11" r="7"/>
-          <path d="M16 16l4 4"/>
-        </svg>
-        <input type="text" id="proySearch" class="proy-search" placeholder="Buscar proyecto..." oninput="proyectosBuscar()">
+    <p style="margin:0 0 16px;font-size:0.82rem;color:#6E6E73;">Gestion integral de proyectos: Programa de Obra y Financiero</p>
+  </div>
+
+  <!-- Tab bar -->
+  <div style="display:flex;border:1px solid #e5e7eb;border-radius:10px;margin:0 24px 20px;overflow:hidden;">
+    <button class="proy-main-tab active" data-tab="dashboard" onclick="proySetMainTab('dashboard')" style="flex:1;padding:10px;border:none;background:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#007AFF;border-bottom:2px solid #007AFF;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Dashboard
+    </button>
+    <button class="proy-main-tab" data-tab="programa" onclick="proySetMainTab('programa')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Programa de Obra
+    </button>
+    <button class="proy-main-tab" data-tab="financiero" onclick="proySetMainTab('financiero')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Financiero
+    </button>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #f0f0f0;margin:0 24px 20px;">
+
+  <!-- TAB 1: Dashboard -->
+  <div id="proyTabDashboard" style="padding:0 24px 20px;">
+    <!-- KPIs row -->
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Indicadores Clave</h3>
+    <div id="proyDashKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+      <!-- Rendered by JS -->
+    </div>
+    <!-- Active projects list -->
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Proyectos Activos</h3>
+    <div id="proyDashList">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- TAB 2: Programa de Obra (existing content) -->
+  <div id="proyTabPrograma" style="display:none;padding:0 24px 20px;">
+    <div class="proy-section-header" style="margin-bottom:16px;">
+      <div class="proy-header-actions">
+        <button class="proy-filter-pill active" data-filter="todos" onclick="proyectosFilterStatus('todos')">Todos</button>
+        <button class="proy-filter-pill" data-filter="active" onclick="proyectosFilterStatus('active')">Activos</button>
+        <button class="proy-filter-pill" data-filter="completed" onclick="proyectosFilterStatus('completed')">Completados</button>
+        <button class="proy-filter-pill" data-filter="planning" onclick="proyectosFilterStatus('planning')">Planificacion</button>
+        <!-- Search -->
+        <div class="proy-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-search-icon">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="M16 16l4 4"/>
+          </svg>
+          <input type="text" id="proySearch" class="proy-search" placeholder="Buscar proyecto..." oninput="proyectosBuscar()">
+        </div>
+        <!-- New project button -->
+        <button class="proy-btn-new" onclick="proyectosCrearDialogo()">+ Nuevo Proyecto</button>
       </div>
-      <!-- New project button -->
-      <button class="proy-btn-new" onclick="proyectosCrearDialogo()">+ Nuevo Proyecto</button>
+    </div>
+    <div class="proy-grid" id="proyGrid">
+      <!-- Cards rendered by JS -->
+    </div>
+    <div class="proy-empty" id="proyEmpty" style="display:none;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+      </svg>
+      <p>No hay proyectos</p>
     </div>
   </div>
 
-  <!-- Cards grid -->
-  <div class="proy-grid" id="proyGrid">
-    <!-- Cards rendered by JS -->
-  </div>
-
-  <!-- Empty state -->
-  <div class="proy-empty" id="proyEmpty" style="display:none;">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-    </svg>
-    <p>No hay proyectos</p>
+  <!-- TAB 3: Financiero -->
+  <div id="proyTabFinanciero" style="display:none;padding:0 24px 20px;">
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Proyectos por Estado</h3>
+    <!-- Sub-tabs -->
+    <div style="display:flex;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;overflow:hidden;">
+      <button class="proy-fin-tab active" data-status="active" onclick="proyFinFilter('active')" style="flex:1;padding:8px;border:none;background:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;color:#007AFF;border-bottom:2px solid #007AFF;">En Ejecucion</button>
+      <button class="proy-fin-tab" data-status="planning" onclick="proyFinFilter('planning')" style="flex:1;padding:8px;border:none;background:#f9fafb;font-size:0.8rem;font-weight:500;cursor:pointer;color:#6B7280;">Programados</button>
+      <button class="proy-fin-tab" data-status="completed" onclick="proyFinFilter('completed')" style="flex:1;padding:8px;border:none;background:#f9fafb;font-size:0.8rem;font-weight:500;cursor:pointer;color:#6B7280;">Cerrados</button>
+    </div>
+    <div id="proyFinList">
+      <!-- Rendered by JS -->
+    </div>
   </div>
 
 </div>

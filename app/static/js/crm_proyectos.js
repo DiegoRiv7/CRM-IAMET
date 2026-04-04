@@ -117,13 +117,15 @@
     //  INIT (called when section becomes active)
     // =========================================
 
+    var _currentMainTab = 'dashboard';
+
     window.proyectosInit = function() {
         currentProjectId = null;
         currentFilter = 'todos';
         searchQuery = '';
         var searchInput = el('proySearch');
         if (searchInput) searchInput.value = '';
-        proyectosCargarLista();
+        proySetMainTab('dashboard');
     };
     window.proyectosAbrir = window.proyectosInit;
 
@@ -2008,5 +2010,144 @@
             e.target.style.display = 'none';
         }
     });
+
+
+    // =========================================
+    //  MAIN TABS: Dashboard / Programa / Financiero
+    // =========================================
+
+    window.proySetMainTab = function(tab) {
+        _currentMainTab = tab;
+        // Toggle tab buttons
+        document.querySelectorAll('.proy-main-tab').forEach(function(btn) {
+            var isActive = btn.getAttribute('data-tab') === tab;
+            btn.style.background = isActive ? '#fff' : '#f9fafb';
+            btn.style.color = isActive ? '#007AFF' : '#6B7280';
+            btn.style.fontWeight = isActive ? '600' : '500';
+            btn.style.borderBottom = isActive ? '2px solid #007AFF' : '2px solid transparent';
+            btn.classList.toggle('active', isActive);
+        });
+        // Toggle tab content
+        var tabs = ['Dashboard', 'Programa', 'Financiero'];
+        tabs.forEach(function(t) {
+            var panel = el('proyTab' + t);
+            if (panel) panel.style.display = t.toLowerCase() === tab ? '' : 'none';
+        });
+        // Load data for the active tab
+        if (tab === 'dashboard') _loadDashboard();
+        else if (tab === 'programa') proyectosCargarLista();
+        else if (tab === 'financiero') _loadFinanciero('active');
+    };
+
+    // ── Dashboard ──
+    function _loadDashboard() {
+        var kpiContainer = el('proyDashKpis');
+        var listContainer = el('proyDashList');
+        if (kpiContainer) kpiContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8e8e93;padding:20px;">Cargando...</div>';
+
+        _fetch('/app/api/iamet/proyectos/dashboard/').then(function(resp) {
+            if (!resp.success) return;
+            var d = resp.data;
+            if (kpiContainer) {
+                kpiContainer.innerHTML =
+                    _dashKpiCard('Proyectos en Ejecucion', d.proyectos_ejecucion, '#007AFF', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>') +
+                    _dashKpiCard('Avance Promedio', '—', '#10b981', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>') +
+                    _dashKpiCard('Personal Activo', '—', '#f59e0b', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>') +
+                    _dashKpiCard('Utilidad Total', fmtMoney(d.utilidad_total), '#059669', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>');
+            }
+        });
+
+        // Load active projects for the list
+        _fetch('/app/api/iamet/proyectos/?status=active').then(function(resp) {
+            if (!resp.ok && !resp.success) return;
+            var projects = resp.data || [];
+            if (listContainer) {
+                if (projects.length === 0) {
+                    listContainer.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">No hay proyectos activos</div>';
+                    return;
+                }
+                listContainer.innerHTML = projects.map(function(p) {
+                    var budgeted = p.utilidad_presupuestada || 0;
+                    var actual = p.utilidad_real || 0;
+                    var pct = budgeted > 0 ? Math.min(Math.round(actual / budgeted * 100), 100) : 0;
+                    var barColor = pct >= 70 ? '#10b981' : (pct >= 30 ? '#f59e0b' : '#e5e7eb');
+                    var statusLabel = p.status === 'active' ? 'En Ejecucion' : (p.status === 'planning' ? 'Programado' : p.status);
+                    var statusColor = p.status === 'active' ? '#10b981' : '#f59e0b';
+                    return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'" onmouseout="this.style.boxShadow=\'none\'" onclick="proyectosVerDetalle(' + p.id + ')">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">' +
+                            '<div><div style="font-weight:700;font-size:0.9rem;">' + p.nombre + '</div>' +
+                            '<div style="font-size:0.78rem;color:#6E6E73;">' + (p.cliente_nombre || '') + '</div></div>' +
+                            '<span style="font-size:0.7rem;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid ' + statusColor + ';color:' + statusColor + ';">' + statusLabel + '</span>' +
+                        '</div>' +
+                        '<div style="margin:10px 0 8px;">' +
+                            '<div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#6E6E73;margin-bottom:4px;"><span>Avance</span><span>' + pct + '%</span></div>' +
+                            '<div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:3px;transition:width 0.3s;"></div></div>' +
+                        '</div>' +
+                        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid #f3f4f6;padding-top:10px;margin-top:6px;">' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Equipo</div><div style="font-weight:600;font-size:0.82rem;">—</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Presupuesto</div><div style="font-weight:600;font-size:0.82rem;">' + fmtMoney(budgeted) + '</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Gastado</div><div style="font-weight:600;font-size:0.82rem;">' + fmtMoney(actual) + '</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Fechas</div><div style="font-weight:600;font-size:0.78rem;">' + (p.fecha_inicio ? fmtDate(p.fecha_inicio) : '—') + ' - ' + (p.fecha_fin ? fmtDate(p.fecha_fin) : '—') + '</div></div>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            }
+        });
+    }
+
+    function _dashKpiCard(label, value, color, iconSvg) {
+        return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;display:flex;justify-content:space-between;align-items:flex-start;">' +
+            '<div><div style="font-size:0.72rem;color:#6E6E73;margin-bottom:4px;">' + label + '</div>' +
+            '<div style="font-size:1.4rem;font-weight:700;">' + value + '</div></div>' +
+            '<div style="color:' + color + ';opacity:0.7;">' + iconSvg + '</div>' +
+        '</div>';
+    }
+
+    // ── Financiero ──
+    var _finStatus = 'active';
+
+    window.proyFinFilter = function(status) {
+        _finStatus = status;
+        document.querySelectorAll('.proy-fin-tab').forEach(function(btn) {
+            var isActive = btn.getAttribute('data-status') === status;
+            btn.style.background = isActive ? '#fff' : '#f9fafb';
+            btn.style.color = isActive ? '#007AFF' : '#6B7280';
+            btn.style.fontWeight = isActive ? '600' : '500';
+            btn.style.borderBottom = isActive ? '2px solid #007AFF' : '2px solid transparent';
+            btn.classList.toggle('active', isActive);
+        });
+        _loadFinanciero(status);
+    };
+
+    function _loadFinanciero(status) {
+        var container = el('proyFinList');
+        if (!container) return;
+        container.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">Cargando...</div>';
+
+        _fetch('/app/api/iamet/proyectos/financiero/?status=' + status).then(function(resp) {
+            if (!resp.success) return;
+            var projects = resp.data || [];
+            if (projects.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">No hay proyectos en este estado</div>';
+                return;
+            }
+            container.innerHTML = projects.map(function(p) {
+                var margenColor = p.margen >= 20 ? '#059669' : (p.margen >= 10 ? '#f59e0b' : '#DC2626');
+                return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'" onmouseout="this.style.boxShadow=\'none\'" onclick="proyectosVerDetalle(' + p.id + ')">' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-weight:700;font-size:0.9rem;">' + p.nombre + '</div>' +
+                        '<div style="font-size:0.78rem;color:#6E6E73;">' + (p.cliente_nombre || '') + '</div>' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:16px;text-align:left;">' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Utilidad Presupuestada</div><div style="font-weight:700;font-size:0.88rem;">' + fmtMoney(p.utilidad_presupuestada) + '</div></div>' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Costo Total</div><div style="font-weight:700;font-size:0.88rem;color:#DC2626;">' + fmtMoney(p.costo_total) + '</div></div>' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Venta Total</div><div style="font-weight:700;font-size:0.88rem;color:#007AFF;">' + fmtMoney(p.venta_total) + '</div></div>' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Margen</div><div style="font-weight:700;font-size:0.88rem;color:' + margenColor + ';">' + p.margen + '%</div></div>' +
+                    '</div>' +
+                    '<div style="margin-left:12px;color:#c7c7cc;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>' +
+                '</div>';
+            }).join('');
+        });
+    }
 
 })();

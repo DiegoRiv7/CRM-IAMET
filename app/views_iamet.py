@@ -9,7 +9,7 @@ from datetime import date
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from django.db.models import Sum, DecimalField
+from django.db.models import Sum, Count, Q, DecimalField
 from django.utils import timezone
 from .models import (
     ProyectoIAMET as Proyecto, ProyectoPartida, ProyectoOrdenCompra,
@@ -232,6 +232,73 @@ def _alerta_to_dict(a):
         'fecha_resolucion': _fmt(a.fecha_resolucion),
         'created_at': _fmt(a.created_at),
     }
+
+
+# ═══════════════════════════════════════════════════════════════
+#  PROYECTOS DASHBOARD / FINANCIERO
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["GET"])
+def api_proyectos_dashboard(request):
+    """KPIs agregados de todos los proyectos visibles."""
+    try:
+        qs = _get_proyectos_qs(request.user)
+        data = {
+            'proyectos_ejecucion': qs.filter(status='active').count(),
+            'proyectos_programados': qs.filter(status='planning').count(),
+            'proyectos_completados': qs.filter(status='completed').count(),
+            'utilidad_total': float(
+                qs.filter(status='active').aggregate(t=Sum('utilidad_presupuestada'))['t'] or 0
+            ),
+            'costo_total': float(
+                qs.filter(status='active').aggregate(t=Sum('partidas__costo_total'))['t'] or 0
+            ),
+            'venta_total': float(
+                qs.filter(status='active').aggregate(t=Sum('partidas__precio_venta_total'))['t'] or 0
+            ),
+        }
+        return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_proyectos_financiero(request):
+    """Lista de proyectos con datos financieros agregados."""
+    try:
+        qs = _get_proyectos_qs(request.user)
+        status_filter = request.GET.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        qs = qs.select_related('usuario').annotate(
+            partidas_costo_total=Sum('partidas__costo_total'),
+            partidas_venta_total=Sum('partidas__precio_venta_total'),
+            partidas_ganancia=Sum('partidas__ganancia'),
+        )
+
+        proyectos = []
+        for p in qs:
+            costo = float(p.partidas_costo_total or 0)
+            venta = float(p.partidas_venta_total or 0)
+            utilidad = float(p.partidas_ganancia or 0)
+            margen = (utilidad / venta * 100) if venta > 0 else 0.0
+            proyectos.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'cliente_nombre': p.cliente_nombre,
+                'status': p.status,
+                'utilidad_presupuestada': utilidad,
+                'costo_total': costo,
+                'venta_total': venta,
+                'margen': round(margen, 2),
+            })
+
+        return JsonResponse({'success': True, 'data': proyectos})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 # ═══════════════════════════════════════════════════════════════
