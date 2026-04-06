@@ -241,21 +241,39 @@ def _alerta_to_dict(a):
 @login_required
 @require_http_methods(["GET"])
 def api_proyectos_dashboard(request):
-    """KPIs agregados de todos los proyectos visibles."""
+    """KPIs agregados de todos los proyectos visibles, con filtro opcional por mes/año."""
     try:
         qs = _get_proyectos_qs(request.user)
+
+        # Filtrar por mes/año de creación si se proporcionan
+        mes = request.GET.get('mes', '')
+        anio = request.GET.get('anio', '')
+        if anio:
+            try:
+                qs = qs.filter(created_at__year=int(anio))
+            except (ValueError, TypeError):
+                pass
+        if mes and mes != 'todos':
+            try:
+                qs = qs.filter(created_at__month=int(mes))
+            except (ValueError, TypeError):
+                pass
+
+        # No filtrar solo activos — contar todos los del periodo
+        activos = qs.filter(status='active')
         data = {
-            'proyectos_ejecucion': qs.filter(status='active').count(),
+            'total_proyectos': qs.count(),
+            'proyectos_ejecucion': activos.count(),
             'proyectos_programados': qs.filter(status='planning').count(),
             'proyectos_completados': qs.filter(status='completed').count(),
             'utilidad_total': float(
-                qs.filter(status='active').aggregate(t=Sum('utilidad_presupuestada'))['t'] or 0
+                qs.aggregate(t=Sum('partidas__ganancia'))['t'] or 0
             ),
             'costo_total': float(
-                qs.filter(status='active').aggregate(t=Sum('partidas__costo_total'))['t'] or 0
+                qs.aggregate(t=Sum('partidas__costo_total'))['t'] or 0
             ),
             'venta_total': float(
-                qs.filter(status='active').aggregate(t=Sum('partidas__precio_venta_total'))['t'] or 0
+                qs.aggregate(t=Sum('partidas__precio_venta_total'))['t'] or 0
             ),
         }
         return JsonResponse({'success': True, 'data': data})

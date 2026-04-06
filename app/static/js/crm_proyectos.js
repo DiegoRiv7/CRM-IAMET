@@ -2040,30 +2040,42 @@
     };
 
     // ── Dashboard ──
+    function _getFilterParams() {
+        var mesEl = document.getElementById('mesFilter');
+        var anioEl = document.getElementById('anioFilter');
+        var mes = mesEl ? mesEl.value : '';
+        var anio = anioEl ? anioEl.value : '';
+        var params = '';
+        if (anio) params += 'anio=' + anio;
+        if (mes) params += (params ? '&' : '') + 'mes=' + mes;
+        return params;
+    }
+
     function _loadDashboard() {
         var kpiContainer = el('proyDashKpis');
         var listContainer = el('proyDashList');
         if (kpiContainer) kpiContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8e8e93;padding:20px;">Cargando...</div>';
 
-        _fetch('/app/api/iamet/proyectos/dashboard/').then(function(resp) {
+        var params = _getFilterParams();
+        _fetch('/app/api/iamet/proyectos/dashboard/' + (params ? '?' + params : '')).then(function(resp) {
             if (!resp.success) return;
             var d = resp.data;
             if (kpiContainer) {
                 kpiContainer.innerHTML =
-                    _dashKpiCard('Proyectos en Ejecucion', d.proyectos_ejecucion, '#007AFF', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>') +
-                    _dashKpiCard('Avance Promedio', '—', '#10b981', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>') +
-                    _dashKpiCard('Personal Activo', '—', '#f59e0b', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>') +
-                    _dashKpiCard('Utilidad Total', fmtMoney(d.utilidad_total), '#059669', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>');
+                    _dashKpiCard('Proyectos en Ejecucion', d.proyectos_ejecucion, '#007AFF', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>', '+' + d.proyectos_programados + ' programados') +
+                    _dashKpiCard('Total Proyectos', d.total_proyectos, '#6366f1', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', d.proyectos_completados + ' completados') +
+                    _dashKpiCard('Venta Total', fmtMoney(d.venta_total), '#007AFF', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>', 'Costo: ' + fmtMoney(d.costo_total)) +
+                    _dashKpiCard('Utilidad Total', fmtMoney(d.utilidad_total), '#059669', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', d.venta_total > 0 ? Math.round(d.utilidad_total / d.venta_total * 100) + '% margen' : '');
             }
         });
 
-        // Load active projects for the list
-        _fetch('/app/api/iamet/proyectos/?status=active').then(function(resp) {
+        // Load ALL projects (not just active)
+        _fetch('/app/api/iamet/proyectos/').then(function(resp) {
             if (!resp.ok && !resp.success) return;
             var projects = resp.data || [];
             if (listContainer) {
                 if (projects.length === 0) {
-                    listContainer.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">No hay proyectos activos</div>';
+                    listContainer.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">No hay proyectos en este periodo</div>';
                     return;
                 }
                 listContainer.innerHTML = projects.map(function(p) {
@@ -2071,8 +2083,10 @@
                     var actual = p.utilidad_real || 0;
                     var pct = budgeted > 0 ? Math.min(Math.round(actual / budgeted * 100), 100) : 0;
                     var barColor = pct >= 70 ? '#10b981' : (pct >= 30 ? '#f59e0b' : '#e5e7eb');
-                    var statusLabel = p.status === 'active' ? 'En Ejecucion' : (p.status === 'planning' ? 'Programado' : p.status);
-                    var statusColor = p.status === 'active' ? '#10b981' : '#f59e0b';
+                    var statusLabels = {active:'En Ejecucion', planning:'Planificacion', completed:'Completado', paused:'Pausado', archived:'Archivado'};
+                    var statusColors = {active:'#10b981', planning:'#f59e0b', completed:'#6366f1', paused:'#8e8e93', archived:'#6B7280'};
+                    var statusLabel = statusLabels[p.status] || p.status;
+                    var statusColor = statusColors[p.status] || '#6B7280';
                     return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'" onmouseout="this.style.boxShadow=\'none\'" onclick="proyectosVerDetalle(' + p.id + ')">' +
                         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">' +
                             '<div><div style="font-weight:700;font-size:0.9rem;">' + p.nombre + '</div>' +
@@ -2095,10 +2109,12 @@
         });
     }
 
-    function _dashKpiCard(label, value, color, iconSvg) {
+    function _dashKpiCard(label, value, color, iconSvg, subtitle) {
         return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;display:flex;justify-content:space-between;align-items:flex-start;">' +
             '<div><div style="font-size:0.72rem;color:#6E6E73;margin-bottom:4px;">' + label + '</div>' +
-            '<div style="font-size:1.4rem;font-weight:700;">' + value + '</div></div>' +
+            '<div style="font-size:1.4rem;font-weight:700;">' + value + '</div>' +
+            (subtitle ? '<div style="font-size:0.68rem;color:#8e8e93;margin-top:2px;">' + subtitle + '</div>' : '') +
+            '</div>' +
             '<div style="color:' + color + ';opacity:0.7;">' + iconSvg + '</div>' +
         '</div>';
     }
