@@ -4564,47 +4564,48 @@
                 }
             }
 
-            // Tarea padre (si es subtarea)
-            var padreCard = document.getElementById('crmTaskPadreCard');
-            if (padreCard) {
-                if (tarea.tarea_padre_id && tarea.tarea_padre_titulo) {
-                    padreCard.style.display = '';
-                    padreCard.innerHTML = '<div onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:#F0F7FF;border:1px solid #BFDBFE;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#DBEAFE\'" onmouseleave="this.style.background=\'#F0F7FF\'">' +
-                        '<svg width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>' +
-                        '<div style="flex:1;min-width:0;">' +
-                            '<div style="font-size:0.68rem;color:#6B7280;text-transform:uppercase;font-weight:600;">Tarea principal</div>' +
-                            '<div style="font-size:0.82rem;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
-                        '</div>' +
-                        '<svg width="14" height="14" fill="none" stroke="#93C5FD" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
-                    '</div>';
-                } else {
-                    padreCard.style.display = 'none';
-                    padreCard.innerHTML = '';
-                }
-            }
-
-            // Subtareas
+            // Subtareas O Tarea padre (mutuamente excluyentes)
             var subtareasSection = document.getElementById('crmTaskSubtareasSection');
             var subtareasList = document.getElementById('crmTaskSubtareasList');
-            if (subtareasList) {
-                var subs = tarea.subtareas || [];
-                if (subs.length > 0) {
-                    var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
-                    var estadoLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
-                    subtareasList.innerHTML = subs.map(function(st) {
-                        var ec = estadoColors[st.estado] || ['#F3F4F6','#6B7280'];
-                        var isComplete = st.estado === 'completada';
-                        return '<div onclick="crmTaskVerDetalle(' + st.id + ')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#F9FAFB;border:1px solid #E5E7EB;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#F3F4F6\'" onmouseleave="this.style.background=\'#F9FAFB\'">' +
-                            '<svg width="14" height="14" fill="none" stroke="' + (isComplete ? '#059669' : '#D1D5DB') + '" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;">' + (isComplete ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : '<circle cx="12" cy="12" r="10"/>') + '</svg>' +
+            if (subtareasSection) {
+                if (tarea.tarea_padre_id && tarea.tarea_padre_titulo) {
+                    // Es subtarea: mostrar card de tarea padre en vez de subtareas
+                    subtareasSection.innerHTML =
+                        '<h3 style="margin:0 0 6px;">Tarea Principal</h3>' +
+                        '<div onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:#F0F7FF;border:1px solid #BFDBFE;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#DBEAFE\'" onmouseleave="this.style.background=\'#F0F7FF\'">' +
+                            '<svg width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>' +
                             '<div style="flex:1;min-width:0;">' +
-                                '<div style="font-size:0.8rem;font-weight:500;color:' + (isComplete ? '#9CA3AF' : '#1D1D1F') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (isComplete ? 'text-decoration:line-through;' : '') + '">' + (st.titulo || '') + '</div>' +
-                                (st.asignado_a ? '<div style="font-size:0.68rem;color:#9CA3AF;margin-top:1px;">' + st.asignado_a + '</div>' : '') +
+                                '<div style="font-size:0.82rem;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
                             '</div>' +
-                            '<span style="font-size:0.65rem;padding:2px 6px;border-radius:4px;background:' + ec[0] + ';color:' + ec[1] + ';white-space:nowrap;">' + (estadoLabels[st.estado] || st.estado) + '</span>' +
+                            '<svg width="14" height="14" fill="none" stroke="#93C5FD" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
                         '</div>';
-                    }).join('');
                 } else {
-                    subtareasList.innerHTML = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin subtareas</div>';
+                    // Es tarea normal: mostrar subtareas
+                    var subs = tarea.subtareas || [];
+                    var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                        '<h3 style="margin:0;">Subtareas</h3>' +
+                        '<button onclick="crmTaskCrearSubtarea()" title="Crear subtarea" style="background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:2px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;">' +
+                        '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Subtarea</button></div>';
+                    var listHtml = '';
+                    if (subs.length > 0) {
+                        var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
+                        var estadoLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
+                        listHtml = '<div style="display:flex;flex-direction:column;gap:4px;">' + subs.map(function(st) {
+                            var ec = estadoColors[st.estado] || ['#F3F4F6','#6B7280'];
+                            var isComplete = st.estado === 'completada';
+                            return '<div onclick="crmTaskVerDetalle(' + st.id + ')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#F9FAFB;border:1px solid #E5E7EB;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#F3F4F6\'" onmouseleave="this.style.background=\'#F9FAFB\'">' +
+                                '<svg width="14" height="14" fill="none" stroke="' + (isComplete ? '#059669' : '#D1D5DB') + '" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;">' + (isComplete ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : '<circle cx="12" cy="12" r="10"/>') + '</svg>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="font-size:0.8rem;font-weight:500;color:' + (isComplete ? '#9CA3AF' : '#1D1D1F') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (isComplete ? 'text-decoration:line-through;' : '') + '">' + (st.titulo || '') + '</div>' +
+                                    (st.asignado_a ? '<div style="font-size:0.68rem;color:#9CA3AF;margin-top:1px;">' + st.asignado_a + '</div>' : '') +
+                                '</div>' +
+                                '<span style="font-size:0.65rem;padding:2px 6px;border-radius:4px;background:' + ec[0] + ';color:' + ec[1] + ';white-space:nowrap;">' + (estadoLabels[st.estado] || st.estado) + '</span>' +
+                            '</div>';
+                        }).join('') + '</div>';
+                    } else {
+                        listHtml = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin subtareas</div>';
+                    }
+                    subtareasSection.innerHTML = headerHtml + listHtml;
                 }
             }
 
