@@ -117,7 +117,7 @@
     //  INIT (called when section becomes active)
     // =========================================
 
-    var _currentMainTab = 'dashboard';
+    var _currentMainTab = 'programa';
 
     window.proyectosInit = function() {
         currentProjectId = null;
@@ -125,7 +125,7 @@
         searchQuery = '';
         var searchInput = el('proySearch');
         if (searchInput) searchInput.value = '';
-        proySetMainTab('dashboard');
+        proySetMainTab('programa');
     };
     window.proyectosAbrir = window.proyectosInit;
 
@@ -2085,23 +2085,45 @@
                     var barColor = pct >= 70 ? '#10b981' : (pct >= 30 ? '#f59e0b' : '#e5e7eb');
                     var statusLabels = {active:'En Ejecucion', planning:'Planificacion', completed:'Completado', paused:'Pausado', archived:'Archivado'};
                     var statusColors = {active:'#10b981', planning:'#f59e0b', completed:'#6366f1', paused:'#8e8e93', archived:'#6B7280'};
-                    var statusLabel = statusLabels[p.status] || p.status;
+                    var sLabel = statusLabels[p.status] || p.status;
                     var statusColor = statusColors[p.status] || '#6B7280';
+
+                    // Equipo: show project owner name
+                    var equipoHtml = p.usuario_nombre ? p.usuario_nombre : '\u2014';
+
+                    // Fechas: start date + days active
+                    var fechaHtml = '\u2014';
+                    if (p.fecha_inicio) {
+                        var startParts = p.fecha_inicio.split('T')[0].split('-');
+                        var startDate = new Date(parseInt(startParts[0]), parseInt(startParts[1]) - 1, parseInt(startParts[2]));
+                        var dias;
+                        if (p.status === 'completed' && p.fecha_fin) {
+                            var endParts = p.fecha_fin.split('T')[0].split('-');
+                            var endDate = new Date(parseInt(endParts[0]), parseInt(endParts[1]) - 1, parseInt(endParts[2]));
+                            dias = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+                        } else {
+                            var today = new Date();
+                            today.setHours(0,0,0,0);
+                            dias = Math.round((today - startDate) / (1000 * 60 * 60 * 24));
+                        }
+                        fechaHtml = fmtDate(p.fecha_inicio) + ' &middot; ' + dias + ' dias';
+                    }
+
                     return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'" onmouseout="this.style.boxShadow=\'none\'" onclick="proyectosVerDetalle(' + p.id + ')">' +
                         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">' +
                             '<div><div style="font-weight:700;font-size:0.9rem;">' + p.nombre + '</div>' +
                             '<div style="font-size:0.78rem;color:#6E6E73;">' + (p.cliente_nombre || '') + '</div></div>' +
-                            '<span style="font-size:0.7rem;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid ' + statusColor + ';color:' + statusColor + ';">' + statusLabel + '</span>' +
+                            '<span style="font-size:0.7rem;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid ' + statusColor + ';color:' + statusColor + ';">' + sLabel + '</span>' +
                         '</div>' +
                         '<div style="margin:10px 0 8px;">' +
                             '<div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#6E6E73;margin-bottom:4px;"><span>Avance</span><span>' + pct + '%</span></div>' +
                             '<div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:3px;transition:width 0.3s;"></div></div>' +
                         '</div>' +
                         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid #f3f4f6;padding-top:10px;margin-top:6px;">' +
-                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Equipo</div><div style="font-weight:600;font-size:0.82rem;">—</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Equipo</div><div style="font-weight:600;font-size:0.82rem;">' + equipoHtml + '</div></div>' +
                             '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Presupuesto</div><div style="font-weight:600;font-size:0.82rem;">' + fmtMoney(budgeted) + '</div></div>' +
                             '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Gastado</div><div style="font-weight:600;font-size:0.82rem;">' + fmtMoney(actual) + '</div></div>' +
-                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Fechas</div><div style="font-weight:600;font-size:0.78rem;">' + (p.fecha_inicio ? fmtDate(p.fecha_inicio) : '—') + ' - ' + (p.fecha_fin ? fmtDate(p.fecha_fin) : '—') + '</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Fechas</div><div style="font-weight:600;font-size:0.78rem;">' + fechaHtml + '</div></div>' +
                         '</div>' +
                     '</div>';
                 }).join('');

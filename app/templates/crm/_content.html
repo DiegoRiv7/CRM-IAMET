@@ -700,6 +700,18 @@
                     <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
             </div>
+            <!-- Subtareas -->
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider" id="crmTaskSubtareasSection">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <h3 style="margin:0;">Subtareas</h3>
+                    <button onclick="crmTaskCrearSubtarea()" title="Crear subtarea"
+                        style="background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:2px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Subtarea
+                    </button>
+                </div>
+                <div id="crmTaskSubtareasList" style="display:flex;flex-direction:column;gap:4px;"></div>
+            </div>
         </div>
     </div>
 
@@ -794,6 +806,7 @@
                 </div>
             </div>
             <input type="hidden" id="crmTaskOppId" value="">
+            <input type="hidden" id="crmTaskPadreId" value="">
         </div>
         <div class="crm-create-task-footer">
             <button type="button" class="crm-create-task-btn-cancel" onclick="crmTaskCerrarCrear()">Cancelar</button>

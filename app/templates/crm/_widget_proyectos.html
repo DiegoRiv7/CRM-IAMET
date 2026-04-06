@@ -17,11 +17,11 @@
 
   <!-- Tab bar -->
   <div style="display:flex;border:1px solid #e5e7eb;border-radius:10px;margin:0 24px 20px;overflow:hidden;">
-    <button class="proy-main-tab active" data-tab="dashboard" onclick="proySetMainTab('dashboard')" style="flex:1;padding:10px;border:none;background:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#007AFF;border-bottom:2px solid #007AFF;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Dashboard
-    </button>
-    <button class="proy-main-tab" data-tab="programa" onclick="proySetMainTab('programa')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
+    <button class="proy-main-tab active" data-tab="programa" onclick="proySetMainTab('programa')" style="flex:1;padding:10px;border:none;background:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#007AFF;border-bottom:2px solid #007AFF;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Programa de Obra
+    </button>
+    <button class="proy-main-tab" data-tab="dashboard" onclick="proySetMainTab('dashboard')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Dashboard
     </button>
     <button class="proy-main-tab" data-tab="financiero" onclick="proySetMainTab('financiero')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Financiero
@@ -31,7 +31,7 @@
   <hr style="border:none;border-top:1px solid #f0f0f0;margin:0 24px 20px;">
 
   <!-- TAB 1: Dashboard -->
-  <div id="proyTabDashboard" style="padding:0 24px 20px;">
+  <div id="proyTabDashboard" style="display:none;padding:0 24px 20px;">
     <!-- KPIs row -->
     <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Indicadores Clave</h3>
     <div id="proyDashKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
@@ -45,7 +45,7 @@
   </div>
 
   <!-- TAB 2: Programa de Obra (existing content) -->
-  <div id="proyTabPrograma" style="display:none;padding:0 24px 20px;">
+  <div id="proyTabPrograma" style="padding:0 24px 20px;">
     <div class="proy-section-header" style="margin-bottom:16px;">
       <div class="proy-header-actions">
         <button class="proy-filter-pill active" data-filter="todos" onclick="proyectosFilterStatus('todos')">Todos</button>

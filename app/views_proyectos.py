@@ -1530,6 +1530,7 @@ def api_crear_tarea(request):
         oportunidad_id = data.get('oportunidad_id')
         participantes_ids = data.get('participantes', [])
         observadores_ids = data.get('observadores', [])
+        tarea_padre_id = data.get('tarea_padre_id')
         
         # Convertir fecha límite si está presente
         fecha_limite_obj = None
@@ -1572,6 +1573,19 @@ def api_crear_tarea(request):
             except TodoItem.DoesNotExist:
                 return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
 
+        # Obtener tarea padre si se especificó (subtarea)
+        tarea_padre = None
+        if tarea_padre_id:
+            try:
+                tarea_padre = Tarea.objects.get(id=tarea_padre_id)
+                # Heredar proyecto y oportunidad de la tarea padre si no se especificaron
+                if not proyecto and tarea_padre.proyecto:
+                    proyecto = tarea_padre.proyecto
+                if not oportunidad and tarea_padre.oportunidad:
+                    oportunidad = tarea_padre.oportunidad
+            except Tarea.DoesNotExist:
+                return JsonResponse({'error': 'Tarea padre no encontrada'}, status=400)
+
         # Crear la tarea en la base de datos
         tarea = Tarea.objects.create(
             titulo=nombre,
@@ -1583,6 +1597,7 @@ def api_crear_tarea(request):
             fecha_limite=fecha_limite_obj,
             proyecto=proyecto,
             oportunidad=oportunidad,
+            tarea_padre=tarea_padre,
         )
         
         # Agregar participantes y observadores
@@ -2469,8 +2484,18 @@ def api_tarea_detalle(request, tarea_id):
                 # Cliente: primero el directo, luego el de la oportunidad
                 'cliente_id': (tarea.cliente.id if tarea.cliente else (tarea.oportunidad.cliente.id if tarea.oportunidad and tarea.oportunidad.cliente else None)),
                 'cliente_nombre': (tarea.cliente.nombre_empresa if tarea.cliente else (tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None)),
+                # Subtareas
+                'tarea_padre_id': tarea.tarea_padre_id,
+                'subtareas': [{
+                    'id': st.id,
+                    'titulo': st.titulo,
+                    'estado': st.estado,
+                    'prioridad': st.prioridad,
+                    'asignado_a': st.asignado_a.get_full_name() if st.asignado_a else None,
+                    'fecha_limite': st.fecha_limite.strftime('%Y-%m-%d') if st.fecha_limite else None,
+                } for st in tarea.subtareas.all().order_by('fecha_creacion')],
             }
-            
+
             return JsonResponse(tarea_data)
             
         except Tarea.DoesNotExist:

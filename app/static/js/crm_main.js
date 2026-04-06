@@ -4564,6 +4564,31 @@
                 }
             }
 
+            // Subtareas
+            var subtareasSection = document.getElementById('crmTaskSubtareasSection');
+            var subtareasList = document.getElementById('crmTaskSubtareasList');
+            if (subtareasList) {
+                var subs = tarea.subtareas || [];
+                if (subs.length > 0) {
+                    var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
+                    var estadoLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
+                    subtareasList.innerHTML = subs.map(function(st) {
+                        var ec = estadoColors[st.estado] || ['#F3F4F6','#6B7280'];
+                        var isComplete = st.estado === 'completada';
+                        return '<div onclick="crmTaskVerDetalle(' + st.id + ')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#F9FAFB;border:1px solid #E5E7EB;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#F3F4F6\'" onmouseleave="this.style.background=\'#F9FAFB\'">' +
+                            '<svg width="14" height="14" fill="none" stroke="' + (isComplete ? '#059669' : '#D1D5DB') + '" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;">' + (isComplete ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : '<circle cx="12" cy="12" r="10"/>') + '</svg>' +
+                            '<div style="flex:1;min-width:0;">' +
+                                '<div style="font-size:0.8rem;font-weight:500;color:' + (isComplete ? '#9CA3AF' : '#1D1D1F') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (isComplete ? 'text-decoration:line-through;' : '') + '">' + (st.titulo || '') + '</div>' +
+                                (st.asignado_a ? '<div style="font-size:0.68rem;color:#9CA3AF;margin-top:1px;">' + st.asignado_a + '</div>' : '') +
+                            '</div>' +
+                            '<span style="font-size:0.65rem;padding:2px 6px;border-radius:4px;background:' + ec[0] + ';color:' + ec[1] + ';white-space:nowrap;">' + (estadoLabels[st.estado] || st.estado) + '</span>' +
+                        '</div>';
+                    }).join('');
+                } else {
+                    subtareasList.innerHTML = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin subtareas</div>';
+                }
+            }
+
             _crmTaskLastData = tarea;
             var _curId = _CRM_CONFIG.userId;
             var _isSu = _CRM_CONFIG.isSuperuser;
@@ -5680,8 +5705,9 @@
             _crmTaskSelectedResp = null;
             _crmTaskSelectedParts = [];
             _crmTaskSelectedObs = [];
-            // Reset oportunidad
+            // Reset oportunidad and tarea padre
             var oid = document.getElementById('crmTaskOppId'); if (oid) oid.value = '';
+            var pid = document.getElementById('crmTaskPadreId'); if (pid) pid.value = '';
             // Remove any open user dropdown
             var dd = document.querySelector('.crm-user-dropdown'); if (dd) dd.remove();
         }
@@ -5859,6 +5885,8 @@
             if (_crmTaskSelectedObs.length > 0) payload.observadores = _crmTaskSelectedObs.map(function (u) { return u.id; });
             var oppIdEl = document.getElementById('crmTaskOppId');
             if (oppIdEl && oppIdEl.value) payload.oportunidad_id = oppIdEl.value;
+            var padreIdEl = document.getElementById('crmTaskPadreId');
+            if (padreIdEl && padreIdEl.value) payload.tarea_padre_id = padreIdEl.value;
 
             var submitBtn = document.getElementById('crmTaskSubmitBtn');
             if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creando...'; }
@@ -5876,9 +5904,14 @@
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Crear tarea'; }
                     if (data.success) {
                         var oppId = oppIdEl ? oppIdEl.value : '';
+                        var padreId = padreIdEl ? padreIdEl.value : '';
                         crmTaskCerrarCrear();
                         recargarTareasCRM();
-                        showToast('Tarea creada exitosamente', 'success');
+                        showToast(padreId ? 'Subtarea creada exitosamente' : 'Tarea creada exitosamente', 'success');
+                        // Refresh parent task detail if subtask was created
+                        if (padreId && typeof crmTaskVerDetalle === 'function') {
+                            crmTaskVerDetalle(parseInt(padreId));
+                        }
                         if (typeof dashRefreshData === 'function') { dashRefreshData(); }
                         if (oppId && typeof window.woCargarTareasInline === 'function') {
                             window.woCargarTareasInline(oppId);
@@ -5932,6 +5965,15 @@
         }
         window.crmTaskToggleDesc = crmTaskToggleDesc;
 
+        function crmTaskCrearSubtarea() {
+            var padreId = _crmCurrentTaskId;
+            if (!padreId) return;
+            crmTaskAbrirCrear();
+            var padreEl = document.getElementById('crmTaskPadreId');
+            if (padreEl) padreEl.value = padreId;
+        }
+
+        window.crmTaskCrearSubtarea = crmTaskCrearSubtarea;
         window.crmTaskAbrirCrear = crmTaskAbrirCrear;
         window.crmTaskCerrarCrear = crmTaskCerrarCrear;
         window.crmTaskCrear = crmTaskCrear;

@@ -2326,6 +2326,14 @@ class Tarea(models.Model):
         related_name='tareas_creadas',
         verbose_name="Regla de automatizacion que creo esta tarea"
     )
+    tarea_padre = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='subtareas',
+        verbose_name="Tarea padre"
+    )
 
     class Meta:
         verbose_name = "Tarea"
@@ -3566,10 +3574,6 @@ class ReglaAutomatizacion(models.Model):
         related_name='reglas_como_observador',
         verbose_name="Observadores predeterminados"
     )
-
-    # Incluir dueño de la oportunidad como participante/observador
-    incluir_dueno_participante = models.BooleanField(default=False, verbose_name="Incluir dueño como participante")
-    incluir_dueno_observador = models.BooleanField(default=False, verbose_name="Incluir dueño como observador")
 
     # Metadatos
     creada_por = models.ForeignKey(
