@@ -2486,6 +2486,7 @@ def api_tarea_detalle(request, tarea_id):
                 'cliente_nombre': (tarea.cliente.nombre_empresa if tarea.cliente else (tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None)),
                 # Subtareas
                 'tarea_padre_id': tarea.tarea_padre_id,
+                'tarea_padre_titulo': tarea.tarea_padre.titulo if tarea.tarea_padre else None,
                 'subtareas': [{
                     'id': st.id,
                     'titulo': st.titulo,

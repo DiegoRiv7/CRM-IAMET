@@ -4564,6 +4564,25 @@
                 }
             }
 
+            // Tarea padre (si es subtarea)
+            var padreCard = document.getElementById('crmTaskPadreCard');
+            if (padreCard) {
+                if (tarea.tarea_padre_id && tarea.tarea_padre_titulo) {
+                    padreCard.style.display = '';
+                    padreCard.innerHTML = '<div onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:#F0F7FF;border:1px solid #BFDBFE;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#DBEAFE\'" onmouseleave="this.style.background=\'#F0F7FF\'">' +
+                        '<svg width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>' +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-size:0.68rem;color:#6B7280;text-transform:uppercase;font-weight:600;">Tarea principal</div>' +
+                            '<div style="font-size:0.82rem;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
+                        '</div>' +
+                        '<svg width="14" height="14" fill="none" stroke="#93C5FD" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
+                    '</div>';
+                } else {
+                    padreCard.style.display = 'none';
+                    padreCard.innerHTML = '';
+                }
+            }
+
             // Subtareas
             var subtareasSection = document.getElementById('crmTaskSubtareasSection');
             var subtareasList = document.getElementById('crmTaskSubtareasList');
