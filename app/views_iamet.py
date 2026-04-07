@@ -162,6 +162,12 @@ def _calcular_efectividad(proyecto):
 
 
 def _proyecto_to_dict(p, include_alerts=False):
+    # Calcular utilidad real desde facturas y gastos (no del campo del modelo)
+    ingresos = float(p.facturas_ingreso.aggregate(t=Sum('monto'))['t'] or 0)
+    costos_prov = float(p.facturas_proveedor.aggregate(t=Sum('monto'))['t'] or 0)
+    gastos_apr = float(p.gastos.filter(estado_aprobacion='approved').aggregate(t=Sum('monto'))['t'] or 0)
+    utilidad_real_calc = ingresos - costos_prov - gastos_apr
+
     d = {
         'id': p.id,
         'usuario_id': p.usuario_id,
@@ -171,7 +177,7 @@ def _proyecto_to_dict(p, include_alerts=False):
         'cliente_nombre': p.cliente_nombre,
         'status': p.status,
         'utilidad_presupuestada': float(p.utilidad_presupuestada),
-        'utilidad_real': float(p.utilidad_real),
+        'utilidad_real': utilidad_real_calc,
         'fecha_inicio': _fmt(p.fecha_inicio),
         'fecha_fin': _fmt(p.fecha_fin),
         'created_at': _fmt(p.created_at),

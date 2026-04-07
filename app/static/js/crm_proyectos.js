@@ -215,6 +215,9 @@
             var amountColor = profitOk ? '#10b981' : '#636366';
 
             var unresolved = p.alertas_count || 0;
+            // Badge: mostrar etapa de la oportunidad si existe
+            var badgeText = p.oportunidad_etapa || statusLabel(p.status);
+            var badgeColor = p.oportunidad_etapa_color || '#6B7280';
 
             html += '<div class="proy-card" onclick="proyectosVerDetalle(' + p.id + ')">' +
                 '<div class="proy-card-header">' +
@@ -222,7 +225,7 @@
                         '<div class="proy-card-title">' + truncate(p.nombre, 45) + '</div>' +
                         '<div class="proy-card-client">' + (p.cliente_nombre || '\u2014') + '</div>' +
                     '</div>' +
-                    '<span class="proy-badge ' + statusClass(p.status) + '">' + statusLabel(p.status) + '</span>' +
+                    '<span class="proy-badge" style="background:' + badgeColor + '20;color:' + badgeColor + ';border:1px solid ' + badgeColor + ';">' + badgeText + '</span>' +
                 '</div>' +
                 '<div class="proy-card-desc">' + truncate(p.descripcion, 90) + '</div>' +
                 '<div class="proy-card-profit">' +
