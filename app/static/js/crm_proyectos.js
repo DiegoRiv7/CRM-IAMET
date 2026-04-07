@@ -1098,7 +1098,27 @@
             container.innerHTML = html;
 
             // Load activities for this week
-            // TODO: fetch from /app/api/programacion/actividades/?proyecto_key=proy_{id}&fecha_desde=...&fecha_hasta=...
+            _fetch('/app/api/programacion/actividades/?proyecto_key=proy_' + projectId).then(function(resp) {
+                if (!resp.success) return;
+                var items = resp.items || [];
+                // Group by date
+                items.forEach(function(act) {
+                    if (!act.fecha) return;
+                    var dayEl = document.getElementById('proyProgDay_' + act.fecha);
+                    if (!dayEl) return;
+                    var respHtml = (act.responsables || []).map(function(r) {
+                        return '<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#007AFF;color:#fff;font-size:0.55rem;line-height:20px;text-align:center;margin-right:2px;" title="' + r.nombre + '">' + r.iniciales + '</span>';
+                    }).join('');
+                    var card = document.createElement('div');
+                    card.style.cssText = 'background:#F0F7FF;border:1px solid #BFDBFE;border-radius:8px;padding:6px 8px;margin-bottom:4px;font-size:0.7rem;cursor:default;';
+                    card.innerHTML = '<div style="font-weight:600;color:#1E40AF;margin-bottom:2px;">' + act.titulo + '</div>' +
+                        '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+                            '<span style="color:#6B7280;">' + act.hora_inicio + ' - ' + act.hora_fin + '</span>' +
+                            '<div>' + respHtml + '</div>' +
+                        '</div>';
+                    dayEl.appendChild(card);
+                });
+            });
         }
 
         // Navigation functions
