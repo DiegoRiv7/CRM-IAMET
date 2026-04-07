@@ -104,7 +104,7 @@ class Command(BaseCommand):
         # ══════════════════════════════════════════
         #  PARTIDAS (10 partidas realistas)
         # ══════════════════════════════════════════
-        partidas = {}
+        partidas = []
         pdata = [
             ('equipamiento', 'Camara Avigilon H5A 4MP Bullet IR40', 'Avigilon', 'H5A-BO-IR40', 16, 0, '4500', '6200', 'Anixter Mexico', 'received'),
             ('equipamiento', 'NVR Avigilon 32ch 24TB', 'Avigilon', 'NVR4X-32-24TB', 1, 0, '28000', '38000', 'Anixter Mexico', 'received'),
@@ -124,19 +124,19 @@ class Command(BaseCommand):
                 costo_unitario=Decimal(cu), precio_venta_unitario=Decimal(vu),
                 proveedor=prov, status=st,
             )
-            partidas[desc[:25]] = p
+            partidas.append(p)
         self.stdout.write(f'  {len(partidas)} partidas creadas')
 
         # ══════════════════════════════════════════
         #  ORDENES DE COMPRA (7 OCs)
         # ══════════════════════════════════════════
-        cam = partidas['Camara Avigilon H5A 4MP']
-        nvr = partidas['NVR Avigilon 32ch 24TB']
-        sw = partidas['Switch PoE 24 puertos Av']
-        cable = partidas['Cable UTP Cat6 Panduit 3']
-        patch = partidas['Patch Panel 24 puertos C']
-        tub = partidas['Tuberia conduit EMT 3/4 ']
-        gab = partidas['Gabinete metalico 19" 12']
+        cam = partidas[0]   # Camara
+        nvr = partidas[1]   # NVR
+        sw = partidas[2]    # Switch
+        cable = partidas[4] # Cable
+        patch = partidas[5] # Patch Panel
+        tub = partidas[7]   # Tuberia
+        gab = partidas[8]   # Gabinete
 
         ocs = [
             ('OC-PRUEBA-001', cam, 'Anixter Mexico', 16, '4500', 'received', -25, -12, -13),
