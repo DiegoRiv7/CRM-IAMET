@@ -46,7 +46,7 @@ class Command(BaseCommand):
             opp = TodoItem.objects.create(
                 oportunidad='Instalacion CCTV y Red - Planta Automotriz Otay',
                 usuario=jefe, cliente=cliente,
-                monto=Decimal('285000'),
+                monto=Decimal('282000'),
                 etapa_corta='Facturado', etapa_color='#00BCD4',
                 area='Seguridad', producto='AVIGILON',
                 mes_cierre='04', anio_cierre=2026,
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             ),
             cliente_nombre='Planta Automotriz Otay',
             status='active',
-            utilidad_presupuestada=Decimal('52340'),
+            utilidad_presupuestada=Decimal('76800'),  # venta $282k - costo $205.2k
             utilidad_real=Decimal('0'),
             fecha_inicio=inicio,
             fecha_fin=fin,
@@ -160,9 +160,13 @@ class Command(BaseCommand):
         # ══════════════════════════════════════════
         #  FACTURAS PROVEEDOR (4 facturas)
         # ══════════════════════════════════════════
+        # Facturas deben coincidir con OCs recibidas:
+        # Anixter: camaras $72k + NVR $28k + switches $17,400 = $117,400
+        # Panduit: cable $17,100 + patch $2,400 = $19,500
+        # TVC: gabinete $3,200
+        # Total facturas proveedor: $140,100
         facprov = [
-            ('FAC-ANX-2026-4521', 'Anixter Mexico', '89000', '89000', -13, 'paid'),
-            ('FAC-ANX-2026-4587', 'Anixter Mexico', '28000', '28000', -10, 'paid'),
+            ('FAC-ANX-2026-4521', 'Anixter Mexico', '117400', '117000', -13, 'paid'),
             ('FAC-PAN-2026-891', 'Panduit Mexico', '19500', '19200', -4, 'received'),
             ('FAC-TVC-2026-112', 'TVC Mexico', '3200', '3200', -9, 'paid'),
         ]
@@ -172,15 +176,18 @@ class Command(BaseCommand):
                 monto=Decimal(monto), monto_presupuestado=Decimal(presu),
                 fecha_factura=hoy + timedelta(days=dias), status=st,
             )
-        self.stdout.write('  4 facturas proveedor')
+        self.stdout.write('  3 facturas proveedor ($140,100 de $205,200 presupuestado)')
 
         # ══════════════════════════════════════════
         #  FACTURAS INGRESO (3 facturas cobradas al cliente)
         # ══════════════════════════════════════════
+        # Venta total del proyecto: $282,000
+        # Anticipo 50% al firmar, 30% a medio proyecto, 20% al entregar
+        # Proyecto al 65% → anticipo cobrado + segundo pago cobrado
         facing = [
-            ('IAMET-2026-0342', '120000', -20, 'paid', 'Transferencia'),
-            ('IAMET-2026-0358', '85000', -7, 'paid', 'Transferencia'),
-            ('IAMET-2026-0371', '50000', -1, 'emitted', 'Pendiente'),
+            ('IAMET-2026-0342', '141000', -20, 'paid', 'Transferencia'),   # 50% anticipo
+            ('IAMET-2026-0358', '84600', -5, 'paid', 'Transferencia'),     # 30% avance
+            # El 20% restante ($56,400) se cobra al entregar → no facturado aun
         ]
         for nf, monto, dias, st, metodo in facing:
             ProyectoFacturaIngreso.objects.create(
@@ -188,7 +195,7 @@ class Command(BaseCommand):
                 fecha_factura=hoy + timedelta(days=dias), status=st,
                 metodo_pago=metodo,
             )
-        self.stdout.write('  3 facturas ingreso ($255,000 total)')
+        self.stdout.write('  2 facturas ingreso ($225,600 cobrado de $282,000 total)')
 
         # ══════════════════════════════════════════
         #  GASTOS OPERATIVOS (5 gastos)
@@ -395,10 +402,10 @@ class Command(BaseCommand):
             f'   Oportunidad: {opp.oportunidad} (etapa: {opp.etapa_corta})\n'
             f'   Periodo: {inicio} → {fin} ({(fin - inicio).days} dias)\n'
             f'   ────────────────────────────────────────\n'
-            f'   10 partidas (4 recibidas, 1 cerrada, 2 ordenadas, 1 transito, 1 pendiente)\n'
-            f'   7 ordenes de compra (5 recibidas, 1 emitida, 1 con sobreprecio)\n'
-            f'   4 facturas proveedor ($139,700 total)\n'
-            f'   3 facturas ingreso ($255,000 cobrado)\n'
+            f'   10 partidas (costo $205,200 / venta $282,000 / utilidad $76,800)\n'
+            f'   7 ordenes de compra ($142,800 gastado en OCs)\n'
+            f'   3 facturas proveedor ($140,100 pagado a proveedores)\n'
+            f'   2 facturas ingreso ($225,600 cobrado al cliente de $282,000)\n'
             f'   6 gastos operativos ($18,700 total, 4 aprobados)\n'
             f'   12 tareas (6 completadas, 1 en progreso, 3 pendientes, 2 vencidas)\n'
             f'   5 alertas (4 activas, 1 resuelta)\n'
