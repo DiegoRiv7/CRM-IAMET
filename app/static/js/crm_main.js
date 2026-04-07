@@ -31,8 +31,13 @@
             if (anioFilter) params.set('anio', anioFilter.value);
             // Preservar tab actual — detectar desde URL o desde tab activo visible
             if (!params.get('tab')) {
-                var activeTab = document.querySelector('.crm-tab-btn.active, [data-tab].active');
-                params.set('tab', activeTab ? (activeTab.dataset.tab || 'crm') : 'crm');
+                var activeTab = document.querySelector('.crm-tab.active');
+                if (activeTab && activeTab.href) {
+                    var tabMatch = activeTab.href.match(/tab=([^&]+)/);
+                    params.set('tab', tabMatch ? tabMatch[1] : 'crm');
+                } else {
+                    params.set('tab', 'crm');
+                }
             }
             // Preserve vendor filter
             var vfChecks = document.querySelectorAll('.vf-user:checked');
