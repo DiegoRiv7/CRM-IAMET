@@ -1440,6 +1440,10 @@ def api_proyecto_financieros(request, proyecto_id):
     cobertura = (ingresos / costos_gastos * 100) if costos_gastos > 0 else Decimal('0')
     alertas_pendientes = proyecto.alertas.filter(resuelta=False).count()
 
+    # KPIs operativos
+    gastado = float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0)
+    cobrado = float(ingresos)
+
     return JsonResponse({
         'success': True,
         'data': {
@@ -1451,6 +1455,10 @@ def api_proyecto_financieros(request, proyecto_id):
             'margen': float(margen),
             'cobertura': float(cobertura),
             'alertas_pendientes': alertas_pendientes,
+            'gastado': gastado,
+            'cobrado': cobrado,
+            'avance_pct': _calcular_avance(proyecto),
+            'efectividad_pct': _calcular_efectividad(proyecto),
         },
     })
 
