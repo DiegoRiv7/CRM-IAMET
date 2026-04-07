@@ -273,8 +273,13 @@
 
                 if (hName) hName.textContent = project.nombre || '';
                 if (hStatus) {
-                    hStatus.textContent = statusLabel(project.status);
-                    hStatus.className = 'proy-badge ' + statusClass(project.status);
+                    var etapa = project.oportunidad_etapa || statusLabel(project.status);
+                    var etapaColor = project.oportunidad_etapa_color || '#6B7280';
+                    hStatus.textContent = etapa;
+                    hStatus.style.background = etapaColor + '20';
+                    hStatus.style.color = etapaColor;
+                    hStatus.style.border = '1px solid ' + etapaColor;
+                    hStatus.className = 'proy-badge';
                 }
                 if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
                 if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
@@ -346,6 +351,49 @@
     }
 
 
+    function renderOperationalKPIs(projectId) {
+        var kpiContainer = el('proyKPIs');
+        if (!kpiContainer) return;
+
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var fin = resp.data;
+                var gastado = fin.gastado || fin.costos || 0;
+                var cobrado = fin.cobrado || fin.ingresos || 0;
+                var avancePct = Math.round(fin.avance_pct || 0);
+                var efectividadPct = Math.round(fin.efectividad_pct || 0);
+
+                var avanceColor = avancePct >= 80 ? '#10b981' : (avancePct >= 50 ? '#f59e0b' : '#ef4444');
+                var efectividadColor = efectividadPct >= 80 ? '#10b981' : (efectividadPct >= 60 ? '#f59e0b' : '#ef4444');
+
+                kpiContainer.innerHTML =
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Gastado</div>' +
+                        '<div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(gastado) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Cobrado</div>' +
+                        '<div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(cobrado) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">% Avance</div>' +
+                        '<div class="proy-kpi-value" style="color:' + avanceColor + '">' + avancePct + '%</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Efectividad</div>' +
+                        '<div class="proy-kpi-value" style="color:' + efectividadColor + '">' + efectividadPct + '%</div>' +
+                    '</div>';
+            }
+        }).catch(function(err) {
+            console.error('Error cargando KPIs operacionales:', err);
+        });
+    }
+
+    function renderFinancialKPIs(projectId) {
+        renderKPIsFromAPI(projectId);
+    }
+
+
     // =========================================
     //  TABS
     // =========================================
@@ -374,10 +422,19 @@
         switch (tabName) {
             case 'info':       renderInfo(); break;
             case 'partidas':   renderPartidas(currentProjectId); break;
-            case 'oc':         renderOC(currentProjectId); break;
             case 'financiero': renderFinanciero(currentProjectId); break;
+            case 'programa':   renderProgramaObra(currentProjectId); break;
             case 'tareas':     renderTareas(currentProjectId); break;
             case 'alertas':    renderAlertas(currentProjectId); break;
+        }
+
+        // Update KPIs based on active tab
+        if (tabName === 'partidas' || tabName === 'programa') {
+            renderOperationalKPIs(currentProjectId);
+        } else if (tabName === 'financiero') {
+            renderFinancialKPIs(currentProjectId);
+        } else {
+            renderOperationalKPIs(currentProjectId);
         }
     };
 
@@ -918,10 +975,107 @@
 
 
     // =========================================
+    //  RENDER: PROGRAMA DE OBRA
+    // =========================================
+
+    function renderProgramaObra(projectId) {
+        var container = el('proyProgramaContainer');
+        if (!container) return;
+
+        var detail = _cachedProjectDetail;
+        if (!detail || !detail.fecha_inicio || !detail.fecha_fin) {
+            container.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">Define las fechas de inicio y fin del proyecto para usar el Programa de Obra</div>';
+            return;
+        }
+
+        // Calculate weeks from fecha_inicio to fecha_fin
+        var start = new Date(detail.fecha_inicio);
+        var end = new Date(detail.fecha_fin);
+        // Adjust to Monday of the start week
+        var dayOfWeek = start.getDay();
+        var mondayStart = new Date(start);
+        mondayStart.setDate(start.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+        var weeks = [];
+        var current = new Date(mondayStart);
+        var weekNum = 1;
+        while (current <= end) {
+            var weekStart = new Date(current);
+            var weekEnd = new Date(current);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            weeks.push({ num: weekNum, start: weekStart, end: weekEnd });
+            current.setDate(current.getDate() + 7);
+            weekNum++;
+        }
+
+        // State
+        var currentWeekIdx = 0;
+        var showWeekend = false;
+
+        function renderWeek() {
+            var week = weeks[currentWeekIdx];
+            if (!week) return;
+
+            var fmtShort = function(d) {
+                var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+                return d.getDate() + ' ' + months[d.getMonth()];
+            };
+
+            var days = ['Lunes','Martes','\u004Di\u00E9rcoles','Jueves','Viernes'];
+            if (showWeekend) days.push('S\u00E1bado', 'Domingo');
+
+            var html = '';
+            // Navigation header
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:12px;">';
+            html += '<button onclick="proyProgramaPrev()" style="background:none;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:1rem;color:#1d1d1f;' + (currentWeekIdx === 0 ? 'opacity:0.3;pointer-events:none;' : '') + '">\u2190</button>';
+            html += '<div style="text-align:center;"><div style="font-weight:700;font-size:0.95rem;">Semana ' + week.num + '</div>';
+            html += '<div style="font-size:0.75rem;color:#6E6E73;">' + fmtShort(week.start) + ' \u2014 ' + fmtShort(new Date(week.start.getTime() + 4*86400000)) + '</div></div>';
+            html += '<button onclick="proyProgramaNext()" style="background:none;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:1rem;color:#1d1d1f;' + (currentWeekIdx >= weeks.length - 1 ? 'opacity:0.3;pointer-events:none;' : '') + '">\u2192</button>';
+            html += '</div>';
+
+            // Toggle weekend button
+            html += '<div style="text-align:right;margin-bottom:8px;"><button onclick="proyProgramaToggleWeekend()" style="font-size:0.72rem;background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;cursor:pointer;color:#6B7280;">' + (showWeekend ? 'Ocultar fin de semana' : 'Mostrar fin de semana') + '</button></div>';
+
+            // Day columns
+            html += '<div style="display:grid;grid-template-columns:repeat(' + days.length + ',1fr);gap:8px;">';
+            days.forEach(function(dayName, i) {
+                var dayDate = new Date(week.start);
+                dayDate.setDate(dayDate.getDate() + i);
+                var dateStr = dayDate.toISOString().split('T')[0];
+                var isToday = dateStr === new Date().toISOString().split('T')[0];
+
+                html += '<div style="border:1px solid ' + (isToday ? '#007AFF' : '#e5e7eb') + ';border-radius:10px;min-height:200px;padding:8px;">';
+                html += '<div style="font-size:0.72rem;font-weight:700;color:' + (isToday ? '#007AFF' : '#6E6E73') + ';text-transform:uppercase;margin-bottom:4px;">' + dayName + '</div>';
+                html += '<div style="font-size:0.68rem;color:#9CA3AF;margin-bottom:8px;">' + fmtShort(dayDate) + '</div>';
+                html += '<div id="proyProgDay_' + dateStr + '">';
+                html += '</div>';
+                html += '<button onclick="proyProgramaAddActivity(\'' + dateStr + '\')" style="width:100%;padding:6px;border:1px dashed #D1D5DB;border-radius:8px;background:none;color:#9CA3AF;font-size:0.72rem;cursor:pointer;margin-top:4px;">+ A\u00F1adir</button>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Load activities for this week
+            // TODO: fetch from /app/api/programacion/actividades/?proyecto_key=proy_{id}&fecha_desde=...&fecha_hasta=...
+        }
+
+        // Navigation functions
+        window.proyProgramaPrev = function() { if (currentWeekIdx > 0) { currentWeekIdx--; renderWeek(); } };
+        window.proyProgramaNext = function() { if (currentWeekIdx < weeks.length - 1) { currentWeekIdx++; renderWeek(); } };
+        window.proyProgramaToggleWeekend = function() { showWeekend = !showWeekend; renderWeek(); };
+        window.proyProgramaAddActivity = function(dateStr) { alert('Crear actividad para ' + dateStr + ' \u2014 pr\u00F3ximamente'); };
+
+        renderWeek();
+    }
+
+
+    // =========================================
     //  RENDER: FINANCIERO
     // =========================================
 
     function renderFinanciero(projectId) {
+        renderOC(projectId);
         renderSupplierInvoices(projectId);
         renderRevenueInvoices(projectId);
         renderExpenses(projectId);
@@ -1335,8 +1489,13 @@
 
                 if (hName) hName.textContent = project.nombre || '';
                 if (hStatus) {
-                    hStatus.textContent = statusLabel(project.status);
-                    hStatus.className = 'proy-badge ' + statusClass(project.status);
+                    var etapa = project.oportunidad_etapa || statusLabel(project.status);
+                    var etapaColor = project.oportunidad_etapa_color || '#6B7280';
+                    hStatus.textContent = etapa;
+                    hStatus.style.background = etapaColor + '20';
+                    hStatus.style.color = etapaColor;
+                    hStatus.style.border = '1px solid ' + etapaColor;
+                    hStatus.className = 'proy-badge';
                 }
                 if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
                 if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);

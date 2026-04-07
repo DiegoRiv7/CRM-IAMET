@@ -68,6 +68,99 @@ def _fmt(val):
     return str(val)
 
 
+def _calcular_avance(proyecto):
+    """Calcula % de avance del proyecto basado en partidas + etapa oportunidad."""
+    from .models import ProgramacionActividad
+
+    # 40% weight: partidas completadas (status closed or received)
+    total_partidas = proyecto.partidas.count()
+    if total_partidas > 0:
+        partidas_completas = proyecto.partidas.filter(status__in=['closed', 'received']).count()
+        pct_partidas = (partidas_completas / total_partidas) * 100
+    else:
+        pct_partidas = 0
+
+    # 30% weight: etapa de oportunidad
+    pct_etapa = 0
+    if proyecto.oportunidad and proyecto.oportunidad.etapa_corta:
+        etapa = proyecto.oportunidad.etapa_corta
+        # Map etapas to progress %
+        etapa_map = {
+            'En Solicitud': 5, 'Cotizando': 15, 'Enviada': 25, 'Seguimiento': 35,
+            'Vendido s/PO': 45, 'Vendido c/PO': 55, 'En Tránsito': 65,
+            'Facturado': 75, 'Programado': 80, 'Entregado': 85,
+            'Esperando Pago': 90, 'Ganado': 95, 'Pagado': 100,
+        }
+        pct_etapa = etapa_map.get(etapa, 50)
+
+    # 30% weight: programa de obra (actividades completadas)
+    pct_programa = 0
+    actividades = ProgramacionActividad.objects.filter(proyecto_key=f'proy_{proyecto.id}')
+    total_acts = actividades.count()
+    if total_acts > 0:
+        # Activities with fecha in the past are considered "done"
+        acts_pasadas = actividades.filter(fecha__lt=timezone.localdate()).count()
+        pct_programa = (acts_pasadas / total_acts) * 100
+
+    avance = (pct_partidas * 0.4) + (pct_etapa * 0.3) + (pct_programa * 0.3)
+
+    # Cap: if oportunidad is not 'Pagado', max 95%
+    if proyecto.oportunidad and proyecto.oportunidad.etapa_corta != 'Pagado':
+        avance = min(avance, 95)
+
+    return round(min(avance, 100), 1)
+
+
+def _calcular_efectividad(proyecto):
+    """Calcula % de efectividad. Empieza en 100% y baja por penalizaciones."""
+    from .models import ProgramacionActividad
+
+    efectividad = 100.0
+    hoy = timezone.localdate()
+
+    # -5% por cada tarea vencida no completada
+    tareas_vencidas = proyecto.tareas_proyecto.filter(
+        fecha_limite__lt=timezone.now()
+    ).exclude(status__in=['completed', 'cancelled']).count()
+    efectividad -= tareas_vencidas * 5
+
+    # -5% si gastado > costo total presupuestado
+    gastado = float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0)
+    costo_total = float(proyecto.partidas.aggregate(t=Sum('costo_total'))['t'] or 0)
+    if costo_total > 0 and gastado > costo_total:
+        efectividad -= 5
+
+    # -3% por cada OC con precio_unitario > partida.costo_unitario
+    for oc in proyecto.ordenes_compra.exclude(status='cancelled').select_related('partida'):
+        if oc.partida and oc.precio_unitario and oc.partida.costo_unitario:
+            if oc.precio_unitario > oc.partida.costo_unitario:
+                efectividad -= 3
+
+    # -10% si fecha actual > fecha_fin y oportunidad no está en Pagado
+    if proyecto.fecha_fin and hoy > proyecto.fecha_fin:
+        if not proyecto.oportunidad or proyecto.oportunidad.etapa_corta != 'Pagado':
+            efectividad -= 10
+
+    # -5% si programa de obra tiene actividades atrasadas
+    acts_atrasadas = ProgramacionActividad.objects.filter(
+        proyecto_key=f'proy_{proyecto.id}',
+        fecha__lt=hoy
+    ).count()
+    # Only penalize if there are activities that should have happened
+    if acts_atrasadas > 0:
+        total_acts = ProgramacionActividad.objects.filter(proyecto_key=f'proy_{proyecto.id}').count()
+        if total_acts > 0:
+            # Check if there are future activities too (meaning project is ongoing)
+            acts_futuras = ProgramacionActividad.objects.filter(
+                proyecto_key=f'proy_{proyecto.id}',
+                fecha__gte=hoy
+            ).count()
+            if acts_futuras == 0 and proyecto.status != 'completed':
+                efectividad -= 5
+
+    return round(max(0, min(100, efectividad)), 1)
+
+
 def _proyecto_to_dict(p, include_alerts=False):
     d = {
         'id': p.id,
@@ -85,6 +178,8 @@ def _proyecto_to_dict(p, include_alerts=False):
         'updated_at': _fmt(p.updated_at),
         'oportunidad_id': p.oportunidad_id if hasattr(p, 'oportunidad_id') else None,
         'oportunidad_nombre': p.oportunidad.oportunidad if hasattr(p, 'oportunidad_id') and p.oportunidad_id and p.oportunidad else None,
+        'oportunidad_etapa': p.oportunidad.etapa_corta if p.oportunidad else None,
+        'oportunidad_etapa_color': p.oportunidad.etapa_color if p.oportunidad else None,
     }
     if include_alerts:
         d['alertas_pendientes'] = p.alertas.filter(resuelta=False).count()
@@ -401,6 +496,13 @@ def api_proyecto_detalle(request, proyecto_id):
         'alertas_pendientes': proyecto.alertas.filter(resuelta=False).count(),
         'tareas_pendientes': proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count(),
         'ordenes_compra_activas': proyecto.ordenes_compra.exclude(status='cancelled').count(),
+        # Gastado: sum of OC montos (not cancelled)
+        'gastado': float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0),
+        # Cobrado: sum of facturas ingreso
+        'cobrado': float(proyecto.facturas_ingreso.aggregate(t=Sum('monto'))['t'] or 0),
+        # KPIs operativos
+        'avance_pct': _calcular_avance(proyecto),
+        'efectividad_pct': _calcular_efectividad(proyecto),
     }
 
     # Configuracion
