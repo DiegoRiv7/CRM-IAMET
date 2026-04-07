@@ -398,18 +398,15 @@
                 var fin = resp.data;
                 // KPI 1: Utilidad Presupuestada (de partidas - lo planeado)
                 var utilPresup = fin.utilidad_presupuestada || 0;
-                // KPI 2: Costo Total (de partidas - lo que se planeo gastar)
-                // Calculamos: costo = (utilidad_presup es venta - costo, entonces costo = venta - utilidad)
-                // Pero mejor: usamos costos reales del endpoint
-                var costoTotal = fin.costos || 0;
-                var gastosAprobados = fin.gastos || 0;
-                var costoRealTotal = costoTotal + gastosAprobados;
-                // KPI 3: Utilidad Real (cobrado - pagado a proveedores - gastos)
+                // KPI 2: Costo Presupuestado (de partidas - lo que se planeo gastar)
+                var costoPresup = fin.costo_presupuestado || 0;
+                // KPI 3: Utilidad Real (cobrado - facturas proveedor - gastos aprobados)
                 var utilReal = fin.utilidad_real || 0;
                 var utilRealColor = utilReal >= 0 ? '#10b981' : '#ef4444';
-                // KPI 4: Margen (utilidad real / ingresos)
-                var margen = fin.margen || 0;
-                var margenColor = margen >= 25 ? '#10b981' : (margen >= 15 ? '#f59e0b' : '#ef4444');
+                // KPI 4: Margen Real (utilidad real / cobrado)
+                var cobrado = fin.ingresos || 0;
+                var margenReal = cobrado > 0 ? (utilReal / cobrado * 100) : 0;
+                var margenColor = margenReal >= 25 ? '#10b981' : (margenReal >= 15 ? '#f59e0b' : '#ef4444');
 
                 kpiContainer.innerHTML =
                     '<div class="proy-kpi-card">' +
@@ -417,16 +414,16 @@
                         '<div class="proy-kpi-value">' + fmtMoney(utilPresup) + '</div>' +
                     '</div>' +
                     '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Costo Real</div>' +
-                        '<div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(costoRealTotal) + '</div>' +
+                        '<div class="proy-kpi-label">Costo Presupuestado</div>' +
+                        '<div class="proy-kpi-value">' + fmtMoney(costoPresup) + '</div>' +
                     '</div>' +
                     '<div class="proy-kpi-card">' +
                         '<div class="proy-kpi-label">Utilidad Real</div>' +
                         '<div class="proy-kpi-value" style="color:' + utilRealColor + '">' + fmtMoney(utilReal) + '</div>' +
                     '</div>' +
                     '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Margen</div>' +
-                        '<div class="proy-kpi-value" style="color:' + margenColor + '">' + Math.round(margen) + '%</div>' +
+                        '<div class="proy-kpi-label">Margen Real</div>' +
+                        '<div class="proy-kpi-value" style="color:' + margenColor + '">' + Math.round(margenReal) + '%</div>' +
                     '</div>';
             }
         }).catch(function(err) {

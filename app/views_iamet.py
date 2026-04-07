@@ -1444,10 +1444,14 @@ def api_proyecto_financieros(request, proyecto_id):
     gastado = float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0)
     cobrado = float(ingresos)
 
+    # Costo presupuestado (de partidas)
+    costo_presupuestado = float(proyecto.partidas.aggregate(t=Sum('costo_total'))['t'] or 0)
+
     return JsonResponse({
         'success': True,
         'data': {
             'utilidad_presupuestada': float(utilidad_presupuestada),
+            'costo_presupuestado': costo_presupuestado,
             'ingresos': float(ingresos),
             'costos': float(costos),
             'gastos': float(gastos),
