@@ -390,7 +390,48 @@
     }
 
     function renderFinancialKPIs(projectId) {
-        renderKPIsFromAPI(projectId);
+        var kpiContainer = el('proyKPIs');
+        if (!kpiContainer) return;
+
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var fin = resp.data;
+                // KPI 1: Utilidad Presupuestada (de partidas - lo planeado)
+                var utilPresup = fin.utilidad_presupuestada || 0;
+                // KPI 2: Costo Total (de partidas - lo que se planeo gastar)
+                // Calculamos: costo = (utilidad_presup es venta - costo, entonces costo = venta - utilidad)
+                // Pero mejor: usamos costos reales del endpoint
+                var costoTotal = fin.costos || 0;
+                var gastosAprobados = fin.gastos || 0;
+                var costoRealTotal = costoTotal + gastosAprobados;
+                // KPI 3: Utilidad Real (cobrado - pagado a proveedores - gastos)
+                var utilReal = fin.utilidad_real || 0;
+                var utilRealColor = utilReal >= 0 ? '#10b981' : '#ef4444';
+                // KPI 4: Margen (utilidad real / ingresos)
+                var margen = fin.margen || 0;
+                var margenColor = margen >= 25 ? '#10b981' : (margen >= 15 ? '#f59e0b' : '#ef4444');
+
+                kpiContainer.innerHTML =
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Utilidad Presupuestada</div>' +
+                        '<div class="proy-kpi-value">' + fmtMoney(utilPresup) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Costo Real</div>' +
+                        '<div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(costoRealTotal) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Utilidad Real</div>' +
+                        '<div class="proy-kpi-value" style="color:' + utilRealColor + '">' + fmtMoney(utilReal) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Margen</div>' +
+                        '<div class="proy-kpi-value" style="color:' + margenColor + '">' + Math.round(margen) + '%</div>' +
+                    '</div>';
+            }
+        }).catch(function(err) {
+            console.error('Error cargando KPIs financieros:', err);
+        });
     }
 
 
