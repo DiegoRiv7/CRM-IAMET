@@ -59,8 +59,13 @@ class Command(BaseCommand):
             opp.save(update_fields=['etapa_corta', 'etapa_color'])
             self.stdout.write(f'Oportunidad existente: {opp.oportunidad}')
 
-        # Eliminar proyecto de prueba anterior si existe
+        # Eliminar proyecto de prueba anterior si existe (cascade borra partidas, OCs, etc)
         ProyectoIAMET.objects.filter(nombre='Instalacion CCTV 16 Camaras - Planta Otay').delete()
+        # Limpiar actividades de programa de obra huerfanas
+        ProgramacionActividad.objects.filter(proyecto_key__startswith='proy_').filter(
+            titulo__in=['Levantamiento fisico zona A', 'Instalacion canaletas piso 1',
+                        'Cableado puntos 1-4', 'Montaje camaras lote 1', 'Config NVR y pruebas']
+        ).delete()
 
         # Crear proyecto
         hoy = date.today()
@@ -149,9 +154,12 @@ class Command(BaseCommand):
         cable = partidas_creadas.get('Cable UTP Cat6 Pandu')
         tuberia = partidas_creadas.get('Tuberia conduit EMT ')
 
+        # Limpiar OCs de prueba anteriores
+        ProyectoOrdenCompra.objects.filter(numero_oc__startswith='OC-PRUEBA-').delete()
+
         ocs_data = [
             {
-                'partida': camaras, 'proveedor': 'Anixter Mexico',
+                'numero_oc': 'OC-PRUEBA-001', 'partida': camaras, 'proveedor': 'Anixter Mexico',
                 'cantidad': 16, 'precio_unitario': Decimal('4500'),
                 'status': 'received',
                 'fecha_emision': hoy - timedelta(days=18),
@@ -159,7 +167,7 @@ class Command(BaseCommand):
                 'fecha_entrega_real': hoy - timedelta(days=8),
             },
             {
-                'partida': nvr, 'proveedor': 'Anixter Mexico',
+                'numero_oc': 'OC-PRUEBA-002', 'partida': nvr, 'proveedor': 'Anixter Mexico',
                 'cantidad': 1, 'precio_unitario': Decimal('28000'),
                 'status': 'received',
                 'fecha_emision': hoy - timedelta(days=18),
@@ -167,7 +175,7 @@ class Command(BaseCommand):
                 'fecha_entrega_real': hoy - timedelta(days=5),
             },
             {
-                'partida': cable, 'proveedor': 'Panduit Mexico',
+                'numero_oc': 'OC-PRUEBA-003', 'partida': cable, 'proveedor': 'Panduit Mexico',
                 'cantidad': 6, 'precio_unitario': Decimal('2850'),  # Ligeramente mas caro
                 'status': 'received',
                 'fecha_emision': hoy - timedelta(days=14),
@@ -175,7 +183,7 @@ class Command(BaseCommand):
                 'fecha_entrega_real': hoy - timedelta(days=2),
             },
             {
-                'partida': tuberia, 'proveedor': 'Electrica del Norte',
+                'numero_oc': 'OC-PRUEBA-004', 'partida': tuberia, 'proveedor': 'Electrica del Norte',
                 'cantidad': 30, 'precio_unitario': Decimal('90'),  # Mas caro que presupuesto
                 'status': 'emitted',
                 'fecha_emision': hoy - timedelta(days=5),
@@ -186,6 +194,7 @@ class Command(BaseCommand):
         for od in ocs_data:
             oc = ProyectoOrdenCompra.objects.create(
                 proyecto=proyecto,
+                numero_oc=od['numero_oc'],
                 partida=od['partida'],
                 proveedor=od['proveedor'],
                 cantidad=od['cantidad'],
