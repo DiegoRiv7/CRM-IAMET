@@ -604,7 +604,13 @@ document.addEventListener('click', function(ev) {
 
         document.getElementById('warnBtnAgendarProspecto').addEventListener('click', function() {
             warn.remove();
-            wpAbrirPanelActividades();
+            // Abrir el widget completo de agendar actividad (el mismo que oportunidades)
+            var crearWidget = document.getElementById('widgetOppCrearActividad');
+            if (crearWidget) {
+                crearWidget.style.display = 'flex';
+            } else {
+                wpAbrirPanelActividades();
+            }
         });
     }
 
@@ -617,11 +623,16 @@ document.addEventListener('click', function(ev) {
             fetch('/app/api/prospecto/' + id + '/actividades/')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (data.actividades && data.actividades.length > 0) {
+                    var acts = data.actividades || [];
+                    if (acts.length > 0) {
                         _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo);
                     } else {
                         _showProspectoMissingActivityWarning();
                     }
+                })
+                .catch(function() {
+                    // Si falla el fetch, mostrar warning de todos modos
+                    _showProspectoMissingActivityWarning();
                 });
             return;
         }
@@ -777,7 +788,14 @@ document.addEventListener('click', function(ev) {
                 '</div>' +
             '</div>';
         body.style.cursor = 'pointer';
-        body.onclick = function() { wpAbrirPanelActividades(); };
+        body.onclick = function() {
+            var crearWidget = document.getElementById('widgetOppCrearActividad');
+            if (crearWidget) {
+                crearWidget.style.display = 'flex';
+            } else {
+                wpAbrirPanelActividades();
+            }
+        };
     }
 
     function renderActividadesFullList(actividades) {
@@ -833,7 +851,13 @@ document.addEventListener('click', function(ev) {
     // Nueva actividad button — open the prospection activities panel
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpBtnNuevaActividad' || e.target.closest('#wpBtnNuevaActividad')) {
-            wpAbrirPanelActividades();
+            // Abrir el widget completo de agendar actividad
+            var crearWidget = document.getElementById('widgetOppCrearActividad');
+            if (crearWidget) {
+                crearWidget.style.display = 'flex';
+            } else {
+                wpAbrirPanelActividades();
+            }
         }
     });
 
