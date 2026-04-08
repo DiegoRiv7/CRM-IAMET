@@ -905,6 +905,9 @@ document.addEventListener('click', function(ev) {
         var existing = document.getElementById('wpActInfoOverlay');
         if (existing) existing.remove();
 
+        var prospData = window._currentProspectoData;
+        var prospectoNombre = prospData ? (prospData.nombre || '') : '';
+
         var overlay = document.createElement('div');
         overlay.id = 'wpActInfoOverlay';
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:10400;display:flex;align-items:center;justify-content:center;';
@@ -940,11 +943,11 @@ document.addEventListener('click', function(ev) {
                         '</div>' +
                     '</div>' +
                     // Relacionado a
-                    '<div style="border-top:1px dashed #E5E7EB;padding-top:12px;">' +
+                    '<div style="border-top:1px dashed #E5E7EB;padding-top:14px;">' +
                         '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:6px;">Relacionado a</div>' +
-                        '<div style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:6px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;">' +
-                            '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
-                            'Prospecto' +
+                        '<div onclick="document.getElementById(\'wpActInfoOverlay\').remove();" style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:8px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;" onmouseover="this.style.background=\'#EDE9FE\'" onmouseout="this.style.background=\'#F3E8FF\'">' +
+                            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
+                            'Prospecto: ' + escapeHtml(prospectoNombre) + ' &rsaquo;' +
                         '</div>' +
                     '</div>' +
                 '</div>' +

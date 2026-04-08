@@ -1674,37 +1674,54 @@
         var isCompletada = ep.completada;
         var creador = ep.creado_por ? ep.creado_por.text : '—';
 
+        // Extraer prospecto_id y nombre del campo descripcion (formato: "prospecto_id:X|nombre|cliente")
+        var prospectoId = null;
+        var prospectoNombre = '';
+        var desc = evt.description || '';
+        if (desc.indexOf('prospecto_id:') === 0) {
+            var parts = desc.split('|');
+            prospectoId = parts[0].replace('prospecto_id:', '');
+            prospectoNombre = parts[1] || '';
+            desc = ''; // No mostrar la descripcion interna
+        }
+
+        var prospectoLinkHtml = prospectoId
+            ? '<div onclick="document.getElementById(\'calProspectoInfoOverlay\').remove();if(typeof abrirWidgetProspecto===\'function\')abrirWidgetProspecto('+prospectoId+');" style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:8px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'#EDE9FE\'" onmouseout="this.style.background=\'#F3E8FF\'">' +
+                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
+                'Prospecto: ' + prospectoNombre.replace(/</g,'&lt;') + ' &rsaquo;</div>'
+            : '<div style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:6px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Prospecto</div>';
+
         var overlay = document.createElement('div');
         overlay.id = 'calProspectoInfoOverlay';
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
         overlay.innerHTML =
-            '<div style="background:#fff;border-radius:16px;width:520px;max-width:94vw;box-shadow:0 25px 60px rgba(0,0,0,0.3);overflow:hidden;">' +
-                '<div style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);padding:1.8rem 1.8rem 1.5rem;position:relative;">' +
-                    '<button onclick="document.getElementById(\'calProspectoInfoOverlay\').remove()" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
-                    '<div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">' +
-                        '<svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+            '<div style="background:#fff;border-radius:16px;width:480px;max-width:92vw;box-shadow:0 25px 60px rgba(0,0,0,0.3);overflow:hidden;">' +
+                '<div style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);padding:1.5rem;position:relative;">' +
+                    '<button onclick="document.getElementById(\'calProspectoInfoOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
+                    '<div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">' +
+                        '<svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
                     '</div>' +
-                    '<div style="font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:4px;">' + (evt.title || '').replace(/</g,'&lt;') + '</div>' +
-                    '<div style="font-size:0.85rem;color:rgba(255,255,255,0.8);">' + dateFmt + ' &middot; ' + timeFmt + '</div>' +
+                    '<div style="font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px;">' + (evt.title || '').replace(/</g,'&lt;') + '</div>' +
+                    '<div style="font-size:0.82rem;color:rgba(255,255,255,0.8);">' + dateFmt + ' &middot; ' + timeFmt + '</div>' +
                 '</div>' +
                 '<div style="padding:1.5rem;">' +
-                    (evt.description ? '<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:14px;margin-bottom:16px;"><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:4px;">Descripcion</div><div style="font-size:0.88rem;color:#1D1D1F;">' + (evt.description || '').replace(/</g,'&lt;') + '</div></div>' : '') +
-                    '<div style="display:flex;gap:2.5rem;margin-bottom:16px;">' +
+                    (desc ? '<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px;margin-bottom:16px;"><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:4px;">Descripcion</div><div style="font-size:0.88rem;color:#1D1D1F;">' + desc.replace(/</g,'&lt;') + '</div></div>' : '') +
+                    '<div style="display:flex;gap:2rem;margin-bottom:16px;">' +
                         '<div><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Creador</div><div style="font-size:0.88rem;font-weight:500;color:#1D1D1F;">' + creador.replace(/</g,'&lt;') + '</div></div>' +
-                        '<div><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Participantes</div><div style="font-size:0.88rem;color:#1D1D1F;">' + (ep.participants||[]).map(function(p){return p.text;}).join(', ') || '—' + '</div></div>' +
+                        '<div><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Estado</div>' +
+                            (isCompletada ? '<span style="font-size:0.82rem;font-weight:600;color:#34C759;">Completada</span>' : '<span style="font-size:0.82rem;font-weight:600;color:#FF9500;">Pendiente</span>') +
+                        '</div>' +
                     '</div>' +
                     '<div style="border-top:1px dashed #E5E7EB;padding-top:14px;">' +
                         '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:6px;">Relacionado a</div>' +
-                        '<div style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:6px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;">' +
-                            '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Prospecto' +
-                        '</div>' +
+                        prospectoLinkHtml +
                     '</div>' +
                 '</div>' +
-                '<div style="padding:1rem 1.8rem;border-top:1px solid #E5E7EB;background:#F9FAFB;display:flex;justify-content:center;gap:12px;border-radius:0 0 16px 16px;">' +
+                '<div style="padding:1rem 1.5rem;border-top:1px solid #E5E7EB;background:#F9FAFB;display:flex;justify-content:center;gap:12px;border-radius:0 0 16px 16px;">' +
                     (isCompletada
-                        ? '<span style="padding:0.7rem 2rem;background:#E5E7EB;color:#9CA3AF;border-radius:8px;font-weight:600;font-size:0.9rem;">Ya completada</span>'
-                        : '<button onclick="_calCompletarProspecto(' + evt.id + ')" style="padding:0.7rem 2rem;background:#34C759;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">Completar</button>') +
-                    '<button onclick="document.getElementById(\'calProspectoInfoOverlay\').remove()" style="padding:0.7rem 2rem;background:#8B5CF6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">Cerrar</button>' +
+                        ? '<span style="padding:0.6rem 2rem;background:#E5E7EB;color:#9CA3AF;border-radius:8px;font-weight:600;">Ya completada</span>'
+                        : '<button onclick="_calCompletarProspecto(' + evt.id + ')" style="padding:0.6rem 2rem;background:#34C759;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Completar</button>') +
+                    '<button onclick="document.getElementById(\'calProspectoInfoOverlay\').remove()" style="padding:0.6rem 2rem;background:#8B5CF6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar</button>' +
                 '</div>' +
             '</div>';
         document.body.appendChild(overlay);

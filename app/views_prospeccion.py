@@ -524,7 +524,7 @@ def api_prospecto_actividades(request, prospecto_id):
             Actividad.objects.create(
                 titulo=descripcion,
                 tipo_actividad=tipo_map.get(tipo, 'otro'),
-                descripcion=f'Prospecto: {prospecto.producto} - {cliente_nombre}',
+                descripcion=f'prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}',
                 fecha_inicio=fecha_dt,
                 fecha_fin=fecha_dt + timedelta(hours=1),
                 creado_por=request.user,
