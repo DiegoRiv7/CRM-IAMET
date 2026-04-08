@@ -125,7 +125,16 @@
         var _crmSearchEl = document.getElementById('crmSearch');
         if (_crmSearchEl) {
             _crmSearchEl.addEventListener('input', function() {
+                // Filtrar cards
                 if (typeof _applyFiltersToCards === 'function') _applyFiltersToCards();
+                // Filtrar tabla también
+                var q = this.value.toLowerCase();
+                var tbody = document.getElementById('crmTbody');
+                if (tbody) {
+                    tbody.querySelectorAll('tr.crm-data-row').forEach(function(row) {
+                        row.style.display = (!q || row.textContent.toLowerCase().includes(q)) ? '' : 'none';
+                    });
+                }
             });
         }
 
@@ -3837,24 +3846,24 @@
                 var tipo = (card.dataset.tipo || '').toLowerCase();
                 var producto = (card.dataset.producto || '').toLowerCase();
                 var cliente = (card.dataset.cliente || '').toLowerCase();
+                var contacto = (card.dataset.contacto || '').toLowerCase();
                 var show = true;
 
-                // Buscador
+                // Buscador global
                 if (searchVal && !text.includes(searchVal)) show = false;
-                // Filtros
+                // Filtros del panel
                 if (show && currentFilters.cliente && !cliente.includes(currentFilters.cliente.toLowerCase())) show = false;
                 if (show && currentFilters.area && !area.includes(currentFilters.area.toLowerCase())) show = false;
                 if (show && currentFilters.etapa && !etapa.includes(currentFilters.etapa.toLowerCase())) show = false;
                 if (show && currentFilters.tipo && tipo !== currentFilters.tipo) show = false;
                 if (show && currentFilters.producto && !producto.includes(currentFilters.producto.toLowerCase())) show = false;
-                if (show && currentFilters.contacto) {
-                    var contacto = (card.dataset.contacto || '').toLowerCase();
-                    if (!contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
-                }
+                if (show && currentFilters.contacto && !contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
 
                 card.style.display = show ? '' : 'none';
             });
         }
+        // Exponer para que se pueda llamar desde fuera del scope
+        window._applyFiltersToCards = _applyFiltersToCards;
 
         // Extraer monto de una fila
         function extractMonto(row) {
