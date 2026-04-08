@@ -522,7 +522,7 @@ def api_prospecto_actividades(request, prospecto_id):
             }
             cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
             Actividad.objects.create(
-                titulo=f'[Prospecto] {descripcion}',
+                titulo=descripcion,
                 tipo_actividad=tipo_map.get(tipo, 'otro'),
                 descripcion=f'Prospecto: {prospecto.producto} - {cliente_nombre}',
                 fecha_inicio=fecha_dt,

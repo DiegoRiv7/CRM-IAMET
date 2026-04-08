@@ -782,7 +782,7 @@ document.addEventListener('click', function(ev) {
                 '</div>' +
             '</div>';
         body.style.cursor = 'pointer';
-        body.onclick = function() { wpAbrirPanelActividades(); };
+        body.onclick = function() { _mostrarInfoActividad(act); };
     }
 
     function renderActividadesFullList(actividades) {
@@ -899,6 +899,61 @@ document.addEventListener('click', function(ev) {
             }).catch(function() { alert('Error de conexion'); });
         }
     });
+
+    // ── Mostrar info de actividad (en vez de abrir formulario) ──
+    function _mostrarInfoActividad(act) {
+        var existing = document.getElementById('wpActInfoOverlay');
+        if (existing) existing.remove();
+
+        var tipoColors = {
+            'llamada': '#007AFF', 'correo': '#FF9500',
+            'reunion': '#5856D6', 'tarea': '#34C759', 'otro': '#8E8E93'
+        };
+        var tipoLabels = {
+            'llamada': 'Llamada', 'correo': 'Correo',
+            'reunion': 'Reunion', 'tarea': 'Tarea', 'otro': 'Otro'
+        };
+        var color = tipoColors[act.tipo] || '#8E8E93';
+        var completadaHtml = act.completada
+            ? '<span style="display:inline-flex;align-items:center;gap:4px;color:#34C759;font-weight:600;font-size:0.82rem;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Completada</span>'
+            : '<span style="display:inline-flex;align-items:center;gap:4px;color:#FF9500;font-weight:600;font-size:0.82rem;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> Pendiente</span>';
+
+        var overlay = document.createElement('div');
+        overlay.id = 'wpActInfoOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:10400;display:flex;align-items:center;justify-content:center;';
+        overlay.innerHTML = '<div style="background:#fff;border-radius:14px;width:420px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;">' +
+            '<div style="padding:1.2rem 1.5rem;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;">' +
+                '<div style="font-weight:700;font-size:1rem;color:#1D1D1F;">Detalle de Actividad</div>' +
+                '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="background:none;border:none;font-size:1.3rem;color:#9CA3AF;cursor:pointer;">&times;</button>' +
+            '</div>' +
+            '<div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">' +
+                '<div>' +
+                    '<div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Nombre</div>' +
+                    '<div style="font-size:0.95rem;font-weight:600;color:#1D1D1F;">' + escapeHtml(act.descripcion) + '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:1rem;">' +
+                    '<div style="flex:1;">' +
+                        '<div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Fecha y Hora</div>' +
+                        '<div style="font-size:0.88rem;color:#1D1D1F;">' + escapeHtml(act.fecha_programada || '—') + '</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Tipo</div>' +
+                        '<div style="font-size:0.82rem;font-weight:600;color:' + color + ';">' + (tipoLabels[act.tipo] || act.tipo) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Estado</div>' +
+                    completadaHtml +
+                '</div>' +
+                (act.usuario ? '<div><div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Creado por</div><div style="font-size:0.85rem;color:#1D1D1F;">' + escapeHtml(act.usuario) + '</div></div>' : '') +
+            '</div>' +
+            '<div style="padding:1rem 1.5rem;border-top:1px solid #E5E7EB;background:#F9FAFB;text-align:right;border-radius:0 0 14px 14px;">' +
+                '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="padding:0.6rem 1.2rem;background:#007AFF;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar</button>' +
+            '</div>' +
+        '</div>';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    }
 
     // ── Participantes de actividad prospecto ──
     var _wpParticipantesSel = [];
