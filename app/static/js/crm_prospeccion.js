@@ -604,13 +604,7 @@ document.addEventListener('click', function(ev) {
 
         document.getElementById('warnBtnAgendarProspecto').addEventListener('click', function() {
             warn.remove();
-            // Abrir el widget completo de agendar actividad (el mismo que oportunidades)
-            var crearWidget = document.getElementById('widgetOppCrearActividad');
-            if (crearWidget) {
-                crearWidget.style.display = 'flex';
-            } else {
-                wpAbrirPanelActividades();
-            }
+            wpAbrirPanelActividades();
         });
     }
 
@@ -788,14 +782,7 @@ document.addEventListener('click', function(ev) {
                 '</div>' +
             '</div>';
         body.style.cursor = 'pointer';
-        body.onclick = function() {
-            var crearWidget = document.getElementById('widgetOppCrearActividad');
-            if (crearWidget) {
-                crearWidget.style.display = 'flex';
-            } else {
-                wpAbrirPanelActividades();
-            }
-        };
+        body.onclick = function() { wpAbrirPanelActividades(); };
     }
 
     function renderActividadesFullList(actividades) {
@@ -851,13 +838,7 @@ document.addEventListener('click', function(ev) {
     // Nueva actividad button — open the prospection activities panel
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpBtnNuevaActividad' || e.target.closest('#wpBtnNuevaActividad')) {
-            // Abrir el widget completo de agendar actividad
-            var crearWidget = document.getElementById('widgetOppCrearActividad');
-            if (crearWidget) {
-                crearWidget.style.display = 'flex';
-            } else {
-                wpAbrirPanelActividades();
-            }
+            wpAbrirPanelActividades();
         }
     });
 
@@ -995,17 +976,42 @@ document.addEventListener('click', function(ev) {
     // ── Close prospecto detail widget ──
     document.addEventListener('click', function(e) {
         if (e.target.id === 'prospectoClose') {
-            var w = document.getElementById('widgetProspecto');
-            if (w) w.classList.remove('active');
+            _intentarCerrarProspecto();
         }
     });
+
+    function _intentarCerrarProspecto() {
+        var id = window._currentProspectoId;
+        if (!id) {
+            var w = document.getElementById('widgetProspecto');
+            if (w) w.classList.remove('active');
+            return;
+        }
+        // Verificar si tiene actividades antes de cerrar
+        fetch('/app/api/prospecto/' + id + '/actividades/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var acts = data.actividades || [];
+                if (acts.length > 0) {
+                    var w = document.getElementById('widgetProspecto');
+                    if (w) w.classList.remove('active');
+                } else {
+                    _showProspectoMissingActivityWarning();
+                }
+            })
+            .catch(function() {
+                // Si falla, dejar cerrar
+                var w = document.getElementById('widgetProspecto');
+                if (w) w.classList.remove('active');
+            });
+    }
 
     // Close on overlay click
     var overlay = document.getElementById('widgetProspecto');
     if (overlay) {
         overlay.addEventListener('click', function(e) {
             if (e.target === overlay) {
-                overlay.classList.remove('active');
+                _intentarCerrarProspecto();
             }
         });
     }
@@ -1023,7 +1029,7 @@ document.addEventListener('click', function(ev) {
             // Close prospecto detail widget
             var w = document.getElementById('widgetProspecto');
             if (w && w.classList.contains('active')) {
-                w.classList.remove('active');
+                _intentarCerrarProspecto();
                 return;
             }
             // Close client widget
