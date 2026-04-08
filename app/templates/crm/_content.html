@@ -123,6 +123,14 @@
                         <line x1="12" y1="18" x2="20" y2="18" />
                     </svg>
                 </button>
+                {% if tab_activo == 'crm' %}
+                <button type="button" id="btnToggleCrmView" title="Cambiar vista" onclick="toggleCrmView()"
+                    style="padding:4px 8px;border:1px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;color:#6B7280;font-size:0.7rem;">
+                    <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                </button>
+                {% endif %}
                 <div class="crm-search-wrap" {% if tab_activo == 'clientes' or tab_activo == 'prospeccion' %}style="display:none;"{% endif %}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.5">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -133,50 +141,90 @@
             </div>
         </div>
         {% if tab_activo == 'crm' %}
-        <div class="flex flex-col gap-2 px-1" id="crmTbody">
-            {% for item in tabla_data %}
-            <div class="crm-data-row group bg-white border border-gray-200/80 rounded-xl px-4 py-3 flex items-center gap-4 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer relative overflow-hidden"
-                 data-opp-id="{{ item.id }}"
-                 data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
-                 data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}"
-                 data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}"
-                 data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}"
-                 data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}"
-                 onclick="openDetalle('{{ item.id }}')">
-
-                <!-- Main info -->
-                <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-gray-900 truncate opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:50 }}</div>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-                        <span class="font-semibold text-gray-700 client-name-link" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:25 }}</span>
-                        <span class="w-1 h-1 rounded-full bg-gray-300 inline-block"></span>
-                        <span>{% if item.contacto %}{{ item.contacto.nombre|truncatechars:15 }}{% else %}-{% endif %}</span>
-                        <span class="text-gray-400">({{ item.area|default:'-' }})</span>
+        <!-- VISTA CARDS (principal) -->
+        <div id="crmViewCards" style="display:none;">
+            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:0 4px;">
+                {% for item in tabla_data %}
+                <div class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}"
+                     onclick="openDetalle('{{ item.id }}')"
+                     style="background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:16px;cursor:pointer;transition:all 0.15s;position:relative;{% if item.tiene_actividad_vencida %}border-left:3px solid #EF4444;{% endif %}"
+                     onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                    <div style="font-weight:700;font-size:0.88rem;color:#1D1D1F;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <span class="opp-name-link" data-oportunidad-id="{{ item.id }}" {% if item.tiene_actividad_vencida %}style="color:#EF4444"{% endif %}>{{ item.oportunidad|truncatechars:40 }}{% if item.tiene_actividad_vencida %} <span style="font-size:0.7rem;">&#9888;</span>{% endif %}</span>
                     </div>
-                    {% if item.producto %}
-                    <div class="text-[11px] text-gray-400 mt-1">Marca: {{ item.producto }}</div>
-                    {% endif %}
-                </div>
-
-                <!-- Stage badge -->
-                <div class="flex-shrink-0 hidden sm:block">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium"
-                          style="background: {{ item.etapa_color|default:'#6B7280' }}15; color: {{ item.etapa_color|default:'#6B7280' }}; border: 1px solid {{ item.etapa_color|default:'#6B7280' }}30;">
-                        {{ item.etapa_corta|default:'Sin etapa' }}
-                    </span>
-                </div>
-
-                <!-- Amount -->
-                <div class="flex-shrink-0 text-right min-w-[100px]">
-                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Monto</div>
-                    <div class="text-sm font-bold tabular-nums {% if item.monto %}text-gray-900{% else %}text-gray-300{% endif %}">
-                        ${{ item.monto|format_currency_es }}
+                    <div style="font-size:0.75rem;color:#6B7280;margin-bottom:10px;" class="client-name-link" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:30 }}</div>
+                    <div style="display:flex;gap:8px;margin-bottom:10px;">
+                        <div style="flex:1;background:#F9FAFB;border-radius:8px;padding:8px 10px;">
+                            <div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;">Valor Total</div>
+                            <div style="font-size:0.95rem;font-weight:700;color:#1D1D1F;">${{ item.monto|format_currency_es }}</div>
+                        </div>
+                        <div style="flex:1;background:#F9FAFB;border-radius:8px;padding:8px 10px;">
+                            <div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;">Marca</div>
+                            <div style="font-size:0.85rem;font-weight:600;color:#1D1D1F;">{{ item.producto|default:'-' }}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:0.65rem;font-weight:600;color:#6B7280;">ETAPA</span>
+                            <span style="font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:6px;background:{{ item.etapa_color|default:'#6B7280' }}15;color:{{ item.etapa_color|default:'#6B7280' }};border:1px solid {{ item.etapa_color|default:'#6B7280' }}30;">{{ item.etapa_corta|default:'Sin etapa' }}</span>
+                        </div>
+                        <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;">{{ item.area|default:'-' }}</div>
                     </div>
                 </div>
+                {% empty %}
+                <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#9CA3AF;">No hay oportunidades</div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <div class="text-center py-16 text-gray-400 text-sm italic">No hay oportunidades para mostrar</div>
-            {% endfor %}
+        </div>
+        <!-- VISTA TABLA (secundaria) -->
+        <div id="crmViewTable">
+        <table class="w-full crm-table">
+            <colgroup>
+                <col style="width:20%"><col style="width:8%"><col style="width:6%">
+                <col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%">
+            </colgroup>
+            <thead class="bg-gray-50/80">
+                <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <th class="px-2 py-3 text-left font-black">Oportunidad</th>
+                    <th class="px-2 py-3 text-left font-black">Contacto</th>
+                    <th class="px-2 py-3 text-left font-black">Area</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Avig.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Genet.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Pol.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>
+                    <th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>
+                </tr>
+            </thead>
+            <tbody id="crmTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                {% for item in tabla_data %}
+                <tr class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
+                    <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
+                        <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span></td>
+                    <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18 }}{% else %}-{% endif %}</td>
+                    <td class="px-2 py-4 text-gray-400 text-xs italic">{{ item.area|default:'-' }}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'PANDUIT' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'APC' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'GENETEC' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'AXIS' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'RUNRATE' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'POLIZA' or item.producto == 'PÓLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">${{ item.monto|format_currency_es }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="14" class="text-center py-20 text-gray-400 italic">No hay datos disponibles.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
         </div>
         {% elif tab_activo == 'prospeccion' %}
         <table id="prospeccionTable" class="w-full crm-table">
