@@ -1085,7 +1085,12 @@
         } else { oppRow.style.display = 'none'; }
 
         var descEl = document.getElementById('calDetailDesc');
-        descEl.textContent = evt.description || 'Sin descripción.';
+        var rawDesc = evt.description || '';
+        // Limpiar metadata de prospecto de la descripcion
+        var descClean = rawDesc.split('\n---prospecto_id:')[0].trim();
+        if (descClean.indexOf('prospecto_id:') === 0) descClean = '';
+        if (descClean.indexOf('Prospecto:') === 0) descClean = '';
+        descEl.textContent = descClean || 'Sin descripción.';
 
         window._calCurrentActividadId = esTarea ? null : id;
         window._calCurrentOppId = hasOpp ? ep.opportunity.id : null;

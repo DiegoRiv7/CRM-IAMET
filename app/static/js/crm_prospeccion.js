@@ -40,6 +40,33 @@ document.addEventListener('click', function(ev) {
         });
     }
 
+    // ── Persistencia: reabrir prospecto sin actividad al cargar ──
+    (function() {
+        var pendienteId = localStorage.getItem('_pendienteProspectoSinActividad');
+        if (pendienteId) {
+            // Verificar si tiene actividades
+            fetch('/app/api/prospecto/' + pendienteId + '/actividades/')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var acts = data.actividades || [];
+                    if (acts.length === 0) {
+                        // Sigue sin actividad, reabrir widget
+                        setTimeout(function() {
+                            if (typeof abrirWidgetProspecto === 'function') {
+                                abrirWidgetProspecto(parseInt(pendienteId));
+                            }
+                        }, 1000);
+                    } else {
+                        // Ya tiene actividad, limpiar
+                        localStorage.removeItem('_pendienteProspectoSinActividad');
+                    }
+                })
+                .catch(function() {
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
+                });
+        }
+    })();
+
     // ══════════════════════════════════════════════════════════════
     // A. MAIN TABLE: Load clients with prospecto counts
     // ══════════════════════════════════════════════════════════════
@@ -1160,6 +1187,8 @@ document.addEventListener('click', function(ev) {
                 if (acts.length > 0) {
                     var w = document.getElementById('widgetProspecto');
                     if (w) w.classList.remove('active');
+                    // Limpiar persistencia
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
                 } else {
                     _showProspectoMissingActivityWarning();
                 }
