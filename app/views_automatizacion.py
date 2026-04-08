@@ -526,7 +526,17 @@ def procesar_cadena_reactiva(tarea, usuario):
 
         # Avanzar la etapa de la oportunidad
         oportunidad.etapa_corta = siguiente
-        oportunidad.save(update_fields=['etapa_corta'])
+        # Automatización: Vendido s/PO o c/PO → probabilidad 100% + mes cierre 2 meses después
+        update_fields = ['etapa_corta']
+        if siguiente in ('Vendido s/PO', 'Vendido c/PO'):
+            from datetime import date as _date
+            from dateutil.relativedelta import relativedelta
+            oportunidad.probabilidad_cierre = 100
+            fecha_cierre = _date.today() + relativedelta(months=2)
+            oportunidad.mes_cierre = str(fecha_cierre.month).zfill(2)
+            oportunidad.anio_cierre = fecha_cierre.year
+            update_fields.extend(['probabilidad_cierre', 'mes_cierre', 'anio_cierre'])
+        oportunidad.save(update_fields=update_fields)
 
         resultado['avances'].append({
             'de': etapa_actual,

@@ -2973,6 +2973,17 @@ def editar_oportunidad_api(request, oportunidad_id):
             oportunidad.etapa_completa = nueva_etapa
             updated_values['etapa_corta'] = nueva_etapa
 
+            # Automatización: Vendido s/PO o c/PO → probabilidad 100% + mes cierre 2 meses después
+            if nueva_etapa in ('Vendido s/PO', 'Vendido c/PO'):
+                from datetime import date as _date
+                from dateutil.relativedelta import relativedelta
+                oportunidad.probabilidad_cierre = 100
+                updated_values['probabilidad_cierre'] = 100
+                fecha_cierre = _date.today() + relativedelta(months=2)
+                oportunidad.mes_cierre = str(fecha_cierre.month).zfill(2)
+                oportunidad.anio_cierre = fecha_cierre.year
+                updated_values['mes_cierre'] = oportunidad.mes_cierre
+
         # Actualizar usuario/vendedor
         if 'usuario' in request.POST and request.POST['usuario']:
             try:
