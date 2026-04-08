@@ -16,7 +16,7 @@ from .views_grupos import get_usuarios_visibles_ids
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
-    MensajeOportunidad,
+    MensajeOportunidad, Actividad,
 )
 
 logger = logging.getLogger(__name__)
@@ -510,6 +510,25 @@ def api_prospecto_actividades(request, prospecto_id):
             descripcion=descripcion,
             fecha_programada=fecha_dt,
         )
+
+        # Also create a calendar Actividad so it appears in the main calendar
+        from datetime import timedelta
+        tipo_map = {
+            'llamada': 'llamada',
+            'reunion': 'reunion',
+            'email': 'email',
+            'tarea': 'tarea',
+        }
+        Actividad.objects.create(
+            titulo=f'[Prospecto] {descripcion}',
+            tipo_actividad=tipo_map.get(tipo, 'otro'),
+            descripcion=f'Prospecto: {prospecto.producto} - {prospecto.cliente.nombre if prospecto.cliente else "Sin cliente"}',
+            fecha_inicio=fecha_dt,
+            fecha_fin=fecha_dt + timedelta(hours=1),
+            creado_por=request.user,
+            color='#8B5CF6',
+        )
+
         return JsonResponse({'success': True})
 
     return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)

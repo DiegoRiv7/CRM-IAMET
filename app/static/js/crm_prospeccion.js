@@ -577,10 +577,59 @@ document.addEventListener('click', function(ev) {
         cambiarEtapaProspecto(etapa);
     };
 
+    function _showProspectoMissingActivityWarning() {
+        var existing = document.getElementById('warnMissingProspectoActivity');
+        if (existing) existing.remove();
+
+        var warn = document.createElement('div');
+        warn.id = 'warnMissingProspectoActivity';
+        warn.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s;';
+        warn.innerHTML = '<div style="background:#fff;border-radius:16px;padding:2rem;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.25);">' +
+            '<div style="width:56px;height:56px;border-radius:50%;background:rgba(255,149,0,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">' +
+            '<svg width="28" height="28" fill="none" stroke="#FF9500" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+            '</div>' +
+            '<h3 style="margin:0 0 0.5rem;font-size:1.15rem;font-weight:700;color:#1D1D1F;">Falta agendar actividad</h3>' +
+            '<p style="margin:0 0 1.5rem;font-size:0.9rem;color:#86868B;line-height:1.5;">Cada prospecto debe tener al menos una actividad programada antes de cerrarlo.</p>' +
+            '<div style="display:flex;gap:0.75rem;justify-content:center;">' +
+            '<button id="warnBtnAgendarProspecto" style="background:#8B5CF6;color:#fff;border:none;padding:0.7rem 1.5rem;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s;" onmouseenter="this.style.transform=\'scale(1.03)\'" onmouseleave="this.style.transform=\'none\'">' +
+            '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
+            'Agendar Actividad' +
+            '</button>' +
+            '</div>' +
+            '</div>';
+        document.body.appendChild(warn);
+
+        // Close on background click
+        warn.addEventListener('click', function(e) { if (e.target === warn) warn.remove(); });
+
+        document.getElementById('warnBtnAgendarProspecto').addEventListener('click', function() {
+            warn.remove();
+            wpAbrirPanelActividades();
+        });
+    }
+
     function cambiarEtapaProspecto(nuevaEtapa, reunionTipo) {
         var id = window._currentProspectoId;
         if (!id) return;
 
+        // Validate: must have at least one activity before closing
+        if (nuevaEtapa === 'cerrado_ganado' || nuevaEtapa === 'cerrado_perdido') {
+            fetch('/app/api/prospecto/' + id + '/actividades/')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.actividades && data.actividades.length > 0) {
+                        _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo);
+                    } else {
+                        _showProspectoMissingActivityWarning();
+                    }
+                });
+            return;
+        }
+
+        _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo);
+    }
+
+    function _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo) {
         var body = { etapa: nuevaEtapa };
         if (reunionTipo) body.reunion_tipo = reunionTipo;
 
@@ -781,17 +830,10 @@ document.addEventListener('click', function(ev) {
         }
     };
 
-    // Nueva actividad button — open the existing activity creation widget
+    // Nueva actividad button — open the prospection activities panel
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpBtnNuevaActividad' || e.target.closest('#wpBtnNuevaActividad')) {
-            // Use the existing oportunidad activity widget
-            var crearWidget = document.getElementById('widgetOppCrearActividad');
-            if (crearWidget) {
-                crearWidget.style.display = 'flex';
-            } else {
-                // Fallback to our panel
-                wpAbrirPanelActividades();
-            }
+            wpAbrirPanelActividades();
         }
     });
 

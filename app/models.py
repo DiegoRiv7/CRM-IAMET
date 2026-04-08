@@ -2410,6 +2410,7 @@ class Actividad(models.Model):
         ('#AF52DE', 'Morado'),
         ('#5856D6', 'Índigo'),
         ('#FF2D55', 'Rosa'),
+        ('#8B5CF6', 'Violeta'),
     ]
 
     TIPO_ACTIVIDAD_CHOICES = [
