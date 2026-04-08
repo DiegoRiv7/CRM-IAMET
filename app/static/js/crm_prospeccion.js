@@ -949,13 +949,35 @@ document.addEventListener('click', function(ev) {
                     '</div>' +
                 '</div>' +
                 // Footer
-                '<div style="padding:1rem 1.5rem;border-top:1px solid #E5E7EB;background:#F9FAFB;text-align:center;border-radius:0 0 16px 16px;">' +
+                '<div style="padding:1rem 1.5rem;border-top:1px solid #E5E7EB;background:#F9FAFB;display:flex;justify-content:center;gap:12px;border-radius:0 0 16px 16px;">' +
+                    (act.completada
+                        ? '<span style="padding:0.6rem 2rem;background:#E5E7EB;color:#9CA3AF;border-radius:8px;font-weight:600;font-size:0.9rem;">Ya completada</span>'
+                        : '<button onclick="_wpCompletarActividad(' + act.id + ')" style="padding:0.6rem 2rem;background:#34C759;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Completar</button>') +
                     '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="padding:0.6rem 2rem;background:#8B5CF6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar</button>' +
                 '</div>' +
             '</div>';
         document.body.appendChild(overlay);
         overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
     }
+
+    // ── Completar actividad prospecto ──
+    window._wpCompletarActividad = function(actividadId) {
+        fetch('/app/api/prospecto-actividad/' + actividadId + '/toggle/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success) {
+                var overlay = document.getElementById('wpActInfoOverlay');
+                if (overlay) overlay.remove();
+                if (window._currentProspectoId) cargarActividadesProspecto(window._currentProspectoId);
+                var toast = document.createElement('div');
+                toast.textContent = 'Actividad completada';
+                toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#34C759;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;font-weight:600;';
+                document.body.appendChild(toast);
+                setTimeout(function() { toast.remove(); }, 3000);
+            }
+        });
+    };
 
     // ── Participantes de actividad prospecto ──
     var _wpParticipantesSel = [];
