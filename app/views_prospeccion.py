@@ -521,10 +521,14 @@ def api_prospecto_actividades(request, prospecto_id):
                 'tarea': 'tarea',
             }
             cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+            desc_extra = data.get('desc_extra', '').strip()
+            # Guardar descripcion visible + metadata de link al final
+            desc_cal = desc_extra if desc_extra else descripcion
+            desc_cal += f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
             Actividad.objects.create(
                 titulo=descripcion,
                 tipo_actividad=tipo_map.get(tipo, 'otro'),
-                descripcion=f'prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}',
+                descripcion=desc_cal,
                 fecha_inicio=fecha_dt,
                 fecha_fin=fecha_dt + timedelta(hours=1),
                 creado_por=request.user,

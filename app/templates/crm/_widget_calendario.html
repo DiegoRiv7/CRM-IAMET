@@ -1674,15 +1674,21 @@
         var isCompletada = ep.completada;
         var creador = ep.creado_por ? ep.creado_por.text : '—';
 
-        // Extraer prospecto_id y nombre del campo descripcion (formato: "prospecto_id:X|nombre|cliente")
+        // Extraer prospecto_id del campo descripcion (puede estar al final despues de ---prospecto_id:)
         var prospectoId = null;
         var prospectoNombre = '';
         var desc = evt.description || '';
-        if (desc.indexOf('prospecto_id:') === 0) {
+        var prospMatch = desc.match(/---prospecto_id:(\d+)\|([^|]*)\|?/);
+        if (prospMatch) {
+            prospectoId = prospMatch[1];
+            prospectoNombre = prospMatch[2] || '';
+            desc = desc.replace(/\n?---prospecto_id:.*$/, '').trim();
+        } else if (desc.indexOf('prospecto_id:') === 0) {
+            // Formato viejo sin ---
             var parts = desc.split('|');
             prospectoId = parts[0].replace('prospecto_id:', '');
             prospectoNombre = parts[1] || '';
-            desc = ''; // No mostrar la descripcion interna
+            desc = '';
         }
 
         var prospectoLinkHtml = prospectoId
@@ -1730,13 +1736,20 @@
 
     window._calCompletarProspecto = function(actividadId) {
         fetch('/app/api/actividades/' + actividadId + '/', {
-            method: 'PUT',
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
             body: JSON.stringify({ completada: true })
         }).then(function(r) { return r.json(); }).then(function(data) {
             var overlay = document.getElementById('calProspectoInfoOverlay');
             if (overlay) overlay.remove();
+            // Recargar calendario
             if (typeof calLoadActividades === 'function') calLoadActividades();
-        });
+            // Toast
+            var toast = document.createElement('div');
+            toast.textContent = 'Actividad completada';
+            toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#34C759;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;font-weight:600;';
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3000);
+        }).catch(function(e) { console.error('Error completando actividad:', e); });
     };
 </script>

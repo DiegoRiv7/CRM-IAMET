@@ -878,7 +878,7 @@ document.addEventListener('click', function(ev) {
             fetch('/app/api/prospecto/' + window._currentProspectoId + '/actividades/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({ tipo: tipo, descripcion: desc, fecha_programada: fechaProgramada })
+                body: JSON.stringify({ tipo: tipo, descripcion: desc, fecha_programada: fechaProgramada, desc_extra: (document.getElementById('wpActDescExtra') || {}).value || '' })
             }).then(function(r) { return r.json(); }).then(function(data) {
                 if (data.success) {
                     document.getElementById('wpActDescripcion').value = '';
