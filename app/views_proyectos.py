@@ -2274,6 +2274,17 @@ def actividad_detail(request, pk):
         if 'completada' in data:
             actividad.completada = data['completada']
             actividad.save(update_fields=['completada'])
+            # Si es actividad de prospecto (morada), también completar la ProspectoActividad
+            if actividad.color == '#8B5CF6' and actividad.completada:
+                try:
+                    from .models import ProspectoActividad
+                    ProspectoActividad.objects.filter(
+                        descripcion=actividad.titulo,
+                        usuario=actividad.creado_por,
+                        completada=False,
+                    ).update(completada=True)
+                except Exception:
+                    pass
             # Registrar en chat de grupo si completó actividad de otro
             if actividad.completada and actividad.creado_por != request.user:
                 try:
