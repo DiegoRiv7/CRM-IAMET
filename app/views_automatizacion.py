@@ -409,7 +409,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
                 prioridad=regla.prioridad_tarea if regla.prioridad_tarea in ['normal', 'alta'] else 'normal',
                 estado='pendiente',
                 fecha_limite=fecha_limite,
-                creado_por=usuario,
+                creado_por=oportunidad.usuario or usuario,
                 asignado_a=responsable,
                 regla_origen=regla,
             )

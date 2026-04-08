@@ -973,6 +973,8 @@ document.addEventListener('click', function(ev) {
                 var overlay = document.getElementById('wpActInfoOverlay');
                 if (overlay) overlay.remove();
                 if (window._currentProspectoId) cargarActividadesProspecto(window._currentProspectoId);
+                // También refrescar calendario si está abierto
+                if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
                 var toast = document.createElement('div');
                 toast.textContent = 'Actividad completada';
                 toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#34C759;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;font-weight:600;';

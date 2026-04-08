@@ -1742,8 +1742,8 @@
         }).then(function(r) { return r.json(); }).then(function(data) {
             var overlay = document.getElementById('calProspectoInfoOverlay');
             if (overlay) overlay.remove();
-            // Recargar calendario
-            if (typeof calLoadActividades === 'function') calLoadActividades();
+            // Recargar calendario inmediatamente
+            if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
             // Toast
             var toast = document.createElement('div');
             toast.textContent = 'Actividad completada';

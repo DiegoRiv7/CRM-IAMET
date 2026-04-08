@@ -522,8 +522,8 @@ def api_prospecto_actividades(request, prospecto_id):
             }
             cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
             desc_extra = data.get('desc_extra', '').strip()
-            # Guardar descripcion visible + metadata de link al final
-            desc_cal = desc_extra if desc_extra else descripcion
+            # Descripcion visible + metadata de link al prospecto al final
+            desc_cal = desc_extra or ''
             desc_cal += f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
             Actividad.objects.create(
                 titulo=descripcion,
@@ -555,6 +555,17 @@ def api_prospecto_actividad_toggle(request, actividad_id):
 
     actividad.completada = not actividad.completada
     actividad.save()
+
+    # También marcar la actividad del calendario correspondiente
+    try:
+        cal_acts = Actividad.objects.filter(
+            color='#8B5CF6',
+            titulo=actividad.descripcion,
+            creado_por=actividad.usuario,
+        )
+        cal_acts.update(completada=actividad.completada)
+    except Exception:
+        pass
 
     return JsonResponse({
         'success': True,
