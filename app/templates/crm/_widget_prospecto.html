@@ -181,11 +181,8 @@
             <button type="button" class="widget-close"
                 onclick="document.getElementById('widgetProspectoActividades').style.display='none';document.getElementById('widgetProspectoActividades').classList.remove('active');">&times;</button>
         </div>
-        <!-- Actividades existentes -->
-        <div id="wpActividadesFullList" style="max-height:150px;overflow-y:auto;padding:1rem;border-bottom:1px solid #F3F4F6;">
-        </div>
-        <!-- Formulario de creacion -->
-        <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:50vh;">
+        <div id="wpActividadesFullList" style="display:none;"></div>
+        <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:70vh;">
             <div>
                 <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">NOMBRE DE LA ACTIVIDAD</label>
                 <input type="text" id="wpActDescripcion"
@@ -210,13 +207,29 @@
                 </div>
             </div>
             <div>
-                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">TIPO</label>
-                <select id="wpActTipo"
-                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;box-sizing:border-box;">
+                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">DESCRIPCION</label>
+                <textarea id="wpActDescExtra" rows="3"
+                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;resize:none;box-sizing:border-box;"
+                    placeholder="Detalles de la actividad..."></textarea>
+            </div>
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">PARTICIPANTES</label>
+                <div id="wpActParticipantesContainer"
+                    style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0.5rem;min-height:30px;padding:4px;border:1px solid #D1D1D6;border-radius:8px;background:#F9FAFB;">
+                </div>
+                <input type="text" id="wpActParticipantesSearch"
+                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;"
+                    placeholder="Buscar usuario por nombre..." oninput="wpSearchParticipantes(this.value)">
+                <div id="wpActParticipantesDropdown"
+                    style="display:none;position:absolute;left:1.5rem;right:1.5rem;background:#fff;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.15);z-index:10400;max-height:180px;overflow-y:auto;margin-top:4px;">
+                </div>
+            </div>
+            <div style="display:none;">
+                <select id="wpActTipo">
+                    <option value="tarea" selected>Tarea</option>
                     <option value="llamada">Llamada</option>
                     <option value="correo">Correo</option>
                     <option value="reunion">Reunion</option>
-                    <option value="tarea" selected>Tarea</option>
                     <option value="otro">Otro</option>
                 </select>
             </div>

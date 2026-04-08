@@ -884,6 +884,51 @@ document.addEventListener('click', function(ev) {
         }
     });
 
+    // ── Participantes de actividad prospecto ──
+    var _wpParticipantesSel = [];
+
+    window.wpSearchParticipantes = function(query) {
+        var dropdown = document.getElementById('wpActParticipantesDropdown');
+        if (!dropdown) return;
+        if (!query || query.length < 2) { dropdown.style.display = 'none'; return; }
+
+        fetch('/app/api/admin/usuarios/').then(function(r) { return r.json(); }).then(function(data) {
+            var users = (data.usuarios || []).filter(function(u) {
+                var name = ((u.first_name || '') + ' ' + (u.last_name || '') + ' ' + (u.username || '')).toLowerCase();
+                var alreadySel = _wpParticipantesSel.some(function(s) { return s.id === u.id; });
+                return name.includes(query.toLowerCase()) && !alreadySel;
+            });
+            if (users.length === 0) { dropdown.style.display = 'none'; return; }
+            dropdown.innerHTML = users.slice(0, 8).map(function(u) {
+                var name = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+                return '<div onclick="wpAddParticipante(' + u.id + ',\'' + name.replace(/'/g, "\\'") + '\')" style="padding:8px 12px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid #F3F4F6;" onmouseover="this.style.background=\'#F3F4F6\'" onmouseout="this.style.background=\'#fff\'">' + name + '</div>';
+            }).join('');
+            dropdown.style.display = '';
+        });
+    };
+
+    window.wpAddParticipante = function(id, name) {
+        if (_wpParticipantesSel.some(function(s) { return s.id === id; })) return;
+        _wpParticipantesSel.push({ id: id, name: name });
+        _wpRenderParticipantes();
+        document.getElementById('wpActParticipantesSearch').value = '';
+        document.getElementById('wpActParticipantesDropdown').style.display = 'none';
+    };
+
+    window.wpRemoveParticipante = function(id) {
+        _wpParticipantesSel = _wpParticipantesSel.filter(function(s) { return s.id !== id; });
+        _wpRenderParticipantes();
+    };
+
+    function _wpRenderParticipantes() {
+        var container = document.getElementById('wpActParticipantesContainer');
+        if (!container) return;
+        container.innerHTML = _wpParticipantesSel.map(function(p) {
+            return '<span style="display:inline-flex;align-items:center;gap:4px;background:#DBEAFE;color:#1E40AF;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:500;">' +
+                p.name + '<span onclick="event.stopPropagation();wpRemoveParticipante(' + p.id + ')" style="cursor:pointer;font-size:0.85rem;color:#6B7280;">&times;</span></span>';
+        }).join('');
+    }
+
     // ── Cotizaciones ──
     function cargarCotizacionesProspecto(data) {
         var container = document.getElementById('wpQuoteList');
