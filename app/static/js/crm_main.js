@@ -121,6 +121,14 @@
         }
         setTimeout(_applyCrmView, 0);
 
+        // Buscador: filtrar cards en tiempo real
+        var _crmSearchEl = document.getElementById('crmSearch');
+        if (_crmSearchEl) {
+            _crmSearchEl.addEventListener('input', function() {
+                if (typeof _applyFiltersToCards === 'function') _applyFiltersToCards();
+            });
+        }
+
         // Init vendor filter from URL
         var initVendedores = _CRM_CONFIG.vendedoresFilter;
         if (initVendedores) {
@@ -3809,6 +3817,42 @@
             // Mostrar solo las filas filtradas
             filteredRows.forEach(function (row) {
                 row.style.display = '';
+            });
+
+            // También filtrar la vista de cards
+            _applyFiltersToCards();
+        }
+
+        function _applyFiltersToCards() {
+            var grid = document.getElementById('crmCardsGrid');
+            if (!grid) return;
+            var cards = grid.querySelectorAll('.crm-data-row');
+            var searchVal = (document.getElementById('crmSearch') || {}).value || '';
+            searchVal = searchVal.toLowerCase();
+
+            cards.forEach(function(card) {
+                var text = card.textContent.toLowerCase();
+                var etapa = (card.dataset.etapa || '').toLowerCase();
+                var area = (card.dataset.area || '').toLowerCase();
+                var tipo = (card.dataset.tipo || '').toLowerCase();
+                var producto = (card.dataset.producto || '').toLowerCase();
+                var cliente = (card.dataset.cliente || '').toLowerCase();
+                var show = true;
+
+                // Buscador
+                if (searchVal && !text.includes(searchVal)) show = false;
+                // Filtros
+                if (show && currentFilters.cliente && !cliente.includes(currentFilters.cliente.toLowerCase())) show = false;
+                if (show && currentFilters.area && !area.includes(currentFilters.area.toLowerCase())) show = false;
+                if (show && currentFilters.etapa && !etapa.includes(currentFilters.etapa.toLowerCase())) show = false;
+                if (show && currentFilters.tipo && tipo !== currentFilters.tipo) show = false;
+                if (show && currentFilters.producto && !producto.includes(currentFilters.producto.toLowerCase())) show = false;
+                if (show && currentFilters.contacto) {
+                    var contacto = (card.dataset.contacto || '').toLowerCase();
+                    if (!contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
+                }
+
+                card.style.display = show ? '' : 'none';
             });
         }
 

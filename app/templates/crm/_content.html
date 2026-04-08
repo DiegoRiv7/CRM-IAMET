@@ -145,6 +145,7 @@
         <div id="crmViewCards" style="display:none;">
             <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:0 4px;">
                 {% for item in tabla_data %}
+                {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
                 <div class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
                      onclick="openDetalle('{{ item.id }}')"
                      style="background:{% if item.tiene_actividad_vencida %}#FEF2F2{% else %}#fff{% endif %};border:{% if item.tiene_actividad_vencida %}2.5px solid #FCA5A5{% else %}2px solid #D1D5DB{% endif %};border-radius:14px;padding:18px 18px 14px;cursor:pointer;transition:all 0.15s;"
@@ -187,6 +188,7 @@
                         <span style="font-size:0.72rem;font-weight:{% if item.actividad_proxima %}600{% else %}500{% endif %};color:{% if item.actividad_proxima %}#1E40AF{% else %}#9CA3AF{% endif %};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{% if item.actividad_proxima %}{{ item.actividad_proxima }}{% else %}Sin actividad programada{% endif %}</span>
                     </div>
                 </div>
+                {% endif %}
                 {% empty %}
                 <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#9CA3AF;">No hay oportunidades</div>
                 {% endfor %}
