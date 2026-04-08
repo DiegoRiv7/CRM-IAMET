@@ -306,6 +306,9 @@ def crm_home(request):
         for item in tabla_data_list:
             vencidas = Actividad.objects.filter(oportunidad=item, fecha_fin__lt=ahora_tz, completada=False).exists()
             item.tiene_actividad_vencida = vencidas
+            # Actividad próxima (la más cercana no completada)
+            proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
+            item.actividad_proxima = proxima.titulo if proxima else None
         # Ordenar: vencidas primero
         tabla_data_list.sort(key=lambda x: (not x.tiene_actividad_vencida, ))
         tabla_data = tabla_data_list

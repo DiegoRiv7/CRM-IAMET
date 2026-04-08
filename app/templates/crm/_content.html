@@ -147,28 +147,44 @@
                 {% for item in tabla_data %}
                 <div class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
                      onclick="openDetalle('{{ item.id }}')"
-                     style="background:{% if item.tiene_actividad_vencida %}#FEF2F2{% else %}#fff{% endif %};border:{% if item.tiene_actividad_vencida %}2px solid #FCA5A5{% else %}1.5px solid #D1D5DB{% endif %};border-radius:14px;padding:16px;cursor:pointer;transition:all 0.15s;"
+                     style="background:{% if item.tiene_actividad_vencida %}#FEF2F2{% else %}#fff{% endif %};border:{% if item.tiene_actividad_vencida %}2.5px solid #FCA5A5{% else %}2px solid #D1D5DB{% endif %};border-radius:14px;padding:18px 18px 14px;cursor:pointer;transition:all 0.15s;"
                      onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)';this.style.transform='translateY(-1px)'" onmouseout="this.style.boxShadow='none';this.style.transform='none'">
-                    <div style="font-weight:700;font-size:0.88rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{% if item.tiene_actividad_vencida %}#DC2626{% else %}#1D1D1F{% endif %};">
+                    <div style="font-weight:700;font-size:0.92rem;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{% if item.tiene_actividad_vencida %}#DC2626{% else %}#1D1D1F{% endif %};">
                         <span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:40 }}{% if item.tiene_actividad_vencida %} <span style="font-size:0.7rem;">&#9888;</span>{% endif %}</span>
                     </div>
-                    <div style="font-size:0.75rem;color:#6B7280;margin-bottom:10px;" class="client-name-link" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:30 }}</div>
-                    <div style="display:flex;gap:8px;margin-bottom:10px;">
-                        <div style="flex:1;background:{% if item.tiene_actividad_vencida %}#FEE2E2{% else %}#F3F4F6{% endif %};border-radius:8px;padding:8px 10px;">
+                    <div style="font-size:0.78rem;color:#6B7280;margin-bottom:14px;" class="client-name-link" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:30 }}</div>
+                    <div style="display:flex;gap:8px;margin-bottom:14px;">
+                        <div style="flex:1;background:{% if item.tiene_actividad_vencida %}#FEE2E2{% else %}#F3F4F6{% endif %};border-radius:8px;padding:10px 12px;">
                             <div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;">Valor Total</div>
-                            <div style="font-size:0.95rem;font-weight:700;color:#1D1D1F;">${{ item.monto|format_currency_es }}</div>
+                            <div style="font-size:1rem;font-weight:700;color:#1D1D1F;">${{ item.monto|format_currency_es }}</div>
                         </div>
-                        <div style="flex:1;background:{% if item.tiene_actividad_vencida %}#FEE2E2{% else %}#F3F4F6{% endif %};border-radius:8px;padding:8px 10px;">
+                        <div style="flex:1;background:{% if item.tiene_actividad_vencida %}#FEE2E2{% else %}#F3F4F6{% endif %};border-radius:8px;padding:10px 12px;">
                             <div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;">Marca</div>
-                            <div style="font-size:0.85rem;font-weight:600;color:#1D1D1F;">{{ item.producto|default:'-' }}</div>
+                            <div style="font-size:0.88rem;font-weight:600;color:#1D1D1F;">{{ item.producto|default:'-' }}</div>
                         </div>
                     </div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="font-size:0.65rem;font-weight:600;color:#6B7280;">ETAPA</span>
-                            <span style="font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:6px;background:{{ item.etapa_color|default:'#6B7280' }}15;color:{{ item.etapa_color|default:'#6B7280' }};border:1px solid {{ item.etapa_color|default:'#6B7280' }}30;">{{ item.etapa_corta|default:'Sin etapa' }}</span>
+                    <!-- Etapa + probabilidad -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <!-- Circulo de probabilidad -->
+                            <div style="position:relative;width:34px;height:34px;flex-shrink:0;">
+                                <svg viewBox="0 0 36 36" style="width:34px;height:34px;transform:rotate(-90deg);">
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="3" pathLength="100"/>
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#007AFF' }}{% endif %}" stroke-width="3" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
+                                </svg>
+                                <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.5rem;font-weight:800;color:#1D1D1F;">{{ item.probabilidad_cierre }}%</span>
+                            </div>
+                            <div>
+                                <div style="font-size:0.6rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;">Etapa</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:#1D1D1F;">{{ item.etapa_corta|default:'Sin etapa' }}</div>
+                            </div>
                         </div>
-                        <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;">{{ item.area|default:'-' }}</div>
+                        <div style="font-size:0.72rem;font-weight:600;color:#9CA3AF;">{{ item.area|default:'-' }}</div>
+                    </div>
+                    <!-- Actividad programada -->
+                    <div style="background:{% if item.actividad_proxima %}#EFF6FF{% else %}#F9FAFB{% endif %};border:1px solid {% if item.actividad_proxima %}#BFDBFE{% else %}#E5E7EB{% endif %};border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:6px;">
+                        <svg width="14" height="14" fill="none" stroke="{% if item.actividad_proxima %}#3B82F6{% else %}#9CA3AF{% endif %}" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <span style="font-size:0.72rem;font-weight:{% if item.actividad_proxima %}600{% else %}500{% endif %};color:{% if item.actividad_proxima %}#1E40AF{% else %}#9CA3AF{% endif %};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{% if item.actividad_proxima %}{{ item.actividad_proxima }}{% else %}Sin actividad programada{% endif %}</span>
                     </div>
                 </div>
                 {% empty %}
