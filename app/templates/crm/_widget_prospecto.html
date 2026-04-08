@@ -172,34 +172,60 @@
     </div>
 </div>
 
-<!-- ═══ PANEL: ACTIVIDADES DEL PROSPECTO ═══ -->
+<!-- ═══ PANEL: ACTIVIDADES DEL PROSPECTO (diseño igual a oportunidades) ═══ -->
 <div class="widget-overlay" id="widgetProspectoActividades" style="z-index:10300;display:none;">
-    <div class="widget-card widget-card-md" style="width:600px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;">
-        <div class="wo-header" style="border-bottom:1px solid #E5E5EA;">
-            <div class="wo-header-top">
-                <div>
-                    <h1 class="wo-title" style="font-size:1.1rem;">Actividades del Prospecto</h1>
-                </div>
-                <button type="button" class="widget-close" onclick="document.getElementById('widgetProspectoActividades').style.display='none';">&times;</button>
+    <div class="widget-card widget-card-md"
+        style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+        <div style="padding:1.5rem;border-bottom:1px solid #E5E5EA;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:600;font-size:1.1rem;color:#1D1D1F;">Agendar Actividad</div>
+            <button type="button" class="widget-close"
+                onclick="document.getElementById('widgetProspectoActividades').style.display='none';document.getElementById('widgetProspectoActividades').classList.remove('active');">&times;</button>
+        </div>
+        <!-- Actividades existentes -->
+        <div id="wpActividadesFullList" style="max-height:150px;overflow-y:auto;padding:1rem;border-bottom:1px solid #F3F4F6;">
+        </div>
+        <!-- Formulario de creacion -->
+        <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:50vh;">
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">NOMBRE DE LA ACTIVIDAD</label>
+                <input type="text" id="wpActDescripcion"
+                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;"
+                    placeholder="Ej. Llamada de seguimiento">
             </div>
-        </div>
-        <div style="flex:1;overflow-y:auto;padding:1rem;" id="wpActividadesFullList">
-        </div>
-        <div style="padding:1rem;border-top:1px solid #E5E5EA;background:#F9FAFB;">
-            <div style="display:flex;gap:6px;margin-bottom:6px;">
-                <select id="wpActTipo" style="flex:0 0 auto;padding:6px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.75rem;background:#fff;">
+            <div style="display:flex;gap:1rem;">
+                <div style="flex:1;">
+                    <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FECHA</label>
+                    <input type="date" id="wpActFechaDate"
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;">
+                </div>
+                <div style="width:130px;">
+                    <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">INICIO</label>
+                    <input type="time" id="wpActHoraInicio" value="09:00"
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;">
+                </div>
+                <div style="width:130px;">
+                    <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FIN</label>
+                    <input type="time" id="wpActHoraFin" value="10:00"
+                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;">
+                </div>
+            </div>
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">TIPO</label>
+                <select id="wpActTipo"
+                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;box-sizing:border-box;">
                     <option value="llamada">Llamada</option>
                     <option value="correo">Correo</option>
                     <option value="reunion">Reunion</option>
                     <option value="tarea" selected>Tarea</option>
                     <option value="otro">Otro</option>
                 </select>
-                <input type="datetime-local" id="wpActFecha" style="flex:1;padding:6px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.75rem;">
             </div>
-            <div style="display:flex;gap:6px;">
-                <input type="text" id="wpActDescripcion" placeholder="Descripcion de la actividad..." style="flex:1;padding:6px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.75rem;">
-                <button type="button" id="wpBtnAgregarActividad" style="padding:6px 16px;background:#5856D6;color:#fff;border:none;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">Agregar</button>
-            </div>
+        </div>
+        <div style="padding:1rem 1.5rem;border-top:1px solid #E5E5EA;background:#F9FAFB;display:flex;justify-content:flex-end;gap:0.8rem;border-radius:0 0 12px 12px;">
+            <button onclick="document.getElementById('widgetProspectoActividades').style.display='none';document.getElementById('widgetProspectoActividades').classList.remove('active');"
+                style="padding:0.7rem 1.2rem;background:none;border:none;color:#86868B;font-weight:500;cursor:pointer;">Cancelar</button>
+            <button type="button" id="wpBtnAgregarActividad"
+                style="padding:0.7rem 1.5rem;background:#5856D6;border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;">Agendar y Notificar</button>
         </div>
     </div>
 </div>

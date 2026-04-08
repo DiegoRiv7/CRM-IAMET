@@ -842,25 +842,45 @@ document.addEventListener('click', function(ev) {
         }
     });
 
-    // Agregar actividad
+    // Agregar actividad (formulario nuevo con fecha + hora separados)
     document.addEventListener('click', function(e) {
-        if (e.target.id === 'wpBtnAgregarActividad') {
+        if (e.target.id === 'wpBtnAgregarActividad' || e.target.closest('#wpBtnAgregarActividad')) {
             var tipo = document.getElementById('wpActTipo').value;
             var desc = document.getElementById('wpActDescripcion').value.trim();
-            var fecha = document.getElementById('wpActFecha').value;
-            if (!desc || !fecha || !window._currentProspectoId) return;
+            var fechaDate = document.getElementById('wpActFechaDate').value;
+            var horaInicio = document.getElementById('wpActHoraInicio').value;
+            var horaFin = document.getElementById('wpActHoraFin').value;
+
+            if (!desc) { alert('El nombre de la actividad es obligatorio'); return; }
+            if (!fechaDate) { alert('La fecha es obligatoria'); return; }
+            if (!horaInicio || !horaFin) { alert('Las horas son obligatorias'); return; }
+            if (horaInicio >= horaFin) { alert('La hora de fin debe ser posterior a la de inicio'); return; }
+            if (!window._currentProspectoId) return;
+
+            var fechaProgramada = fechaDate + 'T' + horaInicio + ':00';
 
             fetch('/app/api/prospecto/' + window._currentProspectoId + '/actividades/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({ tipo: tipo, descripcion: desc, fecha_programada: fecha })
+                body: JSON.stringify({ tipo: tipo, descripcion: desc, fecha_programada: fechaProgramada })
             }).then(function(r) { return r.json(); }).then(function(data) {
                 if (data.success) {
                     document.getElementById('wpActDescripcion').value = '';
-                    document.getElementById('wpActFecha').value = '';
+                    document.getElementById('wpActFechaDate').value = '';
                     cargarActividadesProspecto(window._currentProspectoId);
+                    // Cerrar panel
+                    var panel = document.getElementById('widgetProspectoActividades');
+                    if (panel) { panel.style.display = 'none'; panel.classList.remove('active'); }
+                    // Toast
+                    var toast = document.createElement('div');
+                    toast.textContent = 'Actividad agendada correctamente';
+                    toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1D1D1F;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;';
+                    document.body.appendChild(toast);
+                    setTimeout(function() { toast.remove(); }, 3000);
+                } else {
+                    alert(data.error || 'Error al crear actividad');
                 }
-            });
+            }).catch(function() { alert('Error de conexion'); });
         }
     });
 
