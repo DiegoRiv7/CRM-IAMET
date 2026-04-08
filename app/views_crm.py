@@ -298,7 +298,17 @@ def crm_home(request):
 
     # ── Tab CRM: Lista de oportunidades individuales ──
     if tab_activo == 'crm':
-        tabla_data = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
+        tabla_data_qs = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
+        # Anotar con tiene_actividad_vencida para el template
+        from .models import Actividad
+        ahora_tz = timezone.now()
+        tabla_data_list = list(tabla_data_qs)
+        for item in tabla_data_list:
+            vencidas = Actividad.objects.filter(oportunidad=item, fecha_fin__lt=ahora_tz, completada=False).exists()
+            item.tiene_actividad_vencida = vencidas
+        # Ordenar: vencidas primero
+        tabla_data_list.sort(key=lambda x: (not x.tiene_actividad_vencida, ))
+        tabla_data = tabla_data_list
 
     # ── Tab Facturado: Datos del XLS por cliente + desglose por producto ──
     elif tab_activo == 'facturado':

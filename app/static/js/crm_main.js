@@ -98,7 +98,7 @@
         });
 
         // CRM View Toggle (cards vs table)
-        var _crmViewMode = localStorage.getItem('crmViewMode') || 'table';
+        var _crmViewMode = localStorage.getItem('crmViewMode') || 'cards';
         window.toggleCrmView = function() {
             _crmViewMode = _crmViewMode === 'cards' ? 'table' : 'cards';
             localStorage.setItem('crmViewMode', _crmViewMode);
