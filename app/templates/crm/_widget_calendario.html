@@ -1086,10 +1086,8 @@
 
         var descEl = document.getElementById('calDetailDesc');
         var rawDesc = evt.description || '';
-        // Limpiar metadata de prospecto de la descripcion
-        var descClean = rawDesc.split('\n---prospecto_id:')[0].trim();
-        if (descClean.indexOf('prospecto_id:') === 0) descClean = '';
-        if (descClean.indexOf('Prospecto:') === 0) descClean = '';
+        // Limpiar metadata de prospecto de la descripcion (cualquier formato)
+        var descClean = rawDesc.replace(/\s*---prospecto_id:.*$/g, '').replace(/^prospecto_id:.*$/g, '').replace(/^Prospecto:.*$/g, '').trim();
         descEl.textContent = descClean || 'Sin descripción.';
 
         window._calCurrentActividadId = esTarea ? null : id;
@@ -1211,6 +1209,23 @@
                 if (r.ok) {
                     calHidePanelDetail();
                     calGlobalRefetch();
+                    // Abrir widget de la oportunidad o prospecto para forzar nueva actividad
+                    var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(id); });
+                    if (evt) {
+                        var ep = evt.extendedProps || {};
+                        if (evt.color === '#8B5CF6') {
+                            // Prospecto: extraer prospecto_id y abrir widget
+                            var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
+                            if (pMatch && typeof abrirWidgetProspecto === 'function') {
+                                setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 300);
+                            }
+                        } else if (ep.opportunity && ep.opportunity.id) {
+                            // Oportunidad: abrir widget de oportunidad
+                            if (typeof openDetalle === 'function') {
+                                setTimeout(function(){ openDetalle(ep.opportunity.id); }, 300);
+                            }
+                        }
+                    }
                 } else {
                     r.json().then(function(d){ alert(d.error || 'No se pudo completar la actividad.'); }).catch(function(){ alert('No se pudo completar la actividad.'); });
                 }
@@ -1749,6 +1764,14 @@
             if (overlay) overlay.remove();
             // Recargar calendario inmediatamente
             if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+            // Abrir widget del prospecto para forzar nueva actividad
+            var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(actividadId); });
+            if (evt) {
+                var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
+                if (pMatch && typeof abrirWidgetProspecto === 'function') {
+                    setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 300);
+                }
+            }
             // Toast
             var toast = document.createElement('div');
             toast.textContent = 'Actividad completada';
