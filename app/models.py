@@ -3575,6 +3575,10 @@ class ReglaAutomatizacion(models.Model):
         verbose_name="Observadores predeterminados"
     )
 
+    # Incluir dueño de la oportunidad como participante/observador
+    incluir_dueno_participante = models.BooleanField(default=False, verbose_name="Incluir dueño como participante")
+    incluir_dueno_observador = models.BooleanField(default=False, verbose_name="Incluir dueño como observador")
+
     # Metadatos
     creada_por = models.ForeignKey(
         User,
