@@ -367,9 +367,11 @@
                         var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
                         var isCompletada = esTarea ? (ep.estado === 'completada') : ep.completada;
                         var title = woEscape(ev.title);
-                        var color   = esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C';
-                        var bgTint  = esTarea ? 'rgba(255,149,0,0.09)' : hasOpp ? 'rgba(0,82,212,0.07)' : 'rgba(29,29,31,0.06)';
-                        var borderC = esTarea ? 'rgba(255,149,0,0.3)' : hasOpp ? 'rgba(0,82,212,0.25)' : 'rgba(29,29,31,0.16)';
+                        // Usar color del evento si está definido (ej: morado para prospectos)
+                        var evColor = stored && stored.color ? stored.color : null;
+                        var color   = evColor || (esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C');
+                        var bgTint  = evColor ? (evColor + '12') : (esTarea ? 'rgba(255,149,0,0.09)' : hasOpp ? 'rgba(0,82,212,0.07)' : 'rgba(29,29,31,0.06)');
+                        var borderC = evColor ? (evColor + '40') : (esTarea ? 'rgba(255,149,0,0.3)' : hasOpp ? 'rgba(0,82,212,0.25)' : 'rgba(29,29,31,0.16)');
                         var opacityStyle = isCompletada ? 'opacity:0.38;' : '';
                         var strikeStyle = isCompletada ? 'text-decoration:line-through;' : '';
                         return { html:
@@ -1371,7 +1373,7 @@
             var tareasData=results[1];
             var tareas=tareasData.tareas||tareasData.results||[];
             _globalEvents = actividades.map(function(e){
-                var evtColor=e.opportunity?'#0052D4':'#1D1D1F';
+                var evtColor = e.color || (e.opportunity ? '#0052D4' : '#1D1D1F');
                 return { id:e.id, title:e.title, start:e.start, end:e.end, description:e.description, color:evtColor,
                     extendedProps:{ participants:e.participants, opportunity:e.opportunity, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada } };
             });
