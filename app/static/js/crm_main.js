@@ -1431,49 +1431,46 @@
             }
 
             function buildCrmRow(r) {
-                var esBitrix = r.tipo_negociacion === 'bitrix_proyecto';
-                var prodCells = '';
-                if (esBitrix) {
-                    // Pipeline Bitrix24: todas las celdas de producto muestran —, sin importes
-                    var totalCols = PRODUCT_COLS.length + 1; // +1 por "Otros"
-                    for (var i = 0; i < totalCols; i++) {
-                        prodCells += '<td style="text-align:right;padding:16px 8px;"><span class="money-zero">—</span></td>';
-                    }
-                } else {
-                    for (var i = 0; i < PRODUCT_COLS.length; i++) {
-                        var match = productMatch(r.producto, PRODUCT_COLS[i]);
-                        prodCells += '<td style="text-align:right;padding:16px 8px;">' + (match ? '<span style="color:#2563EB;font-weight:700;">$' + fmtShort(r.monto) + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
-                    }
-                    // Otros
-                    prodCells += '<td style="text-align:right;padding:16px 8px;">' + (isOtherProduct(r.producto) && r.producto ? '<span style="color:#2563EB;font-weight:700;">$' + fmtShort(r.monto) + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
-                }
-
-                var nameStyle = '';
+                var vencidaStyle = '';
                 var vencidaIcon = '';
-                var rowExtraClass = '';
+                var alertBorder = '';
                 if (r.tiene_actividad_vencida) {
-                    nameStyle = ' style="color:#EF4444 !important;"';
-                    vencidaIcon = '<span title="Actividad vencida" style="color:#EF4444;font-size:0.7rem;margin-left:4px;">&#9888;</span>';
-                    rowExtraClass = ' crm-row-vencida';
+                    vencidaStyle = 'color:#EF4444;';
+                    vencidaIcon = ' <span title="Actividad vencida" style="color:#EF4444;font-size:0.7rem;">&#9888;</span>';
+                    alertBorder = '<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#EF4444;border-radius:12px 0 0 12px;"></div>';
                 }
 
-                // Badge para proyectos Bitrix24
-                var bitrixBadge = esBitrix
-                    ? '<span style="display:inline-block;background:#5856D6;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;letter-spacing:0.04em;">B24</span>'
-                    : '';
+                var esBitrix = r.tipo_negociacion === 'bitrix_proyecto';
+                var bitrixBadge = esBitrix ? ' <span style="display:inline-block;background:#5856D6;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:3px;vertical-align:middle;">B24</span>' : '';
 
-                var totalCell = esBitrix
-                    ? '<td style="text-align:right;padding:16px 8px;font-weight:900;border-left:1px solid #F3F4F6;"><span style="color:#D1D5DB;">$0</span></td>'
-                    : '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.monto + '</td>';
+                var etapaColor = r.etapa_color || '#6B7280';
+                var etapa = r.etapa || 'Sin etapa';
+                var montoNum = parseFloat((r.monto || '0').toString().replace(/,/g, '')) || 0;
 
-                return '<tr class="crm-data-row' + rowExtraClass + '" data-opp-id="' + r.id + '" data-tipo="' + (r.tipo_negociacion || '') + '" data-etapa="' + (r.etapa || '') + '" data-fecha="' + (r.fecha_ts || '0') + '">' +
-                    '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '"' + nameStyle + '>' + r.oportunidad + vencidaIcon + '</span>' + bitrixBadge +
-                    '<span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="' + (r.cliente_id || '') + '" data-tab="crm">' + (r.cliente || '- Sin Cliente -') + '</span></td>' +
-                    '<td class="px-2 py-4 text-gray-600">' + r.contacto + '</td>' +
-                    '<td class="px-2 py-4 text-gray-400 text-xs italic">' + r.area + '</td>' +
-                    prodCells +
-                    totalCell +
-                    '</tr>';
+                return '<div class="crm-data-row" data-opp-id="' + r.id + '" data-tipo="' + (r.tipo_negociacion || '') + '" data-etapa="' + (r.etapa || '') + '" data-fecha="' + (r.fecha_ts || '0') + '" ' +
+                    'style="background:#fff;border:1px solid rgba(229,231,235,0.8);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all 0.15s;position:relative;overflow:hidden;margin-bottom:6px;" ' +
+                    'onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.08)\';this.style.borderColor=\'#D1D5DB\';" ' +
+                    'onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'rgba(229,231,235,0.8)\';" ' +
+                    'onclick="openDetalle(\'' + r.id + '\')">' +
+                    alertBorder +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div class="opp-name-link" data-oportunidad-id="' + r.id + '" style="font-size:0.85rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + vencidaStyle + '">' + (r.oportunidad || '') + vencidaIcon + bitrixBadge + '</div>' +
+                        '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;font-size:0.72rem;color:#6B7280;">' +
+                            '<span class="client-name-link" data-cliente-id="' + (r.cliente_id || '') + '" data-tab="crm" style="font-weight:600;color:#374151;">' + (r.cliente || 'Sin Cliente') + '</span>' +
+                            '<span style="width:3px;height:3px;border-radius:50%;background:#D1D5DB;"></span>' +
+                            '<span>' + (r.contacto || '-') + '</span>' +
+                            '<span style="color:#9CA3AF;">(' + (r.area || '-') + ')</span>' +
+                        '</div>' +
+                        (r.producto ? '<div style="font-size:0.68rem;color:#9CA3AF;margin-top:3px;">Marca: ' + r.producto + '</div>' : '') +
+                    '</div>' +
+                    '<div style="flex-shrink:0;">' +
+                        '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:0.7rem;font-weight:500;background:' + etapaColor + '15;color:' + etapaColor + ';border:1px solid ' + etapaColor + '30;">' + etapa + '</span>' +
+                    '</div>' +
+                    '<div style="flex-shrink:0;text-align:right;min-width:100px;">' +
+                        '<div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;">Monto</div>' +
+                        '<div style="font-size:0.88rem;font-weight:700;' + (montoNum > 0 ? 'color:#1D1D1F;' : 'color:#D1D5DB;') + '">$' + (r.monto || '0') + '</div>' +
+                    '</div>' +
+                '</div>';
             }
 
             function buildFacturadoRow(r) {
@@ -2975,7 +2972,7 @@
                     if (!tbody) return;
 
                     if (data.rows.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="14" class="text-center py-20 text-gray-400 italic">No hay datos disponibles para este periodo.</td></tr>';
+                        tbody.innerHTML = '<div style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:0.85rem;">No hay datos disponibles para este periodo.</div>';
                     } else {
                         var html = '';
                         for (var i = 0; i < data.rows.length; i++) {

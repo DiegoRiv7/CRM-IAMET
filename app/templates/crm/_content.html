@@ -144,11 +144,6 @@
                  data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}"
                  onclick="openDetalle('{{ item.id }}')">
 
-                <!-- Status emoji -->
-                <div class="text-2xl flex-shrink-0 leading-none" title="{{ item.etapa_corta|default:'Sin etapa' }}">
-                    {% if item.etapa_corta == 'Ganado' or item.etapa_corta == 'Pagado' %}&#x1F3C6;{% elif item.etapa_corta == 'Perdido' %}&#x1F621;{% elif item.etapa_corta == 'Sin Respuesta' %}&#x1F634;{% elif item.etapa_corta == 'Entregado' or item.etapa_corta == 'Esperando Pago' %}&#x1F929;{% elif item.etapa_corta == 'En Tránsito' or item.etapa_corta == 'Facturado' or item.etapa_corta == 'Programado' %}&#x1F604;{% elif item.etapa_corta == 'Vendido s/PO' or item.etapa_corta == 'Vendido c/PO' %}&#x1F60A;{% elif item.etapa_corta == 'Enviada' or item.etapa_corta == 'Seguimiento' %}&#x1F642;{% else %}&#x1F610;{% endif %}
-                </div>
-
                 <!-- Main info -->
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-semibold text-gray-900 truncate opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:50 }}</div>

@@ -684,6 +684,7 @@ def api_crm_table_data(request):
                 'fecha_iso': item.fecha_creacion.strftime('%Y-%m-%d'),
                 'fecha_ts': int(item.fecha_actualizacion.timestamp()) if item.fecha_actualizacion else 0,
                 'etapa': item.etapa_corta or '',
+                'etapa_color': item.etapa_color or '#6B7280',
                 'tiene_actividad_vencida': tiene_vencida,
                 'sin_actividad_pendiente': not tiene_pendiente,
                 'tipo_negociacion': item.tipo_negociacion or 'runrate',
