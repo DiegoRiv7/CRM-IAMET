@@ -511,23 +511,27 @@ def api_prospecto_actividades(request, prospecto_id):
             fecha_programada=fecha_dt,
         )
 
-        # Also create a calendar Actividad so it appears in the main calendar
-        from datetime import timedelta
-        tipo_map = {
-            'llamada': 'llamada',
-            'reunion': 'reunion',
-            'email': 'email',
-            'tarea': 'tarea',
-        }
-        Actividad.objects.create(
-            titulo=f'[Prospecto] {descripcion}',
-            tipo_actividad=tipo_map.get(tipo, 'otro'),
-            descripcion=f'Prospecto: {prospecto.producto} - {prospecto.cliente.nombre if prospecto.cliente else "Sin cliente"}',
-            fecha_inicio=fecha_dt,
-            fecha_fin=fecha_dt + timedelta(hours=1),
-            creado_por=request.user,
-            color='#8B5CF6',
-        )
+        # Also create a calendar Actividad so it appears in the main calendar (purple)
+        try:
+            from datetime import timedelta
+            tipo_map = {
+                'llamada': 'llamada',
+                'reunion': 'reunion',
+                'correo': 'email',
+                'tarea': 'tarea',
+            }
+            cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+            Actividad.objects.create(
+                titulo=f'[Prospecto] {descripcion}',
+                tipo_actividad=tipo_map.get(tipo, 'otro'),
+                descripcion=f'Prospecto: {prospecto.producto} - {cliente_nombre}',
+                fecha_inicio=fecha_dt,
+                fecha_fin=fecha_dt + timedelta(hours=1),
+                creado_por=request.user,
+                color='#8B5CF6',
+            )
+        except Exception as e:
+            print(f'[Prospecto] Error creando actividad calendario: {e}')
 
         return JsonResponse({'success': True})
 

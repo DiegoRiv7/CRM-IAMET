@@ -832,6 +832,22 @@ document.addEventListener('click', function(ev) {
         if (panel) {
             panel.style.display = '';
             panel.classList.add('active');
+            // Auto-rellenar fecha de hoy y hora actual
+            var now = new Date();
+            var pad = function(n) { return n < 10 ? '0' + n : n; };
+            var fechaEl = document.getElementById('wpActFechaDate');
+            var hiEl = document.getElementById('wpActHoraInicio');
+            var hfEl = document.getElementById('wpActHoraFin');
+            if (fechaEl && !fechaEl.value) {
+                fechaEl.value = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+            }
+            if (hiEl && hiEl.value === '09:00') {
+                hiEl.value = pad(now.getHours()) + ':' + pad(now.getMinutes());
+            }
+            if (hfEl && hfEl.value === '10:00') {
+                var fin = new Date(now.getTime() + 3600000);
+                hfEl.value = pad(fin.getHours()) + ':' + pad(fin.getMinutes());
+            }
         }
     };
 
