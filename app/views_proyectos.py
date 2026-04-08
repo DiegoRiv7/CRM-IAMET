@@ -2278,11 +2278,15 @@ def actividad_detail(request, pk):
             if actividad.color == '#8B5CF6' and actividad.completada:
                 try:
                     from .models import ProspectoActividad
-                    ProspectoActividad.objects.filter(
+                    # Buscar la ProspectoActividad más cercana por fecha y título
+                    pa = ProspectoActividad.objects.filter(
                         descripcion=actividad.titulo,
                         usuario=actividad.creado_por,
                         completada=False,
-                    ).update(completada=True)
+                    ).order_by('fecha_programada').first()
+                    if pa:
+                        pa.completada = True
+                        pa.save(update_fields=['completada'])
                 except Exception:
                     pass
             # Registrar en chat de grupo si completó actividad de otro

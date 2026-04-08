@@ -1086,11 +1086,14 @@
 
         var descEl = document.getElementById('calDetailDesc');
         var rawDesc = evt.description || '';
-        // Limpiar metadata de prospecto de la descripcion
-        var idxMeta = rawDesc.indexOf('---prospecto_id:');
-        if (idxMeta === -1) idxMeta = rawDesc.indexOf('prospecto_id:');
-        if (idxMeta === -1 && rawDesc.indexOf('Prospecto:') === 0) idxMeta = 0;
-        var descClean = idxMeta > 0 ? rawDesc.substring(0, idxMeta).trim() : (idxMeta === 0 ? '' : rawDesc.trim());
+        // Limpiar TODA metadata de prospecto
+        var descClean = rawDesc;
+        var cut = descClean.indexOf('prospecto_id:');
+        if (cut > 0) { descClean = descClean.substring(0, cut); }
+        else if (cut === 0) { descClean = ''; }
+        cut = descClean.indexOf('Prospecto:');
+        if (cut === 0) { descClean = ''; }
+        descClean = descClean.replace(/[-\s]+$/, '').trim();
         descEl.textContent = descClean || 'Sin descripción.';
 
         window._calCurrentActividadId = esTarea ? null : id;

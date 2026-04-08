@@ -645,7 +645,8 @@ document.addEventListener('click', function(ev) {
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     var acts = data.actividades || [];
-                    if (acts.length > 0) {
+                    var pendientes = acts.filter(function(a) { return !a.completada; });
+                    if (pendientes.length > 0) {
                         _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo);
                     } else {
                         _showProspectoMissingActivityWarning();
@@ -1184,12 +1185,14 @@ document.addEventListener('click', function(ev) {
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 var acts = data.actividades || [];
-                if (acts.length > 0) {
+                var pendientes = acts.filter(function(a) { return !a.completada; });
+                if (pendientes.length > 0) {
+                    // Tiene actividades pendientes, puede cerrar
                     var w = document.getElementById('widgetProspecto');
                     if (w) w.classList.remove('active');
-                    // Limpiar persistencia
                     localStorage.removeItem('_pendienteProspectoSinActividad');
                 } else {
+                    // No tiene actividades pendientes, debe agendar una nueva
                     _showProspectoMissingActivityWarning();
                 }
             })
