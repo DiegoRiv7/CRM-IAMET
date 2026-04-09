@@ -1165,7 +1165,7 @@
         } else if (!esTarea) {
             fetch('/app/api/actividades/'+id+'/')
                 .then(function(r){ return r.ok?r.json():null; })
-                .then(function(d){ if(!d) return; var f=d.description||d.descripcion||''; descEl.textContent=f||'Sin descripción.'; evt.description=f; })
+                .then(function(d){ if(!d) return; var f=d.description||d.descripcion||''; evt.description=f; var ci=f.indexOf('prospecto_id:'); var clean=ci>0?f.substring(0,ci).replace(/[-\s]+$/,'').trim():(ci===0?'':f.trim()); if(f.indexOf('Prospecto:')===0)clean=''; descEl.textContent=clean||'Sin descripción.'; })
                 .catch(function(){});
         }
     };
@@ -1223,12 +1223,12 @@
                             // Prospecto: extraer prospecto_id y abrir widget
                             var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
                             if (pMatch && typeof abrirWidgetProspecto === 'function') {
-                                setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 300);
+                                setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 600);
                             }
                         } else if (ep.opportunity && ep.opportunity.id) {
-                            // Oportunidad: abrir widget de oportunidad
+                            // Oportunidad: abrir widget de oportunidad (delay para que PATCH se procese)
                             if (typeof openDetalle === 'function') {
-                                setTimeout(function(){ openDetalle(ep.opportunity.id); }, 300);
+                                setTimeout(function(){ openDetalle(ep.opportunity.id); }, 600);
                             }
                         }
                     }

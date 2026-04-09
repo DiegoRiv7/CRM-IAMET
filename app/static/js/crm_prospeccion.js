@@ -912,6 +912,10 @@ document.addEventListener('click', function(ev) {
                     document.getElementById('wpActDescripcion').value = '';
                     document.getElementById('wpActFechaDate').value = '';
                     cargarActividadesProspecto(window._currentProspectoId);
+                    // Refrescar calendario inmediatamente
+                    if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+                    // Limpiar persistencia (ya tiene actividad nueva)
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
                     // Cerrar panel
                     var panel = document.getElementById('widgetProspectoActividades');
                     if (panel) { panel.style.display = 'none'; panel.classList.remove('active'); }
