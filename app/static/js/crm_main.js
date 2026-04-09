@@ -3704,6 +3704,24 @@
         // Filtro orden por fecha
         setupIslandFilterListener('filterFecha', 'fecha');
 
+        // Filtro por rango de fechas: aplicar al cambiar "Hasta"
+        var _fDesde = document.getElementById('filterDesde');
+        var _fHasta = document.getElementById('filterHasta');
+        if (_fHasta) {
+            _fHasta.addEventListener('change', function() {
+                currentFilters.desde = _fDesde ? _fDesde.value : '';
+                currentFilters.hasta = this.value;
+                applyFiltersToTable();
+            });
+        }
+        if (_fDesde) {
+            _fDesde.addEventListener('change', function() {
+                currentFilters.desde = this.value;
+                currentFilters.hasta = _fHasta ? _fHasta.value : '';
+                if (currentFilters.hasta) applyFiltersToTable();
+            });
+        }
+
         // Limpiar filtros (Island button)
         var btnClearIsland = document.getElementById('btnClearIslandFilters');
         if (btnClearIsland) {
