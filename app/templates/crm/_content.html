@@ -184,7 +184,11 @@
                     <!-- Franja superior de color -->
                     <div class="absolute top-0 left-0 right-0 h-1.5" style="{% if item.tiene_actividad_vencida %}background:#EF4444;box-shadow:0 2px 4px rgba(239,68,68,0.4);{% elif item.tipo_negociacion == 'proyecto' %}background:#8B5CF6;box-shadow:0 2px 4px rgba(139,92,246,0.3);{% else %}background:#3B82F6;box-shadow:0 2px 4px rgba(59,130,246,0.3);{% endif %}"></div>
                     <!-- Sombra interna sutil -->
-                    <div class="absolute inset-0 pointer-events-none rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]"></div>
+                    <div class="absolute inset-0 pointer-events-none rounded-2xl" style="box-shadow:inset 0 1px 1px rgba(255,255,255,0.8);"></div>
+                    <!-- Pin de anclaje -->
+                    <div onclick="event.stopPropagation();togglePinOpp({{ item.id }},this)" title="{% if item.esta_anclada %}Desanclar{% else %}Anclar{% endif %}" style="position:absolute;top:8px;right:10px;z-index:5;cursor:pointer;transition:transform 0.2s;{% if item.esta_anclada %}transform:rotate(-45deg);{% else %}opacity:0.3;{% endif %}" onmouseover="this.style.opacity='1';this.style.transform='rotate(-45deg) scale(1.2)'" onmouseout="{% if item.esta_anclada %}this.style.opacity='1';this.style.transform='rotate(-45deg)'{% else %}this.style.opacity='0.3';this.style.transform='none'{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#9CA3AF{% endif %}" stroke="{% if item.esta_anclada %}#EF4444{% else %}#9CA3AF{% endif %}" stroke-width="1"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
+                    </div>
                     <!-- Cabecera -->
                     <div style="margin-bottom:12px;position:relative;z-index:1;padding-right:8px;">
                         <h3 style="font-size:0.95rem;font-weight:700;color:#2563EB;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">

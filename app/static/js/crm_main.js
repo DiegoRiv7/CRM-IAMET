@@ -97,6 +97,30 @@
             });
         });
 
+        // Toggle pin oportunidad
+        window.togglePinOpp = function(oppId, el) {
+            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+            fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) {
+                    var svg = el.querySelector('svg');
+                    if (data.anclada) {
+                        svg.setAttribute('fill', '#EF4444');
+                        svg.setAttribute('stroke', '#EF4444');
+                        el.style.opacity = '1';
+                        el.style.transform = 'rotate(-45deg)';
+                    } else {
+                        svg.setAttribute('fill', '#9CA3AF');
+                        svg.setAttribute('stroke', '#9CA3AF');
+                        el.style.opacity = '0.3';
+                        el.style.transform = 'none';
+                    }
+                }
+            });
+        };
+
         // CRM View Toggle (cards vs table)
         var _crmViewMode = localStorage.getItem('crmViewMode') || 'cards';
         window.toggleCrmView = function() {

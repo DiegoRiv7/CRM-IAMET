@@ -55,6 +55,7 @@ class UserProfile(models.Model):
         ('ingeniero', 'Ingeniero'),
     ]
     rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='vendedor', verbose_name="Rol")
+    oportunidades_ancladas = models.JSONField(default=list, blank=True, verbose_name="IDs de oportunidades ancladas")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")

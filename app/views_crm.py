@@ -309,8 +309,12 @@ def crm_home(request):
             # Actividad próxima (la más cercana no completada)
             proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
             item.actividad_proxima = proxima.titulo if proxima else None
-        # Ordenar: vencidas primero
-        tabla_data_list.sort(key=lambda x: (not x.tiene_actividad_vencida, ))
+        # Obtener IDs ancladas del usuario
+        ancladas_ids = set(profile.oportunidades_ancladas or [])
+        for item in tabla_data_list:
+            item.esta_anclada = item.id in ancladas_ids
+        # Ordenar: ancladas primero, luego vencidas, luego el resto
+        tabla_data_list.sort(key=lambda x: (not x.esta_anclada, not x.tiene_actividad_vencida))
         tabla_data = tabla_data_list
 
     # ── Tab Facturado: Datos del XLS por cliente + desglose por producto ──
@@ -4655,3 +4659,21 @@ def api_desglose_cotizaciones(request):
         'rows': rows,
         'total': sum(count_by_client.values()),
     })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_toggle_pin_oportunidad(request, opp_id):
+    """Toggle anclar/desanclar una oportunidad para el usuario actual."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    ancladas = profile.oportunidades_ancladas or []
+    if opp_id in ancladas:
+        ancladas.remove(opp_id)
+        anclada = False
+    else:
+        ancladas.append(opp_id)
+        anclada = True
+    profile.oportunidades_ancladas = ancladas
+    profile.save(update_fields=["oportunidades_ancladas"])
+    return JsonResponse({"success": True, "anclada": anclada})
+
