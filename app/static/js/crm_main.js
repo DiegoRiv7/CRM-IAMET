@@ -115,28 +115,23 @@
                     }).then(function(r) { return r.json(); }).then(function(data) {
                         if (data.success) {
                             self.classList.toggle('pinned', data.anclada);
-                            // Cambiar colores del SVG
-                            var circle = self.querySelector('circle:first-of-type');
-                            var stops = self.querySelectorAll('stop');
+                            var svg = self.querySelector('svg');
+                            var path = self.querySelector('path');
                             if (data.anclada) {
-                                if (stops[0]) stops[0].setAttribute('stop-color', '#FF6B6B');
-                                if (stops[1]) stops[1].setAttribute('stop-color', '#DC2626');
+                                if (svg) { svg.setAttribute('fill', '#EF4444'); svg.setAttribute('stroke', '#EF4444'); }
                                 // Agregar agujero
-                                var hole = document.createElement('div');
-                                hole.className = 'crm-pin-hole-dyn';
-                                hole.style.cssText = 'position:absolute;top:6px;right:22px;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,#D1D5DB 0%,#E5E7EB 60%,transparent 70%);box-shadow:inset 0 1px 2px rgba(0,0,0,0.15);z-index:3;';
-                                if (card && !card.querySelector('.crm-pin-hole-dyn')) card.insertBefore(hole, card.firstChild);
-                                // Mover al inicio del grid
-                                if (card && grid) {
-                                    card.style.transition = 'none';
-                                    grid.insertBefore(card, grid.firstChild);
-                                    setTimeout(function() { card.style.transition = ''; }, 50);
+                                if (card && !card.querySelector('.crm-pin-hole-dyn')) {
+                                    var hole = document.createElement('div');
+                                    hole.className = 'crm-pin-hole-dyn';
+                                    hole.style.cssText = 'position:absolute;top:10px;right:18px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#B0B8C4 0%,#D1D5DB 50%,#E5E7EB 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.06);z-index:4;';
+                                    card.appendChild(hole);
                                 }
+                                // Mover al inicio
+                                if (card && grid) { grid.insertBefore(card, grid.firstChild); }
                             } else {
-                                if (stops[0]) stops[0].setAttribute('stop-color', '#D1D5DB');
-                                if (stops[1]) stops[1].setAttribute('stop-color', '#9CA3AF');
-                                var existingHole = card ? card.querySelector('.crm-pin-hole-dyn') : null;
-                                if (existingHole) existingHole.remove();
+                                if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', '#9CA3AF'); }
+                                var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
+                                if (h) h.remove();
                             }
                         }
                     });
