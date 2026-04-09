@@ -3858,16 +3858,18 @@
                     if (!etapaVal.includes(currentFilters.etapa.toLowerCase())) return false;
                 }
 
-                // Filtro por rango de fechas
+                // Filtro por rango de fechas (usa timestamp de fecha_actualizacion)
                 if (currentFilters.desde || currentFilters.hasta) {
                     var ts = parseInt(row.dataset.fecha || '0', 10);
-                    if (currentFilters.desde) {
-                        var desdeTs = new Date(currentFilters.desde + 'T00:00:00').getTime() / 1000;
-                        if (ts < desdeTs) return false;
-                    }
-                    if (currentFilters.hasta) {
-                        var hastaTs = new Date(currentFilters.hasta + 'T23:59:59').getTime() / 1000;
-                        if (ts > hastaTs) return false;
+                    if (ts > 0) {
+                        if (currentFilters.desde) {
+                            var desdeTs = new Date(currentFilters.desde + 'T00:00:00').getTime() / 1000;
+                            if (ts < desdeTs) return false;
+                        }
+                        if (currentFilters.hasta) {
+                            var hastaTs = new Date(currentFilters.hasta + 'T23:59:59').getTime() / 1000;
+                            if (ts > hastaTs) return false;
+                        }
                     }
                 }
 
@@ -3938,16 +3940,12 @@
                 if (show && currentFilters.producto && !producto.includes(currentFilters.producto.toLowerCase())) show = false;
                 if (show && currentFilters.contacto && !contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
 
-                // Rango de fechas
+                // Rango de fechas (por fecha de creacion)
                 if (show && (currentFilters.desde || currentFilters.hasta)) {
-                    var ts = parseInt(card.dataset.fecha || '0', 10);
-                    if (currentFilters.desde) {
-                        var desdeTs = new Date(currentFilters.desde + 'T00:00:00').getTime() / 1000;
-                        if (ts < desdeTs) show = false;
-                    }
-                    if (show && currentFilters.hasta) {
-                        var hastaTs = new Date(currentFilters.hasta + 'T23:59:59').getTime() / 1000;
-                        if (ts > hastaTs) show = false;
+                    var fechaCreacion = card.dataset.creacion || '';
+                    if (fechaCreacion) {
+                        if (currentFilters.desde && fechaCreacion < currentFilters.desde) show = false;
+                        if (show && currentFilters.hasta && fechaCreacion > currentFilters.hasta) show = false;
                     }
                 }
 
