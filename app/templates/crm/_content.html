@@ -176,13 +176,13 @@
                 .crm-postit:nth-child(6n+5) { transform: rotate(-1.6deg); }
                 .crm-postit:nth-child(6n+6) { transform: rotate(0.7deg); }
                 .crm-pin {
-                    position: absolute; top: 4px; right: 8px; z-index: 5;
+                    position: absolute; top: -6px; right: 6px; z-index: 6;
                     cursor: pointer; transition: transform 0.15s, opacity 0.15s;
                     opacity: 0;
                 }
-                .crm-pin.pinned { opacity: 1; transform: rotate(-45deg); }
-                .crm-postit:hover .crm-pin { opacity: 0.35; }
-                .crm-postit:hover .crm-pin:hover { opacity: 1; transform: rotate(-45deg) scale(1.15); }
+                .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
+                .crm-postit:hover .crm-pin { opacity: 0.3; }
+                .crm-postit:hover .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
                 .crm-postit:hover .crm-pin.pinned { opacity: 1; }
             </style>
             <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px;">
@@ -196,11 +196,10 @@
                     <div class="absolute inset-0 pointer-events-none rounded-2xl" style="box-shadow:inset 0 1px 1px rgba(255,255,255,0.8);"></div>
                     <!-- Pin de anclaje -->
                     <div class="crm-pin {% if item.esta_anclada %}pinned{% endif %}" data-pin-id="{{ item.pk }}">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#9CA3AF{% endif %}" stroke="{% if item.esta_anclada %}#EF4444{% else %}#9CA3AF{% endif %}" stroke-width="0.5" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#B0B8C4{% endif %}" stroke="none" style="filter:drop-shadow(1px 2px 3px rgba(0,0,0,0.35));"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
                     </div>
                     {% if item.esta_anclada %}
-                    <!-- Agujero donde el pin perfora la tarjeta -->
-                    <div style="position:absolute;top:10px;right:18px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#B0B8C4 0%,#D1D5DB 50%,#E5E7EB 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.06);z-index:4;"></div>
+                    <div style="position:absolute;top:8px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;"></div>
                     {% endif %}
                     <!-- Cabecera -->
                     <div style="margin-bottom:12px;position:relative;z-index:1;padding-right:8px;">

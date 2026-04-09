@@ -123,7 +123,7 @@
                                 if (card && !card.querySelector('.crm-pin-hole-dyn')) {
                                     var hole = document.createElement('div');
                                     hole.className = 'crm-pin-hole-dyn';
-                                    hole.style.cssText = 'position:absolute;top:10px;right:18px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#B0B8C4 0%,#D1D5DB 50%,#E5E7EB 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.06);z-index:4;';
+                                    hole.style.cssText = 'position:absolute;top:8px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
                                     card.appendChild(hole);
                                 }
                                 // Mover al inicio
