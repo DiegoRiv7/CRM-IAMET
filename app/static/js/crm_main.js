@@ -97,23 +97,27 @@
             });
         });
 
-        // Toggle pin oportunidad (delegacion de evento)
-        document.addEventListener('click', function(e) {
-            var pin = e.target.closest('.crm-pin');
-            if (!pin) return;
-            e.stopPropagation();
-            var oppId = pin.getAttribute('data-pin-id');
-            if (!oppId) return;
-            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-            fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
-            }).then(function(r) { return r.json(); }).then(function(data) {
-                if (data.success) {
-                    pin.classList.toggle('pinned', data.anclada);
-                }
+        // Toggle pin oportunidad
+        setTimeout(function() {
+            document.querySelectorAll('.crm-pin').forEach(function(pin) {
+                pin.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    var oppId = this.getAttribute('data-pin-id');
+                    if (!oppId) return;
+                    var self = this;
+                    var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                    fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
+                    }).then(function(r) { return r.json(); }).then(function(data) {
+                        if (data.success) {
+                            self.classList.toggle('pinned', data.anclada);
+                        }
+                    });
+                });
             });
-        });
+        }, 500);
 
         // CRM View Toggle (cards vs table)
         var _crmViewMode = localStorage.getItem('crmViewMode') || 'cards';
