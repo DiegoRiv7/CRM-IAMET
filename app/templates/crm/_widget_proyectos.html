@@ -671,3 +671,67 @@
     </div>
   </div>
 </div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR ACTIVIDAD (PROGRAMA DE OBRA)
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoActividad" style="z-index:10200;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:560px;">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(0,122,255,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="proy-dialog-title" style="margin:0;">Nueva Actividad</h3>
+          <div id="proyActFechaLabel" style="font-size:0.75rem;color:#6E6E73;margin-top:2px;"></div>
+        </div>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoActividad')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <!-- Nombre -->
+      <div class="proy-field">
+        <label for="proyActTitulo" class="proy-label">Nombre de la actividad *</label>
+        <input type="text" id="proyActTitulo" class="proy-input" placeholder="Ej: Instalacion de cableado">
+      </div>
+      <!-- Descripcion -->
+      <div class="proy-field">
+        <label for="proyActDescripcion" class="proy-label">Descripcion</label>
+        <textarea id="proyActDescripcion" class="proy-input" rows="2" placeholder="Detalles adicionales..." style="resize:vertical;"></textarea>
+      </div>
+      <!-- Horarios -->
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyActHoraInicio" class="proy-label">Hora inicio</label>
+          <input type="time" id="proyActHoraInicio" class="proy-input" value="07:00">
+        </div>
+        <div class="proy-field">
+          <label for="proyActHoraFin" class="proy-label">Hora fin</label>
+          <input type="time" id="proyActHoraFin" class="proy-input" value="16:00">
+        </div>
+      </div>
+      <!-- Personal -->
+      <div class="proy-field">
+        <label class="proy-label">Personal (Responsables)</label>
+        <div id="proyActPersonalList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;padding:4px;">
+          <div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando disponibilidad...</div>
+        </div>
+      </div>
+      <!-- Vehiculos -->
+      <div class="proy-field">
+        <label for="proyActVehiculos" class="proy-label">Vehiculos</label>
+        <input type="text" id="proyActVehiculos" class="proy-input" placeholder="Ej: Camioneta Ford Ranger, Grua #3">
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoActividad')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyActBtnCrear" onclick="proyectosGuardarActividad()">Crear Actividad</button>
+    </div>
+  </div>
+</div>

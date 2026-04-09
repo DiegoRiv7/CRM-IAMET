@@ -1125,9 +1125,196 @@
         window.proyProgramaPrev = function() { if (currentWeekIdx > 0) { currentWeekIdx--; renderWeek(); } };
         window.proyProgramaNext = function() { if (currentWeekIdx < weeks.length - 1) { currentWeekIdx++; renderWeek(); } };
         window.proyProgramaToggleWeekend = function() { showWeekend = !showWeekend; renderWeek(); };
-        window.proyProgramaAddActivity = function(dateStr) { alert('Crear actividad para ' + dateStr + ' \u2014 pr\u00F3ximamente'); };
+        window.proyProgramaAddActivity = function(dateStr) { _openActividadForm(dateStr); };
 
         renderWeek();
+    }
+
+
+    // =========================================
+    //  ACTIVIDAD FORM (PROGRAMA DE OBRA)
+    // =========================================
+
+    var _actividadFechaSeleccionada = null;
+    var _actividadSelectedUsers = {};
+
+    function _getDayNameSpanish(dateStr) {
+        var d = new Date(dateStr + 'T12:00:00');
+        var names = ['Domingo','Lunes','Martes','Mi\u00E9rcoles','Jueves','Viernes','S\u00E1bado'];
+        return names[d.getDay()];
+    }
+
+    function _fmtDateLong(dateStr) {
+        var d = new Date(dateStr + 'T12:00:00');
+        var months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        return d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+    }
+
+    function _openActividadForm(dateStr) {
+        _actividadFechaSeleccionada = dateStr;
+        _actividadSelectedUsers = {};
+
+        // Set date label
+        var label = el('proyActFechaLabel');
+        if (label) label.textContent = _getDayNameSpanish(dateStr) + ', ' + _fmtDateLong(dateStr);
+
+        // Reset form fields
+        if (el('proyActTitulo')) el('proyActTitulo').value = '';
+        if (el('proyActDescripcion')) el('proyActDescripcion').value = '';
+        if (el('proyActHoraInicio')) el('proyActHoraInicio').value = '07:00';
+        if (el('proyActHoraFin')) el('proyActHoraFin').value = '16:00';
+        if (el('proyActVehiculos')) el('proyActVehiculos').value = '';
+
+        // Show dialog
+        var d = el('proyDialogoActividad');
+        if (d) d.style.display = 'flex';
+
+        // Load availability
+        _loadPersonalDisponibilidad(dateStr);
+
+        // Re-load on time change
+        var hiEl = el('proyActHoraInicio');
+        var hfEl = el('proyActHoraFin');
+        if (hiEl) hiEl.onchange = function() { _loadPersonalDisponibilidad(dateStr); };
+        if (hfEl) hfEl.onchange = function() { _loadPersonalDisponibilidad(dateStr); };
+    }
+
+    function _loadPersonalDisponibilidad(dateStr) {
+        var container = el('proyActPersonalList');
+        if (!container) return;
+
+        container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando disponibilidad...</div>';
+
+        var horaInicio = el('proyActHoraInicio') ? el('proyActHoraInicio').value : '07:00';
+        var horaFin = el('proyActHoraFin') ? el('proyActHoraFin').value : '16:00';
+        var diaSemana = _getDayNameSpanish(dateStr);
+
+        var url = '/app/api/programacion/disponibilidad/?dia_semana=' + encodeURIComponent(diaSemana) +
+            '&hora_inicio=' + encodeURIComponent(horaInicio) +
+            '&hora_fin=' + encodeURIComponent(horaFin) +
+            '&fecha=' + encodeURIComponent(dateStr);
+
+        _fetch(url).then(function(resp) {
+            if (!resp.success && !resp.ok) {
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error al cargar personal</div>';
+                return;
+            }
+            var users = resp.usuarios || resp.data || [];
+            if (users.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">No hay personal registrado</div>';
+                return;
+            }
+
+            var html = '';
+            users.forEach(function(u) {
+                var available = u.disponible !== false;
+                var conflict = u.conflicto || u.conflict || '';
+                var checked = _actividadSelectedUsers[u.id] ? ' checked' : '';
+                var opacity = available ? '1' : '0.5';
+
+                html += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:' + (available ? 'pointer' : 'default') + ';opacity:' + opacity + ';transition:background 0.15s;" ' +
+                    'onmouseover="this.style.background=\'#F5F5F7\'" onmouseout="this.style.background=\'transparent\'">' +
+                    '<input type="checkbox" value="' + u.id + '"' + checked + (available ? '' : ' disabled') +
+                    ' onchange="proyActToggleUser(' + u.id + ', this.checked)" ' +
+                    'style="width:16px;height:16px;accent-color:#007AFF;flex-shrink:0;">' +
+                    '<div style="width:28px;height:28px;border-radius:50%;background:' + (available ? '#007AFF' : '#D1D5DB') + ';color:#fff;font-size:0.6rem;line-height:28px;text-align:center;flex-shrink:0;font-weight:600;">' + (u.iniciales || u.initials || '??') + '</div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-size:0.8rem;font-weight:500;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (u.nombre || u.name || 'Usuario ' + u.id) + '</div>' +
+                        (conflict ? '<div style="font-size:0.68rem;color:#EF4444;margin-top:1px;">' + conflict + '</div>' : '') +
+                        (available && !conflict ? '<div style="font-size:0.68rem;color:#10B981;margin-top:1px;">Disponible</div>' : '') +
+                    '</div>' +
+                '</label>';
+            });
+
+            container.innerHTML = html;
+        }).catch(function(err) {
+            container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error de conexion</div>';
+            console.error('Error cargando disponibilidad:', err);
+        });
+    }
+
+    window.proyActToggleUser = function(userId, checked) {
+        if (checked) {
+            _actividadSelectedUsers[userId] = true;
+        } else {
+            delete _actividadSelectedUsers[userId];
+        }
+    };
+
+    window.proyectosGuardarActividad = function() {
+        if (!currentProjectId) return;
+
+        var titulo = el('proyActTitulo') ? el('proyActTitulo').value.trim() : '';
+        if (!titulo) {
+            el('proyActTitulo').style.borderColor = '#FF3B30';
+            el('proyActTitulo').focus();
+            return;
+        }
+        el('proyActTitulo').style.borderColor = '';
+
+        var horaInicio = el('proyActHoraInicio') ? el('proyActHoraInicio').value : '07:00';
+        var horaFin = el('proyActHoraFin') ? el('proyActHoraFin').value : '16:00';
+        var diaSemana = _getDayNameSpanish(_actividadFechaSeleccionada);
+
+        var responsables = Object.keys(_actividadSelectedUsers).map(function(k) { return parseInt(k); });
+
+        var payload = {
+            proyecto_key: 'proy_' + currentProjectId,
+            titulo: titulo,
+            dia_semana: diaSemana,
+            hora_inicio: horaInicio,
+            hora_fin: horaFin,
+            fecha: _actividadFechaSeleccionada,
+            responsables: responsables
+        };
+
+        // Include optional fields if filled
+        var desc = el('proyActDescripcion') ? el('proyActDescripcion').value.trim() : '';
+        if (desc) payload.descripcion = desc;
+
+        var vehiculos = el('proyActVehiculos') ? el('proyActVehiculos').value.trim() : '';
+        if (vehiculos) payload.vehiculos = vehiculos;
+
+        // Disable button while submitting
+        var btn = el('proyActBtnCrear');
+        if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
+
+        _fetch('/app/api/programacion/actividades/', {
+            method: 'POST',
+            body: payload
+        }).then(function(resp) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Crear Actividad'; }
+
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoActividad');
+                // Re-render programa de obra to show new activity
+                renderProgramaObra(currentProjectId);
+                // Show toast
+                _showToast('Actividad creada');
+            } else {
+                alert('Error al crear actividad: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Crear Actividad'; }
+            alert('Error de conexion al crear actividad');
+            console.error('Error creando actividad:', err);
+        });
+    };
+
+    function _showToast(message) {
+        var existing = document.getElementById('proyToast');
+        if (existing) existing.remove();
+
+        var toast = document.createElement('div');
+        toast.id = 'proyToast';
+        toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1D1D1F;color:#fff;padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.2);transition:opacity 0.3s;';
+        toast.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>' +
+            message + '</div>';
+        document.body.appendChild(toast);
+
+        setTimeout(function() { toast.style.opacity = '0'; }, 2500);
+        setTimeout(function() { toast.remove(); }, 3000);
     }
 
 
