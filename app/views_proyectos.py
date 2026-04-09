@@ -2274,6 +2274,16 @@ def actividad_detail(request, pk):
         if 'completada' in data:
             actividad.completada = data['completada']
             actividad.save(update_fields=['completada'])
+            # Si es actividad de oportunidad, completar la TareaOportunidad vinculada
+            if actividad.completada and actividad.oportunidad_id:
+                try:
+                    from .models import TareaOportunidad
+                    TareaOportunidad.objects.filter(
+                        actividad_calendario=actividad,
+                        estado='pendiente',
+                    ).update(estado='completada')
+                except Exception:
+                    pass
             # Si es actividad de prospecto (morada), también completar la ProspectoActividad
             if actividad.color == '#8B5CF6' and actividad.completada:
                 try:
