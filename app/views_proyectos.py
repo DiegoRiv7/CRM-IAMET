@@ -3626,6 +3626,13 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             tarea.descripcion = data['descripcion']
         if 'estado' in data:
             tarea.estado = data['estado']
+            # Si se completa, también completar la Actividad del calendario vinculada
+            if data['estado'] == 'completada' and tarea.actividad_calendario_id:
+                try:
+                    tarea.actividad_calendario.completada = True
+                    tarea.actividad_calendario.save(update_fields=['completada'])
+                except Exception:
+                    pass
         if 'prioridad' in data:
             tarea.prioridad = data['prioridad']
         if 'fecha_limite' in data:
