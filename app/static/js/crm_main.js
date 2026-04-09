@@ -103,7 +103,7 @@
                 pin.addEventListener('click', function(e) {
                     e.stopPropagation();
                     e.preventDefault();
-                    var oppId = this.getAttribute('data-pin-id');
+                    var oppId = (this.getAttribute('data-pin-id') || '').replace(/\s/g, '').replace(/\u00A0/g, '');
                     if (!oppId) return;
                     var self = this;
                     var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
