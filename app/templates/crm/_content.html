@@ -141,50 +141,61 @@
         {% if tab_activo == 'crm' %}
         <!-- VISTA CARDS (principal) -->
         <div id="crmViewCards" style="display:none;">
-            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:0 4px;">
+            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;padding:4px 2px;">
                 {% for item in tabla_data %}
                 {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
                 <div class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
                      onclick="openDetalle('{{ item.id }}')"
-                     style="background:{% if item.tiene_actividad_vencida %}#FEF2F2{% else %}#fff{% endif %};border:{% if item.tiene_actividad_vencida %}2.5px solid #FCA5A5{% else %}2px solid #D1D5DB{% endif %};border-radius:14px;padding:18px 18px 14px;cursor:pointer;transition:all 0.15s;"
-                     onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)';this.style.transform='translateY(-1px)'" onmouseout="this.style.boxShadow='none';this.style.transform='none'">
-                    <div style="font-weight:700;font-size:0.92rem;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{% if item.tiene_actividad_vencida %}#DC2626{% else %}#1D1D1F{% endif %};">
-                        <span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:40 }}{% if item.tiene_actividad_vencida %} <span style="font-size:0.7rem;">&#9888;</span>{% endif %}</span>
+                     style="background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:20px 20px 16px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;box-shadow:2px 6px 15px -4px rgba(0,0,0,0.08);display:flex;flex-direction:column;"
+                     onmouseover="this.style.boxShadow='0 25px 40px -10px rgba(0,0,0,0.18)';this.style.transform='translateY(-4px) rotate(0deg)';this.style.borderColor='#D1D5DB';this.style.zIndex='20'" onmouseout="this.style.boxShadow='2px 6px 15px -4px rgba(0,0,0,0.08)';this.style.transform='';this.style.borderColor='#E5E7EB';this.style.zIndex='0'">
+                    <!-- Franja superior de color -->
+                    <div style="position:absolute;top:0;left:0;right:0;height:4px;{% if item.tiene_actividad_vencida %}background:#EF4444;box-shadow:0 2px 4px rgba(239,68,68,0.4);{% elif item.tipo_negociacion == 'proyecto' %}background:#8B5CF6;box-shadow:0 2px 4px rgba(139,92,246,0.3);{% else %}background:#3B82F6;box-shadow:0 2px 4px rgba(59,130,246,0.3);{% endif %}"></div>
+                    <!-- Sombra interna sutil -->
+                    <div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 1px 1px rgba(255,255,255,0.8);border-radius:16px;"></div>
+                    <!-- Cabecera -->
+                    <div style="margin-bottom:12px;position:relative;z-index:1;padding-right:8px;">
+                        <h3 style="font-size:0.95rem;font-weight:700;color:#2563EB;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                            <span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:45 }}</span>
+                        </h3>
+                        <div style="font-size:0.8rem;font-weight:500;color:#6B7280;margin-top:2px;cursor:pointer;transition:color 0.15s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#6B7280'" onclick="event.stopPropagation();if(typeof openClienteOportunidadesModal==='function')openClienteOportunidadesModal('{{ item.cliente.id|default:'' }}','{{ item.cliente.nombre_empresa|default:"Sin Cliente" }}')">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:30 }}</div>
                     </div>
-                    <div style="font-size:0.78rem;color:#6B7280;margin-bottom:14px;cursor:pointer;transition:color 0.15s;" onmouseover="this.style.color='#007AFF'" onmouseout="this.style.color='#6B7280'" onclick="event.stopPropagation();if(typeof openClienteOportunidadesModal==='function')openClienteOportunidadesModal('{{ item.cliente.id|default:'' }}','{{ item.cliente.nombre_empresa|default:"Sin Cliente" }}')">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:30 }}</div>
-                    <div style="display:flex;gap:8px;margin-bottom:14px;">
-                        <div style="flex:1;background:{% if item.tiene_actividad_vencida %}#FEE2E2{% else %}#F3F4F6{% endif %};border-radius:8px;padding:10px 12px;">
-                            <div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;">Valor Total</div>
-                            <div style="font-size:1rem;font-weight:700;color:#1D1D1F;">${{ item.monto|format_currency_es }}</div>
+                    <!-- Bloques valor + marca -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;position:relative;z-index:1;">
+                        <div style="background:#F8FAFC;border-radius:12px;padding:10px 12px;border:1px solid #E2E8F0;">
+                            <div style="font-size:0.58rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Valor Total</div>
+                            <div style="font-size:0.95rem;font-weight:700;color:#0F172A;">${{ item.monto|format_currency_es }}</div>
                         </div>
-                        <div style="flex:1;background:{% if item.tiene_actividad_vencida %}#FEE2E2{% else %}#F3F4F6{% endif %};border-radius:8px;padding:10px 12px;">
-                            <div style="font-size:0.6rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;">Marca</div>
-                            <div style="font-size:0.88rem;font-weight:600;color:#1D1D1F;">{{ item.producto|default:'-' }}</div>
+                        <div style="background:#F8FAFC;border-radius:12px;padding:10px 12px;border:1px solid #E2E8F0;">
+                            <div style="font-size:0.58rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Marca</div>
+                            <div style="font-size:0.85rem;font-weight:700;color:#0F172A;text-transform:uppercase;">{{ item.producto|default:'-' }}</div>
                         </div>
                     </div>
                     <!-- Etapa + probabilidad -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <!-- Circulo de probabilidad -->
-                            <div style="position:relative;width:34px;height:34px;flex-shrink:0;">
-                                <svg viewBox="0 0 36 36" style="width:34px;height:34px;transform:rotate(-90deg);">
-                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="3" pathLength="100"/>
-                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#007AFF' }}{% endif %}" stroke-width="3" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="position:relative;width:40px;height:40px;flex-shrink:0;">
+                                <svg viewBox="0 0 36 36" style="width:40px;height:40px;transform:rotate(-90deg);">
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="2.5" pathLength="100"/>
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#3B82F6' }}{% endif %}" stroke-width="2.5" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
                                 </svg>
-                                <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.5rem;font-weight:800;color:#1D1D1F;">{{ item.probabilidad_cierre }}%</span>
+                                <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.55rem;font-weight:800;color:#0F172A;">{{ item.probabilidad_cierre }}%</span>
                             </div>
                             <div>
-                                <div style="font-size:0.6rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;">Etapa</div>
-                                <div style="font-size:0.82rem;font-weight:700;color:#1D1D1F;">{{ item.etapa_corta|default:'Sin etapa' }}</div>
+                                <div style="font-size:0.58rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.04em;">Etapa</div>
+                                <div style="font-size:0.85rem;font-weight:700;color:#0F172A;">{{ item.etapa_corta|default:'Sin etapa' }}</div>
                             </div>
                         </div>
-                        <div style="font-size:0.68rem;font-weight:600;padding:2px 8px;border-radius:4px;{% if item.tipo_negociacion == 'proyecto' %}background:#EDE9FE;color:#7C3AED;{% else %}background:#DBEAFE;color:#2563EB;{% endif %}">{% if item.tipo_negociacion == 'proyecto' %}Proyecto{% elif item.tipo_negociacion == 'bitrix_proyecto' %}B24{% else %}Runrate{% endif %}</div>
+                        <div style="font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;{% if item.tipo_negociacion == 'proyecto' %}background:#F5F3FF;color:#7C3AED;border-color:#DDD6FE;{% else %}background:#EFF6FF;color:#2563EB;border-color:#BFDBFE;{% endif %}">{% if item.tipo_negociacion == 'proyecto' %}Proyecto{% elif item.tipo_negociacion == 'bitrix_proyecto' %}B24{% else %}Runrate{% endif %}</div>
                     </div>
-                    <!-- Actividad programada (click abre detalle opp + widget actividad encima) -->
-                    <div class="card-act-bar" data-opp-act="{{ item.id }}" onclick="event.stopPropagation();openDetalle('{{ item.id }}');setTimeout(function(){if(typeof woAbrirActividadReciente==='function')woAbrirActividadReciente();},400);" style="background:{% if item.actividad_proxima %}#EFF6FF{% else %}#F9FAFB{% endif %};border:1px solid {% if item.actividad_proxima %}#BFDBFE{% else %}#E5E7EB{% endif %};border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='{% if item.actividad_proxima %}#DBEAFE{% else %}#F3F4F6{% endif %}'" onmouseout="this.style.background='{% if item.actividad_proxima %}#EFF6FF{% else %}#F9FAFB{% endif %}'">
-                        <svg width="14" height="14" fill="none" stroke="{% if item.actividad_proxima %}#3B82F6{% else %}#9CA3AF{% endif %}" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                        <span class="card-act-text" style="font-size:0.72rem;font-weight:{% if item.actividad_proxima %}600{% else %}500{% endif %};color:{% if item.actividad_proxima %}#1E40AF{% else %}#9CA3AF{% endif %};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">{% if item.actividad_proxima %}{{ item.actividad_proxima }}{% else %}Sin actividad programada{% endif %}</span>
-                        <svg width="12" height="12" fill="none" stroke="#9CA3AF" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
+                    <!-- Actividad programada -->
+                    <div style="margin-top:auto;position:relative;z-index:1;">
+                        <div class="card-act-bar" data-opp-act="{{ item.id }}" onclick="event.stopPropagation();openDetalle('{{ item.id }}');setTimeout(function(){if(typeof woAbrirActividadReciente==='function')woAbrirActividadReciente();},400);" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;transition:all 0.2s;{% if item.actividad_proxima %}border-color:#BFDBFE;background:#EFF6FF;{% endif %}" onmouseover="this.style.background='{% if item.actividad_proxima %}#DBEAFE{% else %}#F8FAFC{% endif %}'" onmouseout="this.style.background='{% if item.actividad_proxima %}#EFF6FF{% else %}#fff{% endif %}'">
+                            <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+                                <svg width="14" height="14" fill="none" stroke="{% if item.actividad_proxima %}#3B82F6{% else %}#9CA3AF{% endif %}" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                <span class="card-act-text" style="font-size:0.78rem;font-weight:{% if item.actividad_proxima %}700{% else %}500{% endif %};color:{% if item.actividad_proxima %}#1E40AF{% else %}#9CA3AF{% endif %};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{% if item.actividad_proxima %}{{ item.actividad_proxima }}{% else %}Sin actividad programada{% endif %}</span>
+                            </div>
+                            <svg width="14" height="14" fill="none" stroke="{% if item.actividad_proxima %}#93C5FD{% else %}#D1D5DB{% endif %}" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
