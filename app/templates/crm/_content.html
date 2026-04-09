@@ -142,6 +142,14 @@
         <!-- VISTA CARDS (principal) -->
         <div id="crmViewCards" style="display:none;">
             <style>
+                #crmViewCards {
+                    background: #F4F5F7;
+                    background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
+                    background-size: 24px 24px;
+                    border-radius: 16px;
+                    padding: 28px 24px;
+                    margin: 0 -8px;
+                }
                 .crm-postit {
                     background: #fff;
                     border: 1px solid #E5E7EB;
@@ -150,25 +158,25 @@
                     cursor: pointer;
                     position: relative;
                     overflow: hidden;
-                    box-shadow: 2px 6px 15px -4px rgba(0,0,0,0.08);
+                    box-shadow: 2px 6px 18px -4px rgba(0,0,0,0.1);
                     display: flex;
                     flex-direction: column;
-                    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
                 }
                 .crm-postit:hover {
-                    transform: translateY(-10px) rotate(0deg) scale(1.02) !important;
-                    box-shadow: 0 25px 40px -10px rgba(0,0,0,0.2);
+                    transform: translateY(-12px) rotate(0deg) scale(1.03) !important;
+                    box-shadow: 0 30px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05);
                     z-index: 20;
-                    border-color: #CBD5E1;
+                    border-color: #93C5FD;
                 }
                 .crm-postit:nth-child(6n+1) { transform: rotate(-1.2deg); }
-                .crm-postit:nth-child(6n+2) { transform: rotate(1.5deg); }
-                .crm-postit:nth-child(6n+3) { transform: rotate(-0.8deg); }
-                .crm-postit:nth-child(6n+4) { transform: rotate(1.8deg); }
-                .crm-postit:nth-child(6n+5) { transform: rotate(-1.5deg); }
-                .crm-postit:nth-child(6n+6) { transform: rotate(0.5deg); }
+                .crm-postit:nth-child(6n+2) { transform: rotate(1.8deg); }
+                .crm-postit:nth-child(6n+3) { transform: rotate(-0.6deg); }
+                .crm-postit:nth-child(6n+4) { transform: rotate(1.3deg); }
+                .crm-postit:nth-child(6n+5) { transform: rotate(-1.6deg); }
+                .crm-postit:nth-child(6n+6) { transform: rotate(0.7deg); }
             </style>
-            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:28px;padding:8px 4px;">
+            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px;">
                 {% for item in tabla_data %}
                 {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
                 <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
