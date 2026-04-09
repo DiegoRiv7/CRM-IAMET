@@ -2348,17 +2348,16 @@
                     if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
                     // Actualizar tarjeta en vista cards del CRM
                     if (_woCurrentOppId) {
-                        var card = document.querySelector('#crmCardsGrid .crm-data-row[data-opp-id="' + _woCurrentOppId + '"]');
-                        if (card) {
-                            var actBar = card.querySelector('div:last-child');
-                            if (actBar && actBar.querySelector('svg')) {
-                                actBar.style.background = '#F9FAFB';
-                                actBar.style.borderColor = '#E5E7EB';
-                                var actSpan = actBar.querySelector('span');
-                                if (actSpan) { actSpan.textContent = 'Sin actividad programada'; actSpan.style.color = '#9CA3AF'; actSpan.style.fontWeight = '500'; }
-                                var actSvg = actBar.querySelector('svg');
-                                if (actSvg) actSvg.setAttribute('stroke', '#9CA3AF');
-                            }
+                        var actBar = document.querySelector('.card-act-bar[data-opp-act="' + _woCurrentOppId + '"]');
+                        if (actBar) {
+                            actBar.style.background = '#F9FAFB';
+                            actBar.style.borderColor = '#E5E7EB';
+                            actBar.onmouseover = function(){ this.style.background='#F3F4F6'; };
+                            actBar.onmouseout = function(){ this.style.background='#F9FAFB'; };
+                            var actText = actBar.querySelector('.card-act-text');
+                            if (actText) { actText.textContent = 'Sin actividad programada'; actText.style.color = '#9CA3AF'; actText.style.fontWeight = '500'; }
+                            var actSvg = actBar.querySelector('svg');
+                            if (actSvg) actSvg.setAttribute('stroke', '#9CA3AF');
                         }
                     }
 
