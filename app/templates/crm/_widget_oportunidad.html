@@ -2344,8 +2344,10 @@
                     // Refrescar actividad reciente y lista de tareas sin recargar
                     if (_woCurrentOppId && typeof woCargarActividadReciente === 'function') woCargarActividadReciente(_woCurrentOppId);
                     if (typeof window.recargarTareasCRM === 'function') window.recargarTareasCRM();
-                    // Refrescar calendario si esta abierto
-                    if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+                    // Refrescar calendario si esta abierto (delay para que BD procese)
+                    setTimeout(function() {
+                        if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+                    }, 300);
                     // Actualizar tarjeta en vista cards del CRM
                     if (_woCurrentOppId) {
                         var actBar = document.querySelector('.card-act-bar[data-opp-act="' + _woCurrentOppId + '"]');
