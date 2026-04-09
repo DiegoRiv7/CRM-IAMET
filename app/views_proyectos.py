@@ -3625,10 +3625,6 @@ def api_tarea_oportunidad_detail(request, tarea_id):
         if 'descripcion' in data:
             tarea.descripcion = data['descripcion']
         if 'estado' in data:
-            if data['estado'] == 'completada':
-                subs_abiertas = tarea.subtareas.exclude(estado__in=['completada', 'cancelada']).count()
-                if subs_abiertas > 0:
-                    return JsonResponse({'error': f'No se puede completar: tiene {subs_abiertas} subtarea(s) pendiente(s)'}, status=400)
             tarea.estado = data['estado']
         if 'prioridad' in data:
             tarea.prioridad = data['prioridad']
