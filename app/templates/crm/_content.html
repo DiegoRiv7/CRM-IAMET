@@ -97,9 +97,17 @@
                         <label>Orden fecha</label>
                         <select id="filterFecha">
                             <option value="">Sin orden</option>
-                            <option value="desc">Reciente → Antiguo</option>
-                            <option value="asc">Antiguo → Reciente</option>
+                            <option value="desc">Reciente &rarr; Antiguo</option>
+                            <option value="asc">Antiguo &rarr; Reciente</option>
                         </select>
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Desde</label>
+                        <input type="date" id="filterDesde" style="font-size:0.75rem;">
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Hasta</label>
+                        <input type="date" id="filterHasta" style="font-size:0.75rem;">
                     </div>
                     <div class="crm-filter-actions">
                         <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">

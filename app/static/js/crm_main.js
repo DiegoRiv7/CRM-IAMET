@@ -3507,7 +3507,9 @@
             producto: '',
             tipo: '',
             etapa: '',
-            fecha: ''
+            fecha: '',
+            desde: '',
+            hasta: ''
         };
 
         // Abrir/Toggle filtros en la isla
@@ -3706,11 +3708,11 @@
         var btnClearIsland = document.getElementById('btnClearIslandFilters');
         if (btnClearIsland) {
             btnClearIsland.addEventListener('click', function () {
-                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo', 'filterEtapa', 'filterFecha'].forEach(function (id) {
+                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo', 'filterEtapa', 'filterFecha', 'filterDesde', 'filterHasta'].forEach(function (id) {
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '', desde: '', hasta: '' };
                 applyFiltersToTable();
             });
         }
@@ -3732,6 +3734,10 @@
                 if (fp) currentFilters.producto = fp.value;
                 if (fe) currentFilters.etapa = fe.value;
                 if (ff) currentFilters.fecha = ff.value;
+                var fDesde = document.getElementById('filterDesde');
+                var fHasta = document.getElementById('filterHasta');
+                if (fDesde) currentFilters.desde = fDesde.value;
+                if (fHasta) currentFilters.hasta = fHasta.value;
                 applyFiltersToTable();
                 closeFilterPanel();
             });
@@ -3744,7 +3750,7 @@
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '', desde: '', hasta: '' };
                 applyFiltersToTable();
             });
         }
@@ -3834,6 +3840,19 @@
                     if (!etapaVal.includes(currentFilters.etapa.toLowerCase())) return false;
                 }
 
+                // Filtro por rango de fechas
+                if (currentFilters.desde || currentFilters.hasta) {
+                    var ts = parseInt(row.dataset.fecha || '0', 10);
+                    if (currentFilters.desde) {
+                        var desdeTs = new Date(currentFilters.desde + 'T00:00:00').getTime() / 1000;
+                        if (ts < desdeTs) return false;
+                    }
+                    if (currentFilters.hasta) {
+                        var hastaTs = new Date(currentFilters.hasta + 'T23:59:59').getTime() / 1000;
+                        if (ts > hastaTs) return false;
+                    }
+                }
+
                 return true;
             });
 
@@ -3900,6 +3919,19 @@
                 if (show && currentFilters.tipo && tipo !== currentFilters.tipo) show = false;
                 if (show && currentFilters.producto && !producto.includes(currentFilters.producto.toLowerCase())) show = false;
                 if (show && currentFilters.contacto && !contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
+
+                // Rango de fechas
+                if (show && (currentFilters.desde || currentFilters.hasta)) {
+                    var ts = parseInt(card.dataset.fecha || '0', 10);
+                    if (currentFilters.desde) {
+                        var desdeTs = new Date(currentFilters.desde + 'T00:00:00').getTime() / 1000;
+                        if (ts < desdeTs) show = false;
+                    }
+                    if (show && currentFilters.hasta) {
+                        var hastaTs = new Date(currentFilters.hasta + 'T23:59:59').getTime() / 1000;
+                        if (ts > hastaTs) show = false;
+                    }
+                }
 
                 card.style.display = show ? '' : 'none';
             });
