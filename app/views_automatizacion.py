@@ -84,6 +84,8 @@ def _regla_to_dict(regla):
         'fecha_fija': regla.fecha_fija.strftime('%Y-%m-%d') if regla.fecha_fija else None,
         'orden': regla.orden,
         'avanzar_etapa_al_completar': regla.avanzar_etapa_al_completar,
+        'incluir_dueno_participante': regla.incluir_dueno_participante,
+        'incluir_dueno_observador': regla.incluir_dueno_observador,
         'responsable': {
             'id': regla.responsable_predeterminado.id,
             'nombre': regla.responsable_predeterminado.get_full_name() or regla.responsable_predeterminado.username,
@@ -207,6 +209,8 @@ def api_automatizacion_crear(request):
         fecha_fija=fecha_fija,
         orden=int(data.get('orden', 0)),
         avanzar_etapa_al_completar=bool(data.get('avanzar_etapa_al_completar', False)),
+        incluir_dueno_participante=bool(data.get('incluir_dueno_participante', False)),
+        incluir_dueno_observador=bool(data.get('incluir_dueno_observador', False)),
         responsable_predeterminado=responsable,
         creada_por=request.user,
     )
@@ -269,6 +273,10 @@ def api_automatizacion_editar(request, regla_id):
         regla.orden = int(data['orden'] or 0)
     if 'avanzar_etapa_al_completar' in data:
         regla.avanzar_etapa_al_completar = bool(data['avanzar_etapa_al_completar'])
+    if 'incluir_dueno_participante' in data:
+        regla.incluir_dueno_participante = bool(data['incluir_dueno_participante'])
+    if 'incluir_dueno_observador' in data:
+        regla.incluir_dueno_observador = bool(data['incluir_dueno_observador'])
 
     if 'fecha_fija' in data:
         if data['fecha_fija']:
@@ -401,7 +409,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
                 prioridad=regla.prioridad_tarea if regla.prioridad_tarea in ['normal', 'alta'] else 'normal',
                 estado='pendiente',
                 fecha_limite=fecha_limite,
-                creado_por=usuario,
+                creado_por=oportunidad.usuario or usuario,
                 asignado_a=responsable,
                 regla_origen=regla,
             )
@@ -409,9 +417,15 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
             # Asignar participantes y observadores
             if regla.participantes_predeterminados.exists():
                 tarea.participantes.set(regla.participantes_predeterminados.all())
+            # Incluir dueño de la oportunidad como participante
+            if regla.incluir_dueno_participante and oportunidad.usuario:
+                tarea.participantes.add(oportunidad.usuario)
 
             if regla.observadores_predeterminados.exists():
                 tarea.observadores.set(regla.observadores_predeterminados.all())
+            # Incluir dueño de la oportunidad como observador
+            if regla.incluir_dueno_observador and oportunidad.usuario:
+                tarea.observadores.add(oportunidad.usuario)
 
             # Registrar ejecución (para evitar duplicados)
             EjecucionAutomatizacion.objects.create(
@@ -512,7 +526,17 @@ def procesar_cadena_reactiva(tarea, usuario):
 
         # Avanzar la etapa de la oportunidad
         oportunidad.etapa_corta = siguiente
-        oportunidad.save(update_fields=['etapa_corta'])
+        # Automatización: Vendido s/PO o c/PO → probabilidad 100% + mes cierre 2 meses después
+        update_fields = ['etapa_corta']
+        if siguiente in ('Vendido s/PO', 'Vendido c/PO'):
+            from datetime import date as _date
+            from dateutil.relativedelta import relativedelta
+            oportunidad.probabilidad_cierre = 100
+            fecha_cierre = _date.today() + relativedelta(months=2)
+            oportunidad.mes_cierre = str(fecha_cierre.month).zfill(2)
+            oportunidad.anio_cierre = fecha_cierre.year
+            update_fields.extend(['probabilidad_cierre', 'mes_cierre', 'anio_cierre'])
+        oportunidad.save(update_fields=update_fields)
 
         resultado['avances'].append({
             'de': etapa_actual,

@@ -40,6 +40,33 @@ document.addEventListener('click', function(ev) {
         });
     }
 
+    // ── Persistencia: reabrir prospecto sin actividad al cargar ──
+    (function() {
+        var pendienteId = localStorage.getItem('_pendienteProspectoSinActividad');
+        if (pendienteId) {
+            // Verificar si tiene actividades
+            fetch('/app/api/prospecto/' + pendienteId + '/actividades/')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var acts = data.actividades || [];
+                    if (acts.length === 0) {
+                        // Sigue sin actividad, reabrir widget
+                        setTimeout(function() {
+                            if (typeof abrirWidgetProspecto === 'function') {
+                                abrirWidgetProspecto(parseInt(pendienteId));
+                            }
+                        }, 1000);
+                    } else {
+                        // Ya tiene actividad, limpiar
+                        localStorage.removeItem('_pendienteProspectoSinActividad');
+                    }
+                })
+                .catch(function() {
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
+                });
+        }
+    })();
+
     // ══════════════════════════════════════════════════════════════
     // A. MAIN TABLE: Load clients with prospecto counts
     // ══════════════════════════════════════════════════════════════
@@ -577,10 +604,65 @@ document.addEventListener('click', function(ev) {
         cambiarEtapaProspecto(etapa);
     };
 
+    function _showProspectoMissingActivityWarning() {
+        var existing = document.getElementById('warnMissingProspectoActivity');
+        if (existing) existing.remove();
+
+        var warn = document.createElement('div');
+        warn.id = 'warnMissingProspectoActivity';
+        warn.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s;';
+        warn.innerHTML = '<div style="background:#fff;border-radius:16px;padding:2rem;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.25);">' +
+            '<div style="width:56px;height:56px;border-radius:50%;background:rgba(255,149,0,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">' +
+            '<svg width="28" height="28" fill="none" stroke="#FF9500" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+            '</div>' +
+            '<h3 style="margin:0 0 0.5rem;font-size:1.15rem;font-weight:700;color:#1D1D1F;">Falta agendar actividad</h3>' +
+            '<p style="margin:0 0 1.5rem;font-size:0.9rem;color:#86868B;line-height:1.5;">Cada prospecto debe tener al menos una actividad programada antes de cerrarlo.</p>' +
+            '<div style="display:flex;gap:0.75rem;justify-content:center;">' +
+            '<button id="warnBtnAgendarProspecto" style="background:#8B5CF6;color:#fff;border:none;padding:0.7rem 1.5rem;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s;" onmouseenter="this.style.transform=\'scale(1.03)\'" onmouseleave="this.style.transform=\'none\'">' +
+            '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
+            'Agendar Actividad' +
+            '</button>' +
+            '</div>' +
+            '</div>';
+        document.body.appendChild(warn);
+
+        // Close on background click
+        warn.addEventListener('click', function(e) { if (e.target === warn) warn.remove(); });
+
+        document.getElementById('warnBtnAgendarProspecto').addEventListener('click', function() {
+            warn.remove();
+            wpAbrirPanelActividades();
+        });
+    }
+
     function cambiarEtapaProspecto(nuevaEtapa, reunionTipo) {
         var id = window._currentProspectoId;
         if (!id) return;
 
+        // Validate: must have at least one activity before closing
+        if (nuevaEtapa === 'cerrado_ganado' || nuevaEtapa === 'cerrado_perdido') {
+            fetch('/app/api/prospecto/' + id + '/actividades/')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var acts = data.actividades || [];
+                    var pendientes = acts.filter(function(a) { return !a.completada; });
+                    if (pendientes.length > 0) {
+                        _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo);
+                    } else {
+                        _showProspectoMissingActivityWarning();
+                    }
+                })
+                .catch(function() {
+                    // Si falla el fetch, mostrar warning de todos modos
+                    _showProspectoMissingActivityWarning();
+                });
+            return;
+        }
+
+        _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo);
+    }
+
+    function _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo) {
         var body = { etapa: nuevaEtapa };
         if (reunionTipo) body.reunion_tipo = reunionTipo;
 
@@ -728,7 +810,7 @@ document.addEventListener('click', function(ev) {
                 '</div>' +
             '</div>';
         body.style.cursor = 'pointer';
-        body.onclick = function() { wpAbrirPanelActividades(); };
+        body.onclick = function() { _mostrarInfoActividad(act); };
     }
 
     function renderActividadesFullList(actividades) {
@@ -778,44 +860,206 @@ document.addEventListener('click', function(ev) {
         if (panel) {
             panel.style.display = '';
             panel.classList.add('active');
+            // Auto-rellenar fecha de hoy y hora actual
+            var now = new Date();
+            var pad = function(n) { return n < 10 ? '0' + n : n; };
+            var fechaEl = document.getElementById('wpActFechaDate');
+            var hiEl = document.getElementById('wpActHoraInicio');
+            var hfEl = document.getElementById('wpActHoraFin');
+            if (fechaEl && !fechaEl.value) {
+                fechaEl.value = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+            }
+            if (hiEl && hiEl.value === '09:00') {
+                hiEl.value = pad(now.getHours()) + ':' + pad(now.getMinutes());
+            }
+            if (hfEl && hfEl.value === '10:00') {
+                var fin = new Date(now.getTime() + 3600000);
+                hfEl.value = pad(fin.getHours()) + ':' + pad(fin.getMinutes());
+            }
         }
     };
 
-    // Nueva actividad button — open the existing activity creation widget
+    // Nueva actividad button — open the prospection activities panel
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpBtnNuevaActividad' || e.target.closest('#wpBtnNuevaActividad')) {
-            // Use the existing oportunidad activity widget
-            var crearWidget = document.getElementById('widgetOppCrearActividad');
-            if (crearWidget) {
-                crearWidget.style.display = 'flex';
-            } else {
-                // Fallback to our panel
-                wpAbrirPanelActividades();
-            }
+            wpAbrirPanelActividades();
         }
     });
 
-    // Agregar actividad
+    // Agregar actividad (formulario nuevo con fecha + hora separados)
     document.addEventListener('click', function(e) {
-        if (e.target.id === 'wpBtnAgregarActividad') {
+        if (e.target.id === 'wpBtnAgregarActividad' || e.target.closest('#wpBtnAgregarActividad')) {
             var tipo = document.getElementById('wpActTipo').value;
             var desc = document.getElementById('wpActDescripcion').value.trim();
-            var fecha = document.getElementById('wpActFecha').value;
-            if (!desc || !fecha || !window._currentProspectoId) return;
+            var fechaDate = document.getElementById('wpActFechaDate').value;
+            var horaInicio = document.getElementById('wpActHoraInicio').value;
+            var horaFin = document.getElementById('wpActHoraFin').value;
+
+            if (!desc) { alert('El nombre de la actividad es obligatorio'); return; }
+            if (!fechaDate) { alert('La fecha es obligatoria'); return; }
+            if (!horaInicio || !horaFin) { alert('Las horas son obligatorias'); return; }
+            if (horaInicio >= horaFin) { alert('La hora de fin debe ser posterior a la de inicio'); return; }
+            if (!window._currentProspectoId) return;
+
+            var fechaProgramada = fechaDate + 'T' + horaInicio + ':00';
 
             fetch('/app/api/prospecto/' + window._currentProspectoId + '/actividades/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({ tipo: tipo, descripcion: desc, fecha_programada: fecha })
+                body: JSON.stringify({ tipo: tipo, descripcion: desc, fecha_programada: fechaProgramada, desc_extra: (document.getElementById('wpActDescExtra') || {}).value || '' })
             }).then(function(r) { return r.json(); }).then(function(data) {
                 if (data.success) {
                     document.getElementById('wpActDescripcion').value = '';
-                    document.getElementById('wpActFecha').value = '';
+                    document.getElementById('wpActFechaDate').value = '';
                     cargarActividadesProspecto(window._currentProspectoId);
+                    // Refrescar calendario inmediatamente
+                    if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+                    // Limpiar persistencia (ya tiene actividad nueva)
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
+                    // Cerrar panel
+                    var panel = document.getElementById('widgetProspectoActividades');
+                    if (panel) { panel.style.display = 'none'; panel.classList.remove('active'); }
+                    // Toast
+                    var toast = document.createElement('div');
+                    toast.textContent = 'Actividad agendada correctamente';
+                    toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1D1D1F;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;';
+                    document.body.appendChild(toast);
+                    setTimeout(function() { toast.remove(); }, 3000);
+                } else {
+                    alert(data.error || 'Error al crear actividad');
                 }
-            });
+            }).catch(function() { alert('Error de conexion'); });
         }
     });
+
+    // ── Mostrar info de actividad (en vez de abrir formulario) ──
+    function _mostrarInfoActividad(act) {
+        var existing = document.getElementById('wpActInfoOverlay');
+        if (existing) existing.remove();
+
+        var prospData = window._currentProspectoData;
+        var prospectoNombre = prospData ? (prospData.nombre || '') : '';
+
+        var overlay = document.createElement('div');
+        overlay.id = 'wpActInfoOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:10400;display:flex;align-items:center;justify-content:center;';
+        overlay.innerHTML =
+            '<div style="background:#fff;border-radius:16px;width:480px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">' +
+                // Header morado
+                '<div style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);padding:1.5rem;position:relative;">' +
+                    '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
+                    '<div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">' +
+                        '<svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+                    '</div>' +
+                    '<div style="font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px;">' + escapeHtml(act.descripcion) + '</div>' +
+                    '<div style="font-size:0.82rem;color:rgba(255,255,255,0.8);">' + escapeHtml(act.fecha_programada || '') + '</div>' +
+                '</div>' +
+                // Body
+                '<div style="padding:1.5rem;">' +
+                    // Descripcion (si tiene)
+                    '<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px;margin-bottom:16px;">' +
+                        '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:4px;">Descripcion</div>' +
+                        '<div style="font-size:0.88rem;color:#1D1D1F;">' + escapeHtml(act.descripcion) + '</div>' +
+                    '</div>' +
+                    // Creador + Estado
+                    '<div style="display:flex;gap:2rem;margin-bottom:16px;">' +
+                        '<div>' +
+                            '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Creador</div>' +
+                            '<div style="font-size:0.88rem;font-weight:500;color:#1D1D1F;">' + escapeHtml(act.usuario || '—') + '</div>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Estado</div>' +
+                            (act.completada
+                                ? '<span style="font-size:0.82rem;font-weight:600;color:#34C759;">Completada</span>'
+                                : '<span style="font-size:0.82rem;font-weight:600;color:#FF9500;">Pendiente</span>') +
+                        '</div>' +
+                    '</div>' +
+                    // Relacionado a
+                    '<div style="border-top:1px dashed #E5E7EB;padding-top:14px;">' +
+                        '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:6px;">Relacionado a</div>' +
+                        '<div onclick="document.getElementById(\'wpActInfoOverlay\').remove();" style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:8px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;" onmouseover="this.style.background=\'#EDE9FE\'" onmouseout="this.style.background=\'#F3E8FF\'">' +
+                            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
+                            'Prospecto: ' + escapeHtml(prospectoNombre) + ' &rsaquo;' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                // Footer
+                '<div style="padding:1rem 1.5rem;border-top:1px solid #E5E7EB;background:#F9FAFB;display:flex;justify-content:center;gap:12px;border-radius:0 0 16px 16px;">' +
+                    (act.completada
+                        ? '<span style="padding:0.6rem 2rem;background:#E5E7EB;color:#9CA3AF;border-radius:8px;font-weight:600;font-size:0.9rem;">Ya completada</span>'
+                        : '<button onclick="_wpCompletarActividad(' + act.id + ')" style="padding:0.6rem 2rem;background:#34C759;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Completar</button>') +
+                    '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="padding:0.6rem 2rem;background:#8B5CF6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    }
+
+    // ── Completar actividad prospecto ──
+    window._wpCompletarActividad = function(actividadId) {
+        fetch('/app/api/prospecto-actividad/' + actividadId + '/toggle/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success) {
+                var overlay = document.getElementById('wpActInfoOverlay');
+                if (overlay) overlay.remove();
+                if (window._currentProspectoId) cargarActividadesProspecto(window._currentProspectoId);
+                // También refrescar calendario si está abierto
+                if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+                var toast = document.createElement('div');
+                toast.textContent = 'Actividad completada';
+                toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#34C759;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;font-weight:600;';
+                document.body.appendChild(toast);
+                setTimeout(function() { toast.remove(); }, 3000);
+            }
+        });
+    };
+
+    // ── Participantes de actividad prospecto ──
+    var _wpParticipantesSel = [];
+
+    window.wpSearchParticipantes = function(query) {
+        var dropdown = document.getElementById('wpActParticipantesDropdown');
+        if (!dropdown) return;
+        if (!query || query.length < 2) { dropdown.style.display = 'none'; return; }
+
+        fetch('/app/api/admin/usuarios/').then(function(r) { return r.json(); }).then(function(data) {
+            var users = (data.usuarios || []).filter(function(u) {
+                var name = ((u.first_name || '') + ' ' + (u.last_name || '') + ' ' + (u.username || '')).toLowerCase();
+                var alreadySel = _wpParticipantesSel.some(function(s) { return s.id === u.id; });
+                return name.includes(query.toLowerCase()) && !alreadySel;
+            });
+            if (users.length === 0) { dropdown.style.display = 'none'; return; }
+            dropdown.innerHTML = users.slice(0, 8).map(function(u) {
+                var name = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+                return '<div onclick="wpAddParticipante(' + u.id + ',\'' + name.replace(/'/g, "\\'") + '\')" style="padding:8px 12px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid #F3F4F6;" onmouseover="this.style.background=\'#F3F4F6\'" onmouseout="this.style.background=\'#fff\'">' + name + '</div>';
+            }).join('');
+            dropdown.style.display = '';
+        });
+    };
+
+    window.wpAddParticipante = function(id, name) {
+        if (_wpParticipantesSel.some(function(s) { return s.id === id; })) return;
+        _wpParticipantesSel.push({ id: id, name: name });
+        _wpRenderParticipantes();
+        document.getElementById('wpActParticipantesSearch').value = '';
+        document.getElementById('wpActParticipantesDropdown').style.display = 'none';
+    };
+
+    window.wpRemoveParticipante = function(id) {
+        _wpParticipantesSel = _wpParticipantesSel.filter(function(s) { return s.id !== id; });
+        _wpRenderParticipantes();
+    };
+
+    function _wpRenderParticipantes() {
+        var container = document.getElementById('wpActParticipantesContainer');
+        if (!container) return;
+        container.innerHTML = _wpParticipantesSel.map(function(p) {
+            return '<span style="display:inline-flex;align-items:center;gap:4px;background:#DBEAFE;color:#1E40AF;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:500;">' +
+                p.name + '<span onclick="event.stopPropagation();wpRemoveParticipante(' + p.id + ')" style="cursor:pointer;font-size:0.85rem;color:#6B7280;">&times;</span></span>';
+        }).join('');
+    }
 
     // ── Cotizaciones ──
     function cargarCotizacionesProspecto(data) {
@@ -929,17 +1173,46 @@ document.addEventListener('click', function(ev) {
     // ── Close prospecto detail widget ──
     document.addEventListener('click', function(e) {
         if (e.target.id === 'prospectoClose') {
-            var w = document.getElementById('widgetProspecto');
-            if (w) w.classList.remove('active');
+            _intentarCerrarProspecto();
         }
     });
+
+    function _intentarCerrarProspecto() {
+        var id = window._currentProspectoId;
+        if (!id) {
+            var w = document.getElementById('widgetProspecto');
+            if (w) w.classList.remove('active');
+            return;
+        }
+        // Verificar si tiene actividades antes de cerrar
+        fetch('/app/api/prospecto/' + id + '/actividades/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var acts = data.actividades || [];
+                var pendientes = acts.filter(function(a) { return !a.completada; });
+                if (pendientes.length > 0) {
+                    // Tiene actividades pendientes, puede cerrar
+                    var w = document.getElementById('widgetProspecto');
+                    if (w) w.classList.remove('active');
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
+                } else {
+                    // No tiene actividades pendientes, debe agendar una nueva
+                    _showProspectoMissingActivityWarning();
+                }
+            })
+            .catch(function() {
+                // Si falla, dejar cerrar
+                var w = document.getElementById('widgetProspecto');
+                if (w) w.classList.remove('active');
+            });
+    }
 
     // Close on overlay click
     var overlay = document.getElementById('widgetProspecto');
     if (overlay) {
         overlay.addEventListener('click', function(e) {
             if (e.target === overlay) {
-                overlay.classList.remove('active');
+                _intentarCerrarProspecto();
             }
         });
     }
@@ -957,7 +1230,7 @@ document.addEventListener('click', function(ev) {
             // Close prospecto detail widget
             var w = document.getElementById('widgetProspecto');
             if (w && w.classList.contains('active')) {
-                w.classList.remove('active');
+                _intentarCerrarProspecto();
                 return;
             }
             // Close client widget

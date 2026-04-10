@@ -3382,7 +3382,7 @@
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 10300;
+        z-index: 10450;
         padding: 1rem;
         backdrop-filter: blur(4px);
     }

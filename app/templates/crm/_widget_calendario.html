@@ -367,9 +367,11 @@
                         var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
                         var isCompletada = esTarea ? (ep.estado === 'completada') : ep.completada;
                         var title = woEscape(ev.title);
-                        var color   = esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C';
-                        var bgTint  = esTarea ? 'rgba(255,149,0,0.09)' : hasOpp ? 'rgba(0,82,212,0.07)' : 'rgba(29,29,31,0.06)';
-                        var borderC = esTarea ? 'rgba(255,149,0,0.3)' : hasOpp ? 'rgba(0,82,212,0.25)' : 'rgba(29,29,31,0.16)';
+                        // Usar color del evento si está definido (ej: morado para prospectos)
+                        var evColor = stored && stored.color ? stored.color : null;
+                        var color   = evColor || (esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C');
+                        var bgTint  = evColor ? (evColor + '12') : (esTarea ? 'rgba(255,149,0,0.09)' : hasOpp ? 'rgba(0,82,212,0.07)' : 'rgba(29,29,31,0.06)');
+                        var borderC = evColor ? (evColor + '40') : (esTarea ? 'rgba(255,149,0,0.3)' : hasOpp ? 'rgba(0,82,212,0.25)' : 'rgba(29,29,31,0.16)');
                         var opacityStyle = isCompletada ? 'opacity:0.38;' : '';
                         var strikeStyle = isCompletada ? 'text-decoration:line-through;' : '';
                         return { html:
@@ -1055,7 +1057,8 @@
         var isNow = now>=startD && now<=endD;
         var isOverdue = now>endD;
 
-        document.getElementById('calDetailType').textContent = esTarea ? 'Tarea' : hasOpp ? 'Oportunidad' : 'Actividad';
+        var esProspecto = evt.color === '#8B5CF6';
+        document.getElementById('calDetailType').textContent = esTarea ? 'Tarea' : esProspecto ? 'Prospecto' : hasOpp ? 'Oportunidad' : 'Actividad';
         document.getElementById('calDetailTitle').textContent = evt.title || '—';
         document.getElementById('calDetailTime').textContent = startFmt + ' – ' + endFmt;
 
@@ -1082,7 +1085,22 @@
         } else { oppRow.style.display = 'none'; }
 
         var descEl = document.getElementById('calDetailDesc');
-        descEl.textContent = evt.description || 'Sin descripción.';
+        var rawDesc = evt.description || '';
+        // Detectar actividad de programa de obra (proyecto)
+        var progMatch = rawDesc.match(/\[programacion_actividad_id:(\d+)\]/);
+        var progActId = progMatch ? parseInt(progMatch[1]) : null;
+        // Limpiar TODA metadata de prospecto y de programa de obra
+        var descClean = rawDesc;
+        descClean = descClean.replace(/\[programacion_actividad_id:\d+\]/g, '');
+        var cut = descClean.indexOf('prospecto_id:');
+        if (cut > 0) { descClean = descClean.substring(0, cut); }
+        else if (cut === 0) { descClean = ''; }
+        cut = descClean.indexOf('Prospecto:');
+        if (cut === 0) { descClean = ''; }
+        descClean = descClean.replace(/[-\s]+$/, '').trim();
+        descEl.textContent = descClean || 'Sin descripción.';
+        // Guardar para uso posterior en los botones
+        window._calCurrentProgActId = progActId;
 
         window._calCurrentActividadId = esTarea ? null : id;
         window._calCurrentOppId = hasOpp ? ep.opportunity.id : null;
@@ -1111,7 +1129,15 @@
             btnReprogram.textContent = 'Ver Detalle';
             btnReprogram.style.background = '#F2F2F7';
             btnReprogram.style.color = '#1D1D1F';
-            btnReprogram.onclick = function(){ woVerActividadGenerica(window._calCurrentActividadId); };
+            btnReprogram.onclick = function(){
+                if (window._calCurrentProgActId && typeof window.proyectosVerActividadDetalle === 'function') {
+                    window.proyectosVerActividadDetalle(window._calCurrentProgActId);
+                } else if (esProspecto && typeof _calMostrarInfoProspecto === 'function') {
+                    _calMostrarInfoProspecto(evt);
+                } else if (typeof woVerActividadGenerica === 'function') {
+                    woVerActividadGenerica(window._calCurrentActividadId);
+                }
+            };
             btnReprogram.onmouseover = function(){ this.style.background='#E5E5EA'; };
             btnReprogram.onmouseout = function(){ this.style.background='#F2F2F7'; };
             if (isCompletada) {
@@ -1128,7 +1154,20 @@
                 btnListo.style.background = '#34C759';
                 btnListo.style.color = '#fff';
                 btnListo.dataset.tid = '';
-                btnListo.onclick = function(){ calDetailCompletar(); };
+                btnListo.onclick = function(){
+                    // Si es actividad de programa de obra, abrir widget de evidencia
+                    if (window._calCurrentProgActId && typeof window.proyectosVerActividadDetalle === 'function') {
+                        window.proyectosVerActividadDetalle(window._calCurrentProgActId);
+                        // Esperar a que cargue y disparar el flujo de completar
+                        setTimeout(function(){
+                            if (typeof window.proyectosIniciarCompletar === 'function') {
+                                window.proyectosIniciarCompletar();
+                            }
+                        }, 400);
+                    } else {
+                        calDetailCompletar();
+                    }
+                };
                 btnListo.onmouseover = function(){ this.style.background='#2DBD4E'; };
                 btnListo.onmouseout = function(){ this.style.background='#34C759'; };
             }
@@ -1147,7 +1186,23 @@
         } else if (!esTarea) {
             fetch('/app/api/actividades/'+id+'/')
                 .then(function(r){ return r.ok?r.json():null; })
-                .then(function(d){ if(!d) return; var f=d.description||d.descripcion||''; descEl.textContent=f||'Sin descripción.'; evt.description=f; })
+                .then(function(d){
+                    if(!d) return;
+                    var f=d.description||d.descripcion||'';
+                    evt.description=f;
+                    // Detectar y guardar id de programa de obra (para Ver Detalle)
+                    var pm = f.match(/\[programacion_actividad_id:(\d+)\]/);
+                    window._calCurrentProgActId = pm ? parseInt(pm[1]) : null;
+                    // Limpiar marcador de programa de obra
+                    var clean = f.replace(/\[programacion_actividad_id:\d+\]/g, '');
+                    // Limpiar metadata de prospecto
+                    var ci = clean.indexOf('prospecto_id:');
+                    if (ci > 0) clean = clean.substring(0, ci);
+                    else if (ci === 0) clean = '';
+                    if (clean.indexOf('Prospecto:') === 0) clean = '';
+                    clean = clean.replace(/[-\s]+$/, '').trim();
+                    descEl.textContent = clean || 'Sin descripción.';
+                })
                 .catch(function(){});
         }
     };
@@ -1197,6 +1252,23 @@
                 if (r.ok) {
                     calHidePanelDetail();
                     calGlobalRefetch();
+                    // Abrir widget de la oportunidad o prospecto para forzar nueva actividad
+                    var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(id); });
+                    if (evt) {
+                        var ep = evt.extendedProps || {};
+                        if (evt.color === '#8B5CF6') {
+                            // Prospecto: extraer prospecto_id y abrir widget
+                            var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
+                            if (pMatch && typeof abrirWidgetProspecto === 'function') {
+                                setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 600);
+                            }
+                        } else if (ep.opportunity && ep.opportunity.id) {
+                            // Oportunidad: abrir widget de oportunidad (delay para que PATCH se procese)
+                            if (typeof openDetalle === 'function') {
+                                setTimeout(function(){ openDetalle(ep.opportunity.id); }, 600);
+                            }
+                        }
+                    }
                 } else {
                     r.json().then(function(d){ alert(d.error || 'No se pudo completar la actividad.'); }).catch(function(){ alert('No se pudo completar la actividad.'); });
                 }
@@ -1371,7 +1443,7 @@
             var tareasData=results[1];
             var tareas=tareasData.tareas||tareasData.results||[];
             _globalEvents = actividades.map(function(e){
-                var evtColor=e.opportunity?'#0052D4':'#1D1D1F';
+                var evtColor = e.color || (e.opportunity ? '#0052D4' : '#1D1D1F');
                 return { id:e.id, title:e.title, start:e.start, end:e.end, description:e.description, color:evtColor,
                     extendedProps:{ participants:e.participants, opportunity:e.opportunity, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada } };
             });
@@ -1651,4 +1723,104 @@
         }
         calUpdateNavTitle();
     });
+
+    // Widget de detalle de actividad de prospecto (morado, desde calendario)
+    window._calMostrarInfoProspecto = function(evt) {
+        var existing = document.getElementById('calProspectoInfoOverlay');
+        if (existing) existing.remove();
+        var ep = evt.extendedProps || {};
+        var startD = new Date(evt.start);
+        var endD = evt.end ? new Date(evt.end) : new Date(startD.getTime()+3600000);
+        var pad = function(n){return String(n).padStart(2,'0');};
+        var dateFmt = pad(startD.getDate())+'/'+pad(startD.getMonth()+1)+'/'+startD.getFullYear();
+        var timeFmt = pad(startD.getHours())+':'+pad(startD.getMinutes())+' – '+pad(endD.getHours())+':'+pad(endD.getMinutes());
+        var isCompletada = ep.completada;
+        var creador = ep.creado_por ? ep.creado_por.text : '—';
+
+        // Extraer prospecto_id del campo descripcion (puede estar al final despues de ---prospecto_id:)
+        var prospectoId = null;
+        var prospectoNombre = '';
+        var desc = evt.description || '';
+        var prospMatch = desc.match(/---prospecto_id:(\d+)\|([^|]*)\|?/);
+        if (prospMatch) {
+            prospectoId = prospMatch[1];
+            prospectoNombre = prospMatch[2] || '';
+            desc = desc.replace(/\n?---prospecto_id:.*$/, '').trim();
+        } else if (desc.indexOf('prospecto_id:') === 0) {
+            // Formato viejo sin ---
+            var parts = desc.split('|');
+            prospectoId = parts[0].replace('prospecto_id:', '');
+            prospectoNombre = parts[1] || '';
+            desc = '';
+        }
+
+        var prospectoLinkHtml = prospectoId
+            ? '<div onclick="document.getElementById(\'calProspectoInfoOverlay\').remove();if(typeof abrirWidgetProspecto===\'function\')abrirWidgetProspecto('+prospectoId+');" style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:8px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'#EDE9FE\'" onmouseout="this.style.background=\'#F3E8FF\'">' +
+                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
+                'Prospecto: ' + prospectoNombre.replace(/</g,'&lt;') + ' &rsaquo;</div>'
+            : '<div style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:6px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Prospecto</div>';
+
+        var overlay = document.createElement('div');
+        overlay.id = 'calProspectoInfoOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+        overlay.innerHTML =
+            '<div style="background:#fff;border-radius:16px;width:480px;max-width:92vw;box-shadow:0 25px 60px rgba(0,0,0,0.3);overflow:hidden;">' +
+                '<div style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);padding:1.5rem;position:relative;">' +
+                    '<button onclick="document.getElementById(\'calProspectoInfoOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
+                    '<div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">' +
+                        '<svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+                    '</div>' +
+                    '<div style="font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px;">' + (evt.title || '').replace(/</g,'&lt;') + '</div>' +
+                    '<div style="font-size:0.82rem;color:rgba(255,255,255,0.8);">' + dateFmt + ' &middot; ' + timeFmt + '</div>' +
+                '</div>' +
+                '<div style="padding:1.5rem;">' +
+                    (desc ? '<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px;margin-bottom:16px;"><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:4px;">Descripcion</div><div style="font-size:0.88rem;color:#1D1D1F;">' + desc.replace(/</g,'&lt;') + '</div></div>' : '') +
+                    '<div style="display:flex;gap:2rem;margin-bottom:16px;">' +
+                        '<div><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Creador</div><div style="font-size:0.88rem;font-weight:500;color:#1D1D1F;">' + creador.replace(/</g,'&lt;') + '</div></div>' +
+                        '<div><div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:3px;">Estado</div>' +
+                            (isCompletada ? '<span style="font-size:0.82rem;font-weight:600;color:#34C759;">Completada</span>' : '<span style="font-size:0.82rem;font-weight:600;color:#FF9500;">Pendiente</span>') +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="border-top:1px dashed #E5E7EB;padding-top:14px;">' +
+                        '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:6px;">Relacionado a</div>' +
+                        prospectoLinkHtml +
+                    '</div>' +
+                '</div>' +
+                '<div style="padding:1rem 1.5rem;border-top:1px solid #E5E7EB;background:#F9FAFB;display:flex;justify-content:center;gap:12px;border-radius:0 0 16px 16px;">' +
+                    (isCompletada
+                        ? '<span style="padding:0.6rem 2rem;background:#E5E7EB;color:#9CA3AF;border-radius:8px;font-weight:600;">Ya completada</span>'
+                        : '<button onclick="_calCompletarProspecto(' + evt.id + ')" style="padding:0.6rem 2rem;background:#34C759;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Completar</button>') +
+                    '<button onclick="document.getElementById(\'calProspectoInfoOverlay\').remove()" style="padding:0.6rem 2rem;background:#8B5CF6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    };
+
+    window._calCompletarProspecto = function(actividadId) {
+        fetch('/app/api/actividades/' + actividadId + '/', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+            body: JSON.stringify({ completada: true })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            var overlay = document.getElementById('calProspectoInfoOverlay');
+            if (overlay) overlay.remove();
+            // Recargar calendario inmediatamente
+            if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+            // Abrir widget del prospecto para forzar nueva actividad
+            var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(actividadId); });
+            if (evt) {
+                var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
+                if (pMatch && typeof abrirWidgetProspecto === 'function') {
+                    setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 300);
+                }
+            }
+            // Toast
+            var toast = document.createElement('div');
+            toast.textContent = 'Actividad completada';
+            toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#34C759;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;font-weight:600;';
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3000);
+        }).catch(function(e) { console.error('Error completando actividad:', e); });
+    };
 </script>

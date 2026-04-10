@@ -55,6 +55,8 @@ class UserProfile(models.Model):
         ('ingeniero', 'Ingeniero'),
     ]
     rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='vendedor', verbose_name="Rol")
+    oportunidades_ancladas = models.JSONField(default=list, blank=True, verbose_name="IDs de oportunidades ancladas")
+    tareas_ancladas = models.JSONField(default=list, blank=True, verbose_name="IDs de tareas ancladas")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
@@ -2326,6 +2328,14 @@ class Tarea(models.Model):
         related_name='tareas_creadas',
         verbose_name="Regla de automatizacion que creo esta tarea"
     )
+    tarea_padre = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='subtareas',
+        verbose_name="Tarea padre"
+    )
 
     class Meta:
         verbose_name = "Tarea"
@@ -2402,6 +2412,7 @@ class Actividad(models.Model):
         ('#AF52DE', 'Morado'),
         ('#5856D6', 'Índigo'),
         ('#FF2D55', 'Rosa'),
+        ('#8B5CF6', 'Violeta'),
     ]
 
     TIPO_ACTIVIDAD_CHOICES = [
@@ -3391,6 +3402,25 @@ class ProgramacionActividad(models.Model):
         related_name='actividades_programadas_creadas',
         verbose_name="Creado por"
     )
+    descripcion = models.TextField(blank=True, default='', verbose_name="Descripción")
+    vehiculos = models.CharField(max_length=255, blank=True, default='', verbose_name="Vehículos")
+    completada = models.BooleanField(default=False, verbose_name="Completada")
+    fecha_completada = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de completada")
+    completada_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='actividades_programadas_completadas',
+        verbose_name="Completada por"
+    )
+    evidencia_texto = models.TextField(blank=True, default='', verbose_name="Evidencia escrita")
+    actividad_calendario = models.ForeignKey(
+        'Actividad',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='programacion_actividades',
+        verbose_name="Actividad de calendario vinculada"
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -3566,6 +3596,10 @@ class ReglaAutomatizacion(models.Model):
         related_name='reglas_como_observador',
         verbose_name="Observadores predeterminados"
     )
+
+    # Incluir dueño de la oportunidad como participante/observador
+    incluir_dueno_participante = models.BooleanField(default=False, verbose_name="Incluir dueño como participante")
+    incluir_dueno_observador = models.BooleanField(default=False, verbose_name="Incluir dueño como observador")
 
     # Metadatos
     creada_por = models.ForeignKey(
@@ -4136,6 +4170,7 @@ class ProyectoEvidencia(models.Model):
         ('tarea', 'Tarea'),
         ('orden_compra', 'Orden de Compra'),
         ('partida', 'Partida'),
+        ('programacion_actividad', 'Actividad de Programa de Obra'),
     ]
     entidad_tipo = models.CharField(max_length=50, choices=ENTITY_CHOICES)
     entidad_id = models.PositiveIntegerField()

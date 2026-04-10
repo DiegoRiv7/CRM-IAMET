@@ -31,8 +31,13 @@
             if (anioFilter) params.set('anio', anioFilter.value);
             // Preservar tab actual — detectar desde URL o desde tab activo visible
             if (!params.get('tab')) {
-                var activeTab = document.querySelector('.crm-tab-btn.active, [data-tab].active');
-                params.set('tab', activeTab ? (activeTab.dataset.tab || 'crm') : 'crm');
+                var activeTab = document.querySelector('.crm-tab.active');
+                if (activeTab && activeTab.href) {
+                    var tabMatch = activeTab.href.match(/tab=([^&]+)/);
+                    params.set('tab', tabMatch ? tabMatch[1] : 'crm');
+                } else {
+                    params.set('tab', 'crm');
+                }
             }
             // Preserve vendor filter
             var vfChecks = document.querySelectorAll('.vf-user:checked');
@@ -91,6 +96,89 @@
                 applyFilter();
             });
         });
+
+        // Toggle pin oportunidad
+        setTimeout(function() {
+            document.querySelectorAll('.crm-pin').forEach(function(pin) {
+                pin.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    var oppId = (this.getAttribute('data-pin-id') || '').replace(/\s/g, '').replace(/\u00A0/g, '');
+                    if (!oppId) return;
+                    var self = this;
+                    var card = self.closest('.crm-postit');
+                    var grid = document.getElementById('crmCardsGrid');
+                    var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                    fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
+                    }).then(function(r) { return r.json(); }).then(function(data) {
+                        if (data.success) {
+                            self.classList.toggle('pinned', data.anclada);
+                            var svg = self.querySelector('svg');
+                            var path = self.querySelector('path');
+                            if (data.anclada) {
+                                if (svg) { svg.setAttribute('fill', '#EF4444'); svg.setAttribute('stroke', '#EF4444'); }
+                                // Agregar agujero
+                                if (card && !card.querySelector('.crm-pin-hole-dyn')) {
+                                    var hole = document.createElement('div');
+                                    hole.className = 'crm-pin-hole-dyn';
+                                    hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
+                                    card.appendChild(hole);
+                                }
+                                // Mover al inicio
+                                if (card && grid) { grid.insertBefore(card, grid.firstChild); }
+                            } else {
+                                if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', '#9CA3AF'); }
+                                var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
+                                if (h) h.remove();
+                            }
+                        }
+                    });
+                });
+            });
+        }, 500);
+
+        // CRM View Toggle (cards vs tabla) — cards es el default
+        var _crmViewMode = localStorage.getItem('crmViewMode') || 'cards';
+        window.toggleCrmView = function() {
+            _crmViewMode = _crmViewMode === 'cards' ? 'table' : 'cards';
+            localStorage.setItem('crmViewMode', _crmViewMode);
+            _applyCrmView();
+        };
+        function _applyCrmView() {
+            var cardsView = document.getElementById('crmViewCards');
+            var tableView = document.getElementById('crmViewTable');
+            var icon = document.getElementById('crmViewIcon');
+            if (!cardsView || !tableView) return;
+            if (_crmViewMode === 'cards') {
+                cardsView.style.display = '';
+                tableView.style.display = 'none';
+                if (icon) icon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
+            } else {
+                cardsView.style.display = 'none';
+                tableView.style.display = '';
+                if (icon) icon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2"/>';
+            }
+        }
+        _applyCrmView();
+
+        // Buscador: filtrar cards en tiempo real
+        var _crmSearchEl = document.getElementById('crmSearch');
+        if (_crmSearchEl) {
+            _crmSearchEl.addEventListener('input', function() {
+                // Filtrar cards
+                if (typeof _applyFiltersToCards === 'function') _applyFiltersToCards();
+                // Filtrar tabla también
+                var q = this.value.toLowerCase();
+                var tbody = document.getElementById('crmTbody');
+                if (tbody) {
+                    tbody.querySelectorAll('tr.crm-data-row').forEach(function(row) {
+                        row.style.display = (!q || row.textContent.toLowerCase().includes(q)) ? '' : 'none';
+                    });
+                }
+            });
+        }
 
         // Init vendor filter from URL
         var initVendedores = _CRM_CONFIG.vendedoresFilter;
@@ -1429,8 +1517,7 @@
                 var esBitrix = r.tipo_negociacion === 'bitrix_proyecto';
                 var prodCells = '';
                 if (esBitrix) {
-                    // Pipeline Bitrix24: todas las celdas de producto muestran —, sin importes
-                    var totalCols = PRODUCT_COLS.length + 1; // +1 por "Otros"
+                    var totalCols = PRODUCT_COLS.length + 1;
                     for (var i = 0; i < totalCols; i++) {
                         prodCells += '<td style="text-align:right;padding:16px 8px;"><span class="money-zero">—</span></td>';
                     }
@@ -1439,10 +1526,8 @@
                         var match = productMatch(r.producto, PRODUCT_COLS[i]);
                         prodCells += '<td style="text-align:right;padding:16px 8px;">' + (match ? '<span style="color:#2563EB;font-weight:700;">$' + fmtShort(r.monto) + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
                     }
-                    // Otros
                     prodCells += '<td style="text-align:right;padding:16px 8px;">' + (isOtherProduct(r.producto) && r.producto ? '<span style="color:#2563EB;font-weight:700;">$' + fmtShort(r.monto) + '</span>' : '<span style="color:#D1D5DB;">$0</span>') + '</td>';
                 }
-
                 var nameStyle = '';
                 var vencidaIcon = '';
                 var rowExtraClass = '';
@@ -1451,24 +1536,15 @@
                     vencidaIcon = '<span title="Actividad vencida" style="color:#EF4444;font-size:0.7rem;margin-left:4px;">&#9888;</span>';
                     rowExtraClass = ' crm-row-vencida';
                 }
-
-                // Badge para proyectos Bitrix24
-                var bitrixBadge = esBitrix
-                    ? '<span style="display:inline-block;background:#5856D6;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;letter-spacing:0.04em;">B24</span>'
-                    : '';
-
-                var totalCell = esBitrix
-                    ? '<td style="text-align:right;padding:16px 8px;font-weight:900;border-left:1px solid #F3F4F6;"><span style="color:#D1D5DB;">$0</span></td>'
-                    : '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.monto + '</td>';
+                var bitrixBadge = esBitrix ? '<span style="display:inline-block;background:#5856D6;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;">B24</span>' : '';
+                var totalCell = esBitrix ? '<td style="text-align:right;padding:16px 8px;font-weight:900;border-left:1px solid #F3F4F6;"><span style="color:#D1D5DB;">$0</span></td>' : '<td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">$' + r.monto + '</td>';
 
                 return '<tr class="crm-data-row' + rowExtraClass + '" data-opp-id="' + r.id + '" data-tipo="' + (r.tipo_negociacion || '') + '" data-etapa="' + (r.etapa || '') + '" data-fecha="' + (r.fecha_ts || '0') + '">' +
                     '<td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="' + r.id + '"' + nameStyle + '>' + r.oportunidad + vencidaIcon + '</span>' + bitrixBadge +
                     '<span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="' + (r.cliente_id || '') + '" data-tab="crm">' + (r.cliente || '- Sin Cliente -') + '</span></td>' +
                     '<td class="px-2 py-4 text-gray-600">' + r.contacto + '</td>' +
                     '<td class="px-2 py-4 text-gray-400 text-xs italic">' + r.area + '</td>' +
-                    prodCells +
-                    totalCell +
-                    '</tr>';
+                    prodCells + totalCell + '</tr>';
             }
 
             function buildFacturadoRow(r) {
@@ -3431,7 +3507,9 @@
             producto: '',
             tipo: '',
             etapa: '',
-            fecha: ''
+            fecha: '',
+            desde: '',
+            hasta: ''
         };
 
         // Abrir/Toggle filtros en la isla
@@ -3626,15 +3704,33 @@
         // Filtro orden por fecha
         setupIslandFilterListener('filterFecha', 'fecha');
 
+        // Filtro por rango de fechas: aplicar al cambiar "Hasta"
+        var _fDesde = document.getElementById('filterDesde');
+        var _fHasta = document.getElementById('filterHasta');
+        if (_fHasta) {
+            _fHasta.addEventListener('change', function() {
+                currentFilters.desde = _fDesde ? _fDesde.value : '';
+                currentFilters.hasta = this.value;
+                applyFiltersToTable();
+            });
+        }
+        if (_fDesde) {
+            _fDesde.addEventListener('change', function() {
+                currentFilters.desde = this.value;
+                currentFilters.hasta = _fHasta ? _fHasta.value : '';
+                if (currentFilters.hasta) applyFiltersToTable();
+            });
+        }
+
         // Limpiar filtros (Island button)
         var btnClearIsland = document.getElementById('btnClearIslandFilters');
         if (btnClearIsland) {
             btnClearIsland.addEventListener('click', function () {
-                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo', 'filterEtapa', 'filterFecha'].forEach(function (id) {
+                ['filterCliente', 'filterContacto', 'filterArea', 'filterProducto', 'filterMonto', 'filterTipo', 'filterEtapa', 'filterFecha', 'filterDesde', 'filterHasta'].forEach(function (id) {
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '', desde: '', hasta: '' };
                 applyFiltersToTable();
             });
         }
@@ -3656,6 +3752,10 @@
                 if (fp) currentFilters.producto = fp.value;
                 if (fe) currentFilters.etapa = fe.value;
                 if (ff) currentFilters.fecha = ff.value;
+                var fDesde = document.getElementById('filterDesde');
+                var fHasta = document.getElementById('filterHasta');
+                if (fDesde) currentFilters.desde = fDesde.value;
+                if (fHasta) currentFilters.hasta = fHasta.value;
                 applyFiltersToTable();
                 closeFilterPanel();
             });
@@ -3668,7 +3768,7 @@
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '' };
+                currentFilters = { cliente: '', area: '', contacto: '', monto: '', producto: '', tipo: '', etapa: '', fecha: '', desde: '', hasta: '' };
                 applyFiltersToTable();
             });
         }
@@ -3758,6 +3858,21 @@
                     if (!etapaVal.includes(currentFilters.etapa.toLowerCase())) return false;
                 }
 
+                // Filtro por rango de fechas (usa timestamp de fecha_actualizacion)
+                if (currentFilters.desde || currentFilters.hasta) {
+                    var ts = parseInt(row.dataset.fecha || '0', 10);
+                    if (ts > 0) {
+                        if (currentFilters.desde) {
+                            var desdeTs = new Date(currentFilters.desde + 'T00:00:00').getTime() / 1000;
+                            if (ts < desdeTs) return false;
+                        }
+                        if (currentFilters.hasta) {
+                            var hastaTs = new Date(currentFilters.hasta + 'T23:59:59').getTime() / 1000;
+                            if (ts > hastaTs) return false;
+                        }
+                    }
+                }
+
                 return true;
             });
 
@@ -3793,7 +3908,52 @@
             filteredRows.forEach(function (row) {
                 row.style.display = '';
             });
+
+            // También filtrar la vista de cards
+            _applyFiltersToCards();
         }
+
+        function _applyFiltersToCards() {
+            var grid = document.getElementById('crmCardsGrid');
+            if (!grid) return;
+            var cards = grid.querySelectorAll('.crm-data-row');
+            var searchVal = (document.getElementById('crmSearch') || {}).value || '';
+            searchVal = searchVal.toLowerCase();
+
+            cards.forEach(function(card) {
+                var text = card.textContent.toLowerCase();
+                var etapa = (card.dataset.etapa || '').toLowerCase();
+                var area = (card.dataset.area || '').toLowerCase();
+                var tipo = (card.dataset.tipo || '').toLowerCase();
+                var producto = (card.dataset.producto || '').toLowerCase();
+                var cliente = (card.dataset.cliente || '').toLowerCase();
+                var contacto = (card.dataset.contacto || '').toLowerCase();
+                var show = true;
+
+                // Buscador global
+                if (searchVal && !text.includes(searchVal)) show = false;
+                // Filtros del panel
+                if (show && currentFilters.cliente && !cliente.includes(currentFilters.cliente.toLowerCase())) show = false;
+                if (show && currentFilters.area && !area.includes(currentFilters.area.toLowerCase())) show = false;
+                if (show && currentFilters.etapa && !etapa.includes(currentFilters.etapa.toLowerCase())) show = false;
+                if (show && currentFilters.tipo && tipo !== currentFilters.tipo) show = false;
+                if (show && currentFilters.producto && !producto.includes(currentFilters.producto.toLowerCase())) show = false;
+                if (show && currentFilters.contacto && !contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
+
+                // Rango de fechas (por fecha de creacion)
+                if (show && (currentFilters.desde || currentFilters.hasta)) {
+                    var fechaCreacion = card.dataset.creacion || '';
+                    if (fechaCreacion) {
+                        if (currentFilters.desde && fechaCreacion < currentFilters.desde) show = false;
+                        if (show && currentFilters.hasta && fechaCreacion > currentFilters.hasta) show = false;
+                    }
+                }
+
+                card.style.display = show ? '' : 'none';
+            });
+        }
+        // Exponer para que se pueda llamar desde fuera del scope
+        window._applyFiltersToCards = _applyFiltersToCards;
 
         // Extraer monto de una fila
         function extractMonto(row) {
@@ -3935,7 +4095,8 @@
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
             if (activeBtn) activeBtn.classList.add('active');
-            if (btnNeg) btnNeg.textContent = (view === 'crm') ? 'Negociacion' : 'Crear';
+            // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +
+            // en crm-bar-right. No sobrescribimos su contenido (el SVG debe quedarse).
         }
 
         try {
@@ -4047,32 +4208,22 @@
         }
 
         function cargarTareasCRM(forzarEstado, pagina) {
-            var estado = forzarEstado || _crmCurrentFilter;
-            var esPaginado = estado === 'completadas' || estado === 'todas';
+            // El nuevo diseño siempre trabaja con 'pendientes' (cacheado);
+            // las completadas quedan excluidas del módulo Focus
+            var estado = 'pendientes';
+            _crmCurrentFilter = 'pendientes';
 
-            // Solo pendientes usa caché
-            if (!esPaginado && _crmTareasCache[estado]) {
+            if (_crmTareasCache[estado]) {
                 _crmAllTareas = _crmTareasCache[estado];
                 _actualizarDropdownResponsables(_crmAllTareas);
-                renderTareasCRM(_crmCurrentFilter);
-                _renderPaginacion(false);
+                renderTareasCRM();
                 return;
             }
 
-            var tbody = document.getElementById('tareasTableBody');
-            var countEl = document.getElementById('tareasCount');
-            if (countEl) countEl.innerHTML = '&nbsp;';
-            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:3rem;color:#9CA3AF;">Cargando tareas...</td></tr>';
+            var grid = document.getElementById('tareasCardsGrid');
+            if (grid) grid.innerHTML = '<div class="tareas-empty-card">Cargando tareas...</div>';
 
-            var params = [];
-            if (estado === 'pendientes' || estado === 'completadas') params.push('estado=' + estado);
-            if (esPaginado) {
-                var p = pagina || _crmPage;
-                params.push('page=' + p);
-                if (_crmPaginatedSearch) params.push('q=' + encodeURIComponent(_crmPaginatedSearch));
-            }
-            var url = '/app/api/tareas/' + (params.length ? '?' + params.join('&') : '');
-
+            var url = '/app/api/tareas/?estado=pendientes';
             fetch(url)
                 .then(function (r) {
                     if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error ' + r.status); });
@@ -4080,31 +4231,18 @@
                 })
                 .then(function (data) {
                     if (data.success && Array.isArray(data.tareas)) {
-                        if (esPaginado) {
-                            _crmPage = data.page || 1;
-                            _crmTotalPages = data.total_pages || 1;
-                            _crmTotalTareas = data.total || data.tareas.length;
-                            _crmAllTareas = data.tareas;
-                            renderTareasCRM(_crmCurrentFilter, true);
-                            _renderPaginacion(true);
-                        } else {
-                            _crmTareasCache[estado] = data.tareas;
-                            _crmAllTareas = data.tareas;
-                            _actualizarDropdownResponsables(data.tareas);
-                            renderTareasCRM(_crmCurrentFilter);
-                            _renderPaginacion(false);
-                            // Set poll hash baseline so next poll detects changes immediately
-                            if (estado === 'pendientes') {
-                                _tareasPollHash = data.tareas.map(function(t) { return t.id + ':' + t.estado; }).join(',');
-                            }
-                        }
+                        _crmTareasCache[estado] = data.tareas;
+                        _crmAllTareas = data.tareas;
+                        _actualizarDropdownResponsables(data.tareas);
+                        renderTareasCRM();
+                        _tareasPollHash = data.tareas.map(function(t){ return t.id+':'+t.estado; }).join(',');
                     } else {
-                        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">No se pudieron cargar las tareas.</td></tr>';
+                        if (grid) grid.innerHTML = '<div class="tareas-empty-card">No se pudieron cargar las tareas.</div>';
                     }
                 })
                 .catch(function (err) {
                     console.error('[Tareas] Error:', err);
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">Error: ' + err.message + '</td></tr>';
+                    if (grid) grid.innerHTML = '<div class="tareas-empty-card">Error: ' + err.message + '</div>';
                 });
         }
 
@@ -4138,110 +4276,454 @@
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
-            if (typeof btnNeg !== 'undefined' && btnNeg) btnNeg.textContent = 'Crear';
+            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             cargarTareasCRM();
         } else if (_savedView === 'proyectos') {
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
-            if (typeof btnNeg !== 'undefined' && btnNeg) btnNeg.textContent = 'Crear';
+            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             if (typeof proyectosInit === 'function') proyectosInit();
         }
 
 
-        function renderTareasCRM(filtro, esPaginado) {
-            var tbody = document.getElementById('tareasTableBody');
+        // ═══ Estado del Focus de tareas ═══
+        var _tareasFocusStorageKey = 'tareasFocusState_v1';
+        var ORDER_PROYECTO_TAREAS = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes','Pagado','Perdido'];
+        var ORDER_RUNRATE_TAREAS = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta','Ganado','Perdido'];
+
+        var _tareasFocus = {
+            flow: 'proyecto',
+            selected: { proyecto: 'ALL', runrate: 'ALL' },
+            urgency: 'todas',       // 'todas' | 'atrasadas' | 'hoy'
+            wasOpen: false,
+            firstLoad: true
+        };
+        try {
+            var _tfSaved = localStorage.getItem(_tareasFocusStorageKey);
+            if (_tfSaved) {
+                var tfp = JSON.parse(_tfSaved);
+                if (tfp && typeof tfp === 'object') {
+                    _tareasFocus.firstLoad = false;
+                    if (tfp.flow === 'proyecto' || tfp.flow === 'runrate') _tareasFocus.flow = tfp.flow;
+                    if (tfp.selected && typeof tfp.selected === 'object') {
+                        if ('proyecto' in tfp.selected) _tareasFocus.selected.proyecto = tfp.selected.proyecto;
+                        if ('runrate' in tfp.selected) _tareasFocus.selected.runrate = tfp.selected.runrate;
+                    }
+                    if (tfp.urgency === 'atrasadas' || tfp.urgency === 'hoy' || tfp.urgency === 'todas') _tareasFocus.urgency = tfp.urgency;
+                    _tareasFocus.wasOpen = !!tfp.wasOpen;
+                }
+            }
+        } catch(e) {}
+
+        function _tareasFocusPersist() {
+            try {
+                var sb = document.getElementById('tareasFocusSidebar');
+                localStorage.setItem(_tareasFocusStorageKey, JSON.stringify({
+                    flow: _tareasFocus.flow,
+                    selected: _tareasFocus.selected,
+                    urgency: _tareasFocus.urgency,
+                    wasOpen: sb ? sb.classList.contains('open') : false
+                }));
+            } catch(e) {}
+        }
+
+        function _tareasGetStagesForFlow(flow) {
+            return (flow === 'proyecto' ? ORDER_PROYECTO_TAREAS : ORDER_RUNRATE_TAREAS).slice();
+        }
+
+        function _tareasIsOverdue(tarea, now) {
+            if (tarea.estado === 'completada') return false;
+            if (!tarea.fecha_limite) return false;
+            return new Date(tarea.fecha_limite) < now;
+        }
+        function _tareasIsToday(tarea, now) {
+            if (tarea.estado === 'completada') return false;
+            if (!tarea.fecha_limite) return false;
+            var d = new Date(tarea.fecha_limite);
+            return d.getFullYear() === now.getFullYear() &&
+                   d.getMonth() === now.getMonth() &&
+                   d.getDate() === now.getDate();
+        }
+
+        function _tareasCalcStageCounts(flow) {
+            var stages = _tareasGetStagesForFlow(flow);
+            var counts = {};
+            stages.forEach(function(s){ counts[s] = 0; });
+            (_crmAllTareas || []).forEach(function(t){
+                if (t.estado === 'completada') return;
+                if (!t.oportunidad_tipo) return;
+                if (t.oportunidad_tipo !== flow) return;
+                var et = t.oportunidad_etapa || '';
+                if (!et) return;
+                if (counts.hasOwnProperty(et)) counts[et] += 1;
+                else counts[et] = 1;
+            });
+            return { stages: stages, counts: counts };
+        }
+
+        function _tareasApplySmartDefault() {
+            if (!_tareasFocus.firstLoad) return;
+            // Intentar primera etapa con cards en 'proyecto'
+            var data = _tareasCalcStageCounts('proyecto');
+            for (var i = 0; i < data.stages.length; i++) {
+                if ((data.counts[data.stages[i]] || 0) > 0) {
+                    _tareasFocus.flow = 'proyecto';
+                    _tareasFocus.selected.proyecto = i;
+                    return;
+                }
+            }
+        }
+
+        function _tareasRenderSidebar() {
+            var flowBtns = document.querySelectorAll('#tareasFocusSidebar .tareasFocus-toggle button');
+            flowBtns.forEach(function(b){ b.classList.toggle('active', b.dataset.flow === _tareasFocus.flow); });
+
+            var now = new Date();
+            var atrasadas = 0, hoy = 0, totalPend = 0;
+            (_crmAllTareas || []).forEach(function(t){
+                if (t.estado === 'completada') return;
+                totalPend++;
+                if (_tareasIsOverdue(t, now)) atrasadas++;
+                if (_tareasIsToday(t, now)) hoy++;
+            });
+            var kA = document.getElementById('tareasFocusKpiAtrasadas');
+            var kH = document.getElementById('tareasFocusKpiHoy');
+            if (kA) kA.textContent = String(atrasadas);
+            if (kH) kH.textContent = String(hoy);
+            var sub = document.getElementById('tareasFocusAllSub');
+            if (sub) sub.textContent = totalPend + ' pendientes';
+
+            var allBtn = document.querySelector('#tareasFocusSidebar .tareasFocus-all');
+            var selected = _tareasFocus.selected[_tareasFocus.flow];
+            if (allBtn) allBtn.classList.toggle('active', selected === 'ALL');
+
+            var data = _tareasCalcStageCounts(_tareasFocus.flow);
+            var cont = document.getElementById('tareasFocusStages');
+            if (!cont) return;
+            cont.innerHTML = '';
+            data.stages.forEach(function(name, idx){
+                var count = data.counts[name] || 0;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'tareasFocus-stage' + (selected === idx ? ' active' : '');
+                btn.setAttribute('data-idx', String(idx));
+                btn.innerHTML =
+                    '<div class="tareasFocus-stage-node"></div>' +
+                    '<span class="tareasFocus-stage-name">' + name + '</span>' +
+                    '<span class="tareasFocus-stage-count' + (count === 0 ? ' zero' : '') + '">' + count + '</span>';
+                btn.addEventListener('click', function(){ _tareasFocusSelectStage(idx); });
+                cont.appendChild(btn);
+            });
+
+            // Urgency pills
+            document.querySelectorAll('#tareasUrgencyPills button').forEach(function(p){
+                p.classList.toggle('active', p.dataset.urg === _tareasFocus.urgency);
+            });
+
+            // Toolbar title
+            var title = document.getElementById('tareasToolbarTitle');
+            if (title) {
+                if (selected === 'ALL') title.textContent = 'Todas las Tareas';
+                else title.textContent = data.stages[selected] || 'Tareas';
+            }
+        }
+
+        function _tareasFocusSelectStage(idxOrAll) {
+            _tareasFocus.selected[_tareasFocus.flow] = idxOrAll;
+            _tareasFocus.firstLoad = false;
+            _tareasFocusPersist();
+            _tareasRenderSidebar();
+            renderTareasCRM();
+        }
+        function _tareasFocusSwitchFlow(flow) {
+            _tareasFocus.flow = flow;
+            _tareasFocus.firstLoad = false;
+            _tareasFocusPersist();
+            _tareasRenderSidebar();
+            renderTareasCRM();
+        }
+        function _tareasFocusSetUrgency(urg) {
+            _tareasFocus.urgency = urg;
+            _tareasFocus.firstLoad = false;
+            _tareasFocusPersist();
+            _tareasRenderSidebar();
+            renderTareasCRM();
+        }
+        function _tareasFocusOpen() {
+            var sb = document.getElementById('tareasFocusSidebar');
+            var vc = document.getElementById('tareasViewCards');
+            if (sb) sb.classList.add('open');
+            if (vc) vc.classList.add('tareasFocus-open');
+            _tareasFocusPersist();
+        }
+        function _tareasFocusClose() {
+            var sb = document.getElementById('tareasFocusSidebar');
+            var vc = document.getElementById('tareasViewCards');
+            if (sb) sb.classList.remove('open');
+            if (vc) vc.classList.remove('tareasFocus-open');
+            _tareasFocusPersist();
+        }
+
+        function renderTareasCRM() {
+            var grid = document.getElementById('tareasCardsGrid');
             var countEl = document.getElementById('tareasCount');
-            if (!tbody) return;
+            if (!grid) return;
 
-            // En modo paginado el servidor ya filtró y ordenó — no procesar aquí
-            if (esPaginado) {
-                var totalStr = _crmTotalTareas + ' tarea' + (_crmTotalTareas !== 1 ? 's' : '') + ' en total';
-                if (countEl) countEl.innerHTML = '<strong>' + _crmAllTareas.length + '</strong> en esta página &nbsp;·&nbsp; ' + totalStr;
-                tbody.innerHTML = _crmAllTareas.map(function (t) { return createTaskRowCRM(t); }).join('');
-                return;
+            // Aplicar default inteligente si es primera carga
+            _tareasApplySmartDefault();
+            // Sincronizar el sidebar (contadores, KPIs, highlighted stage)
+            _tareasRenderSidebar();
+
+            var tareas = (_crmAllTareas || []).slice();
+
+            // Siempre excluir completadas (el nuevo Focus es de tareas pendientes)
+            tareas = tareas.filter(function(t){ return t.estado !== 'completada'; });
+
+            // Filtro por pipeline + etapa (del sidebar)
+            var selected = _tareasFocus.selected[_tareasFocus.flow];
+            if (selected !== 'ALL') {
+                var stages = _tareasGetStagesForFlow(_tareasFocus.flow);
+                var stageName = stages[selected];
+                tareas = tareas.filter(function(t){
+                    return t.oportunidad_tipo === _tareasFocus.flow && t.oportunidad_etapa === stageName;
+                });
             }
 
-            var tareas = _crmAllTareas.slice();
-            if (filtro === 'pendientes') {
-                tareas = tareas.filter(function (t) { return t.estado !== 'completada'; });
-            } else if (filtro === 'completadas') {
-                tareas = tareas.filter(function (t) { return t.estado === 'completada'; });
+            // Filtro por urgency pills
+            var now = new Date();
+            if (_tareasFocus.urgency === 'atrasadas') {
+                tareas = tareas.filter(function(t){ return _tareasIsOverdue(t, now); });
+            } else if (_tareasFocus.urgency === 'hoy') {
+                tareas = tareas.filter(function(t){ return _tareasIsToday(t, now); });
             }
 
-            // Apply priority filter
-            if (_crmTareasPrioFilter && _crmTareasPrioFilter !== 'todas') {
-                tareas = tareas.filter(function (t) { return t.prioridad === _crmTareasPrioFilter; });
-            }
-            // Apply responsable filter
-            if (_crmTareasRespFilter && _crmTareasRespFilter !== 'todos') {
-                tareas = tareas.filter(function (t) { return t.responsable === _crmTareasRespFilter; });
-            }
-
-            // Apply search filter
+            // Búsqueda
             var searchVal = (document.getElementById('tareasSearchInput') || {}).value || '';
             if (searchVal.trim()) {
                 var q = searchVal.trim().toLowerCase();
-                tareas = tareas.filter(function (t) { return t.titulo.toLowerCase().indexOf(q) !== -1; });
+                tareas = tareas.filter(function(t){ return (t.titulo || '').toLowerCase().indexOf(q) !== -1; });
             }
 
-            // Sort: vencidas primero, luego próximas por fecha, completadas al final
-            var _now = new Date();
-            tareas.sort(function (a, b) {
-                var aDone = a.estado === 'completada';
-                var bDone = b.estado === 'completada';
-                var aVencida = !aDone && a.fecha_limite && new Date(a.fecha_limite) < _now;
-                var bVencida = !bDone && b.fecha_limite && new Date(b.fecha_limite) < _now;
-                if (aVencida && !bVencida) return -1;
-                if (!aVencida && bVencida) return 1;
-                if (aDone && !bDone) return 1;
-                if (!aDone && bDone) return -1;
+            // Sort: ancladas > vencidas > por fecha
+            tareas.sort(function(a, b){
+                var aP = !!a.esta_anclada;
+                var bP = !!b.esta_anclada;
+                if (aP && !bP) return -1;
+                if (!aP && bP) return 1;
+                var aV = _tareasIsOverdue(a, now);
+                var bV = _tareasIsOverdue(b, now);
+                if (aV && !bV) return -1;
+                if (!aV && bV) return 1;
                 var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
                 var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
                 return aT - bT;
             });
 
-            // Update count
-            if (countEl) countEl.innerHTML = '<strong>' + tareas.length + '</strong> tarea' + (tareas.length !== 1 ? 's' : '');
+            if (countEl) countEl.textContent = tareas.length + ' tarea' + (tareas.length !== 1 ? 's' : '');
 
             if (tareas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">No hay tareas disponibles.</td></tr>';
+                grid.innerHTML = '<div class="tareas-empty-card">No hay tareas en esta etapa.</div>';
                 return;
             }
-
-            tbody.innerHTML = tareas.map(function (t) { return createTaskRowCRM(t); }).join('');
+            grid.innerHTML = tareas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
         }
 
-        function createTaskRowCRM(tarea) {
-            var now2 = new Date();
+        function _tareasFmtFecha(isoStr) {
+            if (!isoStr) return '';
+            var d = new Date(isoStr);
+            var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            var h = String(d.getHours()).padStart(2,'0');
+            var m = String(d.getMinutes()).padStart(2,'0');
+            return d.getDate() + ' ' + meses[d.getMonth()] + ', ' + h + ':' + m;
+        }
+
+        function _tareasIniciales(nombre) {
+            if (!nombre) return '??';
+            var parts = String(nombre).trim().split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+
+        function _tareasEscape(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function createTaskCardCRM(tarea, now) {
             var done = tarea.estado === 'completada';
-            var vencida = !done && tarea.fecha_limite && new Date(tarea.fecha_limite) < now2;
-            var isHP = tarea.prioridad === 'alta' && !done;
-            var rowBg = done ? 'background:rgba(52,199,89,0.07);' : (vencida ? 'background:rgba(255,59,48,0.07);' : '');
-            var tituloStyle = done ? 'text-decoration:line-through;color:#9CA3AF;' : (vencida ? 'color:#FF3B30;' : '');
-            var fechaStyle = vencida ? 'color:#FF3B30;font-weight:600;' : 'color:#6B7280;';
-            var icon = isHP ? '<span style="color:#F59E0B;font-size:0.8rem;">&#9650;</span>' : (vencida ? '<span style="color:#FF3B30;font-size:0.8rem;">&#9888;</span>' : '');
-            var oppCell;
-            if (tarea.oportunidad_id) {
-                var oppLabel = (tarea.oportunidad_nombre || 'Oportunidad');
-                if (oppLabel.length > 35) oppLabel = oppLabel.substring(0, 33) + '…';
-                oppCell = '<span style="color:#0052D4;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#EFF6FF;padding:2px 8px;border-radius:12px;border:1px solid #BFDBFE;" title="Oportunidad: ' + (tarea.oportunidad_nombre || '') + '" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' + oppLabel + '</span>';
-            } else if (tarea.proyecto_id) {
-                var proyLabel = (tarea.proyecto_nombre || 'Proyecto');
-                if (proyLabel.length > 35) proyLabel = proyLabel.substring(0, 33) + '…';
-                oppCell = '<span style="color:#7C3AED;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#F5F3FF;padding:2px 8px;border-radius:12px;border:1px solid #DDD6FE;" title="Proyecto: ' + tarea.proyecto_nombre + '" onclick="event.stopPropagation();ingenieroAbrirProyecto(' + tarea.proyecto_id + ')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' + proyLabel + '</span>';
-            } else {
-                oppCell = '<span class="crm-task-asignar-opp" data-task-id="' + tarea.id + '" style="color:#9CA3AF;font-size:0.78rem;cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation();crmTaskAbrirAsignarOpp(this,' + tarea.id + ')">Asignar...</span>';
+            var vencida = _tareasIsOverdue(tarea, now);
+            var pinned = !!tarea.esta_anclada;
+            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '');
+
+            // Fecha badge
+            var fechaHtml = '';
+            if (tarea.fecha_limite) {
+                var fechaTxt = _tareasFmtFecha(tarea.fecha_limite);
+                var clsF = vencida ? '' : 'future';
+                var iconColor = vencida ? '#B91C1C' : '#4B5563';
+                fechaHtml = '<span class="tareas-badge-fecha ' + clsF + '">' +
+                    '<svg width="11" height="11" fill="none" stroke="' + iconColor + '" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">' +
+                    (vencida
+                        ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
+                        : '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>') +
+                    '</svg>' + fechaTxt + '</span>';
             }
-            return '<tr class="' + (isHP ? 'task-row-priority' : '') + '" style="' + rowBg + 'cursor:pointer;" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
-                '<td><div style="display:flex;align-items:center;gap:0.4rem;">' + icon + '<span class="task-name" style="' + tituloStyle + '">' + tarea.titulo + '</span></div></td>' +
-                '<td>' + getEstadoBadgeCRM(tarea.estado) + '</td>' +
-                '<td style="' + fechaStyle + '">' + (tarea.fecha_limite ? formatearFechaCRM(tarea.fecha_limite) : 'Sin fecha') + '</td>' +
-                '<td style="color:#6B7280;">' + tarea.creado_por + '</td>' +
-                '<td style="color:#6B7280;">' + (tarea.responsable || 'Sin asignar') + '</td>' +
-                '<td>' + oppCell + '</td>' +
-                '</tr>';
+
+            // Estado badge (solo si no es pendiente por default)
+            var estadoHtml = '';
+            if (tarea.estado === 'en_progreso') {
+                estadoHtml = '<span class="tareas-badge-estado" style="background:rgba(0,82,212,0.1);color:#0052D4;">' +
+                    '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+                    'En Progreso</span>';
+            } else if (tarea.estado === 'iniciada') {
+                estadoHtml = '<span class="tareas-badge-estado" style="background:rgba(255,149,0,0.12);color:#FF9500;">Pausado</span>';
+            }
+
+            // Oportunidad
+            var oppHtml = '';
+            if (tarea.oportunidad_id) {
+                oppHtml = '<div class="tareas-card-opp" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ');">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' +
+                    '<span class="txt">' + _tareasEscape(tarea.oportunidad_nombre || '') + '</span>' +
+                    '</div>';
+            } else if (tarea.proyecto_id) {
+                oppHtml = '<div class="tareas-card-opp">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+                    '<span class="txt">' + _tareasEscape(tarea.proyecto_nombre || 'Sin proyecto') + '</span>' +
+                    '</div>';
+            }
+
+            // Responsable avatar + nombre
+            var respNombre = tarea.responsable || 'Sin asignar';
+            var iniciales = _tareasIniciales(respNombre);
+            var respHtml = '<div class="tareas-card-avatar">' + iniciales + '</div>' +
+                '<span class="tareas-card-resp">Resp: <b>' + _tareasEscape(respNombre.split(' ')[0]) + '</b></span>';
+
+            // Etapa badge (si es oportunidad)
+            var etapaHtml = '';
+            if (tarea.oportunidad_etapa) {
+                etapaHtml = '<span class="tareas-card-etapa">' + _tareasEscape(tarea.oportunidad_etapa) + '</span>';
+            }
+
+            // Pin chincheta
+            var pinFill = pinned ? '#EF4444' : '#B0B8C4';
+            var pinBtn = '<button type="button" class="tareas-card-pin' + (pinned ? ' pinned' : '') + '" data-pin-id="' + tarea.id + '" onclick="event.stopPropagation();crmTareaTogglePin(this,' + tarea.id + ');" title="Anclar tarea">' +
+                '<svg width="24" height="24" viewBox="0 0 24 24" fill="' + pinFill + '" stroke="none"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
+                '</button>';
+
+            return '<div class="' + cardClass + '" data-tarea-id="' + tarea.id + '" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
+                '<div class="tareas-card-top">' +
+                    '<div class="tareas-card-check" onclick="event.stopPropagation();crmTaskCompletarRapido(' + tarea.id + ');"></div>' +
+                    '<div class="tareas-card-title">' + _tareasEscape(tarea.titulo || 'Sin título') + '</div>' +
+                    pinBtn +
+                '</div>' +
+                (fechaHtml || estadoHtml ? '<div class="tareas-card-badges">' + fechaHtml + estadoHtml + '</div>' : '') +
+                '<div class="tareas-card-sep"></div>' +
+                oppHtml +
+                '<div class="tareas-card-bottom">' +
+                    respHtml +
+                    etapaHtml +
+                '</div>' +
+            '</div>';
         }
+
+        // Toggle anclar tarea (similar al de oportunidades)
+        window.crmTareaTogglePin = function(btn, tareaId) {
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = csrfEl ? csrfEl.value : '';
+            fetch('/app/api/tarea/' + tareaId + '/toggle-pin/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                credentials: 'same-origin'
+            }).then(function(r){ return r.json(); }).then(function(data){
+                if (!data || !data.success) return;
+                // Actualizar estado en _crmAllTareas (cache)
+                if (Array.isArray(_crmAllTareas)) {
+                    for (var i = 0; i < _crmAllTareas.length; i++) {
+                        if (_crmAllTareas[i].id === tareaId) {
+                            _crmAllTareas[i].esta_anclada = data.anclada;
+                            break;
+                        }
+                    }
+                }
+                // Actualizar cache de pendientes también
+                if (_crmTareasCache && _crmTareasCache.pendientes) {
+                    _crmTareasCache.pendientes = _crmAllTareas;
+                }
+                // Re-render para reordenar
+                renderTareasCRM();
+            }).catch(console.error);
+        };
+
+        // Helper de completar rápido (usa la misma API de tareas)
+        window.crmTaskCompletarRapido = function(tareaId) {
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = csrfEl ? csrfEl.value : '';
+            fetch('/app/api/tarea/' + tareaId + '/actualizar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                credentials: 'same-origin',
+                body: JSON.stringify({ estado: 'completada' })
+            }).then(function(r){ return r.json(); }).then(function(res){
+                if (res && res.success) {
+                    // Quitar de caché y recargar
+                    _crmTareasCache = {};
+                    cargarTareasCRM();
+                }
+            }).catch(console.error);
+        };
+
+        // Listeners del sidebar + pills (al cargar el DOM)
+        (function initTareasFocusListeners(){
+            function bind() {
+                var sb = document.getElementById('tareasFocusSidebar');
+                if (!sb) return setTimeout(bind, 100);
+
+                // Toggle button de la toolbar (abrir)
+                var btnT = document.getElementById('tareasFocusToggleBtn');
+                if (btnT) btnT.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    if (sb.classList.contains('open')) _tareasFocusClose(); else _tareasFocusOpen();
+                });
+                // Botón hamburguesa embebido en el sidebar (cerrar)
+                var btnClose = document.getElementById('tareasFocusCloseBtn');
+                if (btnClose) btnClose.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    _tareasFocusClose();
+                });
+
+                // Flow buttons
+                sb.querySelectorAll('.tareasFocus-toggle button').forEach(function(b){
+                    b.addEventListener('click', function(){ _tareasFocusSwitchFlow(b.dataset.flow); });
+                });
+
+                // Ver Todo
+                var allBtn = sb.querySelector('.tareasFocus-all');
+                if (allBtn) allBtn.addEventListener('click', function(){ _tareasFocusSelectStage('ALL'); });
+
+                // Urgency pills
+                document.querySelectorAll('#tareasUrgencyPills button').forEach(function(p){
+                    p.addEventListener('click', function(){ _tareasFocusSetUrgency(p.dataset.urg); });
+                });
+                // (El handler del search input ya vive en bloque existente más abajo)
+
+                // Restaurar estado abierto
+                if (_tareasFocus.wasOpen) {
+                    sb.style.transition = 'none';
+                    var vc = document.getElementById('tareasViewCards');
+                    if (vc) vc.classList.add('tareasFocus-open');
+                    sb.classList.add('open');
+                    void sb.offsetWidth;
+                    requestAnimationFrame(function(){ sb.style.transition = ''; });
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bind);
+            } else {
+                bind();
+            }
+        })();
 
         // ── Dropdown para asignar oportunidad a tarea ──
         var _crmOppPickerTaskId = null;
@@ -4561,6 +5043,51 @@
                     respContainer.innerHTML = '<div class="crm-task-avatar" style="width:30px;height:30px;font-size:0.65rem;background:#0052D4;">' + (rd.avatar_url ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">' : initials) + '</div><span style="font-weight:500;font-size:0.82rem;flex:1;min-width:0;">' + rd.nombre + '</span>';
                 } else {
                     respContainer.innerHTML = '<span style="color:#9CA3AF;font-size:0.82rem;">Sin asignar</span>';
+                }
+            }
+
+            // Subtareas O Tarea padre (mutuamente excluyentes)
+            var subtareasSection = document.getElementById('crmTaskSubtareasSection');
+            var subtareasList = document.getElementById('crmTaskSubtareasList');
+            if (subtareasSection) {
+                if (tarea.tarea_padre_id && tarea.tarea_padre_titulo) {
+                    // Es subtarea: mostrar card de tarea padre en vez de subtareas
+                    subtareasSection.innerHTML =
+                        '<h3 style="margin:0 0 6px;">Tarea Principal</h3>' +
+                        '<div onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:#F0F7FF;border:1px solid #BFDBFE;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#DBEAFE\'" onmouseleave="this.style.background=\'#F0F7FF\'">' +
+                            '<svg width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>' +
+                            '<div style="flex:1;min-width:0;">' +
+                                '<div style="font-size:0.82rem;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
+                            '</div>' +
+                            '<svg width="14" height="14" fill="none" stroke="#93C5FD" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
+                        '</div>';
+                } else {
+                    // Es tarea normal: mostrar subtareas
+                    var subs = tarea.subtareas || [];
+                    var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                        '<h3 style="margin:0;">Subtareas</h3>' +
+                        '<button onclick="crmTaskCrearSubtarea()" title="Crear subtarea" style="background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:2px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;">' +
+                        '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Subtarea</button></div>';
+                    var listHtml = '';
+                    if (subs.length > 0) {
+                        var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
+                        var estadoLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
+                        listHtml = '<div style="display:flex;flex-direction:column;gap:4px;">' + subs.map(function(st) {
+                            var ec = estadoColors[st.estado] || ['#F3F4F6','#6B7280'];
+                            var isComplete = st.estado === 'completada';
+                            return '<div onclick="crmTaskVerDetalle(' + st.id + ')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#F9FAFB;border:1px solid #E5E7EB;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#F3F4F6\'" onmouseleave="this.style.background=\'#F9FAFB\'">' +
+                                '<svg width="14" height="14" fill="none" stroke="' + (isComplete ? '#059669' : '#D1D5DB') + '" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;">' + (isComplete ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : '<circle cx="12" cy="12" r="10"/>') + '</svg>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="font-size:0.8rem;font-weight:500;color:' + (isComplete ? '#9CA3AF' : '#1D1D1F') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (isComplete ? 'text-decoration:line-through;' : '') + '">' + (st.titulo || '') + '</div>' +
+                                    (st.asignado_a ? '<div style="font-size:0.68rem;color:#9CA3AF;margin-top:1px;">' + st.asignado_a + '</div>' : '') +
+                                '</div>' +
+                                '<span style="font-size:0.65rem;padding:2px 6px;border-radius:4px;background:' + ec[0] + ';color:' + ec[1] + ';white-space:nowrap;">' + (estadoLabels[st.estado] || st.estado) + '</span>' +
+                            '</div>';
+                        }).join('') + '</div>';
+                    } else {
+                        listHtml = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin subtareas</div>';
+                    }
+                    subtareasSection.innerHTML = headerHtml + listHtml;
                 }
             }
 
@@ -5680,8 +6207,9 @@
             _crmTaskSelectedResp = null;
             _crmTaskSelectedParts = [];
             _crmTaskSelectedObs = [];
-            // Reset oportunidad
+            // Reset oportunidad and tarea padre
             var oid = document.getElementById('crmTaskOppId'); if (oid) oid.value = '';
+            var pid = document.getElementById('crmTaskPadreId'); if (pid) pid.value = '';
             // Remove any open user dropdown
             var dd = document.querySelector('.crm-user-dropdown'); if (dd) dd.remove();
         }
@@ -5859,6 +6387,8 @@
             if (_crmTaskSelectedObs.length > 0) payload.observadores = _crmTaskSelectedObs.map(function (u) { return u.id; });
             var oppIdEl = document.getElementById('crmTaskOppId');
             if (oppIdEl && oppIdEl.value) payload.oportunidad_id = oppIdEl.value;
+            var padreIdEl = document.getElementById('crmTaskPadreId');
+            if (padreIdEl && padreIdEl.value) payload.tarea_padre_id = padreIdEl.value;
 
             var submitBtn = document.getElementById('crmTaskSubmitBtn');
             if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creando...'; }
@@ -5876,9 +6406,14 @@
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Crear tarea'; }
                     if (data.success) {
                         var oppId = oppIdEl ? oppIdEl.value : '';
+                        var padreId = padreIdEl ? padreIdEl.value : '';
                         crmTaskCerrarCrear();
                         recargarTareasCRM();
-                        showToast('Tarea creada exitosamente', 'success');
+                        showToast(padreId ? 'Subtarea creada exitosamente' : 'Tarea creada exitosamente', 'success');
+                        // Refresh parent task detail if subtask was created
+                        if (padreId && typeof crmTaskVerDetalle === 'function') {
+                            crmTaskVerDetalle(parseInt(padreId));
+                        }
                         if (typeof dashRefreshData === 'function') { dashRefreshData(); }
                         if (oppId && typeof window.woCargarTareasInline === 'function') {
                             window.woCargarTareasInline(oppId);
@@ -5932,6 +6467,15 @@
         }
         window.crmTaskToggleDesc = crmTaskToggleDesc;
 
+        function crmTaskCrearSubtarea() {
+            var padreId = _crmCurrentTaskId;
+            if (!padreId) return;
+            crmTaskAbrirCrear();
+            var padreEl = document.getElementById('crmTaskPadreId');
+            if (padreEl) padreEl.value = padreId;
+        }
+
+        window.crmTaskCrearSubtarea = crmTaskCrearSubtarea;
         window.crmTaskAbrirCrear = crmTaskAbrirCrear;
         window.crmTaskCerrarCrear = crmTaskCerrarCrear;
         window.crmTaskCrear = crmTaskCrear;

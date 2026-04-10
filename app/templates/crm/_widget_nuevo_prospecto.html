@@ -346,6 +346,15 @@
                         setTimeout(function() { toast.classList.remove('show'); }, 3000);
                     }
 
+                    // Abrir widget del prospecto recién creado (forzar actividad)
+                    if (data.id && typeof abrirWidgetProspecto === 'function') {
+                        setTimeout(function() {
+                            abrirWidgetProspecto(data.id);
+                            // Guardar en localStorage para persistir si recarga
+                            localStorage.setItem('_pendienteProspectoSinActividad', data.id);
+                        }, 500);
+                    }
+
                     // Flujo automático desde click en marca:
                     // 1. Abrir widget de cliente con tabla de prospectos
                     // 2. Abrir editor de campaña encima

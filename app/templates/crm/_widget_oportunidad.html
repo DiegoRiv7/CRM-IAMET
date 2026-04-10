@@ -450,7 +450,7 @@
 </div>
 
 <!-- ═══ WIDGET: CREAR ACTIVIDAD (TAREA) ═══ -->
-<div class="widget-overlay" id="widgetOppCrearActividad" style="z-index:10200;display:none;"><!-- CAPA 2 -->
+<div class="widget-overlay" id="widgetOppCrearActividad" style="z-index:99990;display:none;"><!-- CAPA TOP - siempre encima -->
     <div class="widget-card widget-card-md"
         style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
         <div
@@ -794,10 +794,37 @@
                     document.head.appendChild(s);
                 }
             }
+            // DOCX - render in isolated iframe with docx-preview
+            else if (['docx'].indexOf(ext) > -1) {
+                content.innerHTML = '<div style="color:#fff;font-size:0.85rem;">Cargando documento...</div>';
+                var iframe = document.createElement('iframe');
+                iframe.style.cssText = 'width:95%;max-width:950px;height:calc(100vh - 80px);border:none;border-radius:8px;box-shadow:0 4px 30px rgba(0,0,0,0.3);background:#e8e8e8;';
+                content.innerHTML = '';
+                content.appendChild(iframe);
+                var iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                // Write a self-contained page that fetches and renders the DOCX
+                var absUrl = new URL(url, window.location.href).href;
+                iDoc.open();
+                iDoc.write('<!DOCTYPE html><html><head>' +
+                    '<style>body{margin:0;background:#e8e8e8;font-family:sans-serif;} .docx-wrapper{background:#e8e8e8 !important;padding:20px !important;} section.docx{box-shadow:0 2px 8px rgba(0,0,0,0.15) !important;margin-bottom:15px !important;} #loading{display:flex;align-items:center;justify-content:center;height:100vh;color:#666;}</style>' +
+                    '<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>' +
+                    '<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js"><\/script>' +
+                    '</head><body><div id="loading">Cargando documento...</div><div id="docx-container"></div>' +
+                    '<script>' +
+                    'fetch("' + absUrl + '").then(function(r){return r.arrayBuffer();}).then(function(buf){' +
+                    '  document.getElementById("loading").style.display="none";' +
+                    '  docx.renderAsync(buf,document.getElementById("docx-container"),null,{' +
+                    '    className:"docx-preview",inWrapper:true,ignoreWidth:false,ignoreHeight:false,' +
+                    '    renderHeaders:true,renderFooters:true,renderFootnotes:true,useBase64URL:true' +
+                    '  });' +
+                    '}).catch(function(e){document.getElementById("loading").innerHTML="<span style=color:red>Error: "+e.message+"</span>";});' +
+                    '<\/script></body></html>');
+                iDoc.close();
+            }
             // Other Office docs - download with file type info
             else if (officeExts.indexOf(ext) > -1 || tipo === 'documento') {
-                var officeIcons = {'doc':'&#128196;','docx':'&#128196;','ppt':'&#128253;','pptx':'&#128253;','odt':'&#128196;','odp':'&#128253;','rtf':'&#128196;'};
-                var officeLabels = {'doc':'Word','docx':'Word','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Writer','odp':'Impress','rtf':'Texto enriquecido'};
+                var officeIcons = {'doc':'&#128196;','ppt':'&#128253;','pptx':'&#128253;','odt':'&#128196;','odp':'&#128253;','rtf':'&#128196;'};
+                var officeLabels = {'doc':'Word (.doc)','ppt':'PowerPoint','pptx':'PowerPoint','odt':'Writer','odp':'Impress','rtf':'Texto enriquecido'};
                 var icon = officeIcons[ext] || '&#128196;';
                 var label = officeLabels[ext] || 'Documento';
                 content.innerHTML = '<div style="text-align:center;color:#fff;">' +
@@ -2314,8 +2341,27 @@
                     badge.innerHTML = '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completada';
                     badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(52,199,89,0.1);color:#34C759;';
                     document.getElementById('woVerActBtnCompletar').style.display = 'none';
-                    // Refrescar lista de tareas sin recargar
-                    if(typeof window.recargarTareasCRM === 'function') window.recargarTareasCRM();
+                    // Refrescar actividad reciente y lista de tareas sin recargar
+                    if (_woCurrentOppId && typeof woCargarActividadReciente === 'function') woCargarActividadReciente(_woCurrentOppId);
+                    if (typeof window.recargarTareasCRM === 'function') window.recargarTareasCRM();
+                    // Refrescar calendario si esta abierto (delay para que BD procese)
+                    setTimeout(function() {
+                        if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
+                    }, 300);
+                    // Actualizar tarjeta en vista cards del CRM
+                    if (_woCurrentOppId) {
+                        var actBar = document.querySelector('.card-act-bar[data-opp-act="' + _woCurrentOppId + '"]');
+                        if (actBar) {
+                            actBar.style.background = '#F9FAFB';
+                            actBar.style.borderColor = '#E5E7EB';
+                            actBar.onmouseover = function(){ this.style.background='#F3F4F6'; };
+                            actBar.onmouseout = function(){ this.style.background='#F9FAFB'; };
+                            var actText = actBar.querySelector('.card-act-text');
+                            if (actText) { actText.textContent = 'Sin actividad programada'; actText.style.color = '#9CA3AF'; actText.style.fontWeight = '500'; }
+                            var actSvg = actBar.querySelector('svg');
+                            if (actSvg) actSvg.setAttribute('stroke', '#9CA3AF');
+                        }
+                    }
 
                     // Poner mensaje de completado en la conversación
                     if (_woCurrentOppId) {

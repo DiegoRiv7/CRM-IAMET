@@ -81,10 +81,6 @@
                     &#8593; Excel
                 </button>
                 <input type="file" id="xlsFileInput" accept=".xls,.xlsx" style="display:none">
-                {% else %}
-                <button type="button" class="island-nav-btn" id="btnNegociacion">
-                    {% if request.user.userprofile.language == 'en' %}OPPORTUNITY{% else %}OPORTUNIDAD{% endif %}
-                </button>
                 {% endif %}
                 <button type="button" class="island-nav-btn" id="btnCotizarRapido"
                     onclick="cotizarRapidoAbrir()">COTIZAR</button>

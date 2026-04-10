@@ -9,7 +9,7 @@ from datetime import date
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from django.db.models import Sum, DecimalField
+from django.db.models import Sum, Count, Q, DecimalField
 from django.utils import timezone
 from .models import (
     ProyectoIAMET as Proyecto, ProyectoPartida, ProyectoOrdenCompra,
@@ -68,7 +68,106 @@ def _fmt(val):
     return str(val)
 
 
+def _calcular_avance(proyecto):
+    """Calcula % de avance del proyecto basado en partidas + etapa oportunidad."""
+    from .models import ProgramacionActividad
+
+    # 40% weight: partidas completadas (status closed or received)
+    total_partidas = proyecto.partidas.count()
+    if total_partidas > 0:
+        partidas_completas = proyecto.partidas.filter(status__in=['closed', 'received']).count()
+        pct_partidas = (partidas_completas / total_partidas) * 100
+    else:
+        pct_partidas = 0
+
+    # 30% weight: etapa de oportunidad
+    pct_etapa = 0
+    if proyecto.oportunidad and proyecto.oportunidad.etapa_corta:
+        etapa = proyecto.oportunidad.etapa_corta
+        # Map etapas to progress %
+        etapa_map = {
+            'En Solicitud': 5, 'Cotizando': 15, 'Enviada': 25, 'Seguimiento': 35,
+            'Vendido s/PO': 45, 'Vendido c/PO': 55, 'En Tránsito': 65,
+            'Facturado': 75, 'Programado': 80, 'Entregado': 85,
+            'Esperando Pago': 90, 'Ganado': 95, 'Pagado': 100,
+        }
+        pct_etapa = etapa_map.get(etapa, 50)
+
+    # 30% weight: programa de obra (actividades completadas)
+    pct_programa = 0
+    actividades = ProgramacionActividad.objects.filter(proyecto_key=f'proy_{proyecto.id}')
+    total_acts = actividades.count()
+    if total_acts > 0:
+        # Activities with fecha in the past are considered "done"
+        acts_pasadas = actividades.filter(fecha__lt=timezone.localdate()).count()
+        pct_programa = (acts_pasadas / total_acts) * 100
+
+    avance = (pct_partidas * 0.4) + (pct_etapa * 0.3) + (pct_programa * 0.3)
+
+    # Cap: if oportunidad is not 'Pagado', max 95%
+    if proyecto.oportunidad and proyecto.oportunidad.etapa_corta != 'Pagado':
+        avance = min(avance, 95)
+
+    return round(min(avance, 100), 1)
+
+
+def _calcular_efectividad(proyecto):
+    """Calcula % de efectividad. Empieza en 100% y baja por penalizaciones."""
+    from .models import ProgramacionActividad
+
+    efectividad = 100.0
+    hoy = timezone.localdate()
+
+    # -5% por cada tarea vencida no completada
+    tareas_vencidas = proyecto.tareas_proyecto.filter(
+        fecha_limite__lt=timezone.now()
+    ).exclude(status__in=['completed', 'cancelled']).count()
+    efectividad -= tareas_vencidas * 5
+
+    # -5% si gastado > costo total presupuestado
+    gastado = float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0)
+    costo_total = float(proyecto.partidas.aggregate(t=Sum('costo_total'))['t'] or 0)
+    if costo_total > 0 and gastado > costo_total:
+        efectividad -= 5
+
+    # -3% por cada OC con precio_unitario > partida.costo_unitario
+    for oc in proyecto.ordenes_compra.exclude(status='cancelled').select_related('partida'):
+        if oc.partida and oc.precio_unitario and oc.partida.costo_unitario:
+            if oc.precio_unitario > oc.partida.costo_unitario:
+                efectividad -= 3
+
+    # -10% si fecha actual > fecha_fin y oportunidad no está en Pagado
+    if proyecto.fecha_fin and hoy > proyecto.fecha_fin:
+        if not proyecto.oportunidad or proyecto.oportunidad.etapa_corta != 'Pagado':
+            efectividad -= 10
+
+    # -5% si programa de obra tiene actividades atrasadas
+    acts_atrasadas = ProgramacionActividad.objects.filter(
+        proyecto_key=f'proy_{proyecto.id}',
+        fecha__lt=hoy
+    ).count()
+    # Only penalize if there are activities that should have happened
+    if acts_atrasadas > 0:
+        total_acts = ProgramacionActividad.objects.filter(proyecto_key=f'proy_{proyecto.id}').count()
+        if total_acts > 0:
+            # Check if there are future activities too (meaning project is ongoing)
+            acts_futuras = ProgramacionActividad.objects.filter(
+                proyecto_key=f'proy_{proyecto.id}',
+                fecha__gte=hoy
+            ).count()
+            if acts_futuras == 0 and proyecto.status != 'completed':
+                efectividad -= 5
+
+    return round(max(0, min(100, efectividad)), 1)
+
+
 def _proyecto_to_dict(p, include_alerts=False):
+    # Calcular utilidad real desde facturas y gastos (no del campo del modelo)
+    ingresos = float(p.facturas_ingreso.aggregate(t=Sum('monto'))['t'] or 0)
+    costos_prov = float(p.facturas_proveedor.aggregate(t=Sum('monto'))['t'] or 0)
+    gastos_apr = float(p.gastos.filter(estado_aprobacion='approved').aggregate(t=Sum('monto'))['t'] or 0)
+    utilidad_real_calc = ingresos - costos_prov - gastos_apr
+
     d = {
         'id': p.id,
         'usuario_id': p.usuario_id,
@@ -78,13 +177,15 @@ def _proyecto_to_dict(p, include_alerts=False):
         'cliente_nombre': p.cliente_nombre,
         'status': p.status,
         'utilidad_presupuestada': float(p.utilidad_presupuestada),
-        'utilidad_real': float(p.utilidad_real),
+        'utilidad_real': utilidad_real_calc,
         'fecha_inicio': _fmt(p.fecha_inicio),
         'fecha_fin': _fmt(p.fecha_fin),
         'created_at': _fmt(p.created_at),
         'updated_at': _fmt(p.updated_at),
         'oportunidad_id': p.oportunidad_id if hasattr(p, 'oportunidad_id') else None,
         'oportunidad_nombre': p.oportunidad.oportunidad if hasattr(p, 'oportunidad_id') and p.oportunidad_id and p.oportunidad else None,
+        'oportunidad_etapa': p.oportunidad.etapa_corta if p.oportunidad else None,
+        'oportunidad_etapa_color': p.oportunidad.etapa_color if p.oportunidad else None,
     }
     if include_alerts:
         d['alertas_pendientes'] = p.alertas.filter(resuelta=False).count()
@@ -235,6 +336,91 @@ def _alerta_to_dict(a):
 
 
 # ═══════════════════════════════════════════════════════════════
+#  PROYECTOS DASHBOARD / FINANCIERO
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["GET"])
+def api_proyectos_dashboard(request):
+    """KPIs agregados de todos los proyectos visibles, con filtro opcional por mes/año."""
+    try:
+        qs = _get_proyectos_qs(request.user)
+
+        # Filtrar por mes/año de creación si se proporcionan
+        mes = request.GET.get('mes', '')
+        anio = request.GET.get('anio', '')
+        if anio:
+            try:
+                qs = qs.filter(created_at__year=int(anio))
+            except (ValueError, TypeError):
+                pass
+        if mes and mes != 'todos':
+            try:
+                qs = qs.filter(created_at__month=int(mes))
+            except (ValueError, TypeError):
+                pass
+
+        # No filtrar solo activos — contar todos los del periodo
+        activos = qs.filter(status='active')
+        data = {
+            'total_proyectos': qs.count(),
+            'proyectos_ejecucion': activos.count(),
+            'proyectos_programados': qs.filter(status='planning').count(),
+            'proyectos_completados': qs.filter(status='completed').count(),
+            'utilidad_total': float(
+                qs.aggregate(t=Sum('partidas__ganancia'))['t'] or 0
+            ),
+            'costo_total': float(
+                qs.aggregate(t=Sum('partidas__costo_total'))['t'] or 0
+            ),
+            'venta_total': float(
+                qs.aggregate(t=Sum('partidas__precio_venta_total'))['t'] or 0
+            ),
+        }
+        return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_proyectos_financiero(request):
+    """Lista de proyectos con datos financieros agregados."""
+    try:
+        qs = _get_proyectos_qs(request.user)
+        status_filter = request.GET.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        qs = qs.select_related('usuario').annotate(
+            partidas_costo_total=Sum('partidas__costo_total'),
+            partidas_venta_total=Sum('partidas__precio_venta_total'),
+            partidas_ganancia=Sum('partidas__ganancia'),
+        )
+
+        proyectos = []
+        for p in qs:
+            costo = float(p.partidas_costo_total or 0)
+            venta = float(p.partidas_venta_total or 0)
+            utilidad = float(p.partidas_ganancia or 0)
+            margen = (utilidad / venta * 100) if venta > 0 else 0.0
+            proyectos.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'cliente_nombre': p.cliente_nombre,
+                'status': p.status,
+                'utilidad_presupuestada': utilidad,
+                'costo_total': costo,
+                'venta_total': venta,
+                'margen': round(margen, 2),
+            })
+
+        return JsonResponse({'success': True, 'data': proyectos})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ═══════════════════════════════════════════════════════════════
 #  PROYECTOS CRUD
 # ═══════════════════════════════════════════════════════════════
 
@@ -316,6 +502,13 @@ def api_proyecto_detalle(request, proyecto_id):
         'alertas_pendientes': proyecto.alertas.filter(resuelta=False).count(),
         'tareas_pendientes': proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count(),
         'ordenes_compra_activas': proyecto.ordenes_compra.exclude(status='cancelled').count(),
+        # Gastado: sum of OC montos (not cancelled)
+        'gastado': float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0),
+        # Cobrado: sum of facturas ingreso
+        'cobrado': float(proyecto.facturas_ingreso.aggregate(t=Sum('monto'))['t'] or 0),
+        # KPIs operativos
+        'avance_pct': _calcular_avance(proyecto),
+        'efectividad_pct': _calcular_efectividad(proyecto),
     }
 
     # Configuracion
@@ -1253,10 +1446,18 @@ def api_proyecto_financieros(request, proyecto_id):
     cobertura = (ingresos / costos_gastos * 100) if costos_gastos > 0 else Decimal('0')
     alertas_pendientes = proyecto.alertas.filter(resuelta=False).count()
 
+    # KPIs operativos
+    gastado = float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0)
+    cobrado = float(ingresos)
+
+    # Costo presupuestado (de partidas)
+    costo_presupuestado = float(proyecto.partidas.aggregate(t=Sum('costo_total'))['t'] or 0)
+
     return JsonResponse({
         'success': True,
         'data': {
             'utilidad_presupuestada': float(utilidad_presupuestada),
+            'costo_presupuestado': costo_presupuestado,
             'ingresos': float(ingresos),
             'costos': float(costos),
             'gastos': float(gastos),
@@ -1264,6 +1465,10 @@ def api_proyecto_financieros(request, proyecto_id):
             'margen': float(margen),
             'cobertura': float(cobertura),
             'alertas_pendientes': alertas_pendientes,
+            'gastado': gastado,
+            'cobrado': cobrado,
+            'avance_pct': _calcular_avance(proyecto),
+            'efectividad_pct': _calcular_efectividad(proyecto),
         },
     })
 

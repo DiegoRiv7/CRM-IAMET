@@ -3,45 +3,79 @@
      ═══════════════════════════════════════════════════════════════ -->
 <div class="proyectos-section" id="proyectosSection">
 
-  <!-- Header -->
-  <div class="proy-section-header">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#007aff;">
+  <!-- Tab bar -->
+  <div style="display:flex;border:1px solid #e5e7eb;border-radius:10px;margin:0 24px 20px;overflow:hidden;">
+    <button class="proy-main-tab active" data-tab="programa" onclick="proySetMainTab('programa')" style="flex:1;padding:10px;border:none;background:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#007AFF;border-bottom:2px solid #007AFF;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Proyectos
+    </button>
+    <button class="proy-main-tab" data-tab="dashboard" onclick="proySetMainTab('dashboard')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Dashboard
+    </button>
+    <button class="proy-main-tab" data-tab="financiero" onclick="proySetMainTab('financiero')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Financiero
+    </button>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #f0f0f0;margin:0 24px 20px;">
+
+  <!-- TAB 1: Dashboard -->
+  <div id="proyTabDashboard" style="display:none;padding:0 24px 20px;">
+    <!-- KPIs row -->
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Indicadores Clave</h3>
+    <div id="proyDashKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+      <!-- Rendered by JS -->
+    </div>
+    <!-- Active projects list -->
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Proyectos del Periodo</h3>
+    <div id="proyDashList">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- TAB 2: Programa de Obra (existing content) -->
+  <div id="proyTabPrograma" style="padding:0 24px 20px;">
+    <div class="proy-section-header" style="margin-bottom:16px;">
+      <div class="proy-header-actions">
+        <button class="proy-filter-pill active" data-filter="todos" onclick="proyectosFilterStatus('todos')">Todos</button>
+        <button class="proy-filter-pill" data-filter="active" onclick="proyectosFilterStatus('active')">Activos</button>
+        <button class="proy-filter-pill" data-filter="completed" onclick="proyectosFilterStatus('completed')">Completados</button>
+        <button class="proy-filter-pill" data-filter="planning" onclick="proyectosFilterStatus('planning')">Planificacion</button>
+        <!-- Search -->
+        <div class="proy-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-search-icon">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="M16 16l4 4"/>
+          </svg>
+          <input type="text" id="proySearch" class="proy-search" placeholder="Buscar proyecto..." oninput="proyectosBuscar()">
+        </div>
+        <!-- New project button -->
+        <button class="proy-btn-new" onclick="proyectosCrearDialogo()">+ Nuevo Proyecto</button>
+      </div>
+    </div>
+    <div class="proy-grid" id="proyGrid">
+      <!-- Cards rendered by JS -->
+    </div>
+    <div class="proy-empty" id="proyEmpty" style="display:none;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;">
         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
       </svg>
-      <h2 class="proy-section-title">Proyectos</h2>
-    </div>
-    <div class="proy-header-actions">
-      <button class="proy-filter-pill active" data-filter="todos" onclick="proyectosFilterStatus('todos')">Todos</button>
-      <button class="proy-filter-pill" data-filter="active" onclick="proyectosFilterStatus('active')">Activos</button>
-      <button class="proy-filter-pill" data-filter="completed" onclick="proyectosFilterStatus('completed')">Completados</button>
-      <button class="proy-filter-pill" data-filter="planning" onclick="proyectosFilterStatus('planning')">Planificacion</button>
-      <!-- Search -->
-      <div class="proy-search-wrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-search-icon">
-          <circle cx="11" cy="11" r="7"/>
-          <path d="M16 16l4 4"/>
-        </svg>
-        <input type="text" id="proySearch" class="proy-search" placeholder="Buscar proyecto..." oninput="proyectosBuscar()">
-      </div>
-      <!-- New project button -->
-      <button class="proy-btn-new" onclick="proyectosCrearDialogo()">+ Nuevo Proyecto</button>
+      <p>No hay proyectos</p>
     </div>
   </div>
 
-  <!-- Cards grid -->
-  <div class="proy-grid" id="proyGrid">
-    <!-- Cards rendered by JS -->
-  </div>
-
-  <!-- Empty state -->
-  <div class="proy-empty" id="proyEmpty" style="display:none;">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-    </svg>
-    <p>No hay proyectos</p>
+  <!-- TAB 3: Financiero -->
+  <div id="proyTabFinanciero" style="display:none;padding:0 24px 20px;">
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Proyectos por Estado</h3>
+    <!-- Sub-tabs -->
+    <div style="display:flex;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;overflow:hidden;">
+      <button class="proy-fin-tab active" data-status="active" onclick="proyFinFilter('active')" style="flex:1;padding:8px;border:none;background:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;color:#007AFF;border-bottom:2px solid #007AFF;">En Ejecucion</button>
+      <button class="proy-fin-tab" data-status="planning" onclick="proyFinFilter('planning')" style="flex:1;padding:8px;border:none;background:#f9fafb;font-size:0.8rem;font-weight:500;cursor:pointer;color:#6B7280;">Programados</button>
+      <button class="proy-fin-tab" data-status="completed" onclick="proyFinFilter('completed')" style="flex:1;padding:8px;border:none;background:#f9fafb;font-size:0.8rem;font-weight:500;cursor:pointer;color:#6B7280;">Cerrados</button>
+    </div>
+    <div id="proyFinList">
+      <!-- Rendered by JS -->
+    </div>
   </div>
 
 </div>
@@ -104,21 +138,19 @@
         </svg>
         Partidas
       </button>
-      <button class="proy-tab-btn" data-tab="oc" onclick="proyectosSetTab('oc')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <rect x="1" y="3" width="15" height="13"/>
-          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-          <circle cx="5.5" cy="18.5" r="2.5"/>
-          <circle cx="18.5" cy="18.5" r="2.5"/>
-        </svg>
-        Ordenes de Compra
-      </button>
       <button class="proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
           <line x1="12" y1="1" x2="12" y2="23"/>
           <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
         </svg>
         Financiero
+      </button>
+      <button class="proy-tab-btn" data-tab="programa" onclick="proyectosSetTab('programa')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+        Programa de Obra
       </button>
       <button class="proy-tab-btn" data-tab="tareas" onclick="proyectosSetTab('tareas')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
@@ -198,8 +230,10 @@
         </div>
       </div>
 
-      <!-- TAB: Ordenes de Compra -->
-      <div id="proyPane_oc" class="proy-tab-pane" style="display:none;">
+      <!-- TAB: Financiero -->
+      <div id="proyPane_financiero" class="proy-tab-pane" style="display:none;">
+
+        <!-- Ordenes de Compra -->
         <div class="proy-tab-header">
           <h3>Ordenes de Compra</h3>
           <div class="proy-tab-actions">
@@ -228,10 +262,6 @@
             <tfoot id="proyOCFoot"></tfoot>
           </table>
         </div>
-      </div>
-
-      <!-- TAB: Financiero -->
-      <div id="proyPane_financiero" class="proy-tab-pane" style="display:none;">
 
         <!-- Facturas Proveedor -->
         <div class="proy-tab-header">
@@ -291,6 +321,13 @@
             <tbody id="proyGastosBody"></tbody>
             <tfoot id="proyGastosFoot"></tfoot>
           </table>
+        </div>
+      </div>
+
+      <!-- Programa de Obra -->
+      <div id="proyPane_programa" class="proy-tab-pane" style="display:none;">
+        <div id="proyProgramaContainer">
+          <!-- Rendered by JS -->
         </div>
       </div>
 
@@ -631,6 +668,203 @@
         <button class="proy-btn proy-btn-secondary" onclick="proyectosCerrarDialogo('proyDialogoEliminar')">Cancelar</button>
         <button style="padding:10px 24px;border-radius:10px;border:none;background:#FF3B30;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;" onclick="proyectosConfirmarEliminar()">Eliminar definitivamente</button>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR ACTIVIDAD (PROGRAMA DE OBRA)
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoActividad" style="z-index:10200;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:560px;">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(0,122,255,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="proy-dialog-title" style="margin:0;">Nueva Actividad</h3>
+          <div id="proyActFechaLabel" style="font-size:0.75rem;color:#6E6E73;margin-top:2px;"></div>
+        </div>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoActividad')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <!-- Nombre -->
+      <div class="proy-field">
+        <label for="proyActTitulo" class="proy-label">Nombre de la actividad *</label>
+        <input type="text" id="proyActTitulo" class="proy-input" placeholder="Ej: Instalacion de cableado">
+      </div>
+      <!-- Descripcion -->
+      <div class="proy-field">
+        <label for="proyActDescripcion" class="proy-label">Descripcion</label>
+        <textarea id="proyActDescripcion" class="proy-input" rows="2" placeholder="Detalles adicionales..." style="resize:vertical;"></textarea>
+      </div>
+      <!-- Horarios -->
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyActHoraInicio" class="proy-label">Hora inicio</label>
+          <input type="time" id="proyActHoraInicio" class="proy-input" value="07:00">
+        </div>
+        <div class="proy-field">
+          <label for="proyActHoraFin" class="proy-label">Hora fin</label>
+          <input type="time" id="proyActHoraFin" class="proy-input" value="16:00">
+        </div>
+      </div>
+      <!-- Personal -->
+      <div class="proy-field">
+        <label class="proy-label">Personal (Responsables)</label>
+        <div id="proyActPersonalList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;padding:4px;">
+          <div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando disponibilidad...</div>
+        </div>
+      </div>
+      <!-- Vehiculos -->
+      <div class="proy-field">
+        <label for="proyActVehiculos" class="proy-label">Vehiculos</label>
+        <input type="text" id="proyActVehiculos" class="proy-input" placeholder="Ej: Camioneta Ford Ranger, Grua #3">
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoActividad')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyActBtnCrear" onclick="proyectosGuardarActividad()">Crear Actividad</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     WIDGET: DETALLE DE ACTIVIDAD (PROGRAMA DE OBRA)
+     Estilo igual al widget de actividades de oportunidades
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay" id="proyDialogoActDetalle" style="z-index:10250;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="widget-card widget-card-md"
+      style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+    <!-- Header con barra café -->
+    <div style="height:60px;background:#92400E;border-radius:12px 12px 0 0;position:relative;">
+      <button type="button" onclick="proyectosCerrarDialogo('proyDialogoActDetalle')"
+          style="position:absolute;top:15px;right:15px;color:#fff;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;line-height:1;transition:background 0.2s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.2)'">&times;</button>
+      <div style="position:absolute;bottom:-20px;left:20px;width:40px;height:40px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);color:#92400E;">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>
+        </svg>
+      </div>
+    </div>
+    <div style="padding:2rem 1.5rem 1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:75vh;">
+      <!-- Título + fecha -->
+      <div>
+        <div style="font-size:0.7rem;text-transform:uppercase;color:#92400E;font-weight:800;letter-spacing:0.05em;margin-bottom:4px;">Programa de Obra</div>
+        <h3 id="proyDetalleActTitulo" style="margin:0;font-size:1.3rem;font-weight:700;color:#1D1D1F;">Cargando...</h3>
+        <div id="proyDetalleActSubtitulo" style="margin-top:0.3rem;color:#86868B;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span id="proyDetalleActFechaTxt"></span>
+        </div>
+      </div>
+
+      <!-- Estado badge -->
+      <div id="proyDetalleActEstadoRow" style="display:none;">
+        <div id="proyDetalleActEstadoBadge" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:700;"></div>
+      </div>
+
+      <!-- Horario + Proyecto -->
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">Horario</div>
+          <div id="proyDetalleActHorario" style="font-size:0.95rem;color:#1D1D1F;font-weight:600;">—</div>
+        </div>
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">Creado por</div>
+          <div id="proyDetalleActCreador" style="font-size:0.9rem;color:#1D1D1F;font-weight:500;">—</div>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div style="background:#F2F2F7;border-radius:8px;padding:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.4rem;text-transform:uppercase;">Descripción</div>
+        <div id="proyDetalleActDesc" style="font-size:0.95rem;color:#1D1D1F;line-height:1.5;white-space:pre-wrap;">Sin descripción</div>
+      </div>
+
+      <!-- Personal -->
+      <div>
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.5rem;text-transform:uppercase;">Personal asignado</div>
+        <div id="proyDetalleActPersonal" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+
+      <!-- Vehículos -->
+      <div id="proyDetalleActVehiculosRow" style="display:none;">
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">Vehículos</div>
+        <div id="proyDetalleActVehiculos" style="font-size:0.9rem;color:#1D1D1F;"></div>
+      </div>
+
+      <!-- Evidencia (solo si está completada) -->
+      <div id="proyDetalleActEvidenciaRow" style="display:none;padding-top:1rem;border-top:1px dashed #E5E5EA;">
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.5rem;text-transform:uppercase;">Evidencia</div>
+        <div id="proyDetalleActEvidenciaTexto" style="background:#FFFBEB;border:1px solid #FEF3C7;border-radius:8px;padding:10px 12px;font-size:0.88rem;color:#78350F;line-height:1.5;white-space:pre-wrap;margin-bottom:10px;display:none;"></div>
+        <div id="proyDetalleActEvidenciaArchivos" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+      <!-- Acciones -->
+      <div id="proyDetalleActAcciones" style="margin-top:0.5rem;padding-top:1rem;border-top:1px dashed #E5E5EA;display:flex;align-items:center;justify-content:flex-end;gap:0.5rem;flex-wrap:wrap;">
+        <button id="proyDetalleActBtnCompletar" onclick="proyectosIniciarCompletar()"
+            style="background:#34C759;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s,background 0.2s;"
+            onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='none'">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Completar Actividad
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: COMPLETAR CON EVIDENCIA
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoEvidencia" style="z-index:10300;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:560px;">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(5,150,105,0.12);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="proy-dialog-title" style="margin:0;">Completar Actividad</h3>
+          <div style="font-size:0.75rem;color:#6E6E73;margin-top:2px;">Agrega evidencia de la actividad realizada</div>
+        </div>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoEvidencia')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <div class="proy-field">
+        <label for="proyEvidenciaTexto" class="proy-label">Evidencia escrita</label>
+        <textarea id="proyEvidenciaTexto" class="proy-input" rows="4" placeholder="Describe lo que se realizo, resultados, observaciones..." style="resize:vertical;"></textarea>
+      </div>
+      <div class="proy-field">
+        <label for="proyEvidenciaArchivos" class="proy-label">Fotos / Documentos</label>
+        <input type="file" id="proyEvidenciaArchivos" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+               style="display:block;width:100%;padding:10px;border:1px dashed #D1D5DB;border-radius:10px;font-size:0.8rem;background:#F9FAFB;">
+        <div id="proyEvidenciaFileList" style="margin-top:8px;font-size:0.75rem;color:#6B7280;"></div>
+      </div>
+      <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 12px;font-size:0.75rem;color:#92400E;">
+        <strong>Importante:</strong> La evidencia (texto y/o archivos) se guardara permanentemente con la actividad.
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoEvidencia')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyEvidenciaBtnEnviar" style="background:#059669;border-color:#059669;" onclick="proyectosEnviarEvidencia()">Completar Actividad</button>
     </div>
   </div>
 </div>

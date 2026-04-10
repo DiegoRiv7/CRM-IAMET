@@ -117,13 +117,15 @@
     //  INIT (called when section becomes active)
     // =========================================
 
+    var _currentMainTab = 'programa';
+
     window.proyectosInit = function() {
         currentProjectId = null;
         currentFilter = 'todos';
         searchQuery = '';
         var searchInput = el('proySearch');
         if (searchInput) searchInput.value = '';
-        proyectosCargarLista();
+        proySetMainTab('programa');
     };
     window.proyectosAbrir = window.proyectosInit;
 
@@ -213,6 +215,9 @@
             var amountColor = profitOk ? '#10b981' : '#636366';
 
             var unresolved = p.alertas_count || 0;
+            // Badge: mostrar etapa de la oportunidad si existe
+            var badgeText = p.oportunidad_etapa || statusLabel(p.status);
+            var badgeColor = p.oportunidad_etapa_color || '#6B7280';
 
             html += '<div class="proy-card" onclick="proyectosVerDetalle(' + p.id + ')">' +
                 '<div class="proy-card-header">' +
@@ -220,7 +225,7 @@
                         '<div class="proy-card-title">' + truncate(p.nombre, 45) + '</div>' +
                         '<div class="proy-card-client">' + (p.cliente_nombre || '\u2014') + '</div>' +
                     '</div>' +
-                    '<span class="proy-badge ' + statusClass(p.status) + '">' + statusLabel(p.status) + '</span>' +
+                    '<span class="proy-badge" style="background:' + badgeColor + '20;color:' + badgeColor + ';border:1px solid ' + badgeColor + ';">' + badgeText + '</span>' +
                 '</div>' +
                 '<div class="proy-card-desc">' + truncate(p.descripcion, 90) + '</div>' +
                 '<div class="proy-card-profit">' +
@@ -271,8 +276,13 @@
 
                 if (hName) hName.textContent = project.nombre || '';
                 if (hStatus) {
-                    hStatus.textContent = statusLabel(project.status);
-                    hStatus.className = 'proy-badge ' + statusClass(project.status);
+                    var etapa = project.oportunidad_etapa || statusLabel(project.status);
+                    var etapaColor = project.oportunidad_etapa_color || '#6B7280';
+                    hStatus.textContent = etapa;
+                    hStatus.style.background = etapaColor + '20';
+                    hStatus.style.color = etapaColor;
+                    hStatus.style.border = '1px solid ' + etapaColor;
+                    hStatus.className = 'proy-badge';
                 }
                 if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
                 if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
@@ -344,6 +354,87 @@
     }
 
 
+    function renderOperationalKPIs(projectId) {
+        var kpiContainer = el('proyKPIs');
+        if (!kpiContainer) return;
+
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var fin = resp.data;
+                var gastado = fin.gastado || fin.costos || 0;
+                var cobrado = fin.cobrado || fin.ingresos || 0;
+                var avancePct = Math.round(fin.avance_pct || 0);
+                var efectividadPct = Math.round(fin.efectividad_pct || 0);
+
+                var avanceColor = avancePct >= 80 ? '#10b981' : (avancePct >= 50 ? '#f59e0b' : '#ef4444');
+                var efectividadColor = efectividadPct >= 80 ? '#10b981' : (efectividadPct >= 60 ? '#f59e0b' : '#ef4444');
+
+                kpiContainer.innerHTML =
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Gastado</div>' +
+                        '<div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(gastado) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Cobrado</div>' +
+                        '<div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(cobrado) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">% Avance</div>' +
+                        '<div class="proy-kpi-value" style="color:' + avanceColor + '">' + avancePct + '%</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Efectividad</div>' +
+                        '<div class="proy-kpi-value" style="color:' + efectividadColor + '">' + efectividadPct + '%</div>' +
+                    '</div>';
+            }
+        }).catch(function(err) {
+            console.error('Error cargando KPIs operacionales:', err);
+        });
+    }
+
+    function renderFinancialKPIs(projectId) {
+        var kpiContainer = el('proyKPIs');
+        if (!kpiContainer) return;
+
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                var fin = resp.data;
+                // KPI 1: Utilidad Presupuestada (de partidas - lo planeado)
+                var utilPresup = fin.utilidad_presupuestada || 0;
+                // KPI 2: Costo Presupuestado (de partidas - lo que se planeo gastar)
+                var costoPresup = fin.costo_presupuestado || 0;
+                // KPI 3: Utilidad Real (cobrado - facturas proveedor - gastos aprobados)
+                var utilReal = fin.utilidad_real || 0;
+                var utilRealColor = utilReal >= 0 ? '#10b981' : '#ef4444';
+                // KPI 4: Margen Real (utilidad real / cobrado)
+                var cobrado = fin.ingresos || 0;
+                var margenReal = cobrado > 0 ? (utilReal / cobrado * 100) : 0;
+                var margenColor = margenReal >= 25 ? '#10b981' : (margenReal >= 15 ? '#f59e0b' : '#ef4444');
+
+                kpiContainer.innerHTML =
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Utilidad Presupuestada</div>' +
+                        '<div class="proy-kpi-value">' + fmtMoney(utilPresup) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Costo Presupuestado</div>' +
+                        '<div class="proy-kpi-value">' + fmtMoney(costoPresup) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Utilidad Real</div>' +
+                        '<div class="proy-kpi-value" style="color:' + utilRealColor + '">' + fmtMoney(utilReal) + '</div>' +
+                    '</div>' +
+                    '<div class="proy-kpi-card">' +
+                        '<div class="proy-kpi-label">Margen Real</div>' +
+                        '<div class="proy-kpi-value" style="color:' + margenColor + '">' + Math.round(margenReal) + '%</div>' +
+                    '</div>';
+            }
+        }).catch(function(err) {
+            console.error('Error cargando KPIs financieros:', err);
+        });
+    }
+
+
     // =========================================
     //  TABS
     // =========================================
@@ -372,10 +463,19 @@
         switch (tabName) {
             case 'info':       renderInfo(); break;
             case 'partidas':   renderPartidas(currentProjectId); break;
-            case 'oc':         renderOC(currentProjectId); break;
             case 'financiero': renderFinanciero(currentProjectId); break;
+            case 'programa':   renderProgramaObra(currentProjectId); break;
             case 'tareas':     renderTareas(currentProjectId); break;
             case 'alertas':    renderAlertas(currentProjectId); break;
+        }
+
+        // Update KPIs based on active tab
+        if (tabName === 'partidas' || tabName === 'programa') {
+            renderOperationalKPIs(currentProjectId);
+        } else if (tabName === 'financiero') {
+            renderFinancialKPIs(currentProjectId);
+        } else {
+            renderOperationalKPIs(currentProjectId);
         }
     };
 
@@ -916,10 +1016,564 @@
 
 
     // =========================================
+    //  RENDER: PROGRAMA DE OBRA
+    // =========================================
+
+    function renderProgramaObra(projectId) {
+        var container = el('proyProgramaContainer');
+        if (!container) return;
+
+        var detail = _cachedProjectDetail;
+        if (!detail || !detail.fecha_inicio || !detail.fecha_fin) {
+            container.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">Define las fechas de inicio y fin del proyecto para usar el Programa de Obra</div>';
+            return;
+        }
+
+        // Calculate weeks from fecha_inicio to fecha_fin
+        var start = new Date(detail.fecha_inicio);
+        var end = new Date(detail.fecha_fin);
+        // Adjust to Monday of the start week
+        var dayOfWeek = start.getDay();
+        var mondayStart = new Date(start);
+        mondayStart.setDate(start.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+        var weeks = [];
+        var current = new Date(mondayStart);
+        var weekNum = 1;
+        while (current <= end) {
+            var weekStart = new Date(current);
+            var weekEnd = new Date(current);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            weeks.push({ num: weekNum, start: weekStart, end: weekEnd });
+            current.setDate(current.getDate() + 7);
+            weekNum++;
+        }
+
+        // State
+        var currentWeekIdx = 0;
+        var showWeekend = false;
+
+        function renderWeek() {
+            var week = weeks[currentWeekIdx];
+            if (!week) return;
+
+            var fmtShort = function(d) {
+                var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+                return d.getDate() + ' ' + months[d.getMonth()];
+            };
+
+            var days = ['Lunes','Martes','\u004Di\u00E9rcoles','Jueves','Viernes'];
+            if (showWeekend) days.push('S\u00E1bado', 'Domingo');
+
+            var html = '';
+            // Navigation header
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:12px;">';
+            html += '<button onclick="proyProgramaPrev()" style="background:none;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:1rem;color:#1d1d1f;' + (currentWeekIdx === 0 ? 'opacity:0.3;pointer-events:none;' : '') + '">\u2190</button>';
+            html += '<div style="text-align:center;"><div style="font-weight:700;font-size:0.95rem;">Semana ' + week.num + '</div>';
+            html += '<div style="font-size:0.75rem;color:#6E6E73;">' + fmtShort(week.start) + ' \u2014 ' + fmtShort(new Date(week.start.getTime() + 4*86400000)) + '</div></div>';
+            html += '<button onclick="proyProgramaNext()" style="background:none;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:1rem;color:#1d1d1f;' + (currentWeekIdx >= weeks.length - 1 ? 'opacity:0.3;pointer-events:none;' : '') + '">\u2192</button>';
+            html += '</div>';
+
+            // Toggle weekend button
+            html += '<div style="text-align:right;margin-bottom:8px;"><button onclick="proyProgramaToggleWeekend()" style="font-size:0.72rem;background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;cursor:pointer;color:#6B7280;">' + (showWeekend ? 'Ocultar fin de semana' : 'Mostrar fin de semana') + '</button></div>';
+
+            // Day columns
+            html += '<div style="display:grid;grid-template-columns:repeat(' + days.length + ',1fr);gap:8px;">';
+            days.forEach(function(dayName, i) {
+                var dayDate = new Date(week.start);
+                dayDate.setDate(dayDate.getDate() + i);
+                var dateStr = dayDate.toISOString().split('T')[0];
+                var isToday = dateStr === new Date().toISOString().split('T')[0];
+
+                html += '<div style="border:1px solid ' + (isToday ? '#007AFF' : '#e5e7eb') + ';border-radius:10px;min-height:200px;padding:8px;">';
+                html += '<div style="font-size:0.72rem;font-weight:700;color:' + (isToday ? '#007AFF' : '#6E6E73') + ';text-transform:uppercase;margin-bottom:4px;">' + dayName + '</div>';
+                html += '<div style="font-size:0.68rem;color:#9CA3AF;margin-bottom:8px;">' + fmtShort(dayDate) + '</div>';
+                html += '<div id="proyProgDay_' + dateStr + '">';
+                html += '</div>';
+                html += '<button onclick="proyProgramaAddActivity(\'' + dateStr + '\')" style="width:100%;padding:6px;border:1px dashed #D1D5DB;border-radius:8px;background:none;color:#9CA3AF;font-size:0.72rem;cursor:pointer;margin-top:4px;">+ A\u00F1adir</button>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Load activities for this week
+            _fetch('/app/api/programacion/actividades/?proyecto_key=proy_' + projectId).then(function(resp) {
+                if (!resp.success) return;
+                var items = resp.items || [];
+                // Group by date
+                items.forEach(function(act) {
+                    if (!act.fecha) return;
+                    var dayEl = document.getElementById('proyProgDay_' + act.fecha);
+                    if (!dayEl) return;
+                    var respHtml = (act.responsables || []).map(function(r) {
+                        return '<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#007AFF;color:#fff;font-size:0.55rem;line-height:20px;text-align:center;margin-right:2px;" title="' + r.nombre + '">' + r.iniciales + '</span>';
+                    }).join('');
+                    var completed = act.completada === true;
+                    var cardBg = '#F0F7FF';
+                    var cardBorder = '#BFDBFE';
+                    var cardColor = '#1E40AF';
+                    var cardOpacity = completed ? '0.42' : '1';
+                    var checkIcon = completed
+                        ? '<span style="display:inline-block;margin-right:4px;color:#059669;font-weight:800;">&#10003;</span>'
+                        : '';
+                    var tituloStyle = completed ? 'text-decoration:line-through;' : '';
+                    var card = document.createElement('div');
+                    card.style.cssText = 'background:' + cardBg + ';border:1px solid ' + cardBorder + ';border-radius:8px;padding:6px 8px;margin-bottom:4px;font-size:0.7rem;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s, opacity 0.2s;opacity:' + cardOpacity + ';';
+                    card.setAttribute('data-act-id', act.id);
+                    card.onmouseover = function() { this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 10px rgba(0,0,0,0.08)'; if (completed) this.style.opacity = '0.85'; };
+                    card.onmouseout = function() { this.style.transform = ''; this.style.boxShadow = ''; if (completed) this.style.opacity = '0.42'; };
+                    card.onclick = function() { window.proyectosVerActividadDetalle(act.id); };
+                    card.innerHTML = '<div style="font-weight:600;color:' + cardColor + ';margin-bottom:2px;' + tituloStyle + '">' + checkIcon + act.titulo + '</div>' +
+                        '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+                            '<span style="color:#6B7280;">' + act.hora_inicio + ' - ' + act.hora_fin + '</span>' +
+                            '<div>' + respHtml + '</div>' +
+                        '</div>';
+                    dayEl.appendChild(card);
+                });
+            });
+        }
+
+        // Navigation functions
+        window.proyProgramaPrev = function() { if (currentWeekIdx > 0) { currentWeekIdx--; renderWeek(); } };
+        window.proyProgramaNext = function() { if (currentWeekIdx < weeks.length - 1) { currentWeekIdx++; renderWeek(); } };
+        window.proyProgramaToggleWeekend = function() { showWeekend = !showWeekend; renderWeek(); };
+        window.proyProgramaAddActivity = function(dateStr) { _openActividadForm(dateStr); };
+
+        renderWeek();
+    }
+
+
+    // =========================================
+    //  ACTIVIDAD FORM (PROGRAMA DE OBRA)
+    // =========================================
+
+    var _actividadFechaSeleccionada = null;
+    var _actividadSelectedUsers = {};
+
+    function _getDayNameSpanish(dateStr) {
+        var d = new Date(dateStr + 'T12:00:00');
+        var names = ['Domingo','Lunes','Martes','Mi\u00E9rcoles','Jueves','Viernes','S\u00E1bado'];
+        return names[d.getDay()];
+    }
+
+    function _fmtDateLong(dateStr) {
+        var d = new Date(dateStr + 'T12:00:00');
+        var months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        return d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+    }
+
+    function _openActividadForm(dateStr) {
+        _actividadFechaSeleccionada = dateStr;
+        _actividadSelectedUsers = {};
+
+        // Set date label
+        var label = el('proyActFechaLabel');
+        if (label) label.textContent = _getDayNameSpanish(dateStr) + ', ' + _fmtDateLong(dateStr);
+
+        // Reset form fields
+        if (el('proyActTitulo')) el('proyActTitulo').value = '';
+        if (el('proyActDescripcion')) el('proyActDescripcion').value = '';
+        if (el('proyActHoraInicio')) el('proyActHoraInicio').value = '07:00';
+        if (el('proyActHoraFin')) el('proyActHoraFin').value = '16:00';
+        if (el('proyActVehiculos')) el('proyActVehiculos').value = '';
+
+        // Show dialog
+        var d = el('proyDialogoActividad');
+        if (d) d.style.display = 'flex';
+
+        // Load availability
+        _loadPersonalDisponibilidad(dateStr);
+
+        // Re-load on time change
+        var hiEl = el('proyActHoraInicio');
+        var hfEl = el('proyActHoraFin');
+        if (hiEl) hiEl.onchange = function() { _loadPersonalDisponibilidad(dateStr); };
+        if (hfEl) hfEl.onchange = function() { _loadPersonalDisponibilidad(dateStr); };
+    }
+
+    function _loadPersonalDisponibilidad(dateStr) {
+        var container = el('proyActPersonalList');
+        if (!container) return;
+
+        container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando disponibilidad...</div>';
+
+        var horaInicio = el('proyActHoraInicio') ? el('proyActHoraInicio').value : '07:00';
+        var horaFin = el('proyActHoraFin') ? el('proyActHoraFin').value : '16:00';
+        var diaSemana = _getDayNameSpanish(dateStr);
+
+        var url = '/app/api/programacion/disponibilidad/?dia_semana=' + encodeURIComponent(diaSemana) +
+            '&hora_inicio=' + encodeURIComponent(horaInicio) +
+            '&hora_fin=' + encodeURIComponent(horaFin) +
+            '&fecha=' + encodeURIComponent(dateStr);
+
+        _fetch(url).then(function(resp) {
+            if (!resp.success && !resp.ok) {
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error al cargar personal</div>';
+                return;
+            }
+            var users = resp.usuarios || resp.data || [];
+            if (users.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">No hay personal registrado</div>';
+                return;
+            }
+
+            var html = '';
+            users.forEach(function(u) {
+                var available = u.disponible !== false;
+                var conflict = u.conflicto || u.conflict || '';
+                var checked = _actividadSelectedUsers[u.id] ? ' checked' : '';
+                var opacity = available ? '1' : '0.5';
+
+                html += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:' + (available ? 'pointer' : 'default') + ';opacity:' + opacity + ';transition:background 0.15s;" ' +
+                    'onmouseover="this.style.background=\'#F5F5F7\'" onmouseout="this.style.background=\'transparent\'">' +
+                    '<input type="checkbox" value="' + u.id + '"' + checked + (available ? '' : ' disabled') +
+                    ' onchange="proyActToggleUser(' + u.id + ', this.checked)" ' +
+                    'style="width:16px;height:16px;accent-color:#007AFF;flex-shrink:0;">' +
+                    '<div style="width:28px;height:28px;border-radius:50%;background:' + (available ? '#007AFF' : '#D1D5DB') + ';color:#fff;font-size:0.6rem;line-height:28px;text-align:center;flex-shrink:0;font-weight:600;">' + (u.iniciales || u.initials || '??') + '</div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-size:0.8rem;font-weight:500;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (u.nombre || u.name || 'Usuario ' + u.id) + '</div>' +
+                        (conflict ? '<div style="font-size:0.68rem;color:#EF4444;margin-top:1px;">' + conflict + '</div>' : '') +
+                        (available && !conflict ? '<div style="font-size:0.68rem;color:#10B981;margin-top:1px;">Disponible</div>' : '') +
+                    '</div>' +
+                '</label>';
+            });
+
+            container.innerHTML = html;
+        }).catch(function(err) {
+            container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error de conexion</div>';
+            console.error('Error cargando disponibilidad:', err);
+        });
+    }
+
+    window.proyActToggleUser = function(userId, checked) {
+        if (checked) {
+            _actividadSelectedUsers[userId] = true;
+        } else {
+            delete _actividadSelectedUsers[userId];
+        }
+    };
+
+    window.proyectosGuardarActividad = function() {
+        if (!currentProjectId) return;
+
+        var titulo = el('proyActTitulo') ? el('proyActTitulo').value.trim() : '';
+        if (!titulo) {
+            el('proyActTitulo').style.borderColor = '#FF3B30';
+            el('proyActTitulo').focus();
+            return;
+        }
+        el('proyActTitulo').style.borderColor = '';
+
+        var horaInicio = el('proyActHoraInicio') ? el('proyActHoraInicio').value : '07:00';
+        var horaFin = el('proyActHoraFin') ? el('proyActHoraFin').value : '16:00';
+        var diaSemana = _getDayNameSpanish(_actividadFechaSeleccionada);
+
+        var responsables = Object.keys(_actividadSelectedUsers).map(function(k) { return parseInt(k); });
+
+        // Nombre real del proyecto (si se cargo el detalle), si no fallback a la key
+        var proyectoNombre = (_cachedProjectDetail && _cachedProjectDetail.nombre)
+            ? _cachedProjectDetail.nombre
+            : ('proy_' + currentProjectId);
+
+        var payload = {
+            proyecto_key: 'proy_' + currentProjectId,
+            proyecto_titulo: proyectoNombre,
+            titulo: titulo,
+            dia_semana: diaSemana,
+            hora_inicio: horaInicio,
+            hora_fin: horaFin,
+            fecha: _actividadFechaSeleccionada,
+            responsables: responsables
+        };
+
+        // Include optional fields if filled
+        var desc = el('proyActDescripcion') ? el('proyActDescripcion').value.trim() : '';
+        if (desc) payload.descripcion = desc;
+
+        var vehiculos = el('proyActVehiculos') ? el('proyActVehiculos').value.trim() : '';
+        if (vehiculos) payload.vehiculos = vehiculos;
+
+        // Disable button while submitting
+        var btn = el('proyActBtnCrear');
+        if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
+
+        _fetch('/app/api/programacion/actividades/', {
+            method: 'POST',
+            body: payload
+        }).then(function(resp) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Crear Actividad'; }
+
+            if (resp.ok || resp.success) {
+                proyectosCerrarDialogo('proyDialogoActividad');
+                // Re-render programa de obra to show new activity
+                renderProgramaObra(currentProjectId);
+                // Show toast
+                _showToast('Actividad creada');
+            } else {
+                alert('Error al crear actividad: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Crear Actividad'; }
+            alert('Error de conexion al crear actividad');
+            console.error('Error creando actividad:', err);
+        });
+    };
+
+    function _showToast(message) {
+        var existing = document.getElementById('proyToast');
+        if (existing) existing.remove();
+
+        var toast = document.createElement('div');
+        toast.id = 'proyToast';
+        toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1D1D1F;color:#fff;padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.2);transition:opacity 0.3s;';
+        toast.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>' +
+            message + '</div>';
+        document.body.appendChild(toast);
+
+        setTimeout(function() { toast.style.opacity = '0'; }, 2500);
+        setTimeout(function() { toast.remove(); }, 3000);
+    }
+
+
+    // =========================================
+    //  DETALLE / COMPLETAR ACTIVIDAD (PROGRAMA DE OBRA)
+    // =========================================
+
+    var _currentActDetalleId = null;
+
+    function _esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.proyectosVerActividadDetalle = function(actividadId) {
+        if (!actividadId) return;
+        _currentActDetalleId = actividadId;
+
+        var overlay = el('proyDialogoActDetalle');
+        if (!overlay) return;
+
+        // Reset fields a "Cargando"
+        el('proyDetalleActTitulo').textContent = 'Cargando...';
+        el('proyDetalleActFechaTxt').textContent = '';
+        el('proyDetalleActHorario').textContent = '—';
+        el('proyDetalleActCreador').textContent = '—';
+        el('proyDetalleActDesc').textContent = 'Sin descripción';
+        el('proyDetalleActPersonal').innerHTML = '';
+        el('proyDetalleActEstadoRow').style.display = 'none';
+        el('proyDetalleActVehiculosRow').style.display = 'none';
+        el('proyDetalleActEvidenciaRow').style.display = 'none';
+        el('proyDetalleActEvidenciaTexto').style.display = 'none';
+        el('proyDetalleActEvidenciaArchivos').innerHTML = '';
+        el('proyDetalleActBtnCompletar').style.display = '';
+
+        overlay.style.display = 'flex';
+
+        _fetch('/app/api/programacion/actividad/' + actividadId + '/').then(function(resp) {
+            if (!resp.success) {
+                el('proyDetalleActTitulo').textContent = 'Error al cargar';
+                return;
+            }
+            var it = resp.item || {};
+
+            // Título
+            el('proyDetalleActTitulo').textContent = it.titulo || 'Actividad';
+
+            // Fecha legible
+            var fechaStr = it.fecha || '';
+            if (fechaStr) {
+                var d = new Date(fechaStr + 'T12:00:00');
+                var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                var dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+                el('proyDetalleActFechaTxt').textContent = dias[d.getDay()] + ', ' + d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
+            } else {
+                el('proyDetalleActFechaTxt').textContent = it.dia_semana || '';
+            }
+
+            // Horario + Creador
+            el('proyDetalleActHorario').textContent = (it.hora_inicio || '—') + ' – ' + (it.hora_fin || '—');
+            el('proyDetalleActCreador').textContent = it.creado_por || '—';
+
+            // Descripción
+            el('proyDetalleActDesc').textContent = it.descripcion || 'Sin descripción';
+
+            // Estado badge
+            var estadoRow = el('proyDetalleActEstadoRow');
+            var estadoBadge = el('proyDetalleActEstadoBadge');
+            if (it.completada) {
+                estadoRow.style.display = '';
+                var completedByStr = it.completada_por ? ' por ' + _esc(it.completada_por) : '';
+                var completedDateStr = '';
+                if (it.fecha_completada) {
+                    var fc = new Date(it.fecha_completada);
+                    completedDateStr = ' · ' + fc.toLocaleDateString('es-MX') + ' ' + fc.getHours().toString().padStart(2,'0') + ':' + fc.getMinutes().toString().padStart(2,'0');
+                }
+                estadoBadge.style.background = 'rgba(52,199,89,0.14)';
+                estadoBadge.style.color = '#16A34A';
+                estadoBadge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Completada' + completedByStr + completedDateStr;
+            } else {
+                estadoRow.style.display = '';
+                estadoBadge.style.background = 'rgba(146,64,14,0.12)';
+                estadoBadge.style.color = '#92400E';
+                estadoBadge.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/></svg>Pendiente';
+            }
+
+            // Personal
+            var personalEl = el('proyDetalleActPersonal');
+            personalEl.innerHTML = '';
+            if (it.responsables && it.responsables.length) {
+                it.responsables.forEach(function(r) {
+                    var chip = document.createElement('div');
+                    chip.style.cssText = 'display:flex;align-items:center;gap:6px;background:#F3F4F6;border-radius:20px;padding:4px 12px 4px 4px;';
+                    chip.innerHTML = '<div style="width:26px;height:26px;border-radius:50%;background:#92400E;color:#fff;font-size:0.65rem;line-height:26px;text-align:center;font-weight:700;">' + _esc(r.iniciales) + '</div>' +
+                        '<span style="font-size:0.85rem;color:#1D1D1F;">' + _esc(r.nombre) + '</span>';
+                    personalEl.appendChild(chip);
+                });
+            } else {
+                personalEl.innerHTML = '<span style="color:#86868B;font-size:0.85rem;font-style:italic;">Sin personal asignado</span>';
+            }
+
+            // Vehículos
+            if (it.vehiculos) {
+                el('proyDetalleActVehiculosRow').style.display = '';
+                el('proyDetalleActVehiculos').textContent = it.vehiculos;
+            }
+
+            // Evidencia (si está completada)
+            if (it.completada) {
+                var evidenciaRow = el('proyDetalleActEvidenciaRow');
+                var textoEl = el('proyDetalleActEvidenciaTexto');
+                var archivosEl = el('proyDetalleActEvidenciaArchivos');
+                var hasAny = false;
+
+                if (it.evidencia_texto) {
+                    textoEl.textContent = it.evidencia_texto;
+                    textoEl.style.display = '';
+                    hasAny = true;
+                }
+                if (it.evidencias && it.evidencias.length) {
+                    hasAny = true;
+                    it.evidencias.forEach(function(e) {
+                        var isImg = (e.tipo_mime || '').indexOf('image/') === 0;
+                        var icon = isImg
+                            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'
+                            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+                        var a = document.createElement('a');
+                        a.href = e.url;
+                        a.target = '_blank';
+                        a.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;text-decoration:none;color:#1D1D1F;font-size:0.85rem;transition:background 0.15s;';
+                        a.onmouseover = function() { this.style.background = '#F9FAFB'; };
+                        a.onmouseout = function() { this.style.background = 'transparent'; };
+                        a.innerHTML = icon + '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(e.nombre_archivo) + '</span>';
+                        archivosEl.appendChild(a);
+                    });
+                }
+                if (hasAny) {
+                    evidenciaRow.style.display = '';
+                } else {
+                    evidenciaRow.style.display = '';
+                    textoEl.textContent = 'Sin evidencia registrada';
+                    textoEl.style.display = '';
+                    textoEl.style.fontStyle = 'italic';
+                    textoEl.style.color = '#9CA3AF';
+                    textoEl.style.background = 'transparent';
+                    textoEl.style.border = 'none';
+                    textoEl.style.padding = '0';
+                }
+            }
+
+            // Botón Completar
+            var btn = el('proyDetalleActBtnCompletar');
+            if (it.completada) {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = 'inline-flex';
+            }
+        }).catch(function(err) {
+            el('proyDetalleActTitulo').textContent = 'Error de conexión';
+            console.error('Error cargando detalle actividad:', err);
+        });
+    };
+
+    window.proyectosIniciarCompletar = function() {
+        if (!_currentActDetalleId) return;
+        // Resetear form
+        var txt = el('proyEvidenciaTexto');
+        var files = el('proyEvidenciaArchivos');
+        var list = el('proyEvidenciaFileList');
+        if (txt) txt.value = '';
+        if (files) files.value = '';
+        if (list) list.textContent = '';
+
+        // Listener para mostrar archivos seleccionados
+        if (files && !files._hasListener) {
+            files.addEventListener('change', function() {
+                var names = [];
+                for (var i = 0; i < this.files.length; i++) names.push(this.files[i].name);
+                if (list) list.textContent = names.length ? (names.length + ' archivo(s): ' + names.join(', ')) : '';
+            });
+            files._hasListener = true;
+        }
+
+        var overlay = el('proyDialogoEvidencia');
+        if (overlay) overlay.style.display = 'flex';
+    };
+
+    window.proyectosEnviarEvidencia = function() {
+        if (!_currentActDetalleId) return;
+        var txt = el('proyEvidenciaTexto');
+        var files = el('proyEvidenciaArchivos');
+        var btn = el('proyEvidenciaBtnEnviar');
+
+        var texto = txt ? txt.value.trim() : '';
+        var archivos = files ? files.files : [];
+
+        if (!texto && (!archivos || archivos.length === 0)) {
+            alert('Debes agregar evidencia escrita o al menos un archivo.');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('evidencia_texto', texto);
+        if (archivos && archivos.length) {
+            for (var i = 0; i < archivos.length; i++) {
+                formData.append('archivos', archivos[i]);
+            }
+        }
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+        _fetch('/app/api/programacion/actividad/' + _currentActDetalleId + '/completar/', {
+            method: 'POST',
+            body: formData
+        }).then(function(resp) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Completar Actividad'; }
+            if (resp.success) {
+                proyectosCerrarDialogo('proyDialogoEvidencia');
+                proyectosCerrarDialogo('proyDialogoActDetalle');
+                _showToast('Actividad completada');
+                if (currentProjectId) renderProgramaObra(currentProjectId);
+                // Refrescar calendario si existe
+                if (typeof calGlobalRefetch === 'function') { try { calGlobalRefetch(); } catch(e) {} }
+            } else {
+                alert('Error al completar: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Completar Actividad'; }
+            alert('Error de conexión al completar actividad');
+            console.error('Error completando actividad:', err);
+        });
+    };
+
+
+    // =========================================
     //  RENDER: FINANCIERO
     // =========================================
 
     function renderFinanciero(projectId) {
+        renderOC(projectId);
         renderSupplierInvoices(projectId);
         renderRevenueInvoices(projectId);
         renderExpenses(projectId);
@@ -1333,8 +1987,13 @@
 
                 if (hName) hName.textContent = project.nombre || '';
                 if (hStatus) {
-                    hStatus.textContent = statusLabel(project.status);
-                    hStatus.className = 'proy-badge ' + statusClass(project.status);
+                    var etapa = project.oportunidad_etapa || statusLabel(project.status);
+                    var etapaColor = project.oportunidad_etapa_color || '#6B7280';
+                    hStatus.textContent = etapa;
+                    hStatus.style.background = etapaColor + '20';
+                    hStatus.style.color = etapaColor;
+                    hStatus.style.border = '1px solid ' + etapaColor;
+                    hStatus.className = 'proy-badge';
                 }
                 if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
                 if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
@@ -2008,5 +2667,182 @@
             e.target.style.display = 'none';
         }
     });
+
+
+    // =========================================
+    //  MAIN TABS: Dashboard / Programa / Financiero
+    // =========================================
+
+    window.proySetMainTab = function(tab) {
+        _currentMainTab = tab;
+        // Toggle tab buttons
+        document.querySelectorAll('.proy-main-tab').forEach(function(btn) {
+            var isActive = btn.getAttribute('data-tab') === tab;
+            btn.style.background = isActive ? '#fff' : '#f9fafb';
+            btn.style.color = isActive ? '#007AFF' : '#6B7280';
+            btn.style.fontWeight = isActive ? '600' : '500';
+            btn.style.borderBottom = isActive ? '2px solid #007AFF' : '2px solid transparent';
+            btn.classList.toggle('active', isActive);
+        });
+        // Toggle tab content
+        var tabs = ['Dashboard', 'Programa', 'Financiero'];
+        tabs.forEach(function(t) {
+            var panel = el('proyTab' + t);
+            if (panel) panel.style.display = t.toLowerCase() === tab ? '' : 'none';
+        });
+        // Load data for the active tab
+        if (tab === 'dashboard') _loadDashboard();
+        else if (tab === 'programa') proyectosCargarLista();
+        else if (tab === 'financiero') _loadFinanciero('active');
+    };
+
+    // ── Dashboard ──
+    function _getFilterParams() {
+        var mesEl = document.getElementById('mesFilter');
+        var anioEl = document.getElementById('anioFilter');
+        var mes = mesEl ? mesEl.value : '';
+        var anio = anioEl ? anioEl.value : '';
+        var params = '';
+        if (anio) params += 'anio=' + anio;
+        if (mes) params += (params ? '&' : '') + 'mes=' + mes;
+        return params;
+    }
+
+    function _loadDashboard() {
+        var kpiContainer = el('proyDashKpis');
+        var listContainer = el('proyDashList');
+        if (kpiContainer) kpiContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8e8e93;padding:20px;">Cargando...</div>';
+
+        var params = _getFilterParams();
+        _fetch('/app/api/iamet/proyectos/dashboard/' + (params ? '?' + params : '')).then(function(resp) {
+            if (!resp.success) return;
+            var d = resp.data;
+            if (kpiContainer) {
+                kpiContainer.innerHTML =
+                    _dashKpiCard('Proyectos en Ejecucion', d.proyectos_ejecucion, '#007AFF', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>', '+' + d.proyectos_programados + ' programados') +
+                    _dashKpiCard('Total Proyectos', d.total_proyectos, '#6366f1', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', d.proyectos_completados + ' completados') +
+                    _dashKpiCard('Venta Total', fmtMoney(d.venta_total), '#007AFF', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>', 'Costo: ' + fmtMoney(d.costo_total)) +
+                    _dashKpiCard('Utilidad Total', fmtMoney(d.utilidad_total), '#059669', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', d.venta_total > 0 ? Math.round(d.utilidad_total / d.venta_total * 100) + '% margen' : '');
+            }
+        });
+
+        // Load ALL projects (not just active)
+        _fetch('/app/api/iamet/proyectos/').then(function(resp) {
+            if (!resp.ok && !resp.success) return;
+            var projects = resp.data || [];
+            if (listContainer) {
+                if (projects.length === 0) {
+                    listContainer.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">No hay proyectos en este periodo</div>';
+                    return;
+                }
+                listContainer.innerHTML = projects.map(function(p) {
+                    var budgeted = p.utilidad_presupuestada || 0;
+                    var actual = p.utilidad_real || 0;
+                    var pct = budgeted > 0 ? Math.min(Math.round(actual / budgeted * 100), 100) : 0;
+                    var barColor = pct >= 70 ? '#10b981' : (pct >= 30 ? '#f59e0b' : '#e5e7eb');
+                    var statusLabels = {active:'En Ejecucion', planning:'Planificacion', completed:'Completado', paused:'Pausado', archived:'Archivado'};
+                    var statusColors = {active:'#10b981', planning:'#f59e0b', completed:'#6366f1', paused:'#8e8e93', archived:'#6B7280'};
+                    var sLabel = statusLabels[p.status] || p.status;
+                    var statusColor = statusColors[p.status] || '#6B7280';
+
+                    // Equipo: show project owner name
+                    var equipoHtml = p.usuario_nombre ? p.usuario_nombre : '\u2014';
+
+                    // Fechas: start date + days active
+                    var fechaHtml = '\u2014';
+                    if (p.fecha_inicio) {
+                        var startParts = p.fecha_inicio.split('T')[0].split('-');
+                        var startDate = new Date(parseInt(startParts[0]), parseInt(startParts[1]) - 1, parseInt(startParts[2]));
+                        var dias;
+                        if (p.status === 'completed' && p.fecha_fin) {
+                            var endParts = p.fecha_fin.split('T')[0].split('-');
+                            var endDate = new Date(parseInt(endParts[0]), parseInt(endParts[1]) - 1, parseInt(endParts[2]));
+                            dias = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+                        } else {
+                            var today = new Date();
+                            today.setHours(0,0,0,0);
+                            dias = Math.round((today - startDate) / (1000 * 60 * 60 * 24));
+                        }
+                        fechaHtml = fmtDate(p.fecha_inicio) + ' &middot; ' + dias + ' dias';
+                    }
+
+                    return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'" onmouseout="this.style.boxShadow=\'none\'" onclick="proyectosVerDetalle(' + p.id + ')">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">' +
+                            '<div><div style="font-weight:700;font-size:0.9rem;">' + p.nombre + '</div>' +
+                            '<div style="font-size:0.78rem;color:#6E6E73;">' + (p.cliente_nombre || '') + '</div></div>' +
+                            '<span style="font-size:0.7rem;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid ' + statusColor + ';color:' + statusColor + ';">' + sLabel + '</span>' +
+                        '</div>' +
+                        '<div style="margin:10px 0 8px;">' +
+                            '<div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#6E6E73;margin-bottom:4px;"><span>Avance</span><span>' + pct + '%</span></div>' +
+                            '<div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:3px;transition:width 0.3s;"></div></div>' +
+                        '</div>' +
+                        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid #f3f4f6;padding-top:10px;margin-top:6px;">' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Equipo</div><div style="font-weight:600;font-size:0.82rem;">' + equipoHtml + '</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Presupuesto</div><div style="font-weight:600;font-size:0.82rem;">' + fmtMoney(budgeted) + '</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Gastado</div><div style="font-weight:600;font-size:0.82rem;">' + fmtMoney(actual) + '</div></div>' +
+                            '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Fechas</div><div style="font-weight:600;font-size:0.78rem;">' + fechaHtml + '</div></div>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            }
+        });
+    }
+
+    function _dashKpiCard(label, value, color, iconSvg, subtitle) {
+        return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;display:flex;justify-content:space-between;align-items:flex-start;">' +
+            '<div><div style="font-size:0.72rem;color:#6E6E73;margin-bottom:4px;">' + label + '</div>' +
+            '<div style="font-size:1.4rem;font-weight:700;">' + value + '</div>' +
+            (subtitle ? '<div style="font-size:0.68rem;color:#8e8e93;margin-top:2px;">' + subtitle + '</div>' : '') +
+            '</div>' +
+            '<div style="color:' + color + ';opacity:0.7;">' + iconSvg + '</div>' +
+        '</div>';
+    }
+
+    // ── Financiero ──
+    var _finStatus = 'active';
+
+    window.proyFinFilter = function(status) {
+        _finStatus = status;
+        document.querySelectorAll('.proy-fin-tab').forEach(function(btn) {
+            var isActive = btn.getAttribute('data-status') === status;
+            btn.style.background = isActive ? '#fff' : '#f9fafb';
+            btn.style.color = isActive ? '#007AFF' : '#6B7280';
+            btn.style.fontWeight = isActive ? '600' : '500';
+            btn.style.borderBottom = isActive ? '2px solid #007AFF' : '2px solid transparent';
+            btn.classList.toggle('active', isActive);
+        });
+        _loadFinanciero(status);
+    };
+
+    function _loadFinanciero(status) {
+        var container = el('proyFinList');
+        if (!container) return;
+        container.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">Cargando...</div>';
+
+        _fetch('/app/api/iamet/proyectos/financiero/?status=' + status).then(function(resp) {
+            if (!resp.success) return;
+            var projects = resp.data || [];
+            if (projects.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">No hay proyectos en este estado</div>';
+                return;
+            }
+            container.innerHTML = projects.map(function(p) {
+                var margenColor = p.margen >= 20 ? '#059669' : (p.margen >= 10 ? '#f59e0b' : '#DC2626');
+                return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'" onmouseout="this.style.boxShadow=\'none\'" onclick="proyectosVerDetalle(' + p.id + ')">' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-weight:700;font-size:0.9rem;">' + p.nombre + '</div>' +
+                        '<div style="font-size:0.78rem;color:#6E6E73;">' + (p.cliente_nombre || '') + '</div>' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:16px;text-align:left;">' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Utilidad Presupuestada</div><div style="font-weight:700;font-size:0.88rem;">' + fmtMoney(p.utilidad_presupuestada) + '</div></div>' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Costo Total</div><div style="font-weight:700;font-size:0.88rem;color:#DC2626;">' + fmtMoney(p.costo_total) + '</div></div>' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Venta Total</div><div style="font-weight:700;font-size:0.88rem;color:#007AFF;">' + fmtMoney(p.venta_total) + '</div></div>' +
+                        '<div><div style="font-size:0.65rem;color:#8e8e93;text-transform:uppercase;">Margen</div><div style="font-weight:700;font-size:0.88rem;color:' + margenColor + ';">' + p.margen + '%</div></div>' +
+                    '</div>' +
+                    '<div style="margin-left:12px;color:#c7c7cc;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>' +
+                '</div>';
+            }).join('');
+        });
+    }
 
 })();

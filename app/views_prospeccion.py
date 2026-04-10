@@ -16,7 +16,7 @@ from .views_grupos import get_usuarios_visibles_ids
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
-    MensajeOportunidad,
+    MensajeOportunidad, Actividad,
 )
 
 logger = logging.getLogger(__name__)
@@ -510,6 +510,33 @@ def api_prospecto_actividades(request, prospecto_id):
             descripcion=descripcion,
             fecha_programada=fecha_dt,
         )
+
+        # Also create a calendar Actividad so it appears in the main calendar (purple)
+        try:
+            from datetime import timedelta
+            tipo_map = {
+                'llamada': 'llamada',
+                'reunion': 'reunion',
+                'correo': 'email',
+                'tarea': 'tarea',
+            }
+            cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+            desc_extra = data.get('desc_extra', '').strip()
+            # Descripcion visible + metadata de link al prospecto al final
+            desc_cal = desc_extra or ''
+            desc_cal += f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
+            Actividad.objects.create(
+                titulo=descripcion,
+                tipo_actividad=tipo_map.get(tipo, 'otro'),
+                descripcion=desc_cal,
+                fecha_inicio=fecha_dt,
+                fecha_fin=fecha_dt + timedelta(hours=1),
+                creado_por=request.user,
+                color='#8B5CF6',
+            )
+        except Exception as e:
+            print(f'[Prospecto] Error creando actividad calendario: {e}')
+
         return JsonResponse({'success': True})
 
     return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
@@ -528,6 +555,17 @@ def api_prospecto_actividad_toggle(request, actividad_id):
 
     actividad.completada = not actividad.completada
     actividad.save()
+
+    # También marcar la actividad del calendario correspondiente
+    try:
+        cal_acts = Actividad.objects.filter(
+            color='#8B5CF6',
+            titulo=actividad.descripcion,
+            creado_por=actividad.usuario,
+        )
+        cal_acts.update(completada=actividad.completada)
+    except Exception:
+        pass
 
     return JsonResponse({
         'success': True,

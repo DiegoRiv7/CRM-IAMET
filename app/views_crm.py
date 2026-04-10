@@ -298,7 +298,24 @@ def crm_home(request):
 
     # ── Tab CRM: Lista de oportunidades individuales ──
     if tab_activo == 'crm':
-        tabla_data = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
+        tabla_data_qs = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
+        # Anotar con tiene_actividad_vencida para el template
+        from .models import Actividad
+        ahora_tz = timezone.now()
+        tabla_data_list = list(tabla_data_qs)
+        for item in tabla_data_list:
+            vencidas = Actividad.objects.filter(oportunidad=item, fecha_fin__lt=ahora_tz, completada=False).exists()
+            item.tiene_actividad_vencida = vencidas
+            # Actividad próxima (la más cercana no completada)
+            proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
+            item.actividad_proxima = proxima.titulo if proxima else None
+        # Obtener IDs ancladas del usuario
+        ancladas_ids = set(profile.oportunidades_ancladas or [])
+        for item in tabla_data_list:
+            item.esta_anclada = item.id in ancladas_ids
+        # Ordenar: ancladas primero, luego vencidas, luego el resto
+        tabla_data_list.sort(key=lambda x: (not x.esta_anclada, not x.tiene_actividad_vencida))
+        tabla_data = tabla_data_list
 
     # ── Tab Facturado: Datos del XLS por cliente + desglose por producto ──
     elif tab_activo == 'facturado':
@@ -684,6 +701,7 @@ def api_crm_table_data(request):
                 'fecha_iso': item.fecha_creacion.strftime('%Y-%m-%d'),
                 'fecha_ts': int(item.fecha_actualizacion.timestamp()) if item.fecha_actualizacion else 0,
                 'etapa': item.etapa_corta or '',
+                'etapa_color': item.etapa_color or '#6B7280',
                 'tiene_actividad_vencida': tiene_vencida,
                 'sin_actividad_pendiente': not tiene_pendiente,
                 'tipo_negociacion': item.tipo_negociacion or 'runrate',
@@ -2959,6 +2977,17 @@ def editar_oportunidad_api(request, oportunidad_id):
             oportunidad.etapa_completa = nueva_etapa
             updated_values['etapa_corta'] = nueva_etapa
 
+            # Automatización: Vendido s/PO o c/PO → probabilidad 100% + mes cierre 2 meses después
+            if nueva_etapa in ('Vendido s/PO', 'Vendido c/PO'):
+                from datetime import date as _date
+                from dateutil.relativedelta import relativedelta
+                oportunidad.probabilidad_cierre = 100
+                updated_values['probabilidad_cierre'] = 100
+                fecha_cierre = _date.today() + relativedelta(months=2)
+                oportunidad.mes_cierre = str(fecha_cierre.month).zfill(2)
+                oportunidad.anio_cierre = fecha_cierre.year
+                updated_values['mes_cierre'] = oportunidad.mes_cierre
+
         # Actualizar usuario/vendedor
         if 'usuario' in request.POST and request.POST['usuario']:
             try:
@@ -2999,8 +3028,8 @@ def editar_oportunidad_api(request, oportunidad_id):
             except Exception as e_auto:
                 print(f'[Automatización] Error ejecutando reglas: {e_auto}')
 
-        # Auto-crear ProyectoIAMET si la etapa es "Levantamiento" y es tipo proyecto
-        if etapa_cambio and etapa_cambio == 'Levantamiento' and oportunidad.tipo_negociacion in ('proyecto', 'bitrix_proyecto'):
+        # Auto-crear ProyectoIAMET si la etapa es "Vendido s/PO" o "Vendido c/PO" y es tipo proyecto
+        if etapa_cambio and etapa_cambio in ('Vendido s/PO', 'Vendido c/PO') and oportunidad.tipo_negociacion in ('proyecto', 'bitrix_proyecto'):
             try:
                 from .models import ProyectoIAMET, ProyectoConfiguracion
                 from datetime import timedelta
@@ -4630,3 +4659,21 @@ def api_desglose_cotizaciones(request):
         'rows': rows,
         'total': sum(count_by_client.values()),
     })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_toggle_pin_oportunidad(request, opp_id):
+    """Toggle anclar/desanclar una oportunidad para el usuario actual."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    ancladas = profile.oportunidades_ancladas or []
+    if opp_id in ancladas:
+        ancladas.remove(opp_id)
+        anclada = False
+    else:
+        ancladas.append(opp_id)
+        anclada = True
+    profile.oportunidades_ancladas = ancladas
+    profile.save(update_fields=["oportunidades_ancladas"])
+    return JsonResponse({"success": True, "anclada": anclada})
+

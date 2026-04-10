@@ -1,11 +1,217 @@
 {% load app_filters %}
 <div class="widget-toast" id="widgetToast"></div> <!-- ═══ CONTENT ═══ -->
 <div class="crm-content" id="crmContentSection">
+
+    {% if tab_activo == 'crm' %}
+    <!-- ═══════════════════════════════════════════════════════════
+         SIDEBAR: FOCUS POR ETAPA (Proyecto / Runrate)
+         Se abre con hover en borde izquierdo o con botón hamburguesa
+         ═══════════════════════════════════════════════════════════ -->
+    <style>
+        /* El contenedor de cards debe ser relativo para anidar el sidebar */
+        #crmViewCards { position: relative; min-height: 560px; }
+        /* Cuando el sidebar está abierto, aseguramos altura suficiente */
+        #crmViewCards.crmFocus-open { min-height: 720px; }
+        /* Fix flash: grid oculto hasta que el filtro inicial se aplique */
+        #crmCardsGrid { opacity: 0; transition: opacity 0.18s ease; }
+        #crmCardsGrid.crmFocus-ready { opacity: 1; }
+        /* Sidebar embebido DENTRO del bloque de cards */
+        .crmFocus-sidebar {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 300px;
+            background: #fff; border-right: 1px solid #E5E7EB;
+            border-radius: 16px 0 0 16px;
+            box-shadow: 6px 0 18px rgba(0, 0, 0, 0.06);
+            z-index: 20;
+            will-change: transform, opacity;
+            transform: translate3d(-105%, 0, 0);
+            opacity: 0;
+            transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.2s ease;
+            display: flex; flex-direction: column;
+            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            pointer-events: none;
+        }
+        .crmFocus-sidebar.open {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* El grid anima su padding de forma independiente al sidebar,
+           con easing de salida rápida para que sienta "pop" */
+        #crmCardsGrid {
+            transition: padding-left 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: padding-left;
+        }
+        #crmViewCards.crmFocus-open #crmCardsGrid { padding-left: 310px; }
+        /* Header */
+        .crmFocus-head { padding: 22px 22px 14px; }
+        .crmFocus-brand {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 22px;
+            color: #1D1D1F;
+        }
+        .crmFocus-brand-ico {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: #0052D4; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 82, 212, 0.2); color: #fff;
+        }
+        .crmFocus-brand-title {
+            font-size: 1.1rem; font-weight: 700; letter-spacing: 0.02em; margin: 0;
+        }
+        .crmFocus-brand-title em {
+            font-style: normal; font-weight: 300; color: #9CA3AF;
+        }
+        /* Toggle Proyectos / Runrate */
+        .crmFocus-toggle {
+            display: flex; background: #F3F4F6; padding: 4px; border-radius: 12px;
+            border: 1px solid #E5E7EB;
+        }
+        .crmFocus-toggle button {
+            flex: 1; padding: 9px 0; border: none; background: transparent;
+            font-size: 0.78rem; font-weight: 700; color: #6B7280; cursor: pointer;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: all 0.2s;
+        }
+        .crmFocus-toggle button svg { width: 14px; height: 14px; }
+        .crmFocus-toggle button.active {
+            background: #fff; color: #0052D4;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        /* Metricas totales */
+        .crmFocus-metrics {
+            padding: 16px 22px; background: #F9FAFB; border-bottom: 1px solid #F3F4F6;
+        }
+        .crmFocus-metrics-label {
+            font-size: 0.65rem; font-weight: 700; color: #9CA3AF;
+            text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px;
+        }
+        .crmFocus-metrics-value {
+            font-size: 1.4rem; font-weight: 800; color: #1D1D1F; letter-spacing: -0.01em;
+        }
+        /* Lista de etapas (scroll oculto) */
+        .crmFocus-list {
+            flex: 1; overflow-y: auto; padding: 14px 10px 20px;
+            scrollbar-width: none;       /* Firefox */
+            -ms-overflow-style: none;    /* IE/Edge legacy */
+        }
+        .crmFocus-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
+        .crmFocus-section-title {
+            font-size: 0.62rem; font-weight: 700; color: #9CA3AF;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            padding: 6px 12px 10px; margin: 0;
+        }
+        /* Botón "Ver Todo" */
+        .crmFocus-all {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border: none; background: transparent;
+            border-radius: 12px; cursor: pointer; text-align: left;
+            margin-bottom: 12px; transition: background 0.15s;
+        }
+        .crmFocus-all:hover { background: #F9FAFB; }
+        .crmFocus-all.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .crmFocus-all-ico {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: #F3F4F6; color: #6B7280;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .crmFocus-all.active .crmFocus-all-ico {
+            background: #0052D4; color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 82, 212, 0.25);
+        }
+        .crmFocus-all-label {
+            font-size: 0.83rem; font-weight: 700; color: #374151;
+        }
+        .crmFocus-all.active .crmFocus-all-label { color: #1E40AF; }
+        .crmFocus-all-sub {
+            font-size: 0.68rem; font-weight: 500; color: #9CA3AF; margin-top: 1px;
+        }
+        /* Stages list with connecting line */
+        .crmFocus-stages {
+            position: relative; padding: 0 8px 0 16px;
+            border-top: 1px solid #F3F4F6;
+            margin-top: 12px; padding-top: 14px;
+        }
+        .crmFocus-stages::before {
+            content: ''; position: absolute; left: 26px; top: 30px; bottom: 10px;
+            width: 2px; background: #F3F4F6; z-index: 0;
+        }
+        .crmFocus-stage {
+            position: relative; z-index: 1;
+            display: flex; align-items: center; gap: 11px;
+            width: 100%; padding: 9px 10px; border: none; background: transparent;
+            border-radius: 10px; cursor: pointer; text-align: left;
+            margin-bottom: 2px; transition: background 0.15s;
+        }
+        .crmFocus-stage:hover { background: #F9FAFB; }
+        .crmFocus-stage.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .crmFocus-stage-node {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #fff; border: 3px solid #D1D5DB;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.15s;
+        }
+        .crmFocus-stage.active .crmFocus-stage-node {
+            border-color: #0052D4;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.12);
+        }
+        .crmFocus-stage.active .crmFocus-stage-node::after {
+            content: ''; width: 6px; height: 6px; border-radius: 50%; background: #0052D4;
+        }
+        .crmFocus-stage-info { flex: 1; min-width: 0; }
+        .crmFocus-stage-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 6px;
+        }
+        .crmFocus-stage-name {
+            font-size: 0.72rem; font-weight: 700; color: #4B5563;
+            text-transform: uppercase; letter-spacing: 0.02em;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .crmFocus-stage.active .crmFocus-stage-name { color: #1E40AF; }
+        .crmFocus-stage-count {
+            font-size: 0.65rem; font-weight: 800;
+            padding: 2px 7px; border-radius: 6px;
+            background: #F3F4F6; color: #6B7280; flex-shrink: 0;
+        }
+        .crmFocus-stage.active .crmFocus-stage-count { background: #0052D4; color: #fff; }
+        .crmFocus-stage-count.zero { background: transparent; color: #D1D5DB; }
+        .crmFocus-stage-value {
+            font-size: 0.68rem; font-weight: 600; color: #9CA3AF; margin-top: 2px;
+        }
+        .crmFocus-stage.active .crmFocus-stage-value { color: #3B82F6; }
+        /* Botón hamburguesa dentro de la barra de tabs */
+        .crmFocus-toggleBtn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; padding: 0;
+            background: transparent; border: 1px solid #E5E7EB; border-radius: 8px;
+            cursor: pointer; color: #6B7280; transition: all 0.15s;
+            margin-right: 8px;
+        }
+        .crmFocus-toggleBtn:hover {
+            background: #EFF6FF; color: #0052D4; border-color: #BFDBFE;
+        }
+    </style>
+
+    {% endif %}
+
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA TABS + STATS + BÚSQUEDA + FILTROS ═══ -->
         <div class="crm-bar">
             <div class="crm-tabs">
+                {% if tab_activo == 'crm' %}
+                <button type="button" class="crmFocus-toggleBtn" id="crmFocusToggleBtn" title="Focus por etapa">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                {% endif %}
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
@@ -26,10 +232,15 @@
                         <button id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:#0052D4;color:#fff;">Oportunidades</button>
                         <button id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:#86868B;">Prospectos</button>
                     </div>
-                    {% else %}
-                    <strong>{{ num_clientes }}</strong>
-                    {% if es_supervisor %}Clientes Totales{% else %}Clientes Asignados{% endif %}
-                    &nbsp;|&nbsp; <strong>{{ num_deals }}</strong> Deals
+                    {% elif tab_activo == 'crm' %}
+                    <button type="button" id="btnNegociacion" title="Nueva oportunidad"
+                        style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;background:#0052D4;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,82,212,0.25);transition:all 0.15s;"
+                        onmouseover="this.style.background='#0041a8';this.style.transform='translateY(-1px)';"
+                        onmouseout="this.style.background='#0052D4';this.style.transform='none';">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </button>
                     {% endif %}
                 </div>
                 <!-- Panel de filtros inline: se expande entre los stats y el botón -->
@@ -97,9 +308,17 @@
                         <label>Orden fecha</label>
                         <select id="filterFecha">
                             <option value="">Sin orden</option>
-                            <option value="desc">Reciente → Antiguo</option>
-                            <option value="asc">Antiguo → Reciente</option>
+                            <option value="desc">Reciente &rarr; Antiguo</option>
+                            <option value="asc">Antiguo &rarr; Reciente</option>
                         </select>
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Desde</label>
+                        <input type="date" id="filterDesde" style="font-size:0.75rem;">
+                    </div>
+                    <div class="crm-filter-item">
+                        <label>Hasta</label>
+                        <input type="date" id="filterHasta" style="font-size:0.75rem;">
                     </div>
                     <div class="crm-filter-actions">
                         <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">
@@ -115,14 +334,20 @@
                         <button type="button" class="crm-filter-clear" id="btnClearFilters">Limpiar</button>
                     </div>
                 </div>
-                <button type="button" class="crm-filter-toggle" id="btnToggleFilterPanel" title="Filtros"
+                <button type="button" class="crm-filter-toggle" id="btnToggleFilterPanel" title="Filtros avanzados"
                     style="{% if tab_activo == 'clientes' %}display:none;{% endif %}">
-                    <svg width="16" height="16" fill="none" stroke="#3C3C43" stroke-width="2" viewBox="0 0 24 24">
-                        <line x1="4" y1="6" x2="20" y2="6" />
-                        <line x1="8" y1="12" x2="20" y2="12" />
-                        <line x1="12" y1="18" x2="20" y2="18" />
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
                     </svg>
                 </button>
+                {% if tab_activo == 'crm' %}
+                <button type="button" id="btnToggleCrmView" title="Cambiar vista" onclick="toggleCrmView()"
+                    style="padding:4px 8px;border:1px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;color:#6B7280;font-size:0.7rem;">
+                    <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                </button>
+                {% endif %}
                 <div class="crm-search-wrap" {% if tab_activo == 'clientes' or tab_activo == 'prospeccion' %}style="display:none;"{% endif %}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.5">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -133,28 +358,177 @@
             </div>
         </div>
         {% if tab_activo == 'crm' %}
+        <!-- VISTA CARDS (unica y predeterminada) -->
+        <div id="crmViewCards">
+            <style>
+                #crmViewCards {
+                    background: #F4F5F7;
+                    background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
+                    background-size: 24px 24px;
+                    border-radius: 16px;
+                    padding: 28px 24px;
+                    margin: 0 -8px;
+                }
+                .crm-postit {
+                    background: #fff;
+                    border: 1px solid #E5E7EB;
+                    border-radius: 16px;
+                    padding: 22px 20px 16px;
+                    cursor: pointer;
+                    position: relative;
+                    overflow: hidden;
+                    box-shadow: 2px 6px 18px -4px rgba(0,0,0,0.1);
+                    display: flex;
+                    flex-direction: column;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+                }
+                .crm-postit:hover {
+                    transform: translateY(-6px) rotate(0deg) !important;
+                    box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
+                    z-index: 20;
+                    border-color: #93C5FD;
+                }
+                .crm-postit:nth-child(6n+1) { transform: rotate(-1.2deg); }
+                .crm-postit:nth-child(6n+2) { transform: rotate(1.8deg); }
+                .crm-postit:nth-child(6n+3) { transform: rotate(-0.6deg); }
+                .crm-postit:nth-child(6n+4) { transform: rotate(1.3deg); }
+                .crm-postit:nth-child(6n+5) { transform: rotate(-1.6deg); }
+                .crm-postit:nth-child(6n+6) { transform: rotate(0.7deg); }
+                .crm-pin {
+                    position: absolute; top: 6px; right: 6px; z-index: 6;
+                    cursor: pointer; transition: transform 0.15s, opacity 0.15s;
+                    opacity: 0;
+                }
+                .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
+                .crm-postit:hover .crm-pin { opacity: 0.3; }
+                .crm-postit:hover .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
+                .crm-postit:hover .crm-pin.pinned { opacity: 1; }
+            </style>
+
+            <!-- ═══ SIDEBAR EMBEBIDO: CRM Focus ═══ -->
+            <aside class="crmFocus-sidebar" id="crmFocusSidebar">
+                <div class="crmFocus-head">
+                    <div class="crmFocus-brand">
+                        <div class="crmFocus-brand-ico">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/>
+                            </svg>
+                        </div>
+                        <h2 class="crmFocus-brand-title">CRM <em>IAMET</em></h2>
+                    </div>
+                    <div class="crmFocus-toggle">
+                        <button type="button" data-flow="proyecto" class="active">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                            Proyectos
+                        </button>
+                        <button type="button" data-flow="runrate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                            Runrate
+                        </button>
+                    </div>
+                </div>
+                <div class="crmFocus-metrics">
+                    <div class="crmFocus-metrics-label">Valor total del embudo</div>
+                    <div class="crmFocus-metrics-value" id="crmFocusTotal">$0</div>
+                </div>
+                <div class="crmFocus-list">
+                    <p class="crmFocus-section-title">Vistas</p>
+                    <button type="button" class="crmFocus-all active" data-all="1">
+                        <div class="crmFocus-all-ico">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="crmFocus-all-label">Ver Todo Global</div>
+                            <div class="crmFocus-all-sub" id="crmFocusAllCount">0 oportunidades</div>
+                        </div>
+                    </button>
+                    <p class="crmFocus-section-title" style="border-top:1px solid #F3F4F6;padding-top:12px;">Etapas del Proceso</p>
+                    <div class="crmFocus-stages" id="crmFocusStages"></div>
+                </div>
+            </aside>
+
+            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px;">
+                {% for item in tabla_data %}
+                {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
+                <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
+                     onclick="openDetalle('{{ item.id }}')"
+                    <!-- Franja superior de color -->
+                    <div class="absolute top-0 left-0 right-0 h-1.5" style="{% if item.tiene_actividad_vencida %}background:#EF4444;box-shadow:0 2px 4px rgba(239,68,68,0.4);{% elif item.tipo_negociacion == 'proyecto' %}background:#8B5CF6;box-shadow:0 2px 4px rgba(139,92,246,0.3);{% else %}background:#3B82F6;box-shadow:0 2px 4px rgba(59,130,246,0.3);{% endif %}"></div>
+                    <!-- Sombra interna sutil -->
+                    <div class="absolute inset-0 pointer-events-none rounded-2xl" style="box-shadow:inset 0 1px 1px rgba(255,255,255,0.8);"></div>
+                    <!-- Pin de anclaje -->
+                    <div class="crm-pin {% if item.esta_anclada %}pinned{% endif %}" data-pin-id="{{ item.pk }}">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#B0B8C4{% endif %}" stroke="none" style="filter:drop-shadow(1px 2px 3px rgba(0,0,0,0.35));"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
+                    </div>
+                    {% if item.esta_anclada %}
+                    <div style="position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;"></div>
+                    {% endif %}
+                    <!-- Cabecera -->
+                    <div style="margin-bottom:12px;position:relative;z-index:1;padding-right:8px;">
+                        <h3 style="font-size:0.95rem;font-weight:700;color:#2563EB;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                            <span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:45 }}</span>
+                        </h3>
+                        <div style="font-size:0.8rem;font-weight:500;color:#6B7280;margin-top:2px;cursor:pointer;transition:color 0.15s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#6B7280'" onclick="event.stopPropagation();if(typeof openClienteOportunidadesModal==='function')openClienteOportunidadesModal('{{ item.cliente.id|default:'' }}','{{ item.cliente.nombre_empresa|default:"Sin Cliente" }}')">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:30 }}</div>
+                    </div>
+                    <!-- Bloques valor + marca -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;position:relative;z-index:1;">
+                        <div style="background:#F8FAFC;border-radius:12px;padding:10px 12px;border:1px solid #E2E8F0;">
+                            <div style="font-size:0.58rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Valor Total</div>
+                            <div style="font-size:0.95rem;font-weight:700;color:#0F172A;">${{ item.monto|format_currency_es }}</div>
+                        </div>
+                        <div style="background:#F8FAFC;border-radius:12px;padding:10px 12px;border:1px solid #E2E8F0;">
+                            <div style="font-size:0.58rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Marca</div>
+                            <div style="font-size:0.85rem;font-weight:700;color:#0F172A;text-transform:uppercase;">{{ item.producto|default:'-' }}</div>
+                        </div>
+                    </div>
+                    <!-- Etapa + probabilidad -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="position:relative;width:40px;height:40px;flex-shrink:0;">
+                                <svg viewBox="0 0 36 36" style="width:40px;height:40px;transform:rotate(-90deg);">
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="2.5" pathLength="100"/>
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#3B82F6' }}{% endif %}" stroke-width="2.5" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
+                                </svg>
+                                <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.55rem;font-weight:800;color:#0F172A;">{{ item.probabilidad_cierre }}%</span>
+                            </div>
+                            <div>
+                                <div style="font-size:0.58rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.04em;">Etapa</div>
+                                <div style="font-size:0.85rem;font-weight:700;color:#0F172A;">{{ item.etapa_corta|default:'Sin etapa' }}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;{% if item.tipo_negociacion == 'proyecto' %}background:#F5F3FF;color:#7C3AED;border-color:#DDD6FE;{% else %}background:#EFF6FF;color:#2563EB;border-color:#BFDBFE;{% endif %}">{% if item.tipo_negociacion == 'proyecto' %}Proyecto{% elif item.tipo_negociacion == 'bitrix_proyecto' %}B24{% else %}Runrate{% endif %}</div>
+                    </div>
+                    <!-- Actividad programada -->
+                    <div style="margin-top:auto;position:relative;z-index:1;">
+                        <div class="card-act-bar" data-opp-act="{{ item.id }}" onclick="event.stopPropagation();openDetalle('{{ item.id }}');setTimeout(function(){if(typeof woAbrirActividadReciente==='function')woAbrirActividadReciente();},400);" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;transition:all 0.2s;{% if item.actividad_proxima %}border-color:#BFDBFE;background:#EFF6FF;{% endif %}" onmouseover="this.style.background='{% if item.actividad_proxima %}#DBEAFE{% else %}#F8FAFC{% endif %}'" onmouseout="this.style.background='{% if item.actividad_proxima %}#EFF6FF{% else %}#fff{% endif %}'">
+                            <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+                                <svg width="14" height="14" fill="none" stroke="{% if item.actividad_proxima %}#3B82F6{% else %}#9CA3AF{% endif %}" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                <span class="card-act-text" style="font-size:0.78rem;font-weight:{% if item.actividad_proxima %}700{% else %}500{% endif %};color:{% if item.actividad_proxima %}#1E40AF{% else %}#9CA3AF{% endif %};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{% if item.actividad_proxima %}{{ item.actividad_proxima }}{% else %}Sin actividad programada{% endif %}</span>
+                            </div>
+                            <svg width="14" height="14" fill="none" stroke="{% if item.actividad_proxima %}#93C5FD{% else %}#D1D5DB{% endif %}" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% empty %}
+                <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#9CA3AF;">No hay oportunidades</div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
+        <div id="crmViewTable" style="display:none;">
         <table class="w-full crm-table">
             <colgroup>
-                <col style="width:20%"><!-- Oportunidad -->
-                <col style="width:8%"> <!-- Contacto -->
-                <col style="width:6%"> <!-- Área -->
-                <col style="width:6%"> <!-- Zebra -->
-                <col style="width:6%"> <!-- Panduit -->
-                <col style="width:6%"> <!-- APC -->
-                <col style="width:6%"> <!-- Avig -->
-                <col style="width:6%"> <!-- Genet -->
-                <col style="width:6%"> <!-- Axis -->
-                <col style="width:6%"> <!-- Soft -->
-                <col style="width:6%"> <!-- RR -->
-                <col style="width:6%"> <!-- Pól -->
-                <col style="width:6%"> <!-- Otros -->
-                <col style="width:6%"> <!-- Total -->
+                <col style="width:20%"><col style="width:8%"><col style="width:6%">
+                <col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%">
             </colgroup>
             <thead class="bg-gray-50/80">
                 <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Opportunity{% else %}Oportunidad{% endif %}</th>
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Contact{% else %}Contacto{% endif %}</th>
-                    <th class="px-2 py-3 text-left font-black">{% if request.user.userprofile.language == 'en' %}Area{% else %}Área{% endif %}</th>
+                    <th class="px-2 py-3 text-left font-black">Oportunidad</th>
+                    <th class="px-2 py-3 text-left font-black">Contacto</th>
+                    <th class="px-2 py-3 text-left font-black">Area</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
@@ -163,54 +537,36 @@
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Pól.</th>
+                    <th class="py-3 pr-2 text-right font-black text-blue-500">Pol.</th>
                     <th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>
                     <th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>
                 </tr>
             </thead>
-            <!-- prettier-ignore -->
             <tbody id="crmTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
                 {% for item in tabla_data %}
-                <tr class="crm-data-row" data-opp-id="{{ item.id }}"
-                    data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
-                    data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}"
-                    data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}"
-                    data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}"
-                    data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
+                <tr class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
                     <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
-                        <span
-                            class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block"
-                            data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span>
-                    </td>
+                        <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span></td>
                     <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18 }}{% else %}-{% endif %}</td>
                     <td class="px-2 py-4 text-gray-400 text-xs italic">{{ item.area|default:'-' }}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'PANDUIT' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'APC' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'PANDUIT' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'APC' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'GENETEC' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'AXIS' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'GENETEC' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'AXIS' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'RUNRATE' %}<span
-                            class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'PÓLIZA' or item.producto == 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'RUNRATE' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    <td class="px-2 py-4 text-right">{% if item.producto == 'POLIZA' or item.producto == 'PÓLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">
-                        ${{ item.monto|format_currency_es }}</td>
+                    <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">${{ item.monto|format_currency_es }}</td>
                 </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="14" class="text-center py-20 text-gray-400 italic">No hay datos disponibles para
-                        este periodo.</td>
-                </tr>
+                <tr><td colspan="14" class="text-center py-20 text-gray-400 italic">No hay datos disponibles.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% elif tab_activo == 'prospeccion' %}
         <table id="prospeccionTable" class="w-full crm-table">
             <thead id="prospeccionThead"></thead>
@@ -409,18 +765,6 @@
             </div>
         </div>
 
-        {% else %}
-        <div class="flex flex-col items-center justify-center py-32 text-gray-300">
-            <div class="w-16 h-16 mb-4 opacity-20">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg font-bold text-gray-400">{% if request.user.userprofile.language == 'en' %}Coming Soon{% else %}Próximamente{% endif %}</h3>
-            <p class="text-[11px] font-medium">{% if request.user.userprofile.language == 'en' %}This section will be
-                available in the next update.{% else %}Esta sección estará disponible en la siguiente actualización.{% endif %}</p>
-        </div>
         {% endif %}
     </div>
     <!-- Footer -->
@@ -447,66 +791,482 @@
 
 <!-- ═══ TAREAS SECTION ═══ -->
 <div class="tareas-section" id="tareasSection">
-    <div class="tareas-tabs" id="tareasTabs">
-        <button class="tareas-tab" data-filter="todas">Todas</button>
-        <button class="tareas-tab active" data-filter="pendientes">Pendientes</button>
-        <button class="tareas-tab" data-filter="completadas">Completadas</button>
-    </div>
-    <div class="tareas-table-wrap">
-        <!-- Bar: count + filter + search -->
-        <div class="tareas-bar">
-            <span class="tareas-bar-stats" id="tareasCount"><strong>0</strong> tareas</span>
-            <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-                <button class="tareas-filter-btn" id="tareasFilterBtn" type="button">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        stroke-width="2.5">
-                        <line x1="4" y1="6" x2="20" y2="6" />
-                        <line x1="8" y1="12" x2="16" y2="12" />
-                        <line x1="11" y1="18" x2="13" y2="18" />
+
+    <style>
+        /* ═══ Tareas: contenedor principal con sidebar embebido ═══ */
+        #tareasViewCards {
+            position: relative;
+            background: #F4F5F7;
+            background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+            border-radius: 16px;
+            padding: 24px 24px 28px;
+            margin: 0;
+            min-height: 640px;
+        }
+        #tareasViewCards.tareasFocus-open { min-height: 760px; }
+
+        /* Toolbar superior */
+        .tareas-toolbar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 4px 2px 18px;
+            flex-wrap: wrap;
+        }
+        .tareas-toolbar-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; padding: 0;
+            background: #fff; border: 1px solid #E5E7EB; border-radius: 8px;
+            cursor: pointer; color: #6B7280; transition: all 0.15s;
+        }
+        .tareas-toolbar-btn:hover { background: #EFF6FF; color: #0052D4; border-color: #BFDBFE; }
+        .tareas-toolbar-title {
+            font-size: 1rem; font-weight: 800; color: #1D1D1F; letter-spacing: -0.01em;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .tareas-toolbar-stat {
+            background: #EFF6FF; color: #1E40AF; font-size: 0.7rem; font-weight: 800;
+            padding: 3px 10px; border-radius: 20px; border: 1px solid #BFDBFE;
+        }
+        .tareas-toolbar-spacer { flex: 1; }
+        .tareas-toolbar-pills {
+            display: inline-flex; background: #F3F4F6; border-radius: 10px; padding: 3px;
+            border: 1px solid #E5E7EB; gap: 2px;
+        }
+        .tareas-toolbar-pills button {
+            padding: 5px 12px; border: none; background: transparent;
+            font-size: 0.72rem; font-weight: 700; color: #6B7280; cursor: pointer;
+            border-radius: 8px; display: flex; align-items: center; gap: 6px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .tareas-toolbar-pills button.active {
+            background: #fff; color: #1D1D1F;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .tareas-pill-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+        .tareas-pill-dot.red { background: #EF4444; }
+        .tareas-pill-dot.amber { background: #F59E0B; }
+        .tareas-nueva-btn {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 8px 14px;
+            background: #1D1D1F; color: #fff; border: none; border-radius: 10px;
+            font-size: 0.78rem; font-weight: 700; cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .tareas-nueva-btn:hover {
+            background: #0052D4;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(0,82,212,0.3);
+        }
+        .tareas-search-mini {
+            position: relative;
+        }
+        .tareas-search-mini svg {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            color: #9CA3AF; width: 14px; height: 14px;
+        }
+        .tareas-search-mini input {
+            padding: 7px 10px 7px 30px;
+            border: 1px solid #E5E7EB; border-radius: 8px;
+            font-size: 0.78rem; background: #fff;
+            outline: none; width: 200px;
+            transition: border-color 0.15s;
+        }
+        .tareas-search-mini input:focus { border-color: #0052D4; }
+
+        /* Grid de cards */
+        #tareasCardsGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+            gap: 16px;
+            transition: padding-left 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: padding-left;
+        }
+        #tareasViewCards.tareasFocus-open #tareasCardsGrid { padding-left: 310px; }
+
+        /* Card de tarea */
+        .tareas-card {
+            position: relative;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            padding: 14px 16px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .tareas-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px -6px rgba(0,0,0,0.12);
+            border-color: #BFDBFE;
+        }
+        .tareas-card.overdue { border-left: 3px solid #EF4444; }
+        .tareas-card.done {
+            opacity: 0.55;
+            background: #FAFAFB;
+        }
+        .tareas-card.pinned { border-color: #FECACA; box-shadow: 0 4px 14px -4px rgba(239,68,68,0.2); }
+        /* Pin icon replaces the 3-dots menu */
+        .tareas-card-pin {
+            background: none; border: none; padding: 2px; cursor: pointer;
+            flex-shrink: 0; transition: transform 0.15s, opacity 0.15s;
+            opacity: 0;
+            margin-top: -2px;
+        }
+        .tareas-card:hover .tareas-card-pin { opacity: 0.4; }
+        .tareas-card:hover .tareas-card-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.1); }
+        .tareas-card-pin.pinned { opacity: 1; transform: rotate(-30deg); }
+        .tareas-card:hover .tareas-card-pin.pinned { opacity: 1; }
+        .tareas-card-pin svg { display: block; filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.25)); }
+        .tareas-card-top {
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .tareas-card-check {
+            width: 18px; height: 18px; border-radius: 50%;
+            border: 1.5px solid #D1D5DB; background: #fff;
+            flex-shrink: 0; margin-top: 2px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .tareas-card-check:hover { border-color: #0052D4; background: #EFF6FF; }
+        .tareas-card.done .tareas-card-check {
+            background: #34C759; border-color: #34C759;
+        }
+        .tareas-card.done .tareas-card-check::after {
+            content: ''; width: 8px; height: 8px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>') no-repeat center;
+            background-size: contain;
+        }
+        .tareas-card-title {
+            flex: 1; font-size: 0.9rem; font-weight: 700; color: #1D1D1F;
+            line-height: 1.35;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tareas-card.done .tareas-card-title { text-decoration: line-through; color: #9CA3AF; }
+        .tareas-card-more {
+            background: none; border: none; color: #9CA3AF; cursor: pointer;
+            padding: 2px; flex-shrink: 0; border-radius: 4px;
+        }
+        .tareas-card-more:hover { color: #1D1D1F; background: #F3F4F6; }
+        .tareas-card-badges {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding-left: 28px;
+        }
+        .tareas-badge-fecha {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 14px;
+            font-size: 0.7rem; font-weight: 700;
+            background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA;
+        }
+        .tareas-badge-fecha.future {
+            background: #F3F4F6; color: #4B5563; border-color: #E5E7EB;
+        }
+        .tareas-badge-estado {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 14px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .tareas-card-sep {
+            border-top: 1px solid #F3F4F6; margin: 2px 0;
+        }
+        .tareas-card-opp {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 0.78rem; font-weight: 500; color: #4B5563;
+            padding-left: 2px;
+        }
+        .tareas-card-opp svg { color: #8B5CF6; flex-shrink: 0; }
+        .tareas-card-opp .txt {
+            flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tareas-card-bottom {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .tareas-card-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: #6B7280; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.62rem; font-weight: 800; flex-shrink: 0;
+        }
+        .tareas-card-resp {
+            font-size: 0.75rem; color: #6B7280;
+        }
+        .tareas-card-resp b { color: #1D1D1F; font-weight: 600; }
+        .tareas-card-etapa {
+            margin-left: auto;
+            font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em;
+            padding: 4px 10px; border-radius: 14px;
+            background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* ═══ Sidebar Focus para tareas (clon estilo del CRM) ═══ */
+        .tareasFocus-sidebar {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 300px;
+            background: #fff; border-right: 1px solid #E5E7EB;
+            border-radius: 16px 0 0 16px;
+            box-shadow: 6px 0 18px rgba(0, 0, 0, 0.06);
+            z-index: 20;
+            will-change: transform, opacity;
+            transform: translate3d(-105%, 0, 0);
+            opacity: 0;
+            transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.2s ease;
+            display: flex; flex-direction: column;
+            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            pointer-events: none;
+        }
+        .tareasFocus-sidebar.open {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .tareasFocus-head { padding: 18px 20px 12px; position: relative; }
+        .tareasFocus-brand {
+            font-size: 0.64rem; font-weight: 800; color: #9CA3AF;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+            padding-left: 38px;
+        }
+        .tareasFocus-brand svg { color: #0052D4; }
+        /* Botón hamburguesa embebido: cierra el sidebar desde adentro */
+        .tareasFocus-close {
+            position: absolute; top: 16px; left: 16px;
+            width: 30px; height: 30px; padding: 0;
+            background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 8px;
+            cursor: pointer; color: #4B5563;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .tareasFocus-close:hover {
+            background: #EFF6FF; color: #0052D4; border-color: #BFDBFE;
+        }
+        .tareasFocus-toggle {
+            display: flex; background: #F3F4F6; padding: 4px; border-radius: 12px;
+            border: 1px solid #E5E7EB;
+        }
+        .tareasFocus-toggle button {
+            flex: 1; padding: 9px 0; border: none; background: transparent;
+            font-size: 0.78rem; font-weight: 700; color: #6B7280; cursor: pointer;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: all 0.2s;
+        }
+        .tareasFocus-toggle button svg { width: 14px; height: 14px; }
+        .tareasFocus-toggle button.active {
+            background: #fff; color: #0052D4;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .tareasFocus-kpis {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            padding: 0 20px 14px;
+        }
+        .tareasFocus-kpi {
+            border-radius: 10px; padding: 10px 12px;
+            display: flex; flex-direction: column; gap: 2px;
+            border: 1px solid;
+        }
+        .tareasFocus-kpi.atrasadas {
+            background: #FEF2F2; border-color: #FECACA;
+        }
+        .tareasFocus-kpi.hoy {
+            background: #FFFBEB; border-color: #FDE68A;
+        }
+        .tareasFocus-kpi-label {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 0.58rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .tareasFocus-kpi.atrasadas .tareasFocus-kpi-label { color: #DC2626; }
+        .tareasFocus-kpi.hoy .tareasFocus-kpi-label { color: #D97706; }
+        .tareasFocus-kpi-value {
+            font-size: 1.3rem; font-weight: 800; color: #1D1D1F;
+        }
+        .tareasFocus-list {
+            flex: 1; overflow-y: auto; padding: 8px 10px 20px;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .tareasFocus-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
+        .tareasFocus-section-title {
+            font-size: 0.62rem; font-weight: 700; color: #9CA3AF;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            padding: 6px 12px 10px; margin: 0;
+        }
+        .tareasFocus-all {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border: none; background: transparent;
+            border-radius: 12px; cursor: pointer; text-align: left;
+            margin-bottom: 10px; transition: background 0.15s;
+        }
+        .tareasFocus-all:hover { background: #F9FAFB; }
+        .tareasFocus-all.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .tareasFocus-all-ico {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: #F3F4F6; color: #6B7280;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .tareasFocus-all.active .tareasFocus-all-ico {
+            background: #0052D4; color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 82, 212, 0.25);
+        }
+        .tareasFocus-all-label {
+            font-size: 0.83rem; font-weight: 700; color: #374151;
+        }
+        .tareasFocus-all.active .tareasFocus-all-label { color: #1E40AF; }
+        .tareasFocus-all-sub {
+            font-size: 0.68rem; font-weight: 500; color: #9CA3AF; margin-top: 1px;
+        }
+        .tareasFocus-stages {
+            position: relative; padding: 0 8px 0 16px;
+            border-top: 1px solid #F3F4F6;
+            margin-top: 10px; padding-top: 12px;
+        }
+        .tareasFocus-stages::before {
+            content: ''; position: absolute; left: 26px; top: 26px; bottom: 10px;
+            width: 2px; background: #F3F4F6; z-index: 0;
+        }
+        .tareasFocus-stage {
+            position: relative; z-index: 1;
+            display: flex; align-items: center; gap: 11px;
+            width: 100%; padding: 8px 10px; border: none; background: transparent;
+            border-radius: 10px; cursor: pointer; text-align: left;
+            margin-bottom: 2px; transition: background 0.15s;
+        }
+        .tareasFocus-stage:hover { background: #F9FAFB; }
+        .tareasFocus-stage.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .tareasFocus-stage-node {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #fff; border: 3px solid #D1D5DB;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.15s;
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-node {
+            border-color: #0052D4;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.12);
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-node::after {
+            content: ''; width: 6px; height: 6px; border-radius: 50%; background: #0052D4;
+        }
+        .tareasFocus-stage-name {
+            flex: 1; font-size: 0.72rem; font-weight: 700; color: #4B5563;
+            text-transform: uppercase; letter-spacing: 0.02em;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-name { color: #1E40AF; }
+        .tareasFocus-stage-count {
+            font-size: 0.65rem; font-weight: 800;
+            padding: 2px 7px; border-radius: 6px;
+            background: #F3F4F6; color: #6B7280; flex-shrink: 0;
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-count { background: #0052D4; color: #fff; }
+        .tareasFocus-stage-count.zero { background: transparent; color: #D1D5DB; }
+
+        .tareas-empty-card {
+            grid-column: 1/-1; padding: 60px 0; text-align: center;
+            color: #9CA3AF; font-size: 0.85rem;
+        }
+    </style>
+
+    <div id="tareasViewCards">
+        <!-- ═══ SIDEBAR EMBEBIDO TAREAS ═══ -->
+        <aside class="tareasFocus-sidebar" id="tareasFocusSidebar">
+            <div class="tareasFocus-head">
+                <button type="button" class="tareasFocus-close" id="tareasFocusCloseBtn" title="Cerrar módulo">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                     </svg>
-                    Filtros
                 </button>
-                <div class="tareas-search-wrap">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round" style="color:#8E8E93;flex-shrink:0;">
-                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <h3 class="tareasFocus-brand">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>
                     </svg>
-                    <input type="text" class="tareas-search-input" id="tareasSearchInput" placeholder="Buscar tarea...">
+                    Módulo de Tareas
+                </h3>
+                <div class="tareasFocus-toggle">
+                    <button type="button" data-flow="proyecto" class="active">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                        Proyectos
+                    </button>
+                    <button type="button" data-flow="runrate">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        Runrate
+                    </button>
                 </div>
             </div>
-        </div>
-        <!-- Filter panel (hidden by default) -->
-        <div class="tareas-filter-panel" id="tareasFilterPanel">
-            <div class="tareas-filter-row">
-                <label class="tareas-filter-label">Prioridad</label>
-                <div class="tareas-filter-chips" id="tareasFilterPrioridad">
-                    <button class="tareas-chip active" data-prio="todas">Todas</button>
-                    <button class="tareas-chip" data-prio="alta">Alta</button>
-                    <button class="tareas-chip" data-prio="media">Media</button>
-                    <button class="tareas-chip" data-prio="baja">Baja</button>
+            <div class="tareasFocus-kpis">
+                <div class="tareasFocus-kpi atrasadas">
+                    <div class="tareasFocus-kpi-label">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Atrasadas
+                    </div>
+                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiAtrasadas">0</div>
+                </div>
+                <div class="tareasFocus-kpi hoy">
+                    <div class="tareasFocus-kpi-label">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Para Hoy
+                    </div>
+                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiHoy">0</div>
                 </div>
             </div>
-            <div class="tareas-filter-row" style="margin-top:8px;">
-                <label class="tareas-filter-label">Responsable</label>
-                <select id="tareasFilterResponsable"
-                    style="padding:5px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.82rem;color:#1D1D1F;background:#F9FAFB;cursor:pointer;outline:none;min-width:180px;">
-                    <option value="todos">Todos los responsables</option>
-                </select>
+            <div class="tareasFocus-list">
+                <p class="tareasFocus-section-title">Vistas</p>
+                <button type="button" class="tareasFocus-all active" data-all="1">
+                    <div class="tareasFocus-all-ico">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M9 10h6M9 14h6M9 18h6"/>
+                        </svg>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="tareasFocus-all-label">Todas las Tareas</div>
+                        <div class="tareasFocus-all-sub" id="tareasFocusAllSub">0 pendientes</div>
+                    </div>
+                </button>
+                <p class="tareasFocus-section-title" style="border-top:1px solid #F3F4F6;padding-top:12px;">Tareas por Etapa</p>
+                <div class="tareasFocus-stages" id="tareasFocusStages"></div>
             </div>
+        </aside>
+
+        <!-- ═══ TOOLBAR SUPERIOR ═══ -->
+        <div class="tareas-toolbar">
+            <button type="button" class="tareas-toolbar-btn" id="tareasFocusToggleBtn" title="Módulo de tareas">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <h2 class="tareas-toolbar-title" id="tareasToolbarTitle">Todas las Tareas</h2>
+            <span class="tareas-toolbar-stat" id="tareasCount">0 tareas</span>
+            <div class="tareas-toolbar-spacer"></div>
+            <div class="tareas-toolbar-pills" id="tareasUrgencyPills">
+                <button type="button" data-urg="todas" class="active">Todas</button>
+                <button type="button" data-urg="atrasadas"><span class="tareas-pill-dot red"></span>Atrasadas</button>
+                <button type="button" data-urg="hoy"><span class="tareas-pill-dot amber"></span>Para Hoy</button>
+            </div>
+            <div class="tareas-search-mini">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" id="tareasSearchInput" placeholder="Buscar tarea...">
+            </div>
+            <button type="button" class="tareas-nueva-btn" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Nueva Tarea
+            </button>
         </div>
-        <table class="tareas-table">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Estado</th>
-                    <th>Fecha Límite</th>
-                    <th>Creado por</th>
-                    <th>Responsable</th>
-                    <th>Oportunidad / Proyecto</th>
-                </tr>
-            </thead>
-            <tbody id="tareasTableBody"></tbody>
-        </table>
+
+        <!-- ═══ GRID DE CARDS ═══ -->
+        <div id="tareasCardsGrid"></div>
         <div class="tareas-footer" id="tareasFooter"></div>
     </div>
 </div>
@@ -546,6 +1306,352 @@
 
 <!-- Aplica estado inicial antes del primer paint para evitar flash -->
 <script>(function(){var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t=document.getElementById('tareasSection');if(t)t.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}})();</script>
+
+{% if tab_activo == 'crm' %}
+<!-- ═══════════════════════════════════════════════════════════
+     Focus sidebar: logica de filtrado por etapa + pipeline
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+    var sidebar = document.getElementById('crmFocusSidebar');
+    var toggleBtn = document.getElementById('crmFocusToggleBtn');
+    var viewCards = document.getElementById('crmViewCards');
+    if (!sidebar || !viewCards) return;
+
+    var STORAGE_KEY = 'crmFocusState_v2';
+
+    // Orden canónico de etapas (mismo que usa el widget de la oportunidad)
+    var ORDER_PROYECTO = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes','Pagado','Perdido'];
+    var ORDER_RUNRATE = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta','Ganado','Perdido'];
+
+    var state = {
+        flow: 'proyecto', // 'proyecto' | 'runrate'
+        selected: {       // { proyecto: 'ALL'|indexNum, runrate: 'ALL'|indexNum }
+            proyecto: 'ALL',   // sobrescrito abajo por default inteligente
+            runrate: 'ALL'
+        },
+        wasOpen: false    // recordar si el sidebar estaba abierto
+    };
+
+    var hasSavedState = false;
+    try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            if (parsed && typeof parsed === 'object') {
+                hasSavedState = true;
+                if (parsed.flow === 'proyecto' || parsed.flow === 'runrate') state.flow = parsed.flow;
+                if (parsed.selected && typeof parsed.selected === 'object') {
+                    if ('proyecto' in parsed.selected) state.selected.proyecto = parsed.selected.proyecto;
+                    if ('runrate' in parsed.selected) state.selected.runrate = parsed.selected.runrate;
+                }
+                state.wasOpen = !!parsed.wasOpen;
+            }
+        }
+    } catch(e) {}
+
+    // Default inteligente si NO hay estado guardado:
+    // Proyecto -> Ejecutando (si hay cards), sino Seguimiento, sino ALL
+    function applySmartDefault() {
+        if (hasSavedState) return;
+        var stages = getStagesForFlow('proyecto');
+        var counts = {};
+        getAllCards().forEach(function(card){
+            if ((card.dataset.tipo || '').toLowerCase() !== 'proyecto') return;
+            var et = card.dataset.etapa || '';
+            counts[et] = (counts[et] || 0) + 1;
+        });
+        var targetIdx = -1;
+        // 1) Ejecutando con cards
+        for (var i = 0; i < stages.length; i++) {
+            if (stages[i].nombre === 'Ejecutando' && counts['Ejecutando']) { targetIdx = i; break; }
+        }
+        // 2) Seguimiento con cards
+        if (targetIdx === -1) {
+            for (var j = 0; j < stages.length; j++) {
+                if (stages[j].nombre === 'Seguimiento' && counts['Seguimiento']) { targetIdx = j; break; }
+            }
+        }
+        if (targetIdx !== -1) {
+            state.flow = 'proyecto';
+            state.selected.proyecto = targetIdx;
+        }
+    }
+
+    function persist() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                flow: state.flow,
+                selected: state.selected,
+                wasOpen: sidebar.classList.contains('open')
+            }));
+        } catch(e) {}
+    }
+
+    var etapasPipeline = (window._CRM_CONFIG || {}).etapasPipeline || {};
+
+    function fmtMoney(v) {
+        var n = Number(v) || 0;
+        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function getAllCards() {
+        var grid = document.getElementById('crmCardsGrid');
+        return grid ? Array.prototype.slice.call(grid.querySelectorAll('.crm-data-row')) : [];
+    }
+
+    function getStagesForFlow(flow) {
+        // 1) Orden canónico definido arriba (mismo que el widget de oportunidad)
+        var canonical = flow === 'proyecto' ? ORDER_PROYECTO : ORDER_RUNRATE;
+        // 2) EtapaPipeline del DB (si hay) — aporta colores
+        var configured = etapasPipeline[flow] || [];
+        var colorByName = {};
+        configured.forEach(function(s){ colorByName[s.nombre] = s.color; });
+        // 3) Etapas reales que aparecen en las cards (para detectar extras)
+        var cards = getAllCards();
+        var seenInCards = {};
+        cards.forEach(function(card){
+            var t = (card.dataset.tipo || '').toLowerCase();
+            if (t !== flow) return;
+            var et = card.dataset.etapa || '';
+            if (et) seenInCards[et] = true;
+        });
+        // 4) Construir lista respetando el orden canónico; extras al final
+        var result = [];
+        var added = {};
+        canonical.forEach(function(name){
+            result.push({ nombre: name, color: colorByName[name] || '#3B82F6' });
+            added[name] = true;
+        });
+        Object.keys(seenInCards).sort().forEach(function(name){
+            if (!added[name]) {
+                result.push({ nombre: name, color: colorByName[name] || '#3B82F6' });
+                added[name] = true;
+            }
+        });
+        return result;
+    }
+
+    function calcMetrics(flow) {
+        var stages = getStagesForFlow(flow);
+        var cards = getAllCards();
+        var byStage = {};
+        stages.forEach(function(s){ byStage[s.nombre] = { count: 0, value: 0 }; });
+        cards.forEach(function(card){
+            var t = (card.dataset.tipo || '').toLowerCase();
+            if (t !== flow) return;
+            var et = card.dataset.etapa || '';
+            var monto = parseFloat(card.dataset.monto || '0') || 0;
+            if (byStage[et]) {
+                byStage[et].count += 1;
+                byStage[et].value += monto;
+            }
+        });
+        // Si hubiera cards con etapa que no está en stages, la añadimos
+        cards.forEach(function(card){
+            var t = (card.dataset.tipo || '').toLowerCase();
+            if (t !== flow) return;
+            var et = card.dataset.etapa || '';
+            if (!et || byStage[et]) return;
+            byStage[et] = { count: 1, value: parseFloat(card.dataset.monto || '0') || 0 };
+            stages.push({ nombre: et, color: '#3B82F6' });
+        });
+        return stages.map(function(s){
+            return { nombre: s.nombre, color: s.color, count: byStage[s.nombre].count, value: byStage[s.nombre].value };
+        });
+    }
+
+    function calcTotalAll() {
+        var cards = getAllCards();
+        return cards.length;
+    }
+
+    function render() {
+        // Toggle flow buttons
+        sidebar.querySelectorAll('.crmFocus-toggle button').forEach(function(btn){
+            btn.classList.toggle('active', btn.dataset.flow === state.flow);
+        });
+
+        // Metrics for current flow
+        var metrics = calcMetrics(state.flow);
+        var totalVal = metrics.reduce(function(s, m){ return s + m.value; }, 0);
+        document.getElementById('crmFocusTotal').textContent = fmtMoney(totalVal);
+
+        // Ver Todo button
+        var allBtn = sidebar.querySelector('.crmFocus-all');
+        var selected = state.selected[state.flow];
+        allBtn.classList.toggle('active', selected === 'ALL');
+        document.getElementById('crmFocusAllCount').textContent = calcTotalAll() + ' oportunidades';
+
+        // Stages list
+        var cont = document.getElementById('crmFocusStages');
+        cont.innerHTML = '';
+        metrics.forEach(function(m, idx){
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'crmFocus-stage' + (selected === idx ? ' active' : '');
+            btn.setAttribute('data-idx', String(idx));
+            var html = '';
+            html += '<div class="crmFocus-stage-node"></div>';
+            html += '<div class="crmFocus-stage-info">';
+            html +=   '<div class="crmFocus-stage-row">';
+            html +=     '<span class="crmFocus-stage-name">' + m.nombre + '</span>';
+            html +=     '<span class="crmFocus-stage-count' + (m.count === 0 ? ' zero' : '') + '">' + m.count + '</span>';
+            html +=   '</div>';
+            if (m.count > 0) {
+                html += '<div class="crmFocus-stage-value">' + fmtMoney(m.value) + '</div>';
+            }
+            html += '</div>';
+            btn.innerHTML = html;
+            btn.addEventListener('click', function(){ selectStage(idx); });
+            cont.appendChild(btn);
+        });
+    }
+
+    function applyFilter() {
+        // Integrar con el sistema existente de filtros (currentFilters en crm_main.js)
+        var selected = state.selected[state.flow];
+        var cards = getAllCards();
+        if (selected === 'ALL') {
+            // Mostrar todas las oportunidades (sin filtrar por tipo/etapa)
+            cards.forEach(function(card){
+                card.removeAttribute('data-crmfocus-hidden');
+            });
+        } else {
+            var stages = getStagesForFlow(state.flow);
+            var etapaNombre = (stages[selected] || {}).nombre || '';
+            cards.forEach(function(card){
+                var t = (card.dataset.tipo || '').toLowerCase();
+                var et = card.dataset.etapa || '';
+                var match = (t === state.flow && et === etapaNombre);
+                if (match) card.removeAttribute('data-crmfocus-hidden');
+                else card.setAttribute('data-crmfocus-hidden', '1');
+            });
+        }
+        // Aplicar mostrar/ocultar respetando otros filtros que ya haya
+        cards.forEach(function(card){
+            if (card.getAttribute('data-crmfocus-hidden') === '1') {
+                card.style.display = 'none';
+            }
+        });
+        // Re-invocar filtros del sistema general para no romper búsqueda/filtros inline
+        if (typeof window._applyFiltersToCards === 'function') {
+            window._applyFiltersToCards();
+            // Luego volver a ocultar las que el focus descarta
+            cards.forEach(function(card){
+                if (card.getAttribute('data-crmfocus-hidden') === '1') {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        // Actualizar título en la barra (badge de oportunidades visibles)
+        updateHeaderCount();
+    }
+
+    function updateHeaderCount() {
+        // Contar cards visibles para mostrar en algún badge si lo queremos
+        // Por ahora solo re-render de metrics
+    }
+
+    function selectStage(idxOrAll) {
+        state.selected[state.flow] = idxOrAll;
+        render();
+        applyFilter();
+        persist();
+    }
+
+    function switchFlow(flow) {
+        state.flow = flow;
+        render();
+        applyFilter();
+        persist();
+    }
+
+    function open() {
+        sidebar.classList.add('open');
+        viewCards.classList.add('crmFocus-open');
+        persist();
+    }
+    function close() {
+        sidebar.classList.remove('open');
+        viewCards.classList.remove('crmFocus-open');
+        persist();
+    }
+
+    // Event listeners: solo el botón hamburguesa (toggle)
+    if (toggleBtn) toggleBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (sidebar.classList.contains('open')) close(); else open();
+    });
+
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape' && sidebar.classList.contains('open')) close();
+    });
+
+    sidebar.querySelectorAll('.crmFocus-toggle button').forEach(function(btn){
+        btn.addEventListener('click', function(){ switchFlow(btn.dataset.flow); });
+    });
+
+    sidebar.querySelector('.crmFocus-all').addEventListener('click', function(){ selectStage('ALL'); });
+
+    // Monkey-patch: cuando otros filtros corran _applyFiltersToCards
+    // (buscador global, panel de filtros), re-aplicar el focus-filter encima
+    function patchAfterMain() {
+        var orig = window._applyFiltersToCards;
+        if (typeof orig !== 'function') {
+            // Aún no cargó crm_main.js; reintentar brevemente
+            setTimeout(patchAfterMain, 80);
+            return;
+        }
+        if (orig._crmFocusPatched) return;
+        window._applyFiltersToCards = function() {
+            orig.apply(this, arguments);
+            var cards = getAllCards();
+            cards.forEach(function(card){
+                if (card.getAttribute('data-crmfocus-hidden') === '1') {
+                    card.style.display = 'none';
+                }
+            });
+        };
+        window._applyFiltersToCards._crmFocusPatched = true;
+    }
+
+    function initAll(){
+        applySmartDefault();
+        render();
+        patchAfterMain();
+        // Aplicar el filtro guardado al cargar la página (sin animación de apertura)
+        if (state.selected[state.flow] !== 'ALL') {
+            applyFilter();
+        }
+        // Restaurar si estaba abierto al recargar
+        if (state.wasOpen) {
+            // Desactivamos transición por un frame para evitar animación al cargar
+            sidebar.style.transition = 'none';
+            viewCards.classList.add('crmFocus-open');
+            sidebar.classList.add('open');
+            // Forzar reflow antes de reactivar transición
+            void sidebar.offsetWidth;
+            requestAnimationFrame(function(){ sidebar.style.transition = ''; });
+        }
+        // Marcar el grid como listo para mostrarlo con fade-in corto
+        var grid = document.getElementById('crmCardsGrid');
+        if (grid) {
+            requestAnimationFrame(function(){
+                grid.classList.add('crmFocus-ready');
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAll);
+    } else {
+        initAll();
+    }
+})();
+</script>
+{% endif %}
 
 <!-- ═══ MODAL DETALLE TAREA ═══ -->
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal">
@@ -700,6 +1806,8 @@
                     <svg width="12" height="12" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
             </div>
+            <!-- Subtareas O Tarea padre (renderizado por JS) -->
+            <div class="crm-task-sidebar-section crm-task-sidebar-divider" id="crmTaskSubtareasSection"></div>
         </div>
     </div>
 
@@ -794,6 +1902,7 @@
                 </div>
             </div>
             <input type="hidden" id="crmTaskOppId" value="">
+            <input type="hidden" id="crmTaskPadreId" value="">
         </div>
         <div class="crm-create-task-footer">
             <button type="button" class="crm-create-task-btn-cancel" onclick="crmTaskCerrarCrear()">Cancelar</button>

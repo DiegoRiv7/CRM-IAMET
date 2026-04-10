@@ -448,6 +448,8 @@ def api_programacion_actividades(request):
                 'hora_fin': a.hora_fin.strftime('%H:%M'),
                 'responsables': responsables,
                 'creado_por': a.creado_por.get_full_name() or a.creado_por.username,
+                'completada': a.completada,
+                'fecha_completada': a.fecha_completada.isoformat() if a.fecha_completada else None,
             })
 
         return JsonResponse({'success': True, 'items': items})
@@ -518,6 +520,8 @@ def api_programacion_actividades(request):
             fecha=fecha,
             hora_inicio=h_ini,
             hora_fin=h_fin,
+            descripcion=data.get('descripcion', '').strip(),
+            vehiculos=data.get('vehiculos', '').strip(),
             creado_por=request.user,
         )
         usuarios_asignados = []
@@ -544,17 +548,24 @@ def api_programacion_actividades(request):
 
         proyecto_titulo = data.get('proyecto_titulo', proyecto_key)
 
+        # Título del calendario = nombre de la actividad (no del proyecto).
+        # El proyecto queda referenciado en la descripción y el color café
+        # ya indica que es una actividad de programa de obra.
         cal_actividad = Actividad.objects.create(
-            titulo=f"📋 {proyecto_titulo}: {titulo or 'Actividad programada'}",
+            titulo=titulo or 'Actividad programada',
             tipo_actividad='reunion',
-            descripcion=f"Actividad programada para el proyecto. Día: {dia_semana}.",
+            descripcion=f"Proyecto: {proyecto_titulo}. Día: {dia_semana}. [programacion_actividad_id:{act.id}]",
             fecha_inicio=fecha_inicio_cal,
             fecha_fin=fecha_fin_cal,
             creado_por=request.user,
-            color='#FF2D55',  # Rosa
+            color='#92400E',  # Café
         )
         if usuarios_asignados:
             cal_actividad.participantes.set(usuarios_asignados)
+
+        # Vincular la actividad del calendario con la programacionactividad
+        act.actividad_calendario = cal_actividad
+        act.save(update_fields=['actividad_calendario'])
 
         # ── Send notifications to assigned users ──
         for u in usuarios_asignados:
@@ -577,8 +588,69 @@ def api_programacion_actividades(request):
 
 @login_required
 def api_programacion_actividad_detail(request, actividad_id):
-    """PUT actualizar / DELETE eliminar una actividad programada."""
+    """GET detalle / PUT actualizar / DELETE eliminar una actividad programada."""
     act = get_object_or_404(ProgramacionActividad, pk=actividad_id)
+
+    if request.method == 'GET':
+        responsables = []
+        for u in act.responsables.all():
+            profile = getattr(u, 'userprofile', None)
+            if profile:
+                iniciales = profile.iniciales()
+            elif u.first_name:
+                iniciales = (u.first_name[:1] + u.last_name[:1]).upper()
+            else:
+                iniciales = u.username[:2].upper()
+            responsables.append({
+                'id': u.id,
+                'nombre': u.get_full_name() or u.username,
+                'iniciales': iniciales,
+            })
+
+        # Evidencias (archivos) vinculadas a esta actividad
+        evidencias = []
+        try:
+            from .models import ProyectoEvidencia
+            qs_ev = ProyectoEvidencia.objects.filter(
+                entidad_tipo='programacion_actividad',
+                entidad_id=act.id,
+            ).order_by('-created_at')
+            for e in qs_ev:
+                evidencias.append({
+                    'id': e.id,
+                    'nombre_archivo': e.nombre_archivo,
+                    'url': e.archivo.url if e.archivo else '',
+                    'tipo_mime': e.tipo_mime,
+                    'tamano': e.tamano,
+                    'descripcion': e.descripcion,
+                    'subido_por': e.subido_por.get_full_name() or e.subido_por.username,
+                    'created_at': e.created_at.isoformat(),
+                })
+        except Exception:
+            pass
+
+        return JsonResponse({
+            'success': True,
+            'item': {
+                'id': act.id,
+                'proyecto_key': act.proyecto_key,
+                'titulo': act.titulo,
+                'descripcion': act.descripcion,
+                'vehiculos': act.vehiculos,
+                'dia_semana': act.dia_semana,
+                'fecha': str(act.fecha) if act.fecha else None,
+                'hora_inicio': act.hora_inicio.strftime('%H:%M'),
+                'hora_fin': act.hora_fin.strftime('%H:%M'),
+                'responsables': responsables,
+                'completada': act.completada,
+                'fecha_completada': act.fecha_completada.isoformat() if act.fecha_completada else None,
+                'completada_por': (act.completada_por.get_full_name() or act.completada_por.username) if act.completada_por else None,
+                'evidencia_texto': act.evidencia_texto,
+                'evidencias': evidencias,
+                'creado_por': act.creado_por.get_full_name() or act.creado_por.username,
+                'fecha_creacion': act.fecha_creacion.isoformat(),
+            }
+        })
 
     if request.method == 'PUT':
         data = json.loads(request.body)
@@ -629,6 +701,71 @@ def api_programacion_actividad_detail(request, actividad_id):
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+@require_POST
+def api_programacion_actividad_completar(request, actividad_id):
+    """
+    Marca una actividad de programa de obra como completada y guarda la evidencia.
+    Recibe multipart/form-data con:
+      - evidencia_texto (str)
+      - archivos (files, múltiples)
+    """
+    act = get_object_or_404(ProgramacionActividad, pk=actividad_id)
+
+    evidencia_texto = request.POST.get('evidencia_texto', '').strip()
+    archivos = request.FILES.getlist('archivos')
+
+    if not evidencia_texto and not archivos:
+        return JsonResponse({
+            'success': False,
+            'error': 'Se requiere evidencia (texto o al menos un archivo).',
+        }, status=400)
+
+    # Marcar como completada
+    act.completada = True
+    act.fecha_completada = timezone.now()
+    act.completada_por = request.user
+    act.evidencia_texto = evidencia_texto
+    act.save(update_fields=['completada', 'fecha_completada', 'completada_por', 'evidencia_texto'])
+
+    # Si la actividad es de un proyecto IAMET (proy_X), guardar archivos en ProyectoEvidencia
+    archivos_guardados = 0
+    if act.proyecto_key.startswith('proy_') and archivos:
+        try:
+            from .models import ProyectoIAMET, ProyectoEvidencia
+            proyecto_id = int(act.proyecto_key.replace('proy_', ''))
+            proyecto = ProyectoIAMET.objects.filter(pk=proyecto_id).first()
+            if proyecto:
+                for f in archivos:
+                    ProyectoEvidencia.objects.create(
+                        proyecto=proyecto,
+                        entidad_tipo='programacion_actividad',
+                        entidad_id=act.id,
+                        archivo=f,
+                        nombre_archivo=f.name,
+                        tipo_mime=getattr(f, 'content_type', '') or '',
+                        tamano=f.size,
+                        descripcion=evidencia_texto[:500],
+                        subido_por=request.user,
+                    )
+                    archivos_guardados += 1
+        except Exception as exc:
+            logging.exception("Error guardando evidencia de actividad programada: %s", exc)
+
+    # Sincronizar actividad del calendario vinculada (marcar como completada)
+    if act.actividad_calendario_id:
+        try:
+            Actividad.objects.filter(pk=act.actividad_calendario_id).update(completada=True)
+        except Exception:
+            pass
+
+    return JsonResponse({
+        'success': True,
+        'archivos_guardados': archivos_guardados,
+        'fecha_completada': act.fecha_completada.isoformat(),
+    })
 
 
 @login_required
@@ -969,11 +1106,28 @@ def api_proyectos(request):
 
 
 @login_required
+@login_required
+@require_POST
+def api_toggle_pin_tarea(request, tarea_id):
+    """Toggle anclar/desanclar una tarea para el usuario actual."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    ancladas = profile.tareas_ancladas or []
+    if tarea_id in ancladas:
+        ancladas.remove(tarea_id)
+        anclada = False
+    else:
+        ancladas.append(tarea_id)
+        anclada = True
+    profile.tareas_ancladas = ancladas
+    profile.save(update_fields=['tareas_ancladas'])
+    return JsonResponse({'success': True, 'anclada': anclada})
+
+
 def api_tareas(request):
     """
     API para obtener y crear tareas
     """
-    
+
     if request.method == 'GET':
         # Obtener tareas por proyecto si se especifica, sino mostrar TODAS las tareas
         proyecto_id = request.GET.get('proyecto_id')
@@ -1050,6 +1204,13 @@ def api_tareas(request):
                     offset = (page - 1) * per_page
                     tareas = tareas[offset:offset + per_page]
             
+            # Cargar ids de tareas ancladas del usuario actual
+            try:
+                profile_actual = UserProfile.objects.get(user=request.user)
+                ancladas_ids = set(profile_actual.tareas_ancladas or [])
+            except UserProfile.DoesNotExist:
+                ancladas_ids = set()
+
             tareas_data = []
             for tarea in tareas:
                 # Formatear tiempo trabajado
@@ -1079,6 +1240,9 @@ def api_tareas(request):
                     'oportunidad_id': tarea.oportunidad.id if tarea.oportunidad else None,
                     'oportunidad_nombre': tarea.oportunidad.oportunidad if tarea.oportunidad else None,
                     'oportunidad_cliente': tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None,
+                    'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
+                    'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
+                    'esta_anclada': tarea.id in ancladas_ids,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                     'pausado': getattr(tarea, 'pausado', False),
@@ -1530,6 +1694,7 @@ def api_crear_tarea(request):
         oportunidad_id = data.get('oportunidad_id')
         participantes_ids = data.get('participantes', [])
         observadores_ids = data.get('observadores', [])
+        tarea_padre_id = data.get('tarea_padre_id')
         
         # Convertir fecha límite si está presente
         fecha_limite_obj = None
@@ -1572,6 +1737,19 @@ def api_crear_tarea(request):
             except TodoItem.DoesNotExist:
                 return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
 
+        # Obtener tarea padre si se especificó (subtarea)
+        tarea_padre = None
+        if tarea_padre_id:
+            try:
+                tarea_padre = Tarea.objects.get(id=tarea_padre_id)
+                # Heredar proyecto y oportunidad de la tarea padre si no se especificaron
+                if not proyecto and tarea_padre.proyecto:
+                    proyecto = tarea_padre.proyecto
+                if not oportunidad and tarea_padre.oportunidad:
+                    oportunidad = tarea_padre.oportunidad
+            except Tarea.DoesNotExist:
+                return JsonResponse({'error': 'Tarea padre no encontrada'}, status=400)
+
         # Crear la tarea en la base de datos
         tarea = Tarea.objects.create(
             titulo=nombre,
@@ -1583,6 +1761,7 @@ def api_crear_tarea(request):
             fecha_limite=fecha_limite_obj,
             proyecto=proyecto,
             oportunidad=oportunidad,
+            tarea_padre=tarea_padre,
         )
         
         # Agregar participantes y observadores
@@ -2259,6 +2438,45 @@ def actividad_detail(request, pk):
         if 'completada' in data:
             actividad.completada = data['completada']
             actividad.save(update_fields=['completada'])
+            # Si es actividad de oportunidad, completar la TareaOportunidad vinculada
+            if actividad.completada and actividad.oportunidad_id:
+                try:
+                    from .models import TareaOportunidad
+                    TareaOportunidad.objects.filter(
+                        actividad_calendario=actividad,
+                        estado='pendiente',
+                    ).update(estado='completada')
+                except Exception:
+                    pass
+            # Si es actividad del programa de obra, sincronizar la ProgramacionActividad vinculada
+            if actividad.completada:
+                try:
+                    prog_acts = ProgramacionActividad.objects.filter(
+                        actividad_calendario=actividad,
+                        completada=False,
+                    )
+                    for prog in prog_acts:
+                        prog.completada = True
+                        prog.fecha_completada = timezone.now()
+                        prog.completada_por = request.user
+                        prog.save(update_fields=['completada', 'fecha_completada', 'completada_por'])
+                except Exception:
+                    pass
+            # Si es actividad de prospecto (morada), también completar la ProspectoActividad
+            if actividad.color == '#8B5CF6' and actividad.completada:
+                try:
+                    from .models import ProspectoActividad
+                    # Buscar la ProspectoActividad más cercana por fecha y título
+                    pa = ProspectoActividad.objects.filter(
+                        descripcion=actividad.titulo,
+                        usuario=actividad.creado_por,
+                        completada=False,
+                    ).order_by('fecha_programada').first()
+                    if pa:
+                        pa.completada = True
+                        pa.save(update_fields=['completada'])
+                except Exception:
+                    pass
             # Registrar en chat de grupo si completó actividad de otro
             if actividad.completada and actividad.creado_por != request.user:
                 try:
@@ -2469,8 +2687,19 @@ def api_tarea_detalle(request, tarea_id):
                 # Cliente: primero el directo, luego el de la oportunidad
                 'cliente_id': (tarea.cliente.id if tarea.cliente else (tarea.oportunidad.cliente.id if tarea.oportunidad and tarea.oportunidad.cliente else None)),
                 'cliente_nombre': (tarea.cliente.nombre_empresa if tarea.cliente else (tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None)),
+                # Subtareas
+                'tarea_padre_id': tarea.tarea_padre_id,
+                'tarea_padre_titulo': tarea.tarea_padre.titulo if tarea.tarea_padre else None,
+                'subtareas': [{
+                    'id': st.id,
+                    'titulo': st.titulo,
+                    'estado': st.estado,
+                    'prioridad': st.prioridad,
+                    'asignado_a': st.asignado_a.get_full_name() if st.asignado_a else None,
+                    'fecha_limite': st.fecha_limite.strftime('%Y-%m-%d') if st.fecha_limite else None,
+                } for st in tarea.subtareas.all().order_by('fecha_creacion')],
             }
-            
+
             return JsonResponse(tarea_data)
             
         except Tarea.DoesNotExist:
@@ -2777,7 +3006,12 @@ def api_completar_tarea(request, tarea_id):
         # Verificar que no esté ya completada
         if tarea.estado == 'completada':
             return JsonResponse({'error': 'La tarea ya está completada'}, status=400)
-        
+
+        # Verificar que no tenga subtareas abiertas
+        subtareas_abiertas = tarea.subtareas.exclude(estado__in=['completada', 'cancelada']).count()
+        if subtareas_abiertas > 0:
+            return JsonResponse({'error': f'No se puede completar: tiene {subtareas_abiertas} subtarea(s) pendiente(s)'}, status=400)
+
         ahora = datetime.now(timezone.utc)
         
         # Si está corriendo el cronómetro, detenerlo y guardar tiempo
@@ -3570,6 +3804,13 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             tarea.descripcion = data['descripcion']
         if 'estado' in data:
             tarea.estado = data['estado']
+            # Si se completa, también completar la Actividad del calendario vinculada
+            if data['estado'] == 'completada' and tarea.actividad_calendario_id:
+                try:
+                    tarea.actividad_calendario.completada = True
+                    tarea.actividad_calendario.save(update_fields=['completada'])
+                except Exception:
+                    pass
         if 'prioridad' in data:
             tarea.prioridad = data['prioridad']
         if 'fecha_limite' in data:
