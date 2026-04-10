@@ -229,10 +229,15 @@
                         <button id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:#0052D4;color:#fff;">Oportunidades</button>
                         <button id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:#86868B;">Prospectos</button>
                     </div>
-                    {% else %}
-                    <strong>{{ num_clientes }}</strong>
-                    {% if es_supervisor %}Clientes Totales{% else %}Clientes Asignados{% endif %}
-                    &nbsp;|&nbsp; <strong>{{ num_deals }}</strong> Deals
+                    {% elif tab_activo == 'crm' %}
+                    <button type="button" id="btnNegociacion" title="Nueva oportunidad"
+                        style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;background:#0052D4;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,82,212,0.25);transition:all 0.15s;"
+                        onmouseover="this.style.background='#0041a8';this.style.transform='translateY(-1px)';"
+                        onmouseout="this.style.background='#0052D4';this.style.transform='none';">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </button>
                     {% endif %}
                 </div>
                 <!-- Panel de filtros inline: se expande entre los stats y el botón -->
@@ -894,22 +899,28 @@
     var viewCards = document.getElementById('crmViewCards');
     if (!sidebar || !viewCards) return;
 
-    var STORAGE_KEY = 'crmFocusState_v1';
+    var STORAGE_KEY = 'crmFocusState_v2';
+
+    // Orden canónico de etapas (mismo que usa el widget de la oportunidad)
+    var ORDER_PROYECTO = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes','Pagado','Perdido'];
+    var ORDER_RUNRATE = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta','Ganado','Perdido'];
+
     var state = {
         flow: 'proyecto', // 'proyecto' | 'runrate'
         selected: {       // { proyecto: 'ALL'|indexNum, runrate: 'ALL'|indexNum }
-            proyecto: 'ALL',
+            proyecto: 'ALL',   // sobrescrito abajo por default inteligente
             runrate: 'ALL'
         },
         wasOpen: false    // recordar si el sidebar estaba abierto
     };
 
-    // Cargar estado guardado
+    var hasSavedState = false;
     try {
         var saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             var parsed = JSON.parse(saved);
             if (parsed && typeof parsed === 'object') {
+                hasSavedState = true;
                 if (parsed.flow === 'proyecto' || parsed.flow === 'runrate') state.flow = parsed.flow;
                 if (parsed.selected && typeof parsed.selected === 'object') {
                     if ('proyecto' in parsed.selected) state.selected.proyecto = parsed.selected.proyecto;
@@ -919,6 +930,34 @@
             }
         }
     } catch(e) {}
+
+    // Default inteligente si NO hay estado guardado:
+    // Proyecto -> Ejecutando (si hay cards), sino Seguimiento, sino ALL
+    function applySmartDefault() {
+        if (hasSavedState) return;
+        var stages = getStagesForFlow('proyecto');
+        var counts = {};
+        getAllCards().forEach(function(card){
+            if ((card.dataset.tipo || '').toLowerCase() !== 'proyecto') return;
+            var et = card.dataset.etapa || '';
+            counts[et] = (counts[et] || 0) + 1;
+        });
+        var targetIdx = -1;
+        // 1) Ejecutando con cards
+        for (var i = 0; i < stages.length; i++) {
+            if (stages[i].nombre === 'Ejecutando' && counts['Ejecutando']) { targetIdx = i; break; }
+        }
+        // 2) Seguimiento con cards
+        if (targetIdx === -1) {
+            for (var j = 0; j < stages.length; j++) {
+                if (stages[j].nombre === 'Seguimiento' && counts['Seguimiento']) { targetIdx = j; break; }
+            }
+        }
+        if (targetIdx !== -1) {
+            state.flow = 'proyecto';
+            state.selected.proyecto = targetIdx;
+        }
+    }
 
     function persist() {
         try {
@@ -943,9 +982,13 @@
     }
 
     function getStagesForFlow(flow) {
-        // 1) Si EtapaPipeline del DB tiene config para este flow, la usamos (respeta orden)
+        // 1) Orden canónico definido arriba (mismo que el widget de oportunidad)
+        var canonical = flow === 'proyecto' ? ORDER_PROYECTO : ORDER_RUNRATE;
+        // 2) EtapaPipeline del DB (si hay) — aporta colores
         var configured = etapasPipeline[flow] || [];
-        // 2) También recolectamos las etapas reales que aparecen en las cards
+        var colorByName = {};
+        configured.forEach(function(s){ colorByName[s.nombre] = s.color; });
+        // 3) Etapas reales que aparecen en las cards (para detectar extras)
         var cards = getAllCards();
         var seenInCards = {};
         cards.forEach(function(card){
@@ -954,19 +997,16 @@
             var et = card.dataset.etapa || '';
             if (et) seenInCards[et] = true;
         });
-        // 3) Combinamos: primero las configuradas, luego las que están en cards pero no en config
+        // 4) Construir lista respetando el orden canónico; extras al final
         var result = [];
         var added = {};
-        configured.forEach(function(s){
-            if (seenInCards[s.nombre]) {
-                // Priorizamos mostrar las que efectivamente tienen cards
-            }
-            result.push({ nombre: s.nombre, color: s.color || '#3B82F6' });
-            added[s.nombre] = true;
+        canonical.forEach(function(name){
+            result.push({ nombre: name, color: colorByName[name] || '#3B82F6' });
+            added[name] = true;
         });
         Object.keys(seenInCards).sort().forEach(function(name){
             if (!added[name]) {
-                result.push({ nombre: name, color: '#3B82F6' });
+                result.push({ nombre: name, color: colorByName[name] || '#3B82F6' });
                 added[name] = true;
             }
         });
@@ -1159,6 +1199,7 @@
     }
 
     function initAll(){
+        applySmartDefault();
         render();
         patchAfterMain();
         // Aplicar el filtro guardado al cargar la página (sin animación de apertura)
