@@ -4095,7 +4095,8 @@
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
             if (activeBtn) activeBtn.classList.add('active');
-            if (btnNeg) btnNeg.textContent = (view === 'crm') ? 'Negociacion' : 'Crear';
+            // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +
+            // en crm-bar-right. No sobrescribimos su contenido (el SVG debe quedarse).
         }
 
         try {
