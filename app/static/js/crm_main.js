@@ -139,29 +139,16 @@
             });
         }, 500);
 
-        // CRM View Toggle (cards vs table)
-        var _crmViewMode = localStorage.getItem('crmViewMode') || 'cards';
-        window.toggleCrmView = function() {
-            _crmViewMode = _crmViewMode === 'cards' ? 'table' : 'cards';
-            localStorage.setItem('crmViewMode', _crmViewMode);
-            _applyCrmView();
-        };
+        // CRM: solo vista de cards (la tabla legado queda oculta).
+        // Mantenemos la función para retro-compatibilidad pero ya no togglea.
+        window.toggleCrmView = function() { /* no-op: solo hay vista cards */ };
         function _applyCrmView() {
             var cardsView = document.getElementById('crmViewCards');
             var tableView = document.getElementById('crmViewTable');
-            var icon = document.getElementById('crmViewIcon');
-            if (!cardsView || !tableView) return;
-            if (_crmViewMode === 'cards') {
-                cardsView.style.display = '';
-                tableView.style.display = 'none';
-                if (icon) icon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2"/>';
-            } else {
-                cardsView.style.display = 'none';
-                tableView.style.display = '';
-                if (icon) icon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
-            }
+            if (cardsView) cardsView.style.display = '';
+            if (tableView) tableView.style.display = 'none';
         }
-        setTimeout(_applyCrmView, 0);
+        _applyCrmView();
 
         // Buscador: filtrar cards en tiempo real
         var _crmSearchEl = document.getElementById('crmSearch');
@@ -4276,13 +4263,13 @@
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
-            if (typeof btnNeg !== 'undefined' && btnNeg) btnNeg.textContent = 'Crear';
+            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             cargarTareasCRM();
         } else if (_savedView === 'proyectos') {
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
-            if (typeof btnNeg !== 'undefined' && btnNeg) btnNeg.textContent = 'Crear';
+            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             if (typeof proyectosInit === 'function') proyectosInit();
         }
 

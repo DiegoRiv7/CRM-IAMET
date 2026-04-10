@@ -337,14 +337,6 @@
                         <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
                     </svg>
                 </button>
-                {% if tab_activo == 'crm' %}
-                <button type="button" id="btnToggleCrmView" title="Cambiar vista" onclick="toggleCrmView()"
-                    style="padding:4px 8px;border:1px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;color:#6B7280;font-size:0.7rem;">
-                    <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                    </svg>
-                </button>
-                {% endif %}
                 <div class="crm-search-wrap" {% if tab_activo == 'clientes' or tab_activo == 'prospeccion' %}style="display:none;"{% endif %}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.5">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -355,8 +347,8 @@
             </div>
         </div>
         {% if tab_activo == 'crm' %}
-        <!-- VISTA CARDS (principal) -->
-        <div id="crmViewCards" style="display:none;">
+        <!-- VISTA CARDS (unica y predeterminada) -->
+        <div id="crmViewCards">
             <style>
                 #crmViewCards {
                     background: #F4F5F7;
@@ -514,8 +506,8 @@
                 {% endfor %}
             </div>
         </div>
-        <!-- VISTA TABLA (secundaria) -->
-        <div id="crmViewTable">
+        <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
+        <div id="crmViewTable" style="display:none;">
         <table class="w-full crm-table">
             <colgroup>
                 <col style="width:20%"><col style="width:8%"><col style="width:6%">
