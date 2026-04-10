@@ -448,6 +448,8 @@ def api_programacion_actividades(request):
                 'hora_fin': a.hora_fin.strftime('%H:%M'),
                 'responsables': responsables,
                 'creado_por': a.creado_por.get_full_name() or a.creado_por.username,
+                'completada': a.completada,
+                'fecha_completada': a.fecha_completada.isoformat() if a.fecha_completada else None,
             })
 
         return JsonResponse({'success': True, 'items': items})
