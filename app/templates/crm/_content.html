@@ -1,11 +1,250 @@
 {% load app_filters %}
 <div class="widget-toast" id="widgetToast"></div> <!-- ═══ CONTENT ═══ -->
 <div class="crm-content" id="crmContentSection">
+
+    {% if tab_activo == 'crm' %}
+    <!-- ═══════════════════════════════════════════════════════════
+         SIDEBAR: FOCUS POR ETAPA (Proyecto / Runrate)
+         Se abre con hover en borde izquierdo o con botón hamburguesa
+         ═══════════════════════════════════════════════════════════ -->
+    <style>
+        /* Zona invisible que activa el sidebar al pasar el cursor */
+        .crmFocus-trigger {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 12px;
+            z-index: 9050; background: transparent;
+        }
+        /* Overlay oscuro cuando el sidebar está abierto */
+        .crmFocus-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.25);
+            z-index: 9060; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .crmFocus-overlay.open {
+            opacity: 1; pointer-events: auto;
+        }
+        /* Sidebar principal */
+        .crmFocus-sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 340px;
+            background: #fff; border-right: 1px solid #E5E7EB;
+            box-shadow: 20px 0 40px rgba(0, 0, 0, 0.1);
+            z-index: 9070; transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            display: flex; flex-direction: column; font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+        .crmFocus-sidebar.open { transform: translateX(0); }
+        /* Header */
+        .crmFocus-head { padding: 22px 22px 14px; }
+        .crmFocus-brand {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 22px;
+            color: #1D1D1F;
+        }
+        .crmFocus-brand-ico {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: #0052D4; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 82, 212, 0.2); color: #fff;
+        }
+        .crmFocus-brand-title {
+            font-size: 1.1rem; font-weight: 700; letter-spacing: 0.02em; margin: 0;
+        }
+        .crmFocus-brand-title em {
+            font-style: normal; font-weight: 300; color: #9CA3AF;
+        }
+        /* Toggle Proyectos / Runrate */
+        .crmFocus-toggle {
+            display: flex; background: #F3F4F6; padding: 4px; border-radius: 12px;
+            border: 1px solid #E5E7EB;
+        }
+        .crmFocus-toggle button {
+            flex: 1; padding: 9px 0; border: none; background: transparent;
+            font-size: 0.78rem; font-weight: 700; color: #6B7280; cursor: pointer;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: all 0.2s;
+        }
+        .crmFocus-toggle button svg { width: 14px; height: 14px; }
+        .crmFocus-toggle button.active {
+            background: #fff; color: #0052D4;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        /* Metricas totales */
+        .crmFocus-metrics {
+            padding: 16px 22px; background: #F9FAFB; border-bottom: 1px solid #F3F4F6;
+        }
+        .crmFocus-metrics-label {
+            font-size: 0.65rem; font-weight: 700; color: #9CA3AF;
+            text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px;
+        }
+        .crmFocus-metrics-value {
+            font-size: 1.4rem; font-weight: 800; color: #1D1D1F; letter-spacing: -0.01em;
+        }
+        /* Lista de etapas */
+        .crmFocus-list {
+            flex: 1; overflow-y: auto; padding: 14px 10px 20px;
+        }
+        .crmFocus-list::-webkit-scrollbar { width: 6px; }
+        .crmFocus-list::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 20px; }
+        .crmFocus-list::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
+        .crmFocus-section-title {
+            font-size: 0.62rem; font-weight: 700; color: #9CA3AF;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            padding: 6px 12px 10px; margin: 0;
+        }
+        /* Botón "Ver Todo" */
+        .crmFocus-all {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border: none; background: transparent;
+            border-radius: 12px; cursor: pointer; text-align: left;
+            margin-bottom: 12px; transition: background 0.15s;
+        }
+        .crmFocus-all:hover { background: #F9FAFB; }
+        .crmFocus-all.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .crmFocus-all-ico {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: #F3F4F6; color: #6B7280;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .crmFocus-all.active .crmFocus-all-ico {
+            background: #0052D4; color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 82, 212, 0.25);
+        }
+        .crmFocus-all-label {
+            font-size: 0.83rem; font-weight: 700; color: #374151;
+        }
+        .crmFocus-all.active .crmFocus-all-label { color: #1E40AF; }
+        .crmFocus-all-sub {
+            font-size: 0.68rem; font-weight: 500; color: #9CA3AF; margin-top: 1px;
+        }
+        /* Stages list with connecting line */
+        .crmFocus-stages {
+            position: relative; padding: 0 8px 0 16px;
+            border-top: 1px solid #F3F4F6;
+            margin-top: 12px; padding-top: 14px;
+        }
+        .crmFocus-stages::before {
+            content: ''; position: absolute; left: 26px; top: 30px; bottom: 10px;
+            width: 2px; background: #F3F4F6; z-index: 0;
+        }
+        .crmFocus-stage {
+            position: relative; z-index: 1;
+            display: flex; align-items: center; gap: 11px;
+            width: 100%; padding: 9px 10px; border: none; background: transparent;
+            border-radius: 10px; cursor: pointer; text-align: left;
+            margin-bottom: 2px; transition: background 0.15s;
+        }
+        .crmFocus-stage:hover { background: #F9FAFB; }
+        .crmFocus-stage.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .crmFocus-stage-node {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #fff; border: 3px solid #D1D5DB;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.15s;
+        }
+        .crmFocus-stage.active .crmFocus-stage-node {
+            border-color: #0052D4;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.12);
+        }
+        .crmFocus-stage.active .crmFocus-stage-node::after {
+            content: ''; width: 6px; height: 6px; border-radius: 50%; background: #0052D4;
+        }
+        .crmFocus-stage-info { flex: 1; min-width: 0; }
+        .crmFocus-stage-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 6px;
+        }
+        .crmFocus-stage-name {
+            font-size: 0.72rem; font-weight: 700; color: #4B5563;
+            text-transform: uppercase; letter-spacing: 0.02em;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .crmFocus-stage.active .crmFocus-stage-name { color: #1E40AF; }
+        .crmFocus-stage-count {
+            font-size: 0.65rem; font-weight: 800;
+            padding: 2px 7px; border-radius: 6px;
+            background: #F3F4F6; color: #6B7280; flex-shrink: 0;
+        }
+        .crmFocus-stage.active .crmFocus-stage-count { background: #0052D4; color: #fff; }
+        .crmFocus-stage-count.zero { background: transparent; color: #D1D5DB; }
+        .crmFocus-stage-value {
+            font-size: 0.68rem; font-weight: 600; color: #9CA3AF; margin-top: 2px;
+        }
+        .crmFocus-stage.active .crmFocus-stage-value { color: #3B82F6; }
+        /* Botón hamburguesa dentro de la barra de tabs */
+        .crmFocus-toggleBtn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; padding: 0;
+            background: transparent; border: 1px solid #E5E7EB; border-radius: 8px;
+            cursor: pointer; color: #6B7280; transition: all 0.15s;
+            margin-right: 8px;
+        }
+        .crmFocus-toggleBtn:hover {
+            background: #EFF6FF; color: #0052D4; border-color: #BFDBFE;
+        }
+    </style>
+
+    <div class="crmFocus-trigger" id="crmFocusTrigger"></div>
+    <div class="crmFocus-overlay" id="crmFocusOverlay"></div>
+    <aside class="crmFocus-sidebar" id="crmFocusSidebar">
+        <div class="crmFocus-head">
+            <div class="crmFocus-brand">
+                <div class="crmFocus-brand-ico">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/>
+                    </svg>
+                </div>
+                <h2 class="crmFocus-brand-title">CRM <em>Focus</em></h2>
+            </div>
+            <div class="crmFocus-toggle">
+                <button type="button" data-flow="proyecto" class="active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    Proyectos
+                </button>
+                <button type="button" data-flow="runrate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    Runrate
+                </button>
+            </div>
+        </div>
+        <div class="crmFocus-metrics">
+            <div class="crmFocus-metrics-label">Valor total del embudo</div>
+            <div class="crmFocus-metrics-value" id="crmFocusTotal">$0</div>
+        </div>
+        <div class="crmFocus-list">
+            <p class="crmFocus-section-title">Vistas</p>
+            <button type="button" class="crmFocus-all active" data-all="1">
+                <div class="crmFocus-all-ico">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div style="flex:1;">
+                    <div class="crmFocus-all-label">Ver Todo Global</div>
+                    <div class="crmFocus-all-sub" id="crmFocusAllCount">0 oportunidades</div>
+                </div>
+            </button>
+            <p class="crmFocus-section-title" style="border-top:1px solid #F3F4F6;padding-top:12px;">Etapas del Proceso</p>
+            <div class="crmFocus-stages" id="crmFocusStages"></div>
+        </div>
+    </aside>
+    {% endif %}
+
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA TABS + STATS + BÚSQUEDA + FILTROS ═══ -->
         <div class="crm-bar">
             <div class="crm-tabs">
+                {% if tab_activo == 'crm' %}
+                <button type="button" class="crmFocus-toggleBtn" id="crmFocusToggleBtn" title="Focus por etapa">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                {% endif %}
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
@@ -634,6 +873,228 @@
 
 <!-- Aplica estado inicial antes del primer paint para evitar flash -->
 <script>(function(){var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t=document.getElementById('tareasSection');if(t)t.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}})();</script>
+
+{% if tab_activo == 'crm' %}
+<!-- ═══════════════════════════════════════════════════════════
+     Focus sidebar: logica de filtrado por etapa + pipeline
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+    var sidebar = document.getElementById('crmFocusSidebar');
+    var overlay = document.getElementById('crmFocusOverlay');
+    var trigger = document.getElementById('crmFocusTrigger');
+    var toggleBtn = document.getElementById('crmFocusToggleBtn');
+    if (!sidebar || !overlay) return;
+
+    var state = {
+        flow: 'proyecto', // 'proyecto' | 'runrate'
+        selected: {       // { proyecto: 'ALL'|indexNum, runrate: 'ALL'|indexNum }
+            proyecto: 'ALL',
+            runrate: 'ALL'
+        }
+    };
+
+    var etapasPipeline = (window._CRM_CONFIG || {}).etapasPipeline || {};
+
+    function fmtMoney(v) {
+        var n = Number(v) || 0;
+        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function getAllCards() {
+        var grid = document.getElementById('crmCardsGrid');
+        return grid ? Array.prototype.slice.call(grid.querySelectorAll('.crm-data-row')) : [];
+    }
+
+    function getStagesForFlow(flow) {
+        return (etapasPipeline[flow] || []);
+    }
+
+    function calcMetrics(flow) {
+        var stages = getStagesForFlow(flow);
+        var cards = getAllCards();
+        var byStage = {};
+        stages.forEach(function(s){ byStage[s.nombre] = { count: 0, value: 0 }; });
+        cards.forEach(function(card){
+            var t = (card.dataset.tipo || '').toLowerCase();
+            if (t !== flow) return;
+            var et = card.dataset.etapa || '';
+            var monto = parseFloat(card.dataset.monto || '0') || 0;
+            if (byStage[et]) {
+                byStage[et].count += 1;
+                byStage[et].value += monto;
+            }
+        });
+        return stages.map(function(s){
+            return { nombre: s.nombre, color: s.color, count: byStage[s.nombre].count, value: byStage[s.nombre].value };
+        });
+    }
+
+    function calcTotalAll() {
+        var cards = getAllCards();
+        return cards.length;
+    }
+
+    function render() {
+        // Toggle flow buttons
+        sidebar.querySelectorAll('.crmFocus-toggle button').forEach(function(btn){
+            btn.classList.toggle('active', btn.dataset.flow === state.flow);
+        });
+
+        // Metrics for current flow
+        var metrics = calcMetrics(state.flow);
+        var totalVal = metrics.reduce(function(s, m){ return s + m.value; }, 0);
+        document.getElementById('crmFocusTotal').textContent = fmtMoney(totalVal);
+
+        // Ver Todo button
+        var allBtn = sidebar.querySelector('.crmFocus-all');
+        var selected = state.selected[state.flow];
+        allBtn.classList.toggle('active', selected === 'ALL');
+        document.getElementById('crmFocusAllCount').textContent = calcTotalAll() + ' oportunidades';
+
+        // Stages list
+        var cont = document.getElementById('crmFocusStages');
+        cont.innerHTML = '';
+        metrics.forEach(function(m, idx){
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'crmFocus-stage' + (selected === idx ? ' active' : '');
+            btn.setAttribute('data-idx', String(idx));
+            var html = '';
+            html += '<div class="crmFocus-stage-node"></div>';
+            html += '<div class="crmFocus-stage-info">';
+            html +=   '<div class="crmFocus-stage-row">';
+            html +=     '<span class="crmFocus-stage-name">' + m.nombre + '</span>';
+            html +=     '<span class="crmFocus-stage-count' + (m.count === 0 ? ' zero' : '') + '">' + m.count + '</span>';
+            html +=   '</div>';
+            if (m.count > 0) {
+                html += '<div class="crmFocus-stage-value">' + fmtMoney(m.value) + '</div>';
+            }
+            html += '</div>';
+            btn.innerHTML = html;
+            btn.addEventListener('click', function(){ selectStage(idx); });
+            cont.appendChild(btn);
+        });
+    }
+
+    function applyFilter() {
+        // Integrar con el sistema existente de filtros (currentFilters en crm_main.js)
+        var selected = state.selected[state.flow];
+        var cards = getAllCards();
+        if (selected === 'ALL') {
+            // Mostrar todas las oportunidades (sin filtrar por tipo/etapa)
+            cards.forEach(function(card){
+                card.removeAttribute('data-crmfocus-hidden');
+            });
+        } else {
+            var stages = getStagesForFlow(state.flow);
+            var etapaNombre = (stages[selected] || {}).nombre || '';
+            cards.forEach(function(card){
+                var t = (card.dataset.tipo || '').toLowerCase();
+                var et = card.dataset.etapa || '';
+                var match = (t === state.flow && et === etapaNombre);
+                if (match) card.removeAttribute('data-crmfocus-hidden');
+                else card.setAttribute('data-crmfocus-hidden', '1');
+            });
+        }
+        // Aplicar mostrar/ocultar respetando otros filtros que ya haya
+        cards.forEach(function(card){
+            if (card.getAttribute('data-crmfocus-hidden') === '1') {
+                card.style.display = 'none';
+            }
+        });
+        // Re-invocar filtros del sistema general para no romper búsqueda/filtros inline
+        if (typeof window._applyFiltersToCards === 'function') {
+            window._applyFiltersToCards();
+            // Luego volver a ocultar las que el focus descarta
+            cards.forEach(function(card){
+                if (card.getAttribute('data-crmfocus-hidden') === '1') {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        // Actualizar título en la barra (badge de oportunidades visibles)
+        updateHeaderCount();
+    }
+
+    function updateHeaderCount() {
+        // Contar cards visibles para mostrar en algún badge si lo queremos
+        // Por ahora solo re-render de metrics
+    }
+
+    function selectStage(idxOrAll) {
+        state.selected[state.flow] = idxOrAll;
+        render();
+        applyFilter();
+    }
+
+    function switchFlow(flow) {
+        state.flow = flow;
+        render();
+        applyFilter();
+    }
+
+    function open() {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+    }
+    function close() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    }
+
+    // Event listeners
+    trigger.addEventListener('mouseenter', open);
+    sidebar.addEventListener('mouseleave', close);
+    overlay.addEventListener('click', close);
+    if (toggleBtn) toggleBtn.addEventListener('click', open);
+
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape' && sidebar.classList.contains('open')) close();
+    });
+
+    sidebar.querySelectorAll('.crmFocus-toggle button').forEach(function(btn){
+        btn.addEventListener('click', function(){ switchFlow(btn.dataset.flow); });
+    });
+
+    sidebar.querySelector('.crmFocus-all').addEventListener('click', function(){ selectStage('ALL'); });
+
+    // Monkey-patch: cuando otros filtros corran _applyFiltersToCards
+    // (buscador global, panel de filtros), re-aplicar el focus-filter encima
+    function patchAfterMain() {
+        var orig = window._applyFiltersToCards;
+        if (typeof orig !== 'function') {
+            // Aún no cargó crm_main.js; reintentar brevemente
+            setTimeout(patchAfterMain, 80);
+            return;
+        }
+        if (orig._crmFocusPatched) return;
+        window._applyFiltersToCards = function() {
+            orig.apply(this, arguments);
+            var cards = getAllCards();
+            cards.forEach(function(card){
+                if (card.getAttribute('data-crmfocus-hidden') === '1') {
+                    card.style.display = 'none';
+                }
+            });
+        };
+        window._applyFiltersToCards._crmFocusPatched = true;
+    }
+
+    function initAll(){
+        render();
+        patchAfterMain();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAll);
+    } else {
+        initAll();
+    }
+})();
+</script>
+{% endif %}
 
 <!-- ═══ MODAL DETALLE TAREA ═══ -->
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal">
