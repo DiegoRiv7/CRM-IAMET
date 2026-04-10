@@ -546,11 +546,13 @@ def api_programacion_actividades(request):
 
         proyecto_titulo = data.get('proyecto_titulo', proyecto_key)
 
-        # Título del calendario = sólo el nombre del proyecto (sin emojis ni prefijos).
+        # Título del calendario = nombre de la actividad (no del proyecto).
+        # El proyecto queda referenciado en la descripción y el color café
+        # ya indica que es una actividad de programa de obra.
         cal_actividad = Actividad.objects.create(
-            titulo=proyecto_titulo,
+            titulo=titulo or 'Actividad programada',
             tipo_actividad='reunion',
-            descripcion=f"Actividad programada: {titulo or 'Actividad'}. Día: {dia_semana}. [programacion_actividad_id:{act.id}]",
+            descripcion=f"Proyecto: {proyecto_titulo}. Día: {dia_semana}. [programacion_actividad_id:{act.id}]",
             fecha_inicio=fecha_inicio_cal,
             fecha_fin=fecha_fin_cal,
             creado_por=request.user,
