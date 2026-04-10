@@ -738,33 +738,89 @@
 
 
 <!-- ══════════════════════════════════════════════════════════════════
-     SUB-DIALOG: DETALLE DE ACTIVIDAD (PROGRAMA DE OBRA)
+     WIDGET: DETALLE DE ACTIVIDAD (PROGRAMA DE OBRA)
+     Estilo igual al widget de actividades de oportunidades
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoActDetalle" style="z-index:10250;display:none;"
+<div class="widget-overlay" id="proyDialogoActDetalle" style="z-index:10250;display:none;"
     onclick="if(event.target===this)this.style.display='none';">
-  <div class="proy-dialog-card" style="max-width:600px;">
-    <div class="proy-dialog-header" style="background:linear-gradient(135deg, #92400E 0%, #B45309 100%);color:#fff;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 7V4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3"/>
-            <path d="M8 3v4M16 3v4"/>
-            <rect x="3" y="7" width="18" height="14" rx="1"/>
-          </svg>
-        </div>
-        <div>
-          <h3 class="proy-dialog-title" style="margin:0;color:#fff;" id="proyDetalleActTitulo">Actividad</h3>
-          <div id="proyDetalleActSubtitulo" style="font-size:0.75rem;color:rgba(255,255,255,0.85);margin-top:2px;"></div>
+  <div class="widget-card widget-card-md"
+      style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+    <!-- Header con barra café -->
+    <div style="height:60px;background:#92400E;border-radius:12px 12px 0 0;position:relative;">
+      <button type="button" onclick="proyectosCerrarDialogo('proyDialogoActDetalle')"
+          style="position:absolute;top:15px;right:15px;color:#fff;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;line-height:1;transition:background 0.2s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.2)'">&times;</button>
+      <div style="position:absolute;bottom:-20px;left:20px;width:40px;height:40px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);color:#92400E;">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>
+        </svg>
+      </div>
+    </div>
+    <div style="padding:2rem 1.5rem 1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:75vh;">
+      <!-- Título + fecha -->
+      <div>
+        <div style="font-size:0.7rem;text-transform:uppercase;color:#92400E;font-weight:800;letter-spacing:0.05em;margin-bottom:4px;">Programa de Obra</div>
+        <h3 id="proyDetalleActTitulo" style="margin:0;font-size:1.3rem;font-weight:700;color:#1D1D1F;">Cargando...</h3>
+        <div id="proyDetalleActSubtitulo" style="margin-top:0.3rem;color:#86868B;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span id="proyDetalleActFechaTxt"></span>
         </div>
       </div>
-      <button class="proy-dialog-close" style="color:#fff;" onclick="proyectosCerrarDialogo('proyDialogoActDetalle')">&times;</button>
-    </div>
-    <div class="proy-dialog-body" id="proyDetalleActBody">
-      <div style="text-align:center;padding:30px;color:#8e8e93;font-size:0.85rem;">Cargando detalle...</div>
-    </div>
-    <div class="proy-dialog-footer" id="proyDetalleActFooter">
-      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoActDetalle')">Cerrar</button>
-      <button class="proy-btn proy-btn-primary" id="proyDetalleActBtnCompletar" style="background:#059669;border-color:#059669;" onclick="proyectosIniciarCompletar()">Completar</button>
+
+      <!-- Estado badge -->
+      <div id="proyDetalleActEstadoRow" style="display:none;">
+        <div id="proyDetalleActEstadoBadge" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:700;"></div>
+      </div>
+
+      <!-- Horario + Proyecto -->
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">Horario</div>
+          <div id="proyDetalleActHorario" style="font-size:0.95rem;color:#1D1D1F;font-weight:600;">—</div>
+        </div>
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">Creado por</div>
+          <div id="proyDetalleActCreador" style="font-size:0.9rem;color:#1D1D1F;font-weight:500;">—</div>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div style="background:#F2F2F7;border-radius:8px;padding:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.4rem;text-transform:uppercase;">Descripción</div>
+        <div id="proyDetalleActDesc" style="font-size:0.95rem;color:#1D1D1F;line-height:1.5;white-space:pre-wrap;">Sin descripción</div>
+      </div>
+
+      <!-- Personal -->
+      <div>
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.5rem;text-transform:uppercase;">Personal asignado</div>
+        <div id="proyDetalleActPersonal" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+
+      <!-- Vehículos -->
+      <div id="proyDetalleActVehiculosRow" style="display:none;">
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.2rem;text-transform:uppercase;">Vehículos</div>
+        <div id="proyDetalleActVehiculos" style="font-size:0.9rem;color:#1D1D1F;"></div>
+      </div>
+
+      <!-- Evidencia (solo si está completada) -->
+      <div id="proyDetalleActEvidenciaRow" style="display:none;padding-top:1rem;border-top:1px dashed #E5E5EA;">
+        <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.5rem;text-transform:uppercase;">Evidencia</div>
+        <div id="proyDetalleActEvidenciaTexto" style="background:#FFFBEB;border:1px solid #FEF3C7;border-radius:8px;padding:10px 12px;font-size:0.88rem;color:#78350F;line-height:1.5;white-space:pre-wrap;margin-bottom:10px;display:none;"></div>
+        <div id="proyDetalleActEvidenciaArchivos" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+      <!-- Acciones -->
+      <div id="proyDetalleActAcciones" style="margin-top:0.5rem;padding-top:1rem;border-top:1px dashed #E5E5EA;display:flex;align-items:center;justify-content:flex-end;gap:0.5rem;flex-wrap:wrap;">
+        <button id="proyDetalleActBtnCompletar" onclick="proyectosIniciarCompletar()"
+            style="background:#34C759;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s,background 0.2s;"
+            onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='none'">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Completar Actividad
+        </button>
+      </div>
     </div>
   </div>
 </div>

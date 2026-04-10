@@ -1107,12 +1107,12 @@
                     var dayEl = document.getElementById('proyProgDay_' + act.fecha);
                     if (!dayEl) return;
                     var respHtml = (act.responsables || []).map(function(r) {
-                        return '<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#92400E;color:#fff;font-size:0.55rem;line-height:20px;text-align:center;margin-right:2px;" title="' + r.nombre + '">' + r.iniciales + '</span>';
+                        return '<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#007AFF;color:#fff;font-size:0.55rem;line-height:20px;text-align:center;margin-right:2px;" title="' + r.nombre + '">' + r.iniciales + '</span>';
                     }).join('');
                     var completed = act.completada === true;
-                    var cardBg = completed ? '#F0FDF4' : '#FEF3C7';
-                    var cardBorder = completed ? '#BBF7D0' : '#FDE68A';
-                    var cardColor = completed ? '#166534' : '#92400E';
+                    var cardBg = completed ? '#F0FDF4' : '#F0F7FF';
+                    var cardBorder = completed ? '#BBF7D0' : '#BFDBFE';
+                    var cardColor = completed ? '#166534' : '#1E40AF';
                     var checkIcon = completed
                         ? '<span style="display:inline-block;margin-right:4px;color:#059669;font-weight:800;">&#10003;</span>'
                         : '';
@@ -1345,121 +1345,147 @@
         if (!actividadId) return;
         _currentActDetalleId = actividadId;
 
-        var overlay = document.getElementById('proyDialogoActDetalle');
-        var body = document.getElementById('proyDetalleActBody');
-        var titulo = document.getElementById('proyDetalleActTitulo');
-        var sub = document.getElementById('proyDetalleActSubtitulo');
-        var btnCompletar = document.getElementById('proyDetalleActBtnCompletar');
-
+        var overlay = el('proyDialogoActDetalle');
         if (!overlay) return;
 
-        titulo.textContent = 'Actividad';
-        sub.textContent = '';
-        body.innerHTML = '<div style="text-align:center;padding:30px;color:#8e8e93;font-size:0.85rem;">Cargando detalle...</div>';
+        // Reset fields a "Cargando"
+        el('proyDetalleActTitulo').textContent = 'Cargando...';
+        el('proyDetalleActFechaTxt').textContent = '';
+        el('proyDetalleActHorario').textContent = '—';
+        el('proyDetalleActCreador').textContent = '—';
+        el('proyDetalleActDesc').textContent = 'Sin descripción';
+        el('proyDetalleActPersonal').innerHTML = '';
+        el('proyDetalleActEstadoRow').style.display = 'none';
+        el('proyDetalleActVehiculosRow').style.display = 'none';
+        el('proyDetalleActEvidenciaRow').style.display = 'none';
+        el('proyDetalleActEvidenciaTexto').style.display = 'none';
+        el('proyDetalleActEvidenciaArchivos').innerHTML = '';
+        el('proyDetalleActBtnCompletar').style.display = '';
+
         overlay.style.display = 'flex';
 
         _fetch('/app/api/programacion/actividad/' + actividadId + '/').then(function(resp) {
             if (!resp.success) {
-                body.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;font-size:0.85rem;">Error al cargar el detalle</div>';
+                el('proyDetalleActTitulo').textContent = 'Error al cargar';
                 return;
             }
             var it = resp.item || {};
-            titulo.textContent = it.titulo || 'Actividad';
+
+            // Título
+            el('proyDetalleActTitulo').textContent = it.titulo || 'Actividad';
+
+            // Fecha legible
             var fechaStr = it.fecha || '';
             if (fechaStr) {
                 var d = new Date(fechaStr + 'T12:00:00');
                 var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
                 var dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-                sub.textContent = dias[d.getDay()] + ', ' + d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
+                el('proyDetalleActFechaTxt').textContent = dias[d.getDay()] + ', ' + d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
             } else {
-                sub.textContent = it.dia_semana || '';
+                el('proyDetalleActFechaTxt').textContent = it.dia_semana || '';
             }
 
-            // Build body HTML
-            var html = '';
+            // Horario + Creador
+            el('proyDetalleActHorario').textContent = (it.hora_inicio || '—') + ' – ' + (it.hora_fin || '—');
+            el('proyDetalleActCreador').textContent = it.creado_por || '—';
 
-            // Status badge
+            // Descripción
+            el('proyDetalleActDesc').textContent = it.descripcion || 'Sin descripción';
+
+            // Estado badge
+            var estadoRow = el('proyDetalleActEstadoRow');
+            var estadoBadge = el('proyDetalleActEstadoBadge');
             if (it.completada) {
+                estadoRow.style.display = '';
                 var completedByStr = it.completada_por ? ' por ' + _esc(it.completada_por) : '';
                 var completedDateStr = '';
                 if (it.fecha_completada) {
                     var fc = new Date(it.fecha_completada);
-                    completedDateStr = ' el ' + fc.toLocaleDateString('es-MX') + ' a las ' + fc.getHours().toString().padStart(2,'0') + ':' + fc.getMinutes().toString().padStart(2,'0');
+                    completedDateStr = ' · ' + fc.toLocaleDateString('es-MX') + ' ' + fc.getHours().toString().padStart(2,'0') + ':' + fc.getMinutes().toString().padStart(2,'0');
                 }
-                html += '<div style="background:#D1FAE5;border:1px solid #A7F3D0;border-radius:10px;padding:10px 14px;margin-bottom:14px;color:#065F46;font-size:0.8rem;font-weight:600;">';
-                html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M20 6L9 17l-5-5"/></svg>';
-                html += 'Actividad completada' + completedByStr + completedDateStr + '</div>';
+                estadoBadge.style.background = 'rgba(52,199,89,0.14)';
+                estadoBadge.style.color = '#16A34A';
+                estadoBadge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Completada' + completedByStr + completedDateStr;
+            } else {
+                estadoRow.style.display = '';
+                estadoBadge.style.background = 'rgba(146,64,14,0.12)';
+                estadoBadge.style.color = '#92400E';
+                estadoBadge.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/></svg>Pendiente';
             }
 
-            // Horario
-            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">';
-            html += '<div style="background:#F9FAFB;border-radius:10px;padding:10px 12px;"><div style="font-size:0.65rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:2px;">Horario</div><div style="font-size:0.88rem;font-weight:600;color:#1D1D1F;">' + _esc(it.hora_inicio) + ' – ' + _esc(it.hora_fin) + '</div></div>';
-            html += '<div style="background:#F9FAFB;border-radius:10px;padding:10px 12px;"><div style="font-size:0.65rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:2px;">Creado por</div><div style="font-size:0.88rem;font-weight:600;color:#1D1D1F;">' + _esc(it.creado_por || '—') + '</div></div>';
-            html += '</div>';
-
-            // Descripción
-            if (it.descripcion) {
-                html += '<div style="margin-bottom:14px;"><div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:4px;">Descripción</div>';
-                html += '<div style="font-size:0.85rem;color:#1D1D1F;line-height:1.45;white-space:pre-wrap;">' + _esc(it.descripcion) + '</div></div>';
-            }
-
-            // Responsables
+            // Personal
+            var personalEl = el('proyDetalleActPersonal');
+            personalEl.innerHTML = '';
             if (it.responsables && it.responsables.length) {
-                html += '<div style="margin-bottom:14px;"><div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:6px;">Personal (' + it.responsables.length + ')</div>';
-                html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
                 it.responsables.forEach(function(r) {
-                    html += '<div style="display:flex;align-items:center;gap:6px;background:#F3F4F6;border-radius:20px;padding:4px 10px 4px 4px;">';
-                    html += '<div style="width:22px;height:22px;border-radius:50%;background:#92400E;color:#fff;font-size:0.6rem;line-height:22px;text-align:center;font-weight:700;">' + _esc(r.iniciales) + '</div>';
-                    html += '<span style="font-size:0.75rem;color:#1D1D1F;">' + _esc(r.nombre) + '</span>';
-                    html += '</div>';
+                    var chip = document.createElement('div');
+                    chip.style.cssText = 'display:flex;align-items:center;gap:6px;background:#F3F4F6;border-radius:20px;padding:4px 12px 4px 4px;';
+                    chip.innerHTML = '<div style="width:26px;height:26px;border-radius:50%;background:#92400E;color:#fff;font-size:0.65rem;line-height:26px;text-align:center;font-weight:700;">' + _esc(r.iniciales) + '</div>' +
+                        '<span style="font-size:0.85rem;color:#1D1D1F;">' + _esc(r.nombre) + '</span>';
+                    personalEl.appendChild(chip);
                 });
-                html += '</div></div>';
+            } else {
+                personalEl.innerHTML = '<span style="color:#86868B;font-size:0.85rem;font-style:italic;">Sin personal asignado</span>';
             }
 
             // Vehículos
             if (it.vehiculos) {
-                html += '<div style="margin-bottom:14px;"><div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:4px;">Vehículos</div>';
-                html += '<div style="font-size:0.85rem;color:#1D1D1F;">' + _esc(it.vehiculos) + '</div></div>';
+                el('proyDetalleActVehiculosRow').style.display = '';
+                el('proyDetalleActVehiculos').textContent = it.vehiculos;
             }
 
-            // Evidencia
+            // Evidencia (si está completada)
             if (it.completada) {
-                html += '<div style="border-top:1px solid #E5E7EB;padding-top:12px;margin-top:12px;">';
-                html += '<div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:6px;">Evidencia</div>';
+                var evidenciaRow = el('proyDetalleActEvidenciaRow');
+                var textoEl = el('proyDetalleActEvidenciaTexto');
+                var archivosEl = el('proyDetalleActEvidenciaArchivos');
+                var hasAny = false;
+
                 if (it.evidencia_texto) {
-                    html += '<div style="background:#FFFBEB;border:1px solid #FEF3C7;border-radius:8px;padding:10px 12px;font-size:0.82rem;color:#78350F;line-height:1.45;white-space:pre-wrap;margin-bottom:8px;">' + _esc(it.evidencia_texto) + '</div>';
+                    textoEl.textContent = it.evidencia_texto;
+                    textoEl.style.display = '';
+                    hasAny = true;
                 }
                 if (it.evidencias && it.evidencias.length) {
-                    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+                    hasAny = true;
                     it.evidencias.forEach(function(e) {
                         var isImg = (e.tipo_mime || '').indexOf('image/') === 0;
                         var icon = isImg
                             ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'
                             : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
-                        html += '<a href="' + _esc(e.url) + '" target="_blank" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #E5E7EB;border-radius:8px;text-decoration:none;color:#1D1D1F;font-size:0.78rem;transition:background 0.15s;" onmouseover="this.style.background=\'#F9FAFB\'" onmouseout="this.style.background=\'transparent\'">';
-                        html += icon + '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(e.nombre_archivo) + '</span>';
-                        html += '</a>';
+                        var a = document.createElement('a');
+                        a.href = e.url;
+                        a.target = '_blank';
+                        a.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;text-decoration:none;color:#1D1D1F;font-size:0.85rem;transition:background 0.15s;';
+                        a.onmouseover = function() { this.style.background = '#F9FAFB'; };
+                        a.onmouseout = function() { this.style.background = 'transparent'; };
+                        a.innerHTML = icon + '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(e.nombre_archivo) + '</span>';
+                        archivosEl.appendChild(a);
                     });
-                    html += '</div>';
                 }
-                if (!it.evidencia_texto && (!it.evidencias || !it.evidencias.length)) {
-                    html += '<div style="font-size:0.78rem;color:#9CA3AF;font-style:italic;">Sin evidencia registrada</div>';
+                if (hasAny) {
+                    evidenciaRow.style.display = '';
+                } else {
+                    evidenciaRow.style.display = '';
+                    textoEl.textContent = 'Sin evidencia registrada';
+                    textoEl.style.display = '';
+                    textoEl.style.fontStyle = 'italic';
+                    textoEl.style.color = '#9CA3AF';
+                    textoEl.style.background = 'transparent';
+                    textoEl.style.border = 'none';
+                    textoEl.style.padding = '0';
                 }
-                html += '</div>';
             }
 
-            body.innerHTML = html;
-
-            // Configurar botón completar
+            // Botón Completar
+            var btn = el('proyDetalleActBtnCompletar');
             if (it.completada) {
-                btnCompletar.style.display = 'none';
+                btn.style.display = 'none';
             } else {
-                btnCompletar.style.display = '';
-                btnCompletar.disabled = false;
-                btnCompletar.textContent = 'Completar';
+                btn.style.display = 'inline-flex';
             }
         }).catch(function(err) {
-            body.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;font-size:0.85rem;">Error de conexión</div>';
+            el('proyDetalleActTitulo').textContent = 'Error de conexión';
             console.error('Error cargando detalle actividad:', err);
         });
     };
