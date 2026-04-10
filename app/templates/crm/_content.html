@@ -991,12 +991,11 @@
             width: 18px; height: 18px; border-radius: 50%;
             border: 1.5px solid #D1D5DB; background: #fff;
             flex-shrink: 0; margin-top: 2px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.15s;
+            pointer-events: none;
         }
-        .tareas-card-check:hover { border-color: #0052D4; background: #EFF6FF; }
         .tareas-card.done .tareas-card-check {
             background: #34C759; border-color: #34C759;
+            display: flex; align-items: center; justify-content: center;
         }
         .tareas-card.done .tareas-card-check::after {
             content: ''; width: 8px; height: 8px;
