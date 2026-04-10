@@ -2419,6 +2419,20 @@ def actividad_detail(request, pk):
                     ).update(estado='completada')
                 except Exception:
                     pass
+            # Si es actividad del programa de obra, sincronizar la ProgramacionActividad vinculada
+            if actividad.completada:
+                try:
+                    prog_acts = ProgramacionActividad.objects.filter(
+                        actividad_calendario=actividad,
+                        completada=False,
+                    )
+                    for prog in prog_acts:
+                        prog.completada = True
+                        prog.fecha_completada = timezone.now()
+                        prog.completada_por = request.user
+                        prog.save(update_fields=['completada', 'fecha_completada', 'completada_por'])
+                except Exception:
+                    pass
             # Si es actividad de prospecto (morada), también completar la ProspectoActividad
             if actividad.color == '#8B5CF6' and actividad.completada:
                 try:

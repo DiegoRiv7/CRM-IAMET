@@ -1110,18 +1110,19 @@
                         return '<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#007AFF;color:#fff;font-size:0.55rem;line-height:20px;text-align:center;margin-right:2px;" title="' + r.nombre + '">' + r.iniciales + '</span>';
                     }).join('');
                     var completed = act.completada === true;
-                    var cardBg = completed ? '#F0FDF4' : '#F0F7FF';
-                    var cardBorder = completed ? '#BBF7D0' : '#BFDBFE';
-                    var cardColor = completed ? '#166534' : '#1E40AF';
+                    var cardBg = '#F0F7FF';
+                    var cardBorder = '#BFDBFE';
+                    var cardColor = '#1E40AF';
+                    var cardOpacity = completed ? '0.42' : '1';
                     var checkIcon = completed
                         ? '<span style="display:inline-block;margin-right:4px;color:#059669;font-weight:800;">&#10003;</span>'
                         : '';
-                    var tituloStyle = completed ? 'text-decoration:line-through;opacity:0.75;' : '';
+                    var tituloStyle = completed ? 'text-decoration:line-through;' : '';
                     var card = document.createElement('div');
-                    card.style.cssText = 'background:' + cardBg + ';border:1px solid ' + cardBorder + ';border-radius:8px;padding:6px 8px;margin-bottom:4px;font-size:0.7rem;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;';
+                    card.style.cssText = 'background:' + cardBg + ';border:1px solid ' + cardBorder + ';border-radius:8px;padding:6px 8px;margin-bottom:4px;font-size:0.7rem;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s, opacity 0.2s;opacity:' + cardOpacity + ';';
                     card.setAttribute('data-act-id', act.id);
-                    card.onmouseover = function() { this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 10px rgba(0,0,0,0.08)'; };
-                    card.onmouseout = function() { this.style.transform = ''; this.style.boxShadow = ''; };
+                    card.onmouseover = function() { this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 10px rgba(0,0,0,0.08)'; if (completed) this.style.opacity = '0.85'; };
+                    card.onmouseout = function() { this.style.transform = ''; this.style.boxShadow = ''; if (completed) this.style.opacity = '0.42'; };
                     card.onclick = function() { window.proyectosVerActividadDetalle(act.id); };
                     card.innerHTML = '<div style="font-weight:600;color:' + cardColor + ';margin-bottom:2px;' + tituloStyle + '">' + checkIcon + act.titulo + '</div>' +
                         '<div style="display:flex;align-items:center;justify-content:space-between;">' +
