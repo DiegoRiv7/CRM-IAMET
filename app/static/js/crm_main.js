@@ -4630,10 +4630,12 @@
 
         // Toggle anclar tarea (similar al de oportunidades)
         window.crmTareaTogglePin = function(btn, tareaId) {
-            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = csrfEl ? csrfEl.value : '';
             fetch('/app/api/tarea/' + tareaId + '/toggle-pin/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                credentials: 'same-origin'
             }).then(function(r){ return r.json(); }).then(function(data){
                 if (!data || !data.success) return;
                 // Actualizar estado en _crmAllTareas (cache)
@@ -4656,10 +4658,12 @@
 
         // Helper de completar rápido (usa la misma API de tareas)
         window.crmTaskCompletarRapido = function(tareaId) {
-            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = csrfEl ? csrfEl.value : '';
             fetch('/app/api/tarea/' + tareaId + '/actualizar/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                credentials: 'same-origin',
                 body: JSON.stringify({ estado: 'completada' })
             }).then(function(r){ return r.json(); }).then(function(res){
                 if (res && res.success) {
