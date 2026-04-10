@@ -26,9 +26,21 @@
         /* Cuando el sidebar está abierto, empujamos el contenido del CRM */
         body.crmFocus-open .crm-content {
             padding-left: 320px;
-            transition: padding-left 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: padding-left 0.45s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .crm-content { transition: padding-left 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+        .crm-content { transition: padding-left 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+        /* Dynamic Island effect: el topbar se desplaza y compacta cuando
+           el sidebar está abierto, para que no quede tapado */
+        body.crmFocus-open .crm-unified-header {
+            padding-left: calc(320px + 1rem);
+            transition: padding-left 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .crm-unified-header { transition: padding-left 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+        body.crmFocus-open .crm-island {
+            transform: scale(0.93);
+            transform-origin: center top;
+        }
+        .crm-island { transform-origin: center top; }
         /* Header */
         .crmFocus-head { padding: 22px 22px 14px; }
         .crmFocus-brand {
