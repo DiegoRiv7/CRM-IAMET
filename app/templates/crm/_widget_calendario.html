@@ -1154,7 +1154,20 @@
                 btnListo.style.background = '#34C759';
                 btnListo.style.color = '#fff';
                 btnListo.dataset.tid = '';
-                btnListo.onclick = function(){ calDetailCompletar(); };
+                btnListo.onclick = function(){
+                    // Si es actividad de programa de obra, abrir widget de evidencia
+                    if (window._calCurrentProgActId && typeof window.proyectosVerActividadDetalle === 'function') {
+                        window.proyectosVerActividadDetalle(window._calCurrentProgActId);
+                        // Esperar a que cargue y disparar el flujo de completar
+                        setTimeout(function(){
+                            if (typeof window.proyectosIniciarCompletar === 'function') {
+                                window.proyectosIniciarCompletar();
+                            }
+                        }, 400);
+                    } else {
+                        calDetailCompletar();
+                    }
+                };
                 btnListo.onmouseover = function(){ this.style.background='#2DBD4E'; };
                 btnListo.onmouseout = function(){ this.style.background='#34C759'; };
             }
@@ -1173,7 +1186,23 @@
         } else if (!esTarea) {
             fetch('/app/api/actividades/'+id+'/')
                 .then(function(r){ return r.ok?r.json():null; })
-                .then(function(d){ if(!d) return; var f=d.description||d.descripcion||''; evt.description=f; var ci=f.indexOf('prospecto_id:'); var clean=ci>0?f.substring(0,ci).replace(/[-\s]+$/,'').trim():(ci===0?'':f.trim()); if(f.indexOf('Prospecto:')===0)clean=''; descEl.textContent=clean||'Sin descripción.'; })
+                .then(function(d){
+                    if(!d) return;
+                    var f=d.description||d.descripcion||'';
+                    evt.description=f;
+                    // Detectar y guardar id de programa de obra (para Ver Detalle)
+                    var pm = f.match(/\[programacion_actividad_id:(\d+)\]/);
+                    window._calCurrentProgActId = pm ? parseInt(pm[1]) : null;
+                    // Limpiar marcador de programa de obra
+                    var clean = f.replace(/\[programacion_actividad_id:\d+\]/g, '');
+                    // Limpiar metadata de prospecto
+                    var ci = clean.indexOf('prospecto_id:');
+                    if (ci > 0) clean = clean.substring(0, ci);
+                    else if (ci === 0) clean = '';
+                    if (clean.indexOf('Prospecto:') === 0) clean = '';
+                    clean = clean.replace(/[-\s]+$/, '').trim();
+                    descEl.textContent = clean || 'Sin descripción.';
+                })
                 .catch(function(){});
         }
     };

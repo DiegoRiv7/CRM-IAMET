@@ -1270,8 +1270,14 @@
 
         var responsables = Object.keys(_actividadSelectedUsers).map(function(k) { return parseInt(k); });
 
+        // Nombre real del proyecto (si se cargo el detalle), si no fallback a la key
+        var proyectoNombre = (_cachedProjectDetail && _cachedProjectDetail.nombre)
+            ? _cachedProjectDetail.nombre
+            : ('proy_' + currentProjectId);
+
         var payload = {
             proyecto_key: 'proy_' + currentProjectId,
+            proyecto_titulo: proyectoNombre,
             titulo: titulo,
             dia_semana: diaSemana,
             hora_inicio: horaInicio,
