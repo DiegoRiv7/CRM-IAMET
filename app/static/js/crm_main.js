@@ -4498,6 +4498,22 @@
                 tareas = tareas.filter(function(t){ return _tareasIsToday(t, now); });
             }
 
+            // Filtro por prioridad (panel)
+            if (_crmTareasPrioFilter && _crmTareasPrioFilter !== 'todas') {
+                tareas = tareas.filter(function(t){ return t.prioridad === _crmTareasPrioFilter; });
+            }
+            // Filtro por responsable (panel)
+            if (_crmTareasRespFilter && _crmTareasRespFilter !== 'todos') {
+                tareas = tareas.filter(function(t){ return t.responsable === _crmTareasRespFilter; });
+            }
+            // Actualizar indicador visual de filtros activos
+            var filterBtn = document.getElementById('tareasFilterBtn');
+            if (filterBtn) {
+                var hasFilters = (_crmTareasPrioFilter && _crmTareasPrioFilter !== 'todas') ||
+                                 (_crmTareasRespFilter && _crmTareasRespFilter !== 'todos');
+                filterBtn.classList.toggle('has-filters', hasFilters);
+            }
+
             // Búsqueda
             var searchVal = (document.getElementById('tareasSearchInput') || {}).value || '';
             if (searchVal.trim()) {
@@ -4707,6 +4723,54 @@
                     p.addEventListener('click', function(){ _tareasFocusSetUrgency(p.dataset.urg); });
                 });
                 // (El handler del search input ya vive en bloque existente más abajo)
+
+                // Botón de filtros (abre/cierra panel)
+                var filterBtn = document.getElementById('tareasFilterBtn');
+                var filterPanel = document.getElementById('tareasFilterPanel');
+                if (filterBtn && filterPanel) {
+                    filterBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        var isOpen = filterPanel.classList.toggle('open');
+                        filterBtn.classList.toggle('active', isOpen);
+                    });
+                    // Cerrar al clickear fuera
+                    document.addEventListener('click', function(e){
+                        if (!filterPanel.contains(e.target) && e.target !== filterBtn) {
+                            filterPanel.classList.remove('open');
+                            filterBtn.classList.remove('active');
+                        }
+                    });
+                }
+                // Chips de prioridad
+                document.querySelectorAll('#tareasFilterPrioridad button').forEach(function(chip){
+                    chip.addEventListener('click', function(){
+                        document.querySelectorAll('#tareasFilterPrioridad button').forEach(function(c){ c.classList.remove('active'); });
+                        chip.classList.add('active');
+                        _crmTareasPrioFilter = chip.getAttribute('data-prio');
+                        renderTareasCRM();
+                    });
+                });
+                // Select de responsable
+                var respSel = document.getElementById('tareasFilterResponsable');
+                if (respSel) {
+                    respSel.addEventListener('change', function(){
+                        _crmTareasRespFilter = this.value;
+                        renderTareasCRM();
+                    });
+                }
+                // Botón limpiar filtros
+                var clearBtn = document.getElementById('tareasFilterClear');
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function(){
+                        _crmTareasPrioFilter = 'todas';
+                        _crmTareasRespFilter = 'todos';
+                        document.querySelectorAll('#tareasFilterPrioridad button').forEach(function(c){
+                            c.classList.toggle('active', c.dataset.prio === 'todas');
+                        });
+                        if (respSel) respSel.value = 'todos';
+                        renderTareasCRM();
+                    });
+                }
 
                 // Restaurar estado abierto
                 if (_tareasFocus.wasOpen) {

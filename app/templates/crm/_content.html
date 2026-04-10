@@ -861,6 +861,67 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 14px rgba(0,82,212,0.3);
         }
+        /* Botón de filtros + panel dropdown */
+        .tareas-filter-trigger {
+            position: relative;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; padding: 0;
+            background: #fff; border: 1px solid #E5E7EB; border-radius: 8px;
+            cursor: pointer; color: #6B7280; transition: all 0.15s;
+        }
+        .tareas-filter-trigger:hover,
+        .tareas-filter-trigger.active {
+            background: #EFF6FF; color: #0052D4; border-color: #BFDBFE;
+        }
+        .tareas-filter-trigger .dot {
+            position: absolute; top: 5px; right: 5px;
+            width: 6px; height: 6px; border-radius: 50%; background: #0052D4;
+            display: none;
+        }
+        .tareas-filter-trigger.has-filters .dot { display: block; }
+        .tareas-filter-panel {
+            position: absolute; right: 0; top: calc(100% + 8px);
+            background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+            padding: 14px; width: 280px;
+            z-index: 30;
+            display: none;
+        }
+        .tareas-filter-panel.open { display: block; }
+        .tareas-filter-panel-row { margin-bottom: 12px; }
+        .tareas-filter-panel-row:last-child { margin-bottom: 0; }
+        .tareas-filter-panel-label {
+            font-size: 0.62rem; font-weight: 800; color: #9CA3AF;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 6px; display: block;
+        }
+        .tareas-filter-panel-chips {
+            display: flex; gap: 4px; flex-wrap: wrap;
+        }
+        .tareas-filter-panel-chips button {
+            padding: 5px 12px; border: 1px solid #E5E7EB;
+            background: #fff; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 700; color: #6B7280;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .tareas-filter-panel-chips button:hover { background: #F9FAFB; }
+        .tareas-filter-panel-chips button.active {
+            background: #0052D4; color: #fff; border-color: #0052D4;
+        }
+        .tareas-filter-panel select {
+            width: 100%; padding: 7px 10px;
+            border: 1px solid #E5E7EB; border-radius: 8px;
+            font-size: 0.78rem; color: #1D1D1F; background: #fff;
+            outline: none; cursor: pointer;
+        }
+        .tareas-filter-panel select:focus { border-color: #0052D4; }
+        .tareas-filter-panel-clear {
+            width: 100%; padding: 7px;
+            border: 1px solid #E5E7EB; background: #F9FAFB;
+            border-radius: 8px; font-size: 0.72rem; font-weight: 700;
+            color: #6B7280; cursor: pointer; margin-top: 6px;
+        }
+        .tareas-filter-panel-clear:hover { background: #F3F4F6; color: #1D1D1F; }
         .tareas-search-mini {
             position: relative;
         }
@@ -1256,6 +1317,33 @@
             <div class="tareas-search-mini">
                 <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <input type="text" id="tareasSearchInput" placeholder="Buscar tarea...">
+            </div>
+            <!-- Filtros (prioridad + responsable) -->
+            <div style="position:relative;">
+                <button type="button" class="tareas-filter-trigger" id="tareasFilterBtn" title="Filtros">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+                    </svg>
+                    <span class="dot"></span>
+                </button>
+                <div class="tareas-filter-panel" id="tareasFilterPanel">
+                    <div class="tareas-filter-panel-row">
+                        <label class="tareas-filter-panel-label">Prioridad</label>
+                        <div class="tareas-filter-panel-chips" id="tareasFilterPrioridad">
+                            <button type="button" data-prio="todas" class="active">Todas</button>
+                            <button type="button" data-prio="alta">Alta</button>
+                            <button type="button" data-prio="media">Media</button>
+                            <button type="button" data-prio="baja">Baja</button>
+                        </div>
+                    </div>
+                    <div class="tareas-filter-panel-row">
+                        <label class="tareas-filter-panel-label">Responsable</label>
+                        <select id="tareasFilterResponsable">
+                            <option value="todos">Todos los responsables</option>
+                        </select>
+                    </div>
+                    <button type="button" class="tareas-filter-panel-clear" id="tareasFilterClear">Limpiar filtros</button>
+                </div>
             </div>
             <button type="button" class="tareas-nueva-btn" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
