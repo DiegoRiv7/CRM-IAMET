@@ -4208,32 +4208,22 @@
         }
 
         function cargarTareasCRM(forzarEstado, pagina) {
-            var estado = forzarEstado || _crmCurrentFilter;
-            var esPaginado = estado === 'completadas' || estado === 'todas';
+            // El nuevo diseño siempre trabaja con 'pendientes' (cacheado);
+            // las completadas quedan excluidas del módulo Focus
+            var estado = 'pendientes';
+            _crmCurrentFilter = 'pendientes';
 
-            // Solo pendientes usa caché
-            if (!esPaginado && _crmTareasCache[estado]) {
+            if (_crmTareasCache[estado]) {
                 _crmAllTareas = _crmTareasCache[estado];
                 _actualizarDropdownResponsables(_crmAllTareas);
-                renderTareasCRM(_crmCurrentFilter);
-                _renderPaginacion(false);
+                renderTareasCRM();
                 return;
             }
 
-            var tbody = document.getElementById('tareasTableBody');
-            var countEl = document.getElementById('tareasCount');
-            if (countEl) countEl.innerHTML = '&nbsp;';
-            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:3rem;color:#9CA3AF;">Cargando tareas...</td></tr>';
+            var grid = document.getElementById('tareasCardsGrid');
+            if (grid) grid.innerHTML = '<div class="tareas-empty-card">Cargando tareas...</div>';
 
-            var params = [];
-            if (estado === 'pendientes' || estado === 'completadas') params.push('estado=' + estado);
-            if (esPaginado) {
-                var p = pagina || _crmPage;
-                params.push('page=' + p);
-                if (_crmPaginatedSearch) params.push('q=' + encodeURIComponent(_crmPaginatedSearch));
-            }
-            var url = '/app/api/tareas/' + (params.length ? '?' + params.join('&') : '');
-
+            var url = '/app/api/tareas/?estado=pendientes';
             fetch(url)
                 .then(function (r) {
                     if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error ' + r.status); });
@@ -4241,31 +4231,18 @@
                 })
                 .then(function (data) {
                     if (data.success && Array.isArray(data.tareas)) {
-                        if (esPaginado) {
-                            _crmPage = data.page || 1;
-                            _crmTotalPages = data.total_pages || 1;
-                            _crmTotalTareas = data.total || data.tareas.length;
-                            _crmAllTareas = data.tareas;
-                            renderTareasCRM(_crmCurrentFilter, true);
-                            _renderPaginacion(true);
-                        } else {
-                            _crmTareasCache[estado] = data.tareas;
-                            _crmAllTareas = data.tareas;
-                            _actualizarDropdownResponsables(data.tareas);
-                            renderTareasCRM(_crmCurrentFilter);
-                            _renderPaginacion(false);
-                            // Set poll hash baseline so next poll detects changes immediately
-                            if (estado === 'pendientes') {
-                                _tareasPollHash = data.tareas.map(function(t) { return t.id + ':' + t.estado; }).join(',');
-                            }
-                        }
+                        _crmTareasCache[estado] = data.tareas;
+                        _crmAllTareas = data.tareas;
+                        _actualizarDropdownResponsables(data.tareas);
+                        renderTareasCRM();
+                        _tareasPollHash = data.tareas.map(function(t){ return t.id+':'+t.estado; }).join(',');
                     } else {
-                        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">No se pudieron cargar las tareas.</td></tr>';
+                        if (grid) grid.innerHTML = '<div class="tareas-empty-card">No se pudieron cargar las tareas.</div>';
                     }
                 })
                 .catch(function (err) {
                     console.error('[Tareas] Error:', err);
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">Error: ' + err.message + '</td></tr>';
+                    if (grid) grid.innerHTML = '<div class="tareas-empty-card">Error: ' + err.message + '</div>';
                 });
         }
 
@@ -4310,99 +4287,398 @@
         }
 
 
-        function renderTareasCRM(filtro, esPaginado) {
-            var tbody = document.getElementById('tareasTableBody');
+        // ═══ Estado del Focus de tareas ═══
+        var _tareasFocusStorageKey = 'tareasFocusState_v1';
+        var ORDER_PROYECTO_TAREAS = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes','Pagado','Perdido'];
+        var ORDER_RUNRATE_TAREAS = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta','Ganado','Perdido'];
+
+        var _tareasFocus = {
+            flow: 'proyecto',
+            selected: { proyecto: 'ALL', runrate: 'ALL' },
+            urgency: 'todas',       // 'todas' | 'atrasadas' | 'hoy'
+            wasOpen: false,
+            firstLoad: true
+        };
+        try {
+            var _tfSaved = localStorage.getItem(_tareasFocusStorageKey);
+            if (_tfSaved) {
+                var tfp = JSON.parse(_tfSaved);
+                if (tfp && typeof tfp === 'object') {
+                    _tareasFocus.firstLoad = false;
+                    if (tfp.flow === 'proyecto' || tfp.flow === 'runrate') _tareasFocus.flow = tfp.flow;
+                    if (tfp.selected && typeof tfp.selected === 'object') {
+                        if ('proyecto' in tfp.selected) _tareasFocus.selected.proyecto = tfp.selected.proyecto;
+                        if ('runrate' in tfp.selected) _tareasFocus.selected.runrate = tfp.selected.runrate;
+                    }
+                    if (tfp.urgency === 'atrasadas' || tfp.urgency === 'hoy' || tfp.urgency === 'todas') _tareasFocus.urgency = tfp.urgency;
+                    _tareasFocus.wasOpen = !!tfp.wasOpen;
+                }
+            }
+        } catch(e) {}
+
+        function _tareasFocusPersist() {
+            try {
+                var sb = document.getElementById('tareasFocusSidebar');
+                localStorage.setItem(_tareasFocusStorageKey, JSON.stringify({
+                    flow: _tareasFocus.flow,
+                    selected: _tareasFocus.selected,
+                    urgency: _tareasFocus.urgency,
+                    wasOpen: sb ? sb.classList.contains('open') : false
+                }));
+            } catch(e) {}
+        }
+
+        function _tareasGetStagesForFlow(flow) {
+            return (flow === 'proyecto' ? ORDER_PROYECTO_TAREAS : ORDER_RUNRATE_TAREAS).slice();
+        }
+
+        function _tareasIsOverdue(tarea, now) {
+            if (tarea.estado === 'completada') return false;
+            if (!tarea.fecha_limite) return false;
+            return new Date(tarea.fecha_limite) < now;
+        }
+        function _tareasIsToday(tarea, now) {
+            if (tarea.estado === 'completada') return false;
+            if (!tarea.fecha_limite) return false;
+            var d = new Date(tarea.fecha_limite);
+            return d.getFullYear() === now.getFullYear() &&
+                   d.getMonth() === now.getMonth() &&
+                   d.getDate() === now.getDate();
+        }
+
+        function _tareasCalcStageCounts(flow) {
+            var stages = _tareasGetStagesForFlow(flow);
+            var counts = {};
+            stages.forEach(function(s){ counts[s] = 0; });
+            (_crmAllTareas || []).forEach(function(t){
+                if (t.estado === 'completada') return;
+                if (!t.oportunidad_tipo) return;
+                if (t.oportunidad_tipo !== flow) return;
+                var et = t.oportunidad_etapa || '';
+                if (!et) return;
+                if (counts.hasOwnProperty(et)) counts[et] += 1;
+                else counts[et] = 1;
+            });
+            return { stages: stages, counts: counts };
+        }
+
+        function _tareasApplySmartDefault() {
+            if (!_tareasFocus.firstLoad) return;
+            // Intentar primera etapa con cards en 'proyecto'
+            var data = _tareasCalcStageCounts('proyecto');
+            for (var i = 0; i < data.stages.length; i++) {
+                if ((data.counts[data.stages[i]] || 0) > 0) {
+                    _tareasFocus.flow = 'proyecto';
+                    _tareasFocus.selected.proyecto = i;
+                    return;
+                }
+            }
+        }
+
+        function _tareasRenderSidebar() {
+            var flowBtns = document.querySelectorAll('#tareasFocusSidebar .tareasFocus-toggle button');
+            flowBtns.forEach(function(b){ b.classList.toggle('active', b.dataset.flow === _tareasFocus.flow); });
+
+            var now = new Date();
+            var atrasadas = 0, hoy = 0, totalPend = 0;
+            (_crmAllTareas || []).forEach(function(t){
+                if (t.estado === 'completada') return;
+                totalPend++;
+                if (_tareasIsOverdue(t, now)) atrasadas++;
+                if (_tareasIsToday(t, now)) hoy++;
+            });
+            var kA = document.getElementById('tareasFocusKpiAtrasadas');
+            var kH = document.getElementById('tareasFocusKpiHoy');
+            if (kA) kA.textContent = String(atrasadas);
+            if (kH) kH.textContent = String(hoy);
+            var sub = document.getElementById('tareasFocusAllSub');
+            if (sub) sub.textContent = totalPend + ' pendientes';
+
+            var allBtn = document.querySelector('#tareasFocusSidebar .tareasFocus-all');
+            var selected = _tareasFocus.selected[_tareasFocus.flow];
+            if (allBtn) allBtn.classList.toggle('active', selected === 'ALL');
+
+            var data = _tareasCalcStageCounts(_tareasFocus.flow);
+            var cont = document.getElementById('tareasFocusStages');
+            if (!cont) return;
+            cont.innerHTML = '';
+            data.stages.forEach(function(name, idx){
+                var count = data.counts[name] || 0;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'tareasFocus-stage' + (selected === idx ? ' active' : '');
+                btn.setAttribute('data-idx', String(idx));
+                btn.innerHTML =
+                    '<div class="tareasFocus-stage-node"></div>' +
+                    '<span class="tareasFocus-stage-name">' + name + '</span>' +
+                    '<span class="tareasFocus-stage-count' + (count === 0 ? ' zero' : '') + '">' + count + '</span>';
+                btn.addEventListener('click', function(){ _tareasFocusSelectStage(idx); });
+                cont.appendChild(btn);
+            });
+
+            // Urgency pills
+            document.querySelectorAll('#tareasUrgencyPills button').forEach(function(p){
+                p.classList.toggle('active', p.dataset.urg === _tareasFocus.urgency);
+            });
+
+            // Toolbar title
+            var title = document.getElementById('tareasToolbarTitle');
+            if (title) {
+                if (selected === 'ALL') title.textContent = 'Todas las Tareas';
+                else title.textContent = data.stages[selected] || 'Tareas';
+            }
+        }
+
+        function _tareasFocusSelectStage(idxOrAll) {
+            _tareasFocus.selected[_tareasFocus.flow] = idxOrAll;
+            _tareasFocus.firstLoad = false;
+            _tareasFocusPersist();
+            _tareasRenderSidebar();
+            renderTareasCRM();
+        }
+        function _tareasFocusSwitchFlow(flow) {
+            _tareasFocus.flow = flow;
+            _tareasFocus.firstLoad = false;
+            _tareasFocusPersist();
+            _tareasRenderSidebar();
+            renderTareasCRM();
+        }
+        function _tareasFocusSetUrgency(urg) {
+            _tareasFocus.urgency = urg;
+            _tareasFocus.firstLoad = false;
+            _tareasFocusPersist();
+            _tareasRenderSidebar();
+            renderTareasCRM();
+        }
+        function _tareasFocusOpen() {
+            var sb = document.getElementById('tareasFocusSidebar');
+            var vc = document.getElementById('tareasViewCards');
+            if (sb) sb.classList.add('open');
+            if (vc) vc.classList.add('tareasFocus-open');
+            _tareasFocusPersist();
+        }
+        function _tareasFocusClose() {
+            var sb = document.getElementById('tareasFocusSidebar');
+            var vc = document.getElementById('tareasViewCards');
+            if (sb) sb.classList.remove('open');
+            if (vc) vc.classList.remove('tareasFocus-open');
+            _tareasFocusPersist();
+        }
+
+        function renderTareasCRM() {
+            var grid = document.getElementById('tareasCardsGrid');
             var countEl = document.getElementById('tareasCount');
-            if (!tbody) return;
+            if (!grid) return;
 
-            // En modo paginado el servidor ya filtró y ordenó — no procesar aquí
-            if (esPaginado) {
-                var totalStr = _crmTotalTareas + ' tarea' + (_crmTotalTareas !== 1 ? 's' : '') + ' en total';
-                if (countEl) countEl.innerHTML = '<strong>' + _crmAllTareas.length + '</strong> en esta página &nbsp;·&nbsp; ' + totalStr;
-                tbody.innerHTML = _crmAllTareas.map(function (t) { return createTaskRowCRM(t); }).join('');
-                return;
+            // Aplicar default inteligente si es primera carga
+            _tareasApplySmartDefault();
+            // Sincronizar el sidebar (contadores, KPIs, highlighted stage)
+            _tareasRenderSidebar();
+
+            var tareas = (_crmAllTareas || []).slice();
+
+            // Siempre excluir completadas (el nuevo Focus es de tareas pendientes)
+            tareas = tareas.filter(function(t){ return t.estado !== 'completada'; });
+
+            // Filtro por pipeline + etapa (del sidebar)
+            var selected = _tareasFocus.selected[_tareasFocus.flow];
+            if (selected !== 'ALL') {
+                var stages = _tareasGetStagesForFlow(_tareasFocus.flow);
+                var stageName = stages[selected];
+                tareas = tareas.filter(function(t){
+                    return t.oportunidad_tipo === _tareasFocus.flow && t.oportunidad_etapa === stageName;
+                });
             }
 
-            var tareas = _crmAllTareas.slice();
-            if (filtro === 'pendientes') {
-                tareas = tareas.filter(function (t) { return t.estado !== 'completada'; });
-            } else if (filtro === 'completadas') {
-                tareas = tareas.filter(function (t) { return t.estado === 'completada'; });
+            // Filtro por urgency pills
+            var now = new Date();
+            if (_tareasFocus.urgency === 'atrasadas') {
+                tareas = tareas.filter(function(t){ return _tareasIsOverdue(t, now); });
+            } else if (_tareasFocus.urgency === 'hoy') {
+                tareas = tareas.filter(function(t){ return _tareasIsToday(t, now); });
             }
 
-            // Apply priority filter
-            if (_crmTareasPrioFilter && _crmTareasPrioFilter !== 'todas') {
-                tareas = tareas.filter(function (t) { return t.prioridad === _crmTareasPrioFilter; });
-            }
-            // Apply responsable filter
-            if (_crmTareasRespFilter && _crmTareasRespFilter !== 'todos') {
-                tareas = tareas.filter(function (t) { return t.responsable === _crmTareasRespFilter; });
-            }
-
-            // Apply search filter
+            // Búsqueda
             var searchVal = (document.getElementById('tareasSearchInput') || {}).value || '';
             if (searchVal.trim()) {
                 var q = searchVal.trim().toLowerCase();
-                tareas = tareas.filter(function (t) { return t.titulo.toLowerCase().indexOf(q) !== -1; });
+                tareas = tareas.filter(function(t){ return (t.titulo || '').toLowerCase().indexOf(q) !== -1; });
             }
 
-            // Sort: vencidas primero, luego próximas por fecha, completadas al final
-            var _now = new Date();
-            tareas.sort(function (a, b) {
-                var aDone = a.estado === 'completada';
-                var bDone = b.estado === 'completada';
-                var aVencida = !aDone && a.fecha_limite && new Date(a.fecha_limite) < _now;
-                var bVencida = !bDone && b.fecha_limite && new Date(b.fecha_limite) < _now;
-                if (aVencida && !bVencida) return -1;
-                if (!aVencida && bVencida) return 1;
-                if (aDone && !bDone) return 1;
-                if (!aDone && bDone) return -1;
+            // Sort: vencidas primero, luego por fecha
+            tareas.sort(function(a, b){
+                var aV = _tareasIsOverdue(a, now);
+                var bV = _tareasIsOverdue(b, now);
+                if (aV && !bV) return -1;
+                if (!aV && bV) return 1;
                 var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
                 var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
                 return aT - bT;
             });
 
-            // Update count
-            if (countEl) countEl.innerHTML = '<strong>' + tareas.length + '</strong> tarea' + (tareas.length !== 1 ? 's' : '');
+            if (countEl) countEl.textContent = tareas.length + ' tarea' + (tareas.length !== 1 ? 's' : '');
 
             if (tareas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="tareas-empty">No hay tareas disponibles.</td></tr>';
+                grid.innerHTML = '<div class="tareas-empty-card">No hay tareas en esta etapa.</div>';
                 return;
             }
-
-            tbody.innerHTML = tareas.map(function (t) { return createTaskRowCRM(t); }).join('');
+            grid.innerHTML = tareas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
         }
 
-        function createTaskRowCRM(tarea) {
-            var now2 = new Date();
+        function _tareasFmtFecha(isoStr) {
+            if (!isoStr) return '';
+            var d = new Date(isoStr);
+            var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            var h = String(d.getHours()).padStart(2,'0');
+            var m = String(d.getMinutes()).padStart(2,'0');
+            return d.getDate() + ' ' + meses[d.getMonth()] + ', ' + h + ':' + m;
+        }
+
+        function _tareasIniciales(nombre) {
+            if (!nombre) return '??';
+            var parts = String(nombre).trim().split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+
+        function _tareasEscape(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function createTaskCardCRM(tarea, now) {
             var done = tarea.estado === 'completada';
-            var vencida = !done && tarea.fecha_limite && new Date(tarea.fecha_limite) < now2;
-            var isHP = tarea.prioridad === 'alta' && !done;
-            var rowBg = done ? 'background:rgba(52,199,89,0.07);' : (vencida ? 'background:rgba(255,59,48,0.07);' : '');
-            var tituloStyle = done ? 'text-decoration:line-through;color:#9CA3AF;' : (vencida ? 'color:#FF3B30;' : '');
-            var fechaStyle = vencida ? 'color:#FF3B30;font-weight:600;' : 'color:#6B7280;';
-            var icon = isHP ? '<span style="color:#F59E0B;font-size:0.8rem;">&#9650;</span>' : (vencida ? '<span style="color:#FF3B30;font-size:0.8rem;">&#9888;</span>' : '');
-            var oppCell;
-            if (tarea.oportunidad_id) {
-                var oppLabel = (tarea.oportunidad_nombre || 'Oportunidad');
-                if (oppLabel.length > 35) oppLabel = oppLabel.substring(0, 33) + '…';
-                oppCell = '<span style="color:#0052D4;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#EFF6FF;padding:2px 8px;border-radius:12px;border:1px solid #BFDBFE;" title="Oportunidad: ' + (tarea.oportunidad_nombre || '') + '" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' + oppLabel + '</span>';
-            } else if (tarea.proyecto_id) {
-                var proyLabel = (tarea.proyecto_nombre || 'Proyecto');
-                if (proyLabel.length > 35) proyLabel = proyLabel.substring(0, 33) + '…';
-                oppCell = '<span style="color:#7C3AED;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;background:#F5F3FF;padding:2px 8px;border-radius:12px;border:1px solid #DDD6FE;" title="Proyecto: ' + tarea.proyecto_nombre + '" onclick="event.stopPropagation();ingenieroAbrirProyecto(' + tarea.proyecto_id + ')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' + proyLabel + '</span>';
-            } else {
-                oppCell = '<span class="crm-task-asignar-opp" data-task-id="' + tarea.id + '" style="color:#9CA3AF;font-size:0.78rem;cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation();crmTaskAbrirAsignarOpp(this,' + tarea.id + ')">Asignar...</span>';
+            var vencida = _tareasIsOverdue(tarea, now);
+            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '');
+
+            // Fecha badge
+            var fechaHtml = '';
+            if (tarea.fecha_limite) {
+                var fechaTxt = _tareasFmtFecha(tarea.fecha_limite);
+                var clsF = vencida ? '' : 'future';
+                var iconColor = vencida ? '#B91C1C' : '#4B5563';
+                fechaHtml = '<span class="tareas-badge-fecha ' + clsF + '">' +
+                    '<svg width="11" height="11" fill="none" stroke="' + iconColor + '" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">' +
+                    (vencida
+                        ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
+                        : '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>') +
+                    '</svg>' + fechaTxt + '</span>';
             }
-            return '<tr class="' + (isHP ? 'task-row-priority' : '') + '" style="' + rowBg + 'cursor:pointer;" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
-                '<td><div style="display:flex;align-items:center;gap:0.4rem;">' + icon + '<span class="task-name" style="' + tituloStyle + '">' + tarea.titulo + '</span></div></td>' +
-                '<td>' + getEstadoBadgeCRM(tarea.estado) + '</td>' +
-                '<td style="' + fechaStyle + '">' + (tarea.fecha_limite ? formatearFechaCRM(tarea.fecha_limite) : 'Sin fecha') + '</td>' +
-                '<td style="color:#6B7280;">' + tarea.creado_por + '</td>' +
-                '<td style="color:#6B7280;">' + (tarea.responsable || 'Sin asignar') + '</td>' +
-                '<td>' + oppCell + '</td>' +
-                '</tr>';
+
+            // Estado badge (solo si no es pendiente por default)
+            var estadoHtml = '';
+            if (tarea.estado === 'en_progreso') {
+                estadoHtml = '<span class="tareas-badge-estado" style="background:rgba(0,82,212,0.1);color:#0052D4;">' +
+                    '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+                    'En Progreso</span>';
+            } else if (tarea.estado === 'iniciada') {
+                estadoHtml = '<span class="tareas-badge-estado" style="background:rgba(255,149,0,0.12);color:#FF9500;">Pausado</span>';
+            }
+
+            // Oportunidad
+            var oppHtml = '';
+            if (tarea.oportunidad_id) {
+                oppHtml = '<div class="tareas-card-opp" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ');">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' +
+                    '<span class="txt">' + _tareasEscape(tarea.oportunidad_nombre || '') + '</span>' +
+                    '</div>';
+            } else if (tarea.proyecto_id) {
+                oppHtml = '<div class="tareas-card-opp">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+                    '<span class="txt">' + _tareasEscape(tarea.proyecto_nombre || 'Sin proyecto') + '</span>' +
+                    '</div>';
+            }
+
+            // Responsable avatar + nombre
+            var respNombre = tarea.responsable || 'Sin asignar';
+            var iniciales = _tareasIniciales(respNombre);
+            var respHtml = '<div class="tareas-card-avatar">' + iniciales + '</div>' +
+                '<span class="tareas-card-resp">Resp: <b>' + _tareasEscape(respNombre.split(' ')[0]) + '</b></span>';
+
+            // Etapa badge (si es oportunidad)
+            var etapaHtml = '';
+            if (tarea.oportunidad_etapa) {
+                etapaHtml = '<span class="tareas-card-etapa">' + _tareasEscape(tarea.oportunidad_etapa) + '</span>';
+            }
+
+            return '<div class="' + cardClass + '" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
+                '<div class="tareas-card-top">' +
+                    '<div class="tareas-card-check" onclick="event.stopPropagation();crmTaskCompletarRapido(' + tarea.id + ');"></div>' +
+                    '<div class="tareas-card-title">' + _tareasEscape(tarea.titulo || 'Sin título') + '</div>' +
+                    '<button type="button" class="tareas-card-more" onclick="event.stopPropagation();crmTaskVerDetalle(' + tarea.id + ');">' +
+                        '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>' +
+                    '</button>' +
+                '</div>' +
+                (fechaHtml || estadoHtml ? '<div class="tareas-card-badges">' + fechaHtml + estadoHtml + '</div>' : '') +
+                '<div class="tareas-card-sep"></div>' +
+                oppHtml +
+                '<div class="tareas-card-bottom">' +
+                    respHtml +
+                    etapaHtml +
+                '</div>' +
+            '</div>';
         }
+
+        // Helper de completar rápido (usa la misma API de tareas)
+        window.crmTaskCompletarRapido = function(tareaId) {
+            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
+            fetch('/app/api/tarea/' + tareaId + '/actualizar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ estado: 'completada' })
+            }).then(function(r){ return r.json(); }).then(function(res){
+                if (res && res.success) {
+                    // Quitar de caché y recargar
+                    _crmTareasCache = {};
+                    cargarTareasCRM();
+                }
+            }).catch(console.error);
+        };
+
+        // Listeners del sidebar + pills (al cargar el DOM)
+        (function initTareasFocusListeners(){
+            function bind() {
+                var sb = document.getElementById('tareasFocusSidebar');
+                if (!sb) return setTimeout(bind, 100);
+
+                // Toggle button
+                var btnT = document.getElementById('tareasFocusToggleBtn');
+                if (btnT) btnT.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    if (sb.classList.contains('open')) _tareasFocusClose(); else _tareasFocusOpen();
+                });
+
+                // Flow buttons
+                sb.querySelectorAll('.tareasFocus-toggle button').forEach(function(b){
+                    b.addEventListener('click', function(){ _tareasFocusSwitchFlow(b.dataset.flow); });
+                });
+
+                // Ver Todo
+                var allBtn = sb.querySelector('.tareasFocus-all');
+                if (allBtn) allBtn.addEventListener('click', function(){ _tareasFocusSelectStage('ALL'); });
+
+                // Urgency pills
+                document.querySelectorAll('#tareasUrgencyPills button').forEach(function(p){
+                    p.addEventListener('click', function(){ _tareasFocusSetUrgency(p.dataset.urg); });
+                });
+                // (El handler del search input ya vive en bloque existente más abajo)
+
+                // Restaurar estado abierto
+                if (_tareasFocus.wasOpen) {
+                    sb.style.transition = 'none';
+                    var vc = document.getElementById('tareasViewCards');
+                    if (vc) vc.classList.add('tareasFocus-open');
+                    sb.classList.add('open');
+                    void sb.offsetWidth;
+                    requestAnimationFrame(function(){ sb.style.transition = ''; });
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bind);
+            } else {
+                bind();
+            }
+        })();
 
         // ── Dropdown para asignar oportunidad a tarea ──
         var _crmOppPickerTaskId = null;

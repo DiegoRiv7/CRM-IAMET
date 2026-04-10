@@ -788,66 +788,451 @@
 
 <!-- ═══ TAREAS SECTION ═══ -->
 <div class="tareas-section" id="tareasSection">
-    <div class="tareas-tabs" id="tareasTabs">
-        <button class="tareas-tab" data-filter="todas">Todas</button>
-        <button class="tareas-tab active" data-filter="pendientes">Pendientes</button>
-        <button class="tareas-tab" data-filter="completadas">Completadas</button>
-    </div>
-    <div class="tareas-table-wrap">
-        <!-- Bar: count + filter + search -->
-        <div class="tareas-bar">
-            <span class="tareas-bar-stats" id="tareasCount"><strong>0</strong> tareas</span>
-            <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-                <button class="tareas-filter-btn" id="tareasFilterBtn" type="button">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        stroke-width="2.5">
-                        <line x1="4" y1="6" x2="20" y2="6" />
-                        <line x1="8" y1="12" x2="16" y2="12" />
-                        <line x1="11" y1="18" x2="13" y2="18" />
+
+    <style>
+        /* ═══ Tareas: contenedor principal con sidebar embebido ═══ */
+        #tareasViewCards {
+            position: relative;
+            background: #F4F5F7;
+            background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+            border-radius: 16px;
+            padding: 24px 24px 28px;
+            margin: 0;
+            min-height: 640px;
+        }
+        #tareasViewCards.tareasFocus-open { min-height: 760px; }
+
+        /* Toolbar superior */
+        .tareas-toolbar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 4px 2px 18px;
+            flex-wrap: wrap;
+        }
+        .tareas-toolbar-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; padding: 0;
+            background: #fff; border: 1px solid #E5E7EB; border-radius: 8px;
+            cursor: pointer; color: #6B7280; transition: all 0.15s;
+        }
+        .tareas-toolbar-btn:hover { background: #EFF6FF; color: #0052D4; border-color: #BFDBFE; }
+        .tareas-toolbar-title {
+            font-size: 1rem; font-weight: 800; color: #1D1D1F; letter-spacing: -0.01em;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .tareas-toolbar-stat {
+            background: #EFF6FF; color: #1E40AF; font-size: 0.7rem; font-weight: 800;
+            padding: 3px 10px; border-radius: 20px; border: 1px solid #BFDBFE;
+        }
+        .tareas-toolbar-spacer { flex: 1; }
+        .tareas-toolbar-pills {
+            display: inline-flex; background: #F3F4F6; border-radius: 10px; padding: 3px;
+            border: 1px solid #E5E7EB; gap: 2px;
+        }
+        .tareas-toolbar-pills button {
+            padding: 5px 12px; border: none; background: transparent;
+            font-size: 0.72rem; font-weight: 700; color: #6B7280; cursor: pointer;
+            border-radius: 8px; display: flex; align-items: center; gap: 6px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .tareas-toolbar-pills button.active {
+            background: #fff; color: #1D1D1F;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .tareas-pill-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+        .tareas-pill-dot.red { background: #EF4444; }
+        .tareas-pill-dot.amber { background: #F59E0B; }
+        .tareas-nueva-btn {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 8px 14px;
+            background: #1D1D1F; color: #fff; border: none; border-radius: 10px;
+            font-size: 0.78rem; font-weight: 700; cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .tareas-nueva-btn:hover {
+            background: #0052D4;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(0,82,212,0.3);
+        }
+        .tareas-search-mini {
+            position: relative;
+        }
+        .tareas-search-mini svg {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            color: #9CA3AF; width: 14px; height: 14px;
+        }
+        .tareas-search-mini input {
+            padding: 7px 10px 7px 30px;
+            border: 1px solid #E5E7EB; border-radius: 8px;
+            font-size: 0.78rem; background: #fff;
+            outline: none; width: 200px;
+            transition: border-color 0.15s;
+        }
+        .tareas-search-mini input:focus { border-color: #0052D4; }
+
+        /* Grid de cards */
+        #tareasCardsGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+            gap: 16px;
+            transition: padding-left 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: padding-left;
+        }
+        #tareasViewCards.tareasFocus-open #tareasCardsGrid { padding-left: 310px; }
+
+        /* Card de tarea */
+        .tareas-card {
+            position: relative;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            padding: 14px 16px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .tareas-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px -6px rgba(0,0,0,0.12);
+            border-color: #BFDBFE;
+        }
+        .tareas-card.overdue { border-left: 3px solid #EF4444; }
+        .tareas-card.done {
+            opacity: 0.55;
+            background: #FAFAFB;
+        }
+        .tareas-card-top {
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .tareas-card-check {
+            width: 18px; height: 18px; border-radius: 50%;
+            border: 1.5px solid #D1D5DB; background: #fff;
+            flex-shrink: 0; margin-top: 2px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .tareas-card-check:hover { border-color: #0052D4; background: #EFF6FF; }
+        .tareas-card.done .tareas-card-check {
+            background: #34C759; border-color: #34C759;
+        }
+        .tareas-card.done .tareas-card-check::after {
+            content: ''; width: 8px; height: 8px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>') no-repeat center;
+            background-size: contain;
+        }
+        .tareas-card-title {
+            flex: 1; font-size: 0.9rem; font-weight: 700; color: #1D1D1F;
+            line-height: 1.35;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tareas-card.done .tareas-card-title { text-decoration: line-through; color: #9CA3AF; }
+        .tareas-card-more {
+            background: none; border: none; color: #9CA3AF; cursor: pointer;
+            padding: 2px; flex-shrink: 0; border-radius: 4px;
+        }
+        .tareas-card-more:hover { color: #1D1D1F; background: #F3F4F6; }
+        .tareas-card-badges {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding-left: 28px;
+        }
+        .tareas-badge-fecha {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 14px;
+            font-size: 0.7rem; font-weight: 700;
+            background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA;
+        }
+        .tareas-badge-fecha.future {
+            background: #F3F4F6; color: #4B5563; border-color: #E5E7EB;
+        }
+        .tareas-badge-estado {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 14px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .tareas-card-sep {
+            border-top: 1px solid #F3F4F6; margin: 2px 0;
+        }
+        .tareas-card-opp {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 0.78rem; font-weight: 500; color: #4B5563;
+            padding-left: 2px;
+        }
+        .tareas-card-opp svg { color: #8B5CF6; flex-shrink: 0; }
+        .tareas-card-opp .txt {
+            flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tareas-card-bottom {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .tareas-card-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: #6B7280; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.62rem; font-weight: 800; flex-shrink: 0;
+        }
+        .tareas-card-resp {
+            font-size: 0.75rem; color: #6B7280;
+        }
+        .tareas-card-resp b { color: #1D1D1F; font-weight: 600; }
+        .tareas-card-etapa {
+            margin-left: auto;
+            font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em;
+            padding: 4px 10px; border-radius: 14px;
+            background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* ═══ Sidebar Focus para tareas (clon estilo del CRM) ═══ */
+        .tareasFocus-sidebar {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 300px;
+            background: #fff; border-right: 1px solid #E5E7EB;
+            border-radius: 16px 0 0 16px;
+            box-shadow: 6px 0 18px rgba(0, 0, 0, 0.06);
+            z-index: 20;
+            will-change: transform, opacity;
+            transform: translate3d(-105%, 0, 0);
+            opacity: 0;
+            transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.2s ease;
+            display: flex; flex-direction: column;
+            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            pointer-events: none;
+        }
+        .tareasFocus-sidebar.open {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .tareasFocus-head { padding: 18px 20px 12px; }
+        .tareasFocus-brand {
+            font-size: 0.64rem; font-weight: 800; color: #9CA3AF;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+        }
+        .tareasFocus-brand svg { color: #0052D4; }
+        .tareasFocus-toggle {
+            display: flex; background: #F3F4F6; padding: 4px; border-radius: 12px;
+            border: 1px solid #E5E7EB;
+        }
+        .tareasFocus-toggle button {
+            flex: 1; padding: 9px 0; border: none; background: transparent;
+            font-size: 0.78rem; font-weight: 700; color: #6B7280; cursor: pointer;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: all 0.2s;
+        }
+        .tareasFocus-toggle button svg { width: 14px; height: 14px; }
+        .tareasFocus-toggle button.active {
+            background: #fff; color: #0052D4;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .tareasFocus-kpis {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            padding: 0 20px 14px;
+        }
+        .tareasFocus-kpi {
+            border-radius: 10px; padding: 10px 12px;
+            display: flex; flex-direction: column; gap: 2px;
+            border: 1px solid;
+        }
+        .tareasFocus-kpi.atrasadas {
+            background: #FEF2F2; border-color: #FECACA;
+        }
+        .tareasFocus-kpi.hoy {
+            background: #FFFBEB; border-color: #FDE68A;
+        }
+        .tareasFocus-kpi-label {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 0.58rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .tareasFocus-kpi.atrasadas .tareasFocus-kpi-label { color: #DC2626; }
+        .tareasFocus-kpi.hoy .tareasFocus-kpi-label { color: #D97706; }
+        .tareasFocus-kpi-value {
+            font-size: 1.3rem; font-weight: 800; color: #1D1D1F;
+        }
+        .tareasFocus-list {
+            flex: 1; overflow-y: auto; padding: 8px 10px 20px;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .tareasFocus-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
+        .tareasFocus-section-title {
+            font-size: 0.62rem; font-weight: 700; color: #9CA3AF;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            padding: 6px 12px 10px; margin: 0;
+        }
+        .tareasFocus-all {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border: none; background: transparent;
+            border-radius: 12px; cursor: pointer; text-align: left;
+            margin-bottom: 10px; transition: background 0.15s;
+        }
+        .tareasFocus-all:hover { background: #F9FAFB; }
+        .tareasFocus-all.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .tareasFocus-all-ico {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: #F3F4F6; color: #6B7280;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .tareasFocus-all.active .tareasFocus-all-ico {
+            background: #0052D4; color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 82, 212, 0.25);
+        }
+        .tareasFocus-all-label {
+            font-size: 0.83rem; font-weight: 700; color: #374151;
+        }
+        .tareasFocus-all.active .tareasFocus-all-label { color: #1E40AF; }
+        .tareasFocus-all-sub {
+            font-size: 0.68rem; font-weight: 500; color: #9CA3AF; margin-top: 1px;
+        }
+        .tareasFocus-stages {
+            position: relative; padding: 0 8px 0 16px;
+            border-top: 1px solid #F3F4F6;
+            margin-top: 10px; padding-top: 12px;
+        }
+        .tareasFocus-stages::before {
+            content: ''; position: absolute; left: 26px; top: 26px; bottom: 10px;
+            width: 2px; background: #F3F4F6; z-index: 0;
+        }
+        .tareasFocus-stage {
+            position: relative; z-index: 1;
+            display: flex; align-items: center; gap: 11px;
+            width: 100%; padding: 8px 10px; border: none; background: transparent;
+            border-radius: 10px; cursor: pointer; text-align: left;
+            margin-bottom: 2px; transition: background 0.15s;
+        }
+        .tareasFocus-stage:hover { background: #F9FAFB; }
+        .tareasFocus-stage.active {
+            background: #EFF6FF;
+            box-shadow: inset 0 0 0 1px #BFDBFE;
+        }
+        .tareasFocus-stage-node {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #fff; border: 3px solid #D1D5DB;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.15s;
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-node {
+            border-color: #0052D4;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.12);
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-node::after {
+            content: ''; width: 6px; height: 6px; border-radius: 50%; background: #0052D4;
+        }
+        .tareasFocus-stage-name {
+            flex: 1; font-size: 0.72rem; font-weight: 700; color: #4B5563;
+            text-transform: uppercase; letter-spacing: 0.02em;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-name { color: #1E40AF; }
+        .tareasFocus-stage-count {
+            font-size: 0.65rem; font-weight: 800;
+            padding: 2px 7px; border-radius: 6px;
+            background: #F3F4F6; color: #6B7280; flex-shrink: 0;
+        }
+        .tareasFocus-stage.active .tareasFocus-stage-count { background: #0052D4; color: #fff; }
+        .tareasFocus-stage-count.zero { background: transparent; color: #D1D5DB; }
+
+        .tareas-empty-card {
+            grid-column: 1/-1; padding: 60px 0; text-align: center;
+            color: #9CA3AF; font-size: 0.85rem;
+        }
+    </style>
+
+    <div id="tareasViewCards">
+        <!-- ═══ SIDEBAR EMBEBIDO TAREAS ═══ -->
+        <aside class="tareasFocus-sidebar" id="tareasFocusSidebar">
+            <div class="tareasFocus-head">
+                <h3 class="tareasFocus-brand">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>
                     </svg>
-                    Filtros
+                    Módulo de Tareas
+                </h3>
+                <div class="tareasFocus-toggle">
+                    <button type="button" data-flow="proyecto" class="active">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                        Proyectos
+                    </button>
+                    <button type="button" data-flow="runrate">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        Runrate
+                    </button>
+                </div>
+            </div>
+            <div class="tareasFocus-kpis">
+                <div class="tareasFocus-kpi atrasadas">
+                    <div class="tareasFocus-kpi-label">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Atrasadas
+                    </div>
+                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiAtrasadas">0</div>
+                </div>
+                <div class="tareasFocus-kpi hoy">
+                    <div class="tareasFocus-kpi-label">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Para Hoy
+                    </div>
+                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiHoy">0</div>
+                </div>
+            </div>
+            <div class="tareasFocus-list">
+                <p class="tareasFocus-section-title">Vistas</p>
+                <button type="button" class="tareasFocus-all active" data-all="1">
+                    <div class="tareasFocus-all-ico">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M9 10h6M9 14h6M9 18h6"/>
+                        </svg>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="tareasFocus-all-label">Todas las Tareas</div>
+                        <div class="tareasFocus-all-sub" id="tareasFocusAllSub">0 pendientes</div>
+                    </div>
                 </button>
-                <div class="tareas-search-wrap">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round" style="color:#8E8E93;flex-shrink:0;">
-                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input type="text" class="tareas-search-input" id="tareasSearchInput" placeholder="Buscar tarea...">
-                </div>
+                <p class="tareasFocus-section-title" style="border-top:1px solid #F3F4F6;padding-top:12px;">Tareas por Etapa</p>
+                <div class="tareasFocus-stages" id="tareasFocusStages"></div>
             </div>
+        </aside>
+
+        <!-- ═══ TOOLBAR SUPERIOR ═══ -->
+        <div class="tareas-toolbar">
+            <button type="button" class="tareas-toolbar-btn" id="tareasFocusToggleBtn" title="Módulo de tareas">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <h2 class="tareas-toolbar-title" id="tareasToolbarTitle">Todas las Tareas</h2>
+            <span class="tareas-toolbar-stat" id="tareasCount">0 tareas</span>
+            <div class="tareas-toolbar-spacer"></div>
+            <div class="tareas-toolbar-pills" id="tareasUrgencyPills">
+                <button type="button" data-urg="todas" class="active">Todas</button>
+                <button type="button" data-urg="atrasadas"><span class="tareas-pill-dot red"></span>Atrasadas</button>
+                <button type="button" data-urg="hoy"><span class="tareas-pill-dot amber"></span>Para Hoy</button>
+            </div>
+            <div class="tareas-search-mini">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" id="tareasSearchInput" placeholder="Buscar tarea...">
+            </div>
+            <button type="button" class="tareas-nueva-btn" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Nueva Tarea
+            </button>
         </div>
-        <!-- Filter panel (hidden by default) -->
-        <div class="tareas-filter-panel" id="tareasFilterPanel">
-            <div class="tareas-filter-row">
-                <label class="tareas-filter-label">Prioridad</label>
-                <div class="tareas-filter-chips" id="tareasFilterPrioridad">
-                    <button class="tareas-chip active" data-prio="todas">Todas</button>
-                    <button class="tareas-chip" data-prio="alta">Alta</button>
-                    <button class="tareas-chip" data-prio="media">Media</button>
-                    <button class="tareas-chip" data-prio="baja">Baja</button>
-                </div>
-            </div>
-            <div class="tareas-filter-row" style="margin-top:8px;">
-                <label class="tareas-filter-label">Responsable</label>
-                <select id="tareasFilterResponsable"
-                    style="padding:5px 10px;border:1px solid #E5E5EA;border-radius:8px;font-size:0.82rem;color:#1D1D1F;background:#F9FAFB;cursor:pointer;outline:none;min-width:180px;">
-                    <option value="todos">Todos los responsables</option>
-                </select>
-            </div>
-        </div>
-        <table class="tareas-table">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Estado</th>
-                    <th>Fecha Límite</th>
-                    <th>Creado por</th>
-                    <th>Responsable</th>
-                    <th>Oportunidad / Proyecto</th>
-                </tr>
-            </thead>
-            <tbody id="tareasTableBody"></tbody>
-        </table>
+
+        <!-- ═══ GRID DE CARDS ═══ -->
+        <div id="tareasCardsGrid"></div>
         <div class="tareas-footer" id="tareasFooter"></div>
     </div>
 </div>

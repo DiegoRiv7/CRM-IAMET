@@ -1216,6 +1216,8 @@ def api_tareas(request):
                     'oportunidad_id': tarea.oportunidad.id if tarea.oportunidad else None,
                     'oportunidad_nombre': tarea.oportunidad.oportunidad if tarea.oportunidad else None,
                     'oportunidad_cliente': tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None,
+                    'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
+                    'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                     'pausado': getattr(tarea, 'pausado', False),
