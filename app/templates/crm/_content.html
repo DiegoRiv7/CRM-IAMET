@@ -1044,6 +1044,18 @@
         .tareas-card-opp .txt {
             flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        .tareas-card-opp.clickable { cursor: pointer; }
+        .tareas-card-opp.clickable .txt {
+            transition: color 0.15s;
+            border-bottom: 1px solid transparent;
+        }
+        .tareas-card-opp.clickable:hover .txt {
+            color: #0052D4;
+            border-bottom-color: #BFDBFE;
+        }
+        .tareas-card-opp.clickable:hover svg {
+            color: #0052D4;
+        }
         .tareas-card-bottom {
             display: flex; align-items: center; gap: 10px;
         }

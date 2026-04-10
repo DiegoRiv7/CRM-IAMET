@@ -4624,10 +4624,10 @@
                 estadoHtml = '<span class="tareas-badge-estado" style="background:rgba(255,149,0,0.12);color:#FF9500;">Pausado</span>';
             }
 
-            // Oportunidad
+            // Oportunidad — clickeable para abrir el widget de detalle
             var oppHtml = '';
             if (tarea.oportunidad_id) {
-                oppHtml = '<div class="tareas-card-opp" onclick="event.stopPropagation();openDetalle(' + tarea.oportunidad_id + ');">' +
+                oppHtml = '<div class="tareas-card-opp clickable" data-opp-id="' + tarea.oportunidad_id + '" title="Abrir oportunidad">' +
                     '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' +
                     '<span class="txt">' + _tareasEscape(tarea.oportunidad_nombre || '') + '</span>' +
                     '</div>';
@@ -4785,6 +4785,23 @@
                         renderTareasCRM();
                     });
                 }
+                // Event delegation: click en el nombre de la oportunidad
+                // dentro de una card de tarea -> abrir widget de la oportunidad
+                var tareasGrid = document.getElementById('tareasCardsGrid');
+                if (tareasGrid && !tareasGrid._oppClickBound) {
+                    tareasGrid.addEventListener('click', function(e){
+                        var oppEl = e.target.closest('.tareas-card-opp.clickable');
+                        if (!oppEl) return;
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var oppId = parseInt(oppEl.getAttribute('data-opp-id'), 10);
+                        if (oppId && typeof window.openDetalle === 'function') {
+                            window.openDetalle(oppId);
+                        }
+                    });
+                    tareasGrid._oppClickBound = true;
+                }
+
                 // Botón limpiar filtros
                 var clearBtn = document.getElementById('tareasFilterClear');
                 if (clearBtn) {
