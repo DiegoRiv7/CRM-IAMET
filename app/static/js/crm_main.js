@@ -4658,7 +4658,7 @@
 
             return '<div class="' + cardClass + '" data-tarea-id="' + tarea.id + '" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
                 '<div class="tareas-card-top">' +
-                    '<div class="tareas-card-check" onclick="event.stopPropagation();crmTaskCompletarRapido(' + tarea.id + ');"></div>' +
+                    '<div class="tareas-card-check"></div>' +
                     '<div class="tareas-card-title">' + _tareasEscape(tarea.titulo || 'Sin título') + '</div>' +
                     pinBtn +
                 '</div>' +
