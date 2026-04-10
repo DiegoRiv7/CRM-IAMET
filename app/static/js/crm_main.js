@@ -4891,36 +4891,8 @@
             });
         }
 
-        // ── Filter panel toggle ──
-        var tareasFilterBtn = document.getElementById('tareasFilterBtn');
-        var tareasFilterPanel = document.getElementById('tareasFilterPanel');
-        if (tareasFilterBtn && tareasFilterPanel) {
-            tareasFilterBtn.addEventListener('click', function () {
-                var open = tareasFilterPanel.classList.toggle('open');
-                tareasFilterBtn.classList.toggle('active', open);
-            });
-            // Priority chip filter
-            var prioChips = document.getElementById('tareasFilterPrioridad');
-            if (prioChips) {
-                prioChips.addEventListener('click', function (e) {
-                    var chip = e.target.closest('.tareas-chip');
-                    if (!chip) return;
-                    prioChips.querySelectorAll('.tareas-chip').forEach(function (c) { c.classList.remove('active'); });
-                    chip.classList.add('active');
-                    _crmTareasPrioFilter = chip.getAttribute('data-prio');
-                    renderTareasCRM(_crmCurrentFilter);
-                });
-            }
-        }
-
-        // ── Filtro responsable ──
-        var tareasRespSel = document.getElementById('tareasFilterResponsable');
-        if (tareasRespSel) {
-            tareasRespSel.addEventListener('change', function () {
-                _crmTareasRespFilter = this.value;
-                renderTareasCRM(_crmCurrentFilter);
-            });
-        }
+        // ── (Los handlers del panel de filtros de tareas ya viven en
+        //     initTareasFocusListeners — no duplicar aqui) ──
 
         // ── Búsqueda ──
         var tareasSearch = document.getElementById('tareasSearchInput');
