@@ -164,6 +164,7 @@ urlpatterns = [
     path('api/ingeniero/dashboard-stats/', views.api_ingeniero_dashboard_stats, name='api_ingeniero_dashboard_stats'),
     path('api/programacion/actividades/', views.api_programacion_actividades, name='api_programacion_actividades'),
     path('api/programacion/actividad/<int:actividad_id>/', views.api_programacion_actividad_detail, name='api_programacion_actividad_detail'),
+    path('api/programacion/actividad/<int:actividad_id>/completar/', views.api_programacion_actividad_completar, name='api_programacion_actividad_completar'),
     path('api/programacion/disponibilidad/', views.api_programacion_disponibilidad, name='api_programacion_disponibilidad'),
     path('api/actividades/', views.actividad_list_create, name='actividad_list_create'),
     path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),

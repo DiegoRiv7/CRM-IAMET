@@ -3401,6 +3401,25 @@ class ProgramacionActividad(models.Model):
         related_name='actividades_programadas_creadas',
         verbose_name="Creado por"
     )
+    descripcion = models.TextField(blank=True, default='', verbose_name="Descripción")
+    vehiculos = models.CharField(max_length=255, blank=True, default='', verbose_name="Vehículos")
+    completada = models.BooleanField(default=False, verbose_name="Completada")
+    fecha_completada = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de completada")
+    completada_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='actividades_programadas_completadas',
+        verbose_name="Completada por"
+    )
+    evidencia_texto = models.TextField(blank=True, default='', verbose_name="Evidencia escrita")
+    actividad_calendario = models.ForeignKey(
+        'Actividad',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='programacion_actividades',
+        verbose_name="Actividad de calendario vinculada"
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -4150,6 +4169,7 @@ class ProyectoEvidencia(models.Model):
         ('tarea', 'Tarea'),
         ('orden_compra', 'Orden de Compra'),
         ('partida', 'Partida'),
+        ('programacion_actividad', 'Actividad de Programa de Obra'),
     ]
     entidad_tipo = models.CharField(max_length=50, choices=ENTITY_CHOICES)
     entidad_id = models.PositiveIntegerField()

@@ -518,6 +518,8 @@ def api_programacion_actividades(request):
             fecha=fecha,
             hora_inicio=h_ini,
             hora_fin=h_fin,
+            descripcion=data.get('descripcion', '').strip(),
+            vehiculos=data.get('vehiculos', '').strip(),
             creado_por=request.user,
         )
         usuarios_asignados = []
@@ -544,17 +546,22 @@ def api_programacion_actividades(request):
 
         proyecto_titulo = data.get('proyecto_titulo', proyecto_key)
 
+        # Título del calendario = sólo el nombre del proyecto (sin emojis ni prefijos).
         cal_actividad = Actividad.objects.create(
-            titulo=f"📋 {proyecto_titulo}: {titulo or 'Actividad programada'}",
+            titulo=proyecto_titulo,
             tipo_actividad='reunion',
-            descripcion=f"Actividad programada para el proyecto. Día: {dia_semana}.",
+            descripcion=f"Actividad programada: {titulo or 'Actividad'}. Día: {dia_semana}. [programacion_actividad_id:{act.id}]",
             fecha_inicio=fecha_inicio_cal,
             fecha_fin=fecha_fin_cal,
             creado_por=request.user,
-            color='#FF2D55',  # Rosa
+            color='#92400E',  # Café
         )
         if usuarios_asignados:
             cal_actividad.participantes.set(usuarios_asignados)
+
+        # Vincular la actividad del calendario con la programacionactividad
+        act.actividad_calendario = cal_actividad
+        act.save(update_fields=['actividad_calendario'])
 
         # ── Send notifications to assigned users ──
         for u in usuarios_asignados:
@@ -577,8 +584,69 @@ def api_programacion_actividades(request):
 
 @login_required
 def api_programacion_actividad_detail(request, actividad_id):
-    """PUT actualizar / DELETE eliminar una actividad programada."""
+    """GET detalle / PUT actualizar / DELETE eliminar una actividad programada."""
     act = get_object_or_404(ProgramacionActividad, pk=actividad_id)
+
+    if request.method == 'GET':
+        responsables = []
+        for u in act.responsables.all():
+            profile = getattr(u, 'userprofile', None)
+            if profile:
+                iniciales = profile.iniciales()
+            elif u.first_name:
+                iniciales = (u.first_name[:1] + u.last_name[:1]).upper()
+            else:
+                iniciales = u.username[:2].upper()
+            responsables.append({
+                'id': u.id,
+                'nombre': u.get_full_name() or u.username,
+                'iniciales': iniciales,
+            })
+
+        # Evidencias (archivos) vinculadas a esta actividad
+        evidencias = []
+        try:
+            from .models import ProyectoEvidencia
+            qs_ev = ProyectoEvidencia.objects.filter(
+                entidad_tipo='programacion_actividad',
+                entidad_id=act.id,
+            ).order_by('-created_at')
+            for e in qs_ev:
+                evidencias.append({
+                    'id': e.id,
+                    'nombre_archivo': e.nombre_archivo,
+                    'url': e.archivo.url if e.archivo else '',
+                    'tipo_mime': e.tipo_mime,
+                    'tamano': e.tamano,
+                    'descripcion': e.descripcion,
+                    'subido_por': e.subido_por.get_full_name() or e.subido_por.username,
+                    'created_at': e.created_at.isoformat(),
+                })
+        except Exception:
+            pass
+
+        return JsonResponse({
+            'success': True,
+            'item': {
+                'id': act.id,
+                'proyecto_key': act.proyecto_key,
+                'titulo': act.titulo,
+                'descripcion': act.descripcion,
+                'vehiculos': act.vehiculos,
+                'dia_semana': act.dia_semana,
+                'fecha': str(act.fecha) if act.fecha else None,
+                'hora_inicio': act.hora_inicio.strftime('%H:%M'),
+                'hora_fin': act.hora_fin.strftime('%H:%M'),
+                'responsables': responsables,
+                'completada': act.completada,
+                'fecha_completada': act.fecha_completada.isoformat() if act.fecha_completada else None,
+                'completada_por': (act.completada_por.get_full_name() or act.completada_por.username) if act.completada_por else None,
+                'evidencia_texto': act.evidencia_texto,
+                'evidencias': evidencias,
+                'creado_por': act.creado_por.get_full_name() or act.creado_por.username,
+                'fecha_creacion': act.fecha_creacion.isoformat(),
+            }
+        })
 
     if request.method == 'PUT':
         data = json.loads(request.body)
@@ -629,6 +697,71 @@ def api_programacion_actividad_detail(request, actividad_id):
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+@require_POST
+def api_programacion_actividad_completar(request, actividad_id):
+    """
+    Marca una actividad de programa de obra como completada y guarda la evidencia.
+    Recibe multipart/form-data con:
+      - evidencia_texto (str)
+      - archivos (files, múltiples)
+    """
+    act = get_object_or_404(ProgramacionActividad, pk=actividad_id)
+
+    evidencia_texto = request.POST.get('evidencia_texto', '').strip()
+    archivos = request.FILES.getlist('archivos')
+
+    if not evidencia_texto and not archivos:
+        return JsonResponse({
+            'success': False,
+            'error': 'Se requiere evidencia (texto o al menos un archivo).',
+        }, status=400)
+
+    # Marcar como completada
+    act.completada = True
+    act.fecha_completada = timezone.now()
+    act.completada_por = request.user
+    act.evidencia_texto = evidencia_texto
+    act.save(update_fields=['completada', 'fecha_completada', 'completada_por', 'evidencia_texto'])
+
+    # Si la actividad es de un proyecto IAMET (proy_X), guardar archivos en ProyectoEvidencia
+    archivos_guardados = 0
+    if act.proyecto_key.startswith('proy_') and archivos:
+        try:
+            from .models import ProyectoIAMET, ProyectoEvidencia
+            proyecto_id = int(act.proyecto_key.replace('proy_', ''))
+            proyecto = ProyectoIAMET.objects.filter(pk=proyecto_id).first()
+            if proyecto:
+                for f in archivos:
+                    ProyectoEvidencia.objects.create(
+                        proyecto=proyecto,
+                        entidad_tipo='programacion_actividad',
+                        entidad_id=act.id,
+                        archivo=f,
+                        nombre_archivo=f.name,
+                        tipo_mime=getattr(f, 'content_type', '') or '',
+                        tamano=f.size,
+                        descripcion=evidencia_texto[:500],
+                        subido_por=request.user,
+                    )
+                    archivos_guardados += 1
+        except Exception as exc:
+            logging.exception("Error guardando evidencia de actividad programada: %s", exc)
+
+    # Sincronizar actividad del calendario vinculada (marcar como completada)
+    if act.actividad_calendario_id:
+        try:
+            Actividad.objects.filter(pk=act.actividad_calendario_id).update(completada=True)
+        except Exception:
+            pass
+
+    return JsonResponse({
+        'success': True,
+        'archivos_guardados': archivos_guardados,
+        'fecha_completada': act.fecha_completada.isoformat(),
+    })
 
 
 @login_required

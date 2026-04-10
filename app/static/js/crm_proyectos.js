@@ -1107,11 +1107,23 @@
                     var dayEl = document.getElementById('proyProgDay_' + act.fecha);
                     if (!dayEl) return;
                     var respHtml = (act.responsables || []).map(function(r) {
-                        return '<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#007AFF;color:#fff;font-size:0.55rem;line-height:20px;text-align:center;margin-right:2px;" title="' + r.nombre + '">' + r.iniciales + '</span>';
+                        return '<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#92400E;color:#fff;font-size:0.55rem;line-height:20px;text-align:center;margin-right:2px;" title="' + r.nombre + '">' + r.iniciales + '</span>';
                     }).join('');
+                    var completed = act.completada === true;
+                    var cardBg = completed ? '#F0FDF4' : '#FEF3C7';
+                    var cardBorder = completed ? '#BBF7D0' : '#FDE68A';
+                    var cardColor = completed ? '#166534' : '#92400E';
+                    var checkIcon = completed
+                        ? '<span style="display:inline-block;margin-right:4px;color:#059669;font-weight:800;">&#10003;</span>'
+                        : '';
+                    var tituloStyle = completed ? 'text-decoration:line-through;opacity:0.75;' : '';
                     var card = document.createElement('div');
-                    card.style.cssText = 'background:#F0F7FF;border:1px solid #BFDBFE;border-radius:8px;padding:6px 8px;margin-bottom:4px;font-size:0.7rem;cursor:default;';
-                    card.innerHTML = '<div style="font-weight:600;color:#1E40AF;margin-bottom:2px;">' + act.titulo + '</div>' +
+                    card.style.cssText = 'background:' + cardBg + ';border:1px solid ' + cardBorder + ';border-radius:8px;padding:6px 8px;margin-bottom:4px;font-size:0.7rem;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;';
+                    card.setAttribute('data-act-id', act.id);
+                    card.onmouseover = function() { this.style.transform = 'translateY(-1px)'; this.style.boxShadow = '0 4px 10px rgba(0,0,0,0.08)'; };
+                    card.onmouseout = function() { this.style.transform = ''; this.style.boxShadow = ''; };
+                    card.onclick = function() { window.proyectosVerActividadDetalle(act.id); };
+                    card.innerHTML = '<div style="font-weight:600;color:' + cardColor + ';margin-bottom:2px;' + tituloStyle + '">' + checkIcon + act.titulo + '</div>' +
                         '<div style="display:flex;align-items:center;justify-content:space-between;">' +
                             '<span style="color:#6B7280;">' + act.hora_inicio + ' - ' + act.hora_fin + '</span>' +
                             '<div>' + respHtml + '</div>' +
@@ -1316,6 +1328,211 @@
         setTimeout(function() { toast.style.opacity = '0'; }, 2500);
         setTimeout(function() { toast.remove(); }, 3000);
     }
+
+
+    // =========================================
+    //  DETALLE / COMPLETAR ACTIVIDAD (PROGRAMA DE OBRA)
+    // =========================================
+
+    var _currentActDetalleId = null;
+
+    function _esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.proyectosVerActividadDetalle = function(actividadId) {
+        if (!actividadId) return;
+        _currentActDetalleId = actividadId;
+
+        var overlay = document.getElementById('proyDialogoActDetalle');
+        var body = document.getElementById('proyDetalleActBody');
+        var titulo = document.getElementById('proyDetalleActTitulo');
+        var sub = document.getElementById('proyDetalleActSubtitulo');
+        var btnCompletar = document.getElementById('proyDetalleActBtnCompletar');
+
+        if (!overlay) return;
+
+        titulo.textContent = 'Actividad';
+        sub.textContent = '';
+        body.innerHTML = '<div style="text-align:center;padding:30px;color:#8e8e93;font-size:0.85rem;">Cargando detalle...</div>';
+        overlay.style.display = 'flex';
+
+        _fetch('/app/api/programacion/actividad/' + actividadId + '/').then(function(resp) {
+            if (!resp.success) {
+                body.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;font-size:0.85rem;">Error al cargar el detalle</div>';
+                return;
+            }
+            var it = resp.item || {};
+            titulo.textContent = it.titulo || 'Actividad';
+            var fechaStr = it.fecha || '';
+            if (fechaStr) {
+                var d = new Date(fechaStr + 'T12:00:00');
+                var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                var dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+                sub.textContent = dias[d.getDay()] + ', ' + d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
+            } else {
+                sub.textContent = it.dia_semana || '';
+            }
+
+            // Build body HTML
+            var html = '';
+
+            // Status badge
+            if (it.completada) {
+                var completedByStr = it.completada_por ? ' por ' + _esc(it.completada_por) : '';
+                var completedDateStr = '';
+                if (it.fecha_completada) {
+                    var fc = new Date(it.fecha_completada);
+                    completedDateStr = ' el ' + fc.toLocaleDateString('es-MX') + ' a las ' + fc.getHours().toString().padStart(2,'0') + ':' + fc.getMinutes().toString().padStart(2,'0');
+                }
+                html += '<div style="background:#D1FAE5;border:1px solid #A7F3D0;border-radius:10px;padding:10px 14px;margin-bottom:14px;color:#065F46;font-size:0.8rem;font-weight:600;">';
+                html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M20 6L9 17l-5-5"/></svg>';
+                html += 'Actividad completada' + completedByStr + completedDateStr + '</div>';
+            }
+
+            // Horario
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">';
+            html += '<div style="background:#F9FAFB;border-radius:10px;padding:10px 12px;"><div style="font-size:0.65rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:2px;">Horario</div><div style="font-size:0.88rem;font-weight:600;color:#1D1D1F;">' + _esc(it.hora_inicio) + ' – ' + _esc(it.hora_fin) + '</div></div>';
+            html += '<div style="background:#F9FAFB;border-radius:10px;padding:10px 12px;"><div style="font-size:0.65rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:2px;">Creado por</div><div style="font-size:0.88rem;font-weight:600;color:#1D1D1F;">' + _esc(it.creado_por || '—') + '</div></div>';
+            html += '</div>';
+
+            // Descripción
+            if (it.descripcion) {
+                html += '<div style="margin-bottom:14px;"><div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:4px;">Descripción</div>';
+                html += '<div style="font-size:0.85rem;color:#1D1D1F;line-height:1.45;white-space:pre-wrap;">' + _esc(it.descripcion) + '</div></div>';
+            }
+
+            // Responsables
+            if (it.responsables && it.responsables.length) {
+                html += '<div style="margin-bottom:14px;"><div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:6px;">Personal (' + it.responsables.length + ')</div>';
+                html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+                it.responsables.forEach(function(r) {
+                    html += '<div style="display:flex;align-items:center;gap:6px;background:#F3F4F6;border-radius:20px;padding:4px 10px 4px 4px;">';
+                    html += '<div style="width:22px;height:22px;border-radius:50%;background:#92400E;color:#fff;font-size:0.6rem;line-height:22px;text-align:center;font-weight:700;">' + _esc(r.iniciales) + '</div>';
+                    html += '<span style="font-size:0.75rem;color:#1D1D1F;">' + _esc(r.nombre) + '</span>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            }
+
+            // Vehículos
+            if (it.vehiculos) {
+                html += '<div style="margin-bottom:14px;"><div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:4px;">Vehículos</div>';
+                html += '<div style="font-size:0.85rem;color:#1D1D1F;">' + _esc(it.vehiculos) + '</div></div>';
+            }
+
+            // Evidencia
+            if (it.completada) {
+                html += '<div style="border-top:1px solid #E5E7EB;padding-top:12px;margin-top:12px;">';
+                html += '<div style="font-size:0.7rem;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:6px;">Evidencia</div>';
+                if (it.evidencia_texto) {
+                    html += '<div style="background:#FFFBEB;border:1px solid #FEF3C7;border-radius:8px;padding:10px 12px;font-size:0.82rem;color:#78350F;line-height:1.45;white-space:pre-wrap;margin-bottom:8px;">' + _esc(it.evidencia_texto) + '</div>';
+                }
+                if (it.evidencias && it.evidencias.length) {
+                    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+                    it.evidencias.forEach(function(e) {
+                        var isImg = (e.tipo_mime || '').indexOf('image/') === 0;
+                        var icon = isImg
+                            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'
+                            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+                        html += '<a href="' + _esc(e.url) + '" target="_blank" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #E5E7EB;border-radius:8px;text-decoration:none;color:#1D1D1F;font-size:0.78rem;transition:background 0.15s;" onmouseover="this.style.background=\'#F9FAFB\'" onmouseout="this.style.background=\'transparent\'">';
+                        html += icon + '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(e.nombre_archivo) + '</span>';
+                        html += '</a>';
+                    });
+                    html += '</div>';
+                }
+                if (!it.evidencia_texto && (!it.evidencias || !it.evidencias.length)) {
+                    html += '<div style="font-size:0.78rem;color:#9CA3AF;font-style:italic;">Sin evidencia registrada</div>';
+                }
+                html += '</div>';
+            }
+
+            body.innerHTML = html;
+
+            // Configurar botón completar
+            if (it.completada) {
+                btnCompletar.style.display = 'none';
+            } else {
+                btnCompletar.style.display = '';
+                btnCompletar.disabled = false;
+                btnCompletar.textContent = 'Completar';
+            }
+        }).catch(function(err) {
+            body.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;font-size:0.85rem;">Error de conexión</div>';
+            console.error('Error cargando detalle actividad:', err);
+        });
+    };
+
+    window.proyectosIniciarCompletar = function() {
+        if (!_currentActDetalleId) return;
+        // Resetear form
+        var txt = el('proyEvidenciaTexto');
+        var files = el('proyEvidenciaArchivos');
+        var list = el('proyEvidenciaFileList');
+        if (txt) txt.value = '';
+        if (files) files.value = '';
+        if (list) list.textContent = '';
+
+        // Listener para mostrar archivos seleccionados
+        if (files && !files._hasListener) {
+            files.addEventListener('change', function() {
+                var names = [];
+                for (var i = 0; i < this.files.length; i++) names.push(this.files[i].name);
+                if (list) list.textContent = names.length ? (names.length + ' archivo(s): ' + names.join(', ')) : '';
+            });
+            files._hasListener = true;
+        }
+
+        var overlay = el('proyDialogoEvidencia');
+        if (overlay) overlay.style.display = 'flex';
+    };
+
+    window.proyectosEnviarEvidencia = function() {
+        if (!_currentActDetalleId) return;
+        var txt = el('proyEvidenciaTexto');
+        var files = el('proyEvidenciaArchivos');
+        var btn = el('proyEvidenciaBtnEnviar');
+
+        var texto = txt ? txt.value.trim() : '';
+        var archivos = files ? files.files : [];
+
+        if (!texto && (!archivos || archivos.length === 0)) {
+            alert('Debes agregar evidencia escrita o al menos un archivo.');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('evidencia_texto', texto);
+        if (archivos && archivos.length) {
+            for (var i = 0; i < archivos.length; i++) {
+                formData.append('archivos', archivos[i]);
+            }
+        }
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+        _fetch('/app/api/programacion/actividad/' + _currentActDetalleId + '/completar/', {
+            method: 'POST',
+            body: formData
+        }).then(function(resp) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Completar Actividad'; }
+            if (resp.success) {
+                proyectosCerrarDialogo('proyDialogoEvidencia');
+                proyectosCerrarDialogo('proyDialogoActDetalle');
+                _showToast('Actividad completada');
+                if (currentProjectId) renderProgramaObra(currentProjectId);
+                // Refrescar calendario si existe
+                if (typeof calGlobalRefetch === 'function') { try { calGlobalRefetch(); } catch(e) {} }
+            } else {
+                alert('Error al completar: ' + (resp.error || 'Error desconocido'));
+            }
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Completar Actividad'; }
+            alert('Error de conexión al completar actividad');
+            console.error('Error completando actividad:', err);
+        });
+    };
 
 
     // =========================================

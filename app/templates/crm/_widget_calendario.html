@@ -1086,8 +1086,12 @@
 
         var descEl = document.getElementById('calDetailDesc');
         var rawDesc = evt.description || '';
-        // Limpiar TODA metadata de prospecto
+        // Detectar actividad de programa de obra (proyecto)
+        var progMatch = rawDesc.match(/\[programacion_actividad_id:(\d+)\]/);
+        var progActId = progMatch ? parseInt(progMatch[1]) : null;
+        // Limpiar TODA metadata de prospecto y de programa de obra
         var descClean = rawDesc;
+        descClean = descClean.replace(/\[programacion_actividad_id:\d+\]/g, '');
         var cut = descClean.indexOf('prospecto_id:');
         if (cut > 0) { descClean = descClean.substring(0, cut); }
         else if (cut === 0) { descClean = ''; }
@@ -1095,6 +1099,8 @@
         if (cut === 0) { descClean = ''; }
         descClean = descClean.replace(/[-\s]+$/, '').trim();
         descEl.textContent = descClean || 'Sin descripción.';
+        // Guardar para uso posterior en los botones
+        window._calCurrentProgActId = progActId;
 
         window._calCurrentActividadId = esTarea ? null : id;
         window._calCurrentOppId = hasOpp ? ep.opportunity.id : null;
@@ -1124,7 +1130,9 @@
             btnReprogram.style.background = '#F2F2F7';
             btnReprogram.style.color = '#1D1D1F';
             btnReprogram.onclick = function(){
-                if (esProspecto && typeof _calMostrarInfoProspecto === 'function') {
+                if (window._calCurrentProgActId && typeof window.proyectosVerActividadDetalle === 'function') {
+                    window.proyectosVerActividadDetalle(window._calCurrentProgActId);
+                } else if (esProspecto && typeof _calMostrarInfoProspecto === 'function') {
                     _calMostrarInfoProspecto(evt);
                 } else if (typeof woVerActividadGenerica === 'function') {
                     woVerActividadGenerica(window._calCurrentActividadId);
