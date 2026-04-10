@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0109_alter_etapapipeline_pipeline'),
+        ('app', '0111_novedadesconfig_em_activation_count_and_more'),
     ]
 
     operations = [
