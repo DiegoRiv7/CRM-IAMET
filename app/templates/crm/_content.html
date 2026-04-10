@@ -9,7 +9,9 @@
          ═══════════════════════════════════════════════════════════ -->
     <style>
         /* El contenedor de cards debe ser relativo para anidar el sidebar */
-        #crmViewCards { position: relative; }
+        #crmViewCards { position: relative; min-height: 560px; }
+        /* Cuando el sidebar está abierto, aseguramos altura suficiente */
+        #crmViewCards.crmFocus-open { min-height: 720px; }
         /* Sidebar embebido DENTRO del bloque de cards */
         .crmFocus-sidebar {
             position: absolute; left: 0; top: 0; bottom: 0; width: 300px;
@@ -17,16 +19,27 @@
             border-radius: 16px 0 0 16px;
             box-shadow: 6px 0 18px rgba(0, 0, 0, 0.06);
             z-index: 20;
-            will-change: transform;
-            transform: translate3d(-102%, 0, 0);
-            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform, opacity;
+            transform: translate3d(-105%, 0, 0);
+            opacity: 0;
+            transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.2s ease;
             display: flex; flex-direction: column;
             font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            pointer-events: none;
         }
-        .crmFocus-sidebar.open { transform: translate3d(0, 0, 0); }
-        /* Cuando el sidebar está abierto, el grid de cards gana padding izquierdo */
-        #crmCardsGrid { transition: padding-left 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
-        #crmViewCards.crmFocus-open #crmCardsGrid { padding-left: 300px; }
+        .crmFocus-sidebar.open {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* El grid anima su padding de forma independiente al sidebar,
+           con easing de salida rápida para que sienta "pop" */
+        #crmCardsGrid {
+            transition: padding-left 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: padding-left;
+        }
+        #crmViewCards.crmFocus-open #crmCardsGrid { padding-left: 310px; }
         /* Header */
         .crmFocus-head { padding: 22px 22px 14px; }
         .crmFocus-brand {
@@ -881,13 +894,41 @@
     var viewCards = document.getElementById('crmViewCards');
     if (!sidebar || !viewCards) return;
 
+    var STORAGE_KEY = 'crmFocusState_v1';
     var state = {
         flow: 'proyecto', // 'proyecto' | 'runrate'
         selected: {       // { proyecto: 'ALL'|indexNum, runrate: 'ALL'|indexNum }
             proyecto: 'ALL',
             runrate: 'ALL'
-        }
+        },
+        wasOpen: false    // recordar si el sidebar estaba abierto
     };
+
+    // Cargar estado guardado
+    try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            if (parsed && typeof parsed === 'object') {
+                if (parsed.flow === 'proyecto' || parsed.flow === 'runrate') state.flow = parsed.flow;
+                if (parsed.selected && typeof parsed.selected === 'object') {
+                    if ('proyecto' in parsed.selected) state.selected.proyecto = parsed.selected.proyecto;
+                    if ('runrate' in parsed.selected) state.selected.runrate = parsed.selected.runrate;
+                }
+                state.wasOpen = !!parsed.wasOpen;
+            }
+        }
+    } catch(e) {}
+
+    function persist() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                flow: state.flow,
+                selected: state.selected,
+                wasOpen: sidebar.classList.contains('open')
+            }));
+        } catch(e) {}
+    }
 
     var etapasPipeline = (window._CRM_CONFIG || {}).etapasPipeline || {};
 
@@ -1057,21 +1098,25 @@
         state.selected[state.flow] = idxOrAll;
         render();
         applyFilter();
+        persist();
     }
 
     function switchFlow(flow) {
         state.flow = flow;
         render();
         applyFilter();
+        persist();
     }
 
     function open() {
         sidebar.classList.add('open');
         viewCards.classList.add('crmFocus-open');
+        persist();
     }
     function close() {
         sidebar.classList.remove('open');
         viewCards.classList.remove('crmFocus-open');
+        persist();
     }
 
     // Event listeners: solo el botón hamburguesa (toggle)
@@ -1116,6 +1161,20 @@
     function initAll(){
         render();
         patchAfterMain();
+        // Aplicar el filtro guardado al cargar la página (sin animación de apertura)
+        if (state.selected[state.flow] !== 'ALL') {
+            applyFilter();
+        }
+        // Restaurar si estaba abierto al recargar
+        if (state.wasOpen) {
+            // Desactivamos transición por un frame para evitar animación al cargar
+            sidebar.style.transition = 'none';
+            viewCards.classList.add('crmFocus-open');
+            sidebar.classList.add('open');
+            // Forzar reflow antes de reactivar transición
+            void sidebar.offsetWidth;
+            requestAnimationFrame(function(){ sidebar.style.transition = ''; });
+        }
     }
 
     if (document.readyState === 'loading') {
