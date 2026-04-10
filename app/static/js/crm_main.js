@@ -4124,8 +4124,9 @@
         } catch (e) { console.error('Section Switch Error', e); }
 
         // ── Cargar tareas desde API ──
-        var _crmTareasPrioFilter = 'todas';
-        var _crmTareasRespFilter = 'todos';
+        var _crmTareasPrioFilter = 'todas'; // legacy, ya no se usa
+        // Set de responsables seleccionados. Vacio = "todos"
+        var _crmTareasRespSet = {};
 
 
         window.updateGlobalNavBadges = function (counts) {
@@ -4193,18 +4194,50 @@
         }, 15000);
 
         function _actualizarDropdownResponsables(tareas) {
-            var sel = document.getElementById('tareasFilterResponsable');
-            if (!sel) return;
+            var list = document.getElementById('tareasFilterResponsableList');
+            if (!list) return;
+            // Guardar seleccion actual antes de reconstruir
+            var selected = {};
+            Object.keys(_crmTareasRespSet).forEach(function(k){ selected[k] = true; });
+
+            // Recolectar responsables únicos
             var respSet = {};
             tareas.forEach(function (t) { if (t.responsable) respSet[t.responsable] = 1; });
-            var current = sel.value;
-            sel.innerHTML = '<option value="todos">Todos los responsables</option>';
-            Object.keys(respSet).sort().forEach(function (r) {
-                var o = document.createElement('option');
-                o.value = r; o.textContent = r;
-                sel.appendChild(o);
+
+            // Reconstruir la lista (mantiene la opcion "Todos" al tope)
+            var allOpt = list.querySelector('.all-opt');
+            list.innerHTML = '';
+            if (allOpt) list.appendChild(allOpt);
+
+            Object.keys(respSet).sort().forEach(function (nombre) {
+                var label = document.createElement('label');
+                label.className = 'tareas-filter-resp-opt';
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = nombre;
+                cb.checked = !!selected[nombre];
+                cb.addEventListener('change', function(){
+                    if (cb.checked) _crmTareasRespSet[nombre] = true;
+                    else delete _crmTareasRespSet[nombre];
+                    _syncRespAllCheckbox();
+                    renderTareasCRM();
+                });
+                label.appendChild(cb);
+                var span = document.createElement('span');
+                span.textContent = nombre;
+                label.appendChild(span);
+                list.appendChild(label);
             });
-            if (current && respSet[current]) sel.value = current;
+
+            // Sincronizar el "Todos" checkbox
+            _syncRespAllCheckbox();
+        }
+
+        function _syncRespAllCheckbox() {
+            var allCb = document.getElementById('tareasRespAll');
+            if (!allCb) return;
+            // "Todos" está checked si no hay ningún individual marcado
+            allCb.checked = Object.keys(_crmTareasRespSet).length === 0;
         }
 
         function cargarTareasCRM(forzarEstado, pagina) {
@@ -4498,20 +4531,15 @@
                 tareas = tareas.filter(function(t){ return _tareasIsToday(t, now); });
             }
 
-            // Filtro por prioridad (panel)
-            if (_crmTareasPrioFilter && _crmTareasPrioFilter !== 'todas') {
-                tareas = tareas.filter(function(t){ return t.prioridad === _crmTareasPrioFilter; });
-            }
-            // Filtro por responsable (panel)
-            if (_crmTareasRespFilter && _crmTareasRespFilter !== 'todos') {
-                tareas = tareas.filter(function(t){ return t.responsable === _crmTareasRespFilter; });
+            // Filtro por responsables seleccionados (multi-select)
+            var respKeys = Object.keys(_crmTareasRespSet);
+            if (respKeys.length > 0) {
+                tareas = tareas.filter(function(t){ return !!_crmTareasRespSet[t.responsable]; });
             }
             // Actualizar indicador visual de filtros activos
             var filterBtn = document.getElementById('tareasFilterBtn');
             if (filterBtn) {
-                var hasFilters = (_crmTareasPrioFilter && _crmTareasPrioFilter !== 'todas') ||
-                                 (_crmTareasRespFilter && _crmTareasRespFilter !== 'todos');
-                filterBtn.classList.toggle('has-filters', hasFilters);
+                filterBtn.classList.toggle('has-filters', respKeys.length > 0);
             }
 
             // Búsqueda
@@ -4735,26 +4763,25 @@
                     });
                     // Cerrar al clickear fuera
                     document.addEventListener('click', function(e){
-                        if (!filterPanel.contains(e.target) && e.target !== filterBtn) {
+                        if (!filterPanel.contains(e.target) && e.target !== filterBtn && !filterBtn.contains(e.target)) {
                             filterPanel.classList.remove('open');
                             filterBtn.classList.remove('active');
                         }
                     });
                 }
-                // Chips de prioridad
-                document.querySelectorAll('#tareasFilterPrioridad button').forEach(function(chip){
-                    chip.addEventListener('click', function(){
-                        document.querySelectorAll('#tareasFilterPrioridad button').forEach(function(c){ c.classList.remove('active'); });
-                        chip.classList.add('active');
-                        _crmTareasPrioFilter = chip.getAttribute('data-prio');
-                        renderTareasCRM();
-                    });
-                });
-                // Select de responsable
-                var respSel = document.getElementById('tareasFilterResponsable');
-                if (respSel) {
-                    respSel.addEventListener('change', function(){
-                        _crmTareasRespFilter = this.value;
+                // Checkbox "Todos" — desmarca todos los individuales
+                var allCb = document.getElementById('tareasRespAll');
+                if (allCb) {
+                    allCb.addEventListener('change', function(){
+                        if (allCb.checked) {
+                            _crmTareasRespSet = {};
+                            document.querySelectorAll('#tareasFilterResponsableList input[type=checkbox]').forEach(function(cb){
+                                if (cb.id !== 'tareasRespAll') cb.checked = false;
+                            });
+                        } else {
+                            // Si se desmarca "Todos" sin nada seleccionado, lo forzamos de vuelta
+                            allCb.checked = true;
+                        }
                         renderTareasCRM();
                     });
                 }
@@ -4762,12 +4789,10 @@
                 var clearBtn = document.getElementById('tareasFilterClear');
                 if (clearBtn) {
                     clearBtn.addEventListener('click', function(){
-                        _crmTareasPrioFilter = 'todas';
-                        _crmTareasRespFilter = 'todos';
-                        document.querySelectorAll('#tareasFilterPrioridad button').forEach(function(c){
-                            c.classList.toggle('active', c.dataset.prio === 'todas');
+                        _crmTareasRespSet = {};
+                        document.querySelectorAll('#tareasFilterResponsableList input[type=checkbox]').forEach(function(cb){
+                            cb.checked = (cb.id === 'tareasRespAll');
                         });
-                        if (respSel) respSel.value = 'todos';
                         renderTareasCRM();
                     });
                 }

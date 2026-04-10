@@ -883,43 +883,43 @@
             position: absolute; right: 0; top: calc(100% + 8px);
             background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
             box-shadow: 0 12px 32px rgba(0,0,0,0.1);
-            padding: 14px; width: 280px;
+            padding: 14px; width: 260px;
             z-index: 30;
             display: none;
         }
         .tareas-filter-panel.open { display: block; }
-        .tareas-filter-panel-row { margin-bottom: 12px; }
-        .tareas-filter-panel-row:last-child { margin-bottom: 0; }
         .tareas-filter-panel-label {
             font-size: 0.62rem; font-weight: 800; color: #9CA3AF;
             text-transform: uppercase; letter-spacing: 0.06em;
-            margin-bottom: 6px; display: block;
+            margin-bottom: 8px; display: block;
         }
-        .tareas-filter-panel-chips {
-            display: flex; gap: 4px; flex-wrap: wrap;
-        }
-        .tareas-filter-panel-chips button {
-            padding: 5px 12px; border: 1px solid #E5E7EB;
-            background: #fff; border-radius: 20px;
-            font-size: 0.7rem; font-weight: 700; color: #6B7280;
-            cursor: pointer; transition: all 0.15s;
-        }
-        .tareas-filter-panel-chips button:hover { background: #F9FAFB; }
-        .tareas-filter-panel-chips button.active {
-            background: #0052D4; color: #fff; border-color: #0052D4;
-        }
-        .tareas-filter-panel select {
-            width: 100%; padding: 7px 10px;
+        .tareas-filter-resp-list {
+            max-height: 220px; overflow-y: auto;
             border: 1px solid #E5E7EB; border-radius: 8px;
-            font-size: 0.78rem; color: #1D1D1F; background: #fff;
-            outline: none; cursor: pointer;
+            padding: 4px;
+            scrollbar-width: thin;
         }
-        .tareas-filter-panel select:focus { border-color: #0052D4; }
+        .tareas-filter-resp-list::-webkit-scrollbar { width: 6px; }
+        .tareas-filter-resp-list::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+        .tareas-filter-resp-opt {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 8px; cursor: pointer; border-radius: 6px;
+            font-size: 0.78rem; color: #374151;
+            transition: background 0.1s;
+        }
+        .tareas-filter-resp-opt:hover { background: #F9FAFB; }
+        .tareas-filter-resp-opt input[type="checkbox"] {
+            width: 14px; height: 14px; accent-color: #0052D4; cursor: pointer;
+        }
+        .tareas-filter-resp-opt.all-opt {
+            font-weight: 700; color: #1D1D1F;
+            border-bottom: 1px solid #F3F4F6; margin-bottom: 4px; padding-bottom: 8px;
+        }
         .tareas-filter-panel-clear {
             width: 100%; padding: 7px;
             border: 1px solid #E5E7EB; background: #F9FAFB;
             border-radius: 8px; font-size: 0.72rem; font-weight: 700;
-            color: #6B7280; cursor: pointer; margin-top: 6px;
+            color: #6B7280; cursor: pointer; margin-top: 10px;
         }
         .tareas-filter-panel-clear:hover { background: #F3F4F6; color: #1D1D1F; }
         .tareas-search-mini {
@@ -1327,22 +1327,14 @@
                     <span class="dot"></span>
                 </button>
                 <div class="tareas-filter-panel" id="tareasFilterPanel">
-                    <div class="tareas-filter-panel-row">
-                        <label class="tareas-filter-panel-label">Prioridad</label>
-                        <div class="tareas-filter-panel-chips" id="tareasFilterPrioridad">
-                            <button type="button" data-prio="todas" class="active">Todas</button>
-                            <button type="button" data-prio="alta">Alta</button>
-                            <button type="button" data-prio="media">Media</button>
-                            <button type="button" data-prio="baja">Baja</button>
-                        </div>
+                    <label class="tareas-filter-panel-label">Filtrar por responsable</label>
+                    <div class="tareas-filter-resp-list" id="tareasFilterResponsableList">
+                        <label class="tareas-filter-resp-opt all-opt">
+                            <input type="checkbox" id="tareasRespAll" checked>
+                            <span>Todos</span>
+                        </label>
                     </div>
-                    <div class="tareas-filter-panel-row">
-                        <label class="tareas-filter-panel-label">Responsable</label>
-                        <select id="tareasFilterResponsable">
-                            <option value="todos">Todos los responsables</option>
-                        </select>
-                    </div>
-                    <button type="button" class="tareas-filter-panel-clear" id="tareasFilterClear">Limpiar filtros</button>
+                    <button type="button" class="tareas-filter-panel-clear" id="tareasFilterClear">Limpiar selección</button>
                 </div>
             </div>
             <button type="button" class="tareas-nueva-btn" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
