@@ -139,14 +139,27 @@
             });
         }, 500);
 
-        // CRM: solo vista de cards (la tabla legado queda oculta).
-        // Mantenemos la función para retro-compatibilidad pero ya no togglea.
-        window.toggleCrmView = function() { /* no-op: solo hay vista cards */ };
+        // CRM View Toggle (cards vs tabla) — cards es el default
+        var _crmViewMode = localStorage.getItem('crmViewMode') || 'cards';
+        window.toggleCrmView = function() {
+            _crmViewMode = _crmViewMode === 'cards' ? 'table' : 'cards';
+            localStorage.setItem('crmViewMode', _crmViewMode);
+            _applyCrmView();
+        };
         function _applyCrmView() {
             var cardsView = document.getElementById('crmViewCards');
             var tableView = document.getElementById('crmViewTable');
-            if (cardsView) cardsView.style.display = '';
-            if (tableView) tableView.style.display = 'none';
+            var icon = document.getElementById('crmViewIcon');
+            if (!cardsView || !tableView) return;
+            if (_crmViewMode === 'cards') {
+                cardsView.style.display = '';
+                tableView.style.display = 'none';
+                if (icon) icon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
+            } else {
+                cardsView.style.display = 'none';
+                tableView.style.display = '';
+                if (icon) icon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2"/>';
+            }
         }
         _applyCrmView();
 
