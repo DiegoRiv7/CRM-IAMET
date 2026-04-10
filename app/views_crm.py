@@ -300,12 +300,25 @@ def crm_home(request):
     if tab_activo == 'crm':
         tabla_data_qs = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
         # Anotar con tiene_actividad_vencida para el template
-        from .models import Actividad
+        from .models import Actividad, TareaOportunidad
         ahora_tz = timezone.now()
         tabla_data_list = list(tabla_data_qs)
         for item in tabla_data_list:
-            vencidas = Actividad.objects.filter(oportunidad=item, fecha_fin__lt=ahora_tz, completada=False).exists()
-            item.tiene_actividad_vencida = vencidas
+            # Actividad del calendario vencida (solo las de los últimos 30 días,
+            # para evitar falsos positivos de actividades viejas nunca cerradas)
+            limite_vencida = ahora_tz - timedelta(days=30)
+            act_vencida = Actividad.objects.filter(
+                oportunidad=item,
+                fecha_fin__lt=ahora_tz,
+                fecha_fin__gte=limite_vencida,
+                completada=False,
+            ).exists()
+            # Tarea de oportunidad vencida (sin tope de antigüedad — son acciones pendientes)
+            tarea_vencida = TareaOportunidad.objects.filter(
+                oportunidad=item,
+                fecha_limite__lt=ahora_tz,
+            ).exclude(estado='completada').exists()
+            item.tiene_actividad_vencida = act_vencida or tarea_vencida
             # Actividad próxima (la más cercana no completada)
             proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
             item.actividad_proxima = proxima.titulo if proxima else None
