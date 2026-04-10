@@ -4641,11 +4641,17 @@
                 var sb = document.getElementById('tareasFocusSidebar');
                 if (!sb) return setTimeout(bind, 100);
 
-                // Toggle button
+                // Toggle button de la toolbar (abrir)
                 var btnT = document.getElementById('tareasFocusToggleBtn');
                 if (btnT) btnT.addEventListener('click', function(e){
                     e.stopPropagation();
                     if (sb.classList.contains('open')) _tareasFocusClose(); else _tareasFocusOpen();
+                });
+                // Botón hamburguesa embebido en el sidebar (cerrar)
+                var btnClose = document.getElementById('tareasFocusCloseBtn');
+                if (btnClose) btnClose.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    _tareasFocusClose();
                 });
 
                 // Flow buttons

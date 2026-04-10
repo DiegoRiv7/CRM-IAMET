@@ -1010,13 +1010,26 @@
             opacity: 1;
             pointer-events: auto;
         }
-        .tareasFocus-head { padding: 18px 20px 12px; }
+        .tareasFocus-head { padding: 18px 20px 12px; position: relative; }
         .tareasFocus-brand {
             font-size: 0.64rem; font-weight: 800; color: #9CA3AF;
             letter-spacing: 0.1em; text-transform: uppercase;
             margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+            padding-left: 38px;
         }
         .tareasFocus-brand svg { color: #0052D4; }
+        /* Botón hamburguesa embebido: cierra el sidebar desde adentro */
+        .tareasFocus-close {
+            position: absolute; top: 16px; left: 16px;
+            width: 30px; height: 30px; padding: 0;
+            background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 8px;
+            cursor: pointer; color: #4B5563;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .tareasFocus-close:hover {
+            background: #EFF6FF; color: #0052D4; border-color: #BFDBFE;
+        }
         .tareasFocus-toggle {
             display: flex; background: #F3F4F6; padding: 4px; border-radius: 12px;
             border: 1px solid #E5E7EB;
@@ -1153,6 +1166,11 @@
         <!-- ═══ SIDEBAR EMBEBIDO TAREAS ═══ -->
         <aside class="tareasFocus-sidebar" id="tareasFocusSidebar">
             <div class="tareasFocus-head">
+                <button type="button" class="tareasFocus-close" id="tareasFocusCloseBtn" title="Cerrar módulo">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
                 <h3 class="tareasFocus-brand">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>
