@@ -1,4 +1,4 @@
-{% load app_filters %}
+{% load app_filters %}{% load l10n %}
 <div class="widget-toast" id="widgetToast"></div> <!-- ═══ CONTENT ═══ -->
 <div class="crm-content" id="crmContentSection">
 
@@ -452,7 +452,7 @@
             <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px;">
                 {% for item in tabla_data %}
                 {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
-                <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
+                <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
                      onclick="openDetalle('{{ item.id }}')"
                     <!-- Franja superior de color -->
                     <div class="absolute top-0 left-0 right-0 h-1.5" style="{% if item.tiene_actividad_vencida %}background:#EF4444;box-shadow:0 2px 4px rgba(239,68,68,0.4);{% elif item.tipo_negociacion == 'proyecto' %}background:#8B5CF6;box-shadow:0 2px 4px rgba(139,92,246,0.3);{% else %}background:#3B82F6;box-shadow:0 2px 4px rgba(59,130,246,0.3);{% endif %}"></div>
@@ -544,7 +544,7 @@
             </thead>
             <tbody id="crmTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
                 {% for item in tabla_data %}
-                <tr class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
+                <tr class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
                     <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
                         <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span></td>
                     <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18 }}{% else %}-{% endif %}</td>
