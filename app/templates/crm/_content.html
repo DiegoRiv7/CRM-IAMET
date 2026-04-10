@@ -907,6 +907,19 @@
             opacity: 0.55;
             background: #FAFAFB;
         }
+        .tareas-card.pinned { border-color: #FECACA; box-shadow: 0 4px 14px -4px rgba(239,68,68,0.2); }
+        /* Pin icon replaces the 3-dots menu */
+        .tareas-card-pin {
+            background: none; border: none; padding: 2px; cursor: pointer;
+            flex-shrink: 0; transition: transform 0.15s, opacity 0.15s;
+            opacity: 0;
+            margin-top: -2px;
+        }
+        .tareas-card:hover .tareas-card-pin { opacity: 0.4; }
+        .tareas-card:hover .tareas-card-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.1); }
+        .tareas-card-pin.pinned { opacity: 1; transform: rotate(-30deg); }
+        .tareas-card:hover .tareas-card-pin.pinned { opacity: 1; }
+        .tareas-card-pin svg { display: block; filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.25)); }
         .tareas-card-top {
             display: flex; align-items: flex-start; gap: 10px;
         }

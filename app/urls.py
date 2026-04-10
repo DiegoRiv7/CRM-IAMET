@@ -118,6 +118,7 @@ urlpatterns = [
     path('api/oportunidad/<int:oportunidad_id>/productos/', views.api_oportunidad_productos, name='api_oportunidad_productos'),
     path('api/oportunidad/<int:oportunidad_id>/productos/<int:producto_id>/', views.api_oportunidad_producto_delete, name='api_oportunidad_producto_delete'),
     path('api/oportunidad/<int:opp_id>/toggle-pin/', views.api_toggle_pin_oportunidad, name='api_toggle_pin_oportunidad'),
+    path('api/tarea/<int:tarea_id>/toggle-pin/', views.api_toggle_pin_tarea, name='api_toggle_pin_tarea'),
     path('api/cliente-oportunidades/<int:cliente_id>/', views.api_cliente_oportunidades, name='api_cliente_oportunidades'),
     path('api/cliente-cotizaciones/<int:cliente_id>/', views.api_cliente_cotizaciones, name='api_cliente_cotizaciones'),
     path('api/cambiar-estado-oportunidad/<int:oportunidad_id>/', views.cambiar_estado_oportunidad, name='cambiar_estado_oportunidad'),

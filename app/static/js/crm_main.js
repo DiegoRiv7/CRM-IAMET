@@ -4505,8 +4505,12 @@
                 tareas = tareas.filter(function(t){ return (t.titulo || '').toLowerCase().indexOf(q) !== -1; });
             }
 
-            // Sort: vencidas primero, luego por fecha
+            // Sort: ancladas > vencidas > por fecha
             tareas.sort(function(a, b){
+                var aP = !!a.esta_anclada;
+                var bP = !!b.esta_anclada;
+                if (aP && !bP) return -1;
+                if (!aP && bP) return 1;
                 var aV = _tareasIsOverdue(a, now);
                 var bV = _tareasIsOverdue(b, now);
                 if (aV && !bV) return -1;
@@ -4549,7 +4553,8 @@
         function createTaskCardCRM(tarea, now) {
             var done = tarea.estado === 'completada';
             var vencida = _tareasIsOverdue(tarea, now);
-            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '');
+            var pinned = !!tarea.esta_anclada;
+            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '');
 
             // Fecha badge
             var fechaHtml = '';
@@ -4601,13 +4606,17 @@
                 etapaHtml = '<span class="tareas-card-etapa">' + _tareasEscape(tarea.oportunidad_etapa) + '</span>';
             }
 
-            return '<div class="' + cardClass + '" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
+            // Pin chincheta
+            var pinFill = pinned ? '#EF4444' : '#B0B8C4';
+            var pinBtn = '<button type="button" class="tareas-card-pin' + (pinned ? ' pinned' : '') + '" data-pin-id="' + tarea.id + '" onclick="event.stopPropagation();crmTareaTogglePin(this,' + tarea.id + ');" title="Anclar tarea">' +
+                '<svg width="24" height="24" viewBox="0 0 24 24" fill="' + pinFill + '" stroke="none"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
+                '</button>';
+
+            return '<div class="' + cardClass + '" data-tarea-id="' + tarea.id + '" onclick="crmTaskVerDetalle(' + tarea.id + ')">' +
                 '<div class="tareas-card-top">' +
                     '<div class="tareas-card-check" onclick="event.stopPropagation();crmTaskCompletarRapido(' + tarea.id + ');"></div>' +
                     '<div class="tareas-card-title">' + _tareasEscape(tarea.titulo || 'Sin título') + '</div>' +
-                    '<button type="button" class="tareas-card-more" onclick="event.stopPropagation();crmTaskVerDetalle(' + tarea.id + ');">' +
-                        '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>' +
-                    '</button>' +
+                    pinBtn +
                 '</div>' +
                 (fechaHtml || estadoHtml ? '<div class="tareas-card-badges">' + fechaHtml + estadoHtml + '</div>' : '') +
                 '<div class="tareas-card-sep"></div>' +
@@ -4618,6 +4627,32 @@
                 '</div>' +
             '</div>';
         }
+
+        // Toggle anclar tarea (similar al de oportunidades)
+        window.crmTareaTogglePin = function(btn, tareaId) {
+            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
+            fetch('/app/api/tarea/' + tareaId + '/toggle-pin/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }
+            }).then(function(r){ return r.json(); }).then(function(data){
+                if (!data || !data.success) return;
+                // Actualizar estado en _crmAllTareas (cache)
+                if (Array.isArray(_crmAllTareas)) {
+                    for (var i = 0; i < _crmAllTareas.length; i++) {
+                        if (_crmAllTareas[i].id === tareaId) {
+                            _crmAllTareas[i].esta_anclada = data.anclada;
+                            break;
+                        }
+                    }
+                }
+                // Actualizar cache de pendientes también
+                if (_crmTareasCache && _crmTareasCache.pendientes) {
+                    _crmTareasCache.pendientes = _crmAllTareas;
+                }
+                // Re-render para reordenar
+                renderTareasCRM();
+            }).catch(console.error);
+        };
 
         // Helper de completar rápido (usa la misma API de tareas)
         window.crmTaskCompletarRapido = function(tareaId) {

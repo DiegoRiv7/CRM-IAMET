@@ -1106,11 +1106,28 @@ def api_proyectos(request):
 
 
 @login_required
+@login_required
+@require_POST
+def api_toggle_pin_tarea(request, tarea_id):
+    """Toggle anclar/desanclar una tarea para el usuario actual."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    ancladas = profile.tareas_ancladas or []
+    if tarea_id in ancladas:
+        ancladas.remove(tarea_id)
+        anclada = False
+    else:
+        ancladas.append(tarea_id)
+        anclada = True
+    profile.tareas_ancladas = ancladas
+    profile.save(update_fields=['tareas_ancladas'])
+    return JsonResponse({'success': True, 'anclada': anclada})
+
+
 def api_tareas(request):
     """
     API para obtener y crear tareas
     """
-    
+
     if request.method == 'GET':
         # Obtener tareas por proyecto si se especifica, sino mostrar TODAS las tareas
         proyecto_id = request.GET.get('proyecto_id')
@@ -1187,6 +1204,13 @@ def api_tareas(request):
                     offset = (page - 1) * per_page
                     tareas = tareas[offset:offset + per_page]
             
+            # Cargar ids de tareas ancladas del usuario actual
+            try:
+                profile_actual = UserProfile.objects.get(user=request.user)
+                ancladas_ids = set(profile_actual.tareas_ancladas or [])
+            except UserProfile.DoesNotExist:
+                ancladas_ids = set()
+
             tareas_data = []
             for tarea in tareas:
                 # Formatear tiempo trabajado
@@ -1218,6 +1242,7 @@ def api_tareas(request):
                     'oportunidad_cliente': tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None,
                     'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
                     'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
+                    'esta_anclada': tarea.id in ancladas_ids,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                     'pausado': getattr(tarea, 'pausado', False),
