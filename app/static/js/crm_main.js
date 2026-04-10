@@ -4785,12 +4785,16 @@
                         renderTareasCRM();
                     });
                 }
-                // Event delegation: click en el nombre de la oportunidad
+                // Event delegation: click EN EL TEXTO del nombre de la oportunidad
                 // dentro de una card de tarea -> abrir widget de la oportunidad
+                // (Click en cualquier otra parte de la card -> abre el widget de la tarea)
                 var tareasGrid = document.getElementById('tareasCardsGrid');
                 if (tareasGrid && !tareasGrid._oppClickBound) {
                     tareasGrid.addEventListener('click', function(e){
-                        var oppEl = e.target.closest('.tareas-card-opp.clickable');
+                        // Solo interceptar clicks en el <span class="txt"> dentro de .tareas-card-opp.clickable
+                        var txt = e.target.closest('.tareas-card-opp.clickable .txt');
+                        if (!txt) return;
+                        var oppEl = txt.closest('.tareas-card-opp.clickable');
                         if (!oppEl) return;
                         e.stopPropagation();
                         e.preventDefault();
@@ -4798,7 +4802,7 @@
                         if (oppId && typeof window.openDetalle === 'function') {
                             window.openDetalle(oppId);
                         }
-                    });
+                    }, true); // captura para adelantarse al onclick de la card
                     tareasGrid._oppClickBound = true;
                 }
 
