@@ -1082,11 +1082,11 @@
                 : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/';
             if (_woDriveCurrentFolder) url += '?parent=' + _woDriveCurrentFolder;
 
-            // Ocultar botones de edición en modo proyecto (read-only)
+            // Botones siempre visibles (se puede subir tanto a opp como a proyecto)
             var btnC = document.getElementById('woDriveBtnNuevaCarpeta');
             var btnS = document.getElementById('woDriveBtnSubirArchivo');
-            if (btnC) btnC.style.display = esProyecto ? 'none' : '';
-            if (btnS) btnS.style.display = esProyecto ? 'none' : '';
+            if (btnC) btnC.style.display = '';
+            if (btnS) btnS.style.display = '';
 
             fetch(url)
                 .then(function (r) { return r.json(); })
@@ -1104,8 +1104,14 @@
                         document.getElementById('woDriveGrid').style.display = 'grid';
                         var html = '';
 
-                        carpetas.forEach(function (c) { html += woDriveRenderCarpeta(c, esProyecto); });
-                        archivos.forEach(function (a) { html += woDriveRenderArchivo(a, esProyecto); });
+                        carpetas.forEach(function (c) {
+                            var ro = (c.tipo === 'carpeta_proyecto');
+                            html += woDriveRenderCarpeta(c, ro);
+                        });
+                        archivos.forEach(function (a) {
+                            var ro = (a.tipo === 'archivo_proyecto');
+                            html += woDriveRenderArchivo(a, ro);
+                        });
                         document.getElementById('woDriveGrid').innerHTML = html;
                     }
 
@@ -1128,7 +1134,11 @@
                 var payload = { nombre: n.trim() };
                 if (_woDriveCurrentFolder) payload.parent_id = _woDriveCurrentFolder;
 
-                fetch('/app/api/oportunidad/' + _woCurrentOppId + '/drive/', {
+                var crearUrl = (_woDriveMode === 'proyecto' && _woDriveProyecto)
+                    ? '/app/api/proyecto/' + _woDriveProyecto.id + '/carpetas/'
+                    : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/';
+
+                fetch(crearUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -1155,7 +1165,11 @@
                 formData.append('archivo', fileList[idx]);
                 if (_woDriveCurrentFolder) formData.append('carpeta_id', _woDriveCurrentFolder);
 
-                fetch('/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivos/', {
+                var uploadUrl = (_woDriveMode === 'proyecto' && _woDriveProyecto)
+                    ? '/app/api/proyecto/' + _woDriveProyecto.id + '/archivos/'
+                    : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivos/';
+
+                fetch(uploadUrl, {
                     method: 'POST',
                     body: formData
                 }).then(function (r) { return r.json(); }).then(function (res) {
@@ -1204,12 +1218,22 @@
         };
 
         window.woDriveMenu = function (tipo, id, actual) {
+            var esProy = (_woDriveMode === 'proyecto' && _woDriveProyecto);
             woDialogShowOptions('Opciones', [
                 {
                     label: 'Renombrar', onClick: function () {
                         woDialogPrompt('Nuevo nombre:', actual, function (n) {
                             if (n && n.trim() && n.trim() !== actual) {
-                                var endpoint = tipo === 'carpeta' ? '/app/api/oportunidad/' + _woCurrentOppId + '/drive/carpeta/' + id + '/' : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivo/' + id + '/';
+                                var endpoint;
+                                if (esProy) {
+                                    endpoint = tipo === 'carpeta'
+                                        ? '/app/api/proyecto/' + _woDriveProyecto.id + '/carpeta/' + id + '/'
+                                        : '/app/api/proyecto/' + _woDriveProyecto.id + '/archivo/' + id + '/';
+                                } else {
+                                    endpoint = tipo === 'carpeta'
+                                        ? '/app/api/oportunidad/' + _woCurrentOppId + '/drive/carpeta/' + id + '/'
+                                        : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivo/' + id + '/';
+                                }
                                 fetch(endpoint, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
@@ -1223,7 +1247,16 @@
                     label: 'Eliminar', color: '#FF3B30', onClick: function () {
                         woDialogConfirm('Eliminar', '¿Estás seguro de que quieres eliminar este elemento?', '#FF3B30', function () {
                             var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-                            var endpoint = tipo === 'carpeta' ? '/app/api/oportunidad/' + _woCurrentOppId + '/drive/carpeta/' + id + '/?force=true' : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivo/' + id + '/';
+                            var endpoint;
+                            if (esProy) {
+                                endpoint = tipo === 'carpeta'
+                                    ? '/app/api/proyecto/' + _woDriveProyecto.id + '/carpeta/' + id + '/?force=true'
+                                    : '/app/api/proyecto/' + _woDriveProyecto.id + '/archivo/' + id + '/';
+                            } else {
+                                endpoint = tipo === 'carpeta'
+                                    ? '/app/api/oportunidad/' + _woCurrentOppId + '/drive/carpeta/' + id + '/?force=true'
+                                    : '/app/api/oportunidad/' + _woCurrentOppId + '/drive/archivo/' + id + '/';
+                            }
                             fetch(endpoint, { method: 'DELETE', headers: csrf ? {'X-CSRFToken': csrf.value} : {} }).then(function (r) {
                                 if (!r.ok) woDialogConfirm('Error', 'No se pudo eliminar ('+r.status+')', null, null, true);
                                 woDriveCargarDirectorio();

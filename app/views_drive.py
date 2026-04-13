@@ -324,13 +324,23 @@ def api_archivos_proyecto(request, proyecto_id):
                 )
                 
                 print(f"✅ Archivo guardado exitosamente: ID={archivo.id}, URL={archivo.archivo.url}")
-                
+
             except Exception as e:
                 print(f"❌ Error guardando archivo {archivo_file.name}: {e}")
                 import traceback
                 print(traceback.format_exc())
                 return JsonResponse({'error': f'Error guardando archivo: {str(e)}'}, status=500)
-            
+
+            # ── Auto-import financiero: analizar si es OCC o Factura ──
+            resultado_fin = {'procesado': False}
+            try:
+                from .services_financiero import analizar_archivo_proyecto
+                resultado_fin = analizar_archivo_proyecto(archivo)
+            except Exception as e_fin:
+                resultado_fin = {'procesado': False, 'error': str(e_fin)}
+                import traceback
+                traceback.print_exc()
+
             return JsonResponse({
                 'success': True,
                 'archivo': {
@@ -344,7 +354,8 @@ def api_archivos_proyecto(request, proyecto_id):
                     'es_publico': archivo.es_publico,
                     'descripcion': archivo.descripcion,
                     'url': f'/app/api/proyecto/{proyecto_id}/archivo/{archivo.id}/stream/',
-                    'tipo': 'archivo'
+                    'tipo': 'archivo',
+                    'financiero': resultado_fin,
                 }
             })
             

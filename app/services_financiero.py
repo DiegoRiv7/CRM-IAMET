@@ -143,6 +143,107 @@ def analizar_archivo_drive(archivo_oportunidad):
     return {'procesado': True, 'tipo': tipo, 'monto': monto, 'error': None}
 
 
+def analizar_archivo_proyecto(archivo_proyecto):
+    """
+    Analiza un ArchivoProyecto recién subido (desde el drive de un proyecto).
+    Busca el ProyectoIAMET vinculado a través de Proyecto → OportunidadProyecto → TodoItem.
+    Si es un OCC o Factura PDF, extrae datos y crea el registro financiero.
+
+    Retorna dict con { procesado: bool, tipo: str, monto: Decimal|None, error: str|None }
+    """
+    from .models import (
+        OportunidadProyecto, ProyectoIAMET, ProyectoOrdenCompra,
+        ProyectoFacturaIngreso,
+    )
+
+    nombre = (archivo_proyecto.nombre_original or '').strip()
+    ext = (archivo_proyecto.extension or '').lower()
+    proyecto_obj = archivo_proyecto.proyecto  # Proyecto (Bitrix)
+
+    # Detectar tipo por nombre
+    nombre_upper = nombre.upper()
+    if nombre_upper.startswith('OCC'):
+        tipo = 'oc'
+    elif nombre_upper.startswith('FACTURA'):
+        tipo = 'factura'
+    else:
+        return {'procesado': False, 'tipo': '', 'monto': None, 'error': None}
+
+    # Buscar oportunidad vinculada al Proyecto (vía OportunidadProyecto)
+    opp_proy = OportunidadProyecto.objects.filter(
+        bitrix_project_id=str(proyecto_obj.bitrix_group_id)
+    ).first()
+    oportunidad = opp_proy.oportunidad if opp_proy else None
+
+    # Buscar ProyectoIAMET vinculado
+    proyecto_iamet = None
+    if oportunidad:
+        proyecto_iamet = ProyectoIAMET.objects.filter(oportunidad=oportunidad).first()
+
+    if not proyecto_iamet:
+        logger.info(f"[Financiero-Proyecto] Archivo '{nombre}' detectado como {tipo} pero no se encontró ProyectoIAMET vinculado al proyecto {proyecto_obj.id}.")
+        return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': 'Sin proyecto IAMET vinculado'}
+
+    # Verificar duplicado por número de OC/Factura
+    numero_doc_check = _extraer_numero_oc(nombre) if tipo == 'oc' else _extraer_numero_factura(nombre)
+    if tipo == 'oc' and ProyectoOrdenCompra.objects.filter(proyecto=proyecto_iamet, numero_oc=numero_doc_check).exists():
+        logger.info(f"[Financiero-Proyecto] Duplicado detectado: OC '{numero_doc_check}' ya existe en proyecto {proyecto_iamet.id}")
+        return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: OC {numero_doc_check} ya existe'}
+    if tipo == 'factura' and ProyectoFacturaIngreso.objects.filter(proyecto=proyecto_iamet, numero_factura=numero_doc_check).exists():
+        logger.info(f"[Financiero-Proyecto] Duplicado detectado: Factura '{numero_doc_check}' ya existe en proyecto {proyecto_iamet.id}")
+        return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: Factura {numero_doc_check} ya existe'}
+
+    # Extraer datos del PDF
+    pdf_data = {}
+    if ext == 'pdf':
+        try:
+            pdf_data = _extraer_datos_pdf(archivo_proyecto.archivo)
+        except Exception as exc:
+            logger.warning(f"[Financiero-Proyecto] Error al parsear PDF '{nombre}': {exc}")
+
+    monto = pdf_data.get('monto')
+    proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
+    fecha_doc = pdf_data.get('fecha')
+    numero_doc = pdf_data.get('numero_oc') or _extraer_numero_oc(nombre)
+
+    # Crear registro financiero
+    try:
+        if tipo == 'oc':
+            oc = ProyectoOrdenCompra(
+                proyecto=proyecto_iamet,
+                partida=None,
+                numero_oc=numero_doc,
+                proveedor=_acortar_nombre(proveedor),
+                cantidad=Decimal('1'),
+                precio_unitario=monto or Decimal('0'),
+                monto_total=monto or Decimal('0'),
+                status='emitted',
+                fecha_emision=fecha_doc,
+                notas=f'Importado automáticamente del drive del proyecto. Archivo: {nombre}',
+            )
+            oc.save()
+            logger.info(f"[Financiero-Proyecto] OC '{oc.numero_oc}' creada: proveedor={proveedor}, monto=${monto}, fecha={fecha_doc}")
+
+        elif tipo == 'factura':
+            from django.utils import timezone
+            factura = ProyectoFacturaIngreso(
+                proyecto=proyecto_iamet,
+                numero_factura=_extraer_numero_factura(nombre) if not pdf_data.get('numero_factura') else pdf_data['numero_factura'],
+                monto=monto or Decimal('0'),
+                fecha_factura=fecha_doc or timezone.localdate(),
+                status='emitted',
+                notas=f'Importada automáticamente del drive del proyecto. Archivo: {nombre}',
+            )
+            factura.save()
+            logger.info(f"[Financiero-Proyecto] Factura '{factura.numero_factura}' creada: monto=${monto}, fecha={fecha_doc}")
+
+    except Exception as exc:
+        logger.exception(f"[Financiero-Proyecto] Error al crear registro desde '{nombre}': {exc}")
+        return {'procesado': False, 'tipo': tipo, 'monto': monto, 'error': str(exc)}
+
+    return {'procesado': True, 'tipo': tipo, 'monto': monto, 'error': None}
+
+
 # ═══════════════════════════════════════════════════════════════
 #  EXTRACCIÓN DE DATOS DEL PDF
 # ═══════════════════════════════════════════════════════════════
