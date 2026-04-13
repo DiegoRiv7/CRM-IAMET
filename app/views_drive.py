@@ -324,13 +324,23 @@ def api_archivos_proyecto(request, proyecto_id):
                 )
                 
                 print(f"✅ Archivo guardado exitosamente: ID={archivo.id}, URL={archivo.archivo.url}")
-                
+
             except Exception as e:
                 print(f"❌ Error guardando archivo {archivo_file.name}: {e}")
                 import traceback
                 print(traceback.format_exc())
                 return JsonResponse({'error': f'Error guardando archivo: {str(e)}'}, status=500)
-            
+
+            # ── Auto-import financiero: analizar si es OCC o Factura ──
+            resultado_fin = {'procesado': False}
+            try:
+                from .services_financiero import analizar_archivo_proyecto
+                resultado_fin = analizar_archivo_proyecto(archivo)
+            except Exception as e_fin:
+                resultado_fin = {'procesado': False, 'error': str(e_fin)}
+                import traceback
+                traceback.print_exc()
+
             return JsonResponse({
                 'success': True,
                 'archivo': {
@@ -344,7 +354,8 @@ def api_archivos_proyecto(request, proyecto_id):
                     'es_publico': archivo.es_publico,
                     'descripcion': archivo.descripcion,
                     'url': f'/app/api/proyecto/{proyecto_id}/archivo/{archivo.id}/stream/',
-                    'tipo': 'archivo'
+                    'tipo': 'archivo',
+                    'financiero': resultado_fin,
                 }
             })
             
@@ -693,11 +704,21 @@ def api_drive_oportunidad_archivo(request, opp_id):
             traceback.print_exc()
             return JsonResponse({'error': f'Error al guardar archivo: {str(e)}'}, status=500)
 
+        # ── Auto-import financiero: analizar si es OCC o Factura ──
+        try:
+            from .services_financiero import analizar_archivo_drive
+            resultado_fin = analizar_archivo_drive(a)
+        except Exception as e_fin:
+            resultado_fin = {'procesado': False, 'error': str(e_fin)}
+            import traceback
+            traceback.print_exc()
+
         return JsonResponse({'success': True, 'archivo': {
             'id': a.id, 'nombre': a.nombre_original,
             'tipo_archivo': a.tipo_archivo, 'extension': a.extension,
             'tamaño': a.tamaño, 'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
-            'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo'
+            'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo',
+            'financiero': resultado_fin,
         }})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)

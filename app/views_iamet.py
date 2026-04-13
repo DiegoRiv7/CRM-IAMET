@@ -217,6 +217,15 @@ def _partida_to_dict(p):
 
 
 def _oc_to_dict(oc):
+    # URL del archivo vinculado (si vino del drive de la oportunidad)
+    archivo_url = None
+    if hasattr(oc, 'archivo_drive') and oc.archivo_drive_id:
+        try:
+            a = oc.archivo_drive
+            if a and a.oportunidad_id:
+                archivo_url = f'/app/api/oportunidad/{a.oportunidad_id}/drive/archivo/{a.id}/stream/'
+        except Exception:
+            pass
     return {
         'id': oc.id,
         'proyecto_id': oc.proyecto_id,
@@ -232,6 +241,7 @@ def _oc_to_dict(oc):
         'fecha_entrega_esperada': _fmt(oc.fecha_entrega_esperada),
         'fecha_entrega_real': _fmt(oc.fecha_entrega_real),
         'notas': oc.notas,
+        'archivo_url': archivo_url,
         'created_at': _fmt(oc.created_at),
         'updated_at': _fmt(oc.updated_at),
     }
@@ -884,6 +894,19 @@ def api_oc_actualizar(request, oc_id):
     return JsonResponse({'success': True, 'data': _oc_to_dict(oc)})
 
 
+@login_required
+@require_http_methods(["DELETE"])
+def api_oc_eliminar(request, oc_id):
+    try:
+        oc = ProyectoOrdenCompra.objects.select_related('proyecto').get(id=oc_id)
+    except ProyectoOrdenCompra.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'OC no encontrada'}, status=404)
+    if not _check_access(request.user, oc.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    oc.delete()
+    return JsonResponse({'success': True})
+
+
 # ═══════════════════════════════════════════════════════════════
 #  FACTURAS PROVEEDOR
 # ═══════════════════════════════════════════════════════════════
@@ -1229,6 +1252,156 @@ def api_gasto_aprobar(request, gasto_id):
     gasto.save()
 
     return JsonResponse({'success': True, 'data': _gasto_to_dict(gasto)})
+
+
+# ═══════════════════════════════════════════════════════════════
+#  FINANCIERO: SYNC DRIVE + UPLOAD MANUAL
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_sync_drive(request, proyecto_id):
+    """Sincroniza archivos del drive de la oportunidad vinculada
+    que aún no se hayan procesado (OCC y Facturas)."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    if not proyecto.oportunidad_id:
+        return JsonResponse({'success': False, 'error': 'El proyecto no tiene oportunidad vinculada'}, status=400)
+
+    from .services_financiero import procesar_archivos_pendientes_oportunidad
+    resultado = procesar_archivos_pendientes_oportunidad(proyecto.oportunidad_id)
+
+    return JsonResponse({
+        'success': True,
+        'total': resultado['total'],
+        'procesados': resultado['procesados'],
+        'errores': resultado['errores'],
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_upload_oc(request, proyecto_id):
+    """Subir un PDF de OC manualmente al financiero del proyecto."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo requerido'}, status=400)
+
+    from decimal import Decimal as D
+    nombre = archivo.name
+    ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
+
+    # Extraer datos completos del PDF usando el parser central
+    pdf_data = {}
+    if ext == 'pdf':
+        try:
+            import pdfplumber, io
+            archivo.seek(0)
+            content = archivo.read()
+            archivo.seek(0)
+            # Crear un file-like para el parser
+            from .services_financiero import _extraer_datos_pdf_from_bytes
+            pdf_data = _extraer_datos_pdf_from_bytes(content)
+        except Exception as exc:
+            import logging
+            logging.warning(f"[Financiero] Error parseando PDF upload: {exc}")
+
+    from .services_financiero import _extraer_numero_oc, _extraer_proveedor_de_nombre, _acortar_nombre
+    numero_oc = pdf_data.get('numero_oc') or _extraer_numero_oc(nombre)
+    proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
+    monto = pdf_data.get('monto') or D('0')
+    fecha = pdf_data.get('fecha')
+
+    # Verificar duplicado
+    if ProyectoOrdenCompra.objects.filter(proyecto=proyecto, numero_oc=numero_oc).exists():
+        return JsonResponse({'success': False, 'error': f'Ya existe una OC con número {numero_oc} en este proyecto'}, status=409)
+
+    oc = ProyectoOrdenCompra.objects.create(
+        proyecto=proyecto,
+        partida=None,
+        numero_oc=numero_oc,
+        proveedor=_acortar_nombre(proveedor),
+        cantidad=D('1'),
+        precio_unitario=monto,
+        monto_total=monto,
+        status='emitted',
+        fecha_emision=fecha,
+        notas=f'Subido manualmente. Archivo: {nombre}',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': _oc_to_dict(oc),
+        'monto_extraido': float(monto),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_upload_factura_ingreso(request, proyecto_id):
+    """Subir un PDF de Factura de Ingreso manualmente."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo requerido'}, status=400)
+
+    from decimal import Decimal as D
+    nombre = archivo.name
+    ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
+
+    pdf_data = {}
+    if ext == 'pdf':
+        try:
+            archivo.seek(0)
+            content = archivo.read()
+            archivo.seek(0)
+            from .services_financiero import _extraer_datos_pdf_from_bytes
+            pdf_data = _extraer_datos_pdf_from_bytes(content)
+        except Exception as exc:
+            import logging
+            logging.warning(f"[Financiero] Error parseando Factura PDF: {exc}")
+
+    from .services_financiero import _extraer_numero_factura
+    monto = pdf_data.get('monto') or D('0')
+    fecha = pdf_data.get('fecha')
+    numero = pdf_data.get('numero_factura') or _extraer_numero_factura(nombre)
+
+    # Verificar duplicado
+    if ProyectoFacturaIngreso.objects.filter(proyecto=proyecto, numero_factura=numero).exists():
+        return JsonResponse({'success': False, 'error': f'Ya existe una factura con número {numero} en este proyecto'}, status=409)
+
+    factura = ProyectoFacturaIngreso.objects.create(
+        proyecto=proyecto,
+        numero_factura=numero,
+        monto=monto,
+        fecha_factura=fecha or timezone.localdate(),
+        status='emitted',
+        notas=f'Subida manualmente. Archivo: {nombre}',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'id': factura.id,
+            'numero_factura': factura.numero_factura,
+            'monto': float(factura.monto),
+            'fecha_factura': str(factura.fecha_factura),
+            'status': factura.status,
+        },
+        'monto_extraido': float(monto),
+    })
 
 
 # ═══════════════════════════════════════════════════════════════

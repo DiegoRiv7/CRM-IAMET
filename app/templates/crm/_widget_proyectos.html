@@ -233,29 +233,37 @@
       <!-- TAB: Financiero -->
       <div id="proyPane_financiero" class="proy-tab-pane" style="display:none;">
 
+        <!-- Botón sincronizar drive -->
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px;">
+          <button class="proy-btn proy-btn-outline" onclick="proyFinSyncDrive()" id="proyFinSyncBtn" style="font-size:0.72rem;display:inline-flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Sincronizar Drive
+          </button>
+        </div>
+
         <!-- Ordenes de Compra -->
         <div class="proy-tab-header">
           <h3>Ordenes de Compra</h3>
           <div class="proy-tab-actions">
-            <button class="proy-btn proy-btn-primary" onclick="proyectosCrearOCDialogo()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Nueva OC
-            </button>
+            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Subir PDF
+              <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadOC(this)">
+            </label>
           </div>
         </div>
         <div class="proy-table-wrap">
           <table class="proy-table">
             <thead>
               <tr>
-                <th>#OC</th>
-                <th>Proveedor</th>
-                <th>Partida</th>
-                <th>Cant.</th>
-                <th>Monto</th>
-                <th>Estado</th>
-                <th>Fecha</th>
+                <th style="text-align:left">#OC</th>
+                <th style="text-align:left">Proveedor</th>
+                <th style="text-align:left">Partida</th>
+                <th style="text-align:right">Cant.</th>
+                <th style="text-align:right">Monto</th>
+                <th style="text-align:center">Estado</th>
+                <th style="text-align:left">Fecha</th>
+                <th style="width:40px;"></th>
               </tr>
             </thead>
             <tbody id="proyOCBody"></tbody>
@@ -266,6 +274,9 @@
         <!-- Facturas Proveedor -->
         <div class="proy-tab-header">
           <h3>Facturas Proveedor</h3>
+          <div class="proy-tab-actions">
+            <span style="font-size:0.65rem;color:#9CA3AF;font-style:italic;">Subir manualmente</span>
+          </div>
         </div>
         <div class="proy-table-wrap">
           <table class="proy-table">
@@ -288,6 +299,13 @@
         <!-- Facturas de Ingreso -->
         <div class="proy-tab-header" style="margin-top:24px;">
           <h3>Facturas de Ingreso</h3>
+          <div class="proy-tab-actions">
+            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Subir PDF
+              <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFactura(this)">
+            </label>
+          </div>
         </div>
         <div class="proy-table-wrap">
           <table class="proy-table">

@@ -2758,6 +2758,12 @@ class ArchivoOportunidad(models.Model):
     mime_type = models.CharField(max_length=100, blank=True)
     bitrix_file_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Archivo en Bitrix24")
     bitrix_download_url = models.TextField(blank=True, verbose_name="URL de Descarga Bitrix24")
+    # Tracking de procesamiento financiero automático
+    procesado_financiero = models.BooleanField(default=False, verbose_name="Procesado por el módulo financiero")
+    tipo_financiero = models.CharField(max_length=20, blank=True, default='', verbose_name="Tipo financiero detectado",
+        help_text="'oc' si es OCC, 'factura' si es Factura de ingreso, '' si no aplica")
+    monto_extraido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
+        verbose_name="Monto extraído del PDF")
 
     class Meta:
         ordering = ['-fecha_subida']
@@ -3928,8 +3934,9 @@ class ProyectoPartida(models.Model):
 
 class ProyectoOrdenCompra(models.Model):
     proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='ordenes_compra')
-    partida = models.ForeignKey(ProyectoPartida, on_delete=models.CASCADE, related_name='ordenes_compra')
+    partida = models.ForeignKey(ProyectoPartida, on_delete=models.CASCADE, related_name='ordenes_compra', null=True, blank=True)
     numero_oc = models.CharField(max_length=100, unique=True, blank=True)
+    archivo_drive = models.ForeignKey('ArchivoOportunidad', on_delete=models.SET_NULL, null=True, blank=True, related_name='ocs_generadas', verbose_name="Archivo del drive vinculado")
     proveedor = models.CharField(max_length=255)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
@@ -4007,6 +4014,7 @@ class ProyectoFacturaIngreso(models.Model):
     proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='facturas_ingreso')
     numero_factura = models.CharField(max_length=100)
     monto = models.DecimalField(max_digits=14, decimal_places=2)
+    archivo_drive = models.ForeignKey('ArchivoOportunidad', on_delete=models.SET_NULL, null=True, blank=True, related_name='facturas_generadas', verbose_name="Archivo del drive vinculado")
     fecha_factura = models.DateField()
     fecha_vencimiento = models.DateField(null=True, blank=True)
     fecha_pago = models.DateField(null=True, blank=True)
