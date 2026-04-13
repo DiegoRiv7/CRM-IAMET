@@ -332,6 +332,9 @@ urlpatterns = [
     path('api/iamet/facturas-ingreso/crear/', views_iamet.api_factura_ingreso_crear, name='api_iamet_factura_ingreso_crear'),
     path('api/iamet/facturas-ingreso/<int:factura_id>/actualizar/', views_iamet.api_factura_ingreso_actualizar, name='api_iamet_factura_ingreso_actualizar'),
     # Gastos Operativos
+    path('api/iamet/proyectos/<int:proyecto_id>/financiero/sync-drive/', views_iamet.api_financiero_sync_drive, name='api_financiero_sync_drive'),
+    path('api/iamet/proyectos/<int:proyecto_id>/financiero/upload-oc/', views_iamet.api_financiero_upload_oc, name='api_financiero_upload_oc'),
+    path('api/iamet/proyectos/<int:proyecto_id>/financiero/upload-factura/', views_iamet.api_financiero_upload_factura_ingreso, name='api_financiero_upload_factura_ingreso'),
     path('api/iamet/proyectos/<int:proyecto_id>/gastos/', views_iamet.api_gastos_lista, name='api_iamet_gastos_lista'),
     path('api/iamet/gastos/crear/', views_iamet.api_gasto_crear, name='api_iamet_gasto_crear'),
     path('api/iamet/gastos/<int:gasto_id>/actualizar/', views_iamet.api_gasto_actualizar, name='api_iamet_gasto_actualizar'),

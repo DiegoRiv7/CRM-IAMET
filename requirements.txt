@@ -31,3 +31,4 @@ whitenoise==6.7.0
 zopfli==0.2.3.post1
 cryptography==43.0.0
 rapidfuzz==3.10.1
+pdfplumber==0.11.4

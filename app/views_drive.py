@@ -693,11 +693,21 @@ def api_drive_oportunidad_archivo(request, opp_id):
             traceback.print_exc()
             return JsonResponse({'error': f'Error al guardar archivo: {str(e)}'}, status=500)
 
+        # ── Auto-import financiero: analizar si es OCC o Factura ──
+        try:
+            from .services_financiero import analizar_archivo_drive
+            resultado_fin = analizar_archivo_drive(a)
+        except Exception as e_fin:
+            resultado_fin = {'procesado': False, 'error': str(e_fin)}
+            import traceback
+            traceback.print_exc()
+
         return JsonResponse({'success': True, 'archivo': {
             'id': a.id, 'nombre': a.nombre_original,
             'tipo_archivo': a.tipo_archivo, 'extension': a.extension,
             'tamaño': a.tamaño, 'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
-            'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo'
+            'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo',
+            'financiero': resultado_fin,
         }})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)

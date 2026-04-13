@@ -1232,6 +1232,165 @@ def api_gasto_aprobar(request, gasto_id):
 
 
 # ═══════════════════════════════════════════════════════════════
+#  FINANCIERO: SYNC DRIVE + UPLOAD MANUAL
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_sync_drive(request, proyecto_id):
+    """Sincroniza archivos del drive de la oportunidad vinculada
+    que aún no se hayan procesado (OCC y Facturas)."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    if not proyecto.oportunidad_id:
+        return JsonResponse({'success': False, 'error': 'El proyecto no tiene oportunidad vinculada'}, status=400)
+
+    from .services_financiero import procesar_archivos_pendientes_oportunidad
+    resultado = procesar_archivos_pendientes_oportunidad(proyecto.oportunidad_id)
+
+    return JsonResponse({
+        'success': True,
+        'total': resultado['total'],
+        'procesados': resultado['procesados'],
+        'errores': resultado['errores'],
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_upload_oc(request, proyecto_id):
+    """Subir un PDF de OC manualmente al financiero del proyecto."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo requerido'}, status=400)
+
+    from decimal import Decimal as D
+    nombre = archivo.name
+    ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
+
+    # Intentar extraer monto si es PDF
+    monto = D('0')
+    if ext == 'pdf':
+        try:
+            from .services_financiero import _extraer_monto_pdf
+            from django.core.files.uploadedfile import InMemoryUploadedFile
+            import io
+            # Guardar temporalmente para leerlo con pdfplumber
+            archivo.seek(0)
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(archivo.read())) as pdf:
+                import re
+                monto_pattern = re.compile(r'(?:SUB\s*-?\s*TOTAL|SUBTOTAL)\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
+                total_pattern = re.compile(r'\bTOTAL\b\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
+                for page in pdf.pages:
+                    text = page.extract_text() or ''
+                    for m in monto_pattern.finditer(text):
+                        val = D(m.group(1).replace(',', '').strip() or '0')
+                        if val > monto:
+                            monto = val
+                    if monto == 0:
+                        for m in total_pattern.finditer(text):
+                            val = D(m.group(1).replace(',', '').strip() or '0')
+                            if val > monto:
+                                monto = val
+            archivo.seek(0)
+        except Exception as exc:
+            import logging
+            logging.warning(f"[Financiero] Error parseando PDF upload: {exc}")
+
+    from .services_financiero import _extraer_numero_oc, _extraer_proveedor_de_nombre
+    oc = ProyectoOrdenCompra.objects.create(
+        proyecto=proyecto,
+        partida=None,
+        numero_oc=_extraer_numero_oc(nombre),
+        proveedor=_extraer_proveedor_de_nombre(nombre),
+        cantidad=D('1'),
+        precio_unitario=monto,
+        monto_total=monto,
+        status='emitted',
+        notas=f'Subido manualmente. Archivo: {nombre}',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': _oc_to_dict(oc),
+        'monto_extraido': float(monto),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_upload_factura_ingreso(request, proyecto_id):
+    """Subir un PDF de Factura de Ingreso manualmente."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo requerido'}, status=400)
+
+    from decimal import Decimal as D
+    nombre = archivo.name
+    ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
+
+    monto = D('0')
+    if ext == 'pdf':
+        try:
+            import pdfplumber, io, re
+            archivo.seek(0)
+            with pdfplumber.open(io.BytesIO(archivo.read())) as pdf:
+                monto_pattern = re.compile(r'(?:SUB\s*-?\s*TOTAL|SUBTOTAL)\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
+                total_pattern = re.compile(r'\bTOTAL\b\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
+                for page in pdf.pages:
+                    text = page.extract_text() or ''
+                    for m in monto_pattern.finditer(text):
+                        val = D(m.group(1).replace(',', '').strip() or '0')
+                        if val > monto:
+                            monto = val
+                    if monto == 0:
+                        for m in total_pattern.finditer(text):
+                            val = D(m.group(1).replace(',', '').strip() or '0')
+                            if val > monto:
+                                monto = val
+            archivo.seek(0)
+        except Exception as exc:
+            import logging
+            logging.warning(f"[Financiero] Error parseando Factura PDF: {exc}")
+
+    from .services_financiero import _extraer_numero_factura
+    factura = ProyectoFacturaIngreso.objects.create(
+        proyecto=proyecto,
+        numero_factura=_extraer_numero_factura(nombre),
+        monto=monto,
+        fecha_factura=timezone.localdate(),
+        status='emitted',
+        notas=f'Subida manualmente. Archivo: {nombre}',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'id': factura.id,
+            'numero_factura': factura.numero_factura,
+            'monto': float(factura.monto),
+            'fecha_factura': str(factura.fecha_factura),
+            'status': factura.status,
+        },
+        'monto_extraido': float(monto),
+    })
+
+
+# ═══════════════════════════════════════════════════════════════
 #  TAREAS PROYECTO
 # ═══════════════════════════════════════════════════════════════
 

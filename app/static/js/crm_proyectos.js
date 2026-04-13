@@ -1577,7 +1577,102 @@
         renderSupplierInvoices(projectId);
         renderRevenueInvoices(projectId);
         renderExpenses(projectId);
+        // Actualizar KPIs después de que las tablas carguen
+        setTimeout(function(){ _updateFinKPIs(projectId); }, 800);
     }
+
+    // ── KPIs financieros ──
+    function _updateFinKPIs(projectId) {
+        var gastado = 0, cobrado = 0;
+        // Leer OC de la tabla ya renderizada
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/oc/').then(function(resp) {
+            if (resp.ok || resp.success) {
+                (resp.data || []).forEach(function(oc) {
+                    if (oc.status !== 'cancelled') gastado += parseFloat(oc.monto_total || 0);
+                });
+            }
+            var elG = document.getElementById('proyFinKpiGastado');
+            if (elG) elG.textContent = fmtMoney(gastado);
+            return _fetch('/app/api/iamet/proyectos/' + projectId + '/facturas-ingreso/');
+        }).then(function(resp) {
+            if (resp.ok || resp.success) {
+                (resp.data || []).forEach(function(f) { cobrado += parseFloat(f.monto || 0); });
+            }
+            var elC = document.getElementById('proyFinKpiCobrado');
+            if (elC) elC.textContent = fmtMoney(cobrado);
+            var elB = document.getElementById('proyFinKpiBalance');
+            if (elB) {
+                var balance = cobrado - gastado;
+                elB.textContent = fmtMoney(Math.abs(balance));
+                elB.style.color = balance >= 0 ? '#16A34A' : '#DC2626';
+            }
+        }).catch(function(err) { console.error('[Financiero KPIs]', err); });
+    }
+
+    // ── Sync Drive ──
+    window.proyFinSyncDrive = function() {
+        if (!currentProjectId) return;
+        var btn = el('proyFinSyncBtn');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="animation:spin 1s linear infinite"><path d="M23 4v6h-6"/></svg> Sincronizando...'; }
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/financiero/sync-drive/', {
+            method: 'POST'
+        }).then(function(resp) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sincronizar Drive'; }
+            if (resp.success) {
+                var msg = resp.procesados + ' archivo(s) importado(s)';
+                if (resp.errores > 0) msg += ', ' + resp.errores + ' con error';
+                _showToast(msg);
+                renderFinanciero(currentProjectId);
+            } else {
+                _showToast(resp.error || 'Error al sincronizar');
+            }
+        }).catch(function() {
+            if (btn) { btn.disabled = false; btn.textContent = 'Sincronizar Drive'; }
+            _showToast('Error de conexión');
+        });
+    };
+
+    // ── Upload OC manual ──
+    window.proyFinUploadOC = function(input) {
+        if (!input.files || !input.files.length || !currentProjectId) return;
+        var formData = new FormData();
+        formData.append('archivo', input.files[0]);
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/financiero/upload-oc/', {
+            method: 'POST',
+            body: formData
+        }).then(function(resp) {
+            input.value = '';
+            if (resp.success) {
+                var msg = 'OC importada';
+                if (resp.monto_extraido > 0) msg += ' ($' + Number(resp.monto_extraido).toLocaleString('en-US', {minimumFractionDigits:2}) + ' extraído del PDF)';
+                _showToast(msg);
+                renderFinanciero(currentProjectId);
+            } else {
+                _showToast(resp.error || 'Error al subir OC');
+            }
+        }).catch(function() { input.value = ''; _showToast('Error de conexión'); });
+    };
+
+    // ── Upload Factura Ingreso manual ──
+    window.proyFinUploadFactura = function(input) {
+        if (!input.files || !input.files.length || !currentProjectId) return;
+        var formData = new FormData();
+        formData.append('archivo', input.files[0]);
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/financiero/upload-factura/', {
+            method: 'POST',
+            body: formData
+        }).then(function(resp) {
+            input.value = '';
+            if (resp.success) {
+                var msg = 'Factura importada';
+                if (resp.monto_extraido > 0) msg += ' ($' + Number(resp.monto_extraido).toLocaleString('en-US', {minimumFractionDigits:2}) + ' extraído del PDF)';
+                _showToast(msg);
+                renderFinanciero(currentProjectId);
+            } else {
+                _showToast(resp.error || 'Error al subir factura');
+            }
+        }).catch(function() { input.value = ''; _showToast('Error de conexión'); });
+    };
 
     function renderSupplierInvoices(projectId) {
         var container = el('proyFacProvBody');
