@@ -966,13 +966,13 @@
         var container = el('proyOCBody');
         if (!container) return;
 
-        container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
+        container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/oc/').then(function(resp) {
             if (resp.ok || resp.success) {
                 var orders = resp.data || [];
                 if (orders.length === 0) {
-                    container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8e8e93">No hay ordenes de compra</td></tr>';
+                    container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#8e8e93">No hay ordenes de compra</td></tr>';
                     var foot = el('proyOCFoot');
                     if (foot) foot.innerHTML = '';
                     return;
@@ -983,14 +983,20 @@
                 orders.forEach(function(oc) {
                     var amount = oc.monto_total || ((oc.cantidad || 0) * (oc.precio_unitario || 0));
                     total += amount;
+                    // Nombre clickeable para abrir el PDF
+                    var nombreHtml = oc.archivo_url
+                        ? '<a href="' + oc.archivo_url + '" target="_blank" style="font-weight:600;color:#007aff;text-decoration:none;white-space:nowrap;cursor:pointer;" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">' + (oc.numero_oc || '\u2014') + '</a>'
+                        : '<span style="font-weight:600;color:#007aff;white-space:nowrap;">' + (oc.numero_oc || '\u2014') + '</span>';
+
                     html += '<tr>' +
-                        '<td style="font-weight:600;color:#007aff;white-space:nowrap;">' + (oc.numero_oc || '\u2014') + '</td>' +
+                        '<td>' + nombreHtml + '</td>' +
                         '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (oc.proveedor || '').replace(/"/g,'') + '">' + (oc.proveedor || '\u2014') + '</td>' +
                         '<td>' + (oc.descripcion || oc.partida_descripcion || '\u2014') + '</td>' +
                         '<td style="text-align:right">' + (oc.cantidad || 0) + '</td>' +
                         '<td style="text-align:right;font-weight:600;">' + fmtMoney(amount) + '</td>' +
                         '<td style="text-align:center"><span class="proy-badge ' + statusClass(oc.status) + '">' + statusLabel(oc.status) + '</span></td>' +
                         '<td style="white-space:nowrap;">' + fmtDate(oc.fecha_emision) + '</td>' +
+                        '<td style="text-align:center;"><button onclick="event.stopPropagation();proyFinEliminarOC(' + oc.id + ')" style="background:none;border:none;cursor:pointer;color:#D1D5DB;padding:4px;" title="Eliminar OC"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></td>' +
                     '</tr>';
                 });
 
@@ -1001,11 +1007,11 @@
                     foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
                         '<td colspan="4" style="text-align:right;color:#8e8e93">Total OC</td>' +
                         '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
-                        '<td colspan="2"></td>' +
+                        '<td colspan="3"></td>' +
                     '</tr>';
                 }
             } else {
-                container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#ef4444">Error al cargar OC</td></tr>';
+                container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#ef4444">Error al cargar OC</td></tr>';
                 console.error('Error cargando OC:', resp.error);
             }
         }).catch(function(err) {
@@ -1621,6 +1627,21 @@
                 _showToast(resp.error || 'Error al subir OC');
             }
         }).catch(function() { input.value = ''; _showToast('Error de conexión'); });
+    };
+
+    // ── Eliminar OC ──
+    window.proyFinEliminarOC = function(ocId) {
+        if (!confirm('¿Eliminar esta orden de compra?')) return;
+        _fetch('/app/api/iamet/oc/' + ocId + '/eliminar/', {
+            method: 'DELETE'
+        }).then(function(resp) {
+            if (resp.success) {
+                _showToast('OC eliminada');
+                if (currentProjectId) renderFinanciero(currentProjectId);
+            } else {
+                _showToast(resp.error || 'Error al eliminar');
+            }
+        }).catch(function() { _showToast('Error de conexión'); });
     };
 
     // ── Upload Factura Ingreso manual ──

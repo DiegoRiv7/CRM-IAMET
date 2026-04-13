@@ -217,6 +217,15 @@ def _partida_to_dict(p):
 
 
 def _oc_to_dict(oc):
+    # URL del archivo vinculado (si vino del drive de la oportunidad)
+    archivo_url = None
+    if hasattr(oc, 'archivo_drive') and oc.archivo_drive_id:
+        try:
+            a = oc.archivo_drive
+            if a and a.oportunidad_id:
+                archivo_url = f'/app/api/oportunidad/{a.oportunidad_id}/drive/archivo/{a.id}/stream/'
+        except Exception:
+            pass
     return {
         'id': oc.id,
         'proyecto_id': oc.proyecto_id,
@@ -232,6 +241,7 @@ def _oc_to_dict(oc):
         'fecha_entrega_esperada': _fmt(oc.fecha_entrega_esperada),
         'fecha_entrega_real': _fmt(oc.fecha_entrega_real),
         'notas': oc.notas,
+        'archivo_url': archivo_url,
         'created_at': _fmt(oc.created_at),
         'updated_at': _fmt(oc.updated_at),
     }
@@ -882,6 +892,19 @@ def api_oc_actualizar(request, oc_id):
     oc.save()  # auto-recalc monto_total
 
     return JsonResponse({'success': True, 'data': _oc_to_dict(oc)})
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_oc_eliminar(request, oc_id):
+    try:
+        oc = ProyectoOrdenCompra.objects.select_related('proyecto').get(id=oc_id)
+    except ProyectoOrdenCompra.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'OC no encontrada'}, status=404)
+    if not _check_access(request.user, oc.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    oc.delete()
+    return JsonResponse({'success': True})
 
 
 # ═══════════════════════════════════════════════════════════════
