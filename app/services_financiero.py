@@ -69,6 +69,21 @@ def analizar_archivo_drive(archivo_oportunidad):
         archivo_oportunidad.save(update_fields=['procesado_financiero'])
         return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': 'Ya importado'}
 
+    # Verificar duplicado por número de OC/Factura (mismo nombre de archivo = mismo documento)
+    numero_doc_check = _extraer_numero_oc(nombre) if tipo == 'oc' else _extraer_numero_factura(nombre)
+    if tipo == 'oc' and ProyectoOrdenCompra.objects.filter(proyecto=proyecto, numero_oc=numero_doc_check).exists():
+        archivo_oportunidad.procesado_financiero = True
+        archivo_oportunidad.tipo_financiero = tipo
+        archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
+        logger.info(f"[Financiero] Duplicado detectado: OC '{numero_doc_check}' ya existe en proyecto {proyecto.id}")
+        return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: OC {numero_doc_check} ya existe'}
+    if tipo == 'factura' and ProyectoFacturaIngreso.objects.filter(proyecto=proyecto, numero_factura=numero_doc_check).exists():
+        archivo_oportunidad.procesado_financiero = True
+        archivo_oportunidad.tipo_financiero = tipo
+        archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
+        logger.info(f"[Financiero] Duplicado detectado: Factura '{numero_doc_check}' ya existe en proyecto {proyecto.id}")
+        return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: Factura {numero_doc_check} ya existe'}
+
     # Extraer datos del PDF
     pdf_data = {}
     if ext == 'pdf':
@@ -131,6 +146,17 @@ def analizar_archivo_drive(archivo_oportunidad):
 # ═══════════════════════════════════════════════════════════════
 #  EXTRACCIÓN DE DATOS DEL PDF
 # ═══════════════════════════════════════════════════════════════
+
+def _extraer_datos_pdf_from_bytes(content_bytes):
+    """Versión que acepta bytes en vez de un FileField (para uploads manuales)."""
+    import io
+
+    class FakeField:
+        def open(self, mode='rb'):
+            return io.BytesIO(content_bytes)
+
+    return _extraer_datos_pdf(FakeField())
+
 
 def _extraer_datos_pdf(archivo_field):
     """

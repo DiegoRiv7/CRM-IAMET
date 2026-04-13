@@ -1299,46 +1299,41 @@ def api_financiero_upload_oc(request, proyecto_id):
     nombre = archivo.name
     ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
 
-    # Intentar extraer monto si es PDF
-    monto = D('0')
+    # Extraer datos completos del PDF usando el parser central
+    pdf_data = {}
     if ext == 'pdf':
         try:
-            from .services_financiero import _extraer_monto_pdf
-            from django.core.files.uploadedfile import InMemoryUploadedFile
-            import io
-            # Guardar temporalmente para leerlo con pdfplumber
+            import pdfplumber, io
             archivo.seek(0)
-            import pdfplumber
-            with pdfplumber.open(io.BytesIO(archivo.read())) as pdf:
-                import re
-                monto_pattern = re.compile(r'(?:SUB\s*-?\s*TOTAL|SUBTOTAL)\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
-                total_pattern = re.compile(r'\bTOTAL\b\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
-                for page in pdf.pages:
-                    text = page.extract_text() or ''
-                    for m in monto_pattern.finditer(text):
-                        val = D(m.group(1).replace(',', '').strip() or '0')
-                        if val > monto:
-                            monto = val
-                    if monto == 0:
-                        for m in total_pattern.finditer(text):
-                            val = D(m.group(1).replace(',', '').strip() or '0')
-                            if val > monto:
-                                monto = val
+            content = archivo.read()
             archivo.seek(0)
+            # Crear un file-like para el parser
+            from .services_financiero import _extraer_datos_pdf_from_bytes
+            pdf_data = _extraer_datos_pdf_from_bytes(content)
         except Exception as exc:
             import logging
             logging.warning(f"[Financiero] Error parseando PDF upload: {exc}")
 
-    from .services_financiero import _extraer_numero_oc, _extraer_proveedor_de_nombre
+    from .services_financiero import _extraer_numero_oc, _extraer_proveedor_de_nombre, _acortar_nombre
+    numero_oc = pdf_data.get('numero_oc') or _extraer_numero_oc(nombre)
+    proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
+    monto = pdf_data.get('monto') or D('0')
+    fecha = pdf_data.get('fecha')
+
+    # Verificar duplicado
+    if ProyectoOrdenCompra.objects.filter(proyecto=proyecto, numero_oc=numero_oc).exists():
+        return JsonResponse({'success': False, 'error': f'Ya existe una OC con número {numero_oc} en este proyecto'}, status=409)
+
     oc = ProyectoOrdenCompra.objects.create(
         proyecto=proyecto,
         partida=None,
-        numero_oc=_extraer_numero_oc(nombre),
-        proveedor=_extraer_proveedor_de_nombre(nombre),
+        numero_oc=numero_oc,
+        proveedor=_acortar_nombre(proveedor),
         cantidad=D('1'),
         precio_unitario=monto,
         monto_total=monto,
         status='emitted',
+        fecha_emision=fecha,
         notas=f'Subido manualmente. Archivo: {nombre}',
     )
 
@@ -1366,36 +1361,32 @@ def api_financiero_upload_factura_ingreso(request, proyecto_id):
     nombre = archivo.name
     ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
 
-    monto = D('0')
+    pdf_data = {}
     if ext == 'pdf':
         try:
-            import pdfplumber, io, re
             archivo.seek(0)
-            with pdfplumber.open(io.BytesIO(archivo.read())) as pdf:
-                monto_pattern = re.compile(r'(?:SUB\s*-?\s*TOTAL|SUBTOTAL)\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
-                total_pattern = re.compile(r'\bTOTAL\b\s*:?\s*\$?\s*([\d,]+\.?\d*)', re.IGNORECASE)
-                for page in pdf.pages:
-                    text = page.extract_text() or ''
-                    for m in monto_pattern.finditer(text):
-                        val = D(m.group(1).replace(',', '').strip() or '0')
-                        if val > monto:
-                            monto = val
-                    if monto == 0:
-                        for m in total_pattern.finditer(text):
-                            val = D(m.group(1).replace(',', '').strip() or '0')
-                            if val > monto:
-                                monto = val
+            content = archivo.read()
             archivo.seek(0)
+            from .services_financiero import _extraer_datos_pdf_from_bytes
+            pdf_data = _extraer_datos_pdf_from_bytes(content)
         except Exception as exc:
             import logging
             logging.warning(f"[Financiero] Error parseando Factura PDF: {exc}")
 
     from .services_financiero import _extraer_numero_factura
+    monto = pdf_data.get('monto') or D('0')
+    fecha = pdf_data.get('fecha')
+    numero = pdf_data.get('numero_factura') or _extraer_numero_factura(nombre)
+
+    # Verificar duplicado
+    if ProyectoFacturaIngreso.objects.filter(proyecto=proyecto, numero_factura=numero).exists():
+        return JsonResponse({'success': False, 'error': f'Ya existe una factura con número {numero} en este proyecto'}, status=409)
+
     factura = ProyectoFacturaIngreso.objects.create(
         proyecto=proyecto,
-        numero_factura=_extraer_numero_factura(nombre),
+        numero_factura=numero,
         monto=monto,
-        fecha_factura=timezone.localdate(),
+        fecha_factura=fecha or timezone.localdate(),
         status='emitted',
         notas=f'Subida manualmente. Archivo: {nombre}',
     )
