@@ -5,13 +5,18 @@ para importar OCC y Facturas al módulo financiero del proyecto.
 Cuando se sube un archivo al drive de una oportunidad:
 1. Si el nombre empieza con "OCC" → es una Orden de Compra
 2. Si el nombre empieza con "Factura" → es una Factura de Ingreso
-3. Si es PDF, se parsea con pdfplumber para extraer el subtotal
+3. Si es PDF, se parsea con pdfplumber para extraer:
+   - Subtotal / Total (monto)
+   - Proveedor (nombre de la empresa, sin RFC ni teléfono)
+   - Fecha del documento
+   - Número de OC/Factura
 4. Se crea automáticamente el registro financiero en el proyecto vinculado
 """
 
 import re
 import logging
 from decimal import Decimal, InvalidOperation
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +24,7 @@ logger = logging.getLogger(__name__)
 def analizar_archivo_drive(archivo_oportunidad):
     """
     Analiza un ArchivoOportunidad recién subido.
-    Si es un OCC o Factura PDF, extrae el monto y crea el registro financiero.
+    Si es un OCC o Factura PDF, extrae datos y crea el registro financiero.
 
     Retorna dict con { procesado: bool, tipo: str, monto: Decimal|None, error: str|None }
     """
@@ -49,7 +54,6 @@ def analizar_archivo_drive(archivo_oportunidad):
     proyecto = ProyectoIAMET.objects.filter(oportunidad=oportunidad).first()
     if not proyecto:
         logger.info(f"[Financiero] Archivo '{nombre}' detectado como {tipo} pero la oportunidad {oportunidad.id} no tiene proyecto IAMET vinculado.")
-        # Marcar como procesado para no reintentar, pero sin crear registro
         archivo_oportunidad.procesado_financiero = True
         archivo_oportunidad.tipo_financiero = tipo
         archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
@@ -65,45 +69,51 @@ def analizar_archivo_drive(archivo_oportunidad):
         archivo_oportunidad.save(update_fields=['procesado_financiero'])
         return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': 'Ya importado'}
 
-    # Extraer monto del PDF
-    monto = None
+    # Extraer datos del PDF
+    pdf_data = {}
     if ext == 'pdf':
         try:
-            monto = _extraer_monto_pdf(archivo_oportunidad.archivo)
+            pdf_data = _extraer_datos_pdf(archivo_oportunidad.archivo)
         except Exception as exc:
             logger.warning(f"[Financiero] Error al parsear PDF '{nombre}': {exc}")
+
+    monto = pdf_data.get('monto')
+    proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
+    fecha_doc = pdf_data.get('fecha')
+    numero_doc = pdf_data.get('numero_oc') or _extraer_numero_oc(nombre)
 
     # Crear registro financiero
     try:
         if tipo == 'oc':
             oc = ProyectoOrdenCompra(
                 proyecto=proyecto,
-                partida=None,  # Se puede vincular manualmente después
-                numero_oc=_extraer_numero_oc(nombre),
-                proveedor=_extraer_proveedor_de_nombre(nombre),
+                partida=None,
+                numero_oc=numero_doc,
+                proveedor=_acortar_nombre(proveedor),
                 cantidad=Decimal('1'),
                 precio_unitario=monto or Decimal('0'),
                 monto_total=monto or Decimal('0'),
                 status='emitted',
+                fecha_emision=fecha_doc,
                 archivo_drive=archivo_oportunidad,
                 notas=f'Importado automáticamente del drive. Archivo: {nombre}',
             )
             oc.save()
-            logger.info(f"[Financiero] OC '{oc.numero_oc}' creada desde '{nombre}' con monto ${monto}")
+            logger.info(f"[Financiero] OC '{oc.numero_oc}' creada: proveedor={proveedor}, monto=${monto}, fecha={fecha_doc}")
 
         elif tipo == 'factura':
             from django.utils import timezone
             factura = ProyectoFacturaIngreso(
                 proyecto=proyecto,
-                numero_factura=_extraer_numero_factura(nombre),
+                numero_factura=_extraer_numero_factura(nombre) if not pdf_data.get('numero_factura') else pdf_data['numero_factura'],
                 monto=monto or Decimal('0'),
-                fecha_factura=timezone.localdate(),
+                fecha_factura=fecha_doc or timezone.localdate(),
                 status='emitted',
                 archivo_drive=archivo_oportunidad,
                 notas=f'Importada automáticamente del drive. Archivo: {nombre}',
             )
             factura.save()
-            logger.info(f"[Financiero] Factura '{factura.numero_factura}' creada desde '{nombre}' con monto ${monto}")
+            logger.info(f"[Financiero] Factura '{factura.numero_factura}' creada: monto=${monto}, fecha={fecha_doc}")
 
     except Exception as exc:
         logger.exception(f"[Financiero] Error al crear registro desde '{nombre}': {exc}")
@@ -118,62 +128,181 @@ def analizar_archivo_drive(archivo_oportunidad):
     return {'procesado': True, 'tipo': tipo, 'monto': monto, 'error': None}
 
 
-def _extraer_monto_pdf(archivo_field):
+# ═══════════════════════════════════════════════════════════════
+#  EXTRACCIÓN DE DATOS DEL PDF
+# ═══════════════════════════════════════════════════════════════
+
+def _extraer_datos_pdf(archivo_field):
     """
-    Abre un PDF con pdfplumber y busca el subtotal.
-    Busca patrones como:
-      - "SUBTOTAL" seguido de un monto
-      - "SUB TOTAL" seguido de un monto
-      - "TOTAL" seguido de un monto (fallback)
-    Retorna Decimal o None.
+    Abre un PDF con pdfplumber y extrae:
+    - monto (subtotal/total)
+    - proveedor (nombre de la empresa)
+    - fecha del documento
+    - numero de OC/factura
+
+    Retorna dict con las claves encontradas.
     """
     try:
         import pdfplumber
     except ImportError:
         logger.warning("[Financiero] pdfplumber no está instalado")
-        return None
+        return {}
 
-    # Patrones para encontrar montos (variantes comunes en facturas MX)
-    # Busca: SUBTOTAL / SUB TOTAL / SUB-TOTAL seguido de $ y/o número
-    monto_pattern = re.compile(
+    result = {
+        'monto': None,
+        'proveedor': None,
+        'fecha': None,
+        'numero_oc': None,
+        'numero_factura': None,
+    }
+
+    # Patrones
+    subtotal_re = re.compile(
         r'(?:SUB\s*-?\s*TOTAL|SUBTOTAL)\s*:?\s*\$?\s*([\d,]+\.?\d*)',
         re.IGNORECASE
     )
-    # Fallback: buscar "TOTAL" (sin "SUB") — usar solo si no se encontró subtotal
-    total_pattern = re.compile(
+    total_re = re.compile(
         r'\bTOTAL\b\s*:?\s*\$?\s*([\d,]+\.?\d*)',
         re.IGNORECASE
     )
+    # "Fecha Documento: 24-03-2026" o "Fecha: 24/03/2026" o "Fecha Documento - 24-03-2026"
+    fecha_re = re.compile(
+        r'Fecha\s*(?:Documento)?\s*[:.\-]\s*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        re.IGNORECASE
+    )
+    # "Orden de Compra - TIJ13781" o "OCC-TIJ13781" o "Orden de Compra: TIJ13781"
+    oc_re = re.compile(
+        r'(?:Orden\s+de\s+Compra|OCC)\s*[-:]\s*([\w\-]+)',
+        re.IGNORECASE
+    )
+    # RFC pattern para limpiar del proveedor
+    rfc_re = re.compile(r'\bRFC\s*:\s*\S+', re.IGNORECASE)
+    tel_re = re.compile(r'\bTel\b\.?\s*:?\s*[\d\s\-\(\)]*', re.IGNORECASE)
 
-    subtotal = None
-    total_fallback = None
+    all_text = ''
 
     try:
         with archivo_field.open('rb') as f:
             with pdfplumber.open(f) as pdf:
                 for page in pdf.pages:
                     text = page.extract_text() or ''
-
-                    # Buscar subtotal
-                    for m in monto_pattern.finditer(text):
-                        val = _parse_monto_str(m.group(1))
-                        if val and val > 0:
-                            if subtotal is None or val > subtotal:
-                                subtotal = val
-
-                    # Buscar total (fallback)
-                    if subtotal is None:
-                        for m in total_pattern.finditer(text):
-                            val = _parse_monto_str(m.group(1))
-                            if val and val > 0:
-                                if total_fallback is None or val > total_fallback:
-                                    total_fallback = val
+                    all_text += text + '\n'
     except Exception as exc:
         logger.warning(f"[Financiero] Error leyendo PDF: {exc}")
-        return None
+        return result
 
-    return subtotal or total_fallback
+    # ── Extraer monto (subtotal preferido, total como fallback) ──
+    subtotal = None
+    total_fallback = None
+    for m in subtotal_re.finditer(all_text):
+        val = _parse_monto_str(m.group(1))
+        if val and val > 0:
+            if subtotal is None or val > subtotal:
+                subtotal = val
+    if subtotal is None:
+        for m in total_re.finditer(all_text):
+            val = _parse_monto_str(m.group(1))
+            if val and val > 0:
+                if total_fallback is None or val > total_fallback:
+                    total_fallback = val
+    result['monto'] = subtotal or total_fallback
 
+    # ── Extraer fecha ──
+    m_fecha = fecha_re.search(all_text)
+    if m_fecha:
+        result['fecha'] = _parse_fecha(m_fecha.group(1))
+
+    # ── Extraer número de OC ──
+    m_oc = oc_re.search(all_text)
+    if m_oc:
+        result['numero_oc'] = m_oc.group(1).strip()
+
+    # ── Extraer proveedor ──
+    # El proveedor generalmente aparece en las primeras líneas del PDF
+    # después del encabezado de la empresa emisora. Buscamos la sección
+    # "Proveedor" seguida del nombre, o la primera línea larga en mayúsculas
+    # que parezca un nombre de empresa.
+    result['proveedor'] = _extraer_proveedor_pdf(all_text)
+
+    return result
+
+
+def _extraer_proveedor_pdf(text):
+    """
+    Extrae el nombre del proveedor del texto del PDF.
+    Busca el patrón "Proveedor\n NOMBRE DE LA EMPRESA" o similar.
+    Limpia RFC, teléfono y otros datos.
+    """
+    lines = text.split('\n')
+
+    # Estrategia 1: buscar la línea después de "Proveedor"
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.lower() in ('proveedor', 'proveedor:'):
+            # La siguiente línea suele ser el nombre
+            if i + 1 < len(lines):
+                nombre = lines[i + 1].strip()
+                nombre = _limpiar_nombre_proveedor(nombre)
+                if nombre and len(nombre) > 3:
+                    return _acortar_nombre(nombre)
+
+    # Estrategia 2: buscar patrón "Proveedor NOMBRE" en la misma línea
+    prov_re = re.compile(r'Proveedor\s*:?\s*(.+)', re.IGNORECASE)
+    for line in lines:
+        m = prov_re.search(line)
+        if m:
+            nombre = _limpiar_nombre_proveedor(m.group(1).strip())
+            if nombre and len(nombre) > 3:
+                return _acortar_nombre(nombre)
+
+    return None
+
+
+def _limpiar_nombre_proveedor(nombre):
+    """Quita RFC, teléfono y otros datos del nombre del proveedor."""
+    if not nombre:
+        return ''
+    # Quitar RFC
+    nombre = re.sub(r'\bRFC\s*:?\s*\S+', '', nombre, flags=re.IGNORECASE).strip()
+    # Quitar teléfono
+    nombre = re.sub(r'\bTel\b\.?\s*:?\s*[\d\s\-\(\)]+', '', nombre, flags=re.IGNORECASE).strip()
+    # Quitar email
+    nombre = re.sub(r'\S+@\S+', '', nombre).strip()
+    # Quitar caracteres sueltos al final
+    nombre = nombre.rstrip('.,;:-_ ')
+    return nombre
+
+
+def _acortar_nombre(nombre, max_len=50):
+    """
+    Acorta nombres de empresa largos de forma inteligente.
+    Ej: "PRO RENTAS, VENTAS Y SERVICIOS PARA LA CONSTRUCCION S.A. DE C.V."
+      → "Pro Rentas, Ventas y Servicios"
+    """
+    if not nombre or len(nombre) <= max_len:
+        return nombre or ''
+
+    # Quitar sufijos legales comunes
+    sufijos = [
+        r'\s*,?\s*S\.?\s*A\.?\s*(DE\s*C\.?\s*V\.?)?',
+        r'\s*,?\s*S\.?\s*DE\s*R\.?\s*L\.?\s*(DE\s*C\.?\s*V\.?)?',
+        r'\s*,?\s*S\.?\s*C\.?',
+        r'\s*,?\s*S\.?\s*A\.?\s*P\.?\s*I\.?',
+    ]
+    cleaned = nombre
+    for suf in sufijos:
+        cleaned = re.sub(suf + r'\s*$', '', cleaned, flags=re.IGNORECASE).strip()
+
+    # Si sigue siendo largo, truncar en la última palabra completa
+    if len(cleaned) > max_len:
+        cleaned = cleaned[:max_len].rsplit(' ', 1)[0] + '...'
+
+    return cleaned
+
+
+# ═══════════════════════════════════════════════════════════════
+#  HELPERS
+# ═══════════════════════════════════════════════════════════════
 
 def _parse_monto_str(s):
     """Convierte '12,345.67' o '12345.67' a Decimal."""
@@ -187,36 +316,39 @@ def _parse_monto_str(s):
         return None
 
 
+def _parse_fecha(fecha_str):
+    """Convierte '24-03-2026' o '24/03/2026' a date object."""
+    fecha_str = fecha_str.strip().replace('/', '-')
+    for fmt in ('%d-%m-%Y', '%d-%m-%y', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(fecha_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def _extraer_numero_oc(nombre):
     """Extrae el número de OC del nombre del archivo.
-    Ej: 'OCC 12345 - Proveedor.pdf' → 'OCC 12345'
+    Ej: 'OCC TIJ13781.pdf' → 'OCC-TIJ13781'
     """
-    # Quitar extensión
     base = re.sub(r'\.\w+$', '', nombre).strip()
-    # Buscar patrón OCC seguido de número
-    m = re.match(r'(OCC\s*[\w\-]+)', base, re.IGNORECASE)
+    m = re.match(r'(OCC\s*[-_]?\s*[\w\-]+)', base, re.IGNORECASE)
     if m:
-        return m.group(1).strip()
-    # Fallback: usar el nombre completo sin extensión (truncado)
+        return m.group(1).strip().replace(' ', '-')
     return base[:80]
 
 
 def _extraer_proveedor_de_nombre(nombre):
-    """Intenta extraer el proveedor del nombre del archivo.
-    Ej: 'OCC 12345 - PANDUIT.pdf' → 'PANDUIT'
-    """
+    """Fallback: intenta extraer el proveedor del nombre del archivo."""
     base = re.sub(r'\.\w+$', '', nombre).strip()
-    # Si hay " - " o " _ ", tomar lo que viene después del OCC
     parts = re.split(r'\s*[-_]\s*', base, maxsplit=1)
     if len(parts) > 1:
-        return parts[1].strip()[:100]
+        return _acortar_nombre(parts[1].strip())
     return 'Proveedor (pendiente)'
 
 
 def _extraer_numero_factura(nombre):
-    """Extrae el número de factura del nombre del archivo.
-    Ej: 'Factura 1234 - Cliente.pdf' → 'Factura 1234'
-    """
+    """Extrae el número de factura del nombre del archivo."""
     base = re.sub(r'\.\w+$', '', nombre).strip()
     m = re.match(r'(Factura\s*[\w\-]+)', base, re.IGNORECASE)
     if m:
@@ -227,10 +359,7 @@ def _extraer_numero_factura(nombre):
 def procesar_archivos_pendientes_oportunidad(oportunidad_id):
     """
     Escanea todos los archivos del drive de una oportunidad que NO hayan
-    sido procesados aún y los analiza. Útil para procesar archivos que se
-    subieron antes de que el auto-import existiera.
-
-    Retorna dict con { total, procesados, errores }
+    sido procesados aún y los analiza.
     """
     from .models import ArchivoOportunidad
 

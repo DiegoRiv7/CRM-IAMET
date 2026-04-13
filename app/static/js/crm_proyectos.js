@@ -984,13 +984,13 @@
                     var amount = oc.monto_total || ((oc.cantidad || 0) * (oc.precio_unitario || 0));
                     total += amount;
                     html += '<tr>' +
-                        '<td style="font-weight:600;color:#007aff">' + (oc.numero_oc || '\u2014') + '</td>' +
-                        '<td>' + (oc.proveedor || '\u2014') + '</td>' +
+                        '<td style="font-weight:600;color:#007aff;white-space:nowrap;">' + (oc.numero_oc || '\u2014') + '</td>' +
+                        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (oc.proveedor || '').replace(/"/g,'') + '">' + (oc.proveedor || '\u2014') + '</td>' +
                         '<td>' + (oc.descripcion || oc.partida_descripcion || '\u2014') + '</td>' +
-                        '<td style="text-align:center">' + (oc.cantidad || 0) + '</td>' +
-                        '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
-                        '<td><span class="proy-badge ' + statusClass(oc.status) + '">' + statusLabel(oc.status) + '</span></td>' +
-                        '<td>' + fmtDate(oc.fecha_emision) + '</td>' +
+                        '<td style="text-align:right">' + (oc.cantidad || 0) + '</td>' +
+                        '<td style="text-align:right;font-weight:600;">' + fmtMoney(amount) + '</td>' +
+                        '<td style="text-align:center"><span class="proy-badge ' + statusClass(oc.status) + '">' + statusLabel(oc.status) + '</span></td>' +
+                        '<td style="white-space:nowrap;">' + fmtDate(oc.fecha_emision) + '</td>' +
                     '</tr>';
                 });
 
