@@ -1577,36 +1577,6 @@
         renderSupplierInvoices(projectId);
         renderRevenueInvoices(projectId);
         renderExpenses(projectId);
-        // Actualizar KPIs después de que las tablas carguen
-        setTimeout(function(){ _updateFinKPIs(projectId); }, 800);
-    }
-
-    // ── KPIs financieros ──
-    function _updateFinKPIs(projectId) {
-        var gastado = 0, cobrado = 0;
-        // Leer OC de la tabla ya renderizada
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/oc/').then(function(resp) {
-            if (resp.ok || resp.success) {
-                (resp.data || []).forEach(function(oc) {
-                    if (oc.status !== 'cancelled') gastado += parseFloat(oc.monto_total || 0);
-                });
-            }
-            var elG = document.getElementById('proyFinKpiGastado');
-            if (elG) elG.textContent = fmtMoney(gastado);
-            return _fetch('/app/api/iamet/proyectos/' + projectId + '/facturas-ingreso/');
-        }).then(function(resp) {
-            if (resp.ok || resp.success) {
-                (resp.data || []).forEach(function(f) { cobrado += parseFloat(f.monto || 0); });
-            }
-            var elC = document.getElementById('proyFinKpiCobrado');
-            if (elC) elC.textContent = fmtMoney(cobrado);
-            var elB = document.getElementById('proyFinKpiBalance');
-            if (elB) {
-                var balance = cobrado - gastado;
-                elB.textContent = fmtMoney(Math.abs(balance));
-                elB.style.color = balance >= 0 ? '#16A34A' : '#DC2626';
-            }
-        }).catch(function(err) { console.error('[Financiero KPIs]', err); });
     }
 
     // ── Sync Drive ──
