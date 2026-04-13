@@ -229,31 +229,73 @@ def _extraer_datos_pdf(archivo_field):
 
 def _extraer_proveedor_pdf(text):
     """
-    Extrae el nombre del proveedor del texto del PDF.
-    Busca el patrón "Proveedor\n NOMBRE DE LA EMPRESA" o similar.
-    Limpia RFC, teléfono y otros datos.
+    Extrae el nombre del proveedor del texto del PDF de OCC.
+
+    En el formato de IAMET, el layout del PDF tiene 2 columnas pero
+    pdfplumber lo extrae como texto lineal. La estructura típica es:
+
+        Proveedor Elaboradopor: ...
+        Aprobadopor: ...
+        NOMBRE DE LA EMPRESA
+        RFC:XXX Tel.: ...           Estado: Aprobada
+        DIRECCION No.XXX
+        ...
+        Cód Cantidad Unidad ...
+
+    El nombre del proveedor es la primera línea en mayúsculas que aparece
+    DESPUÉS de la línea que contiene "Proveedor" y ANTES de "Cód",
+    excluyendo líneas que empiezan con RFC, Tel, Col, BLVD, direcciones, etc.
     """
     lines = text.split('\n')
 
-    # Estrategia 1: buscar la línea después de "Proveedor"
+    # Buscar el rango de líneas entre "Proveedor" y "Cód"
+    start_idx = None
+    end_idx = len(lines)
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if stripped.lower() in ('proveedor', 'proveedor:'):
-            # La siguiente línea suele ser el nombre
-            if i + 1 < len(lines):
-                nombre = lines[i + 1].strip()
-                nombre = _limpiar_nombre_proveedor(nombre)
-                if nombre and len(nombre) > 3:
-                    return _acortar_nombre(nombre)
+        if 'proveedor' in stripped.lower() and start_idx is None:
+            start_idx = i + 1  # empezar desde la siguiente
+        if re.match(r'^C[oó]d\b', stripped, re.IGNORECASE) and start_idx is not None:
+            end_idx = i
+            break
 
-    # Estrategia 2: buscar patrón "Proveedor NOMBRE" en la misma línea
-    prov_re = re.compile(r'Proveedor\s*:?\s*(.+)', re.IGNORECASE)
-    for line in lines:
-        m = prov_re.search(line)
-        if m:
-            nombre = _limpiar_nombre_proveedor(m.group(1).strip())
-            if nombre and len(nombre) > 3:
-                return _acortar_nombre(nombre)
+    if start_idx is None:
+        return None
+
+    # Patrones que NO son el nombre del proveedor
+    skip_patterns = [
+        r'^RFC\s*:',
+        r'^Tel\b',
+        r'^BLVD\b',
+        r'^AV\b',
+        r'^CALLE\b',
+        r'^Col\b',
+        r'^C\.?\s*P\b',
+        r'^\d{5}',           # CP
+        r'^Elaborado',
+        r'^Aprobado',
+        r'^Estado\s*:',
+        r'^Almac[eé]n',
+        r',\s*(Tijuana|México|Mexico|Monterrey|Guadalajara|Ensenada)',
+        r'^No\.',
+    ]
+    skip_re = re.compile('|'.join(skip_patterns), re.IGNORECASE)
+
+    # Buscar la primera línea "limpia" que parezca nombre de empresa
+    for i in range(start_idx, min(end_idx, start_idx + 8)):
+        line = lines[i].strip()
+        if not line or len(line) < 4:
+            continue
+        if skip_re.search(line):
+            continue
+        # Limpiar: quitar "Elaboradopor:..." si viene pegado
+        line = re.sub(r'Elaborado\s*por\s*:.*', '', line, flags=re.IGNORECASE).strip()
+        line = re.sub(r'Aprobado\s*por\s*:.*', '', line, flags=re.IGNORECASE).strip()
+        if not line or len(line) < 4:
+            continue
+        nombre = _limpiar_nombre_proveedor(line)
+        if nombre and len(nombre) > 3:
+            return _acortar_nombre(nombre)
 
     return None
 
