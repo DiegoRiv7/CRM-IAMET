@@ -138,12 +138,43 @@
                             if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', 'none'); }
                             var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
                             if (h) h.remove();
-                            if (node) { node.dataset.anclada = '0'; node.classList.remove('pinned-row'); }
+                            if (node) {
+                                node.dataset.anclada = '0';
+                                node.classList.remove('pinned-row');
+                                // Re-ubicar inmediatamente: después de todas las ancladas y vencidas
+                                if (container) {
+                                    var insertBefore = null;
+                                    var children = container.children;
+                                    for (var i = 0; i < children.length; i++) {
+                                        var ch = children[i];
+                                        if (ch === node) continue;
+                                        var chPinned   = ch.dataset && ch.dataset.anclada === '1';
+                                        var chOverdue  = ch.dataset && ch.dataset.vencida === '1';
+                                        if (!chPinned && !chOverdue) { insertBefore = ch; break; }
+                                    }
+                                    if (insertBefore) container.insertBefore(node, insertBefore);
+                                    else container.appendChild(node);
+                                }
+                            }
                         }
                     });
                 });
             });
         }, 500);
+
+        // Delegated capture-phase handler: botón de cotizar en la vista lista
+        // Capture phase + stopImmediatePropagation para ganar contra el onclick del row.
+        document.addEventListener('click', function(e){
+            var qbtn = e.target.closest && e.target.closest('.crm-list-quote');
+            if (qbtn) {
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                var oppId = parseInt(qbtn.getAttribute('data-opp-id') || '0', 10);
+                if (oppId && typeof window.openCotizador === 'function') window.openCotizador(oppId);
+                return false;
+            }
+        }, true);
 
         // Helpers orden: ancladas → vencidas (más días arriba) → resto
         function isOverdueNode(n) { return n && n.dataset && n.dataset.vencida === '1'; }
