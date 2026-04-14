@@ -500,6 +500,12 @@ def api_proyecto_detalle(request, proyecto_id):
     utilidad_real = ingresos - costos_prov - gastos_aprobados
     margen = (utilidad_real / ingresos * 100) if ingresos > 0 else Decimal('0')
 
+    # Gastado: OCs (no canceladas) + Gastos operativos (no rechazados, es decir pendientes + aprobados)
+    gastado_oc = proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or Decimal('0')
+    gastos_no_rechazados = proyecto.gastos.exclude(estado_aprobacion='rejected').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    gastado_total = float(gastado_oc) + float(gastos_no_rechazados)
+
+    d['current_user_is_supervisor'] = is_supervisor(request.user)
     d['kpis'] = {
         'total_costo_partidas': float(partidas_agg['total_costo'] or 0),
         'total_venta_partidas': float(partidas_agg['total_venta'] or 0),
@@ -512,8 +518,8 @@ def api_proyecto_detalle(request, proyecto_id):
         'alertas_pendientes': proyecto.alertas.filter(resuelta=False).count(),
         'tareas_pendientes': proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count(),
         'ordenes_compra_activas': proyecto.ordenes_compra.exclude(status='cancelled').count(),
-        # Gastado: sum of OC montos (not cancelled)
-        'gastado': float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0),
+        # Gastado: OCs (no canceladas) + Gastos operativos (no rechazados)
+        'gastado': gastado_total,
         # Cobrado: sum of facturas ingreso
         'cobrado': float(proyecto.facturas_ingreso.aggregate(t=Sum('monto'))['t'] or 0),
         # KPIs operativos
@@ -2257,3 +2263,45 @@ def api_restaurar_version(request, proyecto_id):
     proyecto.save(update_fields=['utilidad_presupuestada'])
 
     return JsonResponse({'ok': True, 'restored': restored})
+
+
+# ═══════════════════════════════════════════════════════════════
+#  CFDI XML → PDF (modulo independiente de prueba)
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["GET"])
+def cfdi_convertidor_page(request):
+    """Pagina standalone con form para subir XML CFDI y descargar PDF."""
+    from django.shortcuts import render
+    return render(request, 'crm/cfdi_convertidor.html')
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_cfdi_convertir(request):
+    """Recibe un XML CFDI, retorna PDF inline."""
+    from django.http import HttpResponse
+    archivo = request.FILES.get('xml')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo XML requerido'}, status=400)
+
+    try:
+        xml_bytes = archivo.read()
+        from .services_cfdi import generate_cfdi_pdf
+        pdf_bytes, data = generate_cfdi_pdf(xml_bytes)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {str(e)}'}, status=500)
+
+    # Nombre de archivo: Factura_<RFC_EMISOR>_<SERIE><FOLIO>_<RFC_RECEPTOR>.pdf
+    rfc_e = data.get('emisor', {}).get('rfc', 'EMISOR')
+    rfc_r = data.get('receptor', {}).get('rfc', 'RECEPTOR')
+    serie_folio = f"{data.get('serie', '')}{data.get('folio', '')}"
+    filename = f"Factura_{rfc_e}_{serie_folio}_{rfc_r}.pdf"
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    # Inline para verlo en el navegador; descarga con el nombre correcto si el usuario usa "Guardar como"
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response

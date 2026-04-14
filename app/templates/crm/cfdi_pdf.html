@@ -1,0 +1,287 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>CFDI {{ cfdi.serie }}{{ cfdi.folio }}</title>
+<style>
+@page {
+    size: letter;
+    margin: 1.2cm 1cm 1.2cm 1cm;
+    @bottom-right {
+        content: "Este documento es una representación impresa de un CFDI 4.0 Página " counter(page) " de " counter(pages);
+        font-size: 8pt;
+        font-weight: bold;
+        color: #1a1a1a;
+    }
+}
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #222; margin: 0; padding: 0; }
+
+/* Header */
+.header-table { width: 100%; border-collapse: collapse; margin-bottom: 8pt; }
+.header-table td { vertical-align: top; padding: 0; }
+.col-logo { width: 26%; padding-right: 6pt; }
+.col-emisor { width: 44%; padding: 0 6pt; font-size: 7.8pt; line-height: 1.3; }
+.col-cfdi-info { width: 30%; padding-left: 6pt; font-size: 8pt; }
+
+.brand-bajanet {
+    background: #fff;
+    padding: 4pt 0;
+    text-align: left;
+}
+.brand-bajanet .logo-text {
+    font-size: 20pt;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #1f3a78;
+}
+.brand-bajanet .logo-text .accent { color: #3b82f6; }
+.brand-bajanet .logo-sub {
+    font-size: 7pt;
+    font-weight: 700;
+    color: #3b82f6;
+    letter-spacing: 0.3em;
+    margin-top: 2pt;
+}
+.brand-generic {
+    border: 1px solid #e5e7eb;
+    padding: 20pt 10pt;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14pt;
+    color: #6b7280;
+}
+
+.cfdi-title { font-size: 13pt; font-weight: 700; color: #222; line-height: 1.2; }
+.cfdi-folio { font-size: 13pt; font-weight: 700; color: #222; margin-bottom: 3pt; }
+.cfdi-folio-label { font-size: 8pt; font-weight: 700; color: #222; margin-top: 2pt; }
+.cfdi-folio-uuid { font-size: 7.5pt; color: #444; word-break: break-all; }
+
+/* Receptor bar */
+.receptor-bar {
+    background: #e5e7eb;
+    padding: 3pt 8pt;
+    font-weight: 700;
+    font-size: 9pt;
+    color: #222;
+    margin-top: 2pt;
+}
+
+.receptor-table { width: 100%; border-collapse: collapse; margin-bottom: 6pt; }
+.receptor-table td { vertical-align: top; padding: 4pt 8pt; }
+.receptor-col { width: 55%; font-size: 7.8pt; line-height: 1.3; }
+.fechas-col { width: 45%; font-size: 8pt; }
+.fechas-col table { width: 100%; border-collapse: collapse; }
+.fechas-col td { padding: 2pt 4pt; border-bottom: 1px solid #e5e7eb; }
+.fechas-col td.label { font-weight: 600; color: #444; }
+.fechas-col td.value { text-align: right; color: #222; }
+
+/* Tabla conceptos */
+.conceptos-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6pt;
+    font-size: 7.5pt;
+}
+.conceptos-table thead th {
+    background: #fff;
+    color: #222;
+    font-weight: 700;
+    text-align: center;
+    padding: 5pt 3pt;
+    border-bottom: 1.5pt solid #222;
+    font-size: 8pt;
+    vertical-align: top;
+}
+.conceptos-table thead th .sub { display: block; font-size: 7pt; font-weight: 400; color: #666; }
+.conceptos-table tbody tr { border-bottom: 1px solid #e5e7eb; }
+.conceptos-table tbody td {
+    padding: 5pt 3pt;
+    vertical-align: middle;
+    font-size: 8pt;
+}
+.conceptos-table .col-cod { text-align: center; font-weight: 600; width: 9%; }
+.conceptos-table .col-cod .clave { display: block; font-size: 7pt; font-weight: 400; color: #666; }
+.conceptos-table .col-cant { text-align: center; width: 8%; }
+.conceptos-table .col-unidad { text-align: center; width: 10%; }
+.conceptos-table .col-unidad .clave { display: block; font-size: 7pt; color: #666; }
+.conceptos-table .col-obj { text-align: center; width: 8%; }
+.conceptos-table .col-desc { text-align: center; width: 30%; font-weight: 600; }
+.conceptos-table .col-desc .imp { display: block; font-size: 7pt; font-weight: 400; color: #666; margin-top: 2pt; }
+.conceptos-table .col-precio { text-align: right; width: 12%; white-space: nowrap; }
+.conceptos-table .col-importe { text-align: right; width: 13%; white-space: nowrap; font-weight: 600; }
+.conceptos-table .col-importe .imp-sub { display: block; font-size: 7pt; font-weight: 400; color: #666; }
+
+/* Footer totales */
+.totales-wrap { margin-top: 10pt; width: 100%; border-collapse: collapse; }
+.totales-wrap td { vertical-align: top; padding: 0; }
+.pago-info { width: 62%; padding-right: 10pt; font-size: 8.5pt; line-height: 1.5; }
+.pago-info div { margin-bottom: 2pt; }
+.totales-box { width: 38%; }
+.totales-box table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.totales-box td { padding: 4pt 8pt; border-bottom: 1px solid #e5e7eb; }
+.totales-box td.label { background: #f3f4f6; font-weight: 700; width: 55%; }
+.totales-box td.value { text-align: right; font-weight: 600; }
+.totales-box .total-row td { background: #1a1a1a; color: #fff; font-weight: 700; }
+
+/* QR + sellos */
+.sellos-section { margin-top: 14pt; page-break-inside: avoid; }
+.sellos-table { width: 100%; border-collapse: collapse; }
+.sellos-table td { vertical-align: top; padding: 0; }
+.qr-col { width: 110pt; padding-right: 10pt; }
+.qr-col img { width: 100pt; height: 100pt; }
+.sellos-col { font-size: 6.5pt; line-height: 1.3; color: #333; }
+.sellos-col .sello-label { font-weight: 700; color: #111; margin: 6pt 0 2pt; font-size: 7.5pt; }
+.sellos-col .sello-val { word-break: break-all; font-family: "Courier New", monospace; }
+
+.notas-bar { background: #1a1a1a; color: #fff; padding: 3pt 8pt; font-weight: 700; font-size: 9pt; margin-top: 10pt; }
+.notas-body { padding: 4pt 8pt; font-size: 8pt; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<table class="header-table">
+  <tr>
+    <td class="col-logo">
+      {% if cfdi.is_bajanet %}
+        <div class="brand-bajanet">
+          <div class="logo-text">BAJA<span class="accent">NET</span></div>
+          <div class="logo-sub">SOLUCIONES TECNOLÓGICAS</div>
+        </div>
+      {% else %}
+        <div class="brand-generic">{{ cfdi.emisor.nombre|truncatechars:22 }}</div>
+      {% endif %}
+    </td>
+    <td class="col-emisor">
+      <strong>{{ cfdi.emisor.nombre }}</strong><br>
+      RFC: {{ cfdi.emisor.rfc }}{% if cfdi.is_bajanet %} Tel.: 6643314515{% endif %}<br>
+      {% if cfdi.is_bajanet %}
+        BOULEVARD PASEO DEL RIO No. 16220<br>
+        LOCAL 7C Y 6C, Col. RIO TIJUANA 3RA ETAPA<br>
+        C.P 22226<br>
+        TIJUANA, Tijuana, Baja California, México<br>
+      {% endif %}
+      Régimen Fiscal: {{ cfdi.emisor.regimen_fiscal }} - {{ cfdi.emisor.regimen_fiscal_label }}<br>
+      Proveedor Facturación:<br>
+      Certificado PAC
+    </td>
+    <td class="col-cfdi-info">
+      <div class="cfdi-title">Factura Electrónica (CFDI):</div>
+      <div class="cfdi-folio">{{ cfdi.serie }}{{ cfdi.folio }}</div>
+      <div class="cfdi-folio-label">Folio Fiscal:</div>
+      <div class="cfdi-folio-uuid">{{ cfdi.timbre.uuid }}</div>
+      {% if cfdi.is_bajanet %}<div style="font-size:7.5pt;color:#444;margin-top:3pt;">Sucursal: No. Col. , Monterrey, Nuevo León C.P México</div>{% endif %}
+    </td>
+  </tr>
+</table>
+
+<!-- Receptor bar -->
+<div class="receptor-bar">Receptor</div>
+
+<!-- Receptor + fechas -->
+<table class="receptor-table">
+  <tr>
+    <td class="receptor-col">
+      <strong>{{ cfdi.receptor.nombre }}</strong><br>
+      RFC: {{ cfdi.receptor.rfc }} Tel.:<br>
+      {% if cfdi.receptor.domicilio_fiscal %}C.P {{ cfdi.receptor.domicilio_fiscal }}<br>{% endif %}
+      Uso CFDI: {{ cfdi.receptor.uso_cfdi }} {{ cfdi.receptor.uso_cfdi_label }}<br>
+      Régimen fiscal: {{ cfdi.receptor.regimen_fiscal }} - {{ cfdi.receptor.regimen_fiscal_label }}
+    </td>
+    <td class="fechas-col">
+      <table>
+        <tr><td class="label">Fecha de Creación:</td><td class="value">{{ cfdi.fecha|slice:":10" }}</td></tr>
+        <tr><td class="label">Fecha de Vencimiento:</td><td class="value">{{ cfdi.fecha|slice:":10" }}</td></tr>
+        <tr><td class="label">Fecha de Certificación:</td><td class="value">{{ cfdi.timbre.fecha_timbrado }}</td></tr>
+        <tr><td class="label">No. Certificado del SAT:</td><td class="value">{{ cfdi.timbre.no_certificado_sat }}</td></tr>
+        <tr><td class="label">Certificado Emisor:</td><td class="value">{{ cfdi.no_certificado }}</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- Conceptos -->
+<table class="conceptos-table">
+  <thead>
+    <tr>
+      <th>Cód.<span class="sub">Clave Prod/Serv</span></th>
+      <th>Cantidad</th>
+      <th>Unidad<span class="sub">Clave Unidad</span></th>
+      <th>Objeto<br>Impuesto</th>
+      <th>Descripción<span class="sub">Lote-Pedimento/Impuestos</span></th>
+      <th>Precio<br>Unitario</th>
+      <th>Importe<span class="sub">Impuestos</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in cfdi.conceptos %}
+    <tr>
+      <td class="col-cod">{{ c.no_identificacion }}<span class="clave">{{ c.clave_prod_serv }}</span></td>
+      <td class="col-cant">{{ c.cantidad|floatformat:4 }}</td>
+      <td class="col-unidad">{{ c.unidad }}<span class="clave">{{ c.clave_unidad }} - {{ c.clave_unidad_label }}</span></td>
+      <td class="col-obj">{{ c.objeto_imp }}</td>
+      <td class="col-desc">
+        {{ c.descripcion }}
+        {% for imp in c.impuestos %}
+          <span class="imp">{{ imp.impuesto }} {{ imp.impuesto_label }} | Tipo Factor: {{ imp.tipo_factor }} | Tasa: {{ imp.tasa_cuota|floatformat:4 }}</span>
+        {% endfor %}
+      </td>
+      <td class="col-precio">$ {{ c.valor_unitario|floatformat:4 }}</td>
+      <td class="col-importe">
+        $ {{ c.importe|floatformat:4 }}
+        {% for imp in c.impuestos %}<span class="imp-sub">{{ imp.importe|floatformat:4 }}</span>{% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Totales + info pago -->
+<table class="totales-wrap">
+  <tr>
+    <td class="pago-info">
+      <div><strong>Forma de Pago:</strong> ({{ cfdi.forma_pago }}) {{ cfdi.forma_pago_label }}</div>
+      <div><strong>Método de Pago:</strong> {{ cfdi.metodo_pago }}</div>
+      {% if cfdi.condiciones_pago %}<div><strong>Condiciones de Pago:</strong> {{ cfdi.condiciones_pago }}</div>{% endif %}
+      <div><strong>Lugar de Expedición:</strong> {{ cfdi.lugar_expedicion }} {% if cfdi.moneda != 'MXN' %}Moneda: {{ cfdi.moneda }} T.C.: ${{ cfdi.tipo_cambio|floatformat:4 }}{% endif %}</div>
+      <div><strong>Tipo Comprobante:</strong> {{ cfdi.tipo_comprobante_label }}</div>
+      <div style="margin-top:6pt;"><strong>Importe con letra:</strong> {{ cfdi.importe_con_letra }}</div>
+    </td>
+    <td class="totales-box">
+      <table>
+        <tr><td class="label">Subtotal:</td><td class="value">$ {{ cfdi.subtotal|floatformat:2 }}</td></tr>
+        <tr><td class="label">Descuento:</td><td class="value">$ {{ cfdi.descuento|floatformat:2 }}</td></tr>
+        {% if cfdi.total_impuestos_retenidos %}<tr><td class="label">Retenciones:</td><td class="value">$ {{ cfdi.total_impuestos_retenidos|floatformat:2 }}</td></tr>{% endif %}
+        <tr><td class="label">I.V.A.</td><td class="value">$ {{ cfdi.total_impuestos_trasladados|floatformat:2 }}</td></tr>
+        <tr class="total-row"><td class="label">Total:</td><td class="value">$ {{ cfdi.total|floatformat:2 }}</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- QR + sellos -->
+<div class="sellos-section">
+  <table class="sellos-table">
+    <tr>
+      {% if cfdi.qr_sat_base64 %}<td class="qr-col"><img src="{{ cfdi.qr_sat_base64 }}" alt="QR"></td>{% endif %}
+      <td class="sellos-col">
+        <div class="sello-label">Cadena original del complemento de certificación digital del SAT</div>
+        <div class="sello-val">{{ cfdi.cadena_original_timbre }}</div>
+
+        <div class="sello-label">Sello digital del CFDI</div>
+        <div class="sello-val">{{ cfdi.timbre.sello_cfd }}</div>
+
+        <div class="sello-label">Sello digital del SAT</div>
+        <div class="sello-val">{{ cfdi.timbre.sello_sat }}</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- Notas -->
+<div class="notas-bar">Notas</div>
+<div class="notas-body">&nbsp;</div>
+
+</body>
+</html>

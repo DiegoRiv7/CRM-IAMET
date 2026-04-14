@@ -1887,6 +1887,7 @@
                     return;
                 }
 
+                var isSupervisor = !!(_cachedProjectDetail && _cachedProjectDetail.current_user_is_supervisor);
                 var html = '';
                 var total = 0;
                 expenses.forEach(function(exp) {
@@ -1895,6 +1896,14 @@
                     var cat = _CATEGORIA_LABEL[exp.categoria] || exp.categoria || '\u2014';
                     var estado = exp.estado_aprobacion || 'pending';
                     var editData = JSON.stringify(exp).replace(/"/g, '&quot;');
+                    var estadoCell = '<span class="proy-badge ' + statusClass(estado) + '">' + statusLabel(estado) + '</span>';
+                    if (isSupervisor && estado === 'pending') {
+                        estadoCell += ' <button onclick="event.stopPropagation();proyectosAprobarGasto(' + exp.id + ', \'approved\')" title="Aprobar" style="background:#DCFCE7;border:1px solid #86EFAC;color:#166534;cursor:pointer;padding:3px 6px;border-radius:6px;margin-left:4px;font-size:0.7rem;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Aprobar</button>';
+                        estadoCell += '<button onclick="event.stopPropagation();proyectosAprobarGasto(' + exp.id + ', \'rejected\')" title="Rechazar" style="background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;cursor:pointer;padding:3px 6px;border-radius:6px;margin-left:4px;font-size:0.7rem;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Rechazar</button>';
+                    } else if (isSupervisor && estado !== 'pending') {
+                        var aprobador = exp.aprobado_por_nombre ? ' por ' + exp.aprobado_por_nombre : '';
+                        estadoCell += '<span style="font-size:0.68rem;color:#9CA3AF;margin-left:6px;">' + aprobador + '</span>';
+                    }
                     var acciones = _btnEditarIcon('proyGastoAbrirDialogo(JSON.parse(this.closest(\'tr\').dataset.gasto))') +
                                    _btnEliminarIcon('proyGastoEliminar(' + exp.id + ')');
                     html += '<tr data-gasto="' + editData + '">' +
@@ -1902,7 +1911,7 @@
                         '<td>' + (exp.descripcion || '\u2014') + '</td>' +
                         '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
                         '<td>' + fmtDate(exp.fecha_gasto) + '</td>' +
-                        '<td><span class="proy-badge ' + statusClass(estado) + '">' + statusLabel(estado) + '</span></td>' +
+                        '<td style="white-space:nowrap">' + estadoCell + '</td>' +
                         '<td style="text-align:center;white-space:nowrap">' + acciones + '</td>' +
                     '</tr>';
                 });
@@ -2818,6 +2827,7 @@
                 proyectosCerrarDialogo('proyDialogoGasto');
                 _showToast(gastoId ? 'Gasto actualizado' : 'Gasto creado');
                 renderExpenses(currentProjectId);
+                if (typeof renderKPIsFromAPI === 'function') renderKPIsFromAPI(currentProjectId);
             } else {
                 _showToast(resp.error || 'Error al guardar gasto');
             }
@@ -2833,7 +2843,10 @@
                 }).then(function(resp) {
                     if (resp.success) {
                         _showToast('Gasto eliminado');
-                        if (currentProjectId) renderExpenses(currentProjectId);
+                        if (currentProjectId) {
+                            renderExpenses(currentProjectId);
+                            if (typeof renderKPIsFromAPI === 'function') renderKPIsFromAPI(currentProjectId);
+                        }
                     } else {
                         _showToast(resp.error || 'Error al eliminar');
                     }
@@ -2848,14 +2861,16 @@
             body: { accion: accion }
         }).then(function(resp) {
             if (resp.ok || resp.success) {
-                if (currentProjectId) renderExpenses(currentProjectId);
+                _showToast(accion === 'approved' ? 'Gasto aprobado' : 'Gasto rechazado');
+                if (currentProjectId) {
+                    // Refrescar expenses y KPIs (para actualizar Gastado)
+                    renderExpenses(currentProjectId);
+                    if (typeof renderKPIsFromAPI === 'function') renderKPIsFromAPI(currentProjectId);
+                }
             } else {
-                alert('Error: ' + (resp.error || 'Error desconocido'));
+                _showToast(resp.error || 'Sin permisos para aprobar');
             }
-        }).catch(function(err) {
-            alert('Error de conexion');
-            console.error('Error aprobando gasto:', err);
-        });
+        }).catch(function() { _showToast('Error de conexion'); });
     };
 
     window.proyectosEliminarProyecto = function(projectId) {

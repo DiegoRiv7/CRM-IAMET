@@ -353,4 +353,7 @@ urlpatterns = [
     path('api/iamet/alertas/<int:alerta_id>/resolver/', views_iamet.api_alerta_resolver, name='api_iamet_alerta_resolver'),
     # Financieros
     path('api/iamet/proyectos/<int:proyecto_id>/financieros/', views_iamet.api_proyecto_financieros, name='api_iamet_proyecto_financieros'),
+    # CFDI XML → PDF (modulo independiente)
+    path('cfdi/', views_iamet.cfdi_convertidor_page, name='cfdi_convertidor_page'),
+    path('api/cfdi/convertir/', views_iamet.api_cfdi_convertir, name='api_cfdi_convertir'),
 ]
