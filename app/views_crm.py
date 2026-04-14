@@ -547,6 +547,11 @@ def crm_home(request):
         'es_ingeniero': es_ingeniero,
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
+        'vendedores_json': [
+            {'id': v.id, 'nombre': v.get_full_name() or v.username}
+            for v in vendedores_list
+        ],
+        'years_range_list': list(range(2024, now.year + 2)),
         'novedades_config': NovedadesConfig.get(),
         'empleado_mes_data': _get_empleado_mes_data(),
         'mis_grupos': _get_mis_grupos_ctx(user),

@@ -2089,19 +2089,34 @@
 </script>
 
 {% if tab_activo == 'crm' %}
+<!-- Datos del facet bar como JSON (parse seguro, sin interpolación en JS) -->
+{{ mes_choices|json_script:"fb-mes-choices" }}
+{{ mes_filter|json_script:"fb-current-mes" }}
+{{ anio_filter|json_script:"fb-current-anio" }}
+{{ vendedores_filter|default_if_none:""|json_script:"fb-vendedores-filter" }}
+{{ es_supervisor|json_script:"fb-es-supervisor" }}
+{{ years_range_list|json_script:"fb-years-range" }}
+{{ vendedores_json|json_script:"fb-vendors-list" }}
+
 <!-- ═══ FACET BAR: wiring (estilo CRM moderno) ═══ -->
 <script>
 (function(){
     try {
-    // Datos precargados de Django
-    var _currentMes    = '{{ mes_filter|escapejs }}';
-    var _currentAnio   = '{{ anio_filter|escapejs }}';
-    var _currentVendors = ('{{ vendedores_filter|escapejs }}' || '').split(',').filter(Boolean);
-    var _esSupervisor  = {{ es_supervisor|yesno:"true,false" }};
-    var _mesChoices    = [{% for code, name in mes_choices %}{v:'{{ code|escapejs }}', l:'{{ name|escapejs }}'}{% if not forloop.last %},{% endif %}{% endfor %}];
-    var _mesNames      = { {% for code, name in mes_choices %}'{{ code|escapejs }}':'{{ name|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %} };
-    var _yearsRange    = [{% for y in years_range %}{{ y }}{% if not forloop.last %},{% endif %}{% endfor %}];
-    var _vendorsList   = [{% for v in vendedores_list %}{id:'{{ v.id }}', nombre:'{{ v.get_full_name|default:v.username|escapejs }}'}{% if not forloop.last %},{% endif %}{% endfor %}];
+    function readJson(id, fallback) {
+        var el = document.getElementById(id);
+        if (!el) return fallback;
+        try { return JSON.parse(el.textContent); } catch(e) { return fallback; }
+    }
+    // Datos precargados (desde <script type="application/json">, sin interpolación JS)
+    var _currentMes    = readJson('fb-current-mes', '') || '';
+    var _currentAnio   = readJson('fb-current-anio', '') || '';
+    var _currentVendors = ((readJson('fb-vendedores-filter', '') || '') + '').split(',').filter(Boolean);
+    var _esSupervisor  = readJson('fb-es-supervisor', false) === true;
+    var _rawMesChoices = readJson('fb-mes-choices', []);  // array de [code, name] o [[code, name], ...]
+    var _mesChoices    = _rawMesChoices.map(function(p){ return { v: p[0], l: p[1] }; });
+    var _mesNames      = {}; _mesChoices.forEach(function(m){ _mesNames[m.v] = m.l; });
+    var _yearsRange    = readJson('fb-years-range', []);
+    var _vendorsList   = readJson('fb-vendors-list', []);  // [{id, nombre}, ...]
 
     // Descripción de cada filtro in-memory (no-reload)
     var FIELDS = [
