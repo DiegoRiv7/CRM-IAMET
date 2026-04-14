@@ -364,10 +364,10 @@
                     </svg>
                 </button>
                 {% if tab_activo == 'crm' %}
-                <button type="button" id="btnToggleCrmView" title="Cambiar vista" onclick="toggleCrmView()"
-                    style="padding:4px 8px;border:1px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;color:#6B7280;font-size:0.7rem;">
-                    <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                <button type="button" id="btnToggleCrmView" title="Cambiar vista: Lista → Tarjetas → Tabla" onclick="toggleCrmView()"
+                    style="padding:0 10px;height:32px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:4px;color:#64748B;font-size:0.7rem;transition:all 0.15s;">
+                    <svg id="crmViewIcon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                     </svg>
                 </button>
                 {% endif %}
@@ -482,6 +482,88 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- VISTA LIST (nueva tabla moderna — default) -->
+        <div id="crmViewList">
+            <div class="crm-list-head">
+                <div class="crm-list-hcell" style="flex:2.6;padding-left:22px;">OPORTUNIDAD / CLIENTE</div>
+                <div class="crm-list-hcell" style="flex:1;">VALOR</div>
+                <div class="crm-list-hcell" style="flex:0.9;">MARCA</div>
+                <div class="crm-list-hcell" style="flex:1.3;">ESTADO DEL PROYECTO</div>
+                <div class="crm-list-hcell" style="flex:1.7;">PRÓXIMA ACTIVIDAD</div>
+                <div class="crm-list-hcell" style="flex:0.7;text-align:right;padding-right:18px;">ACCIONES</div>
+            </div>
+            <div class="crm-list-body" id="crmListBody">
+                {% for item in tabla_data %}
+                {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
+                <div class="crm-data-row crm-list-row"
+                    data-opp-id="{{ item.id }}"
+                    data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
+                    data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}"
+                    data-area="{{ item.area|default:'-' }}"
+                    data-producto="{{ item.producto }}"
+                    data-monto="{{ item.monto|unlocalize }}"
+                    data-tipo="{{ item.tipo_negociacion }}"
+                    data-etapa="{{ item.etapa_corta|default:'' }}"
+                    data-fecha="{{ item.fecha_actualizacion|date:'U' }}"
+                    data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}"
+                    data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
+                    onclick="openDetalle('{{ item.id }}')">
+                    <div class="crm-list-strip" style="background:{% if item.tiene_actividad_vencida %}#EF4444{% elif item.tipo_negociacion == 'proyecto' %}#8B5CF6{% else %}#3B82F6{% endif %};"></div>
+                    <div class="crm-list-cell" style="flex:2.6;padding-left:22px;">
+                        <div class="crm-list-title"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:42 }}</span></div>
+                        <div class="crm-list-sub" onclick="event.stopPropagation();if(typeof openClienteOportunidadesModal==='function')openClienteOportunidadesModal('{{ item.cliente.id|default:'' }}','{{ item.cliente.nombre_empresa|default:"Sin Cliente" }}')">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:34 }}</div>
+                    </div>
+                    <div class="crm-list-cell" style="flex:1;">
+                        <span class="crm-list-value">${{ item.monto|format_currency_es }}</span>
+                    </div>
+                    <div class="crm-list-cell" style="flex:0.9;">
+                        <span class="crm-list-brand-badge">{{ item.producto|default:'-' }}</span>
+                    </div>
+                    <div class="crm-list-cell" style="flex:1.3;">
+                        <div class="crm-list-state">
+                            <div class="crm-list-progress">
+                                <svg viewBox="0 0 36 36" style="width:36px;height:36px;transform:rotate(-90deg);">
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="2.5" pathLength="100"/>
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#3B82F6' }}{% endif %}" stroke-width="2.5" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
+                                </svg>
+                                <span>{{ item.probabilidad_cierre }}%</span>
+                            </div>
+                            <div class="crm-list-state-text">
+                                <div class="crm-list-state-label">{% if item.tipo_negociacion == 'proyecto' %}PROYECTO{% elif item.tipo_negociacion == 'bitrix_proyecto' %}BITRIX{% else %}RUNRATE{% endif %}</div>
+                                <div class="crm-list-state-stage">{{ item.etapa_corta|default:'-'|upper }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-list-cell" style="flex:1.7;">
+                        {% if item.actividad_proxima %}
+                        <div class="crm-list-activity-pill has-activity" onclick="event.stopPropagation();openDetalle('{{ item.id }}');setTimeout(function(){if(typeof woAbrirActividadReciente==='function')woAbrirActividadReciente();},400);">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                            <span>{{ item.actividad_proxima|truncatechars:28 }}</span>
+                        </div>
+                        {% else %}
+                        <div class="crm-list-activity-pill">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+                            <span>Sin pendientes</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="crm-list-cell crm-list-actions" style="flex:0.7;padding-right:18px;">
+                        <button type="button" class="crm-list-arrow" title="Abrir" onclick="event.stopPropagation();openDetalle('{{ item.id }}');">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                        </button>
+                        <button type="button" class="crm-list-kebab" title="Más" onclick="event.stopPropagation();">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+                {% empty %}
+                <div style="text-align:center;padding:60px 0;color:#9CA3AF;">No hay oportunidades</div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
         <div id="crmViewTable" style="display:none;">
         <table class="w-full crm-table">
