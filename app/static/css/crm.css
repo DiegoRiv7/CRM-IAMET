@@ -5825,6 +5825,13 @@
     user-select: none;
 }
 .crm-facet-chip:hover { border-color: #94A3B8; background: #F8FAFC; }
+/* Chips de período (mes/año/vendedor) — siempre visibles, solid background */
+.crm-facet-chip-period {
+    background: #F1F5F9;
+    border-color: #E2E8F0;
+}
+.crm-facet-chip-period:hover { background: #E2E8F0; border-color: #94A3B8; }
+.crm-facet-chip-period .crm-facet-chip-val { color: #1E293B; }
 .crm-facet-chip-key { color: #64748B; font-weight: 600; margin-right: 4px; }
 .crm-facet-chip-op  { color: #94A3B8; font-weight: 500; margin: 0 4px; }
 .crm-facet-chip-val { color: #0052D4; font-weight: 700; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -5873,6 +5880,42 @@
     color: #1D6F42;
 }
 .crm-facet-export:hover { background: #ECFDF5; border-color: #1D6F42; color: #14532D; }
+
+/* + Nuevo en el facet bar (azul prominente) */
+.crm-facet-new {
+    background: #0052D4 !important;
+    border-color: #0052D4 !important;
+    color: #FFFFFF !important;
+    border-style: solid !important;
+    box-shadow: 0 2px 8px rgba(0,82,212,0.22);
+    height: 30px;
+}
+.crm-facet-new:hover {
+    background: #0041a8 !important;
+    border-color: #0041a8 !important;
+    color: #FFFFFF !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,82,212,0.3);
+}
+
+/* Count pill dentro del tab activo */
+.crm-tab.active .crm-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 7px;
+    margin-left: 8px;
+    background: rgba(255,255,255,0.22);
+    color: #FFFFFF;
+    border-radius: 9px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+.crm-tab-count { display: none; }
 
 /* Popovers */
 .crm-popover {

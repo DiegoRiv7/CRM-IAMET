@@ -23,6 +23,17 @@
             <span class="crm-sb-label">Buscar</span>
         </button>
 
+        <!-- Alertas (Notificaciones) -->
+        <button type="button" class="crm-sb-btn" id="btnNotificaciones"
+            onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';"
+            data-tooltip="Alertas">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="crm-sb-label">Alertas</span>
+            <span id="notifBadge" class="crm-sb-dot" style="display:none;"></span>
+        </button>
+
         <!-- CRM -->
         <button type="button" class="crm-sb-btn active" id="btnCRM" data-tooltip="CRM">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
@@ -73,14 +84,6 @@
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}</span>
         </button>
 
-        <!-- Novedades -->
-        <a href="/app/novedades/" target="_blank" class="crm-sb-btn" data-tooltip="Novedades">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h8"/>
-            </svg>
-            <span class="crm-sb-label">Novedades</span>
-        </a>
-
         {% if mis_grupos %}
         <!-- Grupo -->
         <button type="button" class="crm-sb-btn" id="btnGrupo" onclick="grupoAbrir()" data-tooltip="{% if es_supervisor %}Grupos{% else %}Mi grupo{% endif %}">
@@ -95,16 +98,13 @@
 
     <!-- Bottom actions -->
     <div class="crm-sb-bottom">
-        <!-- Notificaciones -->
-        <button type="button" class="crm-sb-btn" id="btnNotificaciones"
-            onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';"
-            data-tooltip="Notificaciones">
+        <!-- Novedades -->
+        <a href="/app/novedades/" target="_blank" class="crm-sb-btn" data-tooltip="Novedades">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h8"/>
             </svg>
-            <span class="crm-sb-label">Alertas</span>
-            <span id="notifBadge" class="crm-sb-dot" style="display:none;"></span>
-        </button>
+            <span class="crm-sb-label">Novedades</span>
+        </a>
 
         {% if es_supervisor %}
         <!-- Admin -->

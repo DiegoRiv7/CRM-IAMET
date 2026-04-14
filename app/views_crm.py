@@ -216,10 +216,12 @@ def crm_home(request):
     }
     MES_NAME_TO_CODE = {v: k for k, v in MES_CODE_TO_NAME.items()}
 
+    anio_todos = (anio_filter == 'todos')
     try:
-        anio_int = int(anio_filter)
+        anio_int = now.year if anio_todos else int(anio_filter)
     except ValueError:
         anio_int = now.year
+        anio_todos = False
 
     # MES_CHOICES para template (con opción "Todos" al inicio)
     mes_choices = [('todos', 'Todos')] + list(TodoItem.MES_CHOICES)
@@ -235,9 +237,9 @@ def crm_home(request):
         vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()]
 
     # Base queryset - oportunidades filtradas por anio_cierre/mes_cierre
-    base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-        anio_cierre=anio_int
-    )
+    base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
+    if not anio_todos:
+        base_qs = base_qs.filter(anio_cierre=anio_int)
     if mes_filter != 'todos':
         base_qs = base_qs.filter(mes_cierre=mes_filter)
 

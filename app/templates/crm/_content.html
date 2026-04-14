@@ -207,6 +207,7 @@
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
+                    {% if tab_activo == 'crm' %}<span class="crm-tab-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>{% endif %}
                 </a>
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
@@ -218,54 +219,35 @@
                 </a>
             </div>
             <div class="crm-bar-right">
-                <!-- Filtros de periodo: mes / año / vendedor -->
-                <div class="crm-period-filters" id="crmPeriodFilters">
-                    <select class="crm-period-select" id="mesFilter" title="Mes">
+                <!-- Mes/Año/Vendedor ahora viven en el facet bar abajo como chips.
+                     Mantenemos los inputs ocultos para que crm_main.js siga leyéndolos. -->
+                <div style="display:none;" id="crmHiddenPeriodInputs">
+                    <select id="mesFilter">
                         {% for code, name in mes_choices %}
                         <option value="{{ code }}" {% if code == mes_filter %}selected{% endif %}>{{ name }}</option>
                         {% endfor %}
                     </select>
-                    <select class="crm-period-select" id="anioFilter" title="Año">
+                    <select id="anioFilter">
+                        <option value="todos" {% if anio_filter == 'todos' %}selected{% endif %}>Todos</option>
                         {% for y in years_range %}
-                        <option value="{{ y|stringformat:'i' }}" {% if y == anio_int %}selected{% endif %}>{{ y }}</option>
+                        <option value="{{ y|stringformat:'i' }}" {% if y|stringformat:'i' == anio_filter %}selected{% endif %}>{{ y }}</option>
                         {% endfor %}
                     </select>
                     {% if es_supervisor %}
-                    <div class="vendor-filter-wrap" style="position:relative;">
-                        <button type="button" class="crm-period-select vendor-filter-btn" id="vendorFilterBtn">
-                            {% if request.user.userprofile.language == 'en' %}Vendors{% else %}Vendedores{% endif %} &#9660;
-                        </button>
-                        <div class="vendor-filter-dropdown" id="vendorFilterDropdown">
-                            <label class="vf-option">
-                                <input type="checkbox" value="all" id="vfAll" checked>
-                                <span>{% if request.user.userprofile.language == 'en' %}All{% else %}Todos{% endif %}</span>
-                            </label>
-                            {% for v in vendedores_list %}
-                            <label class="vf-option">
-                                <input type="checkbox" class="vf-user" value="{{ v.id }}">
-                                <span>{{ v.get_full_name|default:v.username }}</span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    <label><input type="checkbox" value="all" id="vfAll" checked><span>Todos</span></label>
+                    {% for v in vendedores_list %}
+                    <label><input type="checkbox" class="vf-user" value="{{ v.id }}" data-name="{{ v.get_full_name|default:v.username }}"><span>{{ v.get_full_name|default:v.username }}</span></label>
+                    {% endfor %}
                     {% endif %}
                 </div>
-
+                {% if tab_activo == 'clientes' %}
                 <div class="crm-bar-stats">
-                    {% if tab_activo == 'clientes' %}
                     <div style="background:#F2F2F7;border-radius:20px;padding:2px;display:inline-flex;gap:2px;">
                         <button id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:#0052D4;color:#fff;">Oportunidades</button>
                         <button id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:#86868B;">Prospectos</button>
                     </div>
-                    {% elif tab_activo == 'crm' %}
-                    <button type="button" id="btnNegociacion" class="crm-btn-new" title="Nueva oportunidad">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        <span>Nuevo</span>
-                    </button>
-                    {% endif %}
                 </div>
+                {% endif %}
                 <!-- Panel de filtros legado: OCULTO — los inputs se conservan como estado interno
                      para no romper listeners de crm_main.js. La UI real vive en .crm-facet-bar abajo. -->
                 <div class="crm-filter-dropdown" id="crmFilterPanel" style="display:none !important;">
@@ -358,15 +340,6 @@
                         <button type="button" class="crm-filter-clear" id="btnClearFilters">Limpiar</button>
                     </div>
                 </div>
-                <!-- btnToggleFilterPanel removido — reemplazado por .crm-facet-bar -->
-                {% if tab_activo == 'crm' %}
-                <button type="button" id="btnToggleCrmView" title="Cambiar vista: Lista → Tarjetas → Tabla" onclick="toggleCrmView()"
-                    style="padding:0 10px;height:32px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:4px;color:#64748B;font-size:0.7rem;transition:all 0.15s;">
-                    <svg id="crmViewIcon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                    </svg>
-                </button>
-                {% endif %}
                 <!-- Search interno reemplazado por Spotlight global (sidebar · Space Space) -->
                 <input type="hidden" id="crmSearch" value="">
             </div>
@@ -393,6 +366,15 @@
             <button type="button" class="crm-facet-btn crm-facet-export" id="btnExportExcelBar" title="Exportar a Excel">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 001 1h4M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
                 <span>Excel</span>
+            </button>
+
+            <button type="button" class="crm-facet-btn" id="btnToggleCrmView" title="Cambiar vista: Lista → Tarjetas → Tabla" onclick="toggleCrmView()">
+                <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+
+            <button type="button" class="crm-facet-btn crm-facet-new" id="btnNegociacion" title="Nueva oportunidad">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Nuevo</span>
             </button>
         </div>
 
@@ -2110,7 +2092,17 @@
 <!-- ═══ FACET BAR: wiring (estilo CRM moderno) ═══ -->
 <script>
 (function(){
-    // Descripción de cada filtro
+    // Datos precargados de Django
+    var _currentMes    = '{{ mes_filter|escapejs }}';
+    var _currentAnio   = '{{ anio_filter|escapejs }}';
+    var _currentVendors = ('{{ vendedores_filter|escapejs }}' || '').split(',').filter(Boolean);
+    var _esSupervisor  = {{ es_supervisor|yesno:"true,false" }};
+    var _mesChoices    = [{% for code, name in mes_choices %}{v:'{{ code|escapejs }}', l:'{{ name|escapejs }}'}{% if not forloop.last %},{% endif %}{% endfor %}];
+    var _mesNames      = { {% for code, name in mes_choices %}'{{ code|escapejs }}':'{{ name|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %} };
+    var _yearsRange    = [{% for y in years_range %}{{ y }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    var _vendorsList   = [{% for v in vendedores_list %}{id:'{{ v.id }}', nombre:'{{ v.get_full_name|default:v.username|escapejs }}'}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    // Descripción de cada filtro in-memory (no-reload)
     var FIELDS = [
         { key: 'cliente',  label: 'Cliente',  type: 'select', inputId: 'filterCliente' },
         { key: 'area',     label: 'Área',     type: 'select', inputId: 'filterArea' },
@@ -2121,6 +2113,14 @@
         { key: 'etapa',    label: 'Etapa',    type: 'text',   inputId: 'filterEtapa' },
         { key: 'fechas',   label: 'Fechas',   type: 'daterange' }
     ];
+    // Campos de período (reload): mes, año, vendedor
+    var PERIOD_FIELDS = [
+        { key: 'mes',  label: 'Mes',  type: 'period-mes' },
+        { key: 'anio', label: 'Año',  type: 'period-anio' }
+    ];
+    if (_esSupervisor) {
+        PERIOD_FIELDS.push({ key: 'vendedor', label: 'Vendedor', type: 'period-vendor' });
+    }
     var SORTS = [
         { k: 'fecha:desc', lbl: 'Recientes primero', field: 'fecha', v: 'desc' },
         { k: 'fecha:asc',  lbl: 'Antiguos primero',  field: 'fecha', v: 'asc'  },
@@ -2206,9 +2206,42 @@
                 '</span>' +
             '</div>';
     }
+    // Chip con × opcional (mes/año siempre editables, pero × regresa a "todos")
+    function chipPeriodHtml(key, label, value, showX) {
+        var safeVal = (value || '').toString().replace(/</g,'&lt;');
+        var xHtml = showX ? '<span class="crm-facet-chip-x" data-fkey="' + key + '" title="Ver todos">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>' +
+                '</span>' : '<span style="padding-right:10px;"></span>';
+        return '' +
+            '<div class="crm-facet-chip crm-facet-chip-period" data-fkey="' + key + '">' +
+                '<span class="crm-facet-chip-key">' + label + '</span>' +
+                '<span class="crm-facet-chip-val">' + safeVal + '</span>' +
+                xHtml +
+            '</div>';
+    }
+
+    function vendorChipLabel() {
+        if (!_currentVendors.length) return 'Todos';
+        if (_currentVendors.length === 1) {
+            var v = _vendorsList.find(function(x){ return x.id === _currentVendors[0]; });
+            return v ? v.nombre : _currentVendors[0];
+        }
+        return _currentVendors.length + ' vendedores';
+    }
+
     function renderChips(){
         var f = readFilters();
         var html = '';
+
+        // Chips de período (siempre visibles)
+        var mesLabel = _mesNames[_currentMes] || _currentMes;
+        html += chipPeriodHtml('mes',  'Mes',  mesLabel, _currentMes !== 'todos');
+        html += chipPeriodHtml('anio', 'Año',  _currentAnio === 'todos' ? 'Todos' : _currentAnio, _currentAnio !== 'todos');
+        if (_esSupervisor) {
+            html += chipPeriodHtml('vendedor', 'Vendedor', vendorChipLabel(), _currentVendors.length > 0);
+        }
+
+        // Chips in-memory (solo si activos)
         if (f.cliente)  html += chipHtml('cliente',  'Cliente',  f.cliente);
         if (f.area)     html += chipHtml('area',     'Área',     f.area);
         if (f.contacto) html += chipHtml('contacto', 'Contacto', f.contacto);
@@ -2224,7 +2257,8 @@
             html += chipHtml('fechas',   'Fechas',  range);
         }
         chipsEl.innerHTML = html;
-        var anyActive = !!html;
+        // "Limpiar todo" SOLO si hay filtros in-memory activos (ignora mes/año/vendedor)
+        var anyActive = !!(f.cliente || f.area || f.contacto || f.producto || f.tipo || f.etapa || f.desde || f.hasta);
         btnClear.style.display = anyActive ? '' : 'none';
 
         // Sort label + estado visual
@@ -2242,7 +2276,13 @@
     // ── Popover: field picker ──────────────────────────────────────────────
     function openFieldPicker(){
         var f = readFilters();
-        var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
+        var html = '<div class="crm-pop-section">Período</div><div class="crm-pop-list">';
+        PERIOD_FIELDS.forEach(function(fld){
+            html += '<button type="button" class="crm-pop-item" data-field="' + fld.key + '" data-period="1">' +
+                        '<span>' + fld.label + '</span>' +
+                    '</button>';
+        });
+        html += '</div><div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
         FIELDS.forEach(function(fld){
             var active = (fld.key === 'fechas') ? !!(f.desde || f.hasta) : !!f[fld.key];
             html += '<button type="button" class="crm-pop-item ' + (active ? 'active' : '') + '" data-field="' + fld.key + '">' +
@@ -2253,7 +2293,66 @@
         popField.innerHTML = html;
         closeAllPopovers(popField);
         popField.classList.add('open');
-        positionPopover(popField, btnAdd, 'left');
+        positionPopover(popField, btnAdd);
+    }
+
+    // ── Popover: period picker (mes / año / vendedor → reload) ─────────────
+    function openPeriodPicker(key, anchorEl){
+        popValue.dataset.currentField = '__period__' + key;
+        var html = '';
+        if (key === 'mes') {
+            html = '<div class="crm-pop-section">Mes</div><div class="crm-pop-list">';
+            _mesChoices.forEach(function(m){
+                var act = m.v === _currentMes ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-pv="' + m.v + '">' + m.l + '</button>';
+            });
+            html += '</div>';
+        } else if (key === 'anio') {
+            html = '<div class="crm-pop-section">Año</div><div class="crm-pop-list">';
+            html += '<button type="button" class="crm-pop-item ' + (_currentAnio === 'todos' ? 'active' : '') + '" data-pv="todos">Todos</button>';
+            _yearsRange.forEach(function(y){
+                var ys = String(y);
+                var act = ys === _currentAnio ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-pv="' + ys + '">' + ys + '</button>';
+            });
+            html += '</div>';
+        } else if (key === 'vendedor') {
+            html = '<div class="crm-pop-section">Vendedores</div><div class="crm-pop-list">';
+            var allChecked = _currentVendors.length === 0;
+            html += '<button type="button" class="crm-pop-item ' + (allChecked ? 'active' : '') + '" data-pv="">Todos</button>';
+            _vendorsList.forEach(function(v){
+                var act = _currentVendors.indexOf(String(v.id)) !== -1 ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-pv="' + v.id + '" data-multi="1">' + v.nombre + '</button>';
+            });
+            html += '</div>';
+            if (_currentVendors.length) {
+                html += '<div class="crm-pop-footer"><button type="button" class="primary" data-act="period-apply-vendor" style="flex:1;">Aplicar selección</button></div>';
+            }
+        }
+        popValue.innerHTML = html;
+        popValue.style.minWidth = '220px';
+        closeAllPopovers(popValue);
+        popValue.classList.add('open');
+        positionPopover(popValue, anchorEl || btnAdd);
+    }
+
+    function reloadWithPeriod(key, value) {
+        var params = new URLSearchParams(window.location.search);
+        if (key === 'mes')      params.set('mes',  value);
+        else if (key === 'anio') params.set('anio', value);
+        else if (key === 'vendedor') {
+            if (value) params.set('vendedores', value);
+            else params.delete('vendedores');
+        }
+        // Preservar tab
+        if (!params.get('tab')) {
+            var activeTab = document.querySelector('.crm-tab.active');
+            if (activeTab && activeTab.href) {
+                var m = activeTab.href.match(/tab=([^&]+)/);
+                if (m) params.set('tab', m[1]);
+            }
+        }
+        window.location.href = window.location.pathname + '?' + params.toString();
     }
 
     // ── Popover: value picker (por field) ──────────────────────────────────
@@ -2382,11 +2481,14 @@
         if (oldBtn) oldBtn.click();
     });
 
-    // Click en chip → reabrir value picker para editar; click en × → quitar
+    // Click en chip → reabrir value picker; click en × → quitar
     chipsEl.addEventListener('click', function(e){
         var x = e.target.closest('.crm-facet-chip-x');
         if (x) {
             var key = x.dataset.fkey;
+            if (key === 'mes')      return reloadWithPeriod('mes',  'todos');
+            if (key === 'anio')     return reloadWithPeriod('anio', 'todos');
+            if (key === 'vendedor') return reloadWithPeriod('vendedor', '');
             if (key === 'fechas') {
                 setInputValue('filterDesde', '');
                 setInputValue('filterHasta', '');
@@ -2399,7 +2501,12 @@
         }
         var chip = e.target.closest('.crm-facet-chip');
         if (chip) {
-            openValuePicker(chip.dataset.fkey);
+            var ck = chip.dataset.fkey;
+            if (ck === 'mes' || ck === 'anio' || ck === 'vendedor') {
+                openPeriodPicker(ck, chip);
+            } else {
+                openValuePicker(ck);
+            }
         }
     });
 
@@ -2408,11 +2515,38 @@
         var item = e.target.closest('.crm-pop-item');
         if (!item) return;
         popField.classList.remove('open');
-        openValuePicker(item.dataset.field);
+        if (item.dataset.period) {
+            openPeriodPicker(item.dataset.field, btnAdd);
+        } else {
+            openValuePicker(item.dataset.field);
+        }
     });
 
     popValue.addEventListener('click', function(e){
         var item = e.target.closest('.crm-pop-item');
+        if (item && item.dataset.pv !== undefined) {
+            // Period picker (mes / anio / vendedor) → reload
+            var field = popValue.dataset.currentField || '';
+            if (field.indexOf('__period__') === 0) {
+                var pkey = field.replace('__period__','');
+                if (pkey === 'vendedor' && item.dataset.multi) {
+                    // Toggle selección múltiple
+                    var id = String(item.dataset.pv);
+                    var idx = _currentVendors.indexOf(id);
+                    if (idx >= 0) _currentVendors.splice(idx, 1);
+                    else _currentVendors.push(id);
+                    item.classList.toggle('active');
+                    // Re-render footer si aparecen selecciones
+                    openPeriodPicker('vendedor', null);
+                    return;
+                }
+                if (pkey === 'vendedor' && !item.dataset.multi) {
+                    // "Todos" → limpiar
+                    return reloadWithPeriod('vendedor', '');
+                }
+                return reloadWithPeriod(pkey, item.dataset.pv);
+            }
+        }
         if (item) {
             var val = item.dataset.val;
             // Determinar qué input actualizar basado en el contenido del popover
@@ -2439,6 +2573,9 @@
         if (!actBtn) return;
         var act = actBtn.dataset.act;
         var field = popValue.dataset.currentField;
+        if (act === 'period-apply-vendor') {
+            return reloadWithPeriod('vendedor', _currentVendors.join(','));
+        }
         if (act === 'clear') {
             if (field === 'fechas') {
                 setInputValue('filterDesde', '');
