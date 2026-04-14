@@ -397,11 +397,6 @@
             </button>
         </div>
 
-        <!-- Popovers (posicionamiento absoluto, ocultos por default) -->
-        <div class="crm-popover" id="popFieldPicker" role="menu"></div>
-        <div class="crm-popover" id="popValuePicker"></div>
-        <div class="crm-popover" id="popSort"></div>
-
         <!-- VISTA CARDS (unica y predeterminada) -->
         <div id="crmViewCards" style="display:none;">
             <style>
@@ -656,12 +651,56 @@
         </table>
         </div>
         {% elif tab_activo == 'prospeccion' %}
+        <!-- Period bar standalone -->
+        <div class="crm-facet-bar crm-facet-bar--minimal">
+            <div style="flex:1;"></div>
+            <div class="crm-period-pills" id="crmPeriodPills">
+                <button type="button" class="crm-period-pill" data-period="mes" id="pillMes">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span id="pillMesLabel">Mes</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <button type="button" class="crm-period-pill" data-period="anio" id="pillAnio">
+                    <span id="pillAnioLabel">Año</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% if es_supervisor %}
+                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span id="pillVendedorLabel">Vendedores</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% endif %}
+            </div>
+        </div>
         <table id="prospeccionTable" class="w-full crm-table">
             <thead id="prospeccionThead"></thead>
             <tbody id="prospeccionTbody"></tbody>
         </table>
         <div class="crm-table-footer" id="prospeccionFooter"></div>
         {% elif tab_activo == 'clientes' %}
+        <!-- Period bar standalone -->
+        <div class="crm-facet-bar crm-facet-bar--minimal">
+            <div style="flex:1;"></div>
+            <div class="crm-period-pills" id="crmPeriodPills">
+                <button type="button" class="crm-period-pill" data-period="mes" id="pillMes">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span id="pillMesLabel">Mes</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <button type="button" class="crm-period-pill" data-period="anio" id="pillAnio">
+                    <span id="pillAnioLabel">Año</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% if es_supervisor %}
+                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span id="pillVendedorLabel">Vendedores</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% endif %}
+            </div>
+        </div>
         <!-- KPI Cards -->
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
             <div class="ck-kpi-card ck-kpi--fact" style="cursor:pointer;" onclick="ckAbrirDesgloseFacturacion()">
@@ -2107,8 +2146,7 @@
     })();
 </script>
 
-{% if tab_activo == 'crm' %}
-<!-- Datos del facet bar como JSON (parse seguro, sin interpolación en JS) -->
+<!-- Datos del facet bar como JSON (parse seguro, renderiza en todos los tabs) -->
 {{ mes_choices|json_script:"fb-mes-choices" }}
 {{ mes_filter|json_script:"fb-current-mes" }}
 {{ anio_filter|json_script:"fb-current-anio" }}
@@ -2116,6 +2154,11 @@
 {{ es_supervisor|json_script:"fb-es-supervisor" }}
 {{ years_range_list|json_script:"fb-years-range" }}
 {{ vendedores_json|json_script:"fb-vendors-list" }}
+
+<!-- Popovers globales (usados por facet bar en CRM y por period pills en todos los tabs) -->
+<div class="crm-popover" id="popFieldPicker" role="menu"></div>
+<div class="crm-popover" id="popValuePicker"></div>
+<div class="crm-popover" id="popSort"></div>
 
 <!-- ═══ FACET BAR: wiring (estilo CRM moderno) ═══ -->
 <script>
@@ -2164,7 +2207,10 @@
     ];
 
     var bar = document.getElementById('crmFacetBar');
-    if (!bar) return;
+    var hasFacetBar = !!bar;
+    var pillMesEl = document.getElementById('pillMes');
+    // Si no hay facet bar ni pills, no hay nada que inicializar.
+    if (!bar && !pillMesEl) return;
 
     var chipsEl     = document.getElementById('crmFacetChips');
     var btnAdd      = document.getElementById('btnAddFacet');
@@ -2497,6 +2543,7 @@
     }
 
     // ── Event wiring ───────────────────────────────────────────────────────
+    if (hasFacetBar) {
     btnAdd.addEventListener('click', function(e){
         e.stopPropagation();
         if (popField.classList.contains('open')) { popField.classList.remove('open'); return; }
@@ -2550,15 +2597,16 @@
         }
     });
 
-    // Delegación en popovers
+    // Delegación en popField (facet bar only)
     popField.addEventListener('click', function(e){
         var item = e.target.closest('.crm-pop-item');
         if (!item) return;
         popField.classList.remove('open');
         openValuePicker(item.dataset.field);
     });
+    } // end if (hasFacetBar)
 
-    // Period pills → openPeriodPicker
+    // Period pills → openPeriodPicker (siempre)
     var periodPillsEl = document.getElementById('crmPeriodPills');
     if (periodPillsEl) {
         periodPillsEl.addEventListener('click', function(e){
@@ -2655,6 +2703,7 @@
         }
     });
 
+    if (hasFacetBar) {
     popSort.addEventListener('click', function(e){
         var item = e.target.closest('.crm-pop-item');
         if (!item) return;
@@ -2670,6 +2719,7 @@
         renderChips();
         applySortToViews();
     });
+    } // end if (hasFacetBar) popSort
 
     // Aplicar sort a las vistas list y cards (reordena DOM)
     function applySortToViews(){
@@ -2721,8 +2771,9 @@
 
     // Cerrar popovers al hacer click fuera
     document.addEventListener('click', function(e){
-        if (bar.contains(e.target)) return;
-        if (popField.contains(e.target) || popValue.contains(e.target) || popSort.contains(e.target)) return;
+        if (bar && bar.contains(e.target)) return;
+        if (periodPillsEl && periodPillsEl.contains(e.target)) return;
+        if ((popField && popField.contains(e.target)) || (popValue && popValue.contains(e.target)) || (popSort && popSort.contains(e.target))) return;
         closeAllPopovers();
     });
     document.addEventListener('keydown', function(e){
@@ -2745,4 +2796,3 @@
     }
 })();
 </script>
-{% endif %}

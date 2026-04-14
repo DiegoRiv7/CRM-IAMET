@@ -5515,17 +5515,38 @@
 }
 
 .crm-sb-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+    width: 58px;
+    min-height: 58px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
+    padding: 7px 6px 6px;
     margin-bottom: 18px;
-    box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+    box-shadow: 0 4px 14px rgba(15,23,42,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
     text-decoration: none;
     flex-shrink: 0;
+    color: #FFFFFF;
+}
+.crm-sb-logo:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(15,23,42,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.crm-sb-logo-chip {
+    width: 30px;
+    height: 30px;
+    color: #FFFFFF;
+    flex-shrink: 0;
+}
+.crm-sb-logo-text {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #FFFFFF;
+    line-height: 1;
 }
 
 .crm-sb-nav {
@@ -5780,14 +5801,22 @@
     border: none !important;
     border-radius: 0 !important;
     padding: 14px 0 10px !important;
+    justify-content: center !important;
     position: relative;
-    min-height: 52px;
 }
-.crm-page-sidebar .crm-bar .crm-tabs {
+/* Cuando bar-right tiene contenido visible, compensamos para mantener tabs centrados */
+.crm-page-sidebar .crm-bar .crm-tabs { margin: 0 auto; }
+.crm-page-sidebar .crm-bar .crm-bar-right {
     position: absolute;
-    left: 50%;
-    top: 14px;
-    transform: translateX(-50%);
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0 !important;
+}
+/* Oculta bar-right si solo tiene los inputs ocultos */
+.crm-page-sidebar .crm-bar .crm-bar-right:empty,
+.crm-page-sidebar .crm-bar .crm-bar-right:has(> :only-child#crmHiddenPeriodInputs) {
+    display: none !important;
 }
 /* Tabs centrados con estilo de dynamic island reducida */
 .crm-page-sidebar .crm-tabs {
@@ -5819,12 +5848,6 @@
     color: #FFFFFF;
     box-shadow: 0 2px 8px rgba(0,82,212,0.25);
 }
-/* crm-bar-right ya no tiene contenido visible por default, pero lo escondemos
-   para no reservar espacio que descentre los tabs */
-.crm-page-sidebar .crm-bar-right:empty,
-.crm-page-sidebar .crm-bar-right:has(> :only-child#crmHiddenPeriodInputs) {
-    display: none;
-}
 .crm-page-sidebar #crmViewCards {
     background: transparent !important;
     padding: 0 !important;
@@ -5845,6 +5868,10 @@
     padding: 10px 4px 14px;
     margin-bottom: 4px;
     position: relative;
+}
+.crm-facet-bar--minimal {
+    padding: 6px 4px 12px;
+    margin-bottom: 0;
 }
 .crm-facet-chips {
     display: flex;
