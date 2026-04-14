@@ -266,8 +266,9 @@
                     </button>
                     {% endif %}
                 </div>
-                <!-- Panel de filtros inline: se expande entre los stats y el botón -->
-                <div class="crm-filter-dropdown" id="crmFilterPanel">
+                <!-- Panel de filtros legado: OCULTO — los inputs se conservan como estado interno
+                     para no romper listeners de crm_main.js. La UI real vive en .crm-facet-bar abajo. -->
+                <div class="crm-filter-dropdown" id="crmFilterPanel" style="display:none !important;">
                     <div class="crm-filter-item">
                         <label>Cliente</label>
                         <select id="filterCliente">
@@ -357,12 +358,7 @@
                         <button type="button" class="crm-filter-clear" id="btnClearFilters">Limpiar</button>
                     </div>
                 </div>
-                <button type="button" class="crm-filter-toggle" id="btnToggleFilterPanel" title="Filtros avanzados"
-                    style="{% if tab_activo == 'clientes' %}display:none;{% endif %}">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
-                    </svg>
-                </button>
+                <!-- btnToggleFilterPanel removido — reemplazado por .crm-facet-bar -->
                 {% if tab_activo == 'crm' %}
                 <button type="button" id="btnToggleCrmView" title="Cambiar vista: Lista → Tarjetas → Tabla" onclick="toggleCrmView()"
                     style="padding:0 10px;height:32px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:4px;color:#64748B;font-size:0.7rem;transition:all 0.15s;">
@@ -376,6 +372,35 @@
             </div>
         </div>
         {% if tab_activo == 'crm' %}
+        <!-- ═══ FACET BAR (estilo HubSpot / Linear) ═══ -->
+        <div class="crm-facet-bar" id="crmFacetBar">
+            <div class="crm-facet-chips" id="crmFacetChips"></div>
+
+            <button type="button" class="crm-facet-btn crm-facet-add" id="btnAddFacet" title="Agregar filtro">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Filtro</span>
+            </button>
+
+            <button type="button" class="crm-facet-btn crm-facet-sort" id="btnSortMenu" title="Ordenar">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                <span id="sortLabel">Ordenar</span>
+            </button>
+
+            <button type="button" class="crm-facet-btn crm-facet-clear" id="btnFacetClear" style="display:none;">Limpiar todo</button>
+
+            <div style="flex:1;"></div>
+
+            <button type="button" class="crm-facet-btn crm-facet-export" id="btnExportExcelBar" title="Exportar a Excel">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 001 1h4M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                <span>Excel</span>
+            </button>
+        </div>
+
+        <!-- Popovers (posicionamiento absoluto, ocultos por default) -->
+        <div class="crm-popover" id="popFieldPicker" role="menu"></div>
+        <div class="crm-popover" id="popValuePicker"></div>
+        <div class="crm-popover" id="popSort"></div>
+
         <!-- VISTA CARDS (unica y predeterminada) -->
         <div id="crmViewCards" style="display:none;">
             <style>
@@ -2080,3 +2105,451 @@
         }
     })();
 </script>
+
+{% if tab_activo == 'crm' %}
+<!-- ═══ FACET BAR: wiring (estilo CRM moderno) ═══ -->
+<script>
+(function(){
+    // Descripción de cada filtro
+    var FIELDS = [
+        { key: 'cliente',  label: 'Cliente',  type: 'select', inputId: 'filterCliente' },
+        { key: 'area',     label: 'Área',     type: 'select', inputId: 'filterArea' },
+        { key: 'contacto', label: 'Contacto', type: 'text',   inputId: 'filterContacto' },
+        { key: 'producto', label: 'Marca',    type: 'select', inputId: 'filterProducto' },
+        { key: 'tipo',     label: 'Tipo',     type: 'enum',   inputId: 'filterTipo',
+            options: [{ v: 'proyecto', l: 'Proyecto' }, { v: 'runrate', l: 'Runrate' }, { v: 'bitrix_proyecto', l: 'Bitrix' }] },
+        { key: 'etapa',    label: 'Etapa',    type: 'text',   inputId: 'filterEtapa' },
+        { key: 'fechas',   label: 'Fechas',   type: 'daterange' }
+    ];
+    var SORTS = [
+        { k: 'fecha:desc', lbl: 'Recientes primero', field: 'fecha', v: 'desc' },
+        { k: 'fecha:asc',  lbl: 'Antiguos primero',  field: 'fecha', v: 'asc'  },
+        { k: 'monto:desc', lbl: 'Monto: mayor a menor', field: 'monto', v: 'desc' },
+        { k: 'monto:asc',  lbl: 'Monto: menor a mayor', field: 'monto', v: 'asc'  }
+    ];
+
+    var bar = document.getElementById('crmFacetBar');
+    if (!bar) return;
+
+    var chipsEl     = document.getElementById('crmFacetChips');
+    var btnAdd      = document.getElementById('btnAddFacet');
+    var btnSort     = document.getElementById('btnSortMenu');
+    var btnClear    = document.getElementById('btnFacetClear');
+    var btnExport   = document.getElementById('btnExportExcelBar');
+    var sortLabel   = document.getElementById('sortLabel');
+    var popField    = document.getElementById('popFieldPicker');
+    var popValue    = document.getElementById('popValuePicker');
+    var popSort     = document.getElementById('popSort');
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function $in(id){ return document.getElementById(id); }
+    function readFilters(){
+        return {
+            cliente: ($in('filterCliente') || {}).value || '',
+            area:    ($in('filterArea') || {}).value || '',
+            contacto:($in('filterContacto') || {}).value || '',
+            producto:($in('filterProducto') || {}).value || '',
+            tipo:    ($in('filterTipo') || {}).value || '',
+            etapa:   ($in('filterEtapa') || {}).value || '',
+            desde:   ($in('filterDesde') || {}).value || '',
+            hasta:   ($in('filterHasta') || {}).value || ''
+        };
+    }
+    function readSort(){
+        var m = ($in('filterMonto') || {}).value || '';
+        var f = ($in('filterFecha') || {}).value || '';
+        if (m === 'desc') return 'monto:desc';
+        if (m === 'asc')  return 'monto:asc';
+        if (f === 'asc')  return 'fecha:asc';
+        if (f === 'desc') return 'fecha:desc';
+        return '';
+    }
+    function setInputValue(id, val){
+        var el = $in(id);
+        if (!el) return;
+        el.value = val;
+        // Dispatch change (selects) and input (text) to trigger listeners de crm_main.js
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.dispatchEvent(new Event('input',  { bubbles: true }));
+    }
+    function closeAllPopovers(except){
+        [popField, popValue, popSort].forEach(function(p){
+            if (p && p !== except) p.classList.remove('open');
+        });
+    }
+    function positionPopover(pop, anchor){
+        // position:fixed → coords de viewport directos
+        var rect = anchor.getBoundingClientRect();
+        pop.style.top  = (rect.bottom + 6) + 'px';
+        pop.style.left = rect.left + 'px';
+        pop.style.right = 'auto';
+        // Si se sale por la derecha, alinear a la derecha del anchor
+        setTimeout(function(){
+            var popRect = pop.getBoundingClientRect();
+            if (popRect.right > window.innerWidth - 8) {
+                pop.style.left = 'auto';
+                pop.style.right = (window.innerWidth - rect.right) + 'px';
+            }
+        }, 0);
+    }
+
+    // ── Chips render ───────────────────────────────────────────────────────
+    function chipHtml(key, label, value) {
+        var safeVal = (value || '').toString().replace(/</g,'&lt;');
+        return '' +
+            '<div class="crm-facet-chip" data-fkey="' + key + '">' +
+                '<span class="crm-facet-chip-key">' + label + '</span>' +
+                '<span class="crm-facet-chip-op">=</span>' +
+                '<span class="crm-facet-chip-val">' + safeVal + '</span>' +
+                '<span class="crm-facet-chip-x" data-fkey="' + key + '" title="Quitar filtro">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>' +
+                '</span>' +
+            '</div>';
+    }
+    function renderChips(){
+        var f = readFilters();
+        var html = '';
+        if (f.cliente)  html += chipHtml('cliente',  'Cliente',  f.cliente);
+        if (f.area)     html += chipHtml('area',     'Área',     f.area);
+        if (f.contacto) html += chipHtml('contacto', 'Contacto', f.contacto);
+        if (f.producto) html += chipHtml('producto', 'Marca',    f.producto);
+        if (f.tipo) {
+            var fld = FIELDS.find(function(x){ return x.key === 'tipo'; });
+            var opt = fld.options.find(function(o){ return o.v === f.tipo; });
+            html += chipHtml('tipo', 'Tipo', opt ? opt.l : f.tipo);
+        }
+        if (f.etapa)    html += chipHtml('etapa',    'Etapa',    f.etapa);
+        if (f.desde || f.hasta) {
+            var range = (f.desde || '…') + ' → ' + (f.hasta || '…');
+            html += chipHtml('fechas',   'Fechas',  range);
+        }
+        chipsEl.innerHTML = html;
+        var anyActive = !!html;
+        btnClear.style.display = anyActive ? '' : 'none';
+
+        // Sort label + estado visual
+        var s = readSort();
+        if (s) {
+            var sd = SORTS.find(function(x){ return x.k === s; });
+            sortLabel.textContent = sd ? sd.lbl : 'Ordenar';
+            btnSort.classList.add('has-sort');
+        } else {
+            sortLabel.textContent = 'Ordenar';
+            btnSort.classList.remove('has-sort');
+        }
+    }
+
+    // ── Popover: field picker ──────────────────────────────────────────────
+    function openFieldPicker(){
+        var f = readFilters();
+        var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
+        FIELDS.forEach(function(fld){
+            var active = (fld.key === 'fechas') ? !!(f.desde || f.hasta) : !!f[fld.key];
+            html += '<button type="button" class="crm-pop-item ' + (active ? 'active' : '') + '" data-field="' + fld.key + '">' +
+                        '<span>' + fld.label + '</span>' +
+                    '</button>';
+        });
+        html += '</div>';
+        popField.innerHTML = html;
+        closeAllPopovers(popField);
+        popField.classList.add('open');
+        positionPopover(popField, btnAdd, 'left');
+    }
+
+    // ── Popover: value picker (por field) ──────────────────────────────────
+    function getUniqueValues(dataKey){
+        var set = {};
+        document.querySelectorAll('#crmListBody .crm-data-row, #crmCardsGrid .crm-data-row').forEach(function(row){
+            var v = (row.dataset[dataKey] || '').trim();
+            if (v && v !== '-') set[v] = true;
+        });
+        return Object.keys(set).sort(function(a,b){ return a.localeCompare(b); });
+    }
+    function openValuePicker(fieldKey){
+        var fld = FIELDS.find(function(x){ return x.key === fieldKey; });
+        if (!fld) return;
+        popValue.dataset.currentField = fieldKey;
+        var f = readFilters();
+        var html = '';
+
+        if (fld.type === 'daterange') {
+            html = '<div class="crm-pop-section">Rango de fechas</div>' +
+                '<div class="crm-pop-dates">' +
+                    '<div><label>Desde</label><input type="date" id="_fpDesde" value="' + (f.desde || '') + '"></div>' +
+                    '<div><label>Hasta</label><input type="date" id="_fpHasta" value="' + (f.hasta || '') + '"></div>' +
+                '</div>' +
+                '<div class="crm-pop-footer">' +
+                    '<button type="button" data-act="clear">Quitar</button>' +
+                    '<button type="button" class="primary" data-act="apply">Aplicar</button>' +
+                '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '280px';
+        }
+        else if (fld.type === 'enum') {
+            html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+            html += '<button type="button" class="crm-pop-item ' + (!f[fieldKey] ? 'active' : '') + '" data-val="">Todos</button>';
+            fld.options.forEach(function(o){
+                var act = f[fieldKey] === o.v ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-val="' + o.v + '">' + o.l + '</button>';
+            });
+            html += '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '200px';
+        }
+        else {
+            // text/select — usamos buscador con valores únicos del dataset
+            var dataKey = ({ cliente: 'cliente', area: 'area', contacto: 'contacto', producto: 'producto', etapa: 'etapa' })[fieldKey];
+            var values = getUniqueValues(dataKey);
+            var current = f[fieldKey] || '';
+            html = '<div class="crm-pop-search">' +
+                        '<svg width="13" height="13" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+                        '<input type="text" id="_fpSearch" placeholder="Buscar ' + fld.label.toLowerCase() + '…" value="' + current.replace(/"/g,'&quot;') + '">' +
+                    '</div>' +
+                    '<div class="crm-pop-list" id="_fpList"></div>' +
+                    '<div class="crm-pop-footer">' +
+                        '<button type="button" data-act="clear">Quitar</button>' +
+                        '<button type="button" class="primary" data-act="apply-text">Aplicar texto</button>' +
+                    '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '260px';
+
+            var listEl = $in('_fpList');
+            var inputEl = $in('_fpSearch');
+            function renderList(q){
+                q = (q || '').toLowerCase();
+                var filtered = q ? values.filter(function(v){ return v.toLowerCase().indexOf(q) !== -1; }) : values;
+                var innerHtml = '';
+                if (!current) innerHtml += '<button type="button" class="crm-pop-item active" data-val="">Todos</button>';
+                else innerHtml += '<button type="button" class="crm-pop-item" data-val="">Todos</button>';
+                filtered.slice(0, 80).forEach(function(v){
+                    var act = current === v ? 'active' : '';
+                    innerHtml += '<button type="button" class="crm-pop-item ' + act + '" data-val="' + v.replace(/"/g,'&quot;') + '">' + v + '</button>';
+                });
+                if (!filtered.length) innerHtml += '<div class="crm-pop-item" style="color:#94A3B8;cursor:default;">Sin coincidencias</div>';
+                listEl.innerHTML = innerHtml;
+            }
+            renderList('');
+            if (inputEl) {
+                inputEl.addEventListener('input', function(){ renderList(this.value); });
+                setTimeout(function(){ inputEl.focus(); inputEl.select(); }, 20);
+            }
+        }
+
+        closeAllPopovers(popValue);
+        popValue.classList.add('open');
+        // Posición: abajo del botón + Filtro
+        positionPopover(popValue, btnAdd, 'left');
+    }
+
+    // ── Popover: sort ──────────────────────────────────────────────────────
+    function openSortPicker(){
+        var cur = readSort();
+        var html = '<div class="crm-pop-section">Ordenar por</div><div class="crm-pop-list">';
+        html += '<button type="button" class="crm-pop-item ' + (!cur ? 'active' : '') + '" data-sort="">Por defecto</button>';
+        SORTS.forEach(function(s){
+            var act = cur === s.k ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-sort="' + s.k + '">' + s.lbl + '</button>';
+        });
+        html += '</div>';
+        popSort.innerHTML = html;
+        closeAllPopovers(popSort);
+        popSort.classList.add('open');
+        positionPopover(popSort, btnSort, 'left');
+    }
+
+    // ── Event wiring ───────────────────────────────────────────────────────
+    btnAdd.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (popField.classList.contains('open')) { popField.classList.remove('open'); return; }
+        openFieldPicker();
+    });
+
+    btnSort.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (popSort.classList.contains('open')) { popSort.classList.remove('open'); return; }
+        openSortPicker();
+    });
+
+    btnClear.addEventListener('click', function(){
+        ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa','filterDesde','filterHasta'].forEach(function(id){
+            setInputValue(id, '');
+        });
+        renderChips();
+    });
+
+    btnExport.addEventListener('click', function(){
+        var oldBtn = document.getElementById('btnExportExcel');
+        if (oldBtn) oldBtn.click();
+    });
+
+    // Click en chip → reabrir value picker para editar; click en × → quitar
+    chipsEl.addEventListener('click', function(e){
+        var x = e.target.closest('.crm-facet-chip-x');
+        if (x) {
+            var key = x.dataset.fkey;
+            if (key === 'fechas') {
+                setInputValue('filterDesde', '');
+                setInputValue('filterHasta', '');
+            } else {
+                var fld = FIELDS.find(function(f){ return f.key === key; });
+                if (fld && fld.inputId) setInputValue(fld.inputId, '');
+            }
+            renderChips();
+            return;
+        }
+        var chip = e.target.closest('.crm-facet-chip');
+        if (chip) {
+            openValuePicker(chip.dataset.fkey);
+        }
+    });
+
+    // Delegación en popovers
+    popField.addEventListener('click', function(e){
+        var item = e.target.closest('.crm-pop-item');
+        if (!item) return;
+        popField.classList.remove('open');
+        openValuePicker(item.dataset.field);
+    });
+
+    popValue.addEventListener('click', function(e){
+        var item = e.target.closest('.crm-pop-item');
+        if (item) {
+            var val = item.dataset.val;
+            // Determinar qué input actualizar basado en el contenido del popover
+            // Buscamos el último field abierto por el estilo del popover — usamos data-current-field
+            var field = popValue.dataset.currentField;
+            if (!field) {
+                // Fallback: deduce del primer item
+                var firstSection = popValue.querySelector('.crm-pop-section');
+                if (firstSection) {
+                    var lbl = firstSection.textContent.trim();
+                    var f = FIELDS.find(function(x){ return x.label === lbl; });
+                    if (f) field = f.key;
+                }
+            }
+            if (field) {
+                var fld = FIELDS.find(function(x){ return x.key === field; });
+                if (fld && fld.inputId) setInputValue(fld.inputId, val);
+            }
+            popValue.classList.remove('open');
+            renderChips();
+            return;
+        }
+        var actBtn = e.target.closest('[data-act]');
+        if (!actBtn) return;
+        var act = actBtn.dataset.act;
+        var field = popValue.dataset.currentField;
+        if (act === 'clear') {
+            if (field === 'fechas') {
+                setInputValue('filterDesde', '');
+                setInputValue('filterHasta', '');
+            } else {
+                var fld = FIELDS.find(function(x){ return x.key === field; });
+                if (fld && fld.inputId) setInputValue(fld.inputId, '');
+            }
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply') {
+            // Date range
+            var d = ($in('_fpDesde') || {}).value || '';
+            var h = ($in('_fpHasta') || {}).value || '';
+            setInputValue('filterDesde', d);
+            setInputValue('filterHasta', h);
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply-text') {
+            var v = ($in('_fpSearch') || {}).value || '';
+            var fld2 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld2 && fld2.inputId) setInputValue(fld2.inputId, v);
+            popValue.classList.remove('open');
+            renderChips();
+        }
+    });
+
+    popSort.addEventListener('click', function(e){
+        var item = e.target.closest('.crm-pop-item');
+        if (!item) return;
+        var sk = item.dataset.sort;
+        // Limpiar ambos selects
+        setInputValue('filterMonto', '');
+        setInputValue('filterFecha', '');
+        if (sk) {
+            var s = SORTS.find(function(x){ return x.k === sk; });
+            if (s) setInputValue('filter' + (s.field === 'monto' ? 'Monto' : 'Fecha'), s.v);
+        }
+        popSort.classList.remove('open');
+        renderChips();
+        applySortToViews();
+    });
+
+    // Aplicar sort a las vistas list y cards (reordena DOM)
+    function applySortToViews(){
+        var m = ($in('filterMonto') || {}).value || '';
+        var f = ($in('filterFecha') || {}).value || '';
+        var sortFn = null;
+        if (m) {
+            sortFn = function(a, b){
+                var av = parseFloat(a.dataset.monto || '0');
+                var bv = parseFloat(b.dataset.monto || '0');
+                return m === 'desc' ? (bv - av) : (av - bv);
+            };
+        } else if (f) {
+            sortFn = function(a, b){
+                var av = parseInt(a.dataset.fecha || '0', 10);
+                var bv = parseInt(b.dataset.fecha || '0', 10);
+                return f === 'desc' ? (bv - av) : (av - bv);
+            };
+        }
+        ['crmListBody', 'crmCardsGrid'].forEach(function(id){
+            var c = document.getElementById(id);
+            if (!c) return;
+            var nodes = Array.prototype.slice.call(c.children).filter(function(n){
+                return n.classList && n.classList.contains('crm-data-row');
+            });
+            if (sortFn) {
+                // User sort explícito: respeta ancladas arriba, luego el sort elegido
+                nodes.sort(function(a, b){
+                    var pa = a.dataset.anclada === '1' ? 0 : 1;
+                    var pb = b.dataset.anclada === '1' ? 0 : 1;
+                    if (pa !== pb) return pa - pb;
+                    return sortFn(a, b);
+                });
+            } else {
+                // Orden natural: ancladas → vencidas (más días) → resto
+                nodes.sort(function(a, b){
+                    var pa = a.dataset.anclada === '1' ? 0 : 1;
+                    var pb = b.dataset.anclada === '1' ? 0 : 1;
+                    if (pa !== pb) return pa - pb;
+                    var oa = a.dataset.vencida === '1' ? 0 : 1;
+                    var ob = b.dataset.vencida === '1' ? 0 : 1;
+                    if (oa !== ob) return oa - ob;
+                    return parseInt(b.dataset.diasVencida || '0', 10) - parseInt(a.dataset.diasVencida || '0', 10);
+                });
+            }
+            nodes.forEach(function(n){ c.appendChild(n); });
+        });
+    }
+
+    // Cerrar popovers al hacer click fuera
+    document.addEventListener('click', function(e){
+        if (bar.contains(e.target)) return;
+        if (popField.contains(e.target) || popValue.contains(e.target) || popSort.contains(e.target)) return;
+        closeAllPopovers();
+    });
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') closeAllPopovers();
+    });
+
+    // Observar cambios en hidden inputs para re-renderizar chips
+    ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa','filterMonto','filterFecha','filterDesde','filterHasta'].forEach(function(id){
+        var el = $in(id);
+        if (!el) return;
+        el.addEventListener('change', renderChips);
+        el.addEventListener('input', renderChips);
+    });
+
+    // Render inicial (tras crm_main.js para que los selects estén poblados)
+    setTimeout(renderChips, 300);
+})();
+</script>
+{% endif %}
