@@ -2670,6 +2670,11 @@
     }
 
     popValue.addEventListener('click', function(e){
+        // Cualquier click dentro del popValue no debe cerrarlo.
+        // stopPropagation crítico porque el innerHTML replace destruye el DOM
+        // y el document handler falla al chequear popValue.contains(e.target).
+        e.stopPropagation();
+
         // Periodo unificado: toggle meses/años en estado temporal
         var pmItem = e.target.closest('[data-pm]');
         if (pmItem) {
