@@ -97,7 +97,7 @@
             });
         });
 
-        // Toggle pin oportunidad
+        // Toggle pin oportunidad (funciona en cards y list rows)
         setTimeout(function() {
             document.querySelectorAll('.crm-pin').forEach(function(pin) {
                 pin.addEventListener('click', function(e) {
@@ -107,37 +107,65 @@
                     if (!oppId) return;
                     var self = this;
                     var card = self.closest('.crm-postit');
-                    var grid = document.getElementById('crmCardsGrid');
+                    var listRow = self.closest('.crm-list-row');
+                    var container = card
+                        ? document.getElementById('crmCardsGrid')
+                        : (listRow ? document.getElementById('crmListBody') : null);
+                    var node = card || listRow;
                     var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
                     fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
                     }).then(function(r) { return r.json(); }).then(function(data) {
-                        if (data.success) {
-                            self.classList.toggle('pinned', data.anclada);
-                            var svg = self.querySelector('svg');
-                            var path = self.querySelector('path');
-                            if (data.anclada) {
-                                if (svg) { svg.setAttribute('fill', '#EF4444'); svg.setAttribute('stroke', '#EF4444'); }
-                                // Agregar agujero
-                                if (card && !card.querySelector('.crm-pin-hole-dyn')) {
-                                    var hole = document.createElement('div');
-                                    hole.className = 'crm-pin-hole-dyn';
-                                    hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
-                                    card.appendChild(hole);
-                                }
-                                // Mover al inicio
-                                if (card && grid) { grid.insertBefore(card, grid.firstChild); }
-                            } else {
-                                if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', '#9CA3AF'); }
-                                var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
-                                if (h) h.remove();
+                        if (!data.success) return;
+                        self.classList.toggle('pinned', data.anclada);
+                        var svg = self.querySelector('svg');
+                        if (data.anclada) {
+                            if (svg) { svg.setAttribute('fill', '#EF4444'); svg.setAttribute('stroke', 'none'); }
+                            if (card && !card.querySelector('.crm-pin-hole-dyn')) {
+                                var hole = document.createElement('div');
+                                hole.className = 'crm-pin-hole-dyn';
+                                hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
+                                card.appendChild(hole);
                             }
+                            // Mover al inicio del contenedor (antes de los vencidos si los hay)
+                            if (node && container) {
+                                // Insertar después de las vencidas, si las hay
+                                var firstNonOverdue = Array.prototype.find.call(container.children, function(ch){
+                                    return ch !== node && !isOverdueNode(ch);
+                                });
+                                if (firstNonOverdue) container.insertBefore(node, firstNonOverdue);
+                                else container.insertBefore(node, container.firstChild);
+                            }
+                        } else {
+                            if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', 'none'); }
+                            var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
+                            if (h) h.remove();
                         }
                     });
                 });
             });
         }, 500);
+
+        // Orden inicial: vencidas (rojas) primero, luego ancladas, luego resto
+        function isOverdueNode(n) { return n && n.dataset && n.dataset.vencida === '1'; }
+        function isPinnedNode(n)  { return n && n.classList && n.classList.contains('pinned-flag'); }
+        setTimeout(function(){
+            ['crmCardsGrid', 'crmListBody'].forEach(function(id){
+                var container = document.getElementById(id);
+                if (!container) return;
+                var nodes = Array.prototype.slice.call(container.children).filter(function(n){
+                    return n.classList && (n.classList.contains('crm-data-row') || n.classList.contains('crm-list-row') || n.classList.contains('crm-postit'));
+                });
+                // Estable: overdue first, luego el resto en orden original
+                nodes.sort(function(a, b){
+                    var oa = isOverdueNode(a) ? 0 : 1;
+                    var ob = isOverdueNode(b) ? 0 : 1;
+                    return oa - ob;
+                });
+                nodes.forEach(function(n){ container.appendChild(n); });
+            });
+        }, 50);
 
         // CRM View Toggle (list → cards → table → list) — list es el default
         var _crmViewOrder = ['list', 'cards', 'table'];

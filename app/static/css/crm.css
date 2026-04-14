@@ -5813,7 +5813,7 @@
     background: #FFFFFF;
     border: 1px solid #E5E7EB;
     border-radius: 12px;
-    padding: 14px 0;
+    padding: 14px 0 14px 8px;
     overflow: hidden;
     cursor: pointer;
     transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
@@ -5823,12 +5823,31 @@
     border-color: #CBD5E1;
     transform: translateY(-1px);
 }
+/* Franja lateral de color — llena altura completa con esquinas redondeadas
+   heredadas del contenedor (overflow:hidden del row las recorta) */
 .crm-list-strip {
     position: absolute;
-    left: 0; top: 10px; bottom: 10px;
-    width: 4px;
-    border-radius: 4px;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: #CBD5E1;
+    box-shadow: 1px 0 0 rgba(15,23,42,0.04);
 }
+.crm-list-strip.vencida  {
+    background: linear-gradient(180deg, #F87171 0%, #EF4444 100%);
+    box-shadow: 0 0 12px rgba(239,68,68,0.35), inset -1px 0 0 rgba(255,255,255,0.25);
+}
+.crm-list-strip.proyecto {
+    background: linear-gradient(180deg, #A78BFA 0%, #8B5CF6 100%);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,0.25);
+}
+.crm-list-strip.runrate  {
+    background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,0.25);
+}
+.crm-list-row:has(.crm-list-strip.vencida) { border-color: #FEE2E2; }
+.crm-list-row:has(.crm-list-strip.vencida):hover { border-color: #FCA5A5; }
 .crm-list-cell { padding: 0 10px; min-width: 0; }
 .crm-list-title {
     font-size: 0.88rem;
@@ -5939,29 +5958,42 @@
     justify-content: flex-end;
     gap: 6px;
 }
-.crm-list-arrow,
-.crm-list-kebab {
+.crm-list-quote,
+.crm-list-pin {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px; height: 32px;
-    border-radius: 8px;
+    width: 34px; height: 34px;
+    border-radius: 9px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: all 0.15s;
     padding: 0;
+    background: transparent;
+    flex-shrink: 0;
 }
-.crm-list-arrow {
+.crm-list-quote {
     background: #EFF6FF;
     color: #2563EB;
     border-color: #DBEAFE;
 }
-.crm-list-arrow:hover { background: #DBEAFE; }
-.crm-list-kebab {
-    background: transparent;
+.crm-list-quote:hover {
+    background: #DBEAFE;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(37,99,235,0.2);
+}
+.crm-list-pin {
     color: #94A3B8;
 }
-.crm-list-kebab:hover { background: #F1F5F9; color: #475569; }
+.crm-list-pin:hover { background: #F1F5F9; }
+.crm-list-pin:hover svg { fill: #64748B; }
+.crm-list-pin.pinned {
+    background: #FEF2F2;
+}
+.crm-list-pin.pinned svg {
+    fill: #EF4444;
+    transform: rotate(-30deg);
+}
 
 /* Responsive list view */
 @media (max-width: 960px) {

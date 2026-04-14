@@ -403,15 +403,15 @@
                     box-shadow: 0 12px 24px -8px rgba(15,23,42,0.12), 0 4px 8px -2px rgba(15,23,42,0.06);
                     border-color: #CBD5E1;
                 }
-                .crm-pin {
+                .crm-postit > .crm-pin {
                     position: absolute; top: 8px; right: 8px; z-index: 6;
                     cursor: pointer; transition: transform 0.15s, opacity 0.15s;
                     opacity: 0;
                 }
-                .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
-                .crm-postit:hover .crm-pin { opacity: 0.3; }
-                .crm-postit:hover .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
-                .crm-postit:hover .crm-pin.pinned { opacity: 1; }
+                .crm-postit > .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
+                .crm-postit:hover > .crm-pin { opacity: 0.3; }
+                .crm-postit:hover > .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
+                .crm-postit:hover > .crm-pin.pinned { opacity: 1; }
             </style>
 
             <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
@@ -509,7 +509,7 @@
                     data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}"
                     data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
                     onclick="openDetalle('{{ item.id }}')">
-                    <div class="crm-list-strip" style="background:{% if item.tiene_actividad_vencida %}#EF4444{% elif item.tipo_negociacion == 'proyecto' %}#8B5CF6{% else %}#3B82F6{% endif %};"></div>
+                    <div class="crm-list-strip{% if item.tiene_actividad_vencida %} vencida{% elif item.tipo_negociacion == 'proyecto' %} proyecto{% else %} runrate{% endif %}"></div>
                     <div class="crm-list-cell" style="flex:2.6;padding-left:22px;">
                         <div class="crm-list-title"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:42 }}</span></div>
                         <div class="crm-list-sub" onclick="event.stopPropagation();if(typeof openClienteOportunidadesModal==='function')openClienteOportunidadesModal('{{ item.cliente.id|default:'' }}','{{ item.cliente.nombre_empresa|default:"Sin Cliente" }}')">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:34 }}</div>
@@ -549,11 +549,17 @@
                         {% endif %}
                     </div>
                     <div class="crm-list-cell crm-list-actions" style="flex:0.7;padding-right:18px;">
-                        <button type="button" class="crm-list-arrow" title="Abrir" onclick="event.stopPropagation();openDetalle('{{ item.id }}');">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                        <button type="button" class="crm-list-quote" title="Cotizar rápido" onclick="event.stopPropagation();if(typeof openCotizador==='function')openCotizador({{ item.id }});">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="3" width="16" height="18" rx="2"/>
+                                <line x1="8" y1="7" x2="16" y2="7"/>
+                                <line x1="8" y1="11" x2="10" y2="11"/><line x1="12" y1="11" x2="14" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/>
+                                <line x1="8" y1="15" x2="10" y2="15"/><line x1="12" y1="15" x2="14" y2="15"/>
+                                <line x1="8" y1="19" x2="10" y2="19"/><line x1="16" y1="15" x2="16" y2="19"/>
+                            </svg>
                         </button>
-                        <button type="button" class="crm-list-kebab" title="Más" onclick="event.stopPropagation();">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                        <button type="button" class="crm-list-pin crm-pin {% if item.esta_anclada %}pinned{% endif %}" data-pin-id="{{ item.id }}" title="Anclar oportunidad" onclick="event.stopPropagation();">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#9CA3AF{% endif %}" stroke="none"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
                         </button>
                     </div>
                 </div>
