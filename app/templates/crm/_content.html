@@ -219,8 +219,28 @@
                 </a>
             </div>
             <div class="crm-bar-right">
-                <!-- Mes/Año/Vendedor ahora viven en el facet bar abajo como chips.
-                     Mantenemos los inputs ocultos para que crm_main.js siga leyéndolos. -->
+                {% if tab_activo == 'crm' %}
+                <!-- Periodo (contexto de la página) — separado de filtros -->
+                <div class="crm-period-pills" id="crmPeriodPills">
+                    <button type="button" class="crm-period-pill" data-period="mes" id="pillMes">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <span id="pillMesLabel">Mes</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <button type="button" class="crm-period-pill" data-period="anio" id="pillAnio">
+                        <span id="pillAnioLabel">Año</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    {% if es_supervisor %}
+                    <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span id="pillVendedorLabel">Vendedores</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <!-- Inputs ocultos: crm_main.js sigue leyéndolos -->
                 <div style="display:none;" id="crmHiddenPeriodInputs">
                     <select id="mesFilter">
                         {% for code, name in mes_choices %}
@@ -2245,17 +2265,28 @@
         return _currentVendors.length + ' vendedores';
     }
 
+    function renderPeriodPills(){
+        var pMes = $in('pillMesLabel');
+        var pAnio = $in('pillAnioLabel');
+        var pVen = $in('pillVendedorLabel');
+        if (pMes) pMes.textContent = _mesNames[_currentMes] || 'Mes';
+        if (pAnio) pAnio.textContent = _currentAnio === 'todos' ? 'Todos los años' : _currentAnio;
+        if (pVen) pVen.textContent = vendorChipLabel();
+
+        // Highlight "todos" state de forma sutil
+        var mes = $in('pillMes');
+        if (mes) mes.classList.toggle('is-default', _currentMes === 'todos');
+        var anio = $in('pillAnio');
+        if (anio) anio.classList.toggle('is-default', _currentAnio === 'todos');
+        var ven = $in('pillVendedor');
+        if (ven) ven.classList.toggle('is-default', _currentVendors.length === 0);
+    }
+
     function renderChips(){
         var f = readFilters();
         var html = '';
 
-        // Chips de período (siempre visibles)
-        var mesLabel = _mesNames[_currentMes] || _currentMes;
-        html += chipPeriodHtml('mes',  'Mes',  mesLabel, _currentMes !== 'todos');
-        html += chipPeriodHtml('anio', 'Año',  _currentAnio === 'todos' ? 'Todos' : _currentAnio, _currentAnio !== 'todos');
-        if (_esSupervisor) {
-            html += chipPeriodHtml('vendedor', 'Vendedor', vendorChipLabel(), _currentVendors.length > 0);
-        }
+        renderPeriodPills();
 
         // Chips in-memory (solo si activos)
         if (f.cliente)  html += chipHtml('cliente',  'Cliente',  f.cliente);
@@ -2292,13 +2323,7 @@
     // ── Popover: field picker ──────────────────────────────────────────────
     function openFieldPicker(){
         var f = readFilters();
-        var html = '<div class="crm-pop-section">Período</div><div class="crm-pop-list">';
-        PERIOD_FIELDS.forEach(function(fld){
-            html += '<button type="button" class="crm-pop-item" data-field="' + fld.key + '" data-period="1">' +
-                        '<span>' + fld.label + '</span>' +
-                    '</button>';
-        });
-        html += '</div><div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
+        var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
         FIELDS.forEach(function(fld){
             var active = (fld.key === 'fechas') ? !!(f.desde || f.hasta) : !!f[fld.key];
             html += '<button type="button" class="crm-pop-item ' + (active ? 'active' : '') + '" data-field="' + fld.key + '">' +
@@ -2531,12 +2556,24 @@
         var item = e.target.closest('.crm-pop-item');
         if (!item) return;
         popField.classList.remove('open');
-        if (item.dataset.period) {
-            openPeriodPicker(item.dataset.field, btnAdd);
-        } else {
-            openValuePicker(item.dataset.field);
-        }
+        openValuePicker(item.dataset.field);
     });
+
+    // Period pills → openPeriodPicker
+    var periodPillsEl = document.getElementById('crmPeriodPills');
+    if (periodPillsEl) {
+        periodPillsEl.addEventListener('click', function(e){
+            var pill = e.target.closest('.crm-period-pill');
+            if (!pill) return;
+            e.stopPropagation();
+            var key = pill.dataset.period;
+            if (popValue.classList.contains('open') && popValue.dataset.currentField === '__period__' + key) {
+                popValue.classList.remove('open');
+                return;
+            }
+            openPeriodPicker(key, pill);
+        });
+    }
 
     popValue.addEventListener('click', function(e){
         var item = e.target.closest('.crm-pop-item');

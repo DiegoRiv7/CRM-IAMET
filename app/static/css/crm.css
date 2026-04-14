@@ -5832,6 +5832,40 @@
 }
 .crm-facet-chip-period:hover { background: #E2E8F0; border-color: #94A3B8; }
 .crm-facet-chip-period .crm-facet-chip-val { color: #1E293B; }
+
+/* Period pills — contexto de la página, junto a los tabs */
+.crm-period-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 8px;
+}
+.crm-period-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 9px 0 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #1E293B;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.crm-period-pill:hover {
+    background: #F1F5F9;
+    border-color: #E2E8F0;
+}
+.crm-period-pill.is-default {
+    color: #64748B;
+    font-weight: 500;
+}
+.crm-period-pill-caret { opacity: 0.55; margin-left: 2px; }
+.crm-period-pill:hover .crm-period-pill-caret { opacity: 1; }
 .crm-facet-chip-key { color: #64748B; font-weight: 600; margin-right: 4px; }
 .crm-facet-chip-op  { color: #94A3B8; font-weight: 500; margin: 0 4px; }
 .crm-facet-chip-val { color: #0052D4; font-weight: 700; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
