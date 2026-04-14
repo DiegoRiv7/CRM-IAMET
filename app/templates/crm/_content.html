@@ -12,9 +12,8 @@
         #crmViewCards { position: relative; min-height: 560px; }
         /* Cuando el sidebar está abierto, aseguramos altura suficiente */
         #crmViewCards.crmFocus-open { min-height: 720px; }
-        /* Fix flash: grid oculto hasta que el filtro inicial se aplique */
-        #crmCardsGrid { opacity: 0; transition: opacity 0.18s ease; }
-        #crmCardsGrid.crmFocus-ready { opacity: 1; }
+        /* Grid visible por default (sidebar focus-etapa eliminado) */
+        #crmCardsGrid { opacity: 1; }
         /* Sidebar embebido DENTRO del bloque de cards */
         .crmFocus-sidebar {
             position: absolute; left: 0; top: 0; bottom: 0; width: 300px;
