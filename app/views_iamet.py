@@ -1404,6 +1404,110 @@ def api_financiero_upload_factura_ingreso(request, proyecto_id):
     })
 
 
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_upload_factura_proveedor(request, proyecto_id):
+    """Subir un PDF de Factura de Proveedor manualmente."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo requerido'}, status=400)
+
+    from decimal import Decimal as D
+    nombre = archivo.name
+    ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
+
+    pdf_data = {}
+    if ext == 'pdf':
+        try:
+            archivo.seek(0)
+            content = archivo.read()
+            archivo.seek(0)
+            from .services_financiero import _extraer_datos_pdf_from_bytes
+            pdf_data = _extraer_datos_pdf_from_bytes(content)
+        except Exception as exc:
+            import logging
+            logging.warning(f"[Financiero] Error parseando Factura Proveedor PDF: {exc}")
+
+    from .services_financiero import _extraer_numero_factura, _extraer_proveedor_de_nombre, _acortar_nombre
+    monto = pdf_data.get('monto') or D('0')
+    fecha = pdf_data.get('fecha')
+    numero = pdf_data.get('numero_factura') or _extraer_numero_factura(nombre)
+    proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
+
+    # Verificar duplicado
+    if ProyectoFacturaProveedor.objects.filter(proyecto=proyecto, numero_factura=numero).exists():
+        return JsonResponse({'success': False, 'error': f'Ya existe una factura de proveedor con número {numero} en este proyecto'}, status=409)
+
+    factura = ProyectoFacturaProveedor.objects.create(
+        proyecto=proyecto,
+        numero_factura=numero,
+        proveedor=_acortar_nombre(proveedor),
+        monto=monto,
+        fecha_factura=fecha or timezone.localdate(),
+        status='received',
+        notas=f'Subida manualmente. Archivo: {nombre}',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': _factura_prov_to_dict(factura),
+        'monto_extraido': float(monto),
+    })
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_factura_proveedor_eliminar(request, factura_id):
+    """Elimina una factura de proveedor."""
+    try:
+        factura = ProyectoFacturaProveedor.objects.select_related('proyecto').get(id=factura_id)
+    except ProyectoFacturaProveedor.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Factura no encontrada'}, status=404)
+
+    if not _check_access(request.user, factura.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    factura.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_factura_ingreso_eliminar(request, factura_id):
+    """Elimina una factura de ingreso."""
+    try:
+        factura = ProyectoFacturaIngreso.objects.select_related('proyecto').get(id=factura_id)
+    except ProyectoFacturaIngreso.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Factura no encontrada'}, status=404)
+
+    if not _check_access(request.user, factura.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    factura.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_gasto_eliminar(request, gasto_id):
+    """Elimina un gasto operativo."""
+    try:
+        gasto = ProyectoGasto.objects.select_related('proyecto').get(id=gasto_id)
+    except ProyectoGasto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Gasto no encontrado'}, status=404)
+
+    if not _check_access(request.user, gasto.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    gasto.delete()
+    return JsonResponse({'success': True})
+
+
 # ═══════════════════════════════════════════════════════════════
 #  TAREAS PROYECTO
 # ═══════════════════════════════════════════════════════════════

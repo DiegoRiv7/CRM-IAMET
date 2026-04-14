@@ -1342,6 +1342,43 @@
         setTimeout(function() { toast.remove(); }, 3000);
     }
 
+    // =========================================
+    //  CONFIRM DIALOG (reemplaza confirm() del navegador)
+    // =========================================
+    var _proyConfirmCallback = null;
+
+    function proyConfirm(titulo, mensaje, opts) {
+        opts = opts || {};
+        var dlg = el('proyConfirmDialog');
+        if (!dlg) { // Fallback si el widget no esta en el DOM
+            if (window.confirm(mensaje)) { if (opts.onConfirm) opts.onConfirm(); }
+            return;
+        }
+        el('proyConfirmTitle').textContent = titulo || 'Confirmar';
+        el('proyConfirmText').textContent = mensaje || '';
+        var btn = el('proyConfirmBtnOk');
+        btn.textContent = opts.textoConfirmar || 'Eliminar';
+        var color = opts.color || '#EF4444';
+        btn.style.background = color;
+        btn.style.borderColor = color;
+        _proyConfirmCallback = opts.onConfirm || null;
+        dlg.style.display = 'flex';
+    }
+
+    window.proyConfirmAceptar = function() {
+        var dlg = el('proyConfirmDialog');
+        if (dlg) dlg.style.display = 'none';
+        var cb = _proyConfirmCallback;
+        _proyConfirmCallback = null;
+        if (cb) cb();
+    };
+
+    window.proyConfirmCancelar = function() {
+        var dlg = el('proyConfirmDialog');
+        if (dlg) dlg.style.display = 'none';
+        _proyConfirmCallback = null;
+    };
+
 
     // =========================================
     //  DETALLE / COMPLETAR ACTIVIDAD (PROGRAMA DE OBRA)
@@ -1631,17 +1668,77 @@
 
     // ── Eliminar OC ──
     window.proyFinEliminarOC = function(ocId) {
-        if (!confirm('¿Eliminar esta orden de compra?')) return;
-        _fetch('/app/api/iamet/oc/' + ocId + '/eliminar/', {
-            method: 'DELETE'
-        }).then(function(resp) {
-            if (resp.success) {
-                _showToast('OC eliminada');
-                if (currentProjectId) renderFinanciero(currentProjectId);
-            } else {
-                _showToast(resp.error || 'Error al eliminar');
+        proyConfirm('Eliminar Orden de Compra', '¿Estas seguro que deseas eliminar esta orden de compra? Esta accion no se puede deshacer.', {
+            onConfirm: function() {
+                _fetch('/app/api/iamet/oc/' + ocId + '/eliminar/', {
+                    method: 'DELETE'
+                }).then(function(resp) {
+                    if (resp.success) {
+                        _showToast('OC eliminada');
+                        if (currentProjectId) renderFinanciero(currentProjectId);
+                    } else {
+                        _showToast(resp.error || 'Error al eliminar');
+                    }
+                }).catch(function() { _showToast('Error de conexion'); });
             }
-        }).catch(function() { _showToast('Error de conexión'); });
+        });
+    };
+
+    // ── Eliminar Factura Proveedor ──
+    window.proyFinEliminarFacturaProveedor = function(facturaId) {
+        proyConfirm('Eliminar Factura Proveedor', '¿Estas seguro que deseas eliminar esta factura de proveedor?', {
+            onConfirm: function() {
+                _fetch('/app/api/iamet/facturas-proveedor/' + facturaId + '/eliminar/', {
+                    method: 'DELETE'
+                }).then(function(resp) {
+                    if (resp.success) {
+                        _showToast('Factura eliminada');
+                        if (currentProjectId) renderFinanciero(currentProjectId);
+                    } else {
+                        _showToast(resp.error || 'Error al eliminar');
+                    }
+                }).catch(function() { _showToast('Error de conexion'); });
+            }
+        });
+    };
+
+    // ── Eliminar Factura Ingreso ──
+    window.proyFinEliminarFacturaIngreso = function(facturaId) {
+        proyConfirm('Eliminar Factura de Ingreso', '¿Estas seguro que deseas eliminar esta factura de ingreso?', {
+            onConfirm: function() {
+                _fetch('/app/api/iamet/facturas-ingreso/' + facturaId + '/eliminar/', {
+                    method: 'DELETE'
+                }).then(function(resp) {
+                    if (resp.success) {
+                        _showToast('Factura eliminada');
+                        if (currentProjectId) renderFinanciero(currentProjectId);
+                    } else {
+                        _showToast(resp.error || 'Error al eliminar');
+                    }
+                }).catch(function() { _showToast('Error de conexion'); });
+            }
+        });
+    };
+
+    // ── Upload Factura Proveedor manual ──
+    window.proyFinUploadFacturaProveedor = function(input) {
+        if (!input.files || !input.files.length || !currentProjectId) return;
+        var formData = new FormData();
+        formData.append('archivo', input.files[0]);
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/financiero/upload-factura-proveedor/', {
+            method: 'POST',
+            body: formData
+        }).then(function(resp) {
+            input.value = '';
+            if (resp.success) {
+                var msg = 'Factura de proveedor importada';
+                if (resp.monto_extraido > 0) msg += ' ($' + Number(resp.monto_extraido).toLocaleString('en-US', {minimumFractionDigits:2}) + ' extraido del PDF)';
+                _showToast(msg);
+                renderFinanciero(currentProjectId);
+            } else {
+                _showToast(resp.error || 'Error al subir factura');
+            }
+        }).catch(function() { input.value = ''; _showToast('Error de conexion'); });
     };
 
     // ── Upload Factura Ingreso manual ──
@@ -1665,17 +1762,25 @@
         }).catch(function() { input.value = ''; _showToast('Error de conexión'); });
     };
 
+    function _btnEliminarIcon(onclickExpr) {
+        return '<button onclick="event.stopPropagation();' + onclickExpr + '" title="Eliminar" style="background:none;border:none;cursor:pointer;color:#9CA3AF;padding:4px;border-radius:4px;transition:all 0.15s;" onmouseenter="this.style.color=\'#EF4444\';this.style.background=\'#FEE2E2\'" onmouseleave="this.style.color=\'#9CA3AF\';this.style.background=\'transparent\'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+    }
+
+    function _btnEditarIcon(onclickExpr) {
+        return '<button onclick="event.stopPropagation();' + onclickExpr + '" title="Editar" style="background:none;border:none;cursor:pointer;color:#9CA3AF;padding:4px;border-radius:4px;margin-right:4px;transition:all 0.15s;" onmouseenter="this.style.color=\'#0052D4\';this.style.background=\'#DBEAFE\'" onmouseleave="this.style.color=\'#9CA3AF\';this.style.background=\'transparent\'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>';
+    }
+
     function renderSupplierInvoices(projectId) {
         var container = el('proyFacProvBody');
         if (!container) return;
 
-        container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
+        container.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/facturas-proveedor/').then(function(resp) {
             if (resp.ok || resp.success) {
                 var invoices = resp.data || [];
                 if (invoices.length === 0) {
-                    container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de proveedores</td></tr>';
+                    container.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de proveedores</td></tr>';
                     return;
                 }
 
@@ -1696,16 +1801,17 @@
                         '<td style="text-align:right;color:' + varianceColor + '">' + (variancePct > 0 ? '+' : '') + variancePct + '%</td>' +
                         '<td><span class="proy-badge ' + statusClass(inv.status) + '">' + statusLabel(inv.status) + '</span></td>' +
                         '<td>' + fmtDate(inv.fecha_factura) + '</td>' +
+                        '<td style="text-align:center">' + _btnEliminarIcon('proyFinEliminarFacturaProveedor(' + inv.id + ')') + '</td>' +
                     '</tr>';
                 });
 
                 container.innerHTML = html;
             } else {
-                container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
+                container.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
                 console.error('Error cargando facturas proveedor:', resp.error);
             }
         }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
+            container.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
             console.error('Error de red cargando facturas proveedor:', err);
         });
     }
@@ -1714,13 +1820,13 @@
         var container = el('proyFacIngBody');
         if (!container) return;
 
-        container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
+        container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/facturas-ingreso/').then(function(resp) {
             if (resp.ok || resp.success) {
                 var invoices = resp.data || [];
                 if (invoices.length === 0) {
-                    container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de ingreso</td></tr>';
+                    container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de ingreso</td></tr>';
                     var foot = el('proyFacIngFoot');
                     if (foot) foot.innerHTML = '';
                     return;
@@ -1736,6 +1842,7 @@
                         '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
                         '<td><span class="proy-badge ' + statusClass(inv.status || inv.metodo_pago || 'emitted') + '">' + statusLabel(inv.status || inv.metodo_pago || 'emitted') + '</span></td>' +
                         '<td>' + fmtDate(inv.fecha_factura) + '</td>' +
+                        '<td style="text-align:center">' + _btnEliminarIcon('proyFinEliminarFacturaIngreso(' + inv.id + ')') + '</td>' +
                     '</tr>';
                 });
 
@@ -1746,30 +1853,35 @@
                     foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
                         '<td style="text-align:right;color:#8e8e93">Total</td>' +
                         '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
-                        '<td colspan="2"></td>' +
+                        '<td colspan="3"></td>' +
                     '</tr>';
                 }
             } else {
-                container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
+                container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
                 console.error('Error cargando facturas ingreso:', resp.error);
             }
         }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
+            container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
             console.error('Error de red cargando facturas ingreso:', err);
         });
     }
+
+    var _CATEGORIA_LABEL = {
+        viatics: 'Viaticos', fuel: 'Combustible', lodging: 'Hospedaje', meals: 'Comidas',
+        equipment: 'Equipo', labor: 'Mano de Obra', other: 'Otro'
+    };
 
     function renderExpenses(projectId) {
         var container = el('proyGastosBody');
         if (!container) return;
 
-        container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
+        container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/gastos/').then(function(resp) {
             if (resp.ok || resp.success) {
                 var expenses = resp.data || [];
                 if (expenses.length === 0) {
-                    container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93">No hay gastos registrados</td></tr>';
+                    container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#8e8e93">No hay gastos registrados</td></tr>';
                     var foot = el('proyGastosFoot');
                     if (foot) foot.innerHTML = '';
                     return;
@@ -1780,11 +1892,18 @@
                 expenses.forEach(function(exp) {
                     var amount = exp.monto || 0;
                     total += amount;
-                    html += '<tr>' +
-                        '<td>' + (exp.categoria || '\u2014') + '</td>' +
+                    var cat = _CATEGORIA_LABEL[exp.categoria] || exp.categoria || '\u2014';
+                    var estado = exp.estado_aprobacion || 'pending';
+                    var editData = JSON.stringify(exp).replace(/"/g, '&quot;');
+                    var acciones = _btnEditarIcon('proyGastoAbrirDialogo(JSON.parse(this.closest(\'tr\').dataset.gasto))') +
+                                   _btnEliminarIcon('proyGastoEliminar(' + exp.id + ')');
+                    html += '<tr data-gasto="' + editData + '">' +
+                        '<td>' + cat + '</td>' +
                         '<td>' + (exp.descripcion || '\u2014') + '</td>' +
                         '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
-                        '<td><span class="proy-badge ' + statusClass(exp.status || exp.aprobacion || 'pending') + '">' + statusLabel(exp.status || exp.aprobacion || 'pending') + '</span></td>' +
+                        '<td>' + fmtDate(exp.fecha_gasto) + '</td>' +
+                        '<td><span class="proy-badge ' + statusClass(estado) + '">' + statusLabel(estado) + '</span></td>' +
+                        '<td style="text-align:center;white-space:nowrap">' + acciones + '</td>' +
                     '</tr>';
                 });
 
@@ -1795,15 +1914,15 @@
                     foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
                         '<td colspan="2" style="text-align:right;color:#8e8e93">Total Gastos</td>' +
                         '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
-                        '<td></td>' +
+                        '<td colspan="3"></td>' +
                     '</tr>';
                 }
             } else {
-                container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error al cargar gastos</td></tr>';
+                container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#ef4444">Error al cargar gastos</td></tr>';
                 console.error('Error cargando gastos:', resp.error);
             }
         }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
+            container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
             console.error('Error de red cargando gastos:', err);
         });
     }
@@ -2647,43 +2766,79 @@
         });
     };
 
-    window.proyectosGuardarGasto = function() {
+    // ── Gastos Operativos: abrir dialogo (crear/editar) ──
+    window.proyGastoAbrirDialogo = function(gastoData) {
+        var dlg = el('proyDialogoGasto');
+        if (!dlg) return;
+
+        var isEdit = !!gastoData;
+        if (el('proyGastoDialogTitle')) el('proyGastoDialogTitle').textContent = isEdit ? 'Editar Gasto Operativo' : 'Agregar Gasto Operativo';
+        if (el('proyGastoBtnGuardar')) el('proyGastoBtnGuardar').textContent = isEdit ? 'Actualizar' : 'Guardar';
+
+        if (el('proyGastoId')) el('proyGastoId').value = isEdit ? gastoData.id : '';
+        if (el('proyGastoCategoria')) el('proyGastoCategoria').value = isEdit ? (gastoData.categoria || 'other') : 'other';
+        if (el('proyGastoDescripcion')) el('proyGastoDescripcion').value = isEdit ? (gastoData.descripcion || '') : '';
+        if (el('proyGastoMonto')) el('proyGastoMonto').value = isEdit && gastoData.monto != null ? gastoData.monto : '';
+        if (el('proyGastoPresupuesto')) el('proyGastoPresupuesto').value = isEdit && gastoData.monto_presupuestado != null ? gastoData.monto_presupuestado : '';
+        if (el('proyGastoFecha')) el('proyGastoFecha').value = isEdit && gastoData.fecha_gasto ? gastoData.fecha_gasto : new Date().toISOString().slice(0, 10);
+        if (el('proyGastoNotas')) el('proyGastoNotas').value = isEdit ? (gastoData.notas || '') : '';
+
+        dlg.style.display = 'flex';
+    };
+
+    // ── Gastos Operativos: guardar (crear o actualizar) ──
+    window.proyGastoGuardar = function() {
         if (!currentProjectId) return;
 
-        var category = el('proyGastoCategoria') ? el('proyGastoCategoria').value.trim() : '';
-        var desc = el('proyGastoDescripcion') ? el('proyGastoDescripcion').value.trim() : '';
-        var amount = el('proyGastoMonto') ? parseFloat(el('proyGastoMonto').value) || 0 : 0;
-        var expenseDate = el('proyGastoFecha') ? el('proyGastoFecha').value : '';
-        var notes = el('proyGastoNotas') ? el('proyGastoNotas').value.trim() : '';
+        var gastoId = el('proyGastoId') ? el('proyGastoId').value : '';
+        var categoria = el('proyGastoCategoria') ? el('proyGastoCategoria').value : 'other';
+        var descripcion = el('proyGastoDescripcion') ? el('proyGastoDescripcion').value.trim() : '';
+        var monto = el('proyGastoMonto') ? parseFloat(el('proyGastoMonto').value) || 0 : 0;
+        var montoPresup = el('proyGastoPresupuesto') && el('proyGastoPresupuesto').value !== '' ? parseFloat(el('proyGastoPresupuesto').value) : null;
+        var fechaGasto = el('proyGastoFecha') ? el('proyGastoFecha').value : '';
+        var notas = el('proyGastoNotas') ? el('proyGastoNotas').value.trim() : '';
 
-        if (!desc || amount <= 0) return;
+        if (!descripcion) { _showToast('La descripcion es obligatoria'); return; }
+        if (monto <= 0) { _showToast('El monto debe ser mayor a 0'); return; }
+        if (!fechaGasto) { _showToast('La fecha es obligatoria'); return; }
 
-        _fetch('/app/api/iamet/gastos/crear/', {
-            method: 'POST',
-            body: {
-                proyecto_id: currentProjectId,
-                categoria: category,
-                descripcion: desc,
-                monto: amount,
-                fecha_gasto: expenseDate,
-                notas: notes
-            }
-        }).then(function(resp) {
+        var url = gastoId ? '/app/api/iamet/gastos/' + gastoId + '/actualizar/' : '/app/api/iamet/gastos/crear/';
+        var body = {
+            categoria: categoria,
+            descripcion: descripcion,
+            monto: monto,
+            monto_presupuestado: montoPresup,
+            fecha_gasto: fechaGasto,
+            notas: notas
+        };
+        if (!gastoId) body.proyecto_id = currentProjectId;
+
+        _fetch(url, { method: 'POST', body: body }).then(function(resp) {
             if (resp.ok || resp.success) {
                 proyectosCerrarDialogo('proyDialogoGasto');
-                // Clear form
-                if (el('proyGastoCategoria')) el('proyGastoCategoria').value = '';
-                if (el('proyGastoDescripcion')) el('proyGastoDescripcion').value = '';
-                if (el('proyGastoMonto')) el('proyGastoMonto').value = '';
-                if (el('proyGastoFecha')) el('proyGastoFecha').value = '';
-                if (el('proyGastoNotas')) el('proyGastoNotas').value = '';
+                _showToast(gastoId ? 'Gasto actualizado' : 'Gasto creado');
                 renderExpenses(currentProjectId);
             } else {
-                alert('Error al crear gasto: ' + (resp.error || 'Error desconocido'));
+                _showToast(resp.error || 'Error al guardar gasto');
             }
-        }).catch(function(err) {
-            alert('Error de conexion al crear gasto');
-            console.error('Error creando gasto:', err);
+        }).catch(function() { _showToast('Error de conexion'); });
+    };
+
+    // ── Gastos Operativos: eliminar ──
+    window.proyGastoEliminar = function(gastoId) {
+        proyConfirm('Eliminar Gasto', '¿Estas seguro que deseas eliminar este gasto operativo?', {
+            onConfirm: function() {
+                _fetch('/app/api/iamet/gastos/' + gastoId + '/eliminar/', {
+                    method: 'DELETE'
+                }).then(function(resp) {
+                    if (resp.success) {
+                        _showToast('Gasto eliminado');
+                        if (currentProjectId) renderExpenses(currentProjectId);
+                    } else {
+                        _showToast(resp.error || 'Error al eliminar');
+                    }
+                }).catch(function() { _showToast('Error de conexion'); });
+            }
         });
     };
 
@@ -2704,37 +2859,37 @@
     };
 
     window.proyectosEliminarProyecto = function(projectId) {
-        if (!confirm('Estas seguro de eliminar este proyecto?')) return;
-
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/eliminar/', {
-            method: 'POST'
-        }).then(function(resp) {
-            if (resp.ok || resp.success) {
-                proyectosVolverLista();
-                proyectosCargarLista();
-            } else {
-                alert('Error al eliminar: ' + (resp.error || 'Error desconocido'));
+        proyConfirm('Eliminar Proyecto', '¿Estas seguro que deseas eliminar este proyecto? Todas las partidas, ordenes de compra, facturas y gastos relacionados se eliminaran tambien.', {
+            onConfirm: function() {
+                _fetch('/app/api/iamet/proyectos/' + projectId + '/eliminar/', {
+                    method: 'POST'
+                }).then(function(resp) {
+                    if (resp.ok || resp.success) {
+                        _showToast('Proyecto eliminado');
+                        proyectosVolverLista();
+                        proyectosCargarLista();
+                    } else {
+                        _showToast(resp.error || 'Error al eliminar');
+                    }
+                }).catch(function() { _showToast('Error de conexion'); });
             }
-        }).catch(function(err) {
-            alert('Error de conexion al eliminar proyecto');
-            console.error('Error eliminando proyecto:', err);
         });
     };
 
     window.proyectosEliminarPartida = function(partidaId) {
-        if (!confirm('Estas seguro de eliminar esta partida?')) return;
-
-        _fetch('/app/api/iamet/partidas/' + partidaId + '/eliminar/', {
-            method: 'POST'
-        }).then(function(resp) {
-            if (resp.ok || resp.success) {
-                if (currentProjectId) renderPartidas(currentProjectId);
-            } else {
-                alert('Error al eliminar: ' + (resp.error || 'Error desconocido'));
+        proyConfirm('Eliminar Partida', '¿Estas seguro que deseas eliminar esta partida?', {
+            onConfirm: function() {
+                _fetch('/app/api/iamet/partidas/' + partidaId + '/eliminar/', {
+                    method: 'POST'
+                }).then(function(resp) {
+                    if (resp.ok || resp.success) {
+                        _showToast('Partida eliminada');
+                        if (currentProjectId) renderPartidas(currentProjectId);
+                    } else {
+                        _showToast(resp.error || 'Error al eliminar');
+                    }
+                }).catch(function() { _showToast('Error de conexion'); });
             }
-        }).catch(function(err) {
-            alert('Error de conexion al eliminar partida');
-            console.error('Error eliminando partida:', err);
         });
     };
 

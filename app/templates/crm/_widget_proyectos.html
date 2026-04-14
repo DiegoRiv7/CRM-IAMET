@@ -275,7 +275,11 @@
         <div class="proy-tab-header">
           <h3>Facturas Proveedor</h3>
           <div class="proy-tab-actions">
-            <span style="font-size:0.65rem;color:#9CA3AF;font-style:italic;">Subir manualmente</span>
+            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Subir PDF
+              <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFacturaProveedor(this)">
+            </label>
           </div>
         </div>
         <div class="proy-table-wrap">
@@ -290,6 +294,7 @@
                 <th>Var.%</th>
                 <th>Estado</th>
                 <th>Fecha</th>
+                <th style="width:40px;"></th>
               </tr>
             </thead>
             <tbody id="proyFacProvBody"></tbody>
@@ -315,6 +320,7 @@
                 <th>Monto</th>
                 <th>Estado</th>
                 <th>Fecha</th>
+                <th style="width:40px;"></th>
               </tr>
             </thead>
             <tbody id="proyFacIngBody"></tbody>
@@ -325,6 +331,12 @@
         <!-- Gastos Operativos -->
         <div class="proy-tab-header" style="margin-top:24px;">
           <h3>Gastos Operativos</h3>
+          <div class="proy-tab-actions">
+            <button class="proy-btn proy-btn-outline" onclick="proyGastoAbrirDialogo()" style="font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar Gasto
+            </button>
+          </div>
         </div>
         <div class="proy-table-wrap">
           <table class="proy-table">
@@ -333,7 +345,9 @@
                 <th>Categoria</th>
                 <th>Descripcion</th>
                 <th>Monto</th>
+                <th>Fecha</th>
                 <th>Estado Aprobacion</th>
+                <th style="width:40px;"></th>
               </tr>
             </thead>
             <tbody id="proyGastosBody"></tbody>
@@ -883,6 +897,89 @@
     <div class="proy-dialog-footer">
       <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoEvidencia')">Cancelar</button>
       <button class="proy-btn proy-btn-primary" id="proyEvidenciaBtnEnviar" style="background:#059669;border-color:#059669;" onclick="proyectosEnviarEvidencia()">Completar Actividad</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     DIALOG: AGREGAR / EDITAR GASTO OPERATIVO
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoGasto" style="z-index:10300;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:520px;">
+    <div class="proy-dialog-header">
+      <h3 class="proy-dialog-title" id="proyGastoDialogTitle">Agregar Gasto Operativo</h3>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoGasto')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <input type="hidden" id="proyGastoId" value="">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="proy-field">
+          <label for="proyGastoCategoria" class="proy-label">Categoria</label>
+          <select id="proyGastoCategoria" class="proy-input">
+            <option value="viatics">Viaticos</option>
+            <option value="fuel">Combustible</option>
+            <option value="lodging">Hospedaje</option>
+            <option value="meals">Comidas</option>
+            <option value="equipment">Equipo</option>
+            <option value="labor">Mano de Obra</option>
+            <option value="other">Otro</option>
+          </select>
+        </div>
+        <div class="proy-field">
+          <label for="proyGastoFecha" class="proy-label">Fecha</label>
+          <input type="date" id="proyGastoFecha" class="proy-input">
+        </div>
+      </div>
+      <div class="proy-field">
+        <label for="proyGastoDescripcion" class="proy-label">Descripcion</label>
+        <input type="text" id="proyGastoDescripcion" class="proy-input" placeholder="Ej: Viaticos visita a obra" maxlength="500">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="proy-field">
+          <label for="proyGastoMonto" class="proy-label">Monto</label>
+          <input type="number" id="proyGastoMonto" class="proy-input" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div class="proy-field">
+          <label for="proyGastoPresupuesto" class="proy-label">Presupuestado <span style="font-weight:400;color:#9CA3AF;">(opcional)</span></label>
+          <input type="number" id="proyGastoPresupuesto" class="proy-input" step="0.01" min="0" placeholder="0.00">
+        </div>
+      </div>
+      <div class="proy-field">
+        <label for="proyGastoNotas" class="proy-label">Notas <span style="font-weight:400;color:#9CA3AF;">(opcional)</span></label>
+        <textarea id="proyGastoNotas" class="proy-input" rows="2" style="resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoGasto')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyGastoBtnGuardar" onclick="proyGastoGuardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     DIALOG: CONFIRMACION (reemplaza confirm() del navegador)
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay" id="proyConfirmDialog" style="z-index:10400;display:none;align-items:center;justify-content:center;"
+    onclick="if(event.target===this)proyConfirmCancelar();">
+  <div style="background:#fff;border-radius:14px;max-width:380px;width:90%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+      <div id="proyConfirmIcon" style="flex-shrink:0;width:40px;height:40px;border-radius:50%;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div style="flex:1;">
+        <h3 id="proyConfirmTitle" style="margin:0 0 6px;font-size:1.05rem;font-weight:700;color:#1D1D1F;">Confirmar</h3>
+        <p id="proyConfirmText" style="margin:0;font-size:0.88rem;color:#4B5563;line-height:1.45;">¿Estas seguro?</p>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
+      <button class="proy-btn proy-btn-outline" onclick="proyConfirmCancelar()">Cancelar</button>
+      <button id="proyConfirmBtnOk" class="proy-btn" style="background:#EF4444;color:#fff;border:1px solid #EF4444;" onclick="proyConfirmAceptar()">Eliminar</button>
     </div>
   </div>
 </div>

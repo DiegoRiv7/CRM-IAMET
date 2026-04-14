@@ -328,18 +328,22 @@ urlpatterns = [
     path('api/iamet/proyectos/<int:proyecto_id>/facturas-proveedor/', views_iamet.api_facturas_proveedor_lista, name='api_iamet_facturas_proveedor_lista'),
     path('api/iamet/facturas-proveedor/crear/', views_iamet.api_factura_proveedor_crear, name='api_iamet_factura_proveedor_crear'),
     path('api/iamet/facturas-proveedor/<int:factura_id>/actualizar/', views_iamet.api_factura_proveedor_actualizar, name='api_iamet_factura_proveedor_actualizar'),
+    path('api/iamet/facturas-proveedor/<int:factura_id>/eliminar/', views_iamet.api_factura_proveedor_eliminar, name='api_iamet_factura_proveedor_eliminar'),
     # Facturas Ingreso
     path('api/iamet/proyectos/<int:proyecto_id>/facturas-ingreso/', views_iamet.api_facturas_ingreso_lista, name='api_iamet_facturas_ingreso_lista'),
     path('api/iamet/facturas-ingreso/crear/', views_iamet.api_factura_ingreso_crear, name='api_iamet_factura_ingreso_crear'),
     path('api/iamet/facturas-ingreso/<int:factura_id>/actualizar/', views_iamet.api_factura_ingreso_actualizar, name='api_iamet_factura_ingreso_actualizar'),
+    path('api/iamet/facturas-ingreso/<int:factura_id>/eliminar/', views_iamet.api_factura_ingreso_eliminar, name='api_iamet_factura_ingreso_eliminar'),
     # Gastos Operativos
     path('api/iamet/proyectos/<int:proyecto_id>/financiero/sync-drive/', views_iamet.api_financiero_sync_drive, name='api_financiero_sync_drive'),
     path('api/iamet/proyectos/<int:proyecto_id>/financiero/upload-oc/', views_iamet.api_financiero_upload_oc, name='api_financiero_upload_oc'),
     path('api/iamet/proyectos/<int:proyecto_id>/financiero/upload-factura/', views_iamet.api_financiero_upload_factura_ingreso, name='api_financiero_upload_factura_ingreso'),
+    path('api/iamet/proyectos/<int:proyecto_id>/financiero/upload-factura-proveedor/', views_iamet.api_financiero_upload_factura_proveedor, name='api_financiero_upload_factura_proveedor'),
     path('api/iamet/proyectos/<int:proyecto_id>/gastos/', views_iamet.api_gastos_lista, name='api_iamet_gastos_lista'),
     path('api/iamet/gastos/crear/', views_iamet.api_gasto_crear, name='api_iamet_gasto_crear'),
     path('api/iamet/gastos/<int:gasto_id>/actualizar/', views_iamet.api_gasto_actualizar, name='api_iamet_gasto_actualizar'),
     path('api/iamet/gastos/<int:gasto_id>/aprobar/', views_iamet.api_gasto_aprobar, name='api_iamet_gasto_aprobar'),
+    path('api/iamet/gastos/<int:gasto_id>/eliminar/', views_iamet.api_gasto_eliminar, name='api_iamet_gasto_eliminar'),
     # Tareas de Proyecto
     path('api/iamet/proyectos/<int:proyecto_id>/tareas/', views_iamet.api_tareas_proyecto_lista, name='api_iamet_tareas_proyecto_lista'),
     path('api/iamet/tareas/crear/', views_iamet.api_tarea_proyecto_crear, name='api_iamet_tarea_proyecto_crear'),
