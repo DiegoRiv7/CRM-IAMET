@@ -4092,7 +4092,7 @@
             if (crmContent) crmContent.style.display = (view === 'crm') ? '' : 'none';
             if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
             if (proyectosSection) proyectosSection.classList.toggle('active', view === 'proyectos');
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.island-nav-btn, .crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
             if (activeBtn) activeBtn.classList.add('active');
             // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +

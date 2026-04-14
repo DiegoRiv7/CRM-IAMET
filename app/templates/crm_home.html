@@ -5,13 +5,29 @@
 {% endblock %}
 {% block content %}
 
-<div class="crm-page">
+<div class="crm-page {% if not es_ingeniero %}crm-page-sidebar{% endif %}">
     <form style="display:none;">{% csrf_token %}</form>
 
     {% if es_ingeniero %}
     {% include "crm/_topbar_ingeniero.html" %}
     {% else %}
-    {% include "crm/_topbar.html" %}
+    {% include "crm/_sidebar.html" %}
+    {% endif %}
+
+    <div class="crm-main">
+    {% if not es_ingeniero %}
+    <!-- Header workspace: título tab + contador -->
+    <header class="crm-workspace-head">
+        <div class="crm-workspace-title">
+            <span class="crm-workspace-title-text">
+                {% if tab_activo == 'crm' %}{% if request.user.userprofile.language == 'en' %}All Opportunities{% else %}Todas las Oportunidades{% endif %}
+                {% elif tab_activo == 'prospeccion' %}Prospección
+                {% elif tab_activo == 'clientes' %}Clientes
+                {% else %}CRM{% endif %}
+            </span>
+            <span class="crm-workspace-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>
+        </div>
+    </header>
     {% endif %}
 
     {% include "crm/_widget_mail.html" %}
@@ -45,6 +61,7 @@
     {% include "crm/_widget_grupo.html" %}
     {% endif %}
 
+    </div><!-- /.crm-main -->
 </div>
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>

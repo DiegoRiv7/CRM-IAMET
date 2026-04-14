@@ -5489,3 +5489,279 @@
 }
 
 /* ── Campaign Template Browser (old editor styles removed) ── */
+
+/* ═══════════════════════════════════════════════════════════════════
+   SIDEBAR VERTICAL IZQUIERDO + LAYOUT NUEVO
+   ═══════════════════════════════════════════════════════════════════ */
+.crm-page-sidebar {
+    display: flex;
+    min-height: 100vh;
+    background: #FFFFFF;
+}
+
+.crm-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 64px;
+    flex-shrink: 0;
+    background: #F6F8FB;
+    border-right: 1px solid #E5E7EB;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 0 16px;
+    z-index: 900;
+}
+
+.crm-sb-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.crm-sb-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 0 8px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: visible;
+    scrollbar-width: none;
+}
+.crm-sb-nav::-webkit-scrollbar { display: none; }
+
+.crm-sb-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 0 8px;
+    margin-top: 8px;
+}
+
+.crm-sb-btn,
+.crm-sb-avatar {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-decoration: none;
+    padding: 0;
+    margin: 0 auto;
+    flex-shrink: 0;
+}
+.crm-sb-btn:hover {
+    background: #FFFFFF;
+    color: #0052D4;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+}
+.crm-sb-btn.active {
+    background: #0052D4;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0,82,212,0.25);
+}
+.crm-sb-btn.active::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 22px;
+    background: #0052D4;
+    border-radius: 0 3px 3px 0;
+}
+
+.crm-sb-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background: #EF4444;
+    border-radius: 50%;
+    border: 2px solid #F6F8FB;
+}
+
+.crm-sb-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #E5E7EB;
+    overflow: hidden;
+    margin-top: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #4A6FA5;
+}
+.crm-sb-avatar img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+.crm-sb-avatar:hover { box-shadow: 0 0 0 2px #0052D4; }
+
+/* Tooltip lateral */
+.crm-sb-btn[data-tooltip]::after,
+.crm-sb-avatar[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1E293B;
+    color: #FFF;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 5px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 1000;
+    letter-spacing: 0.02em;
+}
+.crm-sb-btn:hover[data-tooltip]::after,
+.crm-sb-avatar:hover[data-tooltip]::after { opacity: 1; }
+
+/* Main area */
+.crm-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 28px 24px;
+}
+
+/* Workspace header (título tab + contador) */
+.crm-workspace-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 14px;
+    border-bottom: 1px solid #E5E7EB;
+    margin-bottom: 18px;
+}
+.crm-workspace-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.crm-workspace-title-text {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+}
+.crm-workspace-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    background: #F1F5F9;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* Filtros periodo (mes / año / vendedores) */
+.crm-period-filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 6px;
+}
+.crm-period-select {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    background: #FFF;
+    color: #1E293B;
+    font-size: 0.72rem;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%2364748B'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 22px;
+}
+.crm-period-select:hover { border-color: #CBD5E1; }
+.crm-period-select:focus { border-color: #0052D4; box-shadow: 0 0 0 3px rgba(0,82,212,0.12); }
+.crm-period-select.vendor-filter-btn {
+    background-image: none;
+    padding-right: 10px;
+}
+
+/* Botón + Nuevo */
+.crm-btn-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 14px;
+    background: #0052D4;
+    color: #FFF;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,82,212,0.22);
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+}
+.crm-btn-new:hover { background: #0041a8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,82,212,0.3); }
+.crm-btn-new:active { transform: translateY(0); }
+
+/* Ocultar el topbar antiguo por si quedara algún include residual */
+.crm-page-sidebar .crm-unified-header { display: none !important; }
+
+/* Quitar frames en el nuevo layout */
+.crm-page-sidebar .crm-table-wrap {
+    background: transparent !important;
+    border: none !important;
+    margin-bottom: 12px;
+    overflow: visible;
+}
+.crm-page-sidebar .crm-bar {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0 0 14px;
+}
+
+/* Responsive: sidebar colapsa a barra fina en mobile */
+@media (max-width: 720px) {
+    .crm-sidebar { width: 56px; }
+    .crm-sb-btn, .crm-sb-avatar { width: 40px; height: 40px; }
+    .crm-main { padding: 0 14px 18px; }
+    .crm-period-filters { display: none; }
+}
+

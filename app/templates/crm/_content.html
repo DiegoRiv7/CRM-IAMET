@@ -226,6 +226,39 @@
                 </a>
             </div>
             <div class="crm-bar-right">
+                <!-- Filtros de periodo: mes / año / vendedor -->
+                <div class="crm-period-filters" id="crmPeriodFilters">
+                    <select class="crm-period-select" id="mesFilter" title="Mes">
+                        {% for code, name in mes_choices %}
+                        <option value="{{ code }}" {% if code == mes_filter %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="crm-period-select" id="anioFilter" title="Año">
+                        {% for y in years_range %}
+                        <option value="{{ y|stringformat:'i' }}" {% if y == anio_int %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if es_supervisor %}
+                    <div class="vendor-filter-wrap" style="position:relative;">
+                        <button type="button" class="crm-period-select vendor-filter-btn" id="vendorFilterBtn">
+                            {% if request.user.userprofile.language == 'en' %}Vendors{% else %}Vendedores{% endif %} &#9660;
+                        </button>
+                        <div class="vendor-filter-dropdown" id="vendorFilterDropdown">
+                            <label class="vf-option">
+                                <input type="checkbox" value="all" id="vfAll" checked>
+                                <span>{% if request.user.userprofile.language == 'en' %}All{% else %}Todos{% endif %}</span>
+                            </label>
+                            {% for v in vendedores_list %}
+                            <label class="vf-option">
+                                <input type="checkbox" class="vf-user" value="{{ v.id }}">
+                                <span>{{ v.get_full_name|default:v.username }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
                 <div class="crm-bar-stats">
                     {% if tab_activo == 'clientes' %}
                     <div style="background:#F2F2F7;border-radius:20px;padding:2px;display:inline-flex;gap:2px;">
@@ -233,13 +266,11 @@
                         <button id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:#86868B;">Prospectos</button>
                     </div>
                     {% elif tab_activo == 'crm' %}
-                    <button type="button" id="btnNegociacion" title="Nueva oportunidad"
-                        style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;background:#0052D4;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,82,212,0.25);transition:all 0.15s;"
-                        onmouseover="this.style.background='#0041a8';this.style.transform='translateY(-1px)';"
-                        onmouseout="this.style.background='#0052D4';this.style.transform='none';">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="button" id="btnNegociacion" class="crm-btn-new" title="Nueva oportunidad">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                         </svg>
+                        <span>Nuevo</span>
                     </button>
                     {% endif %}
                 </div>
@@ -348,13 +379,8 @@
                     </svg>
                 </button>
                 {% endif %}
-                <div class="crm-search-wrap" {% if tab_activo == 'clientes' or tab_activo == 'prospeccion' %}style="display:none;"{% endif %}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.5">
-                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input type="text" class="crm-search-input" id="crmSearch"
-                        placeholder="{% if request.user.userprofile.language == 'en' %}Search opportunity...{% else %}Buscar oportunidad...{% endif %}">
-                </div>
+                <!-- Search interno reemplazado por Spotlight global (sidebar · Space Space) -->
+                <input type="hidden" id="crmSearch" value="">
             </div>
         </div>
         {% if tab_activo == 'crm' %}
@@ -362,40 +388,31 @@
         <div id="crmViewCards">
             <style>
                 #crmViewCards {
-                    background: #F4F5F7;
-                    background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
-                    background-size: 24px 24px;
-                    border-radius: 16px;
-                    padding: 28px 24px;
-                    margin: 0 -8px;
+                    background: transparent;
+                    padding: 8px 0 24px;
+                    margin: 0;
                 }
                 .crm-postit {
                     background: #fff;
                     border: 1px solid #E5E7EB;
-                    border-radius: 16px;
+                    border-radius: 14px;
                     padding: 22px 20px 16px;
+                    padding-top: 24px;
                     cursor: pointer;
                     position: relative;
                     overflow: hidden;
-                    box-shadow: 2px 6px 18px -4px rgba(0,0,0,0.1);
+                    box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.03);
                     display: flex;
                     flex-direction: column;
                     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
                 }
                 .crm-postit:hover {
-                    transform: translateY(-6px) rotate(0deg) !important;
-                    box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
-                    z-index: 20;
-                    border-color: #93C5FD;
+                    transform: translateY(-3px);
+                    box-shadow: 0 12px 24px -8px rgba(15,23,42,0.12), 0 4px 8px -2px rgba(15,23,42,0.06);
+                    border-color: #CBD5E1;
                 }
-                .crm-postit:nth-child(6n+1) { transform: rotate(-1.2deg); }
-                .crm-postit:nth-child(6n+2) { transform: rotate(1.8deg); }
-                .crm-postit:nth-child(6n+3) { transform: rotate(-0.6deg); }
-                .crm-postit:nth-child(6n+4) { transform: rotate(1.3deg); }
-                .crm-postit:nth-child(6n+5) { transform: rotate(-1.6deg); }
-                .crm-postit:nth-child(6n+6) { transform: rotate(0.7deg); }
                 .crm-pin {
-                    position: absolute; top: 6px; right: 6px; z-index: 6;
+                    position: absolute; top: 8px; right: 8px; z-index: 6;
                     cursor: pointer; transition: transform 0.15s, opacity 0.15s;
                     opacity: 0;
                 }
@@ -449,7 +466,7 @@
                 </div>
             </aside>
 
-            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px;">
+            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
                 {% for item in tabla_data %}
                 {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
                 <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
