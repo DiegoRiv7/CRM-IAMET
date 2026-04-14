@@ -128,28 +128,32 @@
                                 hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
                                 card.appendChild(hole);
                             }
-                            // Mover al inicio del contenedor (antes de los vencidos si los hay)
+                            // Mover al inicio — las ancladas van incluso arriba de las vencidas
                             if (node && container) {
-                                // Insertar después de las vencidas, si las hay
-                                var firstNonOverdue = Array.prototype.find.call(container.children, function(ch){
-                                    return ch !== node && !isOverdueNode(ch);
-                                });
-                                if (firstNonOverdue) container.insertBefore(node, firstNonOverdue);
-                                else container.insertBefore(node, container.firstChild);
+                                node.dataset.anclada = '1';
+                                node.classList.add('pinned-row');
+                                container.insertBefore(node, container.firstChild);
                             }
                         } else {
                             if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', 'none'); }
                             var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
                             if (h) h.remove();
+                            if (node) { node.dataset.anclada = '0'; node.classList.remove('pinned-row'); }
                         }
                     });
                 });
             });
         }, 500);
 
-        // Orden inicial: vencidas (rojas) primero, luego ancladas, luego resto
+        // Helpers orden: ancladas → vencidas (más días arriba) → resto
         function isOverdueNode(n) { return n && n.dataset && n.dataset.vencida === '1'; }
-        function isPinnedNode(n)  { return n && n.classList && n.classList.contains('pinned-flag'); }
+        function isAnchoredNode(n) {
+            return n && ((n.dataset && n.dataset.anclada === '1') || (n.classList && n.classList.contains('pinned-row')));
+        }
+        function diasVencidaNode(n) {
+            return (n && n.dataset && parseInt(n.dataset.diasVencida || '0', 10)) || 0;
+        }
+        // El backend ya devuelve ordenado, pero re-aseguro cliente-side por si se mueven nodos.
         setTimeout(function(){
             ['crmCardsGrid', 'crmListBody'].forEach(function(id){
                 var container = document.getElementById(id);
@@ -157,11 +161,17 @@
                 var nodes = Array.prototype.slice.call(container.children).filter(function(n){
                     return n.classList && (n.classList.contains('crm-data-row') || n.classList.contains('crm-list-row') || n.classList.contains('crm-postit'));
                 });
-                // Estable: overdue first, luego el resto en orden original
                 nodes.sort(function(a, b){
+                    // 1) Ancladas primero
+                    var pa = isAnchoredNode(a) ? 0 : 1;
+                    var pb = isAnchoredNode(b) ? 0 : 1;
+                    if (pa !== pb) return pa - pb;
+                    // 2) Vencidas (no ancladas) después
                     var oa = isOverdueNode(a) ? 0 : 1;
                     var ob = isOverdueNode(b) ? 0 : 1;
-                    return oa - ob;
+                    if (oa !== ob) return oa - ob;
+                    // 3) Dentro de vencidas: más días arriba
+                    return diasVencidaNode(b) - diasVencidaNode(a);
                 });
                 nodes.forEach(function(n){ container.appendChild(n); });
             });
@@ -1423,10 +1433,15 @@
                 }
             }
 
+            // Solo la X cierra el cotizador — click en backdrop y tecla Escape bloqueados.
             cotizadorCloseBtn.addEventListener('click', closeCotizador);
-            cotizadorOverlay.addEventListener('click', function (e) {
-                if (e.target === cotizadorOverlay) closeCotizador();
-            });
+            // Capturar Escape a nivel document y swallow si el overlay está activo
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && cotizadorOverlay.classList.contains('active')) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }, true);
 
             // ── Refresh table via API (sin recargar página) ──
             var currentTab = _CRM_CONFIG.tabActivo;

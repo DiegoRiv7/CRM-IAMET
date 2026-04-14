@@ -307,18 +307,25 @@ def crm_home(request):
             # Actividad del calendario vencida (solo las de los últimos 30 días,
             # para evitar falsos positivos de actividades viejas nunca cerradas)
             limite_vencida = ahora_tz - timedelta(days=30)
-            act_vencida = Actividad.objects.filter(
+            act_mas_vencida = Actividad.objects.filter(
                 oportunidad=item,
                 fecha_fin__lt=ahora_tz,
                 fecha_fin__gte=limite_vencida,
                 completada=False,
-            ).exists()
+            ).order_by('fecha_fin').first()
             # Tarea de oportunidad vencida (sin tope de antigüedad — son acciones pendientes)
-            tarea_vencida = TareaOportunidad.objects.filter(
+            tarea_mas_vencida = TareaOportunidad.objects.filter(
                 oportunidad=item,
                 fecha_limite__lt=ahora_tz,
-            ).exclude(estado='completada').exists()
-            item.tiene_actividad_vencida = act_vencida or tarea_vencida
+            ).exclude(estado='completada').order_by('fecha_limite').first()
+            item.tiene_actividad_vencida = bool(act_mas_vencida or tarea_mas_vencida)
+            # Días vencidos (máximo entre actividad y tarea) — 0 si no está vencida
+            dias = 0
+            if act_mas_vencida and act_mas_vencida.fecha_fin:
+                dias = max(dias, (ahora_tz - act_mas_vencida.fecha_fin).days)
+            if tarea_mas_vencida and tarea_mas_vencida.fecha_limite:
+                dias = max(dias, (ahora_tz - tarea_mas_vencida.fecha_limite).days)
+            item.dias_vencida = dias
             # Actividad próxima (la más cercana no completada)
             proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
             item.actividad_proxima = proxima.titulo if proxima else None
@@ -326,8 +333,8 @@ def crm_home(request):
         ancladas_ids = set(profile.oportunidades_ancladas or [])
         for item in tabla_data_list:
             item.esta_anclada = item.id in ancladas_ids
-        # Ordenar: ancladas primero, luego vencidas, luego el resto
-        tabla_data_list.sort(key=lambda x: (not x.esta_anclada, not x.tiene_actividad_vencida))
+        # Ordenar: ancladas primero, luego vencidas (más días vencidas arriba), luego el resto
+        tabla_data_list.sort(key=lambda x: (not x.esta_anclada, not x.tiene_actividad_vencida, -getattr(x, 'dias_vencida', 0)))
         tabla_data = tabla_data_list
 
     # ── Tab Facturado: Datos del XLS por cliente + desglose por producto ──

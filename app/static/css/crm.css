@@ -5834,10 +5834,6 @@
     background: #CBD5E1;
     box-shadow: 1px 0 0 rgba(15,23,42,0.04);
 }
-.crm-list-strip.vencida  {
-    background: linear-gradient(180deg, #F87171 0%, #EF4444 100%);
-    box-shadow: 0 0 12px rgba(239,68,68,0.35), inset -1px 0 0 rgba(255,255,255,0.25);
-}
 .crm-list-strip.proyecto {
     background: linear-gradient(180deg, #A78BFA 0%, #8B5CF6 100%);
     box-shadow: inset -1px 0 0 rgba(255,255,255,0.25);
@@ -5846,8 +5842,47 @@
     background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
     box-shadow: inset -1px 0 0 rgba(255,255,255,0.25);
 }
+/* Heat map vencidas: mientras más tiempo pasa, más roja se vuelve */
+.crm-list-strip.vencida.heat-1   { background: linear-gradient(180deg, #FCA5A5 0%, #F87171 100%); box-shadow: 0 0 6px rgba(248,113,113,0.25), inset -1px 0 0 rgba(255,255,255,0.25); }
+.crm-list-strip.vencida.heat-2   { background: linear-gradient(180deg, #F87171 0%, #EF4444 100%); box-shadow: 0 0 8px rgba(239,68,68,0.30), inset -1px 0 0 rgba(255,255,255,0.25); }
+.crm-list-strip.vencida.heat-3   { background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%); box-shadow: 0 0 10px rgba(220,38,38,0.35), inset -1px 0 0 rgba(255,255,255,0.2); }
+.crm-list-strip.vencida.heat-4   { background: linear-gradient(180deg, #DC2626 0%, #B91C1C 100%); box-shadow: 0 0 12px rgba(185,28,28,0.40), inset -1px 0 0 rgba(255,255,255,0.18); }
+.crm-list-strip.vencida.heat-5   { background: linear-gradient(180deg, #B91C1C 0%, #991B1B 100%); box-shadow: 0 0 14px rgba(153,27,27,0.45), inset -1px 0 0 rgba(255,255,255,0.15); }
+.crm-list-strip.vencida.heat-max {
+    background: #7F1D1D;
+    box-shadow: 0 0 18px rgba(127,29,29,0.55), inset -1px 0 0 rgba(255,255,255,0.1);
+    animation: crm-heat-pulse 1.8s ease-in-out infinite;
+}
+@keyframes crm-heat-pulse {
+    0%,100% { box-shadow: 0 0 18px rgba(127,29,29,0.55), inset -1px 0 0 rgba(255,255,255,0.1); }
+    50%     { box-shadow: 0 0 26px rgba(185,28,28,0.8),  inset -1px 0 0 rgba(255,255,255,0.1); }
+}
 .crm-list-row:has(.crm-list-strip.vencida) { border-color: #FEE2E2; }
 .crm-list-row:has(.crm-list-strip.vencida):hover { border-color: #FCA5A5; }
+.crm-list-row:has(.crm-list-strip.vencida.heat-max) { border-color: #FECACA; background: #FFFBFB; }
+
+/* Alerta crítica (≥30 días vencida) */
+.crm-alert-critical {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: crm-alert-shake 2.5s ease-in-out infinite;
+}
+@keyframes crm-alert-shake {
+    0%, 90%, 100% { transform: rotate(0); }
+    92% { transform: rotate(-8deg); }
+    94% { transform: rotate(8deg); }
+    96% { transform: rotate(-6deg); }
+    98% { transform: rotate(0); }
+}
+
+/* Fila anclada: sutil highlight */
+.crm-list-row.pinned-row {
+    background: #FEFCE8;
+    border-color: #FDE68A;
+}
+.crm-list-row.pinned-row:hover { border-color: #FCD34D; }
 .crm-list-cell { padding: 0 10px; min-width: 0; }
 .crm-list-title {
     font-size: 0.88rem;
