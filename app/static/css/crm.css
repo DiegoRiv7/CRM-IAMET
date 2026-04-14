@@ -5496,7 +5496,7 @@
 .crm-page-sidebar {
     display: flex;
     min-height: 100vh;
-    background: #FFFFFF;
+    background: #F4F6FA;
 }
 
 .crm-sidebar {
@@ -5648,7 +5648,8 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    padding: 0 28px 24px;
+    padding: 0 20px 24px;
+    background: transparent;
 }
 
 /* Workspace header (título tab + contador) */
@@ -5656,9 +5657,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 0 14px;
-    border-bottom: 1px solid #E5E7EB;
-    margin-bottom: 18px;
+    padding: 18px 4px 14px;
+    margin-bottom: 6px;
+    background: transparent;
 }
 .crm-workspace-title {
     display: flex;
@@ -5744,17 +5745,31 @@
 .crm-page-sidebar .crm-unified-header { display: none !important; }
 
 /* Quitar frames en el nuevo layout */
-.crm-page-sidebar .crm-table-wrap {
+.crm-page-sidebar .crm-table-wrap,
+.crm-page-sidebar #crmTableWrap {
     background: transparent !important;
     border: none !important;
-    margin-bottom: 12px;
-    overflow: visible;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
 }
 .crm-page-sidebar .crm-bar {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 0 0 14px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 0 14px !important;
+}
+.crm-page-sidebar #crmViewCards {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+}
+.crm-page-sidebar #crmContentSection {
+    background: transparent !important;
 }
 
 /* Responsive: sidebar colapsa a barra fina en mobile */
