@@ -2092,6 +2092,7 @@
 <!-- ═══ FACET BAR: wiring (estilo CRM moderno) ═══ -->
 <script>
 (function(){
+    try {
     // Datos precargados de Django
     var _currentMes    = '{{ mes_filter|escapejs }}';
     var _currentAnio   = '{{ anio_filter|escapejs }}';
@@ -2686,7 +2687,11 @@
     });
 
     // Render inicial (tras crm_main.js para que los selects estén poblados)
-    setTimeout(renderChips, 300);
+    setTimeout(function(){ try { renderChips(); } catch(e){ console.error('[FacetBar] renderChips error:', e); } }, 300);
+    console.log('[FacetBar] init OK');
+    } catch(e) {
+        console.error('[FacetBar] init FAILED:', e);
+    }
 })();
 </script>
 {% endif %}
