@@ -371,15 +371,11 @@
 
             <div style="flex:1;"></div>
 
-            <!-- Periodo: mes / año / vendedor (contexto de la página) -->
+            <!-- Periodo: mes+año unificado -->
             <div class="crm-period-pills" id="crmPeriodPills">
-                <button type="button" class="crm-period-pill" data-period="mes" id="pillMes">
+                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    <span id="pillMesLabel">Mes</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                <button type="button" class="crm-period-pill" data-period="anio" id="pillAnio">
-                    <span id="pillAnioLabel">Año</span>
+                    <span id="pillPeriodoLabel">Periodo</span>
                     <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 {% if es_supervisor %}
@@ -655,13 +651,9 @@
         <div class="crm-facet-bar crm-facet-bar--minimal">
             <div style="flex:1;"></div>
             <div class="crm-period-pills" id="crmPeriodPills">
-                <button type="button" class="crm-period-pill" data-period="mes" id="pillMes">
+                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    <span id="pillMesLabel">Mes</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                <button type="button" class="crm-period-pill" data-period="anio" id="pillAnio">
-                    <span id="pillAnioLabel">Año</span>
+                    <span id="pillPeriodoLabel">Periodo</span>
                     <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 {% if es_supervisor %}
@@ -683,13 +675,9 @@
         <div class="crm-facet-bar crm-facet-bar--minimal">
             <div style="flex:1;"></div>
             <div class="crm-period-pills" id="crmPeriodPills">
-                <button type="button" class="crm-period-pill" data-period="mes" id="pillMes">
+                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    <span id="pillMesLabel">Mes</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                <button type="button" class="crm-period-pill" data-period="anio" id="pillAnio">
-                    <span id="pillAnioLabel">Año</span>
+                    <span id="pillPeriodoLabel">Periodo</span>
                     <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 {% if es_supervisor %}
@@ -2154,6 +2142,8 @@
 {{ es_supervisor|json_script:"fb-es-supervisor" }}
 {{ years_range_list|json_script:"fb-years-range" }}
 {{ vendedores_json|json_script:"fb-vendors-list" }}
+{{ meses_selected|json_script:"fb-meses-selected" }}
+{{ anios_selected|json_script:"fb-anios-selected" }}
 
 <!-- Popovers globales (usados por facet bar en CRM y por period pills en todos los tabs) -->
 <div class="crm-popover" id="popFieldPicker" role="menu"></div>
@@ -2174,11 +2164,17 @@
     var _currentAnio   = readJson('fb-current-anio', '') || '';
     var _currentVendors = ((readJson('fb-vendedores-filter', '') || '') + '').split(',').filter(Boolean);
     var _esSupervisor  = readJson('fb-es-supervisor', false) === true;
-    var _rawMesChoices = readJson('fb-mes-choices', []);  // array de [code, name] o [[code, name], ...]
-    var _mesChoices    = _rawMesChoices.map(function(p){ return { v: p[0], l: p[1] }; });
+    var _rawMesChoices = readJson('fb-mes-choices', []);  // array de [code, name]
+    // Excluir la pseudo-opción "todos" del listado real (sólo la usamos como concepto URL)
+    var _mesChoices    = _rawMesChoices
+        .filter(function(p){ return p[0] !== 'todos'; })
+        .map(function(p){ return { v: p[0], l: p[1] }; });
     var _mesNames      = {}; _mesChoices.forEach(function(m){ _mesNames[m.v] = m.l; });
     var _yearsRange    = readJson('fb-years-range', []);
     var _vendorsList   = readJson('fb-vendors-list', []);  // [{id, nombre}, ...]
+    // Selección multi-valor para periodo (del backend). [] = todos.
+    var _mesesSelected  = (readJson('fb-meses-selected', []) || []).map(String);
+    var _aniosSelected  = (readJson('fb-anios-selected', []) || []).map(String);
 
     // Descripción de cada filtro in-memory (no-reload)
     var FIELDS = [
@@ -2310,19 +2306,28 @@
         return _currentVendors.length + ' vendedores';
     }
 
+    function periodoLabel(){
+        // Construye un label compacto: "Abril · 2026" / "Todos · 2026" / "3 meses · 2 años" etc.
+        var mesPart, anioPart;
+        if (_mesesSelected.length === 0) mesPart = 'Todos';
+        else if (_mesesSelected.length === 1) mesPart = _mesNames[_mesesSelected[0]] || _mesesSelected[0];
+        else mesPart = _mesesSelected.length + ' meses';
+
+        if (_aniosSelected.length === 0) anioPart = 'Todos';
+        else if (_aniosSelected.length === 1) anioPart = _aniosSelected[0];
+        else anioPart = _aniosSelected.length + ' años';
+
+        return mesPart + ' · ' + anioPart;
+    }
+
     function renderPeriodPills(){
-        var pMes = $in('pillMesLabel');
-        var pAnio = $in('pillAnioLabel');
+        var pPer = $in('pillPeriodoLabel');
         var pVen = $in('pillVendedorLabel');
-        if (pMes) pMes.textContent = _mesNames[_currentMes] || 'Mes';
-        if (pAnio) pAnio.textContent = _currentAnio === 'todos' ? 'Todos los años' : _currentAnio;
+        if (pPer) pPer.textContent = periodoLabel();
         if (pVen) pVen.textContent = vendorChipLabel();
 
-        // Highlight "todos" state de forma sutil
-        var mes = $in('pillMes');
-        if (mes) mes.classList.toggle('is-default', _currentMes === 'todos');
-        var anio = $in('pillAnio');
-        if (anio) anio.classList.toggle('is-default', _currentAnio === 'todos');
+        var per = $in('pillPeriodo');
+        if (per) per.classList.toggle('is-default', _mesesSelected.length === 0 && _aniosSelected.length === 0);
         var ven = $in('pillVendedor');
         if (ven) ven.classList.toggle('is-default', _currentVendors.length === 0);
     }
@@ -2382,26 +2387,54 @@
         positionPopover(popField, btnAdd);
     }
 
-    // ── Popover: period picker (mes / año / vendedor → reload) ─────────────
+    // Estado temporal del picker periodo (se confirma al Aplicar)
+    var _tmpMeses = [];
+    var _tmpAnios = [];
+
+    function renderPeriodoPopoverContent() {
+        var html = '<div class="crm-pop-period">';
+        // Columna Meses
+        html += '<div class="crm-pop-col">';
+        html += '<div class="crm-pop-section">Meses</div>';
+        html += '<div class="crm-pop-list">';
+        var allMesesChecked = _tmpMeses.length === 0;
+        html += '<button type="button" class="crm-pop-item ' + (allMesesChecked ? 'active' : '') + '" data-pm="__all__">Todos los meses</button>';
+        _mesChoices.forEach(function(m){
+            var act = _tmpMeses.indexOf(m.v) !== -1 ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-pm="' + m.v + '">' + m.l + '</button>';
+        });
+        html += '</div></div>';
+        // Columna Años
+        html += '<div class="crm-pop-col">';
+        html += '<div class="crm-pop-section">Años</div>';
+        html += '<div class="crm-pop-list">';
+        var allAniosChecked = _tmpAnios.length === 0;
+        html += '<button type="button" class="crm-pop-item ' + (allAniosChecked ? 'active' : '') + '" data-pa="__all__">Todos los años</button>';
+        _yearsRange.forEach(function(y){
+            var ys = String(y);
+            var act = _tmpAnios.indexOf(ys) !== -1 ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-pa="' + ys + '">' + ys + '</button>';
+        });
+        html += '</div></div>';
+        html += '</div>';
+        html += '<div class="crm-pop-footer">' +
+                    '<button type="button" data-act="periodo-reset">Restablecer</button>' +
+                    '<button type="button" class="primary" data-act="periodo-apply" style="flex:2;">Aplicar</button>' +
+                '</div>';
+        return html;
+    }
+
+    // ── Popover: period picker (periodo unificado / vendedor → reload) ─────
     function openPeriodPicker(key, anchorEl){
         popValue.dataset.currentField = '__period__' + key;
         var html = '';
-        if (key === 'mes') {
-            html = '<div class="crm-pop-section">Mes</div><div class="crm-pop-list">';
-            _mesChoices.forEach(function(m){
-                var act = m.v === _currentMes ? 'active' : '';
-                html += '<button type="button" class="crm-pop-item ' + act + '" data-pv="' + m.v + '">' + m.l + '</button>';
-            });
-            html += '</div>';
-        } else if (key === 'anio') {
-            html = '<div class="crm-pop-section">Año</div><div class="crm-pop-list">';
-            html += '<button type="button" class="crm-pop-item ' + (_currentAnio === 'todos' ? 'active' : '') + '" data-pv="todos">Todos</button>';
-            _yearsRange.forEach(function(y){
-                var ys = String(y);
-                var act = ys === _currentAnio ? 'active' : '';
-                html += '<button type="button" class="crm-pop-item ' + act + '" data-pv="' + ys + '">' + ys + '</button>';
-            });
-            html += '</div>';
+        if (key === 'periodo') {
+            // Inicializar estado temporal con la selección actual
+            _tmpMeses = _mesesSelected.slice();
+            _tmpAnios = _aniosSelected.slice();
+            html = renderPeriodoPopoverContent();
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '380px';
         } else if (key === 'vendedor') {
             html = '<div class="crm-pop-section">Vendedores</div><div class="crm-pop-list">';
             var allChecked = _currentVendors.length === 0;
@@ -2414,9 +2447,9 @@
             if (_currentVendors.length) {
                 html += '<div class="crm-pop-footer"><button type="button" class="primary" data-act="period-apply-vendor" style="flex:1;">Aplicar selección</button></div>';
             }
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '220px';
         }
-        popValue.innerHTML = html;
-        popValue.style.minWidth = '220px';
         closeAllPopovers(popValue);
         popValue.classList.add('open');
         positionPopover(popValue, anchorEl || btnAdd);
@@ -2431,6 +2464,20 @@
             else params.delete('vendedores');
         }
         // Preservar tab
+        if (!params.get('tab')) {
+            var activeTab = document.querySelector('.crm-tab.active');
+            if (activeTab && activeTab.href) {
+                var m = activeTab.href.match(/tab=([^&]+)/);
+                if (m) params.set('tab', m[1]);
+            }
+        }
+        window.location.href = window.location.pathname + '?' + params.toString();
+    }
+
+    function reloadWithPeriodo(meses, anios) {
+        var params = new URLSearchParams(window.location.search);
+        params.set('mes',  meses.length === 0 ? 'todos' : meses.join(','));
+        params.set('anio', anios.length === 0 ? 'todos' : anios.join(','));
         if (!params.get('tab')) {
             var activeTab = document.querySelector('.crm-tab.active');
             if (activeTab && activeTab.href) {
@@ -2623,6 +2670,32 @@
     }
 
     popValue.addEventListener('click', function(e){
+        // Periodo unificado: toggle meses/años en estado temporal
+        var pmItem = e.target.closest('[data-pm]');
+        if (pmItem) {
+            var v = pmItem.dataset.pm;
+            if (v === '__all__') { _tmpMeses = []; }
+            else {
+                var idx = _tmpMeses.indexOf(v);
+                if (idx >= 0) _tmpMeses.splice(idx, 1);
+                else _tmpMeses.push(v);
+            }
+            popValue.innerHTML = renderPeriodoPopoverContent();
+            return;
+        }
+        var paItem = e.target.closest('[data-pa]');
+        if (paItem) {
+            var v = paItem.dataset.pa;
+            if (v === '__all__') { _tmpAnios = []; }
+            else {
+                var idx = _tmpAnios.indexOf(v);
+                if (idx >= 0) _tmpAnios.splice(idx, 1);
+                else _tmpAnios.push(v);
+            }
+            popValue.innerHTML = renderPeriodoPopoverContent();
+            return;
+        }
+
         var item = e.target.closest('.crm-pop-item');
         if (item && item.dataset.pv !== undefined) {
             // Period picker (mes / anio / vendedor) → reload
@@ -2673,6 +2746,15 @@
         if (!actBtn) return;
         var act = actBtn.dataset.act;
         var field = popValue.dataset.currentField;
+        if (act === 'periodo-apply') {
+            return reloadWithPeriodo(_tmpMeses, _tmpAnios);
+        }
+        if (act === 'periodo-reset') {
+            _tmpMeses = [];
+            _tmpAnios = [];
+            popValue.innerHTML = renderPeriodoPopoverContent();
+            return;
+        }
         if (act === 'period-apply-vendor') {
             return reloadWithPeriod('vendedor', _currentVendors.join(','));
         }

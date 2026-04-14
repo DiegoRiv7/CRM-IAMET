@@ -216,12 +216,30 @@ def crm_home(request):
     }
     MES_NAME_TO_CODE = {v: k for k, v in MES_CODE_TO_NAME.items()}
 
-    anio_todos = (anio_filter == 'todos')
+    # Parseo multi-valor: mes y año pueden ser 'todos', un valor, o lista comma-separated
+    def _parse_multi(raw, is_int=False):
+        if raw is None or raw == '' or raw == 'todos':
+            return None  # None = todos
+        items = [x.strip() for x in str(raw).split(',') if x.strip()]
+        if not items:
+            return None
+        if is_int:
+            out = []
+            for x in items:
+                try: out.append(int(x))
+                except ValueError: pass
+            return out or None
+        return items
+
+    meses_list = _parse_multi(mes_filter)
+    anios_list = _parse_multi(anio_filter, is_int=True)
+
+    # Legacy: anio_int (un solo valor) para funciones que aún no soportan multi.
+    anio_todos = (anios_list is None)
     try:
-        anio_int = now.year if anio_todos else int(anio_filter)
-    except ValueError:
+        anio_int = anios_list[0] if anios_list else now.year
+    except (ValueError, IndexError, TypeError):
         anio_int = now.year
-        anio_todos = False
 
     # MES_CHOICES para template (con opción "Todos" al inicio)
     mes_choices = [('todos', 'Todos')] + list(TodoItem.MES_CHOICES)
@@ -236,12 +254,12 @@ def crm_home(request):
     if vendedores_filter:
         vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()]
 
-    # Base queryset - oportunidades filtradas por anio_cierre/mes_cierre
+    # Base queryset - oportunidades filtradas por anio_cierre/mes_cierre (multi-valor)
     base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
-    if not anio_todos:
-        base_qs = base_qs.filter(anio_cierre=anio_int)
-    if mes_filter != 'todos':
-        base_qs = base_qs.filter(mes_cierre=mes_filter)
+    if anios_list is not None:
+        base_qs = base_qs.filter(anio_cierre__in=anios_list)
+    if meses_list is not None:
+        base_qs = base_qs.filter(mes_cierre__in=meses_list)
 
     # Filtrado por visibilidad: supervisor global ve todo, grupos de trabajo amplían visibilidad
     if not es_supervisor:
@@ -552,6 +570,8 @@ def crm_home(request):
             for v in vendedores_list
         ],
         'years_range_list': list(range(2024, now.year + 2)),
+        'meses_selected': meses_list if meses_list is not None else [],   # [] = todos
+        'anios_selected': anios_list if anios_list is not None else [],   # [] = todos
         'novedades_config': NovedadesConfig.get(),
         'empleado_mes_data': _get_empleado_mes_data(),
         'mis_grupos': _get_mis_grupos_ctx(user),
