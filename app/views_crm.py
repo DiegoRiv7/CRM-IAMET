@@ -1911,13 +1911,29 @@ def api_subir_cobrado(request):
                 fecha_str = (row.get('Fecha') or '').strip()
                 if not fecha_str:
                     continue
-                try:
-                    fecha = dt_now.strptime(fecha_str, '%d/%m/%Y %I:%M:%S %p')
-                except ValueError:
+                # Probar varios formatos — el CSV puede venir con año 2 o 4 dígitos,
+                # con o sin segundos, con o sin AM/PM.
+                fecha = None
+                _fecha_formats = [
+                    '%d/%m/%Y %I:%M:%S %p',
+                    '%d/%m/%Y %H:%M:%S',
+                    '%d/%m/%Y %I:%M %p',
+                    '%d/%m/%Y %H:%M',
+                    '%d/%m/%y %I:%M:%S %p',
+                    '%d/%m/%y %H:%M:%S',
+                    '%d/%m/%y %I:%M %p',
+                    '%d/%m/%y %H:%M',
+                    '%d/%m/%Y',
+                    '%d/%m/%y',
+                ]
+                for _fmt in _fecha_formats:
                     try:
-                        fecha = dt_now.strptime(fecha_str, '%d/%m/%Y %H:%M:%S')
+                        fecha = dt_now.strptime(fecha_str, _fmt)
+                        break
                     except ValueError:
                         continue
+                if fecha is None:
+                    continue
 
                 row_mes = str(fecha.month).zfill(2)
                 row_anio = fecha.year
