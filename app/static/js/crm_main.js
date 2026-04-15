@@ -4428,16 +4428,26 @@
             if (grid) grid.innerHTML = '<div class="tareas-empty-card">Cargando tareas...</div>';
 
             var url = '/app/api/tareas/?estado=pendientes';
-            fetch(url)
-                .then(function (r) {
-                    if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error ' + r.status); });
-                    return r.json();
-                })
-                .then(function (data) {
+            // Fetch paralelo: pendientes + completadas recientes (para que sigan visibles
+            // en el calendario después de recargar la página)
+            Promise.all([
+                fetch(url).then(function(r){ if (!r.ok) return r.json().then(function(d){ throw new Error(d.error || 'Error ' + r.status); }); return r.json(); }),
+                fetch('/app/api/tareas/?estado=completadas&page=1&page_size=100').then(function(r){ return r.ok ? r.json() : { success:false, tareas:[] }; }).catch(function(){ return { success:false, tareas:[] }; })
+            ])
+                .then(function (results) {
+                    var data = results[0];
+                    var dataCompl = results[1] || { tareas: [] };
                     if (data.success && Array.isArray(data.tareas)) {
-                        _crmTareasCache[estado] = data.tareas;
-                        _crmAllTareas = data.tareas;
-                        _actualizarDropdownResponsables(data.tareas);
+                        // Merge: pendientes + completadas (dedup por id)
+                        var byId = {};
+                        data.tareas.forEach(function(t){ byId[t.id] = t; });
+                        if (Array.isArray(dataCompl.tareas)) {
+                            dataCompl.tareas.forEach(function(t){ if (!byId[t.id]) byId[t.id] = t; });
+                        }
+                        var merged = Object.keys(byId).map(function(k){ return byId[k]; });
+                        _crmTareasCache[estado] = merged;
+                        _crmAllTareas = merged;
+                        _actualizarDropdownResponsables(merged);
                         renderTareasCRM();
                         _tareasPollHash = data.tareas.map(function(t){ return t.id+':'+t.estado; }).join(',');
                     } else {
@@ -5177,9 +5187,29 @@
                 body: JSON.stringify({ estado: 'completada' })
             }).then(function(r){ return r.json(); }).then(function(res){
                 if (res && res.success) {
-                    // Quitar de caché y recargar
-                    _crmTareasCache = {};
-                    cargarTareasCRM();
+                    // Actualizar en memoria en vez de recargar — el endpoint ?estado=pendientes
+                    // la excluiría y desaparecería. Con esto queda visible como completada.
+                    if (Array.isArray(_crmAllTareas)) {
+                        for (var i = 0; i < _crmAllTareas.length; i++) {
+                            if (_crmAllTareas[i].id === tareaId) {
+                                _crmAllTareas[i].estado = 'completada';
+                                _crmAllTareas[i].fecha_completada = new Date().toISOString();
+                                break;
+                            }
+                        }
+                    }
+                    Object.keys(_crmTareasCache || {}).forEach(function(k){
+                        var arr = _crmTareasCache[k];
+                        if (!Array.isArray(arr)) return;
+                        for (var j = 0; j < arr.length; j++) {
+                            if (arr[j].id === tareaId) {
+                                arr[j].estado = 'completada';
+                                arr[j].fecha_completada = new Date().toISOString();
+                                break;
+                            }
+                        }
+                    });
+                    renderTareasCRM();
                 }
             }).catch(console.error);
         };
