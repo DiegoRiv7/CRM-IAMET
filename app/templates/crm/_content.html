@@ -593,13 +593,13 @@
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
         <!-- ═══ VISTA KANBAN (por etapa) ═══ -->
         <div id="crmViewKanban" style="display:none;">
+            <div class="crm-kanban-board" id="crmKanbanBoard"></div>
             <button type="button" class="crm-kanban-nav left" id="kanbanNavLeft" title="Ver etapas anteriores">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <button type="button" class="crm-kanban-nav right" id="kanbanNavRight" title="Ver etapas siguientes">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
-            <div class="crm-kanban-board" id="crmKanbanBoard"></div>
         </div>
 
         <div id="crmViewTable" style="display:none;">
@@ -2907,12 +2907,12 @@
     var ORDER_RUNRATE  = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta'];
 
     var _kanbanFlow = localStorage.getItem('kanbanFlow') || 'proyecto';  // proyecto | runrate | both
-    var _kanbanCollapsed = {};   // { stageName: true }
+    var _kanbanCollapsed = {};   // { stageName: true } — collapse manual por etapa (con oportunidades)
+    var _kanbanShowEmpty = localStorage.getItem('kanbanShowEmpty') === '1';  // mostrar vacías (default: false)
     try {
         var savedCol = localStorage.getItem('kanbanCollapsed');
         if (savedCol) _kanbanCollapsed = JSON.parse(savedCol) || {};
     } catch(e) {}
-    var _kanbanAutoCollapsedOnce = false;  // para evitar re-colapsar tras interacción del usuario
 
     function persistCollapsed(){
         try { localStorage.setItem('kanbanCollapsed', JSON.stringify(_kanbanCollapsed)); } catch(e) {}
@@ -2920,11 +2920,16 @@
     function setFlow(flow){
         _kanbanFlow = flow;
         localStorage.setItem('kanbanFlow', flow);
-        _kanbanAutoCollapsedOnce = false;  // re-calcular auto-collapse al cambiar flujo
         render();
     }
     window._crmSetKanbanFlow = setFlow;
     window._crmGetKanbanFlow = function(){ return _kanbanFlow; };
+    window._crmToggleKanbanShowEmpty = function(){
+        _kanbanShowEmpty = !_kanbanShowEmpty;
+        localStorage.setItem('kanbanShowEmpty', _kanbanShowEmpty ? '1' : '0');
+        render();
+    };
+    window._crmGetKanbanShowEmpty = function(){ return _kanbanShowEmpty; };
 
     function stagesForFlow(flow){
         if (flow === 'proyecto') return ORDER_PROYECTO.slice();
@@ -2963,15 +2968,11 @@
         });
 
         var stages = stagesForFlow(_kanbanFlow);
-        // Auto-collapse vacías SOLO en la primera render de este flow
-        if (!_kanbanAutoCollapsedOnce) {
-            stages.forEach(function(s){
-                if (!byStage[s] || byStage[s].length === 0) {
-                    _kanbanCollapsed[s] = true;
-                }
+        // Ocultar etapas vacías por default (toggle via Ordenar popover)
+        if (!_kanbanShowEmpty) {
+            stages = stages.filter(function(s){
+                return byStage[s] && byStage[s].length > 0;
             });
-            _kanbanAutoCollapsedOnce = true;
-            persistCollapsed();
         }
 
         board.innerHTML = '';
@@ -3087,6 +3088,10 @@
                     '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'runrate'  ? ' active' : '') + '" data-kflow="runrate">Solo Runrate</button>' +
                     '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'both'     ? ' active' : '') + '" data-kflow="both">Ambos flujos</button>' +
                 '</div>' +
+                '<div class="crm-pop-section" style="border-top:1px solid #F1F5F9;margin-top:4px;padding-top:10px;">Opciones</div>' +
+                '<div class="crm-pop-list">' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanShowEmpty ? ' active' : '') + '" data-kshow="empty">Mostrar etapas vacías</button>' +
+                '</div>' +
                 '</div>';
             popSort.insertAdjacentHTML('beforeend', sectionHtml);
             // Bind clicks en la nueva sección
@@ -3096,6 +3101,12 @@
                     setFlow(btn.dataset.kflow);
                     popSort.classList.remove('open');
                 });
+            });
+            var toggleEmpty = popSort.querySelector('[data-kshow="empty"]');
+            if (toggleEmpty) toggleEmpty.addEventListener('click', function(e){
+                e.stopPropagation();
+                window._crmToggleKanbanShowEmpty();
+                popSort.classList.remove('open');
             });
         });
         origObserver.observe(popSort, { childList: true, attributes: true, attributeFilter: ['class'] });
