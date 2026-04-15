@@ -6053,14 +6053,93 @@
     width: 100%;
     margin: 0;
     flex-shrink: 0;
+    padding: 12px 12px 12px 14px;  /* un poco menos apretado pero compacto */
+    gap: 8px;
 }
-/* Ocultar checkbox vacío dentro del calendario (no hacemos nada con él) */
+/* Ocultar checkbox vacío dentro del calendario */
 .tareas-cal-col-body .tareas-card-check { display: none !important; }
-.tareas-cal-col-body .tareas-card-top { gap: 0; }
-/* Color por tipo (border lateral) — proyecto morado, runrate azul, vencida rojo gana */
-.tareas-card.tipo-proyecto:not(.overdue) { border-left: 3px solid #8B5CF6; }
-.tareas-card.tipo-runrate:not(.overdue)  { border-left: 3px solid #3B82F6; }
-.tareas-card.overdue { border-left: 3px solid #EF4444 !important; }
+.tareas-cal-col-body .tareas-card-top { gap: 0; align-items: flex-start; }
+/* Título en 2-3 líneas (NO truncar a una línea) */
+.tareas-cal-col-body .tareas-card-title {
+    white-space: normal !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: initial;
+    word-break: break-word;
+    line-height: 1.3;
+}
+/* Badges sin padding-left (antes compensaba el check) */
+.tareas-cal-col-body .tareas-card-badges { padding-left: 0; }
+/* Bottom: stack vertical si no entra horizontal */
+.tareas-cal-col-body .tareas-card-bottom {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+}
+.tareas-cal-col-body .tareas-card-etapa { margin-left: 0; }
+/* Oportunidad: respeta max width, wrap si hace falta */
+.tareas-cal-col-body .tareas-card-opp .txt { white-space: normal; overflow: visible; text-overflow: initial; }
+
+/* ══ Border-left coloreado por tipo — vía pseudo-elemento para soportar gradient ══ */
+.tareas-card {
+    position: relative;
+    /* Le damos a las cards un left-border simple de 3px para el color sólido.
+       El pseudo ::before se usa para los estados warm con gradient. */
+}
+.tareas-card.tipo-proyecto:not(.overdue):not(.warm-1):not(.warm-2):not(.warm-3):not(.done) {
+    border-left: 3px solid #8B5CF6;
+}
+.tareas-card.tipo-runrate:not(.overdue):not(.warm-1):not(.warm-2):not(.warm-3):not(.done) {
+    border-left: 3px solid #3B82F6;
+}
+.tareas-card.overdue:not(.done) { border-left: 3px solid #EF4444 !important; }
+/* Completada: strip verde, sin gradient */
+.tareas-card.done {
+    border-left: 3px solid #16A34A !important;
+}
+.tareas-card.done { background: #F0FDF4; opacity: 0.75; }
+.tareas-card.done .tareas-card-title { text-decoration: line-through; color: #166534; }
+
+/* WARM gradients — usa ::before overlay ya que border no soporta gradient nativo.
+   Mantiene el color base (morado/azul) dominante, red se mezcla abajo. */
+.tareas-card.warm-1:not(.overdue):not(.done),
+.tareas-card.warm-2:not(.overdue):not(.done),
+.tareas-card.warm-3:not(.overdue):not(.done) {
+    border-left: 3px solid transparent;
+}
+.tareas-card.warm-1:not(.overdue):not(.done)::before,
+.tareas-card.warm-2:not(.overdue):not(.done)::before,
+.tareas-card.warm-3:not(.overdue):not(.done)::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 14px 0 0 14px;
+    pointer-events: none;
+}
+/* Proyecto warm */
+.tareas-card.tipo-proyecto.warm-1:not(.overdue):not(.done)::before {
+    background: linear-gradient(180deg, #8B5CF6 0%, #8B5CF6 60%, #A56DC5 85%, #E8687F 100%);
+}
+.tareas-card.tipo-proyecto.warm-2:not(.overdue):not(.done)::before {
+    background: linear-gradient(180deg, #8B5CF6 0%, #9E6AC8 45%, #C97395 75%, #EF4444 100%);
+}
+.tareas-card.tipo-proyecto.warm-3:not(.overdue):not(.done)::before {
+    background: linear-gradient(180deg, #8B5CF6 0%, #A866A0 35%, #D45F70 65%, #EF4444 100%);
+}
+/* Runrate warm */
+.tareas-card.tipo-runrate.warm-1:not(.overdue):not(.done)::before {
+    background: linear-gradient(180deg, #3B82F6 0%, #3B82F6 60%, #7C80CD 85%, #E8687F 100%);
+}
+.tareas-card.tipo-runrate.warm-2:not(.overdue):not(.done)::before {
+    background: linear-gradient(180deg, #3B82F6 0%, #6D7EDA 45%, #BE7093 75%, #EF4444 100%);
+}
+.tareas-card.tipo-runrate.warm-3:not(.overdue):not(.done)::before {
+    background: linear-gradient(180deg, #3B82F6 0%, #8A7AC2 35%, #CC6079 65%, #EF4444 100%);
+}
 
 /* ══ TAREAS: nuevo diseño con tabs island + facet bar + vista lista ══ */
 /* Ocultar el focus sidebar antiguo y su toolbar */

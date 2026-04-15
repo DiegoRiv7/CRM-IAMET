@@ -4692,8 +4692,7 @@
 
             var tareas = (_crmAllTareas || []).slice();
 
-            // Siempre excluir completadas
-            tareas = tareas.filter(function(t){ return t.estado !== 'completada'; });
+            // NO excluimos completadas — se muestran marcadas (verde) y ordenadas al final
 
             // Contadores globales (para los tabs) — ANTES de aplicar urgency
             var now = new Date();
@@ -4747,9 +4746,12 @@
                 });
             }
 
-            // Sort: ancladas > rojas (más días vencida) > próximas por fecha
+            // Sort: completadas SIEMPRE al final > ancladas > rojas > próximas por fecha
             var userSort = ($tIn('tareasSort') || {}).value || '';
             tareas.sort(function(a, b){
+                var aD = a.estado === 'completada';
+                var bD = b.estado === 'completada';
+                if (aD !== bD) return aD ? 1 : -1;
                 var aP = !!a.esta_anclada;
                 var bP = !!b.esta_anclada;
                 if (aP !== bP) return aP ? -1 : 1;
@@ -4875,9 +4877,12 @@
                 // Tareas de semanas futuras no se muestran — usar navegación
             });
 
-            // Sort buckets: rojas arriba
+            // Sort buckets: completadas al final, luego rojas, luego el resto por fecha
             Object.keys(buckets).forEach(function(k) {
                 buckets[k].sort(function(a, b) {
+                    var aD = a.estado === 'completada';
+                    var bD = b.estado === 'completada';
+                    if (aD !== bD) return aD ? 1 : -1;  // completadas al final de su día
                     var aV = _tareasIsOverdue(a, now);
                     var bV = _tareasIsOverdue(b, now);
                     if (aV !== bV) return aV ? -1 : 1;
@@ -5048,7 +5053,18 @@
             var tipoCls = (tipo === 'proyecto' || tipo === 'bitrix_proyecto') ? ' tipo-proyecto'
                         : (tipo === 'runrate') ? ' tipo-runrate'
                         : '';
-            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '') + tipoCls;
+            // Warm: días hasta fecha límite (solo si no vencida ni completada)
+            var warmCls = '';
+            if (!vencida && !done && tarea.fecha_limite) {
+                var dt = new Date(tarea.fecha_limite);
+                if (!isNaN(dt.getTime())) {
+                    var diasHasta = Math.ceil((dt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                    if (diasHasta <= 1)       warmCls = ' warm-3';
+                    else if (diasHasta <= 7)  warmCls = ' warm-2';
+                    else if (diasHasta <= 14) warmCls = ' warm-1';
+                }
+            }
+            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '') + tipoCls + warmCls;
 
             // Fecha badge
             var fechaHtml = '';
@@ -5556,16 +5572,18 @@
                     var lv = document.getElementById('tareasViewList');
                     var cv = document.getElementById('tareasCardsGrid');
                     var calv = document.getElementById('tareasViewCalendar');
+                    var tabsBar = document.querySelector('.tareas-tabs-bar');
                     if (cv) cv.style.display = 'none';  // cards legacy siempre oculto
                     if (mode === 'calendar') {
                         if (lv)   lv.style.display   = 'none';
                         if (calv) calv.style.display = 'flex';
-                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';  // icono calendario
-                        // Re-render para poblar
+                        if (tabsBar) tabsBar.style.display = 'none';   // ocultar tabs (se usa todo el espacio)
+                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';
                         if (typeof renderTareasCRM === 'function') renderTareasCRM();
                     } else {
                         if (lv)   lv.style.display   = '';
                         if (calv) calv.style.display = 'none';
+                        if (tabsBar) tabsBar.style.display = '';        // mostrar tabs en lista
                         if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
                     }
                 }
