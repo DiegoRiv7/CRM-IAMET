@@ -319,6 +319,12 @@
                         <label>Hasta</label>
                         <input type="date" id="filterHasta" style="font-size:0.75rem;">
                     </div>
+                    <!-- Nuevos filtros (ocultos, escritos por el facet bar popover) -->
+                    <input type="hidden" id="filterMontoMin" value="">
+                    <input type="hidden" id="filterMontoMax" value="">
+                    <input type="hidden" id="filterProbMin" value="">
+                    <input type="hidden" id="filterProbMax" value="">
+                    <input type="hidden" id="filterMesCierre" value="">
                     <div class="crm-filter-actions">
                         <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
@@ -428,7 +434,7 @@
             <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
                 {% for item in tabla_data %}
                 {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
-                <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
+                <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-probabilidad="{{ item.probabilidad_cierre|default:0 }}" data-mes-cierre="{{ item.mes_cierre|default:'' }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
                      onclick="openDetalle('{{ item.id }}')"
                     <!-- Franja superior de color -->
                     <div class="absolute top-0 left-0 right-0 h-1.5" style="{% if item.tiene_actividad_vencida %}background:#EF4444;box-shadow:0 2px 4px rgba(239,68,68,0.4);{% elif item.tipo_negociacion == 'proyecto' %}background:#8B5CF6;box-shadow:0 2px 4px rgba(139,92,246,0.3);{% else %}background:#3B82F6;box-shadow:0 2px 4px rgba(59,130,246,0.3);{% endif %}"></div>
@@ -514,6 +520,8 @@
                     data-area="{{ item.area|default:'-' }}"
                     data-producto="{{ item.producto }}"
                     data-monto="{{ item.monto|unlocalize }}"
+                    data-probabilidad="{{ item.probabilidad_cierre|default:0 }}"
+                    data-mes-cierre="{{ item.mes_cierre|default:'' }}"
                     data-tipo="{{ item.tipo_negociacion }}"
                     data-etapa="{{ item.etapa_corta|default:'' }}"
                     data-fecha="{{ item.fecha_actualizacion|date:'U' }}"
@@ -591,14 +599,14 @@
         </div>
 
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
-        <!-- ═══ VISTA KANBAN (por etapa) — rails tipo timeline en los bordes ═══ -->
+        <!-- ═══ VISTA KANBAN (por etapa) — arrows flotantes en esquinas ═══ -->
         <div id="crmViewKanban" style="display:none;">
-            <button type="button" class="crm-kanban-rail left" id="kanbanRailLeft" title="Ver etapas anteriores" aria-label="Anterior">
-                <svg viewBox="0 0 22 88" fill="currentColor" class="crm-kanban-rail-chevron"><polygon points="22,0 0,44 22,88" /></svg>
-            </button>
             <div class="crm-kanban-board" id="crmKanbanBoard"></div>
-            <button type="button" class="crm-kanban-rail right" id="kanbanRailRight" title="Ver etapas siguientes" aria-label="Siguiente">
-                <svg viewBox="0 0 22 88" fill="currentColor" class="crm-kanban-rail-chevron"><polygon points="0,0 22,44 0,88" /></svg>
+            <button type="button" class="crm-kanban-nav left" id="kanbanRailLeft" title="Ver etapas anteriores" aria-label="Anterior">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="crm-kanban-nav right" id="kanbanRailRight" title="Ver etapas siguientes" aria-label="Siguiente">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
         </div>
 
@@ -2173,7 +2181,10 @@
         { key: 'producto', label: 'Marca',    type: 'select', inputId: 'filterProducto' },
         { key: 'tipo',     label: 'Tipo',     type: 'enum',   inputId: 'filterTipo',
             options: [{ v: 'proyecto', l: 'Proyecto' }, { v: 'runrate', l: 'Runrate' }, { v: 'bitrix_proyecto', l: 'Bitrix' }] },
-        { key: 'etapa',    label: 'Etapa',    type: 'text',   inputId: 'filterEtapa' },
+        { key: 'etapa',    label: 'Etapa',    type: 'multiselect', inputId: 'filterEtapa', dataKey: 'etapa' },
+        { key: 'monto',    label: 'Monto',    type: 'numberrange', minId: 'filterMontoMin', maxId: 'filterMontoMax', prefix: '$', suffix: 'MXN' },
+        { key: 'probabilidad', label: 'Probabilidad', type: 'numberrange', minId: 'filterProbMin', maxId: 'filterProbMax', suffix: '%', max: 100 },
+        { key: 'mescierre', label: 'Mes cierre', type: 'monthmulti', inputId: 'filterMesCierre' },
         { key: 'fechas',   label: 'Fechas',   type: 'daterange' }
     ];
     // Campos de período (reload): mes, año, vendedor
@@ -2218,7 +2229,12 @@
             tipo:    ($in('filterTipo') || {}).value || '',
             etapa:   ($in('filterEtapa') || {}).value || '',
             desde:   ($in('filterDesde') || {}).value || '',
-            hasta:   ($in('filterHasta') || {}).value || ''
+            hasta:   ($in('filterHasta') || {}).value || '',
+            montoMin:($in('filterMontoMin') || {}).value || '',
+            montoMax:($in('filterMontoMax') || {}).value || '',
+            probMin: ($in('filterProbMin')  || {}).value || '',
+            probMax: ($in('filterProbMax')  || {}).value || '',
+            mesCierre:($in('filterMesCierre') || {}).value || ''
         };
     }
     function readSort(){
@@ -2345,14 +2361,36 @@
             var opt = fld.options.find(function(o){ return o.v === f.tipo; });
             html += chipHtml('tipo', 'Tipo', opt ? opt.l : f.tipo);
         }
-        if (f.etapa)    html += chipHtml('etapa',    'Etapa',    f.etapa);
+        if (f.etapa) {
+            var etapaVal = f.etapa.indexOf(',') !== -1
+                ? (f.etapa.split(',').filter(Boolean).length + ' etapas')
+                : f.etapa;
+            html += chipHtml('etapa', 'Etapa', etapaVal);
+        }
+        if (f.montoMin || f.montoMax) {
+            var mMin = f.montoMin ? '$' + Number(f.montoMin).toLocaleString('en-US') : '$0';
+            var mMax = f.montoMax ? '$' + Number(f.montoMax).toLocaleString('en-US') : '∞';
+            html += chipHtml('monto', 'Monto', mMin + ' — ' + mMax);
+        }
+        if (f.probMin || f.probMax) {
+            var pMin = f.probMin ? (f.probMin + '%') : '0%';
+            var pMax = f.probMax ? (f.probMax + '%') : '100%';
+            html += chipHtml('probabilidad', 'Probabilidad', pMin + ' — ' + pMax);
+        }
+        if (f.mesCierre) {
+            var meses = f.mesCierre.split(',').filter(Boolean);
+            var mesName = { '01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic' };
+            var lbl = meses.length === 1 ? (mesName[meses[0]] || meses[0]) : (meses.length + ' meses');
+            html += chipHtml('mescierre', 'Mes cierre', lbl);
+        }
         if (f.desde || f.hasta) {
             var range = (f.desde || '…') + ' → ' + (f.hasta || '…');
             html += chipHtml('fechas',   'Fechas',  range);
         }
         chipsEl.innerHTML = html;
         // "Limpiar todo" SOLO si hay filtros in-memory activos (ignora mes/año/vendedor)
-        var anyActive = !!(f.cliente || f.area || f.contacto || f.producto || f.tipo || f.etapa || f.desde || f.hasta);
+        var anyActive = !!(f.cliente || f.area || f.contacto || f.producto || f.tipo || f.etapa ||
+            f.desde || f.hasta || f.montoMin || f.montoMax || f.probMin || f.probMax || f.mesCierre);
         btnClear.style.display = anyActive ? '' : 'none';
 
         // Sort label + estado visual
@@ -2517,6 +2555,77 @@
             popValue.innerHTML = html;
             popValue.style.minWidth = '280px';
         }
+        else if (fld.type === 'numberrange') {
+            var curMin = (fld.key === 'monto' ? f.montoMin : f.probMin) || '';
+            var curMax = (fld.key === 'monto' ? f.montoMax : f.probMax) || '';
+            var prefix = fld.prefix || '';
+            var suffix = fld.suffix || '';
+            var placeholderMin = fld.key === 'probabilidad' ? '0' : '0';
+            var placeholderMax = fld.key === 'probabilidad' ? '100' : 'Sin límite';
+            html = '<div class="crm-pop-section">' + fld.label + (suffix ? ' (' + suffix + ')' : '') + '</div>' +
+                '<div class="crm-pop-dates">' +
+                    '<div><label>Mínimo</label><input type="number" id="_fpNumMin" min="0"' + (fld.max ? ' max="' + fld.max + '"' : '') + ' placeholder="' + placeholderMin + '" value="' + curMin + '"></div>' +
+                    '<div><label>Máximo</label><input type="number" id="_fpNumMax" min="0"' + (fld.max ? ' max="' + fld.max + '"' : '') + ' placeholder="' + placeholderMax + '" value="' + curMax + '"></div>' +
+                '</div>' +
+                '<div class="crm-pop-footer">' +
+                    '<button type="button" data-act="clear-numrange">Quitar</button>' +
+                    '<button type="button" class="primary" data-act="apply-numrange">Aplicar</button>' +
+                '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '260px';
+        }
+        else if (fld.type === 'monthmulti') {
+            var cur = (f.mesCierre || '').split(',').filter(Boolean);
+            var MESES = [['01','Enero'],['02','Febrero'],['03','Marzo'],['04','Abril'],['05','Mayo'],['06','Junio'],['07','Julio'],['08','Agosto'],['09','Septiembre'],['10','Octubre'],['11','Noviembre'],['12','Diciembre']];
+            html = '<div class="crm-pop-section">Mes de cierre</div><div class="crm-pop-list">';
+            html += '<button type="button" class="crm-pop-item ' + (cur.length === 0 ? 'active' : '') + '" data-mescierre="__all__">Todos los meses</button>';
+            MESES.forEach(function(m){
+                var act = cur.indexOf(m[0]) !== -1 ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-mescierre="' + m[0] + '">' + m[1] + '</button>';
+            });
+            html += '</div>';
+            html += '<div class="crm-pop-footer"><button type="button" class="primary" data-act="apply-mescierre" style="flex:1;">Aplicar</button></div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '200px';
+        }
+        else if (fld.type === 'multiselect') {
+            var curVal = ((f[fieldKey] || '') + '').split(',').filter(Boolean);
+            var dataKey = fld.dataKey || fieldKey;
+            var values = getUniqueValues(dataKey);
+            html = '<div class="crm-pop-search">' +
+                        '<svg width="13" height="13" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+                        '<input type="text" id="_fpSearchMs" placeholder="Buscar ' + fld.label.toLowerCase() + '…">' +
+                    '</div>' +
+                    '<div class="crm-pop-list" id="_fpListMs"></div>' +
+                    '<div class="crm-pop-footer">' +
+                        '<button type="button" data-act="clear-multi">Quitar</button>' +
+                        '<button type="button" class="primary" data-act="apply-multi">Aplicar (' + curVal.length + ')</button>' +
+                    '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '260px';
+
+            var listEl = $in('_fpListMs');
+            var inputEl = $in('_fpSearchMs');
+            function renderMsList(q){
+                q = (q || '').toLowerCase();
+                var filtered = q ? values.filter(function(v){ return v.toLowerCase().indexOf(q) !== -1; }) : values;
+                var innerHtml = '';
+                filtered.slice(0, 80).forEach(function(v){
+                    var act = curVal.indexOf(v) !== -1 ? 'active' : '';
+                    innerHtml += '<button type="button" class="crm-pop-item ' + act + '" data-multival="' + v.replace(/"/g,'&quot;') + '">' + v + '</button>';
+                });
+                if (!filtered.length) innerHtml += '<div class="crm-pop-item" style="color:#94A3B8;cursor:default;">Sin coincidencias</div>';
+                listEl.innerHTML = innerHtml;
+            }
+            renderMsList('');
+            // Store refs en popValue dataset para handlers
+            popValue._msCurVal = curVal;
+            popValue._msRender = renderMsList;
+            if (inputEl) {
+                inputEl.addEventListener('input', function(){ renderMsList(this.value); });
+                setTimeout(function(){ inputEl.focus(); }, 20);
+            }
+        }
         else if (fld.type === 'enum') {
             html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
             html += '<button type="button" class="crm-pop-item ' + (!f[fieldKey] ? 'active' : '') + '" data-val="">Todos</button>';
@@ -2604,7 +2713,8 @@
     });
 
     btnClear.addEventListener('click', function(){
-        ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa','filterDesde','filterHasta'].forEach(function(id){
+        ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa',
+         'filterDesde','filterHasta','filterMontoMin','filterMontoMax','filterProbMin','filterProbMax','filterMesCierre'].forEach(function(id){
             setInputValue(id, '');
         });
         renderChips();
@@ -2629,6 +2739,23 @@
                 params.delete('desde');
                 params.delete('hasta');
                 window.location.href = window.location.pathname + '?' + params.toString();
+                return;
+            }
+            if (key === 'monto') {
+                setInputValue('filterMontoMin', '');
+                setInputValue('filterMontoMax', '');
+                renderChips();
+                return;
+            }
+            if (key === 'probabilidad') {
+                setInputValue('filterProbMin', '');
+                setInputValue('filterProbMax', '');
+                renderChips();
+                return;
+            }
+            if (key === 'mescierre') {
+                setInputValue('filterMesCierre', '');
+                renderChips();
                 return;
             }
             var fld = FIELDS.find(function(f){ return f.key === key; });
@@ -2677,6 +2804,37 @@
         // stopPropagation crítico porque el innerHTML replace destruye el DOM
         // y el document handler falla al chequear popValue.contains(e.target).
         e.stopPropagation();
+
+        // Multiselect: toggle items (etapa)
+        var msItem = e.target.closest('[data-multival]');
+        if (msItem && popValue._msCurVal) {
+            var val = msItem.dataset.multival;
+            var idx = popValue._msCurVal.indexOf(val);
+            if (idx >= 0) popValue._msCurVal.splice(idx, 1);
+            else popValue._msCurVal.push(val);
+            // Re-render list + update footer count
+            popValue._msRender(($in('_fpSearchMs') || {}).value || '');
+            var applyBtn = popValue.querySelector('[data-act="apply-multi"]');
+            if (applyBtn) applyBtn.textContent = 'Aplicar (' + popValue._msCurVal.length + ')';
+            return;
+        }
+
+        // Mes cierre: toggle months — aplica directo a hidden input + re-render
+        var mcItem = e.target.closest('[data-mescierre]');
+        if (mcItem) {
+            var mv = mcItem.dataset.mescierre;
+            var currentMc = (($in('filterMesCierre') || {}).value || '').split(',').filter(Boolean);
+            if (mv === '__all__') currentMc = [];
+            else {
+                var idx2 = currentMc.indexOf(mv);
+                if (idx2 >= 0) currentMc.splice(idx2, 1);
+                else currentMc.push(mv);
+            }
+            setInputValue('filterMesCierre', currentMc.join(','));
+            openValuePicker('mescierre');
+            renderChips();
+            return;
+        }
 
         // Periodo unificado: toggle meses/años en estado temporal
         var pmItem = e.target.closest('[data-pm]');
@@ -2801,6 +2959,41 @@
             if (fld2 && fld2.inputId) setInputValue(fld2.inputId, v);
             popValue.classList.remove('open');
             renderChips();
+        } else if (act === 'apply-numrange') {
+            // Monto o Probabilidad
+            var nmin = ($in('_fpNumMin') || {}).value || '';
+            var nmax = ($in('_fpNumMax') || {}).value || '';
+            var fld3 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld3 && fld3.minId) {
+                setInputValue(fld3.minId, nmin);
+                setInputValue(fld3.maxId, nmax);
+            }
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'clear-numrange') {
+            var fld4 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld4 && fld4.minId) {
+                setInputValue(fld4.minId, '');
+                setInputValue(fld4.maxId, '');
+            }
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply-mescierre') {
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply-multi') {
+            // Multiselect (etapa) — guardar array como comma-separated
+            if (popValue._msCurVal) {
+                var fld5 = FIELDS.find(function(x){ return x.key === field; });
+                if (fld5 && fld5.inputId) setInputValue(fld5.inputId, popValue._msCurVal.join(','));
+            }
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'clear-multi') {
+            var fld6 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld6 && fld6.inputId) setInputValue(fld6.inputId, '');
+            popValue.classList.remove('open');
+            renderChips();
         }
     });
 
@@ -2882,7 +3075,9 @@
     });
 
     // Observar cambios en hidden inputs para re-renderizar chips
-    ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa','filterMonto','filterFecha','filterDesde','filterHasta'].forEach(function(id){
+    ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa',
+     'filterMonto','filterFecha','filterDesde','filterHasta',
+     'filterMontoMin','filterMontoMax','filterProbMin','filterProbMax','filterMesCierre'].forEach(function(id){
         var el = $in(id);
         if (!el) return;
         el.addEventListener('change', renderChips);
@@ -2950,9 +3145,11 @@
         var sourceGrid = document.getElementById('crmCardsGrid');
         if (!sourceGrid) return;
 
-        // Filtrar postit cards según flujo
+        // Filtrar postit cards: excluye las que están display:none por los filtros del facet bar
+        // Así el kanban respeta todos los filtros activos (cliente, monto, probabilidad, etc.)
         var allCards = Array.prototype.slice.call(sourceGrid.querySelectorAll('.crm-postit'));
         var filtered = allCards.filter(function(c){
+            if (c.style.display === 'none') return false;  // filtro in-memory aplicó
             var tipo = (c.dataset.tipo || '').toLowerCase();
             if (_kanbanFlow === 'proyecto') return tipo === 'proyecto' || tipo === 'bitrix_proyecto';
             if (_kanbanFlow === 'runrate')  return tipo === 'runrate';
@@ -2968,6 +3165,18 @@
         });
 
         var stages = stagesForFlow(_kanbanFlow);
+
+        // Si el usuario filtró por etapas específicas, mostrar SOLO esas columnas
+        var etapaFilter = (document.getElementById('filterEtapa') || {}).value || '';
+        if (etapaFilter) {
+            var etapasSeleccionadas = etapaFilter.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+            if (etapasSeleccionadas.length) {
+                stages = stages.filter(function(s){
+                    return etapasSeleccionadas.some(function(sel){ return sel.toLowerCase() === s.toLowerCase(); });
+                });
+            }
+        }
+
         // Ocultar etapas vacías por default (toggle via Ordenar popover)
         if (!_kanbanShowEmpty) {
             stages = stages.filter(function(s){

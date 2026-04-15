@@ -6083,62 +6083,40 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     display: flex;
     flex-direction: column;
 }
-/* Kanban con rails tipo timeline: flex row con rails a los lados + board al centro */
-#crmViewKanban {
-    padding: 0;
-    display: flex;
-    flex-direction: row !important;  /* sobreescribe el column default para poner rails al lado */
-    align-items: stretch;
-}
+/* Padding interno del kanban — mínimo para respirar y permitir arrows flotantes */
+#crmViewKanban { padding: 0 14px 0; }
 
-/* Rails de navegación — timeline marker: línea vertical suave de arriba a abajo
-   con triángulo sólido centrado apuntando hacia afuera. */
-.crm-kanban-rail {
-    flex-shrink: 0;
-    width: 22px;
+/* Flechas flotantes en las esquinas — diseño original, visibles pero discretas */
+.crm-kanban-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: none;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(15,23,42,0.1);
+    border-radius: 10px;
+    color: #475569;
     cursor: pointer;
-    color: rgba(100, 116, 139, 0.35);
-    transition: color 0.18s ease, transform 0.18s ease;
-    padding: 0;
-    height: 100%;
-    position: relative;
+    opacity: 0.6;
+    transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    z-index: 100;
+    box-shadow: 0 6px 20px rgba(15,23,42,0.15), 0 2px 4px rgba(15,23,42,0.08);
 }
-/* Línea vertical timeline: abarca TODO el borde de arriba a abajo */
-.crm-kanban-rail::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: currentColor;
-    opacity: 0.4;
-    transform: translateX(-50%);
-    transition: background 0.18s ease;
-    pointer-events: none;
-}
-/* Triángulo sólido centrado verticalmente — proporcionado, no estirado */
-.crm-kanban-rail-chevron {
-    width: 22px;
-    height: 88px;
-    display: block;
-    position: relative;
-    z-index: 1;
-    filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.08));
-}
-.crm-kanban-rail:hover {
+.crm-kanban-nav:hover {
+    opacity: 1;
+    background: #FFFFFF;
     color: #0052D4;
+    transform: translateY(-50%) scale(1.05);
 }
-.crm-kanban-rail:hover::before {
-    opacity: 0.7;
-}
-.crm-kanban-rail:active { transform: scale(0.97); }
-.crm-kanban-rail.disabled { opacity: 0; pointer-events: none; }
+.crm-kanban-nav.left  { left: 8px; }
+.crm-kanban-nav.right { right: 8px; }
+.crm-kanban-nav.disabled { opacity: 0; pointer-events: none; }
 
 /* .crm-kanban-nav: removido. Scroll horizontal nativo via trackpad / Shift+wheel / wheel (hook JS). */
 .crm-kanban-board {

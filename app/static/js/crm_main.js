@@ -4052,6 +4052,21 @@
             var searchVal = (document.getElementById('crmSearch') || {}).value || '';
             searchVal = searchVal.toLowerCase();
 
+            // Leer filtros nuevos (monto/probabilidad/mes cierre) directo de hidden inputs
+            var montoMinStr = (document.getElementById('filterMontoMin') || {}).value || '';
+            var montoMaxStr = (document.getElementById('filterMontoMax') || {}).value || '';
+            var probMinStr  = (document.getElementById('filterProbMin')  || {}).value || '';
+            var probMaxStr  = (document.getElementById('filterProbMax')  || {}).value || '';
+            var mesCierreStr = (document.getElementById('filterMesCierre') || {}).value || '';
+            var montoMin = montoMinStr !== '' ? parseFloat(montoMinStr) : null;
+            var montoMax = montoMaxStr !== '' ? parseFloat(montoMaxStr) : null;
+            var probMin  = probMinStr  !== '' ? parseFloat(probMinStr)  : null;
+            var probMax  = probMaxStr  !== '' ? parseFloat(probMaxStr)  : null;
+            var mesCierreList = mesCierreStr ? mesCierreStr.split(',').filter(Boolean) : null;
+            // Etapa puede ser multi (comma-separated desde el multiselect)
+            var etapaFilterRaw = (currentFilters.etapa || '').trim();
+            var etapaList = etapaFilterRaw ? etapaFilterRaw.split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean) : null;
+
             cards.forEach(function(card) {
                 var text = card.textContent.toLowerCase();
                 var etapa = (card.dataset.etapa || '').toLowerCase();
@@ -4060,6 +4075,9 @@
                 var producto = (card.dataset.producto || '').toLowerCase();
                 var cliente = (card.dataset.cliente || '').toLowerCase();
                 var contacto = (card.dataset.contacto || '').toLowerCase();
+                var monto = parseFloat(card.dataset.monto || '0') || 0;
+                var prob  = parseFloat(card.dataset.probabilidad || '0') || 0;
+                var mesCierre = (card.dataset.mesCierre || '').trim();
                 var show = true;
 
                 // Buscador global
@@ -4067,10 +4085,21 @@
                 // Filtros del panel
                 if (show && currentFilters.cliente && !cliente.includes(currentFilters.cliente.toLowerCase())) show = false;
                 if (show && currentFilters.area && !area.includes(currentFilters.area.toLowerCase())) show = false;
-                if (show && currentFilters.etapa && !etapa.includes(currentFilters.etapa.toLowerCase())) show = false;
+                if (show && etapaList) {
+                    // Multi-etapa: match exacto (después de lowercase) contra cualquier elemento de la lista
+                    if (etapaList.indexOf(etapa) === -1) show = false;
+                }
                 if (show && currentFilters.tipo && tipo !== currentFilters.tipo) show = false;
                 if (show && currentFilters.producto && !producto.includes(currentFilters.producto.toLowerCase())) show = false;
                 if (show && currentFilters.contacto && !contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
+                // Rango de monto
+                if (show && montoMin !== null && monto < montoMin) show = false;
+                if (show && montoMax !== null && monto > montoMax) show = false;
+                // Rango de probabilidad
+                if (show && probMin !== null && prob < probMin) show = false;
+                if (show && probMax !== null && prob > probMax) show = false;
+                // Mes de cierre (multi)
+                if (show && mesCierreList && mesCierreList.indexOf(mesCierre) === -1) show = false;
 
                 // Rango de fechas (por fecha de creacion)
                 if (show && (currentFilters.desde || currentFilters.hasta)) {
@@ -4083,6 +4112,12 @@
 
                 card.style.display = show ? '' : 'none';
             });
+
+            // Kanban respeta filtros: re-render si visible
+            if (typeof window._crmRenderKanban === 'function') {
+                var kv = document.getElementById('crmViewKanban');
+                if (kv && kv.style.display !== 'none') window._crmRenderKanban();
+            }
         }
         // Exponer para que se pueda llamar desde fuera del scope
         window._applyFiltersToCards = _applyFiltersToCards;
