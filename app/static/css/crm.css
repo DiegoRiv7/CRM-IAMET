@@ -6083,9 +6083,54 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     display: flex;
     flex-direction: column;
 }
-/* Padding interno minimal — sin arrows, scroll horizontal nativo (trackpad / Shift+wheel).
-   Ajustado a 14px para aire y efecto "peek" de la siguiente columna. */
-#crmViewKanban { padding: 0 14px 0; }
+/* Kanban con rails tipo timeline: flex row con rails a los lados + board al centro */
+#crmViewKanban {
+    padding: 0;
+    display: flex;
+    flex-direction: row !important;  /* sobreescribe el column default para poner rails al lado */
+    align-items: stretch;
+}
+
+/* Rails de navegación — ocupan el espacio que antes era gutter, con chevron dentro */
+.crm-kanban-rail {
+    flex-shrink: 0;
+    width: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #94A3B8;
+    opacity: 0.35;
+    transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
+    padding: 0;
+    height: 100%;
+    position: relative;
+}
+.crm-kanban-rail::before {
+    /* Línea vertical sutil tipo timeline */
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background: rgba(100, 116, 139, 0.15);
+    transform: translateX(-50%);
+    pointer-events: none;
+    transition: background 0.18s ease;
+}
+.crm-kanban-rail:hover {
+    opacity: 1;
+    background: rgba(0, 82, 212, 0.05);
+    color: #0052D4;
+}
+.crm-kanban-rail:hover::before {
+    background: rgba(0, 82, 212, 0.2);
+}
+.crm-kanban-rail.disabled { opacity: 0; pointer-events: none; }
+.crm-kanban-rail svg { position: relative; z-index: 1; }
 
 /* .crm-kanban-nav: removido. Scroll horizontal nativo via trackpad / Shift+wheel / wheel (hook JS). */
 .crm-kanban-board {
@@ -6097,6 +6142,7 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     padding: 4px 2px 8px;
     flex: 1;
     min-height: 0;
+    min-width: 0;
     scroll-behavior: smooth;
     /* Sensación de infinito: sin scrollbar horizontal visible */
     scrollbar-width: none;

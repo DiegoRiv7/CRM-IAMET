@@ -591,9 +591,15 @@
         </div>
 
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
-        <!-- ═══ VISTA KANBAN (por etapa) — scroll horizontal nativo (trackpad / Shift+wheel) ═══ -->
+        <!-- ═══ VISTA KANBAN (por etapa) — rails tipo timeline en los bordes ═══ -->
         <div id="crmViewKanban" style="display:none;">
+            <button type="button" class="crm-kanban-rail left" id="kanbanRailLeft" title="Ver etapas anteriores" aria-label="Anterior">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
             <div class="crm-kanban-board" id="crmKanbanBoard"></div>
+            <button type="button" class="crm-kanban-rail right" id="kanbanRailRight" title="Ver etapas siguientes" aria-label="Siguiente">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
         </div>
 
         <div id="crmViewTable" style="display:none;">
@@ -3125,21 +3131,36 @@
         mo.observe(sourceGrid, { childList: true, subtree: true, attributes: true, attributeFilter: ['class','data-anclada'] });
     }
 
-    // Scroll horizontal nativo del board — wheel vertical del mouse se convierte en horizontal
-    // SOLO cuando el cursor NO está sobre el body de una columna (que tiene su propio scroll).
-    // Si está sobre una columna: la rueda scrollea esa columna verticalmente (comportamiento default).
+    // Scroll horizontal del board + rails tipo timeline en los bordes
     var board = document.getElementById('crmKanbanBoard');
+    var railL = document.getElementById('kanbanRailLeft');
+    var railR = document.getElementById('kanbanRailRight');
+
+    function updateRailsState(){
+        if (!board || !railL || !railR) return;
+        var maxScroll = board.scrollWidth - board.clientWidth;
+        railL.classList.toggle('disabled', board.scrollLeft <= 4);
+        railR.classList.toggle('disabled', board.scrollLeft >= maxScroll - 4);
+    }
+
+    if (railL && board) railL.addEventListener('click', function(){ board.scrollBy({ left: -320, behavior: 'smooth' }); });
+    if (railR && board) railR.addEventListener('click', function(){ board.scrollBy({ left:  320, behavior: 'smooth' }); });
+
     if (board) {
+        // Wheel: convertir wheel vertical a horizontal SOLO cuando no está sobre el body de una columna
         board.addEventListener('wheel', function(e){
-            // Si el cursor está dentro del body de una columna, respeta su scroll vertical
             var colBody = e.target.closest && e.target.closest('.crm-kanban-col-body');
             if (colBody) return;
-            // Solo convertir si es un wheel predominantemente vertical
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
                 e.preventDefault();
                 board.scrollLeft += e.deltaY;
             }
         }, { passive: false });
+
+        board.addEventListener('scroll', updateRailsState);
+        setTimeout(updateRailsState, 100);
+        var ro = new ResizeObserver(updateRailsState);
+        ro.observe(board);
     }
 })();
 </script>
