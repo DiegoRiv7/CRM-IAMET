@@ -264,6 +264,8 @@
             // Clase en .crm-main para que el board llegue edge-to-edge y hasta abajo
             var mainEl = document.querySelector('.crm-main');
             if (mainEl) mainEl.classList.toggle('kanban-active', _crmViewMode === 'kanban');
+            // Lock scroll del body para evitar scroll global en vista kanban
+            document.body.classList.toggle('kanban-scroll-lock', _crmViewMode === 'kanban');
             if (_crmViewMode === 'kanban' && typeof window._crmRenderKanban === 'function') {
                 window._crmRenderKanban();
             }

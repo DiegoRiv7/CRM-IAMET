@@ -6062,6 +6062,9 @@
     height: 100vh;
     max-height: 100vh;
 }
+/* Body sin scroll cuando kanban activo — el único scroll permitido es dentro de cada columna */
+body.kanban-scroll-lock { overflow: hidden; }
+body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 .crm-main.kanban-active .crm-table-wrap {
     flex: 1;
     min-height: 0;
@@ -6080,8 +6083,8 @@
     display: flex;
     flex-direction: column;
 }
-/* Padding interno del kanban para que las columnas no toquen el borde */
-#crmViewKanban { padding: 0 14px 14px; }
+/* Padding interno del kanban — gutter a los lados para que las arrows queden en el margen */
+#crmViewKanban { padding: 0 52px 0; }
 
 /* Flechas de navegación lateral — discretas pero visibles */
 .crm-kanban-nav {

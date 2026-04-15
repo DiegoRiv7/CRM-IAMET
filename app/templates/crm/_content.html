@@ -3073,14 +3073,22 @@
 
     window._crmRenderKanban = render;
 
-    // Inject flow selector en el popover de Sort (si existe)
+    // Inject flow selector en el popover de Sort (si existe) — SOLO cuando vista kanban activa
     // El popover de sort se crea on-demand; hook al abrirlo para inyectar la sección de flujo.
     var popSort = document.getElementById('popSort');
     if (popSort) {
         var origObserver = new MutationObserver(function(){
             // Cuando el popSort se abre (innerHTML cambia), inyecta sección de flujo si aún no está
             if (!popSort.classList.contains('open')) return;
-            if (popSort.querySelector('.crm-kanban-flow-section')) return;
+            // Solo mostrar secciones de kanban si la vista kanban está activa
+            var kanbanActive = localStorage.getItem('crmViewMode') === 'kanban';
+            // Si la vista no es kanban, remover las secciones (por si quedaron del popover anterior)
+            var existing = popSort.querySelector('.crm-kanban-flow-section');
+            if (!kanbanActive) {
+                if (existing) existing.remove();
+                return;
+            }
+            if (existing) return;
             var sectionHtml = '<div class="crm-kanban-flow-section">' +
                 '<div class="crm-pop-section" style="border-top:1px solid #F1F5F9;margin-top:4px;padding-top:10px;">Flujo (Kanban)</div>' +
                 '<div class="crm-pop-list">' +
