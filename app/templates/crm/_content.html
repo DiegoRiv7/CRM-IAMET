@@ -591,15 +591,9 @@
         </div>
 
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
-        <!-- ═══ VISTA KANBAN (por etapa) ═══ -->
+        <!-- ═══ VISTA KANBAN (por etapa) — scroll horizontal nativo (trackpad / Shift+wheel) ═══ -->
         <div id="crmViewKanban" style="display:none;">
             <div class="crm-kanban-board" id="crmKanbanBoard"></div>
-            <button type="button" class="crm-kanban-nav left" id="kanbanNavLeft" title="Ver etapas anteriores">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <button type="button" class="crm-kanban-nav right" id="kanbanNavRight" title="Ver etapas siguientes">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
         </div>
 
         <div id="crmViewTable" style="display:none;">
@@ -3131,25 +3125,17 @@
         mo.observe(sourceGrid, { childList: true, subtree: true, attributes: true, attributeFilter: ['class','data-anclada'] });
     }
 
-    // Flechas de navegación lateral
-    var navLeft  = document.getElementById('kanbanNavLeft');
-    var navRight = document.getElementById('kanbanNavRight');
-    var board    = document.getElementById('crmKanbanBoard');
-    function updateNavState(){
-        if (!board || !navLeft || !navRight) return;
-        var maxScroll = board.scrollWidth - board.clientWidth;
-        navLeft.classList.toggle('disabled',  board.scrollLeft <= 4);
-        navRight.classList.toggle('disabled', board.scrollLeft >= maxScroll - 4);
-    }
-    if (navLeft  && board) navLeft .addEventListener('click', function(){ board.scrollBy({ left: -320, behavior: 'smooth' }); });
-    if (navRight && board) navRight.addEventListener('click', function(){ board.scrollBy({ left:  320, behavior: 'smooth' }); });
+    // Scroll horizontal nativo del board — wheel vertical del mouse se convierte en horizontal
+    // cuando el cursor está sobre el kanban (además del trackpad swipe y Shift+wheel default).
+    var board = document.getElementById('crmKanbanBoard');
     if (board) {
-        board.addEventListener('scroll', updateNavState);
-        // Actualizar estado inicial tras primer render
-        setTimeout(updateNavState, 100);
-        // Re-chequear cuando cambie el ancho (colapsar/expandir columnas)
-        var ro = new ResizeObserver(updateNavState);
-        ro.observe(board);
+        board.addEventListener('wheel', function(e){
+            // Solo convertir si es un wheel predominantemente vertical
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
+                e.preventDefault();
+                board.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
     }
 })();
 </script>
