@@ -6690,6 +6690,46 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 }
 .crm-pop-dates input:focus { border-color: #0052D4; }
 
+/* Inputs de monto con prefix/suffix estilo MXN */
+.crm-money-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    padding: 0 8px;
+    background: #FFFFFF;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.crm-money-wrap:focus-within {
+    border-color: #0052D4;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.1);
+}
+.crm-money-prefix {
+    color: #94A3B8;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.crm-money-suffix {
+    color: #94A3B8;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.crm-money-wrap input,
+.crm-pop-dates .crm-money-wrap input {
+    border: none !important;
+    outline: none !important;
+    padding: 6px 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    min-width: 0;
+    width: 100%;
+}
+
 /* Popover periodo: dos columnas (meses / años) */
 .crm-pop-period {
     display: grid;
@@ -6760,6 +6800,31 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
     box-shadow: inset -1px 0 0 rgba(255,255,255,0.25);
 }
+/* WARM: aproximando fecha límite — el strip se mezcla con rojo gradualmente.
+   La franja VERTICAL de la lista va de su color base (arriba) al rojo (abajo)
+   según qué tan cerca está la actividad próxima. */
+.crm-list-strip.proyecto.warm-1 {
+    background: linear-gradient(180deg, #A78BFA 0%, #B478E1 40%, #D57399 75%, #E8687F 100%);
+}
+.crm-list-strip.proyecto.warm-2 {
+    background: linear-gradient(180deg, #C48DD5 0%, #DD7A9A 50%, #EB5F6C 100%);
+    box-shadow: 0 0 6px rgba(235,95,108,0.3), inset -1px 0 0 rgba(255,255,255,0.2);
+}
+.crm-list-strip.proyecto.warm-3 {
+    background: linear-gradient(180deg, #E06B7D 0%, #EF4E5C 60%, #EF4444 100%);
+    box-shadow: 0 0 8px rgba(239,68,68,0.4), inset -1px 0 0 rgba(255,255,255,0.18);
+}
+.crm-list-strip.runrate.warm-1 {
+    background: linear-gradient(180deg, #60A5FA 0%, #8B8EE0 40%, #D47691 75%, #E8687F 100%);
+}
+.crm-list-strip.runrate.warm-2 {
+    background: linear-gradient(180deg, #8996DE 0%, #DD7A9A 50%, #EB5F6C 100%);
+    box-shadow: 0 0 6px rgba(235,95,108,0.3), inset -1px 0 0 rgba(255,255,255,0.2);
+}
+.crm-list-strip.runrate.warm-3 {
+    background: linear-gradient(180deg, #E06B7D 0%, #EF4E5C 60%, #EF4444 100%);
+    box-shadow: 0 0 8px rgba(239,68,68,0.4), inset -1px 0 0 rgba(255,255,255,0.18);
+}
 /* Heat map vencidas: mientras más tiempo pasa, más roja se vuelve */
 .crm-list-strip.vencida.heat-1   { background: linear-gradient(180deg, #FCA5A5 0%, #F87171 100%); box-shadow: 0 0 6px rgba(248,113,113,0.25), inset -1px 0 0 rgba(255,255,255,0.25); }
 .crm-list-strip.vencida.heat-2   { background: linear-gradient(180deg, #F87171 0%, #EF4444 100%); box-shadow: 0 0 8px rgba(239,68,68,0.30), inset -1px 0 0 rgba(255,255,255,0.25); }
@@ -6801,6 +6866,96 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     border-color: #FDE68A;
 }
 .crm-list-row.pinned-row:hover { border-color: #FCD34D; }
+
+/* ═══ POSTIT CARDS: strip superior + heat/warm + alerta crítica ═══ */
+.crm-postit { position: relative; }
+.crm-postit-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    z-index: 2;
+    pointer-events: none;
+    transition: background 0.3s ease;
+}
+/* Defaults por tipo (cuando no hay heat/warm) */
+.crm-postit[data-tipo="proyecto"] .crm-postit-strip,
+.crm-postit[data-tipo="bitrix_proyecto"] .crm-postit-strip {
+    background: linear-gradient(180deg, #A78BFA 0%, #8B5CF6 100%);
+    box-shadow: 0 2px 4px rgba(139,92,246,0.3);
+}
+.crm-postit[data-tipo="runrate"] .crm-postit-strip {
+    background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
+    box-shadow: 0 2px 4px rgba(59,130,246,0.3);
+}
+
+/* WARM states — actividad próxima a vencer pero NO vencida aún.
+   El strip se empieza a mezclar con rojo gradualmente según dias_hasta_proxima */
+.crm-postit.warm-1[data-tipo="proyecto"] .crm-postit-strip,
+.crm-postit.warm-1[data-tipo="bitrix_proyecto"] .crm-postit-strip {
+    background: linear-gradient(90deg, #A78BFA 0%, #B478E1 35%, #D57399 65%, #E8687F 100%);
+    box-shadow: 0 2px 6px rgba(216,110,140,0.28);
+}
+.crm-postit.warm-2[data-tipo="proyecto"] .crm-postit-strip,
+.crm-postit.warm-2[data-tipo="bitrix_proyecto"] .crm-postit-strip {
+    background: linear-gradient(90deg, #C48DD5 0%, #DD7A9A 45%, #EB5F6C 100%);
+    box-shadow: 0 2px 8px rgba(235,95,108,0.35);
+}
+.crm-postit.warm-3[data-tipo="proyecto"] .crm-postit-strip,
+.crm-postit.warm-3[data-tipo="bitrix_proyecto"] .crm-postit-strip {
+    background: linear-gradient(90deg, #E06B7D 0%, #EF4E5C 60%, #EF4444 100%);
+    box-shadow: 0 2px 10px rgba(239,68,68,0.4);
+}
+/* Runrate warm: azul → rojo gradual */
+.crm-postit.warm-1[data-tipo="runrate"] .crm-postit-strip {
+    background: linear-gradient(90deg, #60A5FA 0%, #8B8EE0 35%, #D47691 65%, #E8687F 100%);
+    box-shadow: 0 2px 6px rgba(216,110,140,0.28);
+}
+.crm-postit.warm-2[data-tipo="runrate"] .crm-postit-strip {
+    background: linear-gradient(90deg, #8996DE 0%, #DD7A9A 45%, #EB5F6C 100%);
+    box-shadow: 0 2px 8px rgba(235,95,108,0.35);
+}
+.crm-postit.warm-3[data-tipo="runrate"] .crm-postit-strip {
+    background: linear-gradient(90deg, #E06B7D 0%, #EF4E5C 60%, #EF4444 100%);
+    box-shadow: 0 2px 10px rgba(239,68,68,0.4);
+}
+
+/* HEAT states — vencida, rojo progresivo */
+.crm-postit.card-vencida.heat-1 .crm-postit-strip {
+    background: linear-gradient(180deg, #FCA5A5 0%, #F87171 100%);
+    box-shadow: 0 2px 6px rgba(248,113,113,0.3);
+}
+.crm-postit.card-vencida.heat-2 .crm-postit-strip {
+    background: linear-gradient(180deg, #F87171 0%, #EF4444 100%);
+    box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+}
+.crm-postit.card-vencida.heat-3 .crm-postit-strip {
+    background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+    box-shadow: 0 2px 10px rgba(220,38,38,0.45);
+}
+.crm-postit.card-vencida.heat-4 .crm-postit-strip {
+    background: linear-gradient(180deg, #DC2626 0%, #B91C1C 100%);
+    box-shadow: 0 2px 12px rgba(185,28,28,0.5);
+}
+.crm-postit.card-vencida.heat-5 .crm-postit-strip {
+    background: linear-gradient(180deg, #B91C1C 0%, #991B1B 100%);
+    box-shadow: 0 2px 14px rgba(153,27,27,0.55);
+}
+/* heat-max: 30+ días — card ENTERA con tinte rojo + strip pulsante + alerta */
+.crm-postit.card-vencida.heat-max .crm-postit-strip {
+    background: #7F1D1D;
+    box-shadow: 0 0 18px rgba(127,29,29,0.6), inset 0 -1px 0 rgba(255,255,255,0.1);
+    animation: crm-heat-pulse-card 1.8s ease-in-out infinite;
+}
+.crm-postit.card-vencida.heat-max {
+    background: #FEF2F2 !important;
+    border-color: #FECACA !important;
+}
+@keyframes crm-heat-pulse-card {
+    0%,100% { box-shadow: 0 0 14px rgba(127,29,29,0.55), inset 0 -1px 0 rgba(255,255,255,0.1); }
+    50%     { box-shadow: 0 0 24px rgba(185,28,28,0.85), inset 0 -1px 0 rgba(255,255,255,0.1); }
+}
 .crm-list-cell { padding: 0 10px; min-width: 0; }
 .crm-list-title {
     font-size: 0.88rem;

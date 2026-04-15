@@ -375,6 +375,25 @@ def crm_home(request):
             # Actividad próxima (la más cercana no completada)
             proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
             item.actividad_proxima = proxima.titulo if proxima else None
+            # Días hasta próxima actividad o tarea (no vencida aún) — para warm gradient
+            # Queremos la fecha limite más cercana FUTURA, sin incluir vencidas
+            dias_hasta = None
+            try:
+                prox_act = Actividad.objects.filter(
+                    oportunidad=item, completada=False, fecha_fin__gte=ahora_tz
+                ).order_by('fecha_fin').first()
+                if prox_act and prox_act.fecha_fin:
+                    d = (prox_act.fecha_fin - ahora_tz).days
+                    dias_hasta = d if dias_hasta is None else min(dias_hasta, d)
+                prox_tar = TareaOportunidad.objects.filter(
+                    oportunidad=item, fecha_limite__gte=ahora_tz
+                ).exclude(estado='completada').order_by('fecha_limite').first()
+                if prox_tar and prox_tar.fecha_limite:
+                    d = (prox_tar.fecha_limite - ahora_tz).days
+                    dias_hasta = d if dias_hasta is None else min(dias_hasta, d)
+            except Exception:
+                dias_hasta = None
+            item.dias_hasta_proxima = dias_hasta  # None = sin actividad futura
         # Obtener IDs ancladas del usuario
         ancladas_ids = set(profile.oportunidades_ancladas or [])
         for item in tabla_data_list:
