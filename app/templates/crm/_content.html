@@ -594,11 +594,11 @@
         <!-- ═══ VISTA KANBAN (por etapa) — rails tipo timeline en los bordes ═══ -->
         <div id="crmViewKanban" style="display:none;">
             <button type="button" class="crm-kanban-rail left" id="kanbanRailLeft" title="Ver etapas anteriores" aria-label="Anterior">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg viewBox="0 0 14 120" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="crm-kanban-rail-chevron"><polyline points="10 20 4 60 10 100"/></svg>
             </button>
             <div class="crm-kanban-board" id="crmKanbanBoard"></div>
             <button type="button" class="crm-kanban-rail right" id="kanbanRailRight" title="Ver etapas siguientes" aria-label="Siguiente">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg viewBox="0 0 14 120" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="crm-kanban-rail-chevron"><polyline points="4 20 10 60 4 100"/></svg>
             </button>
         </div>
 
@@ -3146,17 +3146,10 @@
     if (railL && board) railL.addEventListener('click', function(){ board.scrollBy({ left: -320, behavior: 'smooth' }); });
     if (railR && board) railR.addEventListener('click', function(){ board.scrollBy({ left:  320, behavior: 'smooth' }); });
 
-    if (board) {
-        // Wheel: convertir wheel vertical a horizontal SOLO cuando no está sobre el body de una columna
-        board.addEventListener('wheel', function(e){
-            var colBody = e.target.closest && e.target.closest('.crm-kanban-col-body');
-            if (colBody) return;
-            if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
-                e.preventDefault();
-                board.scrollLeft += e.deltaY;
-            }
-        }, { passive: false });
+    // (Removido: conversión wheel vertical → horizontal. Trackpad swipe horizontal y
+    // Shift+wheel siguen funcionando nativos; para mouse-only usar los rails o teclado.)
 
+    if (board) {
         board.addEventListener('scroll', updateRailsState);
         setTimeout(updateRailsState, 100);
         var ro = new ResizeObserver(updateRailsState);

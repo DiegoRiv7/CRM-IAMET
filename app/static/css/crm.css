@@ -6091,46 +6091,35 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     align-items: stretch;
 }
 
-/* Rails de navegación — ocupan el espacio que antes era gutter, con chevron dentro */
+/* Rails de navegación — chevron grande que abarca TODA la altura del rail, mismo ancho que
+   los bordes existentes (22px). Opacity 0.3 al reposo, full al hover. */
 .crm-kanban-rail {
     flex-shrink: 0;
     width: 22px;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
     background: transparent;
     border: none;
     cursor: pointer;
     color: #94A3B8;
-    opacity: 0.35;
+    opacity: 0.3;
     transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
-    padding: 0;
+    padding: 12px 0;
     height: 100%;
-    position: relative;
 }
-.crm-kanban-rail::before {
-    /* Línea vertical sutil tipo timeline */
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 20%;
-    bottom: 20%;
-    width: 1px;
-    background: rgba(100, 116, 139, 0.15);
-    transform: translateX(-50%);
-    pointer-events: none;
-    transition: background 0.18s ease;
+.crm-kanban-rail-chevron {
+    width: 14px;
+    height: 100%;
+    flex: 1;
+    display: block;
 }
 .crm-kanban-rail:hover {
     opacity: 1;
     background: rgba(0, 82, 212, 0.05);
     color: #0052D4;
 }
-.crm-kanban-rail:hover::before {
-    background: rgba(0, 82, 212, 0.2);
-}
 .crm-kanban-rail.disabled { opacity: 0; pointer-events: none; }
-.crm-kanban-rail svg { position: relative; z-index: 1; }
 
 /* .crm-kanban-nav: removido. Scroll horizontal nativo via trackpad / Shift+wheel / wheel (hook JS). */
 .crm-kanban-board {
