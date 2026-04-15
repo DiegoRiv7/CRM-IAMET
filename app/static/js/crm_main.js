@@ -4892,24 +4892,22 @@
             var dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
             board.innerHTML = '';
 
-            // Columna Atrasadas
-            var colAtr = document.createElement('div');
-            colAtr.className = 'tareas-cal-col col-atrasadas';
-            colAtr.innerHTML =
-                '<div class="tareas-cal-col-head">' +
-                    '<div class="tareas-cal-col-head-row">' +
-                        '<div><div class="tareas-cal-day-name">Atrasadas</div><div class="tareas-cal-day-num">' +
-                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="#B91C1C" stroke="none" style="vertical-align:-2px;"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>' +
-                        '</div></div>' +
-                        '<span class="tareas-cal-count">' + buckets.atrasadas.length + '</span>' +
+            // Columna Atrasadas — SOLO se muestra si hay atrasadas
+            if (buckets.atrasadas.length > 0) {
+                var colAtr = document.createElement('div');
+                colAtr.className = 'tareas-cal-col col-atrasadas';
+                colAtr.innerHTML =
+                    '<div class="tareas-cal-col-head">' +
+                        '<div class="tareas-cal-col-head-row">' +
+                            '<div><div class="tareas-cal-day-name">Atrasadas</div><div class="tareas-cal-day-num">' +
+                                '<svg width="14" height="14" viewBox="0 0 24 24" fill="#B91C1C" stroke="none" style="vertical-align:-2px;"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>' +
+                            '</div></div>' +
+                            '<span class="tareas-cal-count">' + buckets.atrasadas.length + '</span>' +
+                        '</div>' +
                     '</div>' +
-                '</div>' +
-                '<div class="tareas-cal-col-body" id="_tareasCalAtr"></div>';
-            board.appendChild(colAtr);
-            var atrBody = colAtr.querySelector('#_tareasCalAtr');
-            if (buckets.atrasadas.length === 0) {
-                atrBody.innerHTML = '<div class="tareas-cal-empty">Sin atrasadas</div>';
-            } else {
+                    '<div class="tareas-cal-col-body"></div>';
+                board.appendChild(colAtr);
+                var atrBody = colAtr.querySelector('.tareas-cal-col-body');
                 atrBody.innerHTML = buckets.atrasadas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
             }
 
@@ -5046,7 +5044,11 @@
             var done = tarea.estado === 'completada';
             var vencida = _tareasIsOverdue(tarea, now);
             var pinned = !!tarea.esta_anclada;
-            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '');
+            var tipo = (tarea.oportunidad_tipo || '').toLowerCase();
+            var tipoCls = (tipo === 'proyecto' || tipo === 'bitrix_proyecto') ? ' tipo-proyecto'
+                        : (tipo === 'runrate') ? ' tipo-runrate'
+                        : '';
+            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '') + tipoCls;
 
             // Fecha badge
             var fechaHtml = '';
