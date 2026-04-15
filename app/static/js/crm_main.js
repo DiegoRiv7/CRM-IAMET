@@ -208,8 +208,8 @@
             });
         }, 50);
 
-        // CRM View Toggle (list → cards → table → list) — list es el default
-        var _crmViewOrder = ['list', 'cards', 'table'];
+        // CRM View Toggle (list → cards → kanban → table → list) — list es el default
+        var _crmViewOrder = ['list', 'cards', 'kanban', 'table'];
         var _crmViewMode = localStorage.getItem('crmViewMode') || 'list';
         if (_crmViewOrder.indexOf(_crmViewMode) === -1) _crmViewMode = 'list';
         window.toggleCrmView = function() {
@@ -219,21 +219,29 @@
             _applyCrmView();
         };
         function _applyCrmView() {
-            var listView  = document.getElementById('crmViewList');
-            var cardsView = document.getElementById('crmViewCards');
-            var tableView = document.getElementById('crmViewTable');
+            var listView   = document.getElementById('crmViewList');
+            var cardsView  = document.getElementById('crmViewCards');
+            var tableView  = document.getElementById('crmViewTable');
+            var kanbanView = document.getElementById('crmViewKanban');
             var icon = document.getElementById('crmViewIcon');
             if (!cardsView || !tableView) return;
-            if (listView)  listView.style.display  = (_crmViewMode === 'list')  ? '' : 'none';
-            cardsView.style.display = (_crmViewMode === 'cards') ? '' : 'none';
-            tableView.style.display = (_crmViewMode === 'table') ? '' : 'none';
+            if (listView)   listView.style.display   = (_crmViewMode === 'list')   ? '' : 'none';
+            cardsView.style.display                   = (_crmViewMode === 'cards')  ? '' : 'none';
+            tableView.style.display                   = (_crmViewMode === 'table')  ? '' : 'none';
+            if (kanbanView) kanbanView.style.display = (_crmViewMode === 'kanban') ? '' : 'none';
+            if (_crmViewMode === 'kanban' && typeof window._crmRenderKanban === 'function') {
+                window._crmRenderKanban();
+            }
             if (icon) {
                 if (_crmViewMode === 'list') {
-                    // 3 filas horizontales (list)
+                    // 3 filas horizontales
                     icon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2"/>';
                 } else if (_crmViewMode === 'cards') {
                     // 2x2 grid (cards)
                     icon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
+                } else if (_crmViewMode === 'kanban') {
+                    // Kanban: 3 columnas verticales
+                    icon.innerHTML = '<rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="14" rx="1"/><rect x="17" y="3" width="4" height="10" rx="1"/>';
                 } else {
                     // Tabla clásica
                     icon.innerHTML = '<rect x="3" y="5" width="18" height="14" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="5" x2="9" y2="19"/>';

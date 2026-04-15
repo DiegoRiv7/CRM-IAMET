@@ -591,6 +591,11 @@
         </div>
 
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
+        <!-- ═══ VISTA KANBAN (por etapa) ═══ -->
+        <div id="crmViewKanban" style="display:none;">
+            <div class="crm-kanban-board" id="crmKanbanBoard"></div>
+        </div>
+
         <div id="crmViewTable" style="display:none;">
         <table class="w-full crm-table">
             <colgroup>
@@ -2886,3 +2891,220 @@
     }
 })();
 </script>
+
+{% if tab_activo == 'crm' %}
+<!-- ═══ KANBAN BOARD (render + flow selector) ═══ -->
+<script>
+(function(){
+    // Orden canónico de etapas por flujo (excluye Ganado/Perdido/Pagado — no aparecen en la lista)
+    var ORDER_PROYECTO = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes'];
+    var ORDER_RUNRATE  = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta'];
+
+    var _kanbanFlow = localStorage.getItem('kanbanFlow') || 'proyecto';  // proyecto | runrate | both
+    var _kanbanCollapsed = {};   // { stageName: true }
+    try {
+        var savedCol = localStorage.getItem('kanbanCollapsed');
+        if (savedCol) _kanbanCollapsed = JSON.parse(savedCol) || {};
+    } catch(e) {}
+    var _kanbanAutoCollapsedOnce = false;  // para evitar re-colapsar tras interacción del usuario
+
+    function persistCollapsed(){
+        try { localStorage.setItem('kanbanCollapsed', JSON.stringify(_kanbanCollapsed)); } catch(e) {}
+    }
+    function setFlow(flow){
+        _kanbanFlow = flow;
+        localStorage.setItem('kanbanFlow', flow);
+        _kanbanAutoCollapsedOnce = false;  // re-calcular auto-collapse al cambiar flujo
+        render();
+    }
+    window._crmSetKanbanFlow = setFlow;
+    window._crmGetKanbanFlow = function(){ return _kanbanFlow; };
+
+    function stagesForFlow(flow){
+        if (flow === 'proyecto') return ORDER_PROYECTO.slice();
+        if (flow === 'runrate')  return ORDER_RUNRATE.slice();
+        // both: unión preservando orden (proyecto primero, luego runrate sin duplicar)
+        var out = ORDER_PROYECTO.slice();
+        ORDER_RUNRATE.forEach(function(s){ if (out.indexOf(s) === -1) out.push(s); });
+        return out;
+    }
+
+    function fmtMoney(n){
+        return '$' + (Number(n)||0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+
+    function render(){
+        var board = document.getElementById('crmKanbanBoard');
+        if (!board) return;
+        var sourceGrid = document.getElementById('crmCardsGrid');
+        if (!sourceGrid) return;
+
+        // Filtrar postit cards según flujo
+        var allCards = Array.prototype.slice.call(sourceGrid.querySelectorAll('.crm-postit'));
+        var filtered = allCards.filter(function(c){
+            var tipo = (c.dataset.tipo || '').toLowerCase();
+            if (_kanbanFlow === 'proyecto') return tipo === 'proyecto' || tipo === 'bitrix_proyecto';
+            if (_kanbanFlow === 'runrate')  return tipo === 'runrate';
+            return true;  // both
+        });
+
+        // Agrupar por etapa
+        var byStage = {};
+        filtered.forEach(function(c){
+            var et = (c.dataset.etapa || '').trim();
+            if (!et) return;
+            (byStage[et] = byStage[et] || []).push(c);
+        });
+
+        var stages = stagesForFlow(_kanbanFlow);
+        // Auto-collapse vacías SOLO en la primera render de este flow
+        if (!_kanbanAutoCollapsedOnce) {
+            stages.forEach(function(s){
+                if (!byStage[s] || byStage[s].length === 0) {
+                    _kanbanCollapsed[s] = true;
+                }
+            });
+            _kanbanAutoCollapsedOnce = true;
+            persistCollapsed();
+        }
+
+        board.innerHTML = '';
+        stages.forEach(function(stage){
+            var cards = (byStage[stage] || []).slice();
+            // Sort: ancladas arriba, luego vencidas (más días), luego resto
+            cards.sort(function(a, b){
+                var pa = a.dataset.anclada === '1' ? 0 : 1;
+                var pb = b.dataset.anclada === '1' ? 0 : 1;
+                if (pa !== pb) return pa - pb;
+                var oa = a.dataset.vencida === '1' ? 0 : 1;
+                var ob = b.dataset.vencida === '1' ? 0 : 1;
+                if (oa !== ob) return oa - ob;
+                return parseInt(b.dataset.diasVencida || '0', 10) - parseInt(a.dataset.diasVencida || '0', 10);
+            });
+
+            var col = document.createElement('div');
+            col.className = 'crm-kanban-col' + (_kanbanCollapsed[stage] ? ' collapsed' : '');
+            col.dataset.stage = stage;
+
+            var totalVal = 0;
+            cards.forEach(function(c){ totalVal += parseFloat(c.dataset.monto || '0') || 0; });
+
+            // Header
+            var head = document.createElement('div');
+            head.className = 'crm-kanban-head';
+
+            if (_kanbanCollapsed[stage]) {
+                // Colapsada: solo dot + nombre vertical + count
+                head.innerHTML = '<div class="crm-kanban-collapsed-body">' +
+                    '<span class="crm-kanban-count" title="' + cards.length + ' oportunidades">' + cards.length + '</span>' +
+                    '<span class="crm-kanban-vertical-name">' + stage + '</span>' +
+                    '</div>';
+                col.appendChild(head);
+                col.addEventListener('click', function(e){
+                    // Expandir al click en cualquier parte
+                    _kanbanCollapsed[stage] = false;
+                    persistCollapsed();
+                    render();
+                });
+            } else {
+                head.innerHTML =
+                    '<div class="crm-kanban-head-top">' +
+                        '<div class="crm-kanban-head-title">' +
+                            '<span class="crm-kanban-dot' + (cards.length ? ' active' : '') + '"></span>' +
+                            '<span class="crm-kanban-stage-name">' + stage + '</span>' +
+                            '<span class="crm-kanban-count">' + cards.length + '</span>' +
+                        '</div>' +
+                        '<div class="crm-kanban-head-actions">' +
+                            '<button type="button" class="crm-kanban-col-btn" data-act="collapse" title="Minimizar etapa">' +
+                                '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/></svg>' +
+                            '</button>' +
+                            '<button type="button" class="crm-kanban-col-btn" data-act="add" title="Nueva oportunidad en esta etapa">' +
+                                '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="crm-kanban-head-bottom">' +
+                        '<span class="crm-kanban-total-label">Total:</span> ' +
+                        '<span class="crm-kanban-total-value">' + fmtMoney(totalVal) + '</span>' +
+                    '</div>';
+                col.appendChild(head);
+
+                head.querySelector('[data-act="collapse"]').addEventListener('click', function(e){
+                    e.stopPropagation();
+                    _kanbanCollapsed[stage] = true;
+                    persistCollapsed();
+                    render();
+                });
+                var btnAdd = head.querySelector('[data-act="add"]');
+                if (btnAdd) btnAdd.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    var btn = document.getElementById('btnNegociacion');
+                    if (btn) btn.click();
+                });
+
+                var body = document.createElement('div');
+                body.className = 'crm-kanban-col-body';
+                if (cards.length === 0) {
+                    body.innerHTML = '<div class="crm-kanban-empty">' +
+                        '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                        '<span>Añadir oportunidad</span>' +
+                    '</div>';
+                } else {
+                    cards.forEach(function(orig){
+                        var clone = orig.cloneNode(true);
+                        clone.classList.add('crm-kanban-card');
+                        // Onclick ya viene en el HTML original con openDetalle('id')
+                        body.appendChild(clone);
+                    });
+                }
+                col.appendChild(body);
+            }
+
+            board.appendChild(col);
+        });
+    }
+
+    window._crmRenderKanban = render;
+
+    // Inject flow selector en el popover de Sort (si existe)
+    // El popover de sort se crea on-demand; hook al abrirlo para inyectar la sección de flujo.
+    var popSort = document.getElementById('popSort');
+    if (popSort) {
+        var origObserver = new MutationObserver(function(){
+            // Cuando el popSort se abre (innerHTML cambia), inyecta sección de flujo si aún no está
+            if (!popSort.classList.contains('open')) return;
+            if (popSort.querySelector('.crm-kanban-flow-section')) return;
+            var sectionHtml = '<div class="crm-kanban-flow-section">' +
+                '<div class="crm-pop-section" style="border-top:1px solid #F1F5F9;margin-top:4px;padding-top:10px;">Flujo (Kanban)</div>' +
+                '<div class="crm-pop-list">' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'proyecto' ? ' active' : '') + '" data-kflow="proyecto">Solo Proyectos</button>' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'runrate'  ? ' active' : '') + '" data-kflow="runrate">Solo Runrate</button>' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'both'     ? ' active' : '') + '" data-kflow="both">Ambos flujos</button>' +
+                '</div>' +
+                '</div>';
+            popSort.insertAdjacentHTML('beforeend', sectionHtml);
+            // Bind clicks en la nueva sección
+            popSort.querySelectorAll('[data-kflow]').forEach(function(btn){
+                btn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    setFlow(btn.dataset.kflow);
+                    popSort.classList.remove('open');
+                });
+            });
+        });
+        origObserver.observe(popSort, { childList: true, attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Render automático cuando el usuario ancla/desancla un card (el DOM de origen cambia)
+    var sourceGrid = document.getElementById('crmCardsGrid');
+    if (sourceGrid) {
+        var mo = new MutationObserver(function(){
+            // Solo re-render si kanban está visible
+            var kv = document.getElementById('crmViewKanban');
+            if (kv && kv.style.display !== 'none') render();
+        });
+        mo.observe(sourceGrid, { childList: true, subtree: true, attributes: true, attributeFilter: ['class','data-anclada'] });
+    }
+})();
+</script>
+{% endif %}
