@@ -237,8 +237,8 @@
             });
         }, 50);
 
-        // CRM View Toggle (list → cards → kanban → table → list) — list es el default
-        var _crmViewOrder = ['list', 'cards', 'kanban', 'table'];
+        // CRM View Toggle — solo List y Kanban (cards + table ocultos por ahora)
+        var _crmViewOrder = ['list', 'kanban'];
         var _crmViewMode = localStorage.getItem('crmViewMode') || 'list';
         if (_crmViewOrder.indexOf(_crmViewMode) === -1) _crmViewMode = 'list';
         window.toggleCrmView = function() {
@@ -248,6 +248,10 @@
             _applyCrmView();
         };
         function _applyCrmView() {
+            // Remover el <style> temprano que oculta vistas (ahora las controlamos inline)
+            var earlyHide = document.getElementById('_crmEarlyViewHide');
+            if (earlyHide) earlyHide.remove();
+
             var listView   = document.getElementById('crmViewList');
             var cardsView  = document.getElementById('crmViewCards');
             var tableView  = document.getElementById('crmViewTable');
@@ -255,8 +259,8 @@
             var icon = document.getElementById('crmViewIcon');
             if (!cardsView || !tableView) return;
             if (listView)   listView.style.display   = (_crmViewMode === 'list')   ? '' : 'none';
-            cardsView.style.display                   = (_crmViewMode === 'cards')  ? '' : 'none';
-            tableView.style.display                   = (_crmViewMode === 'table')  ? '' : 'none';
+            cardsView.style.display                   = 'none';  // cards oculta por ahora
+            tableView.style.display                   = 'none';  // table oculta por ahora
             if (kanbanView) kanbanView.style.display = (_crmViewMode === 'kanban') ? '' : 'none';
             // En kanban: ocultar el footer legacy (clientes / deals / total) para aprovechar espacio
             var footer = document.querySelector('.crm-footer');

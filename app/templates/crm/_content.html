@@ -344,6 +344,24 @@
             </div>
         </div>
         {% if tab_activo == 'crm' %}
+        <!-- Early script: aplica la vista guardada en localStorage ANTES del render para evitar flash -->
+        <script>
+        (function(){
+            try {
+                var saved = localStorage.getItem('crmViewMode') || 'list';
+                if (saved !== 'list' && saved !== 'kanban') saved = 'list';
+                var s = document.createElement('style');
+                s.id = '_crmEarlyViewHide';
+                // Oculta las vistas no elegidas con !important para sobrescribir inline style="display:none"
+                // Sin !important para PODER removerlo con .remove() cuando _applyCrmView corra.
+                var hideList   = saved !== 'list'   ? '#crmViewList{display:none;}'   : '#crmViewList{display:flex;}';
+                var hideKanban = saved !== 'kanban' ? '#crmViewKanban{display:none;}' : '#crmViewKanban{display:flex;}';
+                s.textContent = hideList + hideKanban + '#crmViewCards{display:none;}#crmViewTable{display:none;}';
+                document.head.appendChild(s);
+            } catch(e) {}
+        })();
+        </script>
+
         <!-- ═══ FACET BAR (estilo HubSpot / Linear) ═══ -->
         <div class="crm-facet-bar" id="crmFacetBar">
             <div class="crm-facet-chips" id="crmFacetChips"></div>
@@ -3074,14 +3092,18 @@
         if (e.key === 'Escape') closeAllPopovers();
     });
 
-    // Observar cambios en hidden inputs para re-renderizar chips
+    // Observar cambios en hidden inputs para re-renderizar chips + aplicar filtros a cards
+    function onFilterChange(){
+        renderChips();
+        if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
+    }
     ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa',
      'filterMonto','filterFecha','filterDesde','filterHasta',
      'filterMontoMin','filterMontoMax','filterProbMin','filterProbMax','filterMesCierre'].forEach(function(id){
         var el = $in(id);
         if (!el) return;
-        el.addEventListener('change', renderChips);
-        el.addEventListener('input', renderChips);
+        el.addEventListener('change', onFilterChange);
+        el.addEventListener('input',  onFilterChange);
     });
 
     // Render inicial (tras crm_main.js para que los selects estén poblados)
@@ -3363,6 +3385,14 @@
         setTimeout(updateRailsState, 100);
         var ro = new ResizeObserver(updateRailsState);
         ro.observe(board);
+    }
+
+    // Render inicial si la vista guardada es kanban (evita flash de vista list al recargar)
+    if (localStorage.getItem('crmViewMode') === 'kanban') {
+        // Primer render inmediato
+        render();
+        // Segundo render tras un tick por si las cards fuente todavía no están listas
+        setTimeout(render, 50);
     }
 })();
 </script>
