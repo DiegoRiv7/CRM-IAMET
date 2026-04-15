@@ -5878,46 +5878,15 @@
 }
 
 /* ══ TAREAS: vista CALENDARIO (kanban por días) ══ */
+/* Altura fija basada en viewport — las columnas llenan el alto visible y
+   cada una tiene scroll interno. No se lockea el body para que la vista de
+   lista siga funcionando con scroll normal. */
 #tareasViewCalendar {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    height: calc(100vh - 130px);
     min-height: 0;
     margin-top: 4px;
-}
-/* Activar flex-chain para que las columnas lleguen hasta abajo del viewport,
-   igual que el kanban del CRM. */
-.crm-main.tareas-cal-active {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-bottom: 0 !important;
-    overflow: hidden;
-    height: 100vh;
-    max-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-body.tareas-cal-scroll-lock { overflow: hidden; }
-body.tareas-cal-scroll-lock .crm-page-sidebar { overflow: hidden; }
-.crm-main.tareas-cal-active .tareas-section {
-    flex: 1;
-    min-height: 0;
-    display: flex !important;
-    flex-direction: column;
-    padding: 0 !important;
-    max-width: 100%;
-}
-.crm-main.tareas-cal-active .tareas-bar,
-.crm-main.tareas-cal-active .tareas-facet-bar,
-.crm-main.tareas-cal-active .crm-facet-bar {
-    padding-left: 20px !important;
-    padding-right: 20px !important;
-    flex-shrink: 0;
-}
-.crm-main.tareas-cal-active #tareasViewCalendar {
-    flex: 1;
-    min-height: 0;
-    padding: 0 14px 0;
 }
 .tareas-cal-nav {
     display: flex;

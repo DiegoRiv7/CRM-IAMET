@@ -4263,19 +4263,6 @@
             if (crmContent) crmContent.style.display = (view === 'crm') ? '' : 'none';
             if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
             if (proyectosSection) proyectosSection.classList.toggle('active', view === 'proyectos');
-            // Cleanup clases del calendario de tareas si salimos de ese tab
-            if (view !== 'tareas') {
-                var mainEl = document.querySelector('.crm-main');
-                if (mainEl) mainEl.classList.remove('tareas-cal-active');
-                document.body.classList.remove('tareas-cal-scroll-lock');
-            } else {
-                // Al entrar a tareas, re-aplicar calendar active si el modo persistido es calendar
-                if (localStorage.getItem('tareasViewMode') === 'calendar') {
-                    var mainEl2 = document.querySelector('.crm-main');
-                    if (mainEl2) mainEl2.classList.add('tareas-cal-active');
-                    document.body.classList.add('tareas-cal-scroll-lock');
-                }
-            }
             document.querySelectorAll('.island-nav-btn, .crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
             if (activeBtn) activeBtn.classList.add('active');
@@ -5622,21 +5609,16 @@
                     var lv = document.getElementById('tareasViewList');
                     var cv = document.getElementById('tareasCardsGrid');
                     var calv = document.getElementById('tareasViewCalendar');
-                    var mainEl = document.querySelector('.crm-main');
                     if (cv) cv.style.display = 'none';  // cards legacy siempre oculto
                     if (mode === 'calendar') {
                         if (lv)   lv.style.display   = 'none';
                         if (calv) calv.style.display = 'flex';
                         if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';
-                        if (mainEl) mainEl.classList.add('tareas-cal-active');
-                        document.body.classList.add('tareas-cal-scroll-lock');
                         if (typeof renderTareasCRM === 'function') renderTareasCRM();
                     } else {
                         if (lv)   lv.style.display   = '';
                         if (calv) calv.style.display = 'none';
                         if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
-                        if (mainEl) mainEl.classList.remove('tareas-cal-active');
-                        document.body.classList.remove('tareas-cal-scroll-lock');
                     }
                 }
                 var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'list';
