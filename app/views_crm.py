@@ -1737,7 +1737,20 @@ def api_desglose_facturacion(request):
     """Desglose completo de facturación del Excel por cliente (sin filtro de match)"""
     try:
         mes = request.GET.get('mes', 'todos')
-        anio = int(request.GET.get('anio', 2026))
+        anio_raw = request.GET.get('anio', '2026')
+
+        def _parse_ints(s, default=None):
+            if not s or s == 'todos':
+                return None
+            parts = [p.strip() for p in str(s).split(',') if p.strip()]
+            out = []
+            for p in parts:
+                try: out.append(int(p))
+                except ValueError: pass
+            return out or default
+
+        anios_list = _parse_ints(anio_raw, default=[2026])
+        meses_list = _parse_ints(mes)
         acumulado = {}  # {key: {nombre, rfc, monto}}
 
         def _procesar_af(af):
@@ -1762,14 +1775,11 @@ def api_desglose_facturacion(request):
                 else:
                     acumulado[k] = {'nombre': nombre, 'rfc': rfc, 'monto': monto}
 
-        if mes == 'todos':
-            for af in ArchivoFacturacion.objects.filter(anio=anio):
-                _procesar_af(af)
-        else:
-            try:
-                _procesar_af(ArchivoFacturacion.objects.get(mes=mes, anio=anio))
-            except ArchivoFacturacion.DoesNotExist:
-                pass
+        af_qs = ArchivoFacturacion.objects.filter(anio__in=anios_list) if anios_list else ArchivoFacturacion.objects.all()
+        if meses_list is not None:
+            af_qs = af_qs.filter(mes__in=[str(m).zfill(2) for m in meses_list])
+        for af in af_qs:
+            _procesar_af(af)
 
         rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
         total = sum(r['monto'] for r in rows)
@@ -2095,7 +2105,21 @@ def api_desglose_cobrado(request):
     """Desglose de cobrado con match a clientes, vendedor, meta y facturas."""
     try:
         mes = request.GET.get('mes', 'todos')
-        anio = int(request.GET.get('anio', 2026))
+        anio_raw = request.GET.get('anio', '2026')
+
+        def _parse_ints(s, default=None):
+            if not s or s == 'todos':
+                return None
+            parts = [p.strip() for p in str(s).split(',') if p.strip()]
+            out = []
+            for p in parts:
+                try: out.append(int(p))
+                except ValueError: pass
+            return out or default
+
+        anios_list = _parse_ints(anio_raw, default=[2026])
+        meses_list = _parse_ints(mes)
+        anio = anios_list[0] if anios_list else 2026
         acumulado = {}  # {nombre: {nombre, monto, facturas[]}}
 
         def _procesar(ac):
@@ -2113,14 +2137,12 @@ def api_desglose_cobrado(request):
                 else:
                     acumulado[nombre] = {'nombre': nombre, 'monto': monto, 'facturas': facturas}
 
-        if mes == 'todos':
-            for ac in ArchivoCobrado.objects.filter(anio=anio):
-                _procesar(ac)
-        else:
-            try:
-                _procesar(ArchivoCobrado.objects.get(mes=mes, anio=anio))
-            except ArchivoCobrado.DoesNotExist:
-                pass
+        # Construir queryset sobre ArchivoCobrado con filtros multi-valor
+        ac_qs = ArchivoCobrado.objects.filter(anio__in=anios_list) if anios_list else ArchivoCobrado.objects.all()
+        if meses_list is not None:
+            ac_qs = ac_qs.filter(mes__in=[str(m).zfill(2) for m in meses_list])
+        for ac in ac_qs:
+            _procesar(ac)
 
         # Cargar alias manuales
         alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
@@ -2139,11 +2161,12 @@ def api_desglose_cobrado(request):
                     if m.asignado_a:
                         vendedor = (m.asignado_a.get_full_name() or m.asignado_a.username)
                         break
-                # Meta: sumar meta_cobrado de TODAS las variantes
+                # Meta: sumar meta_cobrado de TODAS las variantes.
+                # Multiplicar por número de meses en el rango (12 si 'todos').
+                meses_multiplier = 12 if meses_list is None else len(meses_list)
                 for m in matches:
                     mc = float(m.meta_cobrado or 0)
-                    if mes == 'todos':
-                        mc = mc * 12
+                    mc = mc * meses_multiplier
                     meta_cobrado += mc
             faltante = meta_cobrado - entry['monto']
             rows.append({
