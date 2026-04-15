@@ -1463,6 +1463,21 @@
             <div class="crm-list-body" id="tareasListBody"></div>
         </div>
 
+        <!-- ═══ VISTA CALENDARIO: kanban por días de la semana ═══ -->
+        <div id="tareasViewCalendar" style="display:none;">
+            <div class="tareas-cal-nav">
+                <button type="button" class="tareas-cal-btn" id="btnTareasWeekPrev" title="Semana anterior">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div class="tareas-cal-label" id="tareasCalLabel">Semana</div>
+                <button type="button" class="tareas-cal-btn" id="btnTareasWeekNext" title="Semana siguiente">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button type="button" class="tareas-cal-today" id="btnTareasWeekToday">Hoy</button>
+            </div>
+            <div class="tareas-cal-board" id="tareasCalBoard"></div>
+        </div>
+
         <!-- ═══ GRID DE CARDS (legacy, cambia con el toggle) ═══ -->
         <div id="tareasCardsGrid" style="display:none;"></div>
         <div class="tareas-footer" id="tareasFooter"></div>

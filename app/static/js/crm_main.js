@@ -4784,6 +4784,8 @@
                     listBody.innerHTML = tareas.map(function(t){ return createTaskListRowCRM(t, now); }).join('');
                 }
             }
+            // Render calendar si visible
+            renderTareasCalendar(tareas, now);
 
             // Clear button visibility
             var clrBtn = document.getElementById('btnTareasFacetClear');
@@ -4791,6 +4793,161 @@
                 var anyFilter = !!(fTipo || fEtapa || fResp || fCread || fDesde || fHasta);
                 clrBtn.style.display = anyFilter ? '' : 'none';
             }
+        }
+
+        // ── Vista CALENDARIO semanal ──────────────────────────────────
+        // Estado: lunes de la semana visible (Date al 00:00 hora local)
+        var _tareasCalWeekStart = null;
+
+        function _getMondayOf(d) {
+            var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            var dow = x.getDay();  // 0=Dom, 1=Lun, ..., 6=Sáb
+            var diff = dow === 0 ? -6 : 1 - dow;  // siempre al lunes
+            x.setDate(x.getDate() + diff);
+            return x;
+        }
+        function _fmtDateKey(d) {
+            var m = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            return d.getFullYear() + '-' + m + '-' + day;
+        }
+        function _dateFromIso(iso) {
+            if (!iso) return null;
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) return null;
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+        if (_tareasCalWeekStart === null) _tareasCalWeekStart = _getMondayOf(new Date());
+        window._tareasCalShiftWeek = function(delta) {
+            _tareasCalWeekStart.setDate(_tareasCalWeekStart.getDate() + delta * 7);
+            renderTareasCRM();
+        };
+        window._tareasCalGoToday = function() {
+            _tareasCalWeekStart = _getMondayOf(new Date());
+            renderTareasCRM();
+        };
+
+        function renderTareasCalendar(tareas, now) {
+            var board = document.getElementById('tareasCalBoard');
+            var label = document.getElementById('tareasCalLabel');
+            if (!board) return;
+
+            var weekStart = _tareasCalWeekStart;
+            var weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+
+            // Label de la semana: "15 – 21 Abr 2026"
+            var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            if (label) {
+                var ls = weekStart.getDate();
+                var le = weekEnd.getDate();
+                var lm = (weekStart.getMonth() === weekEnd.getMonth())
+                    ? meses[weekStart.getMonth()]
+                    : meses[weekStart.getMonth()] + '/' + meses[weekEnd.getMonth()];
+                label.textContent = ls + '–' + le + ' ' + lm + ' ' + weekEnd.getFullYear();
+            }
+
+            // Bucket tareas por día + atrasadas
+            var buckets = { atrasadas: [] };
+            var hasWeekend = { sat: false, sun: false };
+            var todayKey = _fmtDateKey(new Date());
+
+            // Preparar keys de los 7 días de la semana
+            var dayKeys = [];
+            for (var i = 0; i < 7; i++) {
+                var d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+                dayKeys.push(_fmtDateKey(d));
+                buckets[_fmtDateKey(d)] = [];
+            }
+
+            tareas.forEach(function(t) {
+                if (!t.fecha_limite) return;
+                var d = _dateFromIso(t.fecha_limite);
+                if (!d) return;
+                var k = _fmtDateKey(d);
+                if (d < weekStart) {
+                    buckets.atrasadas.push(t);
+                } else if (buckets[k] !== undefined) {
+                    buckets[k].push(t);
+                    var dow = d.getDay();
+                    if (dow === 6) hasWeekend.sat = true;
+                    if (dow === 0) hasWeekend.sun = true;
+                }
+                // Tareas de semanas futuras no se muestran — usar navegación
+            });
+
+            // Sort buckets: rojas arriba
+            Object.keys(buckets).forEach(function(k) {
+                buckets[k].sort(function(a, b) {
+                    var aV = _tareasIsOverdue(a, now);
+                    var bV = _tareasIsOverdue(b, now);
+                    if (aV !== bV) return aV ? -1 : 1;
+                    if (aV && bV) return _tareasDiasVencida(b, now) - _tareasDiasVencida(a, now);
+                    var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                    var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                    return aT - bT;
+                });
+            });
+
+            // Construir columnas
+            var dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+            board.innerHTML = '';
+
+            // Columna Atrasadas
+            var colAtr = document.createElement('div');
+            colAtr.className = 'tareas-cal-col col-atrasadas';
+            colAtr.innerHTML =
+                '<div class="tareas-cal-col-head">' +
+                    '<div class="tareas-cal-col-head-row">' +
+                        '<div><div class="tareas-cal-day-name">Atrasadas</div><div class="tareas-cal-day-num">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="#B91C1C" stroke="none" style="vertical-align:-2px;"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>' +
+                        '</div></div>' +
+                        '<span class="tareas-cal-count">' + buckets.atrasadas.length + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="tareas-cal-col-body" id="_tareasCalAtr"></div>';
+            board.appendChild(colAtr);
+            var atrBody = colAtr.querySelector('#_tareasCalAtr');
+            if (buckets.atrasadas.length === 0) {
+                atrBody.innerHTML = '<div class="tareas-cal-empty">Sin atrasadas</div>';
+            } else {
+                atrBody.innerHTML = buckets.atrasadas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+            }
+
+            // 5 días laborables (Lun-Vie) + Sáb/Dom opcionales
+            for (var i = 0; i < 5; i++) {
+                var d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+                var key = dayKeys[i];
+                _renderCalCol(board, d, dayNames[d.getDay()], buckets[key], key === todayKey, now, false);
+            }
+            // Sábado: solo si hay tareas
+            if (hasWeekend.sat) {
+                var dSat = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 5);
+                _renderCalCol(board, dSat, 'Sáb', buckets[dayKeys[5]], dayKeys[5] === todayKey, now, true);
+            }
+            if (hasWeekend.sun) {
+                var dSun = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+                _renderCalCol(board, dSun, 'Dom', buckets[dayKeys[6]], dayKeys[6] === todayKey, now, true);
+            }
+        }
+
+        function _renderCalCol(board, d, dayName, list, isToday, now, isWeekend) {
+            var col = document.createElement('div');
+            col.className = 'tareas-cal-col' + (isToday ? ' col-hoy' : '') + (isWeekend ? ' col-weekend' : '');
+            col.innerHTML =
+                '<div class="tareas-cal-col-head">' +
+                    '<div class="tareas-cal-col-head-row">' +
+                        '<div><div class="tareas-cal-day-name">' + dayName + '</div><div class="tareas-cal-day-num">' + d.getDate() + '</div></div>' +
+                        '<span class="tareas-cal-count">' + list.length + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="tareas-cal-col-body"></div>';
+            var body = col.querySelector('.tareas-cal-col-body');
+            if (list.length === 0) {
+                body.innerHTML = '<div class="tareas-cal-empty">Sin tareas</div>';
+            } else {
+                body.innerHTML = list.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+            }
+            board.appendChild(col);
         }
 
         function createTaskListRowCRM(t, now) {
@@ -5392,27 +5549,40 @@
                     renderChips(); renderTareasCRM();
                 });
 
-                // View toggle (list ⇄ cards)
+                // View toggle (list ⇄ calendar)
                 function applyTareasView(mode){
                     var lv = document.getElementById('tareasViewList');
                     var cv = document.getElementById('tareasCardsGrid');
-                    if (mode === 'cards') {
-                        if (lv) lv.style.display = 'none';
-                        if (cv) cv.style.display = '';
-                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
+                    var calv = document.getElementById('tareasViewCalendar');
+                    if (cv) cv.style.display = 'none';  // cards legacy siempre oculto
+                    if (mode === 'calendar') {
+                        if (lv)   lv.style.display   = 'none';
+                        if (calv) calv.style.display = 'flex';
+                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';  // icono calendario
+                        // Re-render para poblar
+                        if (typeof renderTareasCRM === 'function') renderTareasCRM();
                     } else {
-                        if (lv) lv.style.display = '';
-                        if (cv) cv.style.display = 'none';
+                        if (lv)   lv.style.display   = '';
+                        if (calv) calv.style.display = 'none';
                         if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
                     }
                 }
                 var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'list';
+                if (_tareasViewMode === 'cards') _tareasViewMode = 'list';  // migración: cards → list
                 applyTareasView(_tareasViewMode);
                 btnView.addEventListener('click', function(){
-                    _tareasViewMode = _tareasViewMode === 'list' ? 'cards' : 'list';
+                    _tareasViewMode = _tareasViewMode === 'list' ? 'calendar' : 'list';
                     localStorage.setItem('tareasViewMode', _tareasViewMode);
                     applyTareasView(_tareasViewMode);
                 });
+
+                // Wire navegación del calendario
+                var btnPrev = document.getElementById('btnTareasWeekPrev');
+                var btnNext = document.getElementById('btnTareasWeekNext');
+                var btnToday = document.getElementById('btnTareasWeekToday');
+                if (btnPrev) btnPrev.addEventListener('click', function(){ if (typeof window._tareasCalShiftWeek === 'function') window._tareasCalShiftWeek(-1); });
+                if (btnNext) btnNext.addEventListener('click', function(){ if (typeof window._tareasCalShiftWeek === 'function') window._tareasCalShiftWeek(1); });
+                if (btnToday) btnToday.addEventListener('click', function(){ if (typeof window._tareasCalGoToday === 'function') window._tareasCalGoToday(); });
 
                 // Cerrar popovers al click fuera / Escape
                 document.addEventListener('click', function(e){

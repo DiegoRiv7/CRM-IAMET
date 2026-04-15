@@ -5877,6 +5877,178 @@
     margin-bottom: 0;
 }
 
+/* ══ TAREAS: vista CALENDARIO (kanban por días) ══ */
+#tareasViewCalendar {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: calc(100vh - 200px);
+    margin-top: 4px;
+}
+.tareas-cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 2px 12px;
+    flex-shrink: 0;
+}
+.tareas-cal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #E5E7EB;
+    background: #FFFFFF;
+    border-radius: 8px;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.tareas-cal-btn:hover { background: #EFF6FF; border-color: #93C5FD; color: #0052D4; }
+.tareas-cal-label {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+    padding: 0 10px;
+    min-width: 200px;
+    text-align: center;
+}
+.tareas-cal-today {
+    padding: 6px 12px;
+    border: 1px solid #E5E7EB;
+    background: #FFFFFF;
+    border-radius: 8px;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: 4px;
+}
+.tareas-cal-today:hover { background: #EFF6FF; border-color: #93C5FD; color: #0052D4; }
+
+.tareas-cal-board {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    padding: 0 2px 8px;
+}
+.tareas-cal-board::-webkit-scrollbar { height: 8px; }
+.tareas-cal-board::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+
+.tareas-cal-col {
+    display: flex;
+    flex-direction: column;
+    width: 240px;
+    flex-shrink: 0;
+    height: 100%;
+    background: rgba(241, 245, 249, 0.6);
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 0;
+}
+.tareas-cal-col.col-atrasadas {
+    width: 280px;
+    background: rgba(254, 242, 242, 0.8);
+    border-color: #FCA5A5;
+}
+.tareas-cal-col.col-hoy {
+    background: #FFFFFF;
+    border-color: #93C5FD;
+    box-shadow: 0 4px 14px -4px rgba(0,82,212,0.18);
+}
+.tareas-cal-col.col-weekend {
+    background: rgba(248, 250, 252, 0.85);
+    border-style: dashed;
+}
+
+.tareas-cal-col-head {
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(226,232,240,0.8);
+    flex-shrink: 0;
+}
+.tareas-cal-col-head-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+.tareas-cal-day-name {
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #64748B;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.tareas-cal-day-num {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.02em;
+}
+.tareas-cal-col.col-hoy .tareas-cal-day-num { color: #0052D4; }
+.tareas-cal-col.col-atrasadas .tareas-cal-day-name { color: #B91C1C; }
+.tareas-cal-col.col-atrasadas .tareas-cal-day-num { color: #B91C1C; }
+.tareas-cal-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 7px;
+    background: #E2E8F0;
+    color: #475569;
+    border-radius: 7px;
+    font-size: 0.66rem;
+    font-weight: 800;
+}
+.tareas-cal-col.col-hoy .tareas-cal-count { background: #DBEAFE; color: #1E40AF; }
+.tareas-cal-col.col-atrasadas .tareas-cal-count { background: #FEE2E2; color: #991B1B; }
+
+.tareas-cal-col-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 8px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+}
+.tareas-cal-col-body::-webkit-scrollbar { width: 5px; }
+.tareas-cal-col-body::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+
+.tareas-cal-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 8px;
+    color: #CBD5E1;
+    font-size: 0.72rem;
+    font-weight: 500;
+    font-style: italic;
+}
+
+/* Card clonada dentro del calendario — reutiliza .tareas-card legacy o genera compactas */
+.tareas-cal-col-body .tareas-card,
+.tareas-cal-col-body .tareas-calendar-card {
+    width: 100%;
+    margin: 0;
+    flex-shrink: 0;
+}
+
 /* ══ TAREAS: nuevo diseño con tabs island + facet bar + vista lista ══ */
 /* Ocultar el focus sidebar antiguo y su toolbar */
 .crm-page-sidebar .tareasFocus-sidebar { display: none !important; }
