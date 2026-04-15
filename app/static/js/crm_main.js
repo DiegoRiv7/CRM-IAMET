@@ -261,6 +261,9 @@
             // En kanban: ocultar el footer legacy (clientes / deals / total) para aprovechar espacio
             var footer = document.querySelector('.crm-footer');
             if (footer) footer.style.display = (_crmViewMode === 'kanban') ? 'none' : '';
+            // Clase en .crm-main para que el board llegue edge-to-edge y hasta abajo
+            var mainEl = document.querySelector('.crm-main');
+            if (mainEl) mainEl.classList.toggle('kanban-active', _crmViewMode === 'kanban');
             if (_crmViewMode === 'kanban' && typeof window._crmRenderKanban === 'function') {
                 window._crmRenderKanban();
             }

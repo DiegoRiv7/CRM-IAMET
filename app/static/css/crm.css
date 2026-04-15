@@ -6045,34 +6045,62 @@
 #crmViewKanban {
     width: 100%;
     margin-top: 4px;
-    /* Ocupa toda la altura disponible (footer oculto en kanban → más espacio) */
-    height: calc(100vh - 175px);
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     position: relative;
 }
+/* Kanban activo: main sin padding inferior ni lateral para que el board
+   llegue hasta los bordes del viewport y hasta abajo (sensación infinita) */
+.crm-main.kanban-active {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: hidden;
+}
+.crm-main.kanban-active .crm-table-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+}
+.crm-main.kanban-active .crm-bar,
+.crm-main.kanban-active .crm-facet-bar {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+}
+.crm-main.kanban-active #crmContentSection {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+/* Padding interno del kanban para que las columnas no toquen el borde */
+#crmViewKanban { padding: 0 14px 14px; }
 
-/* Flechas de navegación lateral — casi invisibles, aparecen al hover */
+/* Flechas de navegación lateral — discretas pero visibles */
 .crm-kanban-nav {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 36px;
-    height: 56px;
+    width: 34px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.92);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(15,23,42,0.08);
-    border-radius: 12px;
+    border-radius: 10px;
     color: #64748B;
     cursor: pointer;
-    opacity: 0.15;
-    transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    opacity: 0.5;
+    transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease, color 0.2s ease;
     z-index: 20;
-    box-shadow: 0 4px 12px rgba(15,23,42,0.08);
+    box-shadow: 0 4px 14px rgba(15,23,42,0.10), 0 1px 2px rgba(15,23,42,0.06);
 }
 .crm-kanban-nav:hover {
     opacity: 1;
@@ -6080,8 +6108,8 @@
     color: #0052D4;
     transform: translateY(-50%) scale(1.05);
 }
-.crm-kanban-nav.left  { left: -4px; }
-.crm-kanban-nav.right { right: -4px; }
+.crm-kanban-nav.left  { left: 4px; }
+.crm-kanban-nav.right { right: 4px; }
 .crm-kanban-nav.disabled { opacity: 0; pointer-events: none; }
 .crm-kanban-board {
     display: flex;
