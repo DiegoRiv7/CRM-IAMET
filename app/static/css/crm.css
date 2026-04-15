@@ -6108,23 +6108,14 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     position: relative;
 }
 .crm-kanban-rail-chevron {
-    width: 100%;   /* Triángulo cubre los 22px del borde */
-    height: 72px;  /* Altura fija del triángulo — visible pero no domina */
+    width: 100%;    /* Cubre los 22px del borde */
+    height: 100%;   /* Abarca de ARRIBA a ABAJO todo el largo del kanban */
     display: block;
-    transition: height 0.18s ease;
 }
 .crm-kanban-rail:hover {
-    color: #0052D4;
-    background: rgba(0, 82, 212, 0.06);
+    color: #0052D4;   /* Solo el triángulo cambia a azul, SIN fondo */
 }
-.crm-kanban-rail:hover .crm-kanban-rail-chevron {
-    height: 88px;  /* Crece al hover */
-}
-.crm-kanban-rail:active .crm-kanban-rail-chevron {
-    transform: scale(0.94);
-}
-.crm-kanban-rail.left:hover  { transform: translateX(-1px); }
-.crm-kanban-rail.right:hover { transform: translateX(1px);  }
+.crm-kanban-rail:active { transform: scale(0.97); }
 .crm-kanban-rail.disabled { opacity: 0; pointer-events: none; }
 
 /* .crm-kanban-nav: removido. Scroll horizontal nativo via trackpad / Shift+wheel / wheel (hook JS). */
