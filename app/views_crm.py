@@ -288,15 +288,23 @@ def crm_home(request):
             base_qs = base_qs.filter(usuario=user)
         else:
             base_qs = base_qs.filter(usuario_id__in=usuarios_visibles)
-    elif vendedores_ids:
+
+    # Guardar qs "antes del filtro de vendedor" para poblar el selector.
+    # Así el picker muestra todos los vendedores CON oportunidades en el periodo,
+    # independiente de qué vendedor esté filtrado actualmente.
+    base_qs_sin_vendedor = base_qs
+
+    if es_supervisor and vendedores_ids:
         # Supervisor con filtro de vendedores específicos
         base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
 
-    # Lista de vendedores para el filtro (supervisores globales ven todos; supervisores de grupo ven su grupo)
+    # Lista de vendedores para el filtro — SOLO los que tienen al menos una
+    # oportunidad en el periodo filtrado (o rango de fechas).
+    usuarios_con_opp = set(base_qs_sin_vendedor.values_list('usuario_id', flat=True))
     vendedores_list = []
     if es_supervisor:
         vendedores_list = User.objects.filter(
-            is_active=True
+            is_active=True, id__in=usuarios_con_opp
         ).exclude(
             groups__name='Supervisores'
         ).order_by('first_name', 'last_name')
@@ -306,7 +314,7 @@ def crm_home(request):
         if usuarios_visibles_ids and len(usuarios_visibles_ids) > 1:
             vendedores_list = User.objects.filter(
                 id__in=usuarios_visibles_ids, is_active=True
-            ).order_by('first_name', 'last_name')
+            ).filter(id__in=usuarios_con_opp).order_by('first_name', 'last_name')
 
     # ── Meta (calculada antes para usar en running meta) ──
     # Determinar qué campo de meta usar según el tab activo

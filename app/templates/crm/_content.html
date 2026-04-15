@@ -659,7 +659,12 @@
                 {% endif %}
             </div>
         </div>
-        <table id="prospeccionTable" class="w-full crm-table">
+        <div id="prospeccionList" class="crm-prospect-list">
+            <div class="crm-prospect-head" id="prospeccionListHead"></div>
+            <div class="crm-prospect-body" id="prospeccionListBody"></div>
+        </div>
+        <!-- Contenedor legacy oculto — se mantiene para no romper referencias JS viejas -->
+        <table id="prospeccionTable" style="display:none;">
             <thead id="prospeccionThead"></thead>
             <tbody id="prospeccionTbody"></tbody>
         </table>
@@ -2311,8 +2316,9 @@
     function vendorChipLabel() {
         if (!_currentVendors.length) return 'Todos';
         if (_currentVendors.length === 1) {
-            var v = _vendorsList.find(function(x){ return x.id === _currentVendors[0]; });
-            return v ? v.nombre : _currentVendors[0];
+            var target = String(_currentVendors[0]);
+            var v = _vendorsList.find(function(x){ return String(x.id) === target; });
+            return v ? v.nombre : target;
         }
         return _currentVendors.length + ' vendedores';
     }
@@ -2408,6 +2414,8 @@
     // Estado temporal del picker periodo (se confirma al Aplicar)
     var _tmpMeses = [];
     var _tmpAnios = [];
+    // Anchor persistente del popover actual (para re-renders no pierdan posición)
+    var _lastPopAnchor = null;
 
     function renderPeriodoPopoverContent() {
         var html = '<div class="crm-pop-period">';
@@ -2444,6 +2452,7 @@
 
     // ── Popover: period picker (periodo unificado / vendedor → reload) ─────
     function openPeriodPicker(key, anchorEl){
+        if (anchorEl) _lastPopAnchor = anchorEl;
         popValue.dataset.currentField = '__period__' + key;
         var html = '';
         if (key === 'periodo') {
@@ -2470,7 +2479,7 @@
         }
         closeAllPopovers(popValue);
         popValue.classList.add('open');
-        positionPopover(popValue, anchorEl || btnAdd);
+        positionPopover(popValue, anchorEl || _lastPopAnchor || btnAdd);
     }
 
     function reloadWithPeriod(key, value) {
