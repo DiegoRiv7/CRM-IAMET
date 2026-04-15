@@ -6105,7 +6105,7 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     color: #94A3B8;
     opacity: 0.3;
     transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
-    padding: 12px 0;
+    padding: 0;  /* chevron abarca TOTALMENTE de arriba a abajo del borde */
     height: 100%;
 }
 .crm-kanban-rail-chevron {
