@@ -3126,10 +3126,14 @@
     }
 
     // Scroll horizontal nativo del board — wheel vertical del mouse se convierte en horizontal
-    // cuando el cursor está sobre el kanban (además del trackpad swipe y Shift+wheel default).
+    // SOLO cuando el cursor NO está sobre el body de una columna (que tiene su propio scroll).
+    // Si está sobre una columna: la rueda scrollea esa columna verticalmente (comportamiento default).
     var board = document.getElementById('crmKanbanBoard');
     if (board) {
         board.addEventListener('wheel', function(e){
+            // Si el cursor está dentro del body de una columna, respeta su scroll vertical
+            var colBody = e.target.closest && e.target.closest('.crm-kanban-col-body');
+            if (colBody) return;
             // Solo convertir si es un wheel predominantemente vertical
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
                 e.preventDefault();
