@@ -167,11 +167,16 @@ def _get_empleado_mes_data():
 
 
 def _calcular_total_desglose(mes, anio):
-    """Calcula el total facturado sumando datos_json — misma lógica que api_desglose_facturacion."""
+    """Calcula el total facturado sumando datos_json — misma lógica que api_desglose_facturacion.
+    mes puede ser 'todos', un valor único ('04'), o comma-separated ('04,03').
+    """
     total = Decimal('0')
     try:
-        if mes == 'todos':
+        if mes == 'todos' or mes is None:
             afs = list(ArchivoFacturacion.objects.filter(anio=anio))
+        elif ',' in str(mes):
+            meses = [m.strip().zfill(2) for m in str(mes).split(',') if m.strip()]
+            afs = list(ArchivoFacturacion.objects.filter(mes__in=meses, anio=anio))
         else:
             afs = [ArchivoFacturacion.objects.get(mes=mes, anio=anio)]
     except ArchivoFacturacion.DoesNotExist:
@@ -667,10 +672,25 @@ def api_crm_table_data(request):
         '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre',
     }
 
-    try:
-        anio_int = int(anio_filter)
-    except ValueError:
-        anio_int = now.year
+    # Helpers multi-valor — mes/anio pueden venir como 'todos', valor único, o comma-separated
+    def _parse_ints(s):
+        if not s or s == 'todos':
+            return None  # None = todos / no filter
+        parts = [p.strip() for p in str(s).split(',') if p.strip()]
+        out = []
+        for p in parts:
+            try: out.append(int(p))
+            except ValueError: pass
+        return out or None
+    def _first_int(s, default):
+        lst = _parse_ints(s)
+        return lst[0] if lst else default
+
+    anios_list = _parse_ints(anio_filter)
+    meses_list = _parse_ints(mes_filter)
+    anio_int = anios_list[0] if anios_list else now.year
+    # mes_filter queda como string (backward-compat). mes_int (primer mes) para casos single-value
+    mes_int_primero = meses_list[0] if meses_list else None
 
     mes_nombre_db = MES_CODE_TO_NAME.get(mes_filter, mes_filter)
 
@@ -692,11 +712,12 @@ def api_crm_table_data(request):
             fecha_creacion__date__lte=hasta_filter,
         )
     else:
-        base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-            anio_cierre=anio_int
-        )
-        if mes_filter != 'todos':
-            base_qs = base_qs.filter(mes_cierre=mes_filter)
+        base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
+        if anios_list is not None:
+            base_qs = base_qs.filter(anio_cierre__in=anios_list)
+        if meses_list is not None:
+            # meses_list son ints, pero mes_cierre es string con zero-padding. Convertir.
+            base_qs = base_qs.filter(mes_cierre__in=[str(m).zfill(2) for m in meses_list])
 
     if not es_supervisor:
         usuarios_visibles_r = get_usuarios_visibles_ids(user)
@@ -935,6 +956,11 @@ def api_crm_table_data(request):
                     data_af = af.datos_json.get('datos', {})
                     for c_name, val in data_af.items():
                         facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+            elif meses_list is not None and len(meses_list) > 1:
+                for af in ArchivoFacturacion.objects.filter(mes__in=[str(m).zfill(2) for m in meses_list], anio=anio_int):
+                    data_af = af.datos_json.get('datos', {})
+                    for c_name, val in data_af.items():
+                        facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
             else:
                 af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
                 data_af = af.datos_json.get('datos', {})
@@ -1032,11 +1058,11 @@ def api_crm_table_data(request):
                     fecha_creacion__date__lte=hasta_filter,
                 )
             else:
-                base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-                    fecha_creacion__year=anio_int
-                )
-                if mes_filter != 'todos':
-                    base_qs = base_qs.filter(fecha_creacion__month=int(mes_filter))
+                base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
+                if anios_list is not None:
+                    base_qs = base_qs.filter(fecha_creacion__year__in=anios_list)
+                if meses_list is not None:
+                    base_qs = base_qs.filter(fecha_creacion__month__in=meses_list)
             # Re-aplicar filtros de usuario/vendedor
             if not es_supervisor:
                 usuarios_visibles_r = get_usuarios_visibles_ids(user)
@@ -1064,12 +1090,14 @@ def api_crm_table_data(request):
         _prev_by_id_cl = {}  # previous month totals per client (oportunidades only)
         _prev_sum = Decimal('0')  # previous month global total for this vista
 
-        # Helper: compute prev month params
+        # Helper: compute prev month params (solo aplica si hay UN solo mes seleccionado)
         def _get_prev_params():
             if mes_filter in ('todos',) or usando_periodo or q_search:
                 return None, None
+            if not meses_list or len(meses_list) != 1:
+                return None, None
             try:
-                pm = int(mes_filter)
+                pm = meses_list[0]
                 return str(pm - 1 if pm > 1 else 12).zfill(2), anio_int if pm > 1 else anio_int - 1
             except (ValueError, TypeError):
                 return None, None
@@ -1122,6 +1150,9 @@ def api_crm_table_data(request):
                         cur = cur.replace(month=cur.month % 12 + 1, day=1) if cur.month < 12 else cur.replace(year=cur.year + 1, month=1, day=1)
                 elif mes_filter == 'todos':
                     for af in ArchivoFacturacion.objects.filter(anio=anio_int):
+                        _facturado_entries.extend(_load_af(af))
+                elif meses_list is not None and len(meses_list) > 1:
+                    for af in ArchivoFacturacion.objects.filter(mes__in=[str(m).zfill(2) for m in meses_list], anio=anio_int):
                         _facturado_entries.extend(_load_af(af))
                 else:
                     af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
@@ -1207,6 +1238,9 @@ def api_crm_table_data(request):
                 elif mes_filter == 'todos':
                     for ac in ArchivoCobrado.objects.filter(anio=anio_int):
                         _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
+                elif meses_list is not None and len(meses_list) > 1:
+                    for ac in ArchivoCobrado.objects.filter(mes__in=[str(m).zfill(2) for m in meses_list], anio=anio_int):
+                        _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
                 else:
                     ac = ArchivoCobrado.objects.get(mes=mes_filter, anio=anio_int)
                     _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
@@ -1267,9 +1301,9 @@ def api_crm_table_data(request):
             vista_label = 'Oportunidades'
             # Previous month totals per client (for trend badge) — usa fecha_creacion
             _prev_by_id_cl = {}
-            if mes_filter not in ('todos',) and not usando_periodo and not q_search:
+            if mes_filter not in ('todos',) and not usando_periodo and not q_search and meses_list and len(meses_list) == 1:
                 try:
-                    _pm = int(mes_filter)
+                    _pm = meses_list[0]
                     _prev_mes = _pm - 1 if _pm > 1 else 12
                     _prev_anio = anio_int if _pm > 1 else anio_int - 1
                     _prev_qs = TodoItem.objects.filter(fecha_creacion__year=_prev_anio, fecha_creacion__month=_prev_mes)
@@ -1294,9 +1328,11 @@ def api_crm_table_data(request):
                     Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__date__gte=desde_filter, fecha_creacion__date__lte=hasta_filter)
                 )
             else:
-                _cot_sueltas_q = Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
-                if mes_filter != 'todos':
-                    _cot_sueltas_q &= Q(fecha_creacion__month=int(mes_filter))
+                _cot_sueltas_q = Q(oportunidad__isnull=True)
+                if anios_list is not None:
+                    _cot_sueltas_q &= Q(fecha_creacion__year__in=anios_list)
+                if meses_list is not None:
+                    _cot_sueltas_q &= Q(fecha_creacion__month__in=meses_list)
                 cot_qs = Cotizacion.objects.select_related('cliente', 'oportunidad').filter(
                     Q(oportunidad_id__in=opp_ids) | _cot_sueltas_q
                 )
@@ -1356,12 +1392,9 @@ def api_crm_table_data(request):
             else:
                 clientes_qs = Cliente.objects.filter(get_clientes_visibles_q(user))
 
-            prospectos_qs = Prospecto.objects.filter(fecha_creacion__year=anio_int)
-            if mes_filter and mes_filter != 'todos':
-                try:
-                    prospectos_qs = prospectos_qs.filter(fecha_creacion__month=int(mes_filter))
-                except ValueError:
-                    pass
+            prospectos_qs = Prospecto.objects.filter(fecha_creacion__year__in=anios_list) if anios_list is not None else Prospecto.objects.filter(fecha_creacion__year=anio_int)
+            if meses_list is not None:
+                prospectos_qs = prospectos_qs.filter(fecha_creacion__month__in=meses_list)
             if not es_supervisor:
                 _gids = get_usuarios_visibles_ids(user)
                 prospectos_qs = prospectos_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else prospectos_qs.filter(usuario=user)
@@ -1384,12 +1417,9 @@ def api_crm_table_data(request):
             total_respondidos = 0
             total_favorables = 0
             try:
-                envios_qs = CampanaEnvio.objects.filter(fecha_envio__year=anio_int)
-                if mes_filter and mes_filter != 'todos':
-                    try:
-                        envios_qs = envios_qs.filter(fecha_envio__month=int(mes_filter))
-                    except ValueError:
-                        pass
+                envios_qs = CampanaEnvio.objects.filter(fecha_envio__year__in=anios_list) if anios_list is not None else CampanaEnvio.objects.filter(fecha_envio__year=anio_int)
+                if meses_list is not None:
+                    envios_qs = envios_qs.filter(fecha_envio__month__in=meses_list)
                 if not es_supervisor:
                     envios_qs = envios_qs.filter(enviado_por=user)
                 elif vendedores_ids:
@@ -2161,22 +2191,33 @@ def api_cliente_oportunidades(request, cliente_id):
     # Filtrar por fecha_creacion si se indica (usado en tab Clientes)
     por_creacion = request.GET.get('por_creacion', '')
 
-    # Aplicar filtros solo si no son 'todos'
-    if anio_filter != 'todos':
-        try:
-            anio_int = int(anio_filter)
-            if por_creacion:
-                qs = qs.filter(fecha_creacion__year=anio_int)
-            else:
-                qs = qs.filter(anio_cierre=anio_int)
-        except (ValueError, TypeError):
-            pass
+    # Aplicar filtros solo si no son 'todos' (soporta multi-valor comma-separado)
+    def _parse_ints_local(s):
+        if not s or s == 'todos':
+            return None
+        parts = [p.strip() for p in str(s).split(',') if p.strip()]
+        out = []
+        for p in parts:
+            try:
+                out.append(int(p))
+            except ValueError:
+                pass
+        return out or None
 
-    if mes_filter != 'todos':
+    anios_local = _parse_ints_local(anio_filter)
+    meses_local = _parse_ints_local(mes_filter)
+
+    if anios_local is not None:
         if por_creacion:
-            qs = qs.filter(fecha_creacion__month=int(mes_filter))
+            qs = qs.filter(fecha_creacion__year__in=anios_local)
         else:
-            qs = qs.filter(mes_cierre=mes_filter)
+            qs = qs.filter(anio_cierre__in=anios_local)
+
+    if meses_local is not None:
+        if por_creacion:
+            qs = qs.filter(fecha_creacion__month__in=meses_local)
+        else:
+            qs = qs.filter(mes_cierre__in=[str(m).zfill(2) for m in meses_local])
 
     if not es_supervisor:
         _gids = get_usuarios_visibles_ids(user)
@@ -4717,15 +4758,29 @@ def api_desglose_cotizaciones(request):
     vendedores_filter = request.GET.get('vendedores', '')
     vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()] if vendedores_filter else []
 
-    try:
-        anio_int = int(anio_filter)
-    except ValueError:
-        anio_int = now.year
+    def _parse_ints_local(s):
+        if not s or s == 'todos':
+            return None
+        parts = [p.strip() for p in str(s).split(',') if p.strip()]
+        out = []
+        for p in parts:
+            try:
+                out.append(int(p))
+            except ValueError:
+                pass
+        return out or None
+
+    anios_local = _parse_ints_local(anio_filter)
+    meses_local = _parse_ints_local(mes_filter)
+    anio_int = anios_local[0] if anios_local else now.year
 
     # Base queryset
-    base_qs = TodoItem.objects.filter(anio_cierre=anio_int)
-    if mes_filter != 'todos':
-        base_qs = base_qs.filter(mes_cierre=mes_filter)
+    if anios_local is not None:
+        base_qs = TodoItem.objects.filter(anio_cierre__in=anios_local)
+    else:
+        base_qs = TodoItem.objects.filter(anio_cierre=anio_int)
+    if meses_local is not None:
+        base_qs = base_qs.filter(mes_cierre__in=[str(m).zfill(2) for m in meses_local])
     if not es_supervisor:
         usuarios_visibles = get_usuarios_visibles_ids(user)
         if usuarios_visibles and len(usuarios_visibles) > 1:
@@ -4736,8 +4791,15 @@ def api_desglose_cotizaciones(request):
         base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
 
     opp_ids = base_qs.values_list('id', flat=True)
+    _sueltas_q = Q(oportunidad__isnull=True)
+    if anios_local is not None:
+        _sueltas_q &= Q(fecha_creacion__year__in=anios_local)
+    else:
+        _sueltas_q &= Q(fecha_creacion__year=anio_int)
+    if meses_local is not None:
+        _sueltas_q &= Q(fecha_creacion__month__in=meses_local)
     cot_qs = Cotizacion.objects.select_related('cliente').filter(
-        Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+        Q(oportunidad_id__in=opp_ids) | _sueltas_q
     )
 
     # Contar por cliente
