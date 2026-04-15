@@ -5919,6 +5919,12 @@
 /* Vista lista de tareas — hereda todo de .crm-list-row */
 #tareasViewList { display: flex; flex-direction: column; gap: 10px; }
 #tareasViewList .crm-list-body { display: flex; flex-direction: column; gap: 10px; }
+/* Match height con .crm-list-row de oportunidades (aprox 80px) */
+.crm-list-row--tarea {
+    padding-top: 18px;
+    padding-bottom: 18px;
+    min-height: 76px;
+}
 
 .crm-list-row--tarea .tarea-resp-nombre,
 .crm-list-row--tarea .tarea-creador-nombre {
