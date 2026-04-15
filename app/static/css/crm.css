@@ -6045,8 +6045,8 @@
 #crmViewKanban {
     width: 100%;
     margin-top: 4px;
-    /* Ocupa toda la altura disponible para que las columnas internas puedan scrollear */
-    height: calc(100vh - 210px);
+    /* Ocupa toda la altura disponible (footer oculto en kanban → más espacio) */
+    height: calc(100vh - 175px);
     display: flex;
     flex-direction: column;
 }
@@ -6184,43 +6184,71 @@
 .crm-kanban-col-body::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
 .crm-kanban-col-body::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-/* Card dentro del kanban — reutiliza .crm-postit pero más compacta */
+/* Card dentro del kanban — reutiliza .crm-postit pero más compacta y robusta */
 .crm-kanban-card.crm-postit {
     margin: 0 !important;
     transform: none !important;
-    padding: 14px 14px 12px;
+    padding: 16px 14px 14px !important;
+    padding-top: 18px !important;  /* espacio para el strip de color superior */
     border-radius: 10px;
     cursor: pointer;
+    width: 100%;
+    flex-shrink: 0;   /* no comprimir la card aunque falte espacio */
+    min-height: auto;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
 }
 .crm-kanban-card.crm-postit:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 10px 20px -10px rgba(15,23,42,0.18);
+    z-index: 2;
+}
+/* Quitar cualquier line-clamp agresivo que pueda recortar el contenido a altura fija */
+.crm-kanban-card.crm-postit h3 {
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-/* Columna colapsada — estilo limpio tipo image#18 */
+/* Padding extra al final del body para que la última card no quede pegada al borde */
+.crm-kanban-col-body::after {
+    content: '';
+    display: block;
+    height: 4px;
+    flex-shrink: 0;
+}
+
+/* Columna colapsada — count arriba, nombre vertical centrado en la columna */
 .crm-kanban-col.collapsed .crm-kanban-head {
     padding: 0;
     background: transparent;
     border-bottom: none;
     height: 100%;
+    width: 100%;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: stretch;
 }
 .crm-kanban-collapsed-body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
-    padding: 14px 0 16px;
+    justify-content: center;  /* ← CENTRA el nombre vertical */
+    padding: 14px 0;
     height: 100%;
     width: 100%;
+    position: relative;
 }
 .crm-kanban-collapsed-body .crm-kanban-count {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
     background: #F1F5F9;
     color: #64748B;
-    margin-bottom: 0;
+    margin: 0;
 }
 .crm-kanban-vertical-name {
     writing-mode: vertical-rl;
@@ -6231,9 +6259,7 @@
     text-transform: uppercase;
     color: #64748B;
     white-space: nowrap;
-    flex: 1;
-    display: flex;
-    align-items: center;
+    /* flex:1 y display:flex quitados — ahora el body lo centra con justify-content:center */
 }
 .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #0052D4; }
 .crm-kanban-col.collapsed:hover .crm-kanban-count { background: #EFF6FF; color: #0052D4; }

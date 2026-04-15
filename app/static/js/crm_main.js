@@ -258,6 +258,9 @@
             cardsView.style.display                   = (_crmViewMode === 'cards')  ? '' : 'none';
             tableView.style.display                   = (_crmViewMode === 'table')  ? '' : 'none';
             if (kanbanView) kanbanView.style.display = (_crmViewMode === 'kanban') ? '' : 'none';
+            // En kanban: ocultar el footer legacy (clientes / deals / total) para aprovechar espacio
+            var footer = document.querySelector('.crm-footer');
+            if (footer) footer.style.display = (_crmViewMode === 'kanban') ? 'none' : '';
             if (_crmViewMode === 'kanban' && typeof window._crmRenderKanban === 'function') {
                 window._crmRenderKanban();
             }
