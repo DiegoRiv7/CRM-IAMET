@@ -2176,6 +2176,19 @@
     var _mesesSelected  = (readJson('fb-meses-selected', []) || []).map(String);
     var _aniosSelected  = (readJson('fb-anios-selected', []) || []).map(String);
 
+    // Rango de fechas desde URL (override del periodo cuando está activo)
+    (function(){
+        var up = new URLSearchParams(window.location.search);
+        var d = up.get('desde') || '';
+        var h = up.get('hasta') || '';
+        if (d || h) {
+            var fd = document.getElementById('filterDesde');
+            var fh = document.getElementById('filterHasta');
+            if (fd) fd.value = d;
+            if (fh) fh.value = h;
+        }
+    })();
+
     // Descripción de cada filtro in-memory (no-reload)
     var FIELDS = [
         { key: 'cliente',  label: 'Cliente',  type: 'select', inputId: 'filterCliente' },
@@ -2327,7 +2340,14 @@
         if (pVen) pVen.textContent = vendorChipLabel();
 
         var per = $in('pillPeriodo');
-        if (per) per.classList.toggle('is-default', _mesesSelected.length === 0 && _aniosSelected.length === 0);
+        if (per) {
+            per.classList.toggle('is-default', _mesesSelected.length === 0 && _aniosSelected.length === 0);
+            // Si hay rango de fechas activo, el periodo está ignorado → visual dim
+            var f = readFilters();
+            var overridden = !!(f.desde || f.hasta);
+            per.classList.toggle('is-overridden', overridden);
+            per.title = overridden ? 'Periodo ignorado mientras hay un rango de fechas activo' : '';
+        }
         var ven = $in('pillVendedor');
         if (ven) ven.classList.toggle('is-default', _currentVendors.length === 0);
     }
@@ -2624,12 +2644,15 @@
             if (key === 'anio')     return reloadWithPeriod('anio', 'todos');
             if (key === 'vendedor') return reloadWithPeriod('vendedor', '');
             if (key === 'fechas') {
-                setInputValue('filterDesde', '');
-                setInputValue('filterHasta', '');
-            } else {
-                var fld = FIELDS.find(function(f){ return f.key === key; });
-                if (fld && fld.inputId) setInputValue(fld.inputId, '');
+                // Quitar desde/hasta del URL → backend vuelve a filtrar por periodo
+                var params = new URLSearchParams(window.location.search);
+                params.delete('desde');
+                params.delete('hasta');
+                window.location.href = window.location.pathname + '?' + params.toString();
+                return;
             }
+            var fld = FIELDS.find(function(f){ return f.key === key; });
+            if (fld && fld.inputId) setInputValue(fld.inputId, '');
             renderChips();
             return;
         }
@@ -2765,22 +2788,33 @@
         }
         if (act === 'clear') {
             if (field === 'fechas') {
-                setInputValue('filterDesde', '');
-                setInputValue('filterHasta', '');
-            } else {
-                var fld = FIELDS.find(function(x){ return x.key === field; });
-                if (fld && fld.inputId) setInputValue(fld.inputId, '');
+                // Reload removiendo desde/hasta del URL
+                var params = new URLSearchParams(window.location.search);
+                params.delete('desde');
+                params.delete('hasta');
+                window.location.href = window.location.pathname + '?' + params.toString();
+                return;
             }
+            var fld = FIELDS.find(function(x){ return x.key === field; });
+            if (fld && fld.inputId) setInputValue(fld.inputId, '');
             popValue.classList.remove('open');
             renderChips();
         } else if (act === 'apply') {
-            // Date range
+            // Date range: reload con ?desde&hasta — backend ignora periodo mientras está activo
             var d = ($in('_fpDesde') || {}).value || '';
             var h = ($in('_fpHasta') || {}).value || '';
-            setInputValue('filterDesde', d);
-            setInputValue('filterHasta', h);
-            popValue.classList.remove('open');
-            renderChips();
+            var params = new URLSearchParams(window.location.search);
+            if (d) params.set('desde', d); else params.delete('desde');
+            if (h) params.set('hasta', h); else params.delete('hasta');
+            if (!params.get('tab')) {
+                var activeTab = document.querySelector('.crm-tab.active');
+                if (activeTab && activeTab.href) {
+                    var mt = activeTab.href.match(/tab=([^&]+)/);
+                    if (mt) params.set('tab', mt[1]);
+                }
+            }
+            window.location.href = window.location.pathname + '?' + params.toString();
+            return;
         } else if (act === 'apply-text') {
             var v = ($in('_fpSearch') || {}).value || '';
             var fld2 = FIELDS.find(function(x){ return x.key === field; });

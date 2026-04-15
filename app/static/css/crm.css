@@ -5941,6 +5941,13 @@
     color: #64748B;
     font-weight: 500;
 }
+.crm-period-pill.is-overridden {
+    opacity: 0.45;
+    text-decoration: line-through;
+    text-decoration-color: rgba(239,68,68,0.6);
+    text-decoration-thickness: 1px;
+}
+.crm-period-pill.is-overridden:hover { opacity: 0.7; }
 .crm-period-pill-caret { opacity: 0.55; margin-left: 2px; }
 .crm-period-pill:hover .crm-period-pill-caret { opacity: 1; }
 .crm-facet-chip-key { color: #64748B; font-weight: 600; margin-right: 4px; }

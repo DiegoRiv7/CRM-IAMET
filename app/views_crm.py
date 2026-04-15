@@ -254,12 +254,30 @@ def crm_home(request):
     if vendedores_filter:
         vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()]
 
-    # Base queryset - oportunidades filtradas por anio_cierre/mes_cierre (multi-valor)
+    # Rango de fechas (desde/hasta) — cuando alguno está presente, IGNORA el filtro
+    # de periodo (mes/año) y filtra por fecha_creacion.
+    desde_raw = (request.GET.get('desde', '') or '').strip()
+    hasta_raw = (request.GET.get('hasta', '') or '').strip()
+    desde_date = hasta_date = None
+    try:
+        if desde_raw: desde_date = datetime.strptime(desde_raw, '%Y-%m-%d').date()
+    except ValueError: desde_date = None
+    try:
+        if hasta_raw: hasta_date = datetime.strptime(hasta_raw, '%Y-%m-%d').date()
+    except ValueError: hasta_date = None
+
+    # Base queryset - oportunidades
     base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
-    if anios_list is not None:
-        base_qs = base_qs.filter(anio_cierre__in=anios_list)
-    if meses_list is not None:
-        base_qs = base_qs.filter(mes_cierre__in=meses_list)
+    if desde_date or hasta_date:
+        # Rango de fechas activo → override del periodo
+        if desde_date: base_qs = base_qs.filter(fecha_creacion__date__gte=desde_date)
+        if hasta_date: base_qs = base_qs.filter(fecha_creacion__date__lte=hasta_date)
+    else:
+        # Filtro por periodo (multi-valor)
+        if anios_list is not None:
+            base_qs = base_qs.filter(anio_cierre__in=anios_list)
+        if meses_list is not None:
+            base_qs = base_qs.filter(mes_cierre__in=meses_list)
 
     # Filtrado por visibilidad: supervisor global ve todo, grupos de trabajo amplían visibilidad
     if not es_supervisor:
