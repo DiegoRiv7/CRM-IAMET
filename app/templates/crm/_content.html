@@ -239,14 +239,8 @@
                     {% endfor %}
                     {% endif %}
                 </div>
-                {% if tab_activo == 'clientes' %}
-                <div class="crm-bar-stats">
-                    <div style="background:#F2F2F7;border-radius:20px;padding:2px;display:inline-flex;gap:2px;">
-                        <button id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:#0052D4;color:#fff;">Oportunidades</button>
-                        <button id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:#86868B;">Prospectos</button>
-                    </div>
-                </div>
-                {% endif %}
+                <!-- Modo toggle movido al period bar (abajo) en tabs de clientes -->
+
                 <!-- Panel de filtros legado: OCULTO — los inputs se conservan como estado interno
                      para no romper listeners de crm_main.js. La UI real vive en .crm-facet-bar abajo. -->
                 <div class="crm-filter-dropdown" id="crmFilterPanel" style="display:none !important;">
@@ -671,8 +665,12 @@
         </table>
         <div class="crm-table-footer" id="prospeccionFooter"></div>
         {% elif tab_activo == 'clientes' %}
-        <!-- Period bar standalone -->
+        <!-- Period bar standalone (+ Modo toggle a la izquierda) -->
         <div class="crm-facet-bar crm-facet-bar--minimal">
+            <div class="crm-mode-toggle">
+                <button id="crmModeOpp" type="button" onclick="window._crmSetMode('oportunidades')" class="crm-mode-btn active">Oportunidades</button>
+                <button id="crmModeProsp" type="button" onclick="window._crmSetMode('prospeccion')" class="crm-mode-btn">Prospectos</button>
+            </div>
             <div style="flex:1;"></div>
             <div class="crm-period-pills" id="crmPeriodPills">
                 <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
@@ -2217,9 +2215,9 @@
 
     var bar = document.getElementById('crmFacetBar');
     var hasFacetBar = !!bar;
-    var pillMesEl = document.getElementById('pillMes');
+    var pillPeriodoEl = document.getElementById('pillPeriodo');
     // Si no hay facet bar ni pills, no hay nada que inicializar.
-    if (!bar && !pillMesEl) return;
+    if (!bar && !pillPeriodoEl) return;
 
     var chipsEl     = document.getElementById('crmFacetChips');
     var btnAdd      = document.getElementById('btnAddFacet');

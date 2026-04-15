@@ -1501,13 +1501,13 @@
                 var btnOpp = document.getElementById('crmModeOpp');
                 var btnProsp = document.getElementById('crmModeProsp');
                 if (btnOpp && btnProsp) {
-                    if (mode === 'oportunidades') {
-                        btnOpp.style.background = '#0052D4'; btnOpp.style.color = '#fff';
-                        btnProsp.style.background = 'transparent'; btnProsp.style.color = '#86868B';
-                    } else {
-                        btnProsp.style.background = '#5856D6'; btnProsp.style.color = '#fff';
-                        btnOpp.style.background = 'transparent'; btnOpp.style.color = '#86868B';
-                    }
+                    btnOpp.classList.toggle('active', mode === 'oportunidades');
+                    btnOpp.classList.remove('active-prospectos');
+                    btnProsp.classList.toggle('active', mode === 'prospeccion');
+                    btnProsp.classList.toggle('active-prospectos', mode === 'prospeccion');
+                    // Limpiar inline styles legados si existen
+                    btnOpp.style.background = ''; btnOpp.style.color = '';
+                    btnProsp.style.background = ''; btnProsp.style.color = '';
                 }
                 var kpiOpp = document.getElementById('ckKpiRow');
                 var kpiProsp = document.getElementById('ckKpiRowProsp');
