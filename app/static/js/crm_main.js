@@ -4585,79 +4585,199 @@
             _tareasFocusPersist();
         }
 
+        function _tareasDiasVencida(t, now) {
+            if (!t.fecha_limite) return 0;
+            var fin = new Date(t.fecha_limite);
+            if (fin >= now) return 0;
+            return Math.floor((now.getTime() - fin.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        function _tareasHeatClass(dias) {
+            if (dias >= 30) return 'heat-max';
+            if (dias >= 14) return 'heat-5';
+            if (dias >= 7)  return 'heat-4';
+            if (dias >= 3)  return 'heat-3';
+            if (dias >= 1)  return 'heat-2';
+            return 'heat-1';
+        }
+
         function renderTareasCRM() {
             var grid = document.getElementById('tareasCardsGrid');
-            var countEl = document.getElementById('tareasCount');
-            if (!grid) return;
-
-            // Aplicar default inteligente si es primera carga
-            _tareasApplySmartDefault();
-            // Sincronizar el sidebar (contadores, KPIs, highlighted stage)
-            _tareasRenderSidebar();
+            var listBody = document.getElementById('tareasListBody');
+            if (!grid && !listBody) return;
 
             var tareas = (_crmAllTareas || []).slice();
 
-            // Siempre excluir completadas (el nuevo Focus es de tareas pendientes)
+            // Siempre excluir completadas
             tareas = tareas.filter(function(t){ return t.estado !== 'completada'; });
 
-            // Filtro por pipeline + etapa (del sidebar)
-            var selected = _tareasFocus.selected[_tareasFocus.flow];
-            if (selected !== 'ALL') {
-                var stages = _tareasGetStagesForFlow(_tareasFocus.flow);
-                var stageName = stages[selected];
-                tareas = tareas.filter(function(t){
-                    return t.oportunidad_tipo === _tareasFocus.flow && t.oportunidad_etapa === stageName;
-                });
-            }
-
-            // Filtro por urgency pills
+            // Contadores globales (para los tabs) — ANTES de aplicar urgency
             var now = new Date();
+            var countTodas = tareas.length;
+            var countAtrasadas = tareas.filter(function(t){ return _tareasIsOverdue(t, now); }).length;
+            var countHoy = tareas.filter(function(t){ return _tareasIsToday(t, now); }).length;
+            var badgeTodas = document.getElementById('tareasCountTodas');
+            var badgeAtrasadas = document.getElementById('tareasCountAtrasadas');
+            var badgeHoy = document.getElementById('tareasCountHoy');
+            if (badgeTodas) badgeTodas.textContent = countTodas;
+            if (badgeAtrasadas) badgeAtrasadas.textContent = countAtrasadas;
+            if (badgeHoy) badgeHoy.textContent = countHoy;
+
+            // Filtro por urgency (tabs)
             if (_tareasFocus.urgency === 'atrasadas') {
                 tareas = tareas.filter(function(t){ return _tareasIsOverdue(t, now); });
             } else if (_tareasFocus.urgency === 'hoy') {
                 tareas = tareas.filter(function(t){ return _tareasIsToday(t, now); });
             }
 
-            // Filtro por responsables seleccionados (multi-select)
-            var respKeys = Object.keys(_crmTareasRespSet);
-            if (respKeys.length > 0) {
-                tareas = tareas.filter(function(t){ return !!_crmTareasRespSet[t.responsable]; });
-            }
-            // Actualizar indicador visual de filtros activos
-            var filterBtn = document.getElementById('tareasFilterBtn');
-            if (filterBtn) {
-                filterBtn.classList.toggle('has-filters', respKeys.length > 0);
+            // Filtros del facet bar (hidden inputs)
+            function $tIn(id) { return document.getElementById(id); }
+            var fTipo    = ($tIn('tareasFilterTipo')    || {}).value || '';
+            var fEtapa   = ($tIn('tareasFilterEtapa')   || {}).value || '';
+            var fResp    = ($tIn('tareasFilterResp')    || {}).value || '';
+            var fCread   = ($tIn('tareasFilterCreador') || {}).value || '';
+            var fDesde   = ($tIn('tareasFilterDesde')   || {}).value || '';
+            var fHasta   = ($tIn('tareasFilterHasta')   || {}).value || '';
+            if (fTipo)  tareas = tareas.filter(function(t){ return (t.oportunidad_tipo || '') === fTipo; });
+            if (fEtapa) tareas = tareas.filter(function(t){ return (t.oportunidad_etapa || '').toLowerCase().indexOf(fEtapa.toLowerCase()) !== -1; });
+            if (fResp)  tareas = tareas.filter(function(t){ return String(t.asignado_a_id || '') === String(fResp); });
+            if (fCread) tareas = tareas.filter(function(t){ return String(t.creado_por_id || '') === String(fCread); });
+            if (fDesde || fHasta) {
+                tareas = tareas.filter(function(t){
+                    if (!t.fecha_limite) return false;
+                    var fl = t.fecha_limite.substring(0, 10);
+                    if (fDesde && fl < fDesde) return false;
+                    if (fHasta && fl > fHasta) return false;
+                    return true;
+                });
             }
 
             // Búsqueda
-            var searchVal = (document.getElementById('tareasSearchInput') || {}).value || '';
+            var searchVal = ($tIn('tareasSearchInput') || {}).value || '';
             if (searchVal.trim()) {
                 var q = searchVal.trim().toLowerCase();
-                tareas = tareas.filter(function(t){ return (t.titulo || '').toLowerCase().indexOf(q) !== -1; });
+                tareas = tareas.filter(function(t){
+                    return (t.titulo || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.oportunidad_nombre || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.responsable || '').toLowerCase().indexOf(q) !== -1;
+                });
             }
 
-            // Sort: ancladas > vencidas > por fecha
+            // Sort: ancladas > rojas (más días vencida) > próximas por fecha
+            var userSort = ($tIn('tareasSort') || {}).value || '';
             tareas.sort(function(a, b){
                 var aP = !!a.esta_anclada;
                 var bP = !!b.esta_anclada;
-                if (aP && !bP) return -1;
-                if (!aP && bP) return 1;
+                if (aP !== bP) return aP ? -1 : 1;
+                if (userSort === 'fecha:asc' || userSort === 'fecha:desc') {
+                    var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                    var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                    return userSort === 'fecha:desc' ? (bT - aT) : (aT - bT);
+                }
+                // Default: vencidas (más días) → resto ascendente por fecha
                 var aV = _tareasIsOverdue(a, now);
                 var bV = _tareasIsOverdue(b, now);
-                if (aV && !bV) return -1;
-                if (!aV && bV) return 1;
-                var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
-                var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
-                return aT - bT;
+                if (aV !== bV) return aV ? -1 : 1;
+                if (aV && bV) return _tareasDiasVencida(b, now) - _tareasDiasVencida(a, now);
+                var aTd = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                var bTd = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                return aTd - bTd;
             });
 
-            if (countEl) countEl.textContent = tareas.length + ' tarea' + (tareas.length !== 1 ? 's' : '');
-
-            if (tareas.length === 0) {
-                grid.innerHTML = '<div class="tareas-empty-card">No hay tareas en esta etapa.</div>';
-                return;
+            // Render cards (vista legacy, oculta por default)
+            if (grid) {
+                if (tareas.length === 0) {
+                    grid.innerHTML = '<div class="tareas-empty-card">No hay tareas.</div>';
+                } else {
+                    grid.innerHTML = tareas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+                }
             }
-            grid.innerHTML = tareas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+            // Render list (nueva default)
+            if (listBody) {
+                if (tareas.length === 0) {
+                    listBody.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94A3B8;font-size:0.85rem;">No hay tareas.</div>';
+                } else {
+                    listBody.innerHTML = tareas.map(function(t){ return createTaskListRowCRM(t, now); }).join('');
+                }
+            }
+
+            // Clear button visibility
+            var clrBtn = document.getElementById('btnTareasFacetClear');
+            if (clrBtn) {
+                var anyFilter = !!(fTipo || fEtapa || fResp || fCread || fDesde || fHasta);
+                clrBtn.style.display = anyFilter ? '' : 'none';
+            }
+        }
+
+        function createTaskListRowCRM(t, now) {
+            var tipo = t.oportunidad_tipo || 'runrate';
+            var vencida = _tareasIsOverdue(t, now);
+            var dias = _tareasDiasVencida(t, now);
+            var esc = _tareasEscape;
+
+            var stripClass = vencida
+                ? 'vencida ' + _tareasHeatClass(dias)
+                : (tipo === 'proyecto' ? 'proyecto' : 'runrate');
+
+            var fechaHtml = '';
+            if (t.fecha_limite) {
+                var fechaTxt = _tareasFmtFecha(t.fecha_limite);
+                var fechaCls = vencida ? 'overdue' : (_tareasIsToday(t, now) ? 'hoy' : '');
+                fechaHtml = '<span class="tarea-fecha-chip ' + fechaCls + '">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+                    esc(fechaTxt) + '</span>';
+            } else {
+                fechaHtml = '<span style="color:#CBD5E1;font-size:0.72rem;">Sin fecha</span>';
+            }
+
+            var respNom = t.responsable || '—';
+            var creadorNom = t.creado_por || '—';
+            var respAvatar = '<span class="tarea-avatar">' + _tareasIniciales(t.responsable || '') + '</span>';
+            var creadorAvatar = '<span class="tarea-avatar" style="background:#FEF3C7;color:#92400E;">' + _tareasIniciales(t.creado_por || '') + '</span>';
+
+            var oppHtml = '';
+            if (t.oportunidad_nombre) {
+                oppHtml = '<div class="tarea-oportunidad-link" onclick="event.stopPropagation();if(typeof openDetalle===\'function\')openDetalle(\'' + t.oportunidad_id + '\');">' +
+                    '<span class="link-text">' + esc(t.oportunidad_nombre) + '</span>' +
+                    (t.oportunidad_etapa ? '<span class="link-etapa">' + esc(t.oportunidad_etapa) + '</span>' : '') +
+                    '</div>';
+            } else {
+                oppHtml = '<span style="color:#CBD5E1;font-size:0.72rem;">—</span>';
+            }
+
+            var alertIcon = (vencida && dias >= 30)
+                ? '<span class="crm-alert-critical" title="' + dias + ' días sin atender">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="#DC2626" stroke="white" stroke-width="1"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>' +
+                  '</span>'
+                : '';
+
+            return '<div class="crm-list-row crm-list-row--tarea crm-data-row' + (t.esta_anclada ? ' pinned-row' : '') + '" ' +
+                'data-tarea-id="' + t.id + '" ' +
+                'data-vencida="' + (vencida ? '1' : '0') + '" ' +
+                'data-dias-vencida="' + dias + '" ' +
+                'data-anclada="' + (t.esta_anclada ? '1' : '0') + '" ' +
+                'onclick="if(typeof crmTaskAbrirDetalle===\'function\')crmTaskAbrirDetalle(' + t.id + ');">' +
+                '<div class="crm-list-strip ' + stripClass + '"></div>' +
+                '<div class="crm-list-cell" style="flex:2.2;padding-left:22px;">' +
+                    '<div class="tarea-titulo">' + alertIcon + esc(t.titulo || 'Sin título') + '</div>' +
+                '</div>' +
+                '<div class="crm-list-cell" style="flex:1;">' +
+                    '<span class="tarea-resp-nombre">' + respAvatar + esc(respNom) + '</span>' +
+                '</div>' +
+                '<div class="crm-list-cell" style="flex:1;">' +
+                    '<span class="tarea-creador-nombre">' + creadorAvatar + esc(creadorNom) + '</span>' +
+                '</div>' +
+                '<div class="crm-list-cell" style="flex:1.1;">' + fechaHtml + '</div>' +
+                '<div class="crm-list-cell" style="flex:1.6;">' + oppHtml + '</div>' +
+                '<div class="crm-list-cell tarea-actions" style="flex:0.6;padding-right:18px;">' +
+                    '<button type="button" class="tarea-action-btn check" title="Completar" onclick="event.stopPropagation();if(typeof crmTaskCompletarRapido===\'function\')crmTaskCompletarRapido(' + t.id + ');">' +
+                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+                    '</button>' +
+                    '<button type="button" class="tarea-action-btn pin' + (t.esta_anclada ? ' pinned' : '') + '" title="Anclar" onclick="event.stopPropagation();crmTareaTogglePin(this,' + t.id + ');">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (t.esta_anclada ? '#EF4444' : '#9CA3AF') + '" stroke="none"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
+                    '</button>' +
+                '</div>' +
+            '</div>';
         }
 
         function _tareasFmtFecha(isoStr) {
@@ -4905,7 +5025,7 @@
                     });
                 }
 
-                // Restaurar estado abierto
+                // Restaurar estado abierto (sidebar antiguo — ya no existe pero mantenemos safe)
                 if (_tareasFocus.wasOpen) {
                     sb.style.transition = 'none';
                     var vc = document.getElementById('tareasViewCards');
@@ -4920,6 +5040,308 @@
             } else {
                 bind();
             }
+        })();
+
+        // ══════════════════════════════════════════════════════════════
+        // ── Facet bar de TAREAS (filtros + sort + view toggle) ────────
+        // ══════════════════════════════════════════════════════════════
+        (function bindTareasFacetBar(){
+            function init(){
+                var bar = document.getElementById('tareasFacetBar');
+                if (!bar) return;
+
+                var btnAdd   = document.getElementById('btnTareasAddFacet');
+                var btnSort  = document.getElementById('btnTareasSortMenu');
+                var btnView  = document.getElementById('btnTareasViewToggle');
+                var btnClear = document.getElementById('btnTareasFacetClear');
+                var sortLbl  = document.getElementById('tareasSortLabel');
+                var viewIcn  = document.getElementById('tareasViewIcon');
+                var chipsEl  = document.getElementById('tareasFacetChips');
+                var popField = document.getElementById('popTareasField');
+                var popValue = document.getElementById('popTareasValue');
+                var popSort  = document.getElementById('popTareasSort');
+                var searchEl = document.getElementById('tareasSearchInput');
+
+                if (searchEl && !searchEl._tbound) {
+                    searchEl.addEventListener('input', function(){ renderTareasCRM(); });
+                    searchEl._tbound = true;
+                }
+
+                var FIELDS = [
+                    { key:'tipo',    label:'Tipo',    inputId:'tareasFilterTipo',
+                      options:[{v:'proyecto',l:'Proyecto'},{v:'runrate',l:'Runrate'},{v:'bitrix_proyecto',l:'Bitrix'}] },
+                    { key:'etapa',   label:'Etapa',   inputId:'tareasFilterEtapa',   type:'autocomplete', dataKey:'etapa' },
+                    { key:'resp',    label:'Responsable', inputId:'tareasFilterResp', type:'userpicker', source:'resp' },
+                    { key:'creador', label:'Creador', inputId:'tareasFilterCreador', type:'userpicker', source:'creador' },
+                    { key:'fechas',  label:'Rango fechas', type:'daterange' }
+                ];
+                var SORTS = [
+                    { k:'', lbl:'Por defecto (rojas arriba)' },
+                    { k:'fecha:asc',  lbl:'Fecha: próximas primero' },
+                    { k:'fecha:desc', lbl:'Fecha: lejanas primero' }
+                ];
+
+                var _tAnchor = null;
+
+                function $in(id){ return document.getElementById(id); }
+                function setHidden(id, v){
+                    var el = $in(id);
+                    if (!el) return;
+                    el.value = v;
+                }
+                function getHidden(id){ return (($in(id) || {}).value || ''); }
+                function closeAll(except){
+                    [popField, popValue, popSort].forEach(function(p){
+                        if (p && p !== except) p.classList.remove('open');
+                    });
+                }
+                function position(pop, anchor){
+                    var r = anchor.getBoundingClientRect();
+                    pop.style.top = (r.bottom + 6) + 'px';
+                    pop.style.left = r.left + 'px';
+                    pop.style.right = 'auto';
+                    setTimeout(function(){
+                        var pr = pop.getBoundingClientRect();
+                        if (pr.right > window.innerWidth - 8) {
+                            pop.style.left = 'auto';
+                            pop.style.right = (window.innerWidth - r.right) + 'px';
+                        }
+                    }, 0);
+                }
+
+                // Valores únicos de etapas y usuarios desde el cache de tareas
+                function uniqueEtapas(){
+                    var s = {}; (_crmAllTareas || []).forEach(function(t){
+                        if (t.oportunidad_etapa) s[t.oportunidad_etapa] = true;
+                    });
+                    return Object.keys(s).sort();
+                }
+                function uniqueUsers(kind){
+                    var seen = {};
+                    (_crmAllTareas || []).forEach(function(t){
+                        if (kind === 'resp' && t.asignado_a_id) seen[t.asignado_a_id] = t.responsable;
+                        if (kind === 'creador' && t.creado_por_id) seen[t.creado_por_id] = t.creado_por;
+                    });
+                    return Object.keys(seen).map(function(id){ return { id: id, nombre: seen[id] }; })
+                        .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); });
+                }
+
+                function renderChips(){
+                    var html = '';
+                    FIELDS.forEach(function(fld){
+                        if (fld.type === 'daterange') {
+                            var d = getHidden('tareasFilterDesde');
+                            var h = getHidden('tareasFilterHasta');
+                            if (d || h) html += chip('fechas', 'Fechas', (d||'…') + ' → ' + (h||'…'));
+                        } else {
+                            var v = getHidden(fld.inputId);
+                            if (v) {
+                                var lbl = v;
+                                if (fld.options) {
+                                    var o = fld.options.find(function(x){ return x.v === v; });
+                                    if (o) lbl = o.l;
+                                } else if (fld.type === 'userpicker') {
+                                    var users = uniqueUsers(fld.source);
+                                    var u = users.find(function(x){ return String(x.id) === String(v); });
+                                    if (u) lbl = u.nombre;
+                                }
+                                html += chip(fld.key, fld.label, lbl);
+                            }
+                        }
+                    });
+                    chipsEl.innerHTML = html;
+                    var any = !!html;
+                    if (btnClear) btnClear.style.display = any ? '' : 'none';
+
+                    // Sort label
+                    var cur = getHidden('tareasSort');
+                    var s = SORTS.find(function(x){ return x.k === cur; });
+                    sortLbl.textContent = (s && cur) ? s.lbl.split(':')[0].trim() : 'Ordenar';
+                    btnSort.classList.toggle('has-sort', !!cur);
+                }
+                function chip(key, label, value) {
+                    var safe = (value||'').toString().replace(/</g,'&lt;');
+                    return '<div class="crm-facet-chip" data-fkey="' + key + '">' +
+                        '<span class="crm-facet-chip-key">' + label + '</span>' +
+                        '<span class="crm-facet-chip-op">=</span>' +
+                        '<span class="crm-facet-chip-val">' + safe + '</span>' +
+                        '<span class="crm-facet-chip-x" data-fkey="' + key + '" title="Quitar">' +
+                            '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>' +
+                        '</span></div>';
+                }
+
+                function openFieldPicker(){
+                    var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
+                    FIELDS.forEach(function(f){
+                        html += '<button type="button" class="crm-pop-item" data-field="' + f.key + '">' + f.label + '</button>';
+                    });
+                    html += '</div>';
+                    popField.innerHTML = html;
+                    closeAll(popField);
+                    popField.classList.add('open');
+                    position(popField, btnAdd);
+                }
+                function openValuePicker(key){
+                    _tAnchor = btnAdd;
+                    var fld = FIELDS.find(function(x){ return x.key === key; });
+                    if (!fld) return;
+                    popValue.dataset.currentField = key;
+                    var html = '';
+                    if (fld.type === 'daterange') {
+                        var d = getHidden('tareasFilterDesde');
+                        var h = getHidden('tareasFilterHasta');
+                        html = '<div class="crm-pop-section">Rango de fechas (fecha límite)</div>' +
+                            '<div class="crm-pop-dates">' +
+                                '<div><label>Desde</label><input type="date" id="_tfpDesde" value="' + d + '"></div>' +
+                                '<div><label>Hasta</label><input type="date" id="_tfpHasta" value="' + h + '"></div>' +
+                            '</div>' +
+                            '<div class="crm-pop-footer">' +
+                                '<button type="button" data-act="clear-fechas">Quitar</button>' +
+                                '<button type="button" class="primary" data-act="apply-fechas">Aplicar</button>' +
+                            '</div>';
+                        popValue.style.minWidth = '280px';
+                    } else if (fld.options) {
+                        html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+                        var cur = getHidden(fld.inputId);
+                        html += '<button type="button" class="crm-pop-item ' + (!cur ? 'active' : '') + '" data-val="">Todos</button>';
+                        fld.options.forEach(function(o){
+                            html += '<button type="button" class="crm-pop-item ' + (cur === o.v ? 'active' : '') + '" data-val="' + o.v + '">' + o.l + '</button>';
+                        });
+                        html += '</div>';
+                        popValue.style.minWidth = '200px';
+                    } else if (fld.type === 'userpicker') {
+                        var cur2 = getHidden(fld.inputId);
+                        var users = uniqueUsers(fld.source);
+                        html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+                        html += '<button type="button" class="crm-pop-item ' + (!cur2 ? 'active' : '') + '" data-val="">Todos</button>';
+                        users.forEach(function(u){
+                            html += '<button type="button" class="crm-pop-item ' + (String(cur2) === String(u.id) ? 'active' : '') + '" data-val="' + u.id + '">' + (u.nombre || '—') + '</button>';
+                        });
+                        html += '</div>';
+                        popValue.style.minWidth = '220px';
+                    } else if (fld.type === 'autocomplete') {
+                        var cur3 = getHidden(fld.inputId);
+                        var etapas = uniqueEtapas();
+                        html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+                        html += '<button type="button" class="crm-pop-item ' + (!cur3 ? 'active' : '') + '" data-val="">Todas</button>';
+                        etapas.forEach(function(e){
+                            html += '<button type="button" class="crm-pop-item ' + (cur3 === e ? 'active' : '') + '" data-val="' + e + '">' + e + '</button>';
+                        });
+                        html += '</div>';
+                        popValue.style.minWidth = '220px';
+                    }
+                    popValue.innerHTML = html;
+                    closeAll(popValue);
+                    popValue.classList.add('open');
+                    position(popValue, _tAnchor);
+                }
+                function openSortPicker(){
+                    var cur = getHidden('tareasSort');
+                    var html = '<div class="crm-pop-section">Ordenar por</div><div class="crm-pop-list">';
+                    SORTS.forEach(function(s){
+                        html += '<button type="button" class="crm-pop-item ' + (cur === s.k ? 'active' : '') + '" data-sort="' + s.k + '">' + s.lbl + '</button>';
+                    });
+                    html += '</div>';
+                    popSort.innerHTML = html;
+                    closeAll(popSort);
+                    popSort.classList.add('open');
+                    position(popSort, btnSort);
+                }
+
+                btnAdd.addEventListener('click', function(e){ e.stopPropagation(); if (popField.classList.contains('open')) { popField.classList.remove('open'); } else openFieldPicker(); });
+                btnSort.addEventListener('click', function(e){ e.stopPropagation(); if (popSort.classList.contains('open')) { popSort.classList.remove('open'); } else openSortPicker(); });
+                btnClear.addEventListener('click', function(){
+                    ['tareasFilterTipo','tareasFilterEtapa','tareasFilterResp','tareasFilterCreador','tareasFilterDesde','tareasFilterHasta'].forEach(function(id){ setHidden(id, ''); });
+                    renderChips(); renderTareasCRM();
+                });
+
+                popField.addEventListener('click', function(e){
+                    var it = e.target.closest('.crm-pop-item');
+                    if (!it) return;
+                    popField.classList.remove('open');
+                    openValuePicker(it.dataset.field);
+                });
+
+                popValue.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    var item = e.target.closest('.crm-pop-item');
+                    if (item && item.dataset.val !== undefined) {
+                        var key = popValue.dataset.currentField;
+                        var fld = FIELDS.find(function(x){ return x.key === key; });
+                        if (fld && fld.inputId) setHidden(fld.inputId, item.dataset.val);
+                        popValue.classList.remove('open');
+                        renderChips(); renderTareasCRM();
+                        return;
+                    }
+                    var actBtn = e.target.closest('[data-act]');
+                    if (!actBtn) return;
+                    var act = actBtn.dataset.act;
+                    if (act === 'apply-fechas') {
+                        setHidden('tareasFilterDesde', ($in('_tfpDesde')||{}).value || '');
+                        setHidden('tareasFilterHasta', ($in('_tfpHasta')||{}).value || '');
+                    } else if (act === 'clear-fechas') {
+                        setHidden('tareasFilterDesde', '');
+                        setHidden('tareasFilterHasta', '');
+                    }
+                    popValue.classList.remove('open');
+                    renderChips(); renderTareasCRM();
+                });
+
+                popSort.addEventListener('click', function(e){
+                    var it = e.target.closest('.crm-pop-item');
+                    if (!it) return;
+                    setHidden('tareasSort', it.dataset.sort);
+                    popSort.classList.remove('open');
+                    renderChips(); renderTareasCRM();
+                });
+
+                chipsEl.addEventListener('click', function(e){
+                    var x = e.target.closest('.crm-facet-chip-x');
+                    if (!x) return;
+                    var key = x.dataset.fkey;
+                    if (key === 'fechas') {
+                        setHidden('tareasFilterDesde', ''); setHidden('tareasFilterHasta', '');
+                    } else {
+                        var fld = FIELDS.find(function(f){ return f.key === key; });
+                        if (fld && fld.inputId) setHidden(fld.inputId, '');
+                    }
+                    renderChips(); renderTareasCRM();
+                });
+
+                // View toggle (list ⇄ cards)
+                function applyTareasView(mode){
+                    var lv = document.getElementById('tareasViewList');
+                    var cv = document.getElementById('tareasCardsGrid');
+                    if (mode === 'cards') {
+                        if (lv) lv.style.display = 'none';
+                        if (cv) cv.style.display = '';
+                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
+                    } else {
+                        if (lv) lv.style.display = '';
+                        if (cv) cv.style.display = 'none';
+                        if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+                    }
+                }
+                var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'list';
+                applyTareasView(_tareasViewMode);
+                btnView.addEventListener('click', function(){
+                    _tareasViewMode = _tareasViewMode === 'list' ? 'cards' : 'list';
+                    localStorage.setItem('tareasViewMode', _tareasViewMode);
+                    applyTareasView(_tareasViewMode);
+                });
+
+                // Cerrar popovers al click fuera / Escape
+                document.addEventListener('click', function(e){
+                    if (bar.contains(e.target)) return;
+                    if (popField.contains(e.target) || popValue.contains(e.target) || popSort.contains(e.target)) return;
+                    closeAll();
+                });
+                document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeAll(); });
+
+                setTimeout(renderChips, 300);
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+            else init();
         })();
 
         // ── Dropdown para asignar oportunidad a tarea ──

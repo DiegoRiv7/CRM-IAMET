@@ -5876,6 +5876,159 @@
     margin-bottom: 0;
 }
 
+/* ══ TAREAS: nuevo diseño con tabs island + facet bar + vista lista ══ */
+/* Ocultar el focus sidebar antiguo y su toolbar */
+.crm-page-sidebar .tareasFocus-sidebar { display: none !important; }
+.crm-page-sidebar .tareas-toolbar { display: none !important; }
+
+/* Tabs bar de tareas — mismo estilo que crm-bar de oportunidades */
+.tareas-tabs-bar {
+    display: flex;
+    justify-content: center;
+    padding: 14px 0 10px !important;
+    margin: 0;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Search mini dentro del facet bar */
+.crm-facet-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    min-width: 220px;
+    transition: all 0.15s;
+}
+.crm-facet-search:focus-within { border-color: #0052D4; box-shadow: 0 0 0 3px rgba(0,82,212,0.12); }
+.crm-facet-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: #1E293B;
+}
+.crm-facet-search input::placeholder { color: #94A3B8; }
+
+/* Vista lista de tareas — hereda todo de .crm-list-row */
+#tareasViewList { display: flex; flex-direction: column; gap: 10px; }
+#tareasViewList .crm-list-body { display: flex; flex-direction: column; gap: 10px; }
+
+.crm-list-row--tarea .tarea-resp-nombre,
+.crm-list-row--tarea .tarea-creador-nombre {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1E293B;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.crm-list-row--tarea .tarea-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #EEF2FF;
+    color: #4338CA;
+    font-size: 0.58rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+.crm-list-row--tarea .tarea-fecha-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    background: #F1F5F9;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.crm-list-row--tarea .tarea-fecha-chip.overdue {
+    background: #FEF2F2;
+    color: #B91C1C;
+    border: 1px solid #FECACA;
+}
+.crm-list-row--tarea .tarea-fecha-chip.hoy {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FDE68A;
+}
+.crm-list-row--tarea .tarea-oportunidad-link {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
+}
+.crm-list-row--tarea .tarea-oportunidad-link .link-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #2563EB;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.crm-list-row--tarea .tarea-oportunidad-link .link-etapa {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.crm-list-row--tarea .tarea-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.crm-list-row--tarea .tarea-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 0;
+    background: transparent;
+    color: #94A3B8;
+}
+.crm-list-row--tarea .tarea-action-btn:hover { background: #F1F5F9; color: #475569; }
+.crm-list-row--tarea .tarea-action-btn.check {
+    background: #ECFDF5;
+    color: #059669;
+    border-color: #A7F3D0;
+}
+.crm-list-row--tarea .tarea-action-btn.check:hover { background: #D1FAE5; }
+.crm-list-row--tarea .tarea-action-btn.pin.pinned { color: #EF4444; }
+
+/* Título de la tarea */
+.crm-list-row--tarea .tarea-titulo {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 /* ══ Lista Prospección: usa .crm-list-row igual que Oportunidades, sin strip de color ══ */
 .crm-prospect-list .crm-list-body { display: flex; flex-direction: column; gap: 10px; }
 .crm-list-row--prospect {

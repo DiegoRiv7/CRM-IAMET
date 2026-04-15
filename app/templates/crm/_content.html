@@ -1365,114 +1365,80 @@
     </style>
 
     <div id="tareasViewCards">
-        <!-- ═══ SIDEBAR EMBEBIDO TAREAS ═══ -->
-        <aside class="tareasFocus-sidebar" id="tareasFocusSidebar">
-            <div class="tareasFocus-head">
-                <button type="button" class="tareasFocus-close" id="tareasFocusCloseBtn" title="Cerrar módulo">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                    </svg>
-                </button>
-                <h3 class="tareasFocus-brand">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>
-                    </svg>
-                    Módulo de Tareas
-                </h3>
-                <div class="tareasFocus-toggle">
-                    <button type="button" data-flow="proyecto" class="active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                        Proyectos
-                    </button>
-                    <button type="button" data-flow="runrate">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        Runrate
-                    </button>
-                </div>
+        <!-- ═══ TABS DINÁMICOS (Todas / Atrasadas / Para hoy) — centrado como island ═══ -->
+        <div class="crm-bar tareas-tabs-bar">
+            <div class="crm-tabs" id="tareasUrgencyPills">
+                <button type="button" class="crm-tab active" data-urg="todas">Todas <span class="crm-tab-count" id="tareasCountTodas">0</span></button>
+                <button type="button" class="crm-tab" data-urg="atrasadas">Atrasadas <span class="crm-tab-count" id="tareasCountAtrasadas">0</span></button>
+                <button type="button" class="crm-tab" data-urg="hoy">Para hoy <span class="crm-tab-count" id="tareasCountHoy">0</span></button>
             </div>
-            <div class="tareasFocus-kpis">
-                <div class="tareasFocus-kpi atrasadas">
-                    <div class="tareasFocus-kpi-label">
-                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Atrasadas
-                    </div>
-                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiAtrasadas">0</div>
-                </div>
-                <div class="tareasFocus-kpi hoy">
-                    <div class="tareasFocus-kpi-label">
-                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Para Hoy
-                    </div>
-                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiHoy">0</div>
-                </div>
-            </div>
-            <div class="tareasFocus-list">
-                <p class="tareasFocus-section-title">Vistas</p>
-                <button type="button" class="tareasFocus-all active" data-all="1">
-                    <div class="tareasFocus-all-ico">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M9 10h6M9 14h6M9 18h6"/>
-                        </svg>
-                    </div>
-                    <div style="flex:1;">
-                        <div class="tareasFocus-all-label">Todas las Tareas</div>
-                        <div class="tareasFocus-all-sub" id="tareasFocusAllSub">0 pendientes</div>
-                    </div>
-                </button>
-                <p class="tareasFocus-section-title" style="border-top:1px solid #F3F4F6;padding-top:12px;">Tareas por Etapa</p>
-                <div class="tareasFocus-stages" id="tareasFocusStages"></div>
-            </div>
-        </aside>
+        </div>
 
-        <!-- ═══ TOOLBAR SUPERIOR ═══ -->
-        <div class="tareas-toolbar">
-            <button type="button" class="tareas-toolbar-btn" id="tareasFocusToggleBtn" title="Módulo de tareas">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
+        <!-- ═══ FACET BAR (filtros + sort + view toggle + search + nueva tarea) ═══ -->
+        <div class="crm-facet-bar" id="tareasFacetBar">
+            <div class="crm-facet-chips" id="tareasFacetChips"></div>
+
+            <button type="button" class="crm-facet-btn crm-facet-add" id="btnTareasAddFacet" title="Agregar filtro">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Filtro</span>
             </button>
-            <h2 class="tareas-toolbar-title" id="tareasToolbarTitle">Todas las Tareas</h2>
-            <span class="tareas-toolbar-stat" id="tareasCount">0 tareas</span>
-            <div class="tareas-toolbar-spacer"></div>
-            <div class="tareas-toolbar-pills" id="tareasUrgencyPills">
-                <button type="button" data-urg="todas" class="active">Todas</button>
-                <button type="button" data-urg="atrasadas"><span class="tareas-pill-dot red"></span>Atrasadas</button>
-                <button type="button" data-urg="hoy"><span class="tareas-pill-dot amber"></span>Para Hoy</button>
-            </div>
-            <div class="tareas-search-mini">
-                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+
+            <button type="button" class="crm-facet-btn crm-facet-sort" id="btnTareasSortMenu" title="Ordenar">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                <span id="tareasSortLabel">Ordenar</span>
+            </button>
+
+            <button type="button" class="crm-facet-btn" id="btnTareasViewToggle" title="Cambiar vista: Lista ⇄ Tarjetas">
+                <svg id="tareasViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+
+            <button type="button" class="crm-facet-btn crm-facet-clear" id="btnTareasFacetClear" style="display:none;">Limpiar todo</button>
+
+            <div style="flex:1;"></div>
+
+            <div class="crm-facet-search">
+                <svg width="13" height="13" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
                 <input type="text" id="tareasSearchInput" placeholder="Buscar tarea...">
             </div>
-            <!-- Filtros (prioridad + responsable) -->
-            <div style="position:relative;">
-                <button type="button" class="tareas-filter-trigger" id="tareasFilterBtn" title="Filtros">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
-                    </svg>
-                    <span class="dot"></span>
-                </button>
-                <div class="tareas-filter-panel" id="tareasFilterPanel">
-                    <label class="tareas-filter-panel-label">Filtrar por responsable</label>
-                    <div class="tareas-filter-resp-list" id="tareasFilterResponsableList">
-                        <label class="tareas-filter-resp-opt all-opt">
-                            <input type="checkbox" id="tareasRespAll" checked>
-                            <span>Todos</span>
-                        </label>
-                    </div>
-                    <button type="button" class="tareas-filter-panel-clear" id="tareasFilterClear">Limpiar selección</button>
-                </div>
-            </div>
-            <button type="button" class="tareas-nueva-btn" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                Nueva Tarea
+
+            <button type="button" class="crm-facet-btn crm-facet-new" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Nueva Tarea</span>
             </button>
         </div>
 
-        <!-- ═══ GRID DE CARDS ═══ -->
-        <div id="tareasCardsGrid"></div>
+        <!-- Popovers para el facet bar de tareas -->
+        <div class="crm-popover" id="popTareasField"></div>
+        <div class="crm-popover" id="popTareasValue"></div>
+        <div class="crm-popover" id="popTareasSort"></div>
+
+        <!-- ═══ VISTA LISTA (nueva, default) ═══ -->
+        <div id="tareasViewList">
+            <div class="crm-list-head">
+                <div class="crm-list-hcell" style="flex:2.2;padding-left:22px;">NOMBRE</div>
+                <div class="crm-list-hcell" style="flex:1;">RESPONSABLE</div>
+                <div class="crm-list-hcell" style="flex:1;">CREADOR</div>
+                <div class="crm-list-hcell" style="flex:1.1;">FECHA LÍMITE</div>
+                <div class="crm-list-hcell" style="flex:1.6;">OPORTUNIDAD</div>
+                <div class="crm-list-hcell" style="flex:0.6;text-align:right;padding-right:18px;">ACCIONES</div>
+            </div>
+            <div class="crm-list-body" id="tareasListBody"></div>
+        </div>
+
+        <!-- ═══ GRID DE CARDS (legacy, cambia con el toggle) ═══ -->
+        <div id="tareasCardsGrid" style="display:none;"></div>
         <div class="tareas-footer" id="tareasFooter"></div>
+
+        <!-- Estado global de filtros de tareas (lo lee y setea el IIFE del facet bar) -->
+        <div style="display:none;">
+            <input type="hidden" id="tareasFilterTipo" value="">
+            <input type="hidden" id="tareasFilterEtapa" value="">
+            <input type="hidden" id="tareasFilterResp" value="">
+            <input type="hidden" id="tareasFilterCreador" value="">
+            <input type="hidden" id="tareasFilterDesde" value="">
+            <input type="hidden" id="tareasFilterHasta" value="">
+            <input type="hidden" id="tareasSort" value="">
+        </div>
     </div>
 </div>
 
