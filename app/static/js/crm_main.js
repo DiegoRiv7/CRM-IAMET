@@ -97,70 +97,99 @@
             });
         });
 
-        // Toggle pin oportunidad (funciona en cards y list rows)
-        setTimeout(function() {
-            document.querySelectorAll('.crm-pin').forEach(function(pin) {
-                pin.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var oppId = (this.getAttribute('data-pin-id') || '').replace(/\s/g, '').replace(/\u00A0/g, '');
-                    if (!oppId) return;
-                    var self = this;
-                    var card = self.closest('.crm-postit');
-                    var listRow = self.closest('.crm-list-row');
-                    var container = card
-                        ? document.getElementById('crmCardsGrid')
-                        : (listRow ? document.getElementById('crmListBody') : null);
-                    var node = card || listRow;
-                    var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-                    fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
-                    }).then(function(r) { return r.json(); }).then(function(data) {
-                        if (!data.success) return;
-                        self.classList.toggle('pinned', data.anclada);
-                        var svg = self.querySelector('svg');
-                        if (data.anclada) {
-                            if (svg) { svg.setAttribute('fill', '#EF4444'); svg.setAttribute('stroke', 'none'); }
-                            if (card && !card.querySelector('.crm-pin-hole-dyn')) {
-                                var hole = document.createElement('div');
-                                hole.className = 'crm-pin-hole-dyn';
-                                hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
-                                card.appendChild(hole);
-                            }
-                            // Mover al inicio — las ancladas van incluso arriba de las vencidas
-                            if (node && container) {
-                                node.dataset.anclada = '1';
-                                node.classList.add('pinned-row');
-                                container.insertBefore(node, container.firstChild);
-                            }
-                        } else {
-                            if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', 'none'); }
-                            var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
-                            if (h) h.remove();
-                            if (node) {
-                                node.dataset.anclada = '0';
-                                node.classList.remove('pinned-row');
-                                // Re-ubicar inmediatamente: después de todas las ancladas y vencidas
-                                if (container) {
-                                    var insertBefore = null;
-                                    var children = container.children;
-                                    for (var i = 0; i < children.length; i++) {
-                                        var ch = children[i];
-                                        if (ch === node) continue;
-                                        var chPinned   = ch.dataset && ch.dataset.anclada === '1';
-                                        var chOverdue  = ch.dataset && ch.dataset.vencida === '1';
-                                        if (!chPinned && !chOverdue) { insertBefore = ch; break; }
-                                    }
-                                    if (insertBefore) container.insertBefore(node, insertBefore);
-                                    else container.appendChild(node);
-                                }
-                            }
+        // Toggle pin oportunidad — delegación en document (capture phase)
+        // Funciona en cards, list rows, y cards clonadas dentro del kanban.
+        document.addEventListener('click', function(e) {
+            var pin = e.target.closest && e.target.closest('.crm-pin');
+            if (!pin) return;
+            // Solo pins de oportunidades (tienen data-pin-id); las de tareas usan otro handler
+            var pidAttr = pin.getAttribute('data-pin-id');
+            if (!pidAttr) return;
+            // Excluir el pin-button de la vista LIST-tarea (class .crm-list-pin es de oportunidades,
+            // pero el pin de tareas usa class .tarea-action-btn y llama a crmTareaTogglePin)
+            if (pin.classList.contains('tarea-action-btn')) return;
+
+            e.stopPropagation();
+            e.preventDefault();
+            (function(clickedPin){
+                var oppId = (pidAttr || '').replace(/\s/g, '').replace(/\u00A0/g, '');
+                if (!oppId) return;
+                var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    if (!data.success) return;
+                    var anclada = !!data.anclada;
+
+                    // 1) Actualizar TODOS los .crm-pin con este oppId (original + clones en kanban)
+                    document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]').forEach(function(p){
+                        if (p.classList.contains('tarea-action-btn')) return;
+                        p.classList.toggle('pinned', anclada);
+                        var svg = p.querySelector('svg');
+                        if (svg) {
+                            svg.setAttribute('fill', anclada ? '#EF4444' : '#9CA3AF');
+                            svg.setAttribute('stroke', 'none');
                         }
                     });
+
+                    // 2) Actualizar TODAS las cards/rows originales (no clones) con este oppId
+                    //    Los clones del kanban se re-renderizan automáticamente por el MutationObserver
+                    var originalCard = document.querySelector('#crmCardsGrid .crm-postit[data-opp-id="' + oppId + '"]');
+                    var originalRow  = document.querySelector('#crmListBody .crm-list-row[data-opp-id="' + oppId + '"]');
+                    [originalCard, originalRow].forEach(function(node){
+                        if (!node) return;
+                        node.dataset.anclada = anclada ? '1' : '0';
+                        node.classList.toggle('pinned-row', anclada);
+                    });
+
+                    // 3) Mover originales al spot correcto
+                    if (anclada) {
+                        // Agujero en el card original
+                        if (originalCard && !originalCard.querySelector('.crm-pin-hole-dyn')) {
+                            var hole = document.createElement('div');
+                            hole.className = 'crm-pin-hole-dyn';
+                            hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
+                            originalCard.appendChild(hole);
+                        }
+                        // Mover al inicio
+                        var cg = document.getElementById('crmCardsGrid');
+                        if (originalCard && cg) cg.insertBefore(originalCard, cg.firstChild);
+                        var lb = document.getElementById('crmListBody');
+                        if (originalRow  && lb) lb.insertBefore(originalRow, lb.firstChild);
+                    } else {
+                        // Quitar agujero
+                        if (originalCard) {
+                            var h = originalCard.querySelector('.crm-pin-hole-dyn');
+                            if (h) h.remove();
+                        }
+                        // Mover después de ancladas + vencidas
+                        function reubicar(container, node){
+                            if (!container || !node) return;
+                            var insertBefore = null;
+                            var children = container.children;
+                            for (var i = 0; i < children.length; i++) {
+                                var ch = children[i];
+                                if (ch === node) continue;
+                                var chPinned  = ch.dataset && ch.dataset.anclada === '1';
+                                var chOverdue = ch.dataset && ch.dataset.vencida === '1';
+                                if (!chPinned && !chOverdue) { insertBefore = ch; break; }
+                            }
+                            if (insertBefore) container.insertBefore(node, insertBefore);
+                            else container.appendChild(node);
+                        }
+                        reubicar(document.getElementById('crmCardsGrid'), originalCard);
+                        reubicar(document.getElementById('crmListBody'),   originalRow);
+                    }
+
+                    // 4) Re-render kanban (el MutationObserver debería detectarlo, pero forzamos por seguridad)
+                    if (typeof window._crmRenderKanban === 'function') {
+                        var kv = document.getElementById('crmViewKanban');
+                        if (kv && kv.style.display !== 'none') window._crmRenderKanban();
+                    }
                 });
-            });
-        }, 500);
+            })(pin);
+        }, true);
 
         // Delegated capture-phase handler: botón de cotizar en la vista lista
         // Capture phase + stopImmediatePropagation para ganar contra el onclick del row.

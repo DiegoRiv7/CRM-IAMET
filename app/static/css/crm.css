@@ -6045,15 +6045,20 @@
 #crmViewKanban {
     width: 100%;
     margin-top: 4px;
+    /* Ocupa toda la altura disponible para que las columnas internas puedan scrollear */
+    height: calc(100vh - 210px);
+    display: flex;
+    flex-direction: column;
 }
 .crm-kanban-board {
     display: flex;
-    gap: 14px;
-    align-items: flex-start;
+    gap: 12px;
+    align-items: stretch;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 6px 2px 20px;
-    min-height: calc(100vh - 280px);
+    padding: 4px 2px 12px;
+    flex: 1;
+    min-height: 0;
     scrollbar-width: thin;
 }
 .crm-kanban-board::-webkit-scrollbar { height: 8px; }
@@ -6064,19 +6069,21 @@
     flex-direction: column;
     width: 300px;
     flex-shrink: 0;
-    max-height: calc(100vh - 280px);
+    height: 100%;
     background: rgba(241, 245, 249, 0.6);
     border: 1px solid #E2E8F0;
     border-radius: 12px;
     overflow: hidden;
     transition: width 0.2s ease, background 0.2s ease;
+    min-height: 0;
 }
 .crm-kanban-col.collapsed {
-    width: 44px;
-    min-width: 44px;
+    width: 42px;
+    min-width: 42px;
     background: #FFFFFF;
     cursor: pointer;
     border-color: #E5E7EB;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
 }
 .crm-kanban-col.collapsed:hover { background: #F8FAFC; border-color: #CBD5E1; }
 
@@ -6167,10 +6174,15 @@
     gap: 10px;
     padding: 12px;
     overflow-y: auto;
+    flex: 1;
+    min-height: 0;
     scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
 }
-.crm-kanban-col-body::-webkit-scrollbar { width: 5px; }
+.crm-kanban-col-body::-webkit-scrollbar { width: 6px; }
+.crm-kanban-col-body::-webkit-scrollbar-track { background: transparent; }
 .crm-kanban-col-body::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.crm-kanban-col-body::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
 /* Card dentro del kanban — reutiliza .crm-postit pero más compacta */
 .crm-kanban-card.crm-postit {
@@ -6185,31 +6197,46 @@
     box-shadow: 0 10px 20px -10px rgba(15,23,42,0.18);
 }
 
-/* Columna colapsada */
+/* Columna colapsada — estilo limpio tipo image#18 */
+.crm-kanban-col.collapsed .crm-kanban-head {
+    padding: 0;
+    background: transparent;
+    border-bottom: none;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
 .crm-kanban-collapsed-body {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
-    padding: 12px 0;
+    gap: 12px;
+    padding: 14px 0 16px;
     height: 100%;
+    width: 100%;
 }
 .crm-kanban-collapsed-body .crm-kanban-count {
-    margin-bottom: 6px;
+    background: #F1F5F9;
+    color: #64748B;
+    margin-bottom: 0;
 }
 .crm-kanban-vertical-name {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
-    font-size: 0.66rem;
+    font-size: 0.62rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #64748B;
     white-space: nowrap;
+    flex: 1;
+    display: flex;
+    align-items: center;
 }
 .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #0052D4; }
+.crm-kanban-col.collapsed:hover .crm-kanban-count { background: #EFF6FF; color: #0052D4; }
 
 /* Estado vacío */
 .crm-kanban-empty {
