@@ -6109,7 +6109,7 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     height: 100%;
 }
 .crm-kanban-rail-chevron {
-    width: 14px;
+    width: 100%;   /* Ocupa TODO el ancho del rail (22px) */
     height: 100%;
     flex: 1;
     display: block;
