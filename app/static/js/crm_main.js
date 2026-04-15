@@ -4756,7 +4756,7 @@
                 'data-vencida="' + (vencida ? '1' : '0') + '" ' +
                 'data-dias-vencida="' + dias + '" ' +
                 'data-anclada="' + (t.esta_anclada ? '1' : '0') + '" ' +
-                'onclick="if(typeof crmTaskAbrirDetalle===\'function\')crmTaskAbrirDetalle(' + t.id + ');">' +
+                'onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' +
                 '<div class="crm-list-strip ' + stripClass + '"></div>' +
                 '<div class="crm-list-cell" style="flex:2.2;padding-left:22px;">' +
                     '<div class="tarea-titulo">' + alertIcon + esc(t.titulo || 'Sin título') + '</div>' +
@@ -4770,8 +4770,8 @@
                 '<div class="crm-list-cell" style="flex:1.1;">' + fechaHtml + '</div>' +
                 '<div class="crm-list-cell" style="flex:1.6;">' + oppHtml + '</div>' +
                 '<div class="crm-list-cell tarea-actions" style="flex:0.6;padding-right:18px;">' +
-                    '<button type="button" class="tarea-action-btn check" title="Completar" onclick="event.stopPropagation();if(typeof crmTaskCompletarRapido===\'function\')crmTaskCompletarRapido(' + t.id + ');">' +
-                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+                    '<button type="button" class="tarea-action-btn subtarea" title="Crear subtarea" onclick="event.stopPropagation();if(typeof crmTaskCrearSubtareaDesdeFila===\'function\')crmTaskCrearSubtareaDesdeFila(' + t.id + ');">' +
+                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="19" cy="17" r="4"/><line x1="19" y1="15" x2="19" y2="19"/><line x1="17" y1="17" x2="21" y2="17"/></svg>' +
                     '</button>' +
                     '<button type="button" class="tarea-action-btn pin' + (t.esta_anclada ? ' pinned' : '') + '" title="Anclar" onclick="event.stopPropagation();crmTareaTogglePin(this,' + t.id + ');">' +
                         '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (t.esta_anclada ? '#EF4444' : '#9CA3AF') + '" stroke="none"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
@@ -7067,6 +7067,17 @@
         }
 
         window.crmTaskCrearSubtarea = crmTaskCrearSubtarea;
+
+        // Variante que acepta el id desde la fila de lista (no requiere tener el detalle abierto)
+        window.crmTaskCrearSubtareaDesdeFila = function(padreId) {
+            if (!padreId) return;
+            crmTaskAbrirCrear();
+            // Pequeño delay para asegurar que el modal esté montado y el input exista
+            setTimeout(function(){
+                var padreEl = document.getElementById('crmTaskPadreId');
+                if (padreEl) padreEl.value = padreId;
+            }, 50);
+        };
         window.crmTaskAbrirCrear = crmTaskAbrirCrear;
         window.crmTaskCerrarCrear = crmTaskCerrarCrear;
         window.crmTaskCrear = crmTaskCrear;

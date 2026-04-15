@@ -6019,6 +6019,12 @@
     border-color: #A7F3D0;
 }
 .crm-list-row--tarea .tarea-action-btn.check:hover { background: #D1FAE5; }
+.crm-list-row--tarea .tarea-action-btn.subtarea {
+    background: #EFF6FF;
+    color: #2563EB;
+    border-color: #DBEAFE;
+}
+.crm-list-row--tarea .tarea-action-btn.subtarea:hover { background: #DBEAFE; color: #1D4ED8; }
 .crm-list-row--tarea .tarea-action-btn.pin.pinned { color: #EF4444; }
 
 /* Título de la tarea */
