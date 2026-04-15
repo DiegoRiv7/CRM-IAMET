@@ -593,6 +593,12 @@
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
         <!-- ═══ VISTA KANBAN (por etapa) ═══ -->
         <div id="crmViewKanban" style="display:none;">
+            <button type="button" class="crm-kanban-nav left" id="kanbanNavLeft" title="Ver etapas anteriores">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="crm-kanban-nav right" id="kanbanNavRight" title="Ver etapas siguientes">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
             <div class="crm-kanban-board" id="crmKanbanBoard"></div>
         </div>
 
@@ -2930,7 +2936,7 @@
     }
 
     function fmtMoney(n){
-        return '$' + (Number(n)||0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        return '$' + (Number(n)||0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' MXN';
     }
 
     function render(){
@@ -3104,6 +3110,27 @@
             if (kv && kv.style.display !== 'none') render();
         });
         mo.observe(sourceGrid, { childList: true, subtree: true, attributes: true, attributeFilter: ['class','data-anclada'] });
+    }
+
+    // Flechas de navegación lateral
+    var navLeft  = document.getElementById('kanbanNavLeft');
+    var navRight = document.getElementById('kanbanNavRight');
+    var board    = document.getElementById('crmKanbanBoard');
+    function updateNavState(){
+        if (!board || !navLeft || !navRight) return;
+        var maxScroll = board.scrollWidth - board.clientWidth;
+        navLeft.classList.toggle('disabled',  board.scrollLeft <= 4);
+        navRight.classList.toggle('disabled', board.scrollLeft >= maxScroll - 4);
+    }
+    if (navLeft  && board) navLeft .addEventListener('click', function(){ board.scrollBy({ left: -320, behavior: 'smooth' }); });
+    if (navRight && board) navRight.addEventListener('click', function(){ board.scrollBy({ left:  320, behavior: 'smooth' }); });
+    if (board) {
+        board.addEventListener('scroll', updateNavState);
+        // Actualizar estado inicial tras primer render
+        setTimeout(updateNavState, 100);
+        // Re-chequear cuando cambie el ancho (colapsar/expandir columnas)
+        var ro = new ResizeObserver(updateNavState);
+        ro.observe(board);
     }
 })();
 </script>

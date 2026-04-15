@@ -6049,20 +6049,55 @@
     height: calc(100vh - 175px);
     display: flex;
     flex-direction: column;
+    position: relative;
 }
+
+/* Flechas de navegación lateral — casi invisibles, aparecen al hover */
+.crm-kanban-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(15,23,42,0.08);
+    border-radius: 12px;
+    color: #64748B;
+    cursor: pointer;
+    opacity: 0.15;
+    transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    z-index: 20;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.08);
+}
+.crm-kanban-nav:hover {
+    opacity: 1;
+    background: #FFFFFF;
+    color: #0052D4;
+    transform: translateY(-50%) scale(1.05);
+}
+.crm-kanban-nav.left  { left: -4px; }
+.crm-kanban-nav.right { right: -4px; }
+.crm-kanban-nav.disabled { opacity: 0; pointer-events: none; }
 .crm-kanban-board {
     display: flex;
     gap: 12px;
     align-items: stretch;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 4px 2px 12px;
+    padding: 4px 2px 8px;
     flex: 1;
     min-height: 0;
-    scrollbar-width: thin;
+    scroll-behavior: smooth;
+    /* Sensación de infinito: sin scrollbar horizontal visible */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
-.crm-kanban-board::-webkit-scrollbar { height: 8px; }
-.crm-kanban-board::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.crm-kanban-board::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 .crm-kanban-col {
     display: flex;
