@@ -95,32 +95,31 @@ document.addEventListener('click', function(ev) {
                     'software': 'SOFTWARE', 'runrate': 'RUNRATE', 'poliza': 'POLIZA', 'otros': ''
                 };
 
-                // Header (labels)
+                // Header (labels) — usa mismo estilo que .crm-list-head
                 if (head) {
-                    var hHtml = '<div class="crm-prospect-cell head-cliente">Cliente</div>';
+                    var hHtml = '<div class="crm-list-hcell" style="flex:2.6;padding-left:22px;">Cliente</div>';
                     prodLabels.forEach(function(l){
-                        hHtml += '<div class="crm-prospect-cell head-prod">' + l + '</div>';
+                        hHtml += '<div class="crm-list-hcell" style="flex:1;text-align:right;">' + l + '</div>';
                     });
                     head.innerHTML = hHtml;
                 }
 
                 data.rows.forEach(function(row) {
                     var rowEl = document.createElement('div');
-                    rowEl.className = 'crm-prospect-row crm-data-row';
+                    // Reutilizamos la clase .crm-list-row (mismo dise;o que oportunidades) + modifier --prospect
+                    rowEl.className = 'crm-list-row crm-list-row--prospect crm-data-row';
                     rowEl.dataset.clienteId = row.cliente_id;
 
-                    // Cliente cell
+                    // Cliente cell (equivalente a la columna "Oportunidad / Cliente")
                     var clienteOnclick = 'onclick="event.stopPropagation();window._prospeccionClickCliente(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + escapeHtml(row.rfc).replace(/'/g, "\\'") + '\')"';
-                    var html = '<div class="crm-prospect-cell cell-cliente">' +
-                        '<span class="cliente-prospeccion-link" data-cliente-id="' + row.cliente_id + '" data-cliente-nombre="' + escapeHtml(row.cliente).replace(/"/g,'&quot;') + '" ' + clienteOnclick + '>' +
-                            escapeHtml(row.cliente) +
-                        '</span>';
+                    var html = '<div class="crm-list-cell cell-cliente" style="flex:2.6;padding-left:22px;">' +
+                        '<div class="crm-list-title"><span class="cliente-prospeccion-link" data-cliente-id="' + row.cliente_id + '" data-cliente-nombre="' + escapeHtml(row.cliente).replace(/"/g,'&quot;') + '" ' + clienteOnclick + '>' + escapeHtml(row.cliente) + '</span></div>';
                     if (row.rfc) {
-                        html += '<span class="cliente-rfc">RFC: ' + escapeHtml(row.rfc) + '</span>';
+                        html += '<div class="crm-list-sub">RFC: ' + escapeHtml(row.rfc) + '</div>';
                     }
                     html += '</div>';
 
-                    // Product cells
+                    // Product cells — cada uno como .crm-list-cell con flex:1
                     prodKeys.forEach(function(key) {
                         var val = row[key] || 0;
                         var prodValue = prodChoicesMap[key] || '';
@@ -128,10 +127,12 @@ document.addEventListener('click', function(ev) {
                         if (prodValue) {
                             cellAttrs = ' onclick="event.stopPropagation();window._prospeccionClickProducto(' +
                                 row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") +
-                                '\',\'' + prodValue + '\')" style="cursor:pointer;"';
+                                '\',\'' + prodValue + '\')" style="flex:1;cursor:pointer;"';
+                        } else {
+                            cellAttrs = ' style="flex:1;"';
                         }
                         var cls = val === 0 ? 'cell-prod zero' : 'cell-prod filled';
-                        html += '<div class="crm-prospect-cell ' + cls + '"' + cellAttrs + '>' + val + '</div>';
+                        html += '<div class="crm-list-cell ' + cls + '"' + cellAttrs + '>' + val + '</div>';
                     });
 
                     rowEl.innerHTML = html;

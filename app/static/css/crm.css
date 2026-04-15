@@ -5876,86 +5876,27 @@
     margin-bottom: 0;
 }
 
-/* ══ Lista Prospección: filas sueltas tipo vista List de Oportunidades ══ */
-.crm-prospect-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 4px;
+/* ══ Lista Prospección: usa .crm-list-row igual que Oportunidades, sin strip de color ══ */
+.crm-prospect-list .crm-list-body { display: flex; flex-direction: column; gap: 10px; }
+.crm-list-row--prospect {
+    /* Sin strip de color — padding igual que crm-list-row default */
+    padding-left: 0 !important;
 }
-.crm-prospect-head,
-.crm-prospect-row {
-    display: grid;
-    grid-template-columns: minmax(180px, 2fr) repeat(10, minmax(52px, 1fr));
-    align-items: center;
-    gap: 0;
-}
-.crm-prospect-head {
-    padding: 4px 18px 8px;
-}
-.crm-prospect-head .crm-prospect-cell {
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #94A3B8;
-}
-.crm-prospect-head .head-cliente { text-align: left; }
-.crm-prospect-head .head-prod { text-align: right; padding-right: 10px; }
-
-.crm-prospect-row {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    padding: 14px 18px;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-}
-.crm-prospect-row:hover {
-    border-color: #CBD5E1;
-    box-shadow: 0 8px 20px -10px rgba(15,23,42,0.15), 0 2px 4px -2px rgba(15,23,42,0.06);
-    transform: translateY(-1px);
-}
-
-.crm-prospect-cell { min-width: 0; }
-.crm-prospect-row .cell-cliente {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    text-align: left;
-    overflow: hidden;
-}
-.crm-prospect-row .cell-cliente .cliente-prospeccion-link {
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: #0F172A;
+.crm-list-row--prospect .cliente-prospeccion-link {
     cursor: pointer;
-    letter-spacing: -0.01em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     transition: color 0.15s;
 }
-.crm-prospect-row .cell-cliente .cliente-prospeccion-link:hover { color: #2563EB; }
-.crm-prospect-row .cell-cliente .cliente-rfc {
-    font-size: 0.62rem;
-    font-weight: 500;
-    color: #94A3B8;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.crm-prospect-row .cell-prod {
+.crm-list-row--prospect .cliente-prospeccion-link:hover { color: #2563EB; }
+.crm-list-row--prospect .cell-prod {
     text-align: right;
-    padding-right: 10px;
+    padding-right: 12px;
     font-size: 0.85rem;
     font-weight: 700;
     transition: color 0.15s;
 }
-.crm-prospect-row .cell-prod.zero { color: #CBD5E1; }
-.crm-prospect-row .cell-prod.filled { color: #2563EB; }
-.crm-prospect-row .cell-prod.filled:hover { color: #1D4ED8; }
+.crm-list-row--prospect .cell-prod.zero { color: #CBD5E1; }
+.crm-list-row--prospect .cell-prod.filled { color: #2563EB; }
+.crm-list-row--prospect .cell-prod.filled:hover { color: #1D4ED8; }
 
 /* Toggle Oportunidades / Prospectos (lado izquierdo del period bar) */
 .crm-mode-toggle {
