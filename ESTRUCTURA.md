@@ -136,10 +136,20 @@ var _ING_CONFIG = { firstName, lastName };
 web:
   volumes:
     - .:/app                    # Código fuente bind mount (git pull aplica al instante)
-    - media_files:/app/media    # Volumen Docker para uploads
+    - media_files:/app/media    # Volumen Docker para uploads (externo)
   ports: 8000:8000              # nginx hace proxy_pass a 127.0.0.1:8000
   networks: nginx_default       # Red externa compartida con nginx
+
+volumes:
+  media_files:
+    external: true
+    name: crm-iamet_media_files  # ~9.9GB con todo el drive de oportunidades
 ```
+
+> **CRÍTICO:** `media_files` DEBE ser external apuntando a `crm-iamet_media_files`.
+> Si se quita el `external`, compose crea un volumen nuevo (`gesti-n-de-ventas_media_files`)
+> vacío y los archivos del Drive "desaparecen" para el contenedor. Los datos
+> reales siguen en `crm-iamet_media_files` — sólo se rompe el mount.
 
 > **Compose project name**: `gesti-n-de-ventas` (nombre legado, no coincide con
 > el directorio `~/crm-iamet`). Los contenedores son `gesti-n-de-ventas-web-1`
