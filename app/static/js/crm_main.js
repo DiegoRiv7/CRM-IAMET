@@ -124,9 +124,26 @@
                     var anclada = !!data.anclada;
                     console.log('[PIN] Resultado:', anclada ? 'ANCLADA' : 'DESANCLADA');
 
+                    // DEBUG: verificar qué hay realmente en el DOM
+                    var allPins = document.querySelectorAll('.crm-pin[data-pin-id]');
+                    var sampleIds = [];
+                    for (var _pi = 0; _pi < Math.min(5, allPins.length); _pi++) sampleIds.push(allPins[_pi].getAttribute('data-pin-id'));
+                    console.log('[PIN] Total pins en DOM:', allPins.length, 'sample IDs:', JSON.stringify(sampleIds), 'buscando:', JSON.stringify(oppId));
+                    var allCards = document.querySelectorAll('.crm-data-row[data-opp-id]');
+                    var sampleOpp = [];
+                    for (var _ci = 0; _ci < Math.min(5, allCards.length); _ci++) sampleOpp.push(allCards[_ci].dataset.oppId);
+                    console.log('[PIN] Total cards con data-opp-id:', allCards.length, 'sample:', JSON.stringify(sampleOpp));
+
                     // 1) Actualizar TODOS los .crm-pin con este oppId (original + clones en kanban)
                     var pinsFound = document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]');
-                    console.log('[PIN] Pins encontrados:', pinsFound.length);
+                    console.log('[PIN] Pins que matchean oppId:', pinsFound.length);
+                    if (pinsFound.length === 0) {
+                        // Fallback: buscar el pin clickeado directamente y actualizarlo
+                        console.log('[PIN] Fallback: actualizo el pin clickeado directamente');
+                        clickedPin.classList.toggle('pinned', anclada);
+                        var _svg = clickedPin.querySelector('svg');
+                        if (_svg) { _svg.setAttribute('fill', anclada ? '#EF4444' : '#9CA3AF'); }
+                    }
                     pinsFound.forEach(function(p){
                         if (p.classList.contains('tarea-action-btn')) return;
                         p.classList.toggle('pinned', anclada);
