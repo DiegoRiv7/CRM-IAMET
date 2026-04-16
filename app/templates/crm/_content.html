@@ -2245,6 +2245,9 @@
     var pillPeriodoEl = document.getElementById('pillPeriodo');
     // Si no hay facet ni pills, no hay nada que inicializar.
     if (!btnAdd && !pillPeriodoEl) return;
+    // `bar` lo usan los listeners de "click fuera" para no cerrar popovers
+    // cuando el click es dentro de la barra. Apunta a la .crm-bar contenedora.
+    var bar = btnAdd ? btnAdd.closest('.crm-bar') : (pillPeriodoEl ? pillPeriodoEl.closest('.crm-bar') : null);
 
     var chipsEl     = document.getElementById('crmFacetChips');
     var btnSort     = document.getElementById('btnSortMenu');
