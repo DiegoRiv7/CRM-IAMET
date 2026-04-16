@@ -2282,6 +2282,8 @@
     function readSort(){
         var m = ($in('filterMonto') || {}).value || '';
         var f = ($in('filterFecha') || {}).value || '';
+        var v = ($in('filterVencida') || {}).value || '';
+        if (v === 'only') return 'vencidas';
         if (m === 'desc') return 'monto:desc';
         if (m === 'asc')  return 'monto:asc';
         if (f === 'asc')  return 'fecha:asc';
@@ -3104,6 +3106,7 @@
         }
         popSort.classList.remove('open');
         renderChips();
+        if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
         applySortToViews();
     });
     } // end if (hasFacetBar) popSort
