@@ -3227,6 +3227,8 @@
                     // y detectar cambios de vencida para animación de "healing"
                     var _apiMap = {};
                     (data.rows || []).forEach(function(r){ _apiMap[String(r.id)] = r; });
+                    var _heatClasses = ['card-vencida','heat-1','heat-2','heat-3','heat-4','heat-5','heat-max'];
+                    var _warmClasses = ['warm-1','warm-2','warm-3'];
                     document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(el){
                         var apiRow = _apiMap[el.dataset.oppId];
                         if (!apiRow) return;
@@ -3234,11 +3236,19 @@
                         var nowVencida = !!apiRow.tiene_actividad_vencida;
                         el.dataset.vencida = nowVencida ? '1' : '0';
                         el.dataset.diasVencida = nowVencida ? (el.dataset.diasVencida || '0') : '0';
-                        // Strip de color
+
+                        // Quitar TODAS las clases de vencida/heat/warm del postit card
+                        if (!nowVencida) {
+                            _heatClasses.forEach(function(c){ el.classList.remove(c); });
+                            _warmClasses.forEach(function(c){ el.classList.remove(c); });
+                        }
+
+                        // Strip de color (list rows)
                         var strip = el.querySelector('.crm-list-strip');
                         if (strip && !nowVencida) {
                             strip.className = 'crm-list-strip ' + (apiRow.tipo_negociacion === 'proyecto' ? 'proyecto' : 'runrate');
                         }
+
                         // Healing: era vencida, ya no lo es → animación
                         if (wasVencida && !nowVencida) {
                             el.classList.add('crm-healing');
