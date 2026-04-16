@@ -2722,16 +2722,17 @@ def api_tarea_detalle(request, tarea_id):
                 tarea = Tarea.objects.get(id=tarea_id)
                 print(f"🔍 Tarea encontrada: {tarea.titulo} (ID: {tarea.id})")
                 
-                # Verificar permisos - creador, admin o compañero de grupo
+                # Verificar permisos - creador, responsable, admin o compañero de grupo
                 from .views_grupos import comparten_grupo as _cg
                 involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
                 user_can_edit = (
                     tarea.creado_por == request.user or
+                    tarea.asignado_a == request.user or
                     request.user.is_superuser or
                     any(_cg(request.user, u) for u in involucrados)
                 )
-                
-                print(f"🔍 Permisos - Creador: {tarea.creado_por.username}, Current: {request.user.username}, Can edit: {user_can_edit}")
+
+                print(f"🔍 Permisos - Creador: {tarea.creado_por.username}, Resp: {getattr(tarea.asignado_a, 'username', None)}, Current: {request.user.username}, Can edit: {user_can_edit}")
                 
                 if not user_can_edit:
                     return JsonResponse({'error': 'Sin permisos para modificar esta tarea'}, status=403)
@@ -3543,18 +3544,13 @@ def api_actualizar_tarea_real(request, tarea_id):
         involucrados = [u for u in [tarea.asignado_a, tarea.creado_por] if u and u != request.user]
         es_companero_grupo = any(comparten_grupo(request.user, u) for u in involucrados)
 
-        # El responsable solo puede cambiar fecha_limite (con razón obligatoria)
-        # El creador, superusuario y compañero de grupo pueden editar todo
-        campos_permitidos_responsable = {'fecha_limite', 'razon_reprogramacion'}
-        campos_enviados = set(data.keys())
-        if not es_creador and not request.user.is_superuser and not es_companero_grupo:
-            if not es_responsable:
-                return JsonResponse({'error': 'Sin permisos para editar esta tarea'}, status=403)
-            # Es responsable — solo puede tocar fecha_limite
-            if not campos_enviados.issubset(campos_permitidos_responsable):
-                return JsonResponse({'error': 'El responsable solo puede cambiar la fecha límite'}, status=403)
-            if 'fecha_limite' in data and not data.get('razon_reprogramacion'):
-                return JsonResponse({'error': 'Debes indicar la razón del cambio de fecha'}, status=400)
+        # Creador, responsable, superusuario o compañero de grupo pueden editar todo
+        # (titulo, descripcion, fecha_limite, prioridad, asignado_a, etc.)
+        if not (es_creador or es_responsable or request.user.is_superuser or es_companero_grupo):
+            return JsonResponse({'error': 'Sin permisos para editar esta tarea'}, status=403)
+
+        # Si se cambia fecha_limite y se envía razón, se notifica a admins (audit trail).
+        # La razón ya NO es obligatoria — creador y responsable la pueden cambiar libremente.
         
         # Actualizar campos si están presentes en la petición
         if 'nombre' in data or 'titulo' in data:
