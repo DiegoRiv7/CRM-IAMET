@@ -4965,13 +4965,15 @@
 
         function createTaskListRowCRM(t, now) {
             var tipo = t.oportunidad_tipo || 'runrate';
-            var vencida = _tareasIsOverdue(t, now);
+            var completada = (t.estado === 'completada');
+            var vencida = !completada && _tareasIsOverdue(t, now);
             var dias = _tareasDiasVencida(t, now);
             var esc = _tareasEscape;
 
-            var stripClass = vencida
-                ? 'vencida ' + _tareasHeatClass(dias)
-                : (tipo === 'proyecto' ? 'proyecto' : 'runrate');
+            var stripClass = completada
+                ? 'completada'
+                : (vencida ? ('vencida ' + _tareasHeatClass(dias))
+                           : (tipo === 'proyecto' ? 'proyecto' : 'runrate'));
 
             var fechaHtml = '';
             if (t.fecha_limite) {
@@ -5005,10 +5007,13 @@
                   '</span>'
                 : '';
 
-            return '<div class="crm-list-row crm-list-row--tarea crm-data-row' + (t.esta_anclada ? ' pinned-row' : '') + '" ' +
+            return '<div class="crm-list-row crm-list-row--tarea crm-data-row' +
+                (completada ? ' crm-list-row--completada' : '') +
+                (t.esta_anclada ? ' pinned-row' : '') + '" ' +
                 'data-tarea-id="' + t.id + '" ' +
                 'data-vencida="' + (vencida ? '1' : '0') + '" ' +
                 'data-dias-vencida="' + dias + '" ' +
+                'data-completada="' + (completada ? '1' : '0') + '" ' +
                 'data-anclada="' + (t.esta_anclada ? '1' : '0') + '" ' +
                 'onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' +
                 '<div class="crm-list-strip ' + stripClass + '"></div>' +

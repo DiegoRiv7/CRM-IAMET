@@ -7144,6 +7144,25 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 .crm-list-row:has(.crm-list-strip.vencida):hover { border-color: #FCA5A5; }
 .crm-list-row:has(.crm-list-strip.vencida.heat-max) { border-color: #FECACA; background: #FFFBFB; }
 
+/* Tarea completada — mismo look que .tareas-card.done del calendario */
+.crm-list-strip.completada {
+    background: linear-gradient(180deg, #4ADE80 0%, #16A34A 100%);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,0.25);
+}
+.crm-list-row--completada {
+    background: #F0FDF4;
+    opacity: 0.75;
+    border-color: #BBF7D0;
+}
+.crm-list-row--completada:hover {
+    opacity: 0.92;
+    border-color: #86EFAC;
+}
+.crm-list-row--completada .tarea-titulo {
+    text-decoration: line-through;
+    color: #166534;
+}
+
 /* Alerta crítica (≥30 días vencida) */
 .crm-alert-critical {
     display: inline-flex;
