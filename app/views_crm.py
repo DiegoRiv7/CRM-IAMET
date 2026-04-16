@@ -355,13 +355,12 @@ def crm_home(request):
         ahora_tz = timezone.now()
         tabla_data_list = list(tabla_data_qs)
         for item in tabla_data_list:
-            # Actividad del calendario vencida (solo las de los últimos 30 días,
-            # para evitar falsos positivos de actividades viejas nunca cerradas)
-            limite_vencida = ahora_tz - timedelta(days=30)
+            # Actividad del calendario vencida — TODA actividad pasada no completada
+            # cuenta (sin tope de antigüedad). Si quedan actividades viejas sin cerrar,
+            # son acciones pendientes reales y la oportunidad debe seguir en rojo.
             act_mas_vencida = Actividad.objects.filter(
                 oportunidad=item,
                 fecha_fin__lt=ahora_tz,
-                fecha_fin__gte=limite_vencida,
                 completada=False,
             ).order_by('fecha_fin').first()
             # Tarea de oportunidad vencida (sin tope de antigüedad — son acciones pendientes)
@@ -788,12 +787,22 @@ def api_crm_table_data(request):
             fecha_limite__isnull=False,
             fecha_limite__lte=_now,
         )
+        # También revisar Actividad del calendario — toda actividad pasada no completada
+        # cuenta como vencida (independiente de si fue creada desde el chat o el calendario).
+        from .models import Actividad as _Actividad
+        _vencida_act_sq = _Actividad.objects.filter(
+            oportunidad=OuterRef('pk'),
+            completada=False,
+            fecha_fin__lt=_now,
+        )
         _pendiente_opp_sq = TareaOportunidad.objects.filter(
             oportunidad=OuterRef('pk'),
         ).exclude(estado='completada')
 
         items = base_qs.select_related('cliente', 'contacto', 'usuario').annotate(
-            _tiene_vencida=_Exists(_vencida_opp_sq) | _Exists(_vencida_tarea_sq),
+            _tiene_vencida=(
+                _Exists(_vencida_opp_sq) | _Exists(_vencida_tarea_sq) | _Exists(_vencida_act_sq)
+            ),
             _tiene_pendiente=_Exists(_pendiente_opp_sq),
         ).order_by('-fecha_actualizacion')
 
