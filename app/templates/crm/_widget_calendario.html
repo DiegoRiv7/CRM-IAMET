@@ -783,9 +783,6 @@
                     : 'box-shadow:0 1px 3px rgba(0,0,0,0.08);';
                 var compOpacity = ep.completada ? 'opacity:0.38;' : '';
 
-                var oppId = hasOpp ? ep.opportunity.id : null;
-                var titleClick = oppId ? ' onclick="event.stopPropagation();if(typeof window.openDetalle===\'function\')window.openDetalle('+oppId+');"' : '';
-
                 var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
                 var statusDot = '';
                 if (isNow) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:1px;"></div>';
@@ -793,7 +790,7 @@
 
                 html += '<div style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
                     '<div style="display:flex;align-items:flex-start;gap:3px;">'+statusDot+
-                    '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;"'+(oppId?' style="cursor:pointer;text-decoration:underline;text-decoration-color:'+borderColor+'44;"':'')+titleClick+'>'+woEscape(ev.title)+'</div>'+
+                    '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;">'+woEscape(ev.title)+'</div>'+
                     '</div>'+
                     (evH > 46 ? '<div style="font-size:0.63rem;color:'+mutedColor+';margin-top:2px;padding-left:'+(statusDot?'8px':'0px')+';">'+startFmt+'</div>' : '')+
                     '</div>';
@@ -958,14 +955,9 @@
                 ? 'box-shadow:0 0 0 2px #34C759,0 4px 16px rgba(52,199,89,0.18);'
                 : 'box-shadow:0 1px 4px rgba(0,0,0,0.07),0 2px 8px rgba(0,0,0,0.04);';
 
-            // Título: si tiene oportunidad, al hacer clic abre el widget de oportunidad
-            var oppId = hasOpp ? ep.opportunity.id : null;
-            var titleHTML;
-            if (oppId) {
-                titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';text-decoration:underline;text-decoration-color:'+borderColor+'44;text-underline-offset:2px;cursor:pointer;" onclick="event.stopPropagation();if(typeof window.openDetalle===\'function\')window.openDetalle('+oppId+');">'+woEscape(ev.title)+'</div>';
-            } else {
-                titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
-            }
+            // Título: el click siempre abre el panel lateral (igual que vista mes).
+            // Desde el panel se puede navegar a la oportunidad con el botón "Oportunidad".
+            var titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
 
             var wkCompOpacity = ep.completada ? 'opacity:0.38;' : '';
             html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'"' +
