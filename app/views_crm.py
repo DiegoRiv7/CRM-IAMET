@@ -355,24 +355,15 @@ def crm_home(request):
         ahora_tz = timezone.now()
         tabla_data_list = list(tabla_data_qs)
         for item in tabla_data_list:
-            # Actividad del calendario vencida — TODA actividad pasada no completada
-            # cuenta (sin tope de antigüedad). Si quedan actividades viejas sin cerrar,
-            # son acciones pendientes reales y la oportunidad debe seguir en rojo.
-            act_mas_vencida = Actividad.objects.filter(
-                oportunidad=item,
-                fecha_fin__lt=ahora_tz,
-                completada=False,
-            ).order_by('fecha_fin').first()
-            # Tarea de oportunidad vencida (sin tope de antigüedad — son acciones pendientes)
+            # Sólo se revisan TareaOportunidad (lo que muestra el widget "ACTIVIDAD
+            # PROGRAMADA"). Las Actividad del calendario de la conversación NO se
+            # consideran porque muchas nunca se cierran y causan falsos positivos.
             tarea_mas_vencida = TareaOportunidad.objects.filter(
                 oportunidad=item,
                 fecha_limite__lt=ahora_tz,
             ).exclude(estado='completada').order_by('fecha_limite').first()
-            item.tiene_actividad_vencida = bool(act_mas_vencida or tarea_mas_vencida)
-            # Días vencidos (máximo entre actividad y tarea) — 0 si no está vencida
+            item.tiene_actividad_vencida = bool(tarea_mas_vencida)
             dias = 0
-            if act_mas_vencida and act_mas_vencida.fecha_fin:
-                dias = max(dias, (ahora_tz - act_mas_vencida.fecha_fin).days)
             if tarea_mas_vencida and tarea_mas_vencida.fecha_limite:
                 dias = max(dias, (ahora_tz - tarea_mas_vencida.fecha_limite).days)
             item.dias_vencida = dias
@@ -787,22 +778,14 @@ def api_crm_table_data(request):
             fecha_limite__isnull=False,
             fecha_limite__lte=_now,
         )
-        # También revisar Actividad del calendario — toda actividad pasada no completada
-        # cuenta como vencida (independiente de si fue creada desde el chat o el calendario).
-        from .models import Actividad as _Actividad
-        _vencida_act_sq = _Actividad.objects.filter(
-            oportunidad=OuterRef('pk'),
-            completada=False,
-            fecha_fin__lt=_now,
-        )
+        # NO se revisan Actividad del calendario — muchas nunca se cierran y causan
+        # falsos positivos. Sólo TareaOportunidad y Tarea (las del widget ACTIVIDAD PROGRAMADA).
         _pendiente_opp_sq = TareaOportunidad.objects.filter(
             oportunidad=OuterRef('pk'),
         ).exclude(estado='completada')
 
         items = base_qs.select_related('cliente', 'contacto', 'usuario').annotate(
-            _tiene_vencida=(
-                _Exists(_vencida_opp_sq) | _Exists(_vencida_tarea_sq) | _Exists(_vencida_act_sq)
-            ),
+            _tiene_vencida=_Exists(_vencida_opp_sq) | _Exists(_vencida_tarea_sq),
             _tiene_pendiente=_Exists(_pendiente_opp_sq),
         ).order_by('-fecha_actualizacion')
 
