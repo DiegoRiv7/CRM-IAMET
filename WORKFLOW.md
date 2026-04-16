@@ -14,10 +14,11 @@
 |-----|-------|
 | Carpeta en servidor | `~/crm-iamet/` |
 | Rama git | `principal` |
-| Contenedor web | `crm-iamet-web-1` |
+| Compose project name | `gesti-n-de-ventas` (legado — usar `-p gesti-n-de-ventas` siempre) |
+| Contenedor web | `gesti-n-de-ventas-web-1` |
 | Contenedor BD | `gesti-n-de-ventas-db-1` |
 | Base de datos | `crm_iamet_db` |
-| Puerto | `8007` |
+| Puerto host | `8000` (mapeo `8000:8000` — nginx hace proxy_pass a `127.0.0.1:8000`) |
 | Variables de entorno | `~/crm-iamet/.env` |
 
 ### Pruebas — `http://crm.pruebas.nethive.mx`
@@ -72,22 +73,43 @@ sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restar
 > Cuando agregues archivos nuevos a `app/static/`, siempre corre collectstatic manualmente.
 
 ### Subir cambios a PRODUCCIÓN
+> **CRÍTICO:** El compose project name de producción es `gesti-n-de-ventas` (legado).
+> SIEMPRE usar `-p gesti-n-de-ventas` en los comandos de compose, si no se crea
+> un stack nuevo vacío `crm-iamet-*` que NO tiene los datos de producción.
+
 ```bash
 # En Mac — merge y push (solo cuando pruebas está verificado)
 git checkout principal
 git merge pruebas
-git push crm-iamet principal
+git push origin principal
 
 # En servidor — aplicar cambios
 cd ~/crm-iamet
 git pull origin principal
-sudo docker compose restart web
+
+# Si SOLO cambió Python/templates (sin requirements.txt ni static):
+sudo docker compose -p gesti-n-de-ventas restart web
+
+# Si cambió requirements.txt (deps nuevas → rebuild):
+sudo docker compose -p gesti-n-de-ventas build web
+sudo docker compose -p gesti-n-de-ventas up -d --no-deps web
+
+# Si cambió app/static/* (collectstatic):
+sudo docker exec gesti-n-de-ventas-web-1 python manage.py collectstatic --noinput
+
+# Verificar
+sudo docker logs gesti-n-de-ventas-web-1 --tail 50
 ```
+
+> **NOTA sobre nginx:** producción es `proxy_pass http://127.0.0.1:8000;` en
+> `/etc/nginx/sites-enabled/crm.iamet.mx`. Si después de un deploy ves 502, lo
+> primero a revisar es que ese puerto coincida con el mapeo del contenedor
+> (`docker ps` debe mostrar `0.0.0.0:8000->8000/tcp` para `gesti-n-de-ventas-web-1`).
 
 ### Ver logs en tiempo real
 ```bash
 # Producción
-sudo docker logs crm-iamet-web-1 --tail 50 -f
+sudo docker logs gesti-n-de-ventas-web-1 --tail 50 -f
 
 # Pruebas
 sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml logs web -f
@@ -97,7 +119,7 @@ sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml logs w
 
 ```bash
 # Producción
-sudo docker exec -it crm-iamet-web-1 python manage.py COMANDO
+sudo docker exec -it gesti-n-de-ventas-web-1 python manage.py COMANDO
 
 # Pruebas
 sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec web python manage.py COMANDO
@@ -105,8 +127,8 @@ sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec w
 
 ### Reiniciar contenedores
 ```bash
-# Producción
-cd ~/crm-iamet && sudo docker compose restart web
+# Producción (recordar -p gesti-n-de-ventas)
+cd ~/crm-iamet && sudo docker compose -p gesti-n-de-ventas restart web
 
 # Pruebas
 cd ~/crm-pruebas && sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml restart web
@@ -169,5 +191,5 @@ sudo docker compose exec web python manage.py descargar_archivos_bitrix
 ## Nginx
 - Configuración: `/etc/nginx/sites-enabled/`
 - Config de pruebas: `crm.pruebas.nethive.mx.conf` → puerto 8001
-- Config de producción: `crm.iamet.mx` → puerto 8007
+- Config de producción: `crm.iamet.mx` → puerto 8000
 - Recargar nginx: `sudo systemctl reload nginx`

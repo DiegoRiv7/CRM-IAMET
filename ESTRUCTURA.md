@@ -87,7 +87,7 @@ Gesti-n-de-ventas/
 ## Cómo funciona el CRM (flujo de una request)
 
 1. Usuario abre `crm.iamet.mx/app/todos/`
-2. nginx recibe → proxy_pass al contenedor Docker puerto 8007 (prod) / 8001 (pruebas)
+2. nginx recibe → proxy_pass al contenedor Docker puerto 8000 (prod) / 8001 (pruebas)
 3. Django → `views_crm.py: crm_home()` → renderiza `crm_home.html`
 4. `crm_home.html` incluye todos los partials vía `{% include %}`
 5. `_styles.html` carga `crm.css` desde nginx (estático, cacheado)
@@ -135,11 +135,19 @@ var _ING_CONFIG = { firstName, lastName };
 ```yaml
 web:
   volumes:
-    - .:/app                    # Código fuente bind mount
+    - .:/app                    # Código fuente bind mount (git pull aplica al instante)
     - media_files:/app/media    # Volumen Docker para uploads
-  ports: 8000:8000
+  ports: 8000:8000              # nginx hace proxy_pass a 127.0.0.1:8000
   networks: nginx_default       # Red externa compartida con nginx
 ```
+
+> **Compose project name**: `gesti-n-de-ventas` (nombre legado, no coincide con
+> el directorio `~/crm-iamet`). Los contenedores son `gesti-n-de-ventas-web-1`
+> y `gesti-n-de-ventas-db-1`. SIEMPRE pasa `-p gesti-n-de-ventas` a los
+> comandos compose o se crea un stack nuevo vacío bajo `crm-iamet-*`:
+> ```bash
+> sudo docker compose -p gesti-n-de-ventas <comando>
+> ```
 
 ### docker-compose.pruebas.yml (PRUEBAS)
 ```yaml
@@ -155,8 +163,10 @@ web:
 ```nginx
 location /static/ { alias /home/iamet2026/crm-iamet/staticfiles/; }
 location /media/  { alias /home/iamet2026/crm-iamet/media/; }
-location /        { proxy_pass http://127.0.0.1:8007; }
+location /        { proxy_pass http://127.0.0.1:8000; }
 ```
+> El contenedor `gesti-n-de-ventas-web-1` mapea `8000:8000`. Si el `proxy_pass`
+> y el puerto del contenedor no coinciden, nginx devuelve 502.
 
 ### nginx (pruebas: crm.pruebas.nethive.mx)
 ```nginx
