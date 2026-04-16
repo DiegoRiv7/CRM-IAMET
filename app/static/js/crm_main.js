@@ -125,7 +125,9 @@
                     console.log('[PIN] Resultado:', anclada ? 'ANCLADA' : 'DESANCLADA');
 
                     // 1) Actualizar TODOS los .crm-pin con este oppId (original + clones en kanban)
-                    document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]').forEach(function(p){
+                    var pinsFound = document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]');
+                    console.log('[PIN] Pins encontrados:', pinsFound.length);
+                    pinsFound.forEach(function(p){
                         if (p.classList.contains('tarea-action-btn')) return;
                         p.classList.toggle('pinned', anclada);
                         var svg = p.querySelector('svg');
@@ -136,9 +138,9 @@
                     });
 
                     // 2) Actualizar TODAS las cards/rows originales (no clones) con este oppId
-                    //    Los clones del kanban se re-renderizan automáticamente por el MutationObserver
                     var originalCard = document.querySelector('#crmCardsGrid .crm-postit[data-opp-id="' + oppId + '"]');
                     var originalRow  = document.querySelector('#crmListBody .crm-list-row[data-opp-id="' + oppId + '"]');
+                    console.log('[PIN] originalCard:', !!originalCard, 'originalRow:', !!originalRow);
                     [originalCard, originalRow].forEach(function(node){
                         if (!node) return;
                         node.dataset.anclada = anclada ? '1' : '0';
@@ -184,10 +186,17 @@
                         reubicar(document.getElementById('crmListBody'),   originalRow);
                     }
 
-                    // 4) Re-render kanban (el MutationObserver debería detectarlo, pero forzamos por seguridad)
+                    // 4) Re-render kanban
                     if (typeof window._crmRenderKanban === 'function') {
                         var kv = document.getElementById('crmViewKanban');
-                        if (kv && kv.style.display !== 'none') window._crmRenderKanban();
+                        console.log('[PIN] Kanban visible:', kv ? kv.style.display : 'NO EXISTE');
+                        if (kv && kv.style.display !== 'none') {
+                            console.log('[PIN] Re-rendering kanban...');
+                            window._crmRenderKanban();
+                            console.log('[PIN] Kanban re-rendered ✓');
+                        }
+                    } else {
+                        console.warn('[PIN] _crmRenderKanban NO está definida');
                     }
                 });
             })(pin);
