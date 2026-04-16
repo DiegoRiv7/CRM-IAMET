@@ -201,8 +201,29 @@
 
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
-        <!-- ═══ BARRA TABS + STATS + BÚSQUEDA + FILTROS ═══ -->
-        <div class="crm-bar">
+        <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
+        <div class="crm-bar {% if tab_activo == 'crm' %}crm-bar--unified{% endif %}">
+            {% if tab_activo == 'crm' %}
+            <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
+            <div class="crm-bar-left" id="crmBarLeft">
+                <button type="button" class="crm-facet-btn crm-facet-add" id="btnAddFacet" title="Agregar filtro">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Filtro</span>
+                </button>
+                <button type="button" class="crm-facet-btn crm-facet-sort" id="btnSortMenu" title="Ordenar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                    <span id="sortLabel">Ordenar</span>
+                </button>
+                <button type="button" class="crm-facet-btn crm-facet-export" id="btnExportExcelBar" title="Exportar a Excel">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 001 1h4M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                    <span>Excel</span>
+                </button>
+                <button type="button" class="crm-facet-btn" id="btnToggleCrmView" title="Cambiar vista: Lista → Tarjetas → Tabla" onclick="toggleCrmView()">
+                    <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <button type="button" class="crm-facet-btn crm-facet-clear" id="btnFacetClear" style="display:none;">Limpiar todo</button>
+            </div>
+            {% endif %}
             <div class="crm-tabs">
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
@@ -219,6 +240,27 @@
                 </a>
             </div>
             <div class="crm-bar-right">
+                {% if tab_activo == 'crm' %}
+                <!-- Periodo + vendedor + nueva oportunidad (antes en .crm-facet-bar) -->
+                <div class="crm-period-pills" id="crmPeriodPills">
+                    <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <span id="pillPeriodoLabel">Periodo</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    {% if es_supervisor %}
+                    <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span id="pillVendedorLabel">Vendedores</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    {% endif %}
+                </div>
+                <button type="button" class="crm-facet-btn crm-facet-new" id="btnNegociacion" title="Nueva oportunidad">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nuevo</span>
+                </button>
+                {% endif %}
                 <!-- Inputs ocultos: crm_main.js sigue leyéndolos -->
                 <div style="display:none;" id="crmHiddenPeriodInputs">
                     <select id="mesFilter">
@@ -362,53 +404,9 @@
         })();
         </script>
 
-        <!-- ═══ FACET BAR (estilo HubSpot / Linear) ═══ -->
-        <div class="crm-facet-bar" id="crmFacetBar">
+        <!-- Chips activos (debajo de la barra unificada) -->
+        <div class="crm-facet-chips-row" id="crmFacetChipsRow">
             <div class="crm-facet-chips" id="crmFacetChips"></div>
-
-            <button type="button" class="crm-facet-btn crm-facet-add" id="btnAddFacet" title="Agregar filtro">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>Filtro</span>
-            </button>
-
-            <button type="button" class="crm-facet-btn crm-facet-sort" id="btnSortMenu" title="Ordenar">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-                <span id="sortLabel">Ordenar</span>
-            </button>
-
-            <button type="button" class="crm-facet-btn crm-facet-export" id="btnExportExcelBar" title="Exportar a Excel">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 001 1h4M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-                <span>Excel</span>
-            </button>
-
-            <button type="button" class="crm-facet-btn" id="btnToggleCrmView" title="Cambiar vista: Lista → Tarjetas → Tabla" onclick="toggleCrmView()">
-                <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
-
-            <button type="button" class="crm-facet-btn crm-facet-clear" id="btnFacetClear" style="display:none;">Limpiar todo</button>
-
-            <div style="flex:1;"></div>
-
-            <!-- Periodo: mes+año unificado -->
-            <div class="crm-period-pills" id="crmPeriodPills">
-                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    <span id="pillPeriodoLabel">Periodo</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                {% if es_supervisor %}
-                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                    <span id="pillVendedorLabel">Vendedores</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                {% endif %}
-            </div>
-
-            <button type="button" class="crm-facet-btn crm-facet-new" id="btnNegociacion" title="Nueva oportunidad">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>Nuevo</span>
-            </button>
         </div>
 
         <!-- VISTA CARDS (unica y predeterminada) -->
@@ -2240,14 +2238,15 @@
         { k: 'monto:asc',  lbl: 'Monto: menor a mayor', field: 'monto', v: 'asc'  }
     ];
 
-    var bar = document.getElementById('crmFacetBar');
-    var hasFacetBar = !!bar;
+    // La facet-bar se fusionó con la crm-bar (unificada). Detectamos su presencia
+    // por btnAddFacet (los botones izquierdos viven ahora en .crm-bar-left).
+    var btnAdd      = document.getElementById('btnAddFacet');
+    var hasFacetBar = !!btnAdd;
     var pillPeriodoEl = document.getElementById('pillPeriodo');
-    // Si no hay facet bar ni pills, no hay nada que inicializar.
-    if (!bar && !pillPeriodoEl) return;
+    // Si no hay facet ni pills, no hay nada que inicializar.
+    if (!btnAdd && !pillPeriodoEl) return;
 
     var chipsEl     = document.getElementById('crmFacetChips');
-    var btnAdd      = document.getElementById('btnAddFacet');
     var btnSort     = document.getElementById('btnSortMenu');
     var btnClear    = document.getElementById('btnFacetClear');
     var btnExport   = document.getElementById('btnExportExcelBar');

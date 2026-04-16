@@ -5862,6 +5862,42 @@
     background: transparent !important;
 }
 
+/* ═══ BARRA UNIFICADA (CRM tab): facet-actions (izq) + tabs (centro) + period+CTA (der) ═══ */
+.crm-page-sidebar .crm-bar.crm-bar--unified {
+    justify-content: space-between !important;
+    gap: 10px;
+    padding: 10px 14px !important;
+}
+.crm-bar--unified .crm-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 0;
+    min-width: 0;
+}
+.crm-bar--unified > .crm-tabs {
+    margin: 0 !important;          /* override "margin: 0 auto" general */
+    flex: 0 0 auto;
+}
+.crm-page-sidebar .crm-bar.crm-bar--unified .crm-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: flex-end;
+    position: static;              /* override absolute positioning */
+    transform: none;
+    margin-left: 0 !important;
+}
+/* Chips bajo la barra — sólo aparece la fila si hay chips */
+.crm-facet-chips-row {
+    padding: 6px 14px 8px;
+}
+.crm-facet-chips-row:has(.crm-facet-chips:empty) {
+    display: none;
+}
+
 /* ═══ FACET BAR (filtros estilo HubSpot / Linear) ═══ */
 .crm-facet-bar {
     display: flex;
