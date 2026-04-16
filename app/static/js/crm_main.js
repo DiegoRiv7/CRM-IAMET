@@ -114,13 +114,15 @@
             (function(clickedPin){
                 var oppId = (pidAttr || '').replace(/\s/g, '').replace(/\u00A0/g, '');
                 if (!oppId) return;
+                console.log('[PIN] Toggle pin para opp:', oppId);
                 var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
                 fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
                 }).then(function(r) { return r.json(); }).then(function(data) {
-                    if (!data.success) return;
+                    if (!data.success) { console.warn('[PIN] API respondió sin success:', data); return; }
                     var anclada = !!data.anclada;
+                    console.log('[PIN] Resultado:', anclada ? 'ANCLADA' : 'DESANCLADA');
 
                     // 1) Actualizar TODOS los .crm-pin con este oppId (original + clones en kanban)
                     document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]').forEach(function(p){
@@ -3169,11 +3171,6 @@
                 loadAllClientesPanels();
                 return;
             }
-            // Guardar estado de vencida ANTES del refresh para detectar cambios
-            var _prevVencidaMap = {};
-            document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(r){
-                _prevVencidaMap[r.dataset.oppId] = r.dataset.vencida === '1';
-            });
             var vendedores = getVendedoresParam();
             var url = '/app/api/crm-table-data/?tab=' + currentTab + '&mes=' + currentMes + '&anio=' + currentAnio;
             if (vendedores) url += '&vendedores=' + vendedores;
@@ -3223,52 +3220,51 @@
                     bindTableEvents();
                     populateIslandFilters();
 
-                    // Sincronizar data-attributes de cards/rows del nuevo list/cards view
-                    // y detectar cambios de vencida para animación de "healing"
+                    // ── Sync reactivo: actualizar cards/rows SSR con datos frescos del API ──
+                    // Esto permite que cambios (completar tarea, etc.) se reflejen sin
+                    // recargar la página.
+                    try {
                     var _apiMap = {};
                     (data.rows || []).forEach(function(r){ _apiMap[String(r.id)] = r; });
-                    var _heatClasses = ['card-vencida','heat-1','heat-2','heat-3','heat-4','heat-5','heat-max'];
-                    var _warmClasses = ['warm-1','warm-2','warm-3'];
+                    var _heatCls = ['card-vencida','heat-1','heat-2','heat-3','heat-4','heat-5','heat-max'];
+                    var _warmCls = ['warm-1','warm-2','warm-3'];
+                    var _hadHealing = false;
                     document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(el){
                         var apiRow = _apiMap[el.dataset.oppId];
                         if (!apiRow) return;
-                        var wasVencida = _prevVencidaMap[el.dataset.oppId];
+                        var wasVencida = el.dataset.vencida === '1';
                         var nowVencida = !!apiRow.tiene_actividad_vencida;
+                        // Siempre sincronizar data-attributes
                         el.dataset.vencida = nowVencida ? '1' : '0';
-                        el.dataset.diasVencida = nowVencida ? (el.dataset.diasVencida || '0') : '0';
-
-                        // Quitar TODAS las clases de vencida/heat/warm del postit card
+                        if (!nowVencida) el.dataset.diasVencida = '0';
+                        // Quitar clases de vencida/heat/warm si ya no está vencida
                         if (!nowVencida) {
-                            _heatClasses.forEach(function(c){ el.classList.remove(c); });
-                            _warmClasses.forEach(function(c){ el.classList.remove(c); });
+                            _heatCls.concat(_warmCls).forEach(function(c){ el.classList.remove(c); });
+                            var strip = el.querySelector('.crm-list-strip');
+                            if (strip) {
+                                strip.className = 'crm-list-strip ' +
+                                    ((apiRow.tipo_negociacion || 'runrate') === 'proyecto' ? 'proyecto' : 'runrate');
+                            }
                         }
-
-                        // Strip de color (list rows)
-                        var strip = el.querySelector('.crm-list-strip');
-                        if (strip && !nowVencida) {
-                            strip.className = 'crm-list-strip ' + (apiRow.tipo_negociacion === 'proyecto' ? 'proyecto' : 'runrate');
-                        }
-
-                        // Healing: era vencida, ya no lo es → animación
+                        // Healing animation: de vencida → no vencida
                         if (wasVencida && !nowVencida) {
+                            _hadHealing = true;
                             el.classList.add('crm-healing');
-                            el.addEventListener('animationend', function _h(){
+                            setTimeout(function(){
                                 el.classList.remove('crm-healing');
-                                el.removeEventListener('animationend', _h);
-                                if (typeof applySortToViews === 'function') applySortToViews();
-                                if (typeof window._crmRenderKanban === 'function') window._crmRenderKanban();
-                            });
+                            }, 1300);
                         }
                     });
-                    // Re-sort y re-render kanban (si no hay healing, se ejecuta directo)
-                    var anyHealing = document.querySelector('.crm-healing');
-                    if (!anyHealing) {
+                    // Re-sort y re-render después de un breve delay para la animación
+                    setTimeout(function(){
                         if (typeof applySortToViews === 'function') applySortToViews();
                         if (typeof window._crmRenderKanban === 'function') {
                             var kv = document.getElementById('crmViewKanban');
                             if (kv && kv.style.display !== 'none') window._crmRenderKanban();
                         }
-                    }
+                        if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
+                    }, _hadHealing ? 1400 : 50);
+                    } catch(syncErr) { console.error('[CRM] sync error:', syncErr); }
                 })
                 .catch(function (err) { console.error('Error refreshing table:', err); });
         }
