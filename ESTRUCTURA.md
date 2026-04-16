@@ -172,11 +172,14 @@ web:
 ### nginx (producción: crm.iamet.mx)
 ```nginx
 location /static/ { alias /home/iamet2026/crm-iamet/staticfiles/; }
-location /media/  { alias /home/iamet2026/crm-iamet/media/; }
+location /media/  { alias /var/lib/docker/volumes/crm-iamet_media_files/_data/; }
 location /        { proxy_pass http://127.0.0.1:8000; }
 ```
-> El contenedor `gesti-n-de-ventas-web-1` mapea `8000:8000`. Si el `proxy_pass`
-> y el puerto del contenedor no coinciden, nginx devuelve 502.
+> **static/** se sirve desde el host (collectstatic los pone en `~/crm-iamet/staticfiles/`).
+> **media/** se sirve desde el Docker volume `crm-iamet_media_files` (avatares, PDFs del drive,
+> facturas subidas). El path del host `~/crm-iamet/media/` NO contiene los archivos porque
+> el volume mount del contenedor lo overridea.
+> **proxy_pass** a 127.0.0.1:8000 → si no coincide con el puerto del contenedor → 502.
 
 ### nginx (pruebas: crm.pruebas.nethive.mx)
 ```nginx
