@@ -1,0 +1,142 @@
+{% load static %}
+<!-- ═══ CRM SIDEBAR VERTICAL IZQUIERDO ═══ -->
+<aside class="crm-sidebar" id="crmSidebar">
+
+    <!-- Logo IAMET -->
+    <a href="/app/todos/" class="crm-sb-logo" title="IAMET · Evolución Tecnológica">
+        <img class="crm-sb-logo-chip" src="{% static 'images/iamet-logo.png' %}" alt="IAMET">
+        <span class="crm-sb-logo-text">IAMET</span>
+    </a>
+
+    <!-- Top nav -->
+    <nav class="crm-sb-nav">
+        <!-- Spotlight (lupa global) -->
+        <button type="button" class="crm-sb-btn" id="btnSpotlight"
+            onclick="if(typeof openSpotlight==='function')openSpotlight();"
+            data-tooltip="Buscar  ·  Space Space">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <span class="crm-sb-label">Buscar</span>
+        </button>
+
+        <!-- Alertas (Notificaciones) -->
+        <button type="button" class="crm-sb-btn" id="btnNotificaciones"
+            onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';"
+            data-tooltip="Alertas">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="crm-sb-label">Alertas</span>
+            <span id="notifBadge" class="crm-sb-dot" style="display:none;"></span>
+        </button>
+
+        <!-- CRM -->
+        <button type="button" class="crm-sb-btn active" id="btnCRM" data-tooltip="CRM">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/>
+            </svg>
+            <span class="crm-sb-label">CRM</span>
+        </button>
+
+        <!-- Tareas -->
+        <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}</span>
+        </button>
+
+        {% if es_supervisor %}
+        <!-- Proyectos -->
+        <button type="button" class="crm-sb-btn" id="btnProyectos" onclick="proyectosAbrir()" data-tooltip="Proyectos">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            </svg>
+            <span class="crm-sb-label">Proyectos</span>
+        </button>
+        {% endif %}
+
+        <!-- Calendario -->
+        <button type="button" class="crm-sb-btn" id="btnCalendario" onclick="calendarioAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}</span>
+        </button>
+
+        <!-- Correo -->
+        <button type="button" class="crm-sb-btn" id="btnMail" onclick="mailAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}</span>
+        </button>
+
+        <!-- Muro -->
+        <button type="button" class="crm-sb-btn" id="btnMuro" onclick="muroAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}</span>
+        </button>
+
+        {% if mis_grupos %}
+        <!-- Grupo -->
+        <button type="button" class="crm-sb-btn" id="btnGrupo" onclick="grupoAbrir()" data-tooltip="{% if es_supervisor %}Grupos{% else %}Mi grupo{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span class="crm-sb-label">{% if es_supervisor %}Grupos{% else %}Grupo{% endif %}</span>
+            <span id="grupoBadge" class="crm-sb-dot" style="display:none;"></span>
+        </button>
+        {% endif %}
+    </nav>
+
+    <!-- Bottom actions -->
+    <div class="crm-sb-bottom">
+        <!-- Novedades -->
+        <a href="/app/novedades/" target="_blank" class="crm-sb-btn" data-tooltip="Novedades">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h8"/>
+            </svg>
+            <span class="crm-sb-label">Novedades</span>
+        </a>
+
+        {% if es_supervisor %}
+        <!-- Admin -->
+        <button type="button" class="crm-sb-btn" id="btnAdminPanel"
+            onclick="var ao=document.getElementById('widgetAdmin');if(ao){ao.classList.add('active');ao.classList.remove('closing');}"
+            data-tooltip="Administración">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span class="crm-sb-label">Admin</span>
+        </button>
+        {% endif %}
+
+        <!-- Perfil -->
+        <button type="button" class="crm-sb-avatar"
+            onclick="var wp=document.getElementById('widgetPerfil'); if(wp) wp.classList.add('active');"
+            data-tooltip="{{ usuario.get_full_name|default:usuario.username }}">
+            {% if request.user.userprofile.avatar %}
+            <img src="{{ request.user.userprofile.avatar.url }}" alt="avatar">
+            {% else %}
+            <span>{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</span>
+            {% endif %}
+        </button>
+    </div>
+
+</aside>
+
+<script>
+(function(){
+    var v = localStorage.getItem('crmView');
+    if (v === 'tareas' || v === 'proyectos') {
+        var c = document.getElementById('btnCRM'); if (c) c.classList.remove('active');
+        var b = document.getElementById(v === 'tareas' ? 'btnTareas' : 'btnProyectos');
+        if (b) b.classList.add('active');
+    }
+})();
+</script>

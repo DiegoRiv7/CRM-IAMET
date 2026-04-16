@@ -15,6 +15,21 @@ var _CRM_CONFIG = {
 </script>
 <script src="{% static 'js/crm_main.js' %}"></script>
 <script>
+/* Contador workspace: # real de filas (excluye Ganado/Perdido/Pagado) */
+(function(){
+    function updateCount(){
+        var el = document.getElementById('crmWorkspaceCount');
+        if (!el) return;
+        var listBody = document.getElementById('crmListBody');
+        var grid = document.getElementById('crmCardsGrid');
+        var n = 0;
+        if (listBody) n = listBody.querySelectorAll('.crm-list-row').length;
+        else if (grid) n = grid.querySelectorAll('.crm-postit').length;
+        el.textContent = n;
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', updateCount);
+    else updateCount();
+})();
 /* KPI facturado: siempre usar el total real del endpoint desglose */
 (function() {
     var params = new URLSearchParams(window.location.search);

@@ -12,9 +12,8 @@
         #crmViewCards { position: relative; min-height: 560px; }
         /* Cuando el sidebar está abierto, aseguramos altura suficiente */
         #crmViewCards.crmFocus-open { min-height: 720px; }
-        /* Fix flash: grid oculto hasta que el filtro inicial se aplique */
-        #crmCardsGrid { opacity: 0; transition: opacity 0.18s ease; }
-        #crmCardsGrid.crmFocus-ready { opacity: 1; }
+        /* Grid visible por default (sidebar focus-etapa eliminado) */
+        #crmCardsGrid { opacity: 1; }
         /* Sidebar embebido DENTRO del bloque de cards */
         .crmFocus-sidebar {
             position: absolute; left: 0; top: 0; bottom: 0; width: 300px;
@@ -202,19 +201,34 @@
 
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
-        <!-- ═══ BARRA TABS + STATS + BÚSQUEDA + FILTROS ═══ -->
-        <div class="crm-bar">
-            <div class="crm-tabs">
-                {% if tab_activo == 'crm' %}
-                <button type="button" class="crmFocus-toggleBtn" id="crmFocusToggleBtn" title="Focus por etapa">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                    </svg>
+        <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
+        <div class="crm-bar {% if tab_activo == 'crm' %}crm-bar--unified{% endif %}">
+            {% if tab_activo == 'crm' %}
+            <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
+            <div class="crm-bar-left" id="crmBarLeft">
+                <button type="button" class="crm-facet-btn crm-facet-add" id="btnAddFacet" title="Agregar filtro">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Filtro</span>
                 </button>
-                {% endif %}
+                <button type="button" class="crm-facet-btn crm-facet-sort" id="btnSortMenu" title="Ordenar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                    <span id="sortLabel">Ordenar</span>
+                </button>
+                <button type="button" class="crm-facet-btn crm-facet-export" id="btnExportExcelBar" title="Exportar a Excel">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 001 1h4M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                    <span>Excel</span>
+                </button>
+                <button type="button" class="crm-facet-btn" id="btnToggleCrmView" title="Cambiar vista: Lista → Tarjetas → Tabla" onclick="toggleCrmView()">
+                    <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <button type="button" class="crm-facet-btn crm-facet-clear" id="btnFacetClear" style="display:none;">Limpiar todo</button>
+            </div>
+            {% endif %}
+            <div class="crm-tabs">
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
+                    {% if tab_activo == 'crm' %}<span class="crm-tab-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>{% endif %}
                 </a>
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
@@ -226,25 +240,52 @@
                 </a>
             </div>
             <div class="crm-bar-right">
-                <div class="crm-bar-stats">
-                    {% if tab_activo == 'clientes' %}
-                    <div style="background:#F2F2F7;border-radius:20px;padding:2px;display:inline-flex;gap:2px;">
-                        <button id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:#0052D4;color:#fff;">Oportunidades</button>
-                        <button id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" style="padding:4px 14px;border-radius:18px;border:none;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:#86868B;">Prospectos</button>
-                    </div>
-                    {% elif tab_activo == 'crm' %}
-                    <button type="button" id="btnNegociacion" title="Nueva oportunidad"
-                        style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;background:#0052D4;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,82,212,0.25);transition:all 0.15s;"
-                        onmouseover="this.style.background='#0041a8';this.style.transform='translateY(-1px)';"
-                        onmouseout="this.style.background='#0052D4';this.style.transform='none';">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
+                {% if tab_activo == 'crm' %}
+                <!-- Periodo + vendedor + nueva oportunidad (antes en .crm-facet-bar) -->
+                <div class="crm-period-pills" id="crmPeriodPills">
+                    <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <span id="pillPeriodoLabel">Periodo</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    {% if es_supervisor %}
+                    <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span id="pillVendedorLabel">Vendedores</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     {% endif %}
                 </div>
-                <!-- Panel de filtros inline: se expande entre los stats y el botón -->
-                <div class="crm-filter-dropdown" id="crmFilterPanel">
+                <button type="button" class="crm-facet-btn crm-facet-new" id="btnNegociacion" title="Nueva oportunidad">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nuevo</span>
+                </button>
+                {% endif %}
+                <!-- Inputs ocultos: crm_main.js sigue leyéndolos -->
+                <div style="display:none;" id="crmHiddenPeriodInputs">
+                    <select id="mesFilter">
+                        {% for code, name in mes_choices %}
+                        <option value="{{ code }}" {% if code == mes_filter %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="anioFilter">
+                        <option value="todos" {% if anio_filter == 'todos' %}selected{% endif %}>Todos</option>
+                        {% for y in years_range %}
+                        <option value="{{ y|stringformat:'i' }}" {% if y|stringformat:'i' == anio_filter %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if es_supervisor %}
+                    <label><input type="checkbox" value="all" id="vfAll" checked><span>Todos</span></label>
+                    {% for v in vendedores_list %}
+                    <label><input type="checkbox" class="vf-user" value="{{ v.id }}" data-name="{{ v.get_full_name|default:v.username }}"><span>{{ v.get_full_name|default:v.username }}</span></label>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                <!-- Modo toggle movido al period bar (abajo) en tabs de clientes -->
+
+                <!-- Panel de filtros legado: OCULTO — los inputs se conservan como estado interno
+                     para no romper listeners de crm_main.js. La UI real vive en .crm-facet-bar abajo. -->
+                <div class="crm-filter-dropdown" id="crmFilterPanel" style="display:none !important;">
                     <div class="crm-filter-item">
                         <label>Cliente</label>
                         <select id="filterCliente">
@@ -320,6 +361,12 @@
                         <label>Hasta</label>
                         <input type="date" id="filterHasta" style="font-size:0.75rem;">
                     </div>
+                    <!-- Nuevos filtros (ocultos, escritos por el facet bar popover) -->
+                    <input type="hidden" id="filterMontoMin" value="">
+                    <input type="hidden" id="filterMontoMax" value="">
+                    <input type="hidden" id="filterProbMin" value="">
+                    <input type="hidden" id="filterProbMax" value="">
+                    <input type="hidden" id="filterMesCierre" value="">
                     <div class="crm-filter-actions">
                         <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
@@ -334,128 +381,79 @@
                         <button type="button" class="crm-filter-clear" id="btnClearFilters">Limpiar</button>
                     </div>
                 </div>
-                <button type="button" class="crm-filter-toggle" id="btnToggleFilterPanel" title="Filtros avanzados"
-                    style="{% if tab_activo == 'clientes' %}display:none;{% endif %}">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
-                    </svg>
-                </button>
-                {% if tab_activo == 'crm' %}
-                <button type="button" id="btnToggleCrmView" title="Cambiar vista" onclick="toggleCrmView()"
-                    style="padding:4px 8px;border:1px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;color:#6B7280;font-size:0.7rem;">
-                    <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                    </svg>
-                </button>
-                {% endif %}
-                <div class="crm-search-wrap" {% if tab_activo == 'clientes' or tab_activo == 'prospeccion' %}style="display:none;"{% endif %}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.5">
-                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input type="text" class="crm-search-input" id="crmSearch"
-                        placeholder="{% if request.user.userprofile.language == 'en' %}Search opportunity...{% else %}Buscar oportunidad...{% endif %}">
-                </div>
+                <!-- Search interno reemplazado por Spotlight global (sidebar · Space Space) -->
+                <input type="hidden" id="crmSearch" value="">
             </div>
         </div>
         {% if tab_activo == 'crm' %}
+        <!-- Early script: aplica la vista guardada en localStorage ANTES del render para evitar flash -->
+        <script>
+        (function(){
+            try {
+                var saved = localStorage.getItem('crmViewMode') || 'list';
+                if (saved !== 'list' && saved !== 'kanban') saved = 'list';
+                var s = document.createElement('style');
+                s.id = '_crmEarlyViewHide';
+                // Oculta las vistas no elegidas con !important para sobrescribir inline style="display:none"
+                // Sin !important para PODER removerlo con .remove() cuando _applyCrmView corra.
+                var hideList   = saved !== 'list'   ? '#crmViewList{display:none;}'   : '#crmViewList{display:flex;}';
+                var hideKanban = saved !== 'kanban' ? '#crmViewKanban{display:none;}' : '#crmViewKanban{display:flex;}';
+                s.textContent = hideList + hideKanban + '#crmViewCards{display:none;}#crmViewTable{display:none;}';
+                document.head.appendChild(s);
+            } catch(e) {}
+        })();
+        </script>
+
+        <!-- Chips activos (debajo de la barra unificada) -->
+        <div class="crm-facet-chips-row" id="crmFacetChipsRow">
+            <div class="crm-facet-chips" id="crmFacetChips"></div>
+        </div>
+
         <!-- VISTA CARDS (unica y predeterminada) -->
-        <div id="crmViewCards">
+        <div id="crmViewCards" style="display:none;">
             <style>
                 #crmViewCards {
-                    background: #F4F5F7;
-                    background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
-                    background-size: 24px 24px;
-                    border-radius: 16px;
-                    padding: 28px 24px;
-                    margin: 0 -8px;
+                    background: transparent;
+                    padding: 8px 0 24px;
+                    margin: 0;
                 }
                 .crm-postit {
                     background: #fff;
                     border: 1px solid #E5E7EB;
-                    border-radius: 16px;
+                    border-radius: 14px;
                     padding: 22px 20px 16px;
+                    padding-top: 24px;
                     cursor: pointer;
                     position: relative;
                     overflow: hidden;
-                    box-shadow: 2px 6px 18px -4px rgba(0,0,0,0.1);
+                    box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.03);
                     display: flex;
                     flex-direction: column;
                     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
                 }
                 .crm-postit:hover {
-                    transform: translateY(-6px) rotate(0deg) !important;
-                    box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
-                    z-index: 20;
-                    border-color: #93C5FD;
+                    transform: translateY(-3px);
+                    box-shadow: 0 12px 24px -8px rgba(15,23,42,0.12), 0 4px 8px -2px rgba(15,23,42,0.06);
+                    border-color: #CBD5E1;
                 }
-                .crm-postit:nth-child(6n+1) { transform: rotate(-1.2deg); }
-                .crm-postit:nth-child(6n+2) { transform: rotate(1.8deg); }
-                .crm-postit:nth-child(6n+3) { transform: rotate(-0.6deg); }
-                .crm-postit:nth-child(6n+4) { transform: rotate(1.3deg); }
-                .crm-postit:nth-child(6n+5) { transform: rotate(-1.6deg); }
-                .crm-postit:nth-child(6n+6) { transform: rotate(0.7deg); }
-                .crm-pin {
-                    position: absolute; top: 6px; right: 6px; z-index: 6;
+                .crm-postit > .crm-pin {
+                    position: absolute; top: 8px; right: 8px; z-index: 6;
                     cursor: pointer; transition: transform 0.15s, opacity 0.15s;
                     opacity: 0;
                 }
-                .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
-                .crm-postit:hover .crm-pin { opacity: 0.3; }
-                .crm-postit:hover .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
-                .crm-postit:hover .crm-pin.pinned { opacity: 1; }
+                .crm-postit > .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
+                .crm-postit:hover > .crm-pin { opacity: 0.3; }
+                .crm-postit:hover > .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
+                .crm-postit:hover > .crm-pin.pinned { opacity: 1; }
             </style>
 
-            <!-- ═══ SIDEBAR EMBEBIDO: CRM Focus ═══ -->
-            <aside class="crmFocus-sidebar" id="crmFocusSidebar">
-                <div class="crmFocus-head">
-                    <div class="crmFocus-brand">
-                        <div class="crmFocus-brand-ico">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/>
-                            </svg>
-                        </div>
-                        <h2 class="crmFocus-brand-title">CRM <em>IAMET</em></h2>
-                    </div>
-                    <div class="crmFocus-toggle">
-                        <button type="button" data-flow="proyecto" class="active">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                            Proyectos
-                        </button>
-                        <button type="button" data-flow="runrate">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                            Runrate
-                        </button>
-                    </div>
-                </div>
-                <div class="crmFocus-metrics">
-                    <div class="crmFocus-metrics-label">Valor total del embudo</div>
-                    <div class="crmFocus-metrics-value" id="crmFocusTotal">$0</div>
-                </div>
-                <div class="crmFocus-list">
-                    <p class="crmFocus-section-title">Vistas</p>
-                    <button type="button" class="crmFocus-all active" data-all="1">
-                        <div class="crmFocus-all-ico">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-                            </svg>
-                        </div>
-                        <div style="flex:1;">
-                            <div class="crmFocus-all-label">Ver Todo Global</div>
-                            <div class="crmFocus-all-sub" id="crmFocusAllCount">0 oportunidades</div>
-                        </div>
-                    </button>
-                    <p class="crmFocus-section-title" style="border-top:1px solid #F3F4F6;padding-top:12px;">Etapas del Proceso</p>
-                    <div class="crmFocus-stages" id="crmFocusStages"></div>
-                </div>
-            </aside>
-
-            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px;">
+            <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
                 {% for item in tabla_data %}
                 {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
-                <div class="crm-data-row crm-postit" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
+                <div class="crm-data-row crm-postit{% if item.tiene_actividad_vencida %} card-vencida heat-{% if item.dias_vencida >= 30 %}max{% elif item.dias_vencida >= 14 %}5{% elif item.dias_vencida >= 7 %}4{% elif item.dias_vencida >= 3 %}3{% elif item.dias_vencida >= 1 %}2{% else %}1{% endif %}{% elif item.dias_hasta_proxima is not None and item.dias_hasta_proxima <= 14 %} warm-{% if item.dias_hasta_proxima <= 1 %}3{% elif item.dias_hasta_proxima <= 7 %}2{% else %}1{% endif %}{% endif %}" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-probabilidad="{{ item.probabilidad_cierre|default:0 }}" data-mes-cierre="{{ item.mes_cierre|default:'' }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}" data-dias-vencida="{{ item.dias_vencida|default:0 }}" data-dias-hasta-proxima="{% if item.dias_hasta_proxima is not None %}{{ item.dias_hasta_proxima }}{% else %}-1{% endif %}" data-anclada="{% if item.esta_anclada %}1{% else %}0{% endif %}"
                      onclick="openDetalle('{{ item.id }}')"
-                    <!-- Franja superior de color -->
-                    <div class="absolute top-0 left-0 right-0 h-1.5" style="{% if item.tiene_actividad_vencida %}background:#EF4444;box-shadow:0 2px 4px rgba(239,68,68,0.4);{% elif item.tipo_negociacion == 'proyecto' %}background:#8B5CF6;box-shadow:0 2px 4px rgba(139,92,246,0.3);{% else %}background:#3B82F6;box-shadow:0 2px 4px rgba(59,130,246,0.3);{% endif %}"></div>
+                    <!-- Franja superior de color (heat/warm via classes en la .crm-postit) -->
+                    <div class="crm-postit-strip"></div>
                     <!-- Sombra interna sutil -->
                     <div class="absolute inset-0 pointer-events-none rounded-2xl" style="box-shadow:inset 0 1px 1px rgba(255,255,255,0.8);"></div>
                     <!-- Pin de anclaje -->
@@ -468,6 +466,11 @@
                     <!-- Cabecera -->
                     <div style="margin-bottom:12px;position:relative;z-index:1;padding-right:8px;">
                         <h3 style="font-size:0.95rem;font-weight:700;color:#2563EB;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                            {% if item.tiene_actividad_vencida and item.dias_vencida >= 30 %}
+                            <span class="crm-alert-critical" title="{{ item.dias_vencida }} días sin atender" style="margin-right:4px;vertical-align:middle;display:inline-flex;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="#DC2626" stroke="white" stroke-width="1"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                            </span>
+                            {% endif %}
                             <span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:45 }}</span>
                         </h3>
                         <div style="font-size:0.8rem;font-weight:500;color:#6B7280;margin-top:2px;cursor:pointer;transition:color 0.15s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#6B7280'" onclick="event.stopPropagation();if(typeof openClienteOportunidadesModal==='function')openClienteOportunidadesModal('{{ item.cliente.id|default:'' }}','{{ item.cliente.nombre_empresa|default:"Sin Cliente" }}')">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:30 }}</div>
@@ -517,7 +520,117 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- VISTA LIST (nueva tabla moderna — default) -->
+        <div id="crmViewList">
+            <div class="crm-list-head">
+                <div class="crm-list-hcell" style="flex:2.6;padding-left:22px;">OPORTUNIDAD / CLIENTE</div>
+                <div class="crm-list-hcell" style="flex:1;">VALOR</div>
+                <div class="crm-list-hcell" style="flex:0.9;">MARCA</div>
+                <div class="crm-list-hcell" style="flex:1.3;">ESTADO DE LA OPORTUNIDAD</div>
+                <div class="crm-list-hcell" style="flex:1.7;">PRÓXIMA ACTIVIDAD</div>
+                <div class="crm-list-hcell" style="flex:0.7;text-align:right;padding-right:18px;">ACCIONES</div>
+            </div>
+            <div class="crm-list-body" id="crmListBody">
+                {% for item in tabla_data %}
+                {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
+                <div class="crm-data-row crm-list-row{% if item.esta_anclada %} pinned-row{% endif %}"
+                    data-opp-id="{{ item.id }}"
+                    data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
+                    data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}"
+                    data-area="{{ item.area|default:'-' }}"
+                    data-producto="{{ item.producto }}"
+                    data-monto="{{ item.monto|unlocalize }}"
+                    data-probabilidad="{{ item.probabilidad_cierre|default:0 }}"
+                    data-mes-cierre="{{ item.mes_cierre|default:'' }}"
+                    data-tipo="{{ item.tipo_negociacion }}"
+                    data-etapa="{{ item.etapa_corta|default:'' }}"
+                    data-fecha="{{ item.fecha_actualizacion|date:'U' }}"
+                    data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}"
+                    data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}"
+                    data-dias-vencida="{{ item.dias_vencida|default:0 }}"
+                    data-anclada="{% if item.esta_anclada %}1{% else %}0{% endif %}"
+                    onclick="openDetalle('{{ item.id }}')">
+                    <div class="crm-list-strip{% if item.tiene_actividad_vencida %} vencida heat-{% if item.dias_vencida >= 30 %}max{% elif item.dias_vencida >= 14 %}5{% elif item.dias_vencida >= 7 %}4{% elif item.dias_vencida >= 3 %}3{% elif item.dias_vencida >= 1 %}2{% else %}1{% endif %}{% elif item.tipo_negociacion == 'proyecto' %} proyecto{% if item.dias_hasta_proxima is not None and item.dias_hasta_proxima <= 14 %} warm-{% if item.dias_hasta_proxima <= 1 %}3{% elif item.dias_hasta_proxima <= 7 %}2{% else %}1{% endif %}{% endif %}{% else %} runrate{% if item.dias_hasta_proxima is not None and item.dias_hasta_proxima <= 14 %} warm-{% if item.dias_hasta_proxima <= 1 %}3{% elif item.dias_hasta_proxima <= 7 %}2{% else %}1{% endif %}{% endif %}{% endif %}"></div>
+                    <div class="crm-list-cell" style="flex:2.6;padding-left:22px;">
+                        <div class="crm-list-title">
+                            {% if item.tiene_actividad_vencida and item.dias_vencida >= 30 %}
+                            <span class="crm-alert-critical" title="{{ item.dias_vencida }} días sin atender">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="#DC2626" stroke="white" stroke-width="1"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                            </span>
+                            {% endif %}
+                            <span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad|truncatechars:42 }}</span>
+                        </div>
+                        <div class="crm-list-sub" onclick="event.stopPropagation();if(typeof openClienteOportunidadesModal==='function')openClienteOportunidadesModal('{{ item.cliente.id|default:'' }}','{{ item.cliente.nombre_empresa|default:"Sin Cliente" }}')">{{ item.cliente.nombre_empresa|default:'Sin Cliente'|truncatechars:34 }}</div>
+                    </div>
+                    <div class="crm-list-cell" style="flex:1;">
+                        <span class="crm-list-value">${{ item.monto|format_currency_es }}</span>
+                    </div>
+                    <div class="crm-list-cell" style="flex:0.9;">
+                        <span class="crm-list-brand-badge">{{ item.producto|default:'-' }}</span>
+                    </div>
+                    <div class="crm-list-cell" style="flex:1.3;">
+                        <div class="crm-list-state">
+                            <div class="crm-list-progress">
+                                <svg viewBox="0 0 36 36" style="width:36px;height:36px;transform:rotate(-90deg);">
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="2.5" pathLength="100"/>
+                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#3B82F6' }}{% endif %}" stroke-width="2.5" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
+                                </svg>
+                                <span>{{ item.probabilidad_cierre }}%</span>
+                            </div>
+                            <div class="crm-list-state-text">
+                                <div class="crm-list-state-label">{% if item.tipo_negociacion == 'proyecto' %}PROYECTO{% elif item.tipo_negociacion == 'bitrix_proyecto' %}BITRIX{% else %}RUNRATE{% endif %}</div>
+                                <div class="crm-list-state-stage">{{ item.etapa_corta|default:'-'|upper }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-list-cell" style="flex:1.7;">
+                        {% if item.actividad_proxima %}
+                        <div class="crm-list-activity-pill has-activity" onclick="event.stopPropagation();openDetalle('{{ item.id }}');setTimeout(function(){if(typeof woAbrirActividadReciente==='function')woAbrirActividadReciente();},400);">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                            <span>{{ item.actividad_proxima|truncatechars:28 }}</span>
+                        </div>
+                        {% else %}
+                        <div class="crm-list-activity-pill">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+                            <span>Sin pendientes</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="crm-list-cell crm-list-actions" style="flex:0.7;padding-right:18px;">
+                        <button type="button" class="crm-list-quote" title="Cotizar rápido" data-opp-id="{{ item.id }}">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="3" width="16" height="18" rx="2"/>
+                                <line x1="8" y1="7" x2="16" y2="7"/>
+                                <line x1="8" y1="11" x2="10" y2="11"/><line x1="12" y1="11" x2="14" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/>
+                                <line x1="8" y1="15" x2="10" y2="15"/><line x1="12" y1="15" x2="14" y2="15"/>
+                                <line x1="8" y1="19" x2="10" y2="19"/><line x1="16" y1="15" x2="16" y2="19"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="crm-list-pin crm-pin {% if item.esta_anclada %}pinned{% endif %}" data-pin-id="{{ item.id }}" title="Anclar oportunidad">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#9CA3AF{% endif %}" stroke="none"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+                {% empty %}
+                <div style="text-align:center;padding:60px 0;color:#9CA3AF;">No hay oportunidades</div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- VISTA TABLA (legado — oculta, se mantiene solo para compatibilidad de búsquedas por selector) -->
+        <!-- ═══ VISTA KANBAN (por etapa) — arrows flotantes en esquinas ═══ -->
+        <div id="crmViewKanban" style="display:none;">
+            <div class="crm-kanban-board" id="crmKanbanBoard"></div>
+            <button type="button" class="crm-kanban-nav left" id="kanbanRailLeft" title="Ver etapas anteriores" aria-label="Anterior">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="crm-kanban-nav right" id="kanbanRailRight" title="Ver etapas siguientes" aria-label="Siguiente">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </div>
+
         <div id="crmViewTable" style="display:none;">
         <table class="w-full crm-table">
             <colgroup>
@@ -568,12 +681,57 @@
         </table>
         </div>
         {% elif tab_activo == 'prospeccion' %}
-        <table id="prospeccionTable" class="w-full crm-table">
+        <!-- Period bar standalone -->
+        <div class="crm-facet-bar crm-facet-bar--minimal">
+            <div style="flex:1;"></div>
+            <div class="crm-period-pills" id="crmPeriodPills">
+                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span id="pillPeriodoLabel">Periodo</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% if es_supervisor %}
+                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span id="pillVendedorLabel">Vendedores</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        <div id="prospeccionList" class="crm-prospect-list">
+            <div class="crm-list-head" id="prospeccionListHead"></div>
+            <div class="crm-list-body" id="prospeccionListBody"></div>
+        </div>
+        <!-- Contenedor legacy oculto — se mantiene para no romper referencias JS viejas -->
+        <table id="prospeccionTable" style="display:none;">
             <thead id="prospeccionThead"></thead>
             <tbody id="prospeccionTbody"></tbody>
         </table>
         <div class="crm-table-footer" id="prospeccionFooter"></div>
         {% elif tab_activo == 'clientes' %}
+        <!-- Period bar standalone (+ Modo toggle a la izquierda) -->
+        <div class="crm-facet-bar crm-facet-bar--minimal">
+            <div class="crm-mode-toggle">
+                <button id="crmModeOpp" type="button" onclick="window._crmSetMode('oportunidades')" class="crm-mode-btn active">Oportunidades</button>
+                <button id="crmModeProsp" type="button" onclick="window._crmSetMode('prospeccion')" class="crm-mode-btn">Prospectos</button>
+            </div>
+            <div style="flex:1;"></div>
+            <div class="crm-period-pills" id="crmPeriodPills">
+                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span id="pillPeriodoLabel">Periodo</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% if es_supervisor %}
+                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span id="pillVendedorLabel">Vendedores</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% endif %}
+            </div>
+        </div>
         <!-- KPI Cards -->
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
             <div class="ck-kpi-card ck-kpi--fact" style="cursor:pointer;" onclick="ckAbrirDesgloseFacturacion()">
@@ -793,16 +951,12 @@
 <div class="tareas-section" id="tareasSection">
 
     <style>
-        /* ═══ Tareas: contenedor principal con sidebar embebido ═══ */
+        /* ═══ Tareas: contenedor principal (sin tablero de puntos) ═══ */
         #tareasViewCards {
             position: relative;
-            background: #F4F5F7;
-            background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
-            background-size: 24px 24px;
-            border-radius: 16px;
-            padding: 24px 24px 28px;
+            background: transparent;
+            padding: 0;
             margin: 0;
-            min-height: 640px;
         }
         #tareasViewCards.tareasFocus-open { min-height: 760px; }
 
@@ -1247,114 +1401,95 @@
     </style>
 
     <div id="tareasViewCards">
-        <!-- ═══ SIDEBAR EMBEBIDO TAREAS ═══ -->
-        <aside class="tareasFocus-sidebar" id="tareasFocusSidebar">
-            <div class="tareasFocus-head">
-                <button type="button" class="tareasFocus-close" id="tareasFocusCloseBtn" title="Cerrar módulo">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                    </svg>
-                </button>
-                <h3 class="tareasFocus-brand">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>
-                    </svg>
-                    Módulo de Tareas
-                </h3>
-                <div class="tareasFocus-toggle">
-                    <button type="button" data-flow="proyecto" class="active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                        Proyectos
-                    </button>
-                    <button type="button" data-flow="runrate">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        Runrate
-                    </button>
-                </div>
+        <!-- Tabs dynamic island removidos; urgency ahora vive en el botón "Ordenar" del facet bar -->
+        <div class="crm-bar tareas-tabs-bar" style="display:none;">
+            <div class="crm-tabs" id="tareasUrgencyPills">
+                <button type="button" class="crm-tab active" data-urg="todas">Todas <span class="crm-tab-count" id="tareasCountTodas">0</span></button>
+                <button type="button" class="crm-tab" data-urg="atrasadas">Atrasadas <span class="crm-tab-count" id="tareasCountAtrasadas">0</span></button>
+                <button type="button" class="crm-tab" data-urg="hoy">Para hoy <span class="crm-tab-count" id="tareasCountHoy">0</span></button>
             </div>
-            <div class="tareasFocus-kpis">
-                <div class="tareasFocus-kpi atrasadas">
-                    <div class="tareasFocus-kpi-label">
-                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Atrasadas
-                    </div>
-                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiAtrasadas">0</div>
-                </div>
-                <div class="tareasFocus-kpi hoy">
-                    <div class="tareasFocus-kpi-label">
-                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Para Hoy
-                    </div>
-                    <div class="tareasFocus-kpi-value" id="tareasFocusKpiHoy">0</div>
-                </div>
-            </div>
-            <div class="tareasFocus-list">
-                <p class="tareasFocus-section-title">Vistas</p>
-                <button type="button" class="tareasFocus-all active" data-all="1">
-                    <div class="tareasFocus-all-ico">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M9 10h6M9 14h6M9 18h6"/>
-                        </svg>
-                    </div>
-                    <div style="flex:1;">
-                        <div class="tareasFocus-all-label">Todas las Tareas</div>
-                        <div class="tareasFocus-all-sub" id="tareasFocusAllSub">0 pendientes</div>
-                    </div>
-                </button>
-                <p class="tareasFocus-section-title" style="border-top:1px solid #F3F4F6;padding-top:12px;">Tareas por Etapa</p>
-                <div class="tareasFocus-stages" id="tareasFocusStages"></div>
-            </div>
-        </aside>
+        </div>
 
-        <!-- ═══ TOOLBAR SUPERIOR ═══ -->
-        <div class="tareas-toolbar">
-            <button type="button" class="tareas-toolbar-btn" id="tareasFocusToggleBtn" title="Módulo de tareas">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
+        <!-- ═══ FACET BAR (filtros + sort + view toggle + search + nueva tarea) ═══ -->
+        <div class="crm-facet-bar" id="tareasFacetBar">
+            <div class="crm-facet-chips" id="tareasFacetChips"></div>
+
+            <button type="button" class="crm-facet-btn crm-facet-add" id="btnTareasAddFacet" title="Agregar filtro">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Filtro</span>
             </button>
-            <h2 class="tareas-toolbar-title" id="tareasToolbarTitle">Todas las Tareas</h2>
-            <span class="tareas-toolbar-stat" id="tareasCount">0 tareas</span>
-            <div class="tareas-toolbar-spacer"></div>
-            <div class="tareas-toolbar-pills" id="tareasUrgencyPills">
-                <button type="button" data-urg="todas" class="active">Todas</button>
-                <button type="button" data-urg="atrasadas"><span class="tareas-pill-dot red"></span>Atrasadas</button>
-                <button type="button" data-urg="hoy"><span class="tareas-pill-dot amber"></span>Para Hoy</button>
-            </div>
-            <div class="tareas-search-mini">
-                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+
+            <button type="button" class="crm-facet-btn crm-facet-sort" id="btnTareasSortMenu" title="Ordenar">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                <span id="tareasSortLabel">Ordenar</span>
+            </button>
+
+            <button type="button" class="crm-facet-btn" id="btnTareasViewToggle" title="Cambiar vista: Lista ⇄ Tarjetas">
+                <svg id="tareasViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+
+            <button type="button" class="crm-facet-btn crm-facet-clear" id="btnTareasFacetClear" style="display:none;">Limpiar todo</button>
+
+            <div style="flex:1;"></div>
+
+            <div class="crm-facet-search">
+                <svg width="13" height="13" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
                 <input type="text" id="tareasSearchInput" placeholder="Buscar tarea...">
             </div>
-            <!-- Filtros (prioridad + responsable) -->
-            <div style="position:relative;">
-                <button type="button" class="tareas-filter-trigger" id="tareasFilterBtn" title="Filtros">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
-                    </svg>
-                    <span class="dot"></span>
-                </button>
-                <div class="tareas-filter-panel" id="tareasFilterPanel">
-                    <label class="tareas-filter-panel-label">Filtrar por responsable</label>
-                    <div class="tareas-filter-resp-list" id="tareasFilterResponsableList">
-                        <label class="tareas-filter-resp-opt all-opt">
-                            <input type="checkbox" id="tareasRespAll" checked>
-                            <span>Todos</span>
-                        </label>
-                    </div>
-                    <button type="button" class="tareas-filter-panel-clear" id="tareasFilterClear">Limpiar selección</button>
-                </div>
-            </div>
-            <button type="button" class="tareas-nueva-btn" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                Nueva Tarea
+
+            <button type="button" class="crm-facet-btn crm-facet-new" onclick="if(typeof crmTaskAbrirCrear==='function')crmTaskAbrirCrear();">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Nueva Tarea</span>
             </button>
         </div>
 
-        <!-- ═══ GRID DE CARDS ═══ -->
-        <div id="tareasCardsGrid"></div>
+        <!-- Popovers para el facet bar de tareas -->
+        <div class="crm-popover" id="popTareasField"></div>
+        <div class="crm-popover" id="popTareasValue"></div>
+        <div class="crm-popover" id="popTareasSort"></div>
+
+        <!-- ═══ VISTA LISTA (nueva, default) ═══ -->
+        <div id="tareasViewList">
+            <div class="crm-list-head">
+                <div class="crm-list-hcell" style="flex:2.2;padding-left:22px;">NOMBRE</div>
+                <div class="crm-list-hcell" style="flex:1;">RESPONSABLE</div>
+                <div class="crm-list-hcell" style="flex:1;">CREADOR</div>
+                <div class="crm-list-hcell" style="flex:1.1;">FECHA LÍMITE</div>
+                <div class="crm-list-hcell" style="flex:1.6;">OPORTUNIDAD</div>
+                <div class="crm-list-hcell" style="flex:0.6;text-align:right;padding-right:18px;">ACCIONES</div>
+            </div>
+            <div class="crm-list-body" id="tareasListBody"></div>
+        </div>
+
+        <!-- ═══ VISTA CALENDARIO: kanban por días de la semana ═══ -->
+        <div id="tareasViewCalendar" style="display:none;">
+            <div class="tareas-cal-nav">
+                <button type="button" class="tareas-cal-btn" id="btnTareasWeekPrev" title="Semana anterior">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div class="tareas-cal-label" id="tareasCalLabel">Semana</div>
+                <button type="button" class="tareas-cal-btn" id="btnTareasWeekNext" title="Semana siguiente">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button type="button" class="tareas-cal-today" id="btnTareasWeekToday">Hoy</button>
+            </div>
+            <div class="tareas-cal-board" id="tareasCalBoard"></div>
+        </div>
+
+        <!-- ═══ GRID DE CARDS (legacy, cambia con el toggle) ═══ -->
+        <div id="tareasCardsGrid" style="display:none;"></div>
         <div class="tareas-footer" id="tareasFooter"></div>
+
+        <!-- Estado global de filtros de tareas (lo lee y setea el IIFE del facet bar) -->
+        <div style="display:none;">
+            <input type="hidden" id="tareasFilterTipo" value="">
+            <input type="hidden" id="tareasFilterEtapa" value="">
+            <input type="hidden" id="tareasFilterResp" value="">
+            <input type="hidden" id="tareasFilterCreador" value="">
+            <input type="hidden" id="tareasFilterDesde" value="">
+            <input type="hidden" id="tareasFilterHasta" value="">
+            <input type="hidden" id="tareasSort" value="">
+        </div>
     </div>
 </div>
 
@@ -2018,3 +2153,1312 @@
         }
     })();
 </script>
+
+<!-- Datos del facet bar como JSON (parse seguro, renderiza en todos los tabs) -->
+{{ mes_choices|json_script:"fb-mes-choices" }}
+{{ mes_filter|json_script:"fb-current-mes" }}
+{{ anio_filter|json_script:"fb-current-anio" }}
+{{ vendedores_filter|default_if_none:""|json_script:"fb-vendedores-filter" }}
+{{ es_supervisor|json_script:"fb-es-supervisor" }}
+{{ years_range_list|json_script:"fb-years-range" }}
+{{ vendedores_json|json_script:"fb-vendors-list" }}
+{{ meses_selected|json_script:"fb-meses-selected" }}
+{{ anios_selected|json_script:"fb-anios-selected" }}
+
+<!-- Popovers globales (usados por facet bar en CRM y por period pills en todos los tabs) -->
+<div class="crm-popover" id="popFieldPicker" role="menu"></div>
+<div class="crm-popover" id="popValuePicker"></div>
+<div class="crm-popover" id="popSort"></div>
+
+<!-- ═══ FACET BAR: wiring (estilo CRM moderno) ═══ -->
+<script>
+(function(){
+    try {
+    function readJson(id, fallback) {
+        var el = document.getElementById(id);
+        if (!el) return fallback;
+        try { return JSON.parse(el.textContent); } catch(e) { return fallback; }
+    }
+    // Datos precargados (desde <script type="application/json">, sin interpolación JS)
+    var _currentMes    = readJson('fb-current-mes', '') || '';
+    var _currentAnio   = readJson('fb-current-anio', '') || '';
+    var _currentVendors = ((readJson('fb-vendedores-filter', '') || '') + '').split(',').filter(Boolean);
+    var _esSupervisor  = readJson('fb-es-supervisor', false) === true;
+    var _rawMesChoices = readJson('fb-mes-choices', []);  // array de [code, name]
+    // Excluir la pseudo-opción "todos" del listado real (sólo la usamos como concepto URL)
+    var _mesChoices    = _rawMesChoices
+        .filter(function(p){ return p[0] !== 'todos'; })
+        .map(function(p){ return { v: p[0], l: p[1] }; });
+    var _mesNames      = {}; _mesChoices.forEach(function(m){ _mesNames[m.v] = m.l; });
+    var _yearsRange    = readJson('fb-years-range', []);
+    var _vendorsList   = readJson('fb-vendors-list', []);  // [{id, nombre}, ...]
+    // Selección multi-valor para periodo (del backend). [] = todos.
+    var _mesesSelected  = (readJson('fb-meses-selected', []) || []).map(String);
+    var _aniosSelected  = (readJson('fb-anios-selected', []) || []).map(String);
+
+    // Rango de fechas desde URL (override del periodo cuando está activo)
+    (function(){
+        var up = new URLSearchParams(window.location.search);
+        var d = up.get('desde') || '';
+        var h = up.get('hasta') || '';
+        if (d || h) {
+            var fd = document.getElementById('filterDesde');
+            var fh = document.getElementById('filterHasta');
+            if (fd) fd.value = d;
+            if (fh) fh.value = h;
+        }
+    })();
+
+    // Descripción de cada filtro in-memory (no-reload)
+    var FIELDS = [
+        { key: 'cliente',  label: 'Cliente',  type: 'select', inputId: 'filterCliente' },
+        { key: 'area',     label: 'Área',     type: 'select', inputId: 'filterArea' },
+        { key: 'contacto', label: 'Contacto', type: 'text',   inputId: 'filterContacto' },
+        { key: 'producto', label: 'Marca',    type: 'select', inputId: 'filterProducto' },
+        { key: 'tipo',     label: 'Tipo',     type: 'enum',   inputId: 'filterTipo',
+            options: [{ v: 'proyecto', l: 'Proyecto' }, { v: 'runrate', l: 'Runrate' }, { v: 'bitrix_proyecto', l: 'Bitrix' }] },
+        { key: 'etapa',    label: 'Etapa',    type: 'multiselect', inputId: 'filterEtapa', dataKey: 'etapa' },
+        { key: 'monto',    label: 'Monto',    type: 'numberrange', minId: 'filterMontoMin', maxId: 'filterMontoMax', prefix: '$', suffix: 'MXN' },
+        { key: 'probabilidad', label: 'Probabilidad', type: 'numberrange', minId: 'filterProbMin', maxId: 'filterProbMax', suffix: '%', max: 100 },
+        { key: 'mescierre', label: 'Mes cierre', type: 'monthmulti', inputId: 'filterMesCierre' },
+        { key: 'fechas',   label: 'Fechas',   type: 'daterange' }
+    ];
+    // Campos de período (reload): mes, año, vendedor
+    var PERIOD_FIELDS = [
+        { key: 'mes',  label: 'Mes',  type: 'period-mes' },
+        { key: 'anio', label: 'Año',  type: 'period-anio' }
+    ];
+    if (_esSupervisor) {
+        PERIOD_FIELDS.push({ key: 'vendedor', label: 'Vendedor', type: 'period-vendor' });
+    }
+    var SORTS = [
+        { k: 'fecha:desc', lbl: 'Recientes primero', field: 'fecha', v: 'desc' },
+        { k: 'fecha:asc',  lbl: 'Antiguos primero',  field: 'fecha', v: 'asc'  },
+        { k: 'monto:desc', lbl: 'Monto: mayor a menor', field: 'monto', v: 'desc' },
+        { k: 'monto:asc',  lbl: 'Monto: menor a mayor', field: 'monto', v: 'asc'  }
+    ];
+
+    // La facet-bar se fusionó con la crm-bar (unificada). Detectamos su presencia
+    // por btnAddFacet (los botones izquierdos viven ahora en .crm-bar-left).
+    var btnAdd      = document.getElementById('btnAddFacet');
+    var hasFacetBar = !!btnAdd;
+    var pillPeriodoEl = document.getElementById('pillPeriodo');
+    // Si no hay facet ni pills, no hay nada que inicializar.
+    if (!btnAdd && !pillPeriodoEl) return;
+
+    var chipsEl     = document.getElementById('crmFacetChips');
+    var btnSort     = document.getElementById('btnSortMenu');
+    var btnClear    = document.getElementById('btnFacetClear');
+    var btnExport   = document.getElementById('btnExportExcelBar');
+    var sortLabel   = document.getElementById('sortLabel');
+    var popField    = document.getElementById('popFieldPicker');
+    var popValue    = document.getElementById('popValuePicker');
+    var popSort     = document.getElementById('popSort');
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function $in(id){ return document.getElementById(id); }
+    function readFilters(){
+        return {
+            cliente: ($in('filterCliente') || {}).value || '',
+            area:    ($in('filterArea') || {}).value || '',
+            contacto:($in('filterContacto') || {}).value || '',
+            producto:($in('filterProducto') || {}).value || '',
+            tipo:    ($in('filterTipo') || {}).value || '',
+            etapa:   ($in('filterEtapa') || {}).value || '',
+            desde:   ($in('filterDesde') || {}).value || '',
+            hasta:   ($in('filterHasta') || {}).value || '',
+            montoMin:($in('filterMontoMin') || {}).value || '',
+            montoMax:($in('filterMontoMax') || {}).value || '',
+            probMin: ($in('filterProbMin')  || {}).value || '',
+            probMax: ($in('filterProbMax')  || {}).value || '',
+            mesCierre:($in('filterMesCierre') || {}).value || ''
+        };
+    }
+    function readSort(){
+        var m = ($in('filterMonto') || {}).value || '';
+        var f = ($in('filterFecha') || {}).value || '';
+        if (m === 'desc') return 'monto:desc';
+        if (m === 'asc')  return 'monto:asc';
+        if (f === 'asc')  return 'fecha:asc';
+        if (f === 'desc') return 'fecha:desc';
+        return '';
+    }
+    function setInputValue(id, val){
+        var el = $in(id);
+        if (!el) return;
+        el.value = val;
+        // Dispatch change (selects) and input (text) to trigger listeners de crm_main.js
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.dispatchEvent(new Event('input',  { bubbles: true }));
+    }
+    function closeAllPopovers(except){
+        [popField, popValue, popSort].forEach(function(p){
+            if (p && p !== except) p.classList.remove('open');
+        });
+    }
+    function positionPopover(pop, anchor){
+        // position:fixed → coords de viewport directos
+        var rect = anchor.getBoundingClientRect();
+        pop.style.top  = (rect.bottom + 6) + 'px';
+        pop.style.left = rect.left + 'px';
+        pop.style.right = 'auto';
+        // Si se sale por la derecha, alinear a la derecha del anchor
+        setTimeout(function(){
+            var popRect = pop.getBoundingClientRect();
+            if (popRect.right > window.innerWidth - 8) {
+                pop.style.left = 'auto';
+                pop.style.right = (window.innerWidth - rect.right) + 'px';
+            }
+        }, 0);
+    }
+
+    // ── Chips render ───────────────────────────────────────────────────────
+    function chipHtml(key, label, value) {
+        var safeVal = (value || '').toString().replace(/</g,'&lt;');
+        return '' +
+            '<div class="crm-facet-chip" data-fkey="' + key + '">' +
+                '<span class="crm-facet-chip-key">' + label + '</span>' +
+                '<span class="crm-facet-chip-op">=</span>' +
+                '<span class="crm-facet-chip-val">' + safeVal + '</span>' +
+                '<span class="crm-facet-chip-x" data-fkey="' + key + '" title="Quitar filtro">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>' +
+                '</span>' +
+            '</div>';
+    }
+    // Chip con × opcional (mes/año siempre editables, pero × regresa a "todos")
+    function chipPeriodHtml(key, label, value, showX) {
+        var safeVal = (value || '').toString().replace(/</g,'&lt;');
+        var xHtml = showX ? '<span class="crm-facet-chip-x" data-fkey="' + key + '" title="Ver todos">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>' +
+                '</span>' : '<span style="padding-right:10px;"></span>';
+        return '' +
+            '<div class="crm-facet-chip crm-facet-chip-period" data-fkey="' + key + '">' +
+                '<span class="crm-facet-chip-key">' + label + '</span>' +
+                '<span class="crm-facet-chip-val">' + safeVal + '</span>' +
+                xHtml +
+            '</div>';
+    }
+
+    function vendorChipLabel() {
+        if (!_currentVendors.length) return 'Todos';
+        if (_currentVendors.length === 1) {
+            var target = String(_currentVendors[0]);
+            var v = _vendorsList.find(function(x){ return String(x.id) === target; });
+            return v ? v.nombre : target;
+        }
+        return _currentVendors.length + ' vendedores';
+    }
+
+    function periodoLabel(){
+        // Construye un label compacto: "Abril · 2026" / "Todos · 2026" / "3 meses · 2 años" etc.
+        var mesPart, anioPart;
+        if (_mesesSelected.length === 0) mesPart = 'Todos';
+        else if (_mesesSelected.length === 1) mesPart = _mesNames[_mesesSelected[0]] || _mesesSelected[0];
+        else mesPart = _mesesSelected.length + ' meses';
+
+        if (_aniosSelected.length === 0) anioPart = 'Todos';
+        else if (_aniosSelected.length === 1) anioPart = _aniosSelected[0];
+        else anioPart = _aniosSelected.length + ' años';
+
+        return mesPart + ' · ' + anioPart;
+    }
+
+    function renderPeriodPills(){
+        var pPer = $in('pillPeriodoLabel');
+        var pVen = $in('pillVendedorLabel');
+        if (pPer) pPer.textContent = periodoLabel();
+        if (pVen) pVen.textContent = vendorChipLabel();
+
+        var per = $in('pillPeriodo');
+        if (per) {
+            per.classList.toggle('is-default', _mesesSelected.length === 0 && _aniosSelected.length === 0);
+            // Si hay rango de fechas activo, el periodo está ignorado → visual dim
+            var f = readFilters();
+            var overridden = !!(f.desde || f.hasta);
+            per.classList.toggle('is-overridden', overridden);
+            per.title = overridden ? 'Periodo ignorado mientras hay un rango de fechas activo' : '';
+        }
+        var ven = $in('pillVendedor');
+        if (ven) ven.classList.toggle('is-default', _currentVendors.length === 0);
+    }
+
+    function renderChips(){
+        if (!chipsEl) return;
+        var f = readFilters();
+        var html = '';
+
+        renderPeriodPills();
+
+        // Chips in-memory (solo si activos)
+        if (f.cliente)  html += chipHtml('cliente',  'Cliente',  f.cliente);
+        if (f.area)     html += chipHtml('area',     'Área',     f.area);
+        if (f.contacto) html += chipHtml('contacto', 'Contacto', f.contacto);
+        if (f.producto) html += chipHtml('producto', 'Marca',    f.producto);
+        if (f.tipo) {
+            var fld = FIELDS.find(function(x){ return x.key === 'tipo'; });
+            var opt = fld.options.find(function(o){ return o.v === f.tipo; });
+            html += chipHtml('tipo', 'Tipo', opt ? opt.l : f.tipo);
+        }
+        if (f.etapa) {
+            var etapaVal = f.etapa.indexOf(',') !== -1
+                ? (f.etapa.split(',').filter(Boolean).length + ' etapas')
+                : f.etapa;
+            html += chipHtml('etapa', 'Etapa', etapaVal);
+        }
+        if (f.montoMin || f.montoMax) {
+            var mMin = f.montoMin ? '$' + Number(f.montoMin).toLocaleString('en-US') : '$0';
+            var mMax = f.montoMax ? '$' + Number(f.montoMax).toLocaleString('en-US') + ' MXN' : '∞';
+            html += chipHtml('monto', 'Monto', mMin + ' — ' + mMax);
+        }
+        if (f.probMin || f.probMax) {
+            var pMin = f.probMin ? (f.probMin + '%') : '0%';
+            var pMax = f.probMax ? (f.probMax + '%') : '100%';
+            html += chipHtml('probabilidad', 'Probabilidad', pMin + ' — ' + pMax);
+        }
+        if (f.mesCierre) {
+            var meses = f.mesCierre.split(',').filter(Boolean);
+            var mesName = { '01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic' };
+            var lbl = meses.length === 1 ? (mesName[meses[0]] || meses[0]) : (meses.length + ' meses');
+            html += chipHtml('mescierre', 'Mes cierre', lbl);
+        }
+        if (f.desde || f.hasta) {
+            var range = (f.desde || '…') + ' → ' + (f.hasta || '…');
+            html += chipHtml('fechas',   'Fechas',  range);
+        }
+        chipsEl.innerHTML = html;
+        // "Limpiar todo" SOLO si hay filtros in-memory activos (ignora mes/año/vendedor)
+        var anyActive = !!(f.cliente || f.area || f.contacto || f.producto || f.tipo || f.etapa ||
+            f.desde || f.hasta || f.montoMin || f.montoMax || f.probMin || f.probMax || f.mesCierre);
+        btnClear.style.display = anyActive ? '' : 'none';
+
+        // Sort label + estado visual
+        var s = readSort();
+        if (s) {
+            var sd = SORTS.find(function(x){ return x.k === s; });
+            sortLabel.textContent = sd ? sd.lbl : 'Ordenar';
+            btnSort.classList.add('has-sort');
+        } else {
+            sortLabel.textContent = 'Ordenar';
+            btnSort.classList.remove('has-sort');
+        }
+    }
+
+    // ── Popover: field picker ──────────────────────────────────────────────
+    function openFieldPicker(){
+        var f = readFilters();
+        var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
+        FIELDS.forEach(function(fld){
+            var active = (fld.key === 'fechas') ? !!(f.desde || f.hasta) : !!f[fld.key];
+            html += '<button type="button" class="crm-pop-item ' + (active ? 'active' : '') + '" data-field="' + fld.key + '">' +
+                        '<span>' + fld.label + '</span>' +
+                    '</button>';
+        });
+        html += '</div>';
+        popField.innerHTML = html;
+        closeAllPopovers(popField);
+        popField.classList.add('open');
+        positionPopover(popField, btnAdd);
+    }
+
+    // Estado temporal del picker periodo (se confirma al Aplicar)
+    var _tmpMeses = [];
+    var _tmpAnios = [];
+    // Anchor persistente del popover actual (para re-renders no pierdan posición)
+    var _lastPopAnchor = null;
+
+    function renderPeriodoPopoverContent() {
+        var html = '<div class="crm-pop-period">';
+        // Columna Meses
+        html += '<div class="crm-pop-col">';
+        html += '<div class="crm-pop-section">Meses</div>';
+        html += '<div class="crm-pop-list">';
+        var allMesesChecked = _tmpMeses.length === 0;
+        html += '<button type="button" class="crm-pop-item ' + (allMesesChecked ? 'active' : '') + '" data-pm="__all__">Todos los meses</button>';
+        _mesChoices.forEach(function(m){
+            var act = _tmpMeses.indexOf(m.v) !== -1 ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-pm="' + m.v + '">' + m.l + '</button>';
+        });
+        html += '</div></div>';
+        // Columna Años
+        html += '<div class="crm-pop-col">';
+        html += '<div class="crm-pop-section">Años</div>';
+        html += '<div class="crm-pop-list">';
+        var allAniosChecked = _tmpAnios.length === 0;
+        html += '<button type="button" class="crm-pop-item ' + (allAniosChecked ? 'active' : '') + '" data-pa="__all__">Todos los años</button>';
+        _yearsRange.forEach(function(y){
+            var ys = String(y);
+            var act = _tmpAnios.indexOf(ys) !== -1 ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-pa="' + ys + '">' + ys + '</button>';
+        });
+        html += '</div></div>';
+        html += '</div>';
+        html += '<div class="crm-pop-footer">' +
+                    '<button type="button" data-act="periodo-reset">Restablecer</button>' +
+                    '<button type="button" class="primary" data-act="periodo-apply" style="flex:2;">Aplicar</button>' +
+                '</div>';
+        return html;
+    }
+
+    // ── Popover: period picker (periodo unificado / vendedor → reload) ─────
+    function openPeriodPicker(key, anchorEl){
+        if (anchorEl) _lastPopAnchor = anchorEl;
+        popValue.dataset.currentField = '__period__' + key;
+        var html = '';
+        if (key === 'periodo') {
+            // Inicializar estado temporal con la selección actual
+            _tmpMeses = _mesesSelected.slice();
+            _tmpAnios = _aniosSelected.slice();
+            html = renderPeriodoPopoverContent();
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '380px';
+        } else if (key === 'vendedor') {
+            html = '<div class="crm-pop-section">Vendedores</div><div class="crm-pop-list">';
+            var allChecked = _currentVendors.length === 0;
+            html += '<button type="button" class="crm-pop-item ' + (allChecked ? 'active' : '') + '" data-pv="">Todos</button>';
+            _vendorsList.forEach(function(v){
+                var act = _currentVendors.indexOf(String(v.id)) !== -1 ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-pv="' + v.id + '" data-multi="1">' + v.nombre + '</button>';
+            });
+            html += '</div>';
+            if (_currentVendors.length) {
+                html += '<div class="crm-pop-footer"><button type="button" class="primary" data-act="period-apply-vendor" style="flex:1;">Aplicar selección</button></div>';
+            }
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '220px';
+        }
+        closeAllPopovers(popValue);
+        popValue.classList.add('open');
+        positionPopover(popValue, anchorEl || _lastPopAnchor || btnAdd);
+    }
+
+    function reloadWithPeriod(key, value) {
+        var params = new URLSearchParams(window.location.search);
+        if (key === 'mes')      params.set('mes',  value);
+        else if (key === 'anio') params.set('anio', value);
+        else if (key === 'vendedor') {
+            if (value) params.set('vendedores', value);
+            else params.delete('vendedores');
+        }
+        // Preservar tab
+        if (!params.get('tab')) {
+            var activeTab = document.querySelector('.crm-tab.active');
+            if (activeTab && activeTab.href) {
+                var m = activeTab.href.match(/tab=([^&]+)/);
+                if (m) params.set('tab', m[1]);
+            }
+        }
+        window.location.href = window.location.pathname + '?' + params.toString();
+    }
+
+    function reloadWithPeriodo(meses, anios) {
+        var params = new URLSearchParams(window.location.search);
+        params.set('mes',  meses.length === 0 ? 'todos' : meses.join(','));
+        params.set('anio', anios.length === 0 ? 'todos' : anios.join(','));
+        if (!params.get('tab')) {
+            var activeTab = document.querySelector('.crm-tab.active');
+            if (activeTab && activeTab.href) {
+                var m = activeTab.href.match(/tab=([^&]+)/);
+                if (m) params.set('tab', m[1]);
+            }
+        }
+        window.location.href = window.location.pathname + '?' + params.toString();
+    }
+
+    // ── Popover: value picker (por field) ──────────────────────────────────
+    function getUniqueValues(dataKey){
+        var set = {};
+        document.querySelectorAll('#crmListBody .crm-data-row, #crmCardsGrid .crm-data-row').forEach(function(row){
+            var v = (row.dataset[dataKey] || '').trim();
+            if (v && v !== '-') set[v] = true;
+        });
+        return Object.keys(set).sort(function(a,b){ return a.localeCompare(b); });
+    }
+    function openValuePicker(fieldKey){
+        var fld = FIELDS.find(function(x){ return x.key === fieldKey; });
+        if (!fld) return;
+        popValue.dataset.currentField = fieldKey;
+        var f = readFilters();
+        var html = '';
+
+        if (fld.type === 'daterange') {
+            html = '<div class="crm-pop-section">Rango de fechas</div>' +
+                '<div class="crm-pop-dates">' +
+                    '<div><label>Desde</label><input type="date" id="_fpDesde" value="' + (f.desde || '') + '"></div>' +
+                    '<div><label>Hasta</label><input type="date" id="_fpHasta" value="' + (f.hasta || '') + '"></div>' +
+                '</div>' +
+                '<div class="crm-pop-footer">' +
+                    '<button type="button" data-act="clear">Quitar</button>' +
+                    '<button type="button" class="primary" data-act="apply">Aplicar</button>' +
+                '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '280px';
+        }
+        else if (fld.type === 'numberrange') {
+            var curMin = (fld.key === 'monto' ? f.montoMin : f.probMin) || '';
+            var curMax = (fld.key === 'monto' ? f.montoMax : f.probMax) || '';
+            var isMonto = fld.key === 'monto';
+            // Formatear valores pre-existentes con separadores si es monto
+            function fmtMX(n) {
+                if (n === '' || n == null) return '';
+                var num = Number(n);
+                if (isNaN(num)) return '';
+                return num.toLocaleString('en-US');  // comas miles, punto decimal
+            }
+            var placeholderMin = fld.key === 'probabilidad' ? '0' : '0';
+            var placeholderMax = fld.key === 'probabilidad' ? '100' : 'Sin límite';
+            var suffixHint = isMonto ? ' (MXN)' : (fld.suffix ? ' (' + fld.suffix + ')' : '');
+            var inputType = isMonto ? 'text' : 'number';
+            var inputClass = isMonto ? 'crm-money-input' : '';
+            var prefixTag = isMonto ? '<span class="crm-money-prefix">$</span>' : '';
+            var suffixTag = isMonto ? '<span class="crm-money-suffix">MXN</span>' : (fld.suffix === '%' ? '<span class="crm-money-suffix">%</span>' : '');
+            html = '<div class="crm-pop-section">' + fld.label + suffixHint + '</div>' +
+                '<div class="crm-pop-dates">' +
+                    '<div><label>Mínimo</label>' +
+                        '<div class="crm-money-wrap">' + prefixTag +
+                            '<input type="' + inputType + '" class="' + inputClass + '" id="_fpNumMin" inputmode="decimal" placeholder="' + placeholderMin + '" value="' + (isMonto ? fmtMX(curMin) : curMin) + '">' +
+                            suffixTag +
+                        '</div>' +
+                    '</div>' +
+                    '<div><label>Máximo</label>' +
+                        '<div class="crm-money-wrap">' + prefixTag +
+                            '<input type="' + inputType + '" class="' + inputClass + '" id="_fpNumMax" inputmode="decimal" placeholder="' + placeholderMax + '" value="' + (isMonto ? fmtMX(curMax) : curMax) + '">' +
+                            suffixTag +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="crm-pop-footer">' +
+                    '<button type="button" data-act="clear-numrange">Quitar</button>' +
+                    '<button type="button" class="primary" data-act="apply-numrange">Aplicar</button>' +
+                '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = isMonto ? '300px' : '240px';
+
+            // Live formatting mientras escribe (solo monto)
+            if (isMonto) {
+                ['_fpNumMin','_fpNumMax'].forEach(function(id){
+                    var el = $in(id);
+                    if (!el) return;
+                    el.addEventListener('input', function(e){
+                        var raw = this.value.replace(/[^0-9.]/g, '');
+                        // Una sola punto decimal
+                        var parts = raw.split('.');
+                        var intPart = parts[0].replace(/^0+(?=\d)/, '');  // quitar ceros líderes
+                        var decPart = parts.length > 1 ? '.' + parts.slice(1).join('').substring(0, 2) : '';
+                        var formatted = (intPart ? Number(intPart).toLocaleString('en-US') : '') + decPart;
+                        if (formatted !== this.value) {
+                            var posEnd = this.selectionEnd;
+                            this.value = formatted;
+                            // Ajustar cursor al final para no saltar al inicio en cada tecla
+                            this.setSelectionRange(this.value.length, this.value.length);
+                        }
+                    });
+                });
+            }
+        }
+        else if (fld.type === 'monthmulti') {
+            var cur = (f.mesCierre || '').split(',').filter(Boolean);
+            var MESES = [['01','Enero'],['02','Febrero'],['03','Marzo'],['04','Abril'],['05','Mayo'],['06','Junio'],['07','Julio'],['08','Agosto'],['09','Septiembre'],['10','Octubre'],['11','Noviembre'],['12','Diciembre']];
+            html = '<div class="crm-pop-section">Mes de cierre</div><div class="crm-pop-list">';
+            html += '<button type="button" class="crm-pop-item ' + (cur.length === 0 ? 'active' : '') + '" data-mescierre="__all__">Todos los meses</button>';
+            MESES.forEach(function(m){
+                var act = cur.indexOf(m[0]) !== -1 ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-mescierre="' + m[0] + '">' + m[1] + '</button>';
+            });
+            html += '</div>';
+            html += '<div class="crm-pop-footer"><button type="button" class="primary" data-act="apply-mescierre" style="flex:1;">Aplicar</button></div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '200px';
+        }
+        else if (fld.type === 'multiselect') {
+            var curVal = ((f[fieldKey] || '') + '').split(',').filter(Boolean);
+            var dataKey = fld.dataKey || fieldKey;
+            var values = getUniqueValues(dataKey);
+            html = '<div class="crm-pop-search">' +
+                        '<svg width="13" height="13" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+                        '<input type="text" id="_fpSearchMs" placeholder="Buscar ' + fld.label.toLowerCase() + '…">' +
+                    '</div>' +
+                    '<div class="crm-pop-list" id="_fpListMs"></div>' +
+                    '<div class="crm-pop-footer">' +
+                        '<button type="button" data-act="clear-multi">Quitar</button>' +
+                        '<button type="button" class="primary" data-act="apply-multi">Aplicar (' + curVal.length + ')</button>' +
+                    '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '260px';
+
+            var listEl = $in('_fpListMs');
+            var inputEl = $in('_fpSearchMs');
+            function renderMsList(q){
+                q = (q || '').toLowerCase();
+                var filtered = q ? values.filter(function(v){ return v.toLowerCase().indexOf(q) !== -1; }) : values;
+                var innerHtml = '';
+                filtered.slice(0, 80).forEach(function(v){
+                    var act = curVal.indexOf(v) !== -1 ? 'active' : '';
+                    innerHtml += '<button type="button" class="crm-pop-item ' + act + '" data-multival="' + v.replace(/"/g,'&quot;') + '">' + v + '</button>';
+                });
+                if (!filtered.length) innerHtml += '<div class="crm-pop-item" style="color:#94A3B8;cursor:default;">Sin coincidencias</div>';
+                listEl.innerHTML = innerHtml;
+            }
+            renderMsList('');
+            // Store refs en popValue dataset para handlers
+            popValue._msCurVal = curVal;
+            popValue._msRender = renderMsList;
+            if (inputEl) {
+                inputEl.addEventListener('input', function(){ renderMsList(this.value); });
+                setTimeout(function(){ inputEl.focus(); }, 20);
+            }
+        }
+        else if (fld.type === 'enum') {
+            html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+            html += '<button type="button" class="crm-pop-item ' + (!f[fieldKey] ? 'active' : '') + '" data-val="">Todos</button>';
+            fld.options.forEach(function(o){
+                var act = f[fieldKey] === o.v ? 'active' : '';
+                html += '<button type="button" class="crm-pop-item ' + act + '" data-val="' + o.v + '">' + o.l + '</button>';
+            });
+            html += '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '200px';
+        }
+        else {
+            // text/select — usamos buscador con valores únicos del dataset
+            var dataKey = ({ cliente: 'cliente', area: 'area', contacto: 'contacto', producto: 'producto', etapa: 'etapa' })[fieldKey];
+            var values = getUniqueValues(dataKey);
+            var current = f[fieldKey] || '';
+            html = '<div class="crm-pop-search">' +
+                        '<svg width="13" height="13" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+                        '<input type="text" id="_fpSearch" placeholder="Buscar ' + fld.label.toLowerCase() + '…" value="' + current.replace(/"/g,'&quot;') + '">' +
+                    '</div>' +
+                    '<div class="crm-pop-list" id="_fpList"></div>' +
+                    '<div class="crm-pop-footer">' +
+                        '<button type="button" data-act="clear">Quitar</button>' +
+                        '<button type="button" class="primary" data-act="apply-text">Aplicar texto</button>' +
+                    '</div>';
+            popValue.innerHTML = html;
+            popValue.style.minWidth = '260px';
+
+            var listEl = $in('_fpList');
+            var inputEl = $in('_fpSearch');
+            function renderList(q){
+                q = (q || '').toLowerCase();
+                var filtered = q ? values.filter(function(v){ return v.toLowerCase().indexOf(q) !== -1; }) : values;
+                var innerHtml = '';
+                if (!current) innerHtml += '<button type="button" class="crm-pop-item active" data-val="">Todos</button>';
+                else innerHtml += '<button type="button" class="crm-pop-item" data-val="">Todos</button>';
+                filtered.slice(0, 80).forEach(function(v){
+                    var act = current === v ? 'active' : '';
+                    innerHtml += '<button type="button" class="crm-pop-item ' + act + '" data-val="' + v.replace(/"/g,'&quot;') + '">' + v + '</button>';
+                });
+                if (!filtered.length) innerHtml += '<div class="crm-pop-item" style="color:#94A3B8;cursor:default;">Sin coincidencias</div>';
+                listEl.innerHTML = innerHtml;
+            }
+            renderList('');
+            if (inputEl) {
+                inputEl.addEventListener('input', function(){ renderList(this.value); });
+                setTimeout(function(){ inputEl.focus(); inputEl.select(); }, 20);
+            }
+        }
+
+        closeAllPopovers(popValue);
+        popValue.classList.add('open');
+        // Posición: abajo del botón + Filtro
+        positionPopover(popValue, btnAdd, 'left');
+    }
+
+    // ── Popover: sort ──────────────────────────────────────────────────────
+    function openSortPicker(){
+        var cur = readSort();
+        var html = '<div class="crm-pop-section">Ordenar por</div><div class="crm-pop-list">';
+        html += '<button type="button" class="crm-pop-item ' + (!cur ? 'active' : '') + '" data-sort="">Por defecto</button>';
+        SORTS.forEach(function(s){
+            var act = cur === s.k ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-sort="' + s.k + '">' + s.lbl + '</button>';
+        });
+        html += '</div>';
+        popSort.innerHTML = html;
+        closeAllPopovers(popSort);
+        popSort.classList.add('open');
+        positionPopover(popSort, btnSort, 'left');
+    }
+
+    // ── Event wiring ───────────────────────────────────────────────────────
+    if (hasFacetBar) {
+    btnAdd.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (popField.classList.contains('open')) { popField.classList.remove('open'); return; }
+        openFieldPicker();
+    });
+
+    btnSort.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (popSort.classList.contains('open')) { popSort.classList.remove('open'); return; }
+        openSortPicker();
+    });
+
+    btnClear.addEventListener('click', function(){
+        ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa',
+         'filterDesde','filterHasta','filterMontoMin','filterMontoMax','filterProbMin','filterProbMax','filterMesCierre'].forEach(function(id){
+            setInputValue(id, '');
+        });
+        renderChips();
+    });
+
+    btnExport.addEventListener('click', function(){
+        var oldBtn = document.getElementById('btnExportExcel');
+        if (oldBtn) oldBtn.click();
+    });
+
+    // Click en chip → reabrir value picker; click en × → quitar
+    chipsEl.addEventListener('click', function(e){
+        var x = e.target.closest('.crm-facet-chip-x');
+        if (x) {
+            var key = x.dataset.fkey;
+            if (key === 'mes')      return reloadWithPeriod('mes',  'todos');
+            if (key === 'anio')     return reloadWithPeriod('anio', 'todos');
+            if (key === 'vendedor') return reloadWithPeriod('vendedor', '');
+            if (key === 'fechas') {
+                // Quitar desde/hasta del URL → backend vuelve a filtrar por periodo
+                var params = new URLSearchParams(window.location.search);
+                params.delete('desde');
+                params.delete('hasta');
+                window.location.href = window.location.pathname + '?' + params.toString();
+                return;
+            }
+            if (key === 'monto') {
+                setInputValue('filterMontoMin', '');
+                setInputValue('filterMontoMax', '');
+                renderChips();
+                return;
+            }
+            if (key === 'probabilidad') {
+                setInputValue('filterProbMin', '');
+                setInputValue('filterProbMax', '');
+                renderChips();
+                return;
+            }
+            if (key === 'mescierre') {
+                setInputValue('filterMesCierre', '');
+                renderChips();
+                return;
+            }
+            var fld = FIELDS.find(function(f){ return f.key === key; });
+            if (fld && fld.inputId) setInputValue(fld.inputId, '');
+            renderChips();
+            return;
+        }
+        var chip = e.target.closest('.crm-facet-chip');
+        if (chip) {
+            var ck = chip.dataset.fkey;
+            if (ck === 'mes' || ck === 'anio' || ck === 'vendedor') {
+                openPeriodPicker(ck, chip);
+            } else {
+                openValuePicker(ck);
+            }
+        }
+    });
+
+    // Delegación en popField (facet bar only)
+    popField.addEventListener('click', function(e){
+        var item = e.target.closest('.crm-pop-item');
+        if (!item) return;
+        popField.classList.remove('open');
+        openValuePicker(item.dataset.field);
+    });
+    } // end if (hasFacetBar)
+
+    // Period pills → openPeriodPicker (siempre)
+    var periodPillsEl = document.getElementById('crmPeriodPills');
+    if (periodPillsEl) {
+        periodPillsEl.addEventListener('click', function(e){
+            var pill = e.target.closest('.crm-period-pill');
+            if (!pill) return;
+            e.stopPropagation();
+            var key = pill.dataset.period;
+            if (popValue.classList.contains('open') && popValue.dataset.currentField === '__period__' + key) {
+                popValue.classList.remove('open');
+                return;
+            }
+            openPeriodPicker(key, pill);
+        });
+    }
+
+    popValue.addEventListener('click', function(e){
+        // Cualquier click dentro del popValue no debe cerrarlo.
+        // stopPropagation crítico porque el innerHTML replace destruye el DOM
+        // y el document handler falla al chequear popValue.contains(e.target).
+        e.stopPropagation();
+
+        // Multiselect: toggle items (etapa)
+        var msItem = e.target.closest('[data-multival]');
+        if (msItem && popValue._msCurVal) {
+            var val = msItem.dataset.multival;
+            var idx = popValue._msCurVal.indexOf(val);
+            if (idx >= 0) popValue._msCurVal.splice(idx, 1);
+            else popValue._msCurVal.push(val);
+            // Re-render list + update footer count
+            popValue._msRender(($in('_fpSearchMs') || {}).value || '');
+            var applyBtn = popValue.querySelector('[data-act="apply-multi"]');
+            if (applyBtn) applyBtn.textContent = 'Aplicar (' + popValue._msCurVal.length + ')';
+            return;
+        }
+
+        // Mes cierre: toggle months — aplica directo a hidden input + re-render
+        var mcItem = e.target.closest('[data-mescierre]');
+        if (mcItem) {
+            var mv = mcItem.dataset.mescierre;
+            var currentMc = (($in('filterMesCierre') || {}).value || '').split(',').filter(Boolean);
+            if (mv === '__all__') currentMc = [];
+            else {
+                var idx2 = currentMc.indexOf(mv);
+                if (idx2 >= 0) currentMc.splice(idx2, 1);
+                else currentMc.push(mv);
+            }
+            setInputValue('filterMesCierre', currentMc.join(','));
+            openValuePicker('mescierre');
+            renderChips();
+            return;
+        }
+
+        // Periodo unificado: toggle meses/años en estado temporal
+        var pmItem = e.target.closest('[data-pm]');
+        if (pmItem) {
+            var v = pmItem.dataset.pm;
+            if (v === '__all__') { _tmpMeses = []; }
+            else {
+                var idx = _tmpMeses.indexOf(v);
+                if (idx >= 0) _tmpMeses.splice(idx, 1);
+                else _tmpMeses.push(v);
+            }
+            popValue.innerHTML = renderPeriodoPopoverContent();
+            return;
+        }
+        var paItem = e.target.closest('[data-pa]');
+        if (paItem) {
+            var v = paItem.dataset.pa;
+            if (v === '__all__') { _tmpAnios = []; }
+            else {
+                var idx = _tmpAnios.indexOf(v);
+                if (idx >= 0) _tmpAnios.splice(idx, 1);
+                else _tmpAnios.push(v);
+            }
+            popValue.innerHTML = renderPeriodoPopoverContent();
+            return;
+        }
+
+        var item = e.target.closest('.crm-pop-item');
+        if (item && item.dataset.pv !== undefined) {
+            // Period picker (mes / anio / vendedor) → reload
+            var field = popValue.dataset.currentField || '';
+            if (field.indexOf('__period__') === 0) {
+                var pkey = field.replace('__period__','');
+                if (pkey === 'vendedor' && item.dataset.multi) {
+                    // Toggle selección múltiple
+                    var id = String(item.dataset.pv);
+                    var idx = _currentVendors.indexOf(id);
+                    if (idx >= 0) _currentVendors.splice(idx, 1);
+                    else _currentVendors.push(id);
+                    item.classList.toggle('active');
+                    // Re-render footer si aparecen selecciones
+                    openPeriodPicker('vendedor', null);
+                    return;
+                }
+                if (pkey === 'vendedor' && !item.dataset.multi) {
+                    // "Todos" → limpiar
+                    return reloadWithPeriod('vendedor', '');
+                }
+                return reloadWithPeriod(pkey, item.dataset.pv);
+            }
+        }
+        if (item) {
+            var val = item.dataset.val;
+            // Determinar qué input actualizar basado en el contenido del popover
+            // Buscamos el último field abierto por el estilo del popover — usamos data-current-field
+            var field = popValue.dataset.currentField;
+            if (!field) {
+                // Fallback: deduce del primer item
+                var firstSection = popValue.querySelector('.crm-pop-section');
+                if (firstSection) {
+                    var lbl = firstSection.textContent.trim();
+                    var f = FIELDS.find(function(x){ return x.label === lbl; });
+                    if (f) field = f.key;
+                }
+            }
+            if (field) {
+                var fld = FIELDS.find(function(x){ return x.key === field; });
+                if (fld && fld.inputId) setInputValue(fld.inputId, val);
+            }
+            popValue.classList.remove('open');
+            renderChips();
+            return;
+        }
+        var actBtn = e.target.closest('[data-act]');
+        if (!actBtn) return;
+        var act = actBtn.dataset.act;
+        var field = popValue.dataset.currentField;
+        if (act === 'periodo-apply') {
+            return reloadWithPeriodo(_tmpMeses, _tmpAnios);
+        }
+        if (act === 'periodo-reset') {
+            _tmpMeses = [];
+            _tmpAnios = [];
+            popValue.innerHTML = renderPeriodoPopoverContent();
+            return;
+        }
+        if (act === 'period-apply-vendor') {
+            return reloadWithPeriod('vendedor', _currentVendors.join(','));
+        }
+        if (act === 'clear') {
+            if (field === 'fechas') {
+                // Reload removiendo desde/hasta del URL
+                var params = new URLSearchParams(window.location.search);
+                params.delete('desde');
+                params.delete('hasta');
+                window.location.href = window.location.pathname + '?' + params.toString();
+                return;
+            }
+            var fld = FIELDS.find(function(x){ return x.key === field; });
+            if (fld && fld.inputId) setInputValue(fld.inputId, '');
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply') {
+            // Date range: reload con ?desde&hasta — backend ignora periodo mientras está activo
+            var d = ($in('_fpDesde') || {}).value || '';
+            var h = ($in('_fpHasta') || {}).value || '';
+            var params = new URLSearchParams(window.location.search);
+            if (d) params.set('desde', d); else params.delete('desde');
+            if (h) params.set('hasta', h); else params.delete('hasta');
+            if (!params.get('tab')) {
+                var activeTab = document.querySelector('.crm-tab.active');
+                if (activeTab && activeTab.href) {
+                    var mt = activeTab.href.match(/tab=([^&]+)/);
+                    if (mt) params.set('tab', mt[1]);
+                }
+            }
+            window.location.href = window.location.pathname + '?' + params.toString();
+            return;
+        } else if (act === 'apply-text') {
+            var v = ($in('_fpSearch') || {}).value || '';
+            var fld2 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld2 && fld2.inputId) setInputValue(fld2.inputId, v);
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply-numrange') {
+            // Monto o Probabilidad — strip formatters antes de guardar
+            var nminRaw = ($in('_fpNumMin') || {}).value || '';
+            var nmaxRaw = ($in('_fpNumMax') || {}).value || '';
+            var nmin = nminRaw.replace(/,/g, '');   // quita separadores de miles
+            var nmax = nmaxRaw.replace(/,/g, '');
+            var fld3 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld3 && fld3.minId) {
+                setInputValue(fld3.minId, nmin);
+                setInputValue(fld3.maxId, nmax);
+            }
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'clear-numrange') {
+            var fld4 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld4 && fld4.minId) {
+                setInputValue(fld4.minId, '');
+                setInputValue(fld4.maxId, '');
+            }
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply-mescierre') {
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'apply-multi') {
+            // Multiselect (etapa) — guardar array como comma-separated
+            if (popValue._msCurVal) {
+                var fld5 = FIELDS.find(function(x){ return x.key === field; });
+                if (fld5 && fld5.inputId) setInputValue(fld5.inputId, popValue._msCurVal.join(','));
+            }
+            popValue.classList.remove('open');
+            renderChips();
+        } else if (act === 'clear-multi') {
+            var fld6 = FIELDS.find(function(x){ return x.key === field; });
+            if (fld6 && fld6.inputId) setInputValue(fld6.inputId, '');
+            popValue.classList.remove('open');
+            renderChips();
+        }
+    });
+
+    if (hasFacetBar) {
+    popSort.addEventListener('click', function(e){
+        var item = e.target.closest('.crm-pop-item');
+        if (!item) return;
+        var sk = item.dataset.sort;
+        // Limpiar ambos selects
+        setInputValue('filterMonto', '');
+        setInputValue('filterFecha', '');
+        if (sk) {
+            var s = SORTS.find(function(x){ return x.k === sk; });
+            if (s) setInputValue('filter' + (s.field === 'monto' ? 'Monto' : 'Fecha'), s.v);
+        }
+        popSort.classList.remove('open');
+        renderChips();
+        applySortToViews();
+    });
+    } // end if (hasFacetBar) popSort
+
+    // Aplicar sort a las vistas list y cards (reordena DOM)
+    function applySortToViews(){
+        var m = ($in('filterMonto') || {}).value || '';
+        var f = ($in('filterFecha') || {}).value || '';
+        var sortFn = null;
+        if (m) {
+            sortFn = function(a, b){
+                var av = parseFloat(a.dataset.monto || '0');
+                var bv = parseFloat(b.dataset.monto || '0');
+                return m === 'desc' ? (bv - av) : (av - bv);
+            };
+        } else if (f) {
+            sortFn = function(a, b){
+                var av = parseInt(a.dataset.fecha || '0', 10);
+                var bv = parseInt(b.dataset.fecha || '0', 10);
+                return f === 'desc' ? (bv - av) : (av - bv);
+            };
+        }
+        ['crmListBody', 'crmCardsGrid'].forEach(function(id){
+            var c = document.getElementById(id);
+            if (!c) return;
+            var nodes = Array.prototype.slice.call(c.children).filter(function(n){
+                return n.classList && n.classList.contains('crm-data-row');
+            });
+            if (sortFn) {
+                // User sort explícito: respeta ancladas arriba, luego el sort elegido
+                nodes.sort(function(a, b){
+                    var pa = a.dataset.anclada === '1' ? 0 : 1;
+                    var pb = b.dataset.anclada === '1' ? 0 : 1;
+                    if (pa !== pb) return pa - pb;
+                    return sortFn(a, b);
+                });
+            } else {
+                // Orden natural: ancladas → vencidas (más días) → resto
+                nodes.sort(function(a, b){
+                    var pa = a.dataset.anclada === '1' ? 0 : 1;
+                    var pb = b.dataset.anclada === '1' ? 0 : 1;
+                    if (pa !== pb) return pa - pb;
+                    var oa = a.dataset.vencida === '1' ? 0 : 1;
+                    var ob = b.dataset.vencida === '1' ? 0 : 1;
+                    if (oa !== ob) return oa - ob;
+                    return parseInt(b.dataset.diasVencida || '0', 10) - parseInt(a.dataset.diasVencida || '0', 10);
+                });
+            }
+            nodes.forEach(function(n){ c.appendChild(n); });
+        });
+    }
+
+    // Cerrar popovers al hacer click fuera
+    document.addEventListener('click', function(e){
+        if (bar && bar.contains(e.target)) return;
+        if (periodPillsEl && periodPillsEl.contains(e.target)) return;
+        if ((popField && popField.contains(e.target)) || (popValue && popValue.contains(e.target)) || (popSort && popSort.contains(e.target))) return;
+        closeAllPopovers();
+    });
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') closeAllPopovers();
+    });
+
+    // Observar cambios en hidden inputs para re-renderizar chips + aplicar filtros a cards
+    function onFilterChange(){
+        renderChips();
+        if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
+    }
+    ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa',
+     'filterMonto','filterFecha','filterDesde','filterHasta',
+     'filterMontoMin','filterMontoMax','filterProbMin','filterProbMax','filterMesCierre'].forEach(function(id){
+        var el = $in(id);
+        if (!el) return;
+        el.addEventListener('change', onFilterChange);
+        el.addEventListener('input',  onFilterChange);
+    });
+
+    // Render inicial (tras crm_main.js para que los selects estén poblados)
+    setTimeout(function(){ try { renderChips(); } catch(e){ console.error('[FacetBar] renderChips error:', e); } }, 300);
+    console.log('[FacetBar] init OK');
+    } catch(e) {
+        console.error('[FacetBar] init FAILED:', e);
+    }
+})();
+</script>
+
+{% if tab_activo == 'crm' %}
+<!-- ═══ KANBAN BOARD (render + flow selector) ═══ -->
+<script>
+(function(){
+    // Orden canónico de etapas por flujo (excluye Ganado/Perdido/Pagado — no aparecen en la lista)
+    var ORDER_PROYECTO = ['Oportunidad','Levantamiento','Base Cotización','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','Cotiz. Proveedor','Comprando','En Tránsito','Ejecutando','Entregado','Facturado','Reportes'];
+    var ORDER_RUNRATE  = ['En Solicitud','Cotizando','Enviada','Seguimiento','Vendido s/PO','Vendido c/PO','En Tránsito','Facturado','Programado','Entregado','Esperando Pago','Sin Respuesta'];
+
+    var _kanbanFlow = localStorage.getItem('kanbanFlow') || 'proyecto';  // proyecto | runrate | both
+    var _kanbanCollapsed = {};   // { stageName: true } — collapse manual por etapa (con oportunidades)
+    var _kanbanShowEmpty = localStorage.getItem('kanbanShowEmpty') === '1';  // mostrar vacías (default: false)
+    try {
+        var savedCol = localStorage.getItem('kanbanCollapsed');
+        if (savedCol) _kanbanCollapsed = JSON.parse(savedCol) || {};
+    } catch(e) {}
+
+    function persistCollapsed(){
+        try { localStorage.setItem('kanbanCollapsed', JSON.stringify(_kanbanCollapsed)); } catch(e) {}
+    }
+    function setFlow(flow){
+        _kanbanFlow = flow;
+        localStorage.setItem('kanbanFlow', flow);
+        render();
+    }
+    window._crmSetKanbanFlow = setFlow;
+    window._crmGetKanbanFlow = function(){ return _kanbanFlow; };
+    window._crmToggleKanbanShowEmpty = function(){
+        _kanbanShowEmpty = !_kanbanShowEmpty;
+        localStorage.setItem('kanbanShowEmpty', _kanbanShowEmpty ? '1' : '0');
+        render();
+    };
+    window._crmGetKanbanShowEmpty = function(){ return _kanbanShowEmpty; };
+
+    function stagesForFlow(flow){
+        if (flow === 'proyecto') return ORDER_PROYECTO.slice();
+        if (flow === 'runrate')  return ORDER_RUNRATE.slice();
+        // both: unión preservando orden (proyecto primero, luego runrate sin duplicar)
+        var out = ORDER_PROYECTO.slice();
+        ORDER_RUNRATE.forEach(function(s){ if (out.indexOf(s) === -1) out.push(s); });
+        return out;
+    }
+
+    function fmtMoney(n){
+        return '$' + (Number(n)||0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' MXN';
+    }
+
+    function render(){
+        var board = document.getElementById('crmKanbanBoard');
+        if (!board) return;
+        var sourceGrid = document.getElementById('crmCardsGrid');
+        if (!sourceGrid) return;
+
+        // Filtrar postit cards: excluye las que están display:none por los filtros del facet bar
+        // Así el kanban respeta todos los filtros activos (cliente, monto, probabilidad, etc.)
+        var allCards = Array.prototype.slice.call(sourceGrid.querySelectorAll('.crm-postit'));
+        var filtered = allCards.filter(function(c){
+            if (c.style.display === 'none') return false;  // filtro in-memory aplicó
+            var tipo = (c.dataset.tipo || '').toLowerCase();
+            if (_kanbanFlow === 'proyecto') return tipo === 'proyecto' || tipo === 'bitrix_proyecto';
+            if (_kanbanFlow === 'runrate')  return tipo === 'runrate';
+            return true;  // both
+        });
+
+        // Agrupar por etapa
+        var byStage = {};
+        filtered.forEach(function(c){
+            var et = (c.dataset.etapa || '').trim();
+            if (!et) return;
+            (byStage[et] = byStage[et] || []).push(c);
+        });
+
+        var stages = stagesForFlow(_kanbanFlow);
+
+        // Si el usuario filtró por etapas específicas, mostrar SOLO esas columnas
+        var etapaFilter = (document.getElementById('filterEtapa') || {}).value || '';
+        if (etapaFilter) {
+            var etapasSeleccionadas = etapaFilter.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+            if (etapasSeleccionadas.length) {
+                stages = stages.filter(function(s){
+                    return etapasSeleccionadas.some(function(sel){ return sel.toLowerCase() === s.toLowerCase(); });
+                });
+            }
+        }
+
+        // Ocultar etapas vacías por default (toggle via Ordenar popover)
+        if (!_kanbanShowEmpty) {
+            stages = stages.filter(function(s){
+                return byStage[s] && byStage[s].length > 0;
+            });
+        }
+
+        board.innerHTML = '';
+        stages.forEach(function(stage){
+            var cards = (byStage[stage] || []).slice();
+            // Sort: ancladas arriba, luego vencidas (más días), luego resto
+            cards.sort(function(a, b){
+                var pa = a.dataset.anclada === '1' ? 0 : 1;
+                var pb = b.dataset.anclada === '1' ? 0 : 1;
+                if (pa !== pb) return pa - pb;
+                var oa = a.dataset.vencida === '1' ? 0 : 1;
+                var ob = b.dataset.vencida === '1' ? 0 : 1;
+                if (oa !== ob) return oa - ob;
+                return parseInt(b.dataset.diasVencida || '0', 10) - parseInt(a.dataset.diasVencida || '0', 10);
+            });
+
+            var col = document.createElement('div');
+            col.className = 'crm-kanban-col' + (_kanbanCollapsed[stage] ? ' collapsed' : '');
+            col.dataset.stage = stage;
+
+            var totalVal = 0;
+            cards.forEach(function(c){ totalVal += parseFloat(c.dataset.monto || '0') || 0; });
+
+            // Header
+            var head = document.createElement('div');
+            head.className = 'crm-kanban-head';
+
+            if (_kanbanCollapsed[stage]) {
+                // Colapsada: solo dot + nombre vertical + count
+                head.innerHTML = '<div class="crm-kanban-collapsed-body">' +
+                    '<span class="crm-kanban-count" title="' + cards.length + ' oportunidades">' + cards.length + '</span>' +
+                    '<span class="crm-kanban-vertical-name">' + stage + '</span>' +
+                    '</div>';
+                col.appendChild(head);
+                col.addEventListener('click', function(e){
+                    // Expandir al click en cualquier parte
+                    _kanbanCollapsed[stage] = false;
+                    persistCollapsed();
+                    render();
+                });
+            } else {
+                head.innerHTML =
+                    '<div class="crm-kanban-head-top">' +
+                        '<div class="crm-kanban-head-title">' +
+                            '<span class="crm-kanban-dot' + (cards.length ? ' active' : '') + '"></span>' +
+                            '<span class="crm-kanban-stage-name">' + stage + '</span>' +
+                            '<span class="crm-kanban-count">' + cards.length + '</span>' +
+                        '</div>' +
+                        '<div class="crm-kanban-head-actions">' +
+                            '<button type="button" class="crm-kanban-col-btn" data-act="collapse" title="Minimizar etapa">' +
+                                '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/></svg>' +
+                            '</button>' +
+                            '<button type="button" class="crm-kanban-col-btn" data-act="add" title="Nueva oportunidad en esta etapa">' +
+                                '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="crm-kanban-head-bottom">' +
+                        '<span class="crm-kanban-total-label">Total:</span> ' +
+                        '<span class="crm-kanban-total-value">' + fmtMoney(totalVal) + '</span>' +
+                    '</div>';
+                col.appendChild(head);
+
+                head.querySelector('[data-act="collapse"]').addEventListener('click', function(e){
+                    e.stopPropagation();
+                    _kanbanCollapsed[stage] = true;
+                    persistCollapsed();
+                    render();
+                });
+                var btnAdd = head.querySelector('[data-act="add"]');
+                if (btnAdd) btnAdd.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    var btn = document.getElementById('btnNegociacion');
+                    if (btn) btn.click();
+                });
+
+                var body = document.createElement('div');
+                body.className = 'crm-kanban-col-body';
+                if (cards.length === 0) {
+                    body.innerHTML = '<div class="crm-kanban-empty">' +
+                        '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                        '<span>Añadir oportunidad</span>' +
+                    '</div>';
+                } else {
+                    cards.forEach(function(orig){
+                        var clone = orig.cloneNode(true);
+                        clone.classList.add('crm-kanban-card');
+                        // Onclick ya viene en el HTML original con openDetalle('id')
+                        body.appendChild(clone);
+                    });
+                }
+                col.appendChild(body);
+            }
+
+            board.appendChild(col);
+        });
+    }
+
+    window._crmRenderKanban = render;
+
+    // Inject flow selector en el popover de Sort (si existe) — SOLO cuando vista kanban activa
+    // El popover de sort se crea on-demand; hook al abrirlo para inyectar la sección de flujo.
+    var popSort = document.getElementById('popSort');
+    if (popSort) {
+        var origObserver = new MutationObserver(function(){
+            // Cuando el popSort se abre (innerHTML cambia), inyecta sección de flujo si aún no está
+            if (!popSort.classList.contains('open')) return;
+            // Solo mostrar secciones de kanban si la vista kanban está activa
+            var kanbanActive = localStorage.getItem('crmViewMode') === 'kanban';
+            // Si la vista no es kanban, remover las secciones (por si quedaron del popover anterior)
+            var existing = popSort.querySelector('.crm-kanban-flow-section');
+            if (!kanbanActive) {
+                if (existing) existing.remove();
+                return;
+            }
+            if (existing) return;
+            var sectionHtml = '<div class="crm-kanban-flow-section">' +
+                '<div class="crm-pop-section" style="border-top:1px solid #F1F5F9;margin-top:4px;padding-top:10px;">Flujo (Kanban)</div>' +
+                '<div class="crm-pop-list">' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'proyecto' ? ' active' : '') + '" data-kflow="proyecto">Solo Proyectos</button>' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'runrate'  ? ' active' : '') + '" data-kflow="runrate">Solo Runrate</button>' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanFlow === 'both'     ? ' active' : '') + '" data-kflow="both">Ambos flujos</button>' +
+                '</div>' +
+                '<div class="crm-pop-section" style="border-top:1px solid #F1F5F9;margin-top:4px;padding-top:10px;">Opciones</div>' +
+                '<div class="crm-pop-list">' +
+                    '<button type="button" class="crm-pop-item' + (_kanbanShowEmpty ? ' active' : '') + '" data-kshow="empty">Mostrar etapas vacías</button>' +
+                '</div>' +
+                '</div>';
+            popSort.insertAdjacentHTML('beforeend', sectionHtml);
+            // Bind clicks en la nueva sección
+            popSort.querySelectorAll('[data-kflow]').forEach(function(btn){
+                btn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    setFlow(btn.dataset.kflow);
+                    popSort.classList.remove('open');
+                });
+            });
+            var toggleEmpty = popSort.querySelector('[data-kshow="empty"]');
+            if (toggleEmpty) toggleEmpty.addEventListener('click', function(e){
+                e.stopPropagation();
+                window._crmToggleKanbanShowEmpty();
+                popSort.classList.remove('open');
+            });
+        });
+        origObserver.observe(popSort, { childList: true, attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Render automático cuando el usuario ancla/desancla un card (el DOM de origen cambia)
+    var sourceGrid = document.getElementById('crmCardsGrid');
+    if (sourceGrid) {
+        var mo = new MutationObserver(function(){
+            // Solo re-render si kanban está visible
+            var kv = document.getElementById('crmViewKanban');
+            if (kv && kv.style.display !== 'none') render();
+        });
+        mo.observe(sourceGrid, { childList: true, subtree: true, attributes: true, attributeFilter: ['class','data-anclada'] });
+    }
+
+    // Scroll horizontal del board + rails tipo timeline en los bordes
+    var board = document.getElementById('crmKanbanBoard');
+    var railL = document.getElementById('kanbanRailLeft');
+    var railR = document.getElementById('kanbanRailRight');
+
+    function updateRailsState(){
+        if (!board || !railL || !railR) return;
+        var maxScroll = board.scrollWidth - board.clientWidth;
+        railL.classList.toggle('disabled', board.scrollLeft <= 4);
+        railR.classList.toggle('disabled', board.scrollLeft >= maxScroll - 4);
+    }
+
+    if (railL && board) railL.addEventListener('click', function(){ board.scrollBy({ left: -320, behavior: 'smooth' }); });
+    if (railR && board) railR.addEventListener('click', function(){ board.scrollBy({ left:  320, behavior: 'smooth' }); });
+
+    // (Removido: conversión wheel vertical → horizontal. Trackpad swipe horizontal y
+    // Shift+wheel siguen funcionando nativos; para mouse-only usar los rails o teclado.)
+
+    if (board) {
+        board.addEventListener('scroll', updateRailsState);
+        setTimeout(updateRailsState, 100);
+        var ro = new ResizeObserver(updateRailsState);
+        ro.observe(board);
+    }
+
+    // Render inicial si la vista guardada es kanban (evita flash de vista list al recargar)
+    if (localStorage.getItem('crmViewMode') === 'kanban') {
+        // Primer render inmediato
+        render();
+        // Segundo render tras un tick por si las cards fuente todavía no están listas
+        setTimeout(render, 50);
+    }
+})();
+</script>
+{% endif %}

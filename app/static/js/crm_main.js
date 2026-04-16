@@ -97,68 +97,196 @@
             });
         });
 
-        // Toggle pin oportunidad
-        setTimeout(function() {
-            document.querySelectorAll('.crm-pin').forEach(function(pin) {
-                pin.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var oppId = (this.getAttribute('data-pin-id') || '').replace(/\s/g, '').replace(/\u00A0/g, '');
-                    if (!oppId) return;
-                    var self = this;
-                    var card = self.closest('.crm-postit');
-                    var grid = document.getElementById('crmCardsGrid');
-                    var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-                    fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
-                    }).then(function(r) { return r.json(); }).then(function(data) {
-                        if (data.success) {
-                            self.classList.toggle('pinned', data.anclada);
-                            var svg = self.querySelector('svg');
-                            var path = self.querySelector('path');
-                            if (data.anclada) {
-                                if (svg) { svg.setAttribute('fill', '#EF4444'); svg.setAttribute('stroke', '#EF4444'); }
-                                // Agregar agujero
-                                if (card && !card.querySelector('.crm-pin-hole-dyn')) {
-                                    var hole = document.createElement('div');
-                                    hole.className = 'crm-pin-hole-dyn';
-                                    hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
-                                    card.appendChild(hole);
-                                }
-                                // Mover al inicio
-                                if (card && grid) { grid.insertBefore(card, grid.firstChild); }
-                            } else {
-                                if (svg) { svg.setAttribute('fill', '#9CA3AF'); svg.setAttribute('stroke', '#9CA3AF'); }
-                                var h = card ? card.querySelector('.crm-pin-hole-dyn') : null;
-                                if (h) h.remove();
-                            }
+        // Toggle pin oportunidad — delegación en document (capture phase)
+        // Funciona en cards, list rows, y cards clonadas dentro del kanban.
+        document.addEventListener('click', function(e) {
+            var pin = e.target.closest && e.target.closest('.crm-pin');
+            if (!pin) return;
+            // Solo pins de oportunidades (tienen data-pin-id); las de tareas usan otro handler
+            var pidAttr = pin.getAttribute('data-pin-id');
+            if (!pidAttr) return;
+            // Excluir el pin-button de la vista LIST-tarea (class .crm-list-pin es de oportunidades,
+            // pero el pin de tareas usa class .tarea-action-btn y llama a crmTareaTogglePin)
+            if (pin.classList.contains('tarea-action-btn')) return;
+
+            e.stopPropagation();
+            e.preventDefault();
+            (function(clickedPin){
+                var oppId = (pidAttr || '').replace(/\s/g, '').replace(/\u00A0/g, '');
+                if (!oppId) return;
+                var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    if (!data.success) return;
+                    var anclada = !!data.anclada;
+
+                    // 1) Actualizar TODOS los .crm-pin con este oppId (original + clones en kanban)
+                    document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]').forEach(function(p){
+                        if (p.classList.contains('tarea-action-btn')) return;
+                        p.classList.toggle('pinned', anclada);
+                        var svg = p.querySelector('svg');
+                        if (svg) {
+                            svg.setAttribute('fill', anclada ? '#EF4444' : '#9CA3AF');
+                            svg.setAttribute('stroke', 'none');
                         }
                     });
-                });
-            });
-        }, 500);
 
-        // CRM View Toggle (cards vs tabla) — cards es el default
-        var _crmViewMode = localStorage.getItem('crmViewMode') || 'cards';
+                    // 2) Actualizar TODAS las cards/rows originales (no clones) con este oppId
+                    //    Los clones del kanban se re-renderizan automáticamente por el MutationObserver
+                    var originalCard = document.querySelector('#crmCardsGrid .crm-postit[data-opp-id="' + oppId + '"]');
+                    var originalRow  = document.querySelector('#crmListBody .crm-list-row[data-opp-id="' + oppId + '"]');
+                    [originalCard, originalRow].forEach(function(node){
+                        if (!node) return;
+                        node.dataset.anclada = anclada ? '1' : '0';
+                        node.classList.toggle('pinned-row', anclada);
+                    });
+
+                    // 3) Mover originales al spot correcto
+                    if (anclada) {
+                        // Agujero en el card original
+                        if (originalCard && !originalCard.querySelector('.crm-pin-hole-dyn')) {
+                            var hole = document.createElement('div');
+                            hole.className = 'crm-pin-hole-dyn';
+                            hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
+                            originalCard.appendChild(hole);
+                        }
+                        // Mover al inicio
+                        var cg = document.getElementById('crmCardsGrid');
+                        if (originalCard && cg) cg.insertBefore(originalCard, cg.firstChild);
+                        var lb = document.getElementById('crmListBody');
+                        if (originalRow  && lb) lb.insertBefore(originalRow, lb.firstChild);
+                    } else {
+                        // Quitar agujero
+                        if (originalCard) {
+                            var h = originalCard.querySelector('.crm-pin-hole-dyn');
+                            if (h) h.remove();
+                        }
+                        // Mover después de ancladas + vencidas
+                        function reubicar(container, node){
+                            if (!container || !node) return;
+                            var insertBefore = null;
+                            var children = container.children;
+                            for (var i = 0; i < children.length; i++) {
+                                var ch = children[i];
+                                if (ch === node) continue;
+                                var chPinned  = ch.dataset && ch.dataset.anclada === '1';
+                                var chOverdue = ch.dataset && ch.dataset.vencida === '1';
+                                if (!chPinned && !chOverdue) { insertBefore = ch; break; }
+                            }
+                            if (insertBefore) container.insertBefore(node, insertBefore);
+                            else container.appendChild(node);
+                        }
+                        reubicar(document.getElementById('crmCardsGrid'), originalCard);
+                        reubicar(document.getElementById('crmListBody'),   originalRow);
+                    }
+
+                    // 4) Re-render kanban (el MutationObserver debería detectarlo, pero forzamos por seguridad)
+                    if (typeof window._crmRenderKanban === 'function') {
+                        var kv = document.getElementById('crmViewKanban');
+                        if (kv && kv.style.display !== 'none') window._crmRenderKanban();
+                    }
+                });
+            })(pin);
+        }, true);
+
+        // Delegated capture-phase handler: botón de cotizar en la vista lista
+        // Capture phase + stopImmediatePropagation para ganar contra el onclick del row.
+        document.addEventListener('click', function(e){
+            var qbtn = e.target.closest && e.target.closest('.crm-list-quote');
+            if (qbtn) {
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                var oppId = parseInt(qbtn.getAttribute('data-opp-id') || '0', 10);
+                if (oppId && typeof window.openCotizador === 'function') window.openCotizador(oppId);
+                return false;
+            }
+        }, true);
+
+        // Helpers orden: ancladas → vencidas (más días arriba) → resto
+        function isOverdueNode(n) { return n && n.dataset && n.dataset.vencida === '1'; }
+        function isAnchoredNode(n) {
+            return n && ((n.dataset && n.dataset.anclada === '1') || (n.classList && n.classList.contains('pinned-row')));
+        }
+        function diasVencidaNode(n) {
+            return (n && n.dataset && parseInt(n.dataset.diasVencida || '0', 10)) || 0;
+        }
+        // El backend ya devuelve ordenado, pero re-aseguro cliente-side por si se mueven nodos.
+        setTimeout(function(){
+            ['crmCardsGrid', 'crmListBody'].forEach(function(id){
+                var container = document.getElementById(id);
+                if (!container) return;
+                var nodes = Array.prototype.slice.call(container.children).filter(function(n){
+                    return n.classList && (n.classList.contains('crm-data-row') || n.classList.contains('crm-list-row') || n.classList.contains('crm-postit'));
+                });
+                nodes.sort(function(a, b){
+                    // 1) Ancladas primero
+                    var pa = isAnchoredNode(a) ? 0 : 1;
+                    var pb = isAnchoredNode(b) ? 0 : 1;
+                    if (pa !== pb) return pa - pb;
+                    // 2) Vencidas (no ancladas) después
+                    var oa = isOverdueNode(a) ? 0 : 1;
+                    var ob = isOverdueNode(b) ? 0 : 1;
+                    if (oa !== ob) return oa - ob;
+                    // 3) Dentro de vencidas: más días arriba
+                    return diasVencidaNode(b) - diasVencidaNode(a);
+                });
+                nodes.forEach(function(n){ container.appendChild(n); });
+            });
+        }, 50);
+
+        // CRM View Toggle — solo List y Kanban (cards + table ocultos por ahora)
+        var _crmViewOrder = ['list', 'kanban'];
+        var _crmViewMode = localStorage.getItem('crmViewMode') || 'list';
+        if (_crmViewOrder.indexOf(_crmViewMode) === -1) _crmViewMode = 'list';
         window.toggleCrmView = function() {
-            _crmViewMode = _crmViewMode === 'cards' ? 'table' : 'cards';
+            var idx = _crmViewOrder.indexOf(_crmViewMode);
+            _crmViewMode = _crmViewOrder[(idx + 1) % _crmViewOrder.length];
             localStorage.setItem('crmViewMode', _crmViewMode);
             _applyCrmView();
         };
         function _applyCrmView() {
-            var cardsView = document.getElementById('crmViewCards');
-            var tableView = document.getElementById('crmViewTable');
+            // Remover el <style> temprano que oculta vistas (ahora las controlamos inline)
+            var earlyHide = document.getElementById('_crmEarlyViewHide');
+            if (earlyHide) earlyHide.remove();
+
+            var listView   = document.getElementById('crmViewList');
+            var cardsView  = document.getElementById('crmViewCards');
+            var tableView  = document.getElementById('crmViewTable');
+            var kanbanView = document.getElementById('crmViewKanban');
             var icon = document.getElementById('crmViewIcon');
             if (!cardsView || !tableView) return;
-            if (_crmViewMode === 'cards') {
-                cardsView.style.display = '';
-                tableView.style.display = 'none';
-                if (icon) icon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
-            } else {
-                cardsView.style.display = 'none';
-                tableView.style.display = '';
-                if (icon) icon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2"/>';
+            if (listView)   listView.style.display   = (_crmViewMode === 'list')   ? '' : 'none';
+            cardsView.style.display                   = 'none';  // cards oculta por ahora
+            tableView.style.display                   = 'none';  // table oculta por ahora
+            if (kanbanView) kanbanView.style.display = (_crmViewMode === 'kanban') ? '' : 'none';
+            // En kanban: ocultar el footer legacy (clientes / deals / total) para aprovechar espacio
+            var footer = document.querySelector('.crm-footer');
+            if (footer) footer.style.display = (_crmViewMode === 'kanban') ? 'none' : '';
+            // Clase en .crm-main para que el board llegue edge-to-edge y hasta abajo
+            var mainEl = document.querySelector('.crm-main');
+            if (mainEl) mainEl.classList.toggle('kanban-active', _crmViewMode === 'kanban');
+            // Lock scroll del body para evitar scroll global en vista kanban
+            document.body.classList.toggle('kanban-scroll-lock', _crmViewMode === 'kanban');
+            if (_crmViewMode === 'kanban' && typeof window._crmRenderKanban === 'function') {
+                window._crmRenderKanban();
+            }
+            if (icon) {
+                if (_crmViewMode === 'list') {
+                    // 3 filas horizontales
+                    icon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2"/>';
+                } else if (_crmViewMode === 'cards') {
+                    // 2x2 grid (cards)
+                    icon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
+                } else if (_crmViewMode === 'kanban') {
+                    // Kanban: 3 columnas verticales
+                    icon.innerHTML = '<rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="14" rx="1"/><rect x="17" y="3" width="4" height="10" rx="1"/>';
+                } else {
+                    // Tabla clásica
+                    icon.innerHTML = '<rect x="3" y="5" width="18" height="14" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="5" x2="9" y2="19"/>';
+                }
             }
         }
         _applyCrmView();
@@ -1385,10 +1513,15 @@
                 }
             }
 
+            // Solo la X cierra el cotizador — click en backdrop y tecla Escape bloqueados.
             cotizadorCloseBtn.addEventListener('click', closeCotizador);
-            cotizadorOverlay.addEventListener('click', function (e) {
-                if (e.target === cotizadorOverlay) closeCotizador();
-            });
+            // Capturar Escape a nivel document y swallow si el overlay está activo
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && cotizadorOverlay.classList.contains('active')) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }, true);
 
             // ── Refresh table via API (sin recargar página) ──
             var currentTab = _CRM_CONFIG.tabActivo;
@@ -1417,13 +1550,13 @@
                 var btnOpp = document.getElementById('crmModeOpp');
                 var btnProsp = document.getElementById('crmModeProsp');
                 if (btnOpp && btnProsp) {
-                    if (mode === 'oportunidades') {
-                        btnOpp.style.background = '#0052D4'; btnOpp.style.color = '#fff';
-                        btnProsp.style.background = 'transparent'; btnProsp.style.color = '#86868B';
-                    } else {
-                        btnProsp.style.background = '#5856D6'; btnProsp.style.color = '#fff';
-                        btnOpp.style.background = 'transparent'; btnOpp.style.color = '#86868B';
-                    }
+                    btnOpp.classList.toggle('active', mode === 'oportunidades');
+                    btnOpp.classList.remove('active-prospectos');
+                    btnProsp.classList.toggle('active', mode === 'prospeccion');
+                    btnProsp.classList.toggle('active-prospectos', mode === 'prospeccion');
+                    // Limpiar inline styles legados si existen
+                    btnOpp.style.background = ''; btnOpp.style.color = '';
+                    btnProsp.style.background = ''; btnProsp.style.color = '';
                 }
                 var kpiOpp = document.getElementById('ckKpiRow');
                 var kpiProsp = document.getElementById('ckKpiRowProsp');
@@ -3915,10 +4048,28 @@
 
         function _applyFiltersToCards() {
             var grid = document.getElementById('crmCardsGrid');
-            if (!grid) return;
-            var cards = grid.querySelectorAll('.crm-data-row');
+            var listBody = document.getElementById('crmListBody');
+            var cards = [];
+            if (grid) cards = cards.concat(Array.prototype.slice.call(grid.querySelectorAll('.crm-data-row')));
+            if (listBody) cards = cards.concat(Array.prototype.slice.call(listBody.querySelectorAll('.crm-data-row')));
+            if (!cards.length) return;
             var searchVal = (document.getElementById('crmSearch') || {}).value || '';
             searchVal = searchVal.toLowerCase();
+
+            // Leer filtros nuevos (monto/probabilidad/mes cierre) directo de hidden inputs
+            var montoMinStr = (document.getElementById('filterMontoMin') || {}).value || '';
+            var montoMaxStr = (document.getElementById('filterMontoMax') || {}).value || '';
+            var probMinStr  = (document.getElementById('filterProbMin')  || {}).value || '';
+            var probMaxStr  = (document.getElementById('filterProbMax')  || {}).value || '';
+            var mesCierreStr = (document.getElementById('filterMesCierre') || {}).value || '';
+            var montoMin = montoMinStr !== '' ? parseFloat(montoMinStr) : null;
+            var montoMax = montoMaxStr !== '' ? parseFloat(montoMaxStr) : null;
+            var probMin  = probMinStr  !== '' ? parseFloat(probMinStr)  : null;
+            var probMax  = probMaxStr  !== '' ? parseFloat(probMaxStr)  : null;
+            var mesCierreList = mesCierreStr ? mesCierreStr.split(',').filter(Boolean) : null;
+            // Etapa puede ser multi (comma-separated desde el multiselect)
+            var etapaFilterRaw = (currentFilters.etapa || '').trim();
+            var etapaList = etapaFilterRaw ? etapaFilterRaw.split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean) : null;
 
             cards.forEach(function(card) {
                 var text = card.textContent.toLowerCase();
@@ -3928,6 +4079,9 @@
                 var producto = (card.dataset.producto || '').toLowerCase();
                 var cliente = (card.dataset.cliente || '').toLowerCase();
                 var contacto = (card.dataset.contacto || '').toLowerCase();
+                var monto = parseFloat(card.dataset.monto || '0') || 0;
+                var prob  = parseFloat(card.dataset.probabilidad || '0') || 0;
+                var mesCierre = (card.dataset.mesCierre || '').trim();
                 var show = true;
 
                 // Buscador global
@@ -3935,10 +4089,21 @@
                 // Filtros del panel
                 if (show && currentFilters.cliente && !cliente.includes(currentFilters.cliente.toLowerCase())) show = false;
                 if (show && currentFilters.area && !area.includes(currentFilters.area.toLowerCase())) show = false;
-                if (show && currentFilters.etapa && !etapa.includes(currentFilters.etapa.toLowerCase())) show = false;
+                if (show && etapaList) {
+                    // Multi-etapa: match exacto (después de lowercase) contra cualquier elemento de la lista
+                    if (etapaList.indexOf(etapa) === -1) show = false;
+                }
                 if (show && currentFilters.tipo && tipo !== currentFilters.tipo) show = false;
                 if (show && currentFilters.producto && !producto.includes(currentFilters.producto.toLowerCase())) show = false;
                 if (show && currentFilters.contacto && !contacto.includes(currentFilters.contacto.toLowerCase())) show = false;
+                // Rango de monto
+                if (show && montoMin !== null && monto < montoMin) show = false;
+                if (show && montoMax !== null && monto > montoMax) show = false;
+                // Rango de probabilidad
+                if (show && probMin !== null && prob < probMin) show = false;
+                if (show && probMax !== null && prob > probMax) show = false;
+                // Mes de cierre (multi)
+                if (show && mesCierreList && mesCierreList.indexOf(mesCierre) === -1) show = false;
 
                 // Rango de fechas (por fecha de creacion)
                 if (show && (currentFilters.desde || currentFilters.hasta)) {
@@ -3951,6 +4116,12 @@
 
                 card.style.display = show ? '' : 'none';
             });
+
+            // Kanban respeta filtros: re-render si visible
+            if (typeof window._crmRenderKanban === 'function') {
+                var kv = document.getElementById('crmViewKanban');
+                if (kv && kv.style.display !== 'none') window._crmRenderKanban();
+            }
         }
         // Exponer para que se pueda llamar desde fuera del scope
         window._applyFiltersToCards = _applyFiltersToCards;
@@ -4092,7 +4263,7 @@
             if (crmContent) crmContent.style.display = (view === 'crm') ? '' : 'none';
             if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
             if (proyectosSection) proyectosSection.classList.toggle('active', view === 'proyectos');
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.island-nav-btn, .crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
             if (activeBtn) activeBtn.classList.add('active');
             // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +
@@ -4257,16 +4428,26 @@
             if (grid) grid.innerHTML = '<div class="tareas-empty-card">Cargando tareas...</div>';
 
             var url = '/app/api/tareas/?estado=pendientes';
-            fetch(url)
-                .then(function (r) {
-                    if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error ' + r.status); });
-                    return r.json();
-                })
-                .then(function (data) {
+            // Fetch paralelo: pendientes + completadas recientes (para que sigan visibles
+            // en el calendario después de recargar la página)
+            Promise.all([
+                fetch(url).then(function(r){ if (!r.ok) return r.json().then(function(d){ throw new Error(d.error || 'Error ' + r.status); }); return r.json(); }),
+                fetch('/app/api/tareas/?estado=completadas&page=1&page_size=100').then(function(r){ return r.ok ? r.json() : { success:false, tareas:[] }; }).catch(function(){ return { success:false, tareas:[] }; })
+            ])
+                .then(function (results) {
+                    var data = results[0];
+                    var dataCompl = results[1] || { tareas: [] };
                     if (data.success && Array.isArray(data.tareas)) {
-                        _crmTareasCache[estado] = data.tareas;
-                        _crmAllTareas = data.tareas;
-                        _actualizarDropdownResponsables(data.tareas);
+                        // Merge: pendientes + completadas (dedup por id)
+                        var byId = {};
+                        data.tareas.forEach(function(t){ byId[t.id] = t; });
+                        if (Array.isArray(dataCompl.tareas)) {
+                            dataCompl.tareas.forEach(function(t){ if (!byId[t.id]) byId[t.id] = t; });
+                        }
+                        var merged = Object.keys(byId).map(function(k){ return byId[k]; });
+                        _crmTareasCache[estado] = merged;
+                        _crmAllTareas = merged;
+                        _actualizarDropdownResponsables(merged);
                         renderTareasCRM();
                         _tareasPollHash = data.tareas.map(function(t){ return t.id+':'+t.estado; }).join(',');
                     } else {
@@ -4498,79 +4679,359 @@
             _tareasFocusPersist();
         }
 
+        function _tareasDiasVencida(t, now) {
+            if (!t.fecha_limite) return 0;
+            var fin = new Date(t.fecha_limite);
+            if (fin >= now) return 0;
+            return Math.floor((now.getTime() - fin.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        function _tareasHeatClass(dias) {
+            if (dias >= 30) return 'heat-max';
+            if (dias >= 14) return 'heat-5';
+            if (dias >= 7)  return 'heat-4';
+            if (dias >= 3)  return 'heat-3';
+            if (dias >= 1)  return 'heat-2';
+            return 'heat-1';
+        }
+
         function renderTareasCRM() {
             var grid = document.getElementById('tareasCardsGrid');
-            var countEl = document.getElementById('tareasCount');
-            if (!grid) return;
-
-            // Aplicar default inteligente si es primera carga
-            _tareasApplySmartDefault();
-            // Sincronizar el sidebar (contadores, KPIs, highlighted stage)
-            _tareasRenderSidebar();
+            var listBody = document.getElementById('tareasListBody');
+            if (!grid && !listBody) return;
 
             var tareas = (_crmAllTareas || []).slice();
 
-            // Siempre excluir completadas (el nuevo Focus es de tareas pendientes)
-            tareas = tareas.filter(function(t){ return t.estado !== 'completada'; });
+            // NO excluimos completadas — se muestran marcadas (verde) y ordenadas al final
 
-            // Filtro por pipeline + etapa (del sidebar)
-            var selected = _tareasFocus.selected[_tareasFocus.flow];
-            if (selected !== 'ALL') {
-                var stages = _tareasGetStagesForFlow(_tareasFocus.flow);
-                var stageName = stages[selected];
-                tareas = tareas.filter(function(t){
-                    return t.oportunidad_tipo === _tareasFocus.flow && t.oportunidad_etapa === stageName;
-                });
-            }
-
-            // Filtro por urgency pills
+            // Contadores globales (para los tabs) — ANTES de aplicar urgency
             var now = new Date();
+            var countTodas = tareas.length;
+            var countAtrasadas = tareas.filter(function(t){ return _tareasIsOverdue(t, now); }).length;
+            var countHoy = tareas.filter(function(t){ return _tareasIsToday(t, now); }).length;
+            var badgeTodas = document.getElementById('tareasCountTodas');
+            var badgeAtrasadas = document.getElementById('tareasCountAtrasadas');
+            var badgeHoy = document.getElementById('tareasCountHoy');
+            if (badgeTodas) badgeTodas.textContent = countTodas;
+            if (badgeAtrasadas) badgeAtrasadas.textContent = countAtrasadas;
+            if (badgeHoy) badgeHoy.textContent = countHoy;
+
+            // Filtro por urgency (tabs)
             if (_tareasFocus.urgency === 'atrasadas') {
                 tareas = tareas.filter(function(t){ return _tareasIsOverdue(t, now); });
             } else if (_tareasFocus.urgency === 'hoy') {
                 tareas = tareas.filter(function(t){ return _tareasIsToday(t, now); });
             }
 
-            // Filtro por responsables seleccionados (multi-select)
-            var respKeys = Object.keys(_crmTareasRespSet);
-            if (respKeys.length > 0) {
-                tareas = tareas.filter(function(t){ return !!_crmTareasRespSet[t.responsable]; });
-            }
-            // Actualizar indicador visual de filtros activos
-            var filterBtn = document.getElementById('tareasFilterBtn');
-            if (filterBtn) {
-                filterBtn.classList.toggle('has-filters', respKeys.length > 0);
+            // Filtros del facet bar (hidden inputs)
+            function $tIn(id) { return document.getElementById(id); }
+            var fTipo    = ($tIn('tareasFilterTipo')    || {}).value || '';
+            var fEtapa   = ($tIn('tareasFilterEtapa')   || {}).value || '';
+            var fResp    = ($tIn('tareasFilterResp')    || {}).value || '';
+            var fCread   = ($tIn('tareasFilterCreador') || {}).value || '';
+            var fDesde   = ($tIn('tareasFilterDesde')   || {}).value || '';
+            var fHasta   = ($tIn('tareasFilterHasta')   || {}).value || '';
+            if (fTipo)  tareas = tareas.filter(function(t){ return (t.oportunidad_tipo || '') === fTipo; });
+            if (fEtapa) tareas = tareas.filter(function(t){ return (t.oportunidad_etapa || '').toLowerCase().indexOf(fEtapa.toLowerCase()) !== -1; });
+            if (fResp)  tareas = tareas.filter(function(t){ return String(t.asignado_a_id || '') === String(fResp); });
+            if (fCread) tareas = tareas.filter(function(t){ return String(t.creado_por_id || '') === String(fCread); });
+            if (fDesde || fHasta) {
+                tareas = tareas.filter(function(t){
+                    if (!t.fecha_limite) return false;
+                    var fl = t.fecha_limite.substring(0, 10);
+                    if (fDesde && fl < fDesde) return false;
+                    if (fHasta && fl > fHasta) return false;
+                    return true;
+                });
             }
 
             // Búsqueda
-            var searchVal = (document.getElementById('tareasSearchInput') || {}).value || '';
+            var searchVal = ($tIn('tareasSearchInput') || {}).value || '';
             if (searchVal.trim()) {
                 var q = searchVal.trim().toLowerCase();
-                tareas = tareas.filter(function(t){ return (t.titulo || '').toLowerCase().indexOf(q) !== -1; });
+                tareas = tareas.filter(function(t){
+                    return (t.titulo || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.oportunidad_nombre || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.responsable || '').toLowerCase().indexOf(q) !== -1;
+                });
             }
 
-            // Sort: ancladas > vencidas > por fecha
+            // Sort: completadas SIEMPRE al final > ancladas > rojas > próximas por fecha
+            var userSort = ($tIn('tareasSort') || {}).value || '';
             tareas.sort(function(a, b){
+                var aD = a.estado === 'completada';
+                var bD = b.estado === 'completada';
+                if (aD !== bD) return aD ? 1 : -1;
                 var aP = !!a.esta_anclada;
                 var bP = !!b.esta_anclada;
-                if (aP && !bP) return -1;
-                if (!aP && bP) return 1;
+                if (aP !== bP) return aP ? -1 : 1;
+                if (userSort === 'fecha:asc' || userSort === 'fecha:desc') {
+                    var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                    var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                    return userSort === 'fecha:desc' ? (bT - aT) : (aT - bT);
+                }
+                // Default: vencidas (más días) → resto ascendente por fecha
                 var aV = _tareasIsOverdue(a, now);
                 var bV = _tareasIsOverdue(b, now);
-                if (aV && !bV) return -1;
-                if (!aV && bV) return 1;
-                var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
-                var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
-                return aT - bT;
+                if (aV !== bV) return aV ? -1 : 1;
+                if (aV && bV) return _tareasDiasVencida(b, now) - _tareasDiasVencida(a, now);
+                var aTd = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                var bTd = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                return aTd - bTd;
             });
 
-            if (countEl) countEl.textContent = tareas.length + ' tarea' + (tareas.length !== 1 ? 's' : '');
-
-            if (tareas.length === 0) {
-                grid.innerHTML = '<div class="tareas-empty-card">No hay tareas en esta etapa.</div>';
-                return;
+            // Render cards (vista legacy, oculta por default)
+            if (grid) {
+                if (tareas.length === 0) {
+                    grid.innerHTML = '<div class="tareas-empty-card">No hay tareas.</div>';
+                } else {
+                    grid.innerHTML = tareas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+                }
             }
-            grid.innerHTML = tareas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+            // Render list (nueva default)
+            if (listBody) {
+                if (tareas.length === 0) {
+                    listBody.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94A3B8;font-size:0.85rem;">No hay tareas.</div>';
+                } else {
+                    listBody.innerHTML = tareas.map(function(t){ return createTaskListRowCRM(t, now); }).join('');
+                }
+            }
+            // Render calendar si visible
+            renderTareasCalendar(tareas, now);
+
+            // Clear button visibility
+            var clrBtn = document.getElementById('btnTareasFacetClear');
+            if (clrBtn) {
+                var anyFilter = !!(fTipo || fEtapa || fResp || fCread || fDesde || fHasta);
+                clrBtn.style.display = anyFilter ? '' : 'none';
+            }
+        }
+
+        // ── Vista CALENDARIO semanal ──────────────────────────────────
+        // Estado: lunes de la semana visible (Date al 00:00 hora local)
+        var _tareasCalWeekStart = null;
+
+        function _getMondayOf(d) {
+            var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            var dow = x.getDay();  // 0=Dom, 1=Lun, ..., 6=Sáb
+            var diff = dow === 0 ? -6 : 1 - dow;  // siempre al lunes
+            x.setDate(x.getDate() + diff);
+            return x;
+        }
+        function _fmtDateKey(d) {
+            var m = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            return d.getFullYear() + '-' + m + '-' + day;
+        }
+        function _dateFromIso(iso) {
+            if (!iso) return null;
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) return null;
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+        if (_tareasCalWeekStart === null) _tareasCalWeekStart = _getMondayOf(new Date());
+        window._tareasCalShiftWeek = function(delta) {
+            _tareasCalWeekStart.setDate(_tareasCalWeekStart.getDate() + delta * 7);
+            renderTareasCRM();
+        };
+        window._tareasCalGoToday = function() {
+            _tareasCalWeekStart = _getMondayOf(new Date());
+            renderTareasCRM();
+        };
+
+        function renderTareasCalendar(tareas, now) {
+            var board = document.getElementById('tareasCalBoard');
+            var label = document.getElementById('tareasCalLabel');
+            if (!board) return;
+
+            var weekStart = _tareasCalWeekStart;
+            var weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+
+            // Label de la semana: "15 – 21 Abr 2026"
+            var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            if (label) {
+                var ls = weekStart.getDate();
+                var le = weekEnd.getDate();
+                var lm = (weekStart.getMonth() === weekEnd.getMonth())
+                    ? meses[weekStart.getMonth()]
+                    : meses[weekStart.getMonth()] + '/' + meses[weekEnd.getMonth()];
+                label.textContent = ls + '–' + le + ' ' + lm + ' ' + weekEnd.getFullYear();
+            }
+
+            // Bucket tareas por día + atrasadas
+            var buckets = { atrasadas: [] };
+            var hasWeekend = { sat: false, sun: false };
+            var todayKey = _fmtDateKey(new Date());
+
+            // Preparar keys de los 7 días de la semana
+            var dayKeys = [];
+            for (var i = 0; i < 7; i++) {
+                var d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+                dayKeys.push(_fmtDateKey(d));
+                buckets[_fmtDateKey(d)] = [];
+            }
+
+            tareas.forEach(function(t) {
+                if (!t.fecha_limite) return;
+                var d = _dateFromIso(t.fecha_limite);
+                if (!d) return;
+                var k = _fmtDateKey(d);
+                if (d < weekStart) {
+                    buckets.atrasadas.push(t);
+                } else if (buckets[k] !== undefined) {
+                    buckets[k].push(t);
+                    var dow = d.getDay();
+                    if (dow === 6) hasWeekend.sat = true;
+                    if (dow === 0) hasWeekend.sun = true;
+                }
+                // Tareas de semanas futuras no se muestran — usar navegación
+            });
+
+            // Sort buckets: completadas al final, luego rojas, luego el resto por fecha
+            Object.keys(buckets).forEach(function(k) {
+                buckets[k].sort(function(a, b) {
+                    var aD = a.estado === 'completada';
+                    var bD = b.estado === 'completada';
+                    if (aD !== bD) return aD ? 1 : -1;  // completadas al final de su día
+                    var aV = _tareasIsOverdue(a, now);
+                    var bV = _tareasIsOverdue(b, now);
+                    if (aV !== bV) return aV ? -1 : 1;
+                    if (aV && bV) return _tareasDiasVencida(b, now) - _tareasDiasVencida(a, now);
+                    var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+                    var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+                    return aT - bT;
+                });
+            });
+
+            // Construir columnas
+            var dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+            board.innerHTML = '';
+
+            // Columna Atrasadas — SOLO se muestra si hay atrasadas
+            if (buckets.atrasadas.length > 0) {
+                var colAtr = document.createElement('div');
+                colAtr.className = 'tareas-cal-col col-atrasadas';
+                colAtr.innerHTML =
+                    '<div class="tareas-cal-col-head">' +
+                        '<div class="tareas-cal-col-head-row">' +
+                            '<div><div class="tareas-cal-day-name">Atrasadas</div><div class="tareas-cal-day-num">' +
+                                '<svg width="14" height="14" viewBox="0 0 24 24" fill="#B91C1C" stroke="none" style="vertical-align:-2px;"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>' +
+                            '</div></div>' +
+                            '<span class="tareas-cal-count">' + buckets.atrasadas.length + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="tareas-cal-col-body"></div>';
+                board.appendChild(colAtr);
+                var atrBody = colAtr.querySelector('.tareas-cal-col-body');
+                atrBody.innerHTML = buckets.atrasadas.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+            }
+
+            // 5 días laborables (Lun-Vie) + Sáb/Dom opcionales
+            for (var i = 0; i < 5; i++) {
+                var d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+                var key = dayKeys[i];
+                _renderCalCol(board, d, dayNames[d.getDay()], buckets[key], key === todayKey, now, false);
+            }
+            // Sábado: solo si hay tareas
+            if (hasWeekend.sat) {
+                var dSat = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 5);
+                _renderCalCol(board, dSat, 'Sáb', buckets[dayKeys[5]], dayKeys[5] === todayKey, now, true);
+            }
+            if (hasWeekend.sun) {
+                var dSun = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+                _renderCalCol(board, dSun, 'Dom', buckets[dayKeys[6]], dayKeys[6] === todayKey, now, true);
+            }
+        }
+
+        function _renderCalCol(board, d, dayName, list, isToday, now, isWeekend) {
+            var col = document.createElement('div');
+            col.className = 'tareas-cal-col' + (isToday ? ' col-hoy' : '') + (isWeekend ? ' col-weekend' : '');
+            col.innerHTML =
+                '<div class="tareas-cal-col-head">' +
+                    '<div class="tareas-cal-col-head-row">' +
+                        '<div><div class="tareas-cal-day-name">' + dayName + '</div><div class="tareas-cal-day-num">' + d.getDate() + '</div></div>' +
+                        '<span class="tareas-cal-count">' + list.length + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="tareas-cal-col-body"></div>';
+            var body = col.querySelector('.tareas-cal-col-body');
+            if (list.length === 0) {
+                body.innerHTML = '<div class="tareas-cal-empty">Sin tareas</div>';
+            } else {
+                body.innerHTML = list.map(function(t){ return createTaskCardCRM(t, now); }).join('');
+            }
+            board.appendChild(col);
+        }
+
+        function createTaskListRowCRM(t, now) {
+            var tipo = t.oportunidad_tipo || 'runrate';
+            var vencida = _tareasIsOverdue(t, now);
+            var dias = _tareasDiasVencida(t, now);
+            var esc = _tareasEscape;
+
+            var stripClass = vencida
+                ? 'vencida ' + _tareasHeatClass(dias)
+                : (tipo === 'proyecto' ? 'proyecto' : 'runrate');
+
+            var fechaHtml = '';
+            if (t.fecha_limite) {
+                var fechaTxt = _tareasFmtFecha(t.fecha_limite);
+                var fechaCls = vencida ? 'overdue' : (_tareasIsToday(t, now) ? 'hoy' : '');
+                fechaHtml = '<span class="tarea-fecha-chip ' + fechaCls + '">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+                    esc(fechaTxt) + '</span>';
+            } else {
+                fechaHtml = '<span style="color:#CBD5E1;font-size:0.72rem;">Sin fecha</span>';
+            }
+
+            var respNom = t.responsable || '—';
+            var creadorNom = t.creado_por || '—';
+            var respAvatar = '<span class="tarea-avatar">' + _tareasIniciales(t.responsable || '') + '</span>';
+            var creadorAvatar = '<span class="tarea-avatar" style="background:#FEF3C7;color:#92400E;">' + _tareasIniciales(t.creado_por || '') + '</span>';
+
+            var oppHtml = '';
+            if (t.oportunidad_nombre) {
+                oppHtml = '<div class="tarea-oportunidad-link" onclick="event.stopPropagation();if(typeof openDetalle===\'function\')openDetalle(\'' + t.oportunidad_id + '\');">' +
+                    '<span class="link-text">' + esc(t.oportunidad_nombre) + '</span>' +
+                    (t.oportunidad_etapa ? '<span class="link-etapa">' + esc(t.oportunidad_etapa) + '</span>' : '') +
+                    '</div>';
+            } else {
+                oppHtml = '<span style="color:#CBD5E1;font-size:0.72rem;">—</span>';
+            }
+
+            var alertIcon = (vencida && dias >= 30)
+                ? '<span class="crm-alert-critical" title="' + dias + ' días sin atender">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="#DC2626" stroke="white" stroke-width="1"><path d="M12 2L1 21h22L12 2zm0 6v6m0 4v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>' +
+                  '</span>'
+                : '';
+
+            return '<div class="crm-list-row crm-list-row--tarea crm-data-row' + (t.esta_anclada ? ' pinned-row' : '') + '" ' +
+                'data-tarea-id="' + t.id + '" ' +
+                'data-vencida="' + (vencida ? '1' : '0') + '" ' +
+                'data-dias-vencida="' + dias + '" ' +
+                'data-anclada="' + (t.esta_anclada ? '1' : '0') + '" ' +
+                'onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' +
+                '<div class="crm-list-strip ' + stripClass + '"></div>' +
+                '<div class="crm-list-cell" style="flex:2.2;padding-left:22px;">' +
+                    '<div class="tarea-titulo">' + alertIcon + esc(t.titulo || 'Sin título') + '</div>' +
+                '</div>' +
+                '<div class="crm-list-cell" style="flex:1;">' +
+                    '<span class="tarea-resp-nombre">' + respAvatar + esc(respNom) + '</span>' +
+                '</div>' +
+                '<div class="crm-list-cell" style="flex:1;">' +
+                    '<span class="tarea-creador-nombre">' + creadorAvatar + esc(creadorNom) + '</span>' +
+                '</div>' +
+                '<div class="crm-list-cell" style="flex:1.1;">' + fechaHtml + '</div>' +
+                '<div class="crm-list-cell" style="flex:1.6;">' + oppHtml + '</div>' +
+                '<div class="crm-list-cell tarea-actions" style="flex:0.6;padding-right:18px;">' +
+                    '<button type="button" class="tarea-action-btn subtarea" title="Crear subtarea" onclick="event.stopPropagation();if(typeof crmTaskCrearSubtareaDesdeFila===\'function\')crmTaskCrearSubtareaDesdeFila(' + t.id + ');">' +
+                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="19" cy="17" r="4"/><line x1="19" y1="15" x2="19" y2="19"/><line x1="17" y1="17" x2="21" y2="17"/></svg>' +
+                    '</button>' +
+                    '<button type="button" class="tarea-action-btn pin' + (t.esta_anclada ? ' pinned' : '') + '" title="Anclar" onclick="event.stopPropagation();crmTareaTogglePin(this,' + t.id + ');">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (t.esta_anclada ? '#EF4444' : '#9CA3AF') + '" stroke="none"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
+                    '</button>' +
+                '</div>' +
+            '</div>';
         }
 
         function _tareasFmtFecha(isoStr) {
@@ -4598,7 +5059,22 @@
             var done = tarea.estado === 'completada';
             var vencida = _tareasIsOverdue(tarea, now);
             var pinned = !!tarea.esta_anclada;
-            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '');
+            var tipo = (tarea.oportunidad_tipo || '').toLowerCase();
+            var tipoCls = (tipo === 'proyecto' || tipo === 'bitrix_proyecto') ? ' tipo-proyecto'
+                        : (tipo === 'runrate') ? ' tipo-runrate'
+                        : '';
+            // Warm: días hasta fecha límite (solo si no vencida ni completada)
+            var warmCls = '';
+            if (!vencida && !done && tarea.fecha_limite) {
+                var dt = new Date(tarea.fecha_limite);
+                if (!isNaN(dt.getTime())) {
+                    var diasHasta = Math.ceil((dt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                    if (diasHasta <= 1)       warmCls = ' warm-3';
+                    else if (diasHasta <= 7)  warmCls = ' warm-2';
+                    else if (diasHasta <= 14) warmCls = ' warm-1';
+                }
+            }
+            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '') + tipoCls + warmCls;
 
             // Fecha badge
             var fechaHtml = '';
@@ -4711,9 +5187,29 @@
                 body: JSON.stringify({ estado: 'completada' })
             }).then(function(r){ return r.json(); }).then(function(res){
                 if (res && res.success) {
-                    // Quitar de caché y recargar
-                    _crmTareasCache = {};
-                    cargarTareasCRM();
+                    // Actualizar en memoria en vez de recargar — el endpoint ?estado=pendientes
+                    // la excluiría y desaparecería. Con esto queda visible como completada.
+                    if (Array.isArray(_crmAllTareas)) {
+                        for (var i = 0; i < _crmAllTareas.length; i++) {
+                            if (_crmAllTareas[i].id === tareaId) {
+                                _crmAllTareas[i].estado = 'completada';
+                                _crmAllTareas[i].fecha_completada = new Date().toISOString();
+                                break;
+                            }
+                        }
+                    }
+                    Object.keys(_crmTareasCache || {}).forEach(function(k){
+                        var arr = _crmTareasCache[k];
+                        if (!Array.isArray(arr)) return;
+                        for (var j = 0; j < arr.length; j++) {
+                            if (arr[j].id === tareaId) {
+                                arr[j].estado = 'completada';
+                                arr[j].fecha_completada = new Date().toISOString();
+                                break;
+                            }
+                        }
+                    });
+                    renderTareasCRM();
                 }
             }).catch(console.error);
         };
@@ -4818,7 +5314,7 @@
                     });
                 }
 
-                // Restaurar estado abierto
+                // Restaurar estado abierto (sidebar antiguo — ya no existe pero mantenemos safe)
                 if (_tareasFocus.wasOpen) {
                     sb.style.transition = 'none';
                     var vc = document.getElementById('tareasViewCards');
@@ -4833,6 +5329,327 @@
             } else {
                 bind();
             }
+        })();
+
+        // ══════════════════════════════════════════════════════════════
+        // ── Facet bar de TAREAS (filtros + sort + view toggle) ────────
+        // ══════════════════════════════════════════════════════════════
+        (function bindTareasFacetBar(){
+            function init(){
+                var bar = document.getElementById('tareasFacetBar');
+                if (!bar) return;
+
+                var btnAdd   = document.getElementById('btnTareasAddFacet');
+                var btnSort  = document.getElementById('btnTareasSortMenu');
+                var btnView  = document.getElementById('btnTareasViewToggle');
+                var btnClear = document.getElementById('btnTareasFacetClear');
+                var sortLbl  = document.getElementById('tareasSortLabel');
+                var viewIcn  = document.getElementById('tareasViewIcon');
+                var chipsEl  = document.getElementById('tareasFacetChips');
+                var popField = document.getElementById('popTareasField');
+                var popValue = document.getElementById('popTareasValue');
+                var popSort  = document.getElementById('popTareasSort');
+                var searchEl = document.getElementById('tareasSearchInput');
+
+                if (searchEl && !searchEl._tbound) {
+                    searchEl.addEventListener('input', function(){ renderTareasCRM(); });
+                    searchEl._tbound = true;
+                }
+
+                var FIELDS = [
+                    { key:'tipo',    label:'Tipo',    inputId:'tareasFilterTipo',
+                      options:[{v:'proyecto',l:'Proyecto'},{v:'runrate',l:'Runrate'},{v:'bitrix_proyecto',l:'Bitrix'}] },
+                    { key:'etapa',   label:'Etapa',   inputId:'tareasFilterEtapa',   type:'autocomplete', dataKey:'etapa' },
+                    { key:'resp',    label:'Responsable', inputId:'tareasFilterResp', type:'userpicker', source:'resp' },
+                    { key:'creador', label:'Creador', inputId:'tareasFilterCreador', type:'userpicker', source:'creador' },
+                    { key:'fechas',  label:'Rango fechas', type:'daterange' }
+                ];
+                // "Ordenar" ahora es urgency: Todas / Atrasadas / Hoy
+                var SORTS = [
+                    { k:'todas',     lbl:'Todas' },
+                    { k:'atrasadas', lbl:'Atrasadas' },
+                    { k:'hoy',       lbl:'Hoy' }
+                ];
+
+                var _tAnchor = null;
+
+                function $in(id){ return document.getElementById(id); }
+                function setHidden(id, v){
+                    var el = $in(id);
+                    if (!el) return;
+                    el.value = v;
+                }
+                function getHidden(id){ return (($in(id) || {}).value || ''); }
+                function closeAll(except){
+                    [popField, popValue, popSort].forEach(function(p){
+                        if (p && p !== except) p.classList.remove('open');
+                    });
+                }
+                function position(pop, anchor){
+                    var r = anchor.getBoundingClientRect();
+                    pop.style.top = (r.bottom + 6) + 'px';
+                    pop.style.left = r.left + 'px';
+                    pop.style.right = 'auto';
+                    setTimeout(function(){
+                        var pr = pop.getBoundingClientRect();
+                        if (pr.right > window.innerWidth - 8) {
+                            pop.style.left = 'auto';
+                            pop.style.right = (window.innerWidth - r.right) + 'px';
+                        }
+                    }, 0);
+                }
+
+                // Valores únicos de etapas y usuarios desde el cache de tareas
+                function uniqueEtapas(){
+                    var s = {}; (_crmAllTareas || []).forEach(function(t){
+                        if (t.oportunidad_etapa) s[t.oportunidad_etapa] = true;
+                    });
+                    return Object.keys(s).sort();
+                }
+                function uniqueUsers(kind){
+                    var seen = {};
+                    (_crmAllTareas || []).forEach(function(t){
+                        if (kind === 'resp' && t.asignado_a_id) seen[t.asignado_a_id] = t.responsable;
+                        if (kind === 'creador' && t.creado_por_id) seen[t.creado_por_id] = t.creado_por;
+                    });
+                    return Object.keys(seen).map(function(id){ return { id: id, nombre: seen[id] }; })
+                        .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); });
+                }
+
+                function renderChips(){
+                    var html = '';
+                    FIELDS.forEach(function(fld){
+                        if (fld.type === 'daterange') {
+                            var d = getHidden('tareasFilterDesde');
+                            var h = getHidden('tareasFilterHasta');
+                            if (d || h) html += chip('fechas', 'Fechas', (d||'…') + ' → ' + (h||'…'));
+                        } else {
+                            var v = getHidden(fld.inputId);
+                            if (v) {
+                                var lbl = v;
+                                if (fld.options) {
+                                    var o = fld.options.find(function(x){ return x.v === v; });
+                                    if (o) lbl = o.l;
+                                } else if (fld.type === 'userpicker') {
+                                    var users = uniqueUsers(fld.source);
+                                    var u = users.find(function(x){ return String(x.id) === String(v); });
+                                    if (u) lbl = u.nombre;
+                                }
+                                html += chip(fld.key, fld.label, lbl);
+                            }
+                        }
+                    });
+                    chipsEl.innerHTML = html;
+                    var any = !!html;
+                    if (btnClear) btnClear.style.display = any ? '' : 'none';
+
+                    // Sort label (ahora refleja la urgency activa)
+                    var curUrg = (_tareasFocus && _tareasFocus.urgency) || 'todas';
+                    var s = SORTS.find(function(x){ return x.k === curUrg; });
+                    sortLbl.textContent = s ? s.lbl : 'Todas';
+                    btnSort.classList.toggle('has-sort', curUrg !== 'todas');
+                }
+                function chip(key, label, value) {
+                    var safe = (value||'').toString().replace(/</g,'&lt;');
+                    return '<div class="crm-facet-chip" data-fkey="' + key + '">' +
+                        '<span class="crm-facet-chip-key">' + label + '</span>' +
+                        '<span class="crm-facet-chip-op">=</span>' +
+                        '<span class="crm-facet-chip-val">' + safe + '</span>' +
+                        '<span class="crm-facet-chip-x" data-fkey="' + key + '" title="Quitar">' +
+                            '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>' +
+                        '</span></div>';
+                }
+
+                function openFieldPicker(){
+                    var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
+                    FIELDS.forEach(function(f){
+                        html += '<button type="button" class="crm-pop-item" data-field="' + f.key + '">' + f.label + '</button>';
+                    });
+                    html += '</div>';
+                    popField.innerHTML = html;
+                    closeAll(popField);
+                    popField.classList.add('open');
+                    position(popField, btnAdd);
+                }
+                function openValuePicker(key){
+                    _tAnchor = btnAdd;
+                    var fld = FIELDS.find(function(x){ return x.key === key; });
+                    if (!fld) return;
+                    popValue.dataset.currentField = key;
+                    var html = '';
+                    if (fld.type === 'daterange') {
+                        var d = getHidden('tareasFilterDesde');
+                        var h = getHidden('tareasFilterHasta');
+                        html = '<div class="crm-pop-section">Rango de fechas (fecha límite)</div>' +
+                            '<div class="crm-pop-dates">' +
+                                '<div><label>Desde</label><input type="date" id="_tfpDesde" value="' + d + '"></div>' +
+                                '<div><label>Hasta</label><input type="date" id="_tfpHasta" value="' + h + '"></div>' +
+                            '</div>' +
+                            '<div class="crm-pop-footer">' +
+                                '<button type="button" data-act="clear-fechas">Quitar</button>' +
+                                '<button type="button" class="primary" data-act="apply-fechas">Aplicar</button>' +
+                            '</div>';
+                        popValue.style.minWidth = '280px';
+                    } else if (fld.options) {
+                        html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+                        var cur = getHidden(fld.inputId);
+                        html += '<button type="button" class="crm-pop-item ' + (!cur ? 'active' : '') + '" data-val="">Todos</button>';
+                        fld.options.forEach(function(o){
+                            html += '<button type="button" class="crm-pop-item ' + (cur === o.v ? 'active' : '') + '" data-val="' + o.v + '">' + o.l + '</button>';
+                        });
+                        html += '</div>';
+                        popValue.style.minWidth = '200px';
+                    } else if (fld.type === 'userpicker') {
+                        var cur2 = getHidden(fld.inputId);
+                        var users = uniqueUsers(fld.source);
+                        html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+                        html += '<button type="button" class="crm-pop-item ' + (!cur2 ? 'active' : '') + '" data-val="">Todos</button>';
+                        users.forEach(function(u){
+                            html += '<button type="button" class="crm-pop-item ' + (String(cur2) === String(u.id) ? 'active' : '') + '" data-val="' + u.id + '">' + (u.nombre || '—') + '</button>';
+                        });
+                        html += '</div>';
+                        popValue.style.minWidth = '220px';
+                    } else if (fld.type === 'autocomplete') {
+                        var cur3 = getHidden(fld.inputId);
+                        var etapas = uniqueEtapas();
+                        html = '<div class="crm-pop-section">' + fld.label + '</div><div class="crm-pop-list">';
+                        html += '<button type="button" class="crm-pop-item ' + (!cur3 ? 'active' : '') + '" data-val="">Todas</button>';
+                        etapas.forEach(function(e){
+                            html += '<button type="button" class="crm-pop-item ' + (cur3 === e ? 'active' : '') + '" data-val="' + e + '">' + e + '</button>';
+                        });
+                        html += '</div>';
+                        popValue.style.minWidth = '220px';
+                    }
+                    popValue.innerHTML = html;
+                    closeAll(popValue);
+                    popValue.classList.add('open');
+                    position(popValue, _tAnchor);
+                }
+                function openSortPicker(){
+                    var cur = (_tareasFocus && _tareasFocus.urgency) || 'todas';
+                    var html = '<div class="crm-pop-section">Mostrar</div><div class="crm-pop-list">';
+                    SORTS.forEach(function(s){
+                        html += '<button type="button" class="crm-pop-item ' + (cur === s.k ? 'active' : '') + '" data-sort="' + s.k + '">' + s.lbl + '</button>';
+                    });
+                    html += '</div>';
+                    popSort.innerHTML = html;
+                    closeAll(popSort);
+                    popSort.classList.add('open');
+                    position(popSort, btnSort);
+                }
+
+                btnAdd.addEventListener('click', function(e){ e.stopPropagation(); if (popField.classList.contains('open')) { popField.classList.remove('open'); } else openFieldPicker(); });
+                btnSort.addEventListener('click', function(e){ e.stopPropagation(); if (popSort.classList.contains('open')) { popSort.classList.remove('open'); } else openSortPicker(); });
+                btnClear.addEventListener('click', function(){
+                    ['tareasFilterTipo','tareasFilterEtapa','tareasFilterResp','tareasFilterCreador','tareasFilterDesde','tareasFilterHasta'].forEach(function(id){ setHidden(id, ''); });
+                    renderChips(); renderTareasCRM();
+                });
+
+                popField.addEventListener('click', function(e){
+                    var it = e.target.closest('.crm-pop-item');
+                    if (!it) return;
+                    popField.classList.remove('open');
+                    openValuePicker(it.dataset.field);
+                });
+
+                popValue.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    var item = e.target.closest('.crm-pop-item');
+                    if (item && item.dataset.val !== undefined) {
+                        var key = popValue.dataset.currentField;
+                        var fld = FIELDS.find(function(x){ return x.key === key; });
+                        if (fld && fld.inputId) setHidden(fld.inputId, item.dataset.val);
+                        popValue.classList.remove('open');
+                        renderChips(); renderTareasCRM();
+                        return;
+                    }
+                    var actBtn = e.target.closest('[data-act]');
+                    if (!actBtn) return;
+                    var act = actBtn.dataset.act;
+                    if (act === 'apply-fechas') {
+                        setHidden('tareasFilterDesde', ($in('_tfpDesde')||{}).value || '');
+                        setHidden('tareasFilterHasta', ($in('_tfpHasta')||{}).value || '');
+                    } else if (act === 'clear-fechas') {
+                        setHidden('tareasFilterDesde', '');
+                        setHidden('tareasFilterHasta', '');
+                    }
+                    popValue.classList.remove('open');
+                    renderChips(); renderTareasCRM();
+                });
+
+                popSort.addEventListener('click', function(e){
+                    var it = e.target.closest('.crm-pop-item');
+                    if (!it) return;
+                    var urg = it.dataset.sort || 'todas';
+                    if (typeof _tareasFocusSetUrgency === 'function') {
+                        _tareasFocusSetUrgency(urg);
+                    } else {
+                        _tareasFocus.urgency = urg;
+                        renderTareasCRM();
+                    }
+                    popSort.classList.remove('open');
+                    renderChips();
+                });
+
+                chipsEl.addEventListener('click', function(e){
+                    var x = e.target.closest('.crm-facet-chip-x');
+                    if (!x) return;
+                    var key = x.dataset.fkey;
+                    if (key === 'fechas') {
+                        setHidden('tareasFilterDesde', ''); setHidden('tareasFilterHasta', '');
+                    } else {
+                        var fld = FIELDS.find(function(f){ return f.key === key; });
+                        if (fld && fld.inputId) setHidden(fld.inputId, '');
+                    }
+                    renderChips(); renderTareasCRM();
+                });
+
+                // View toggle (list ⇄ calendar)
+                function applyTareasView(mode){
+                    var lv = document.getElementById('tareasViewList');
+                    var cv = document.getElementById('tareasCardsGrid');
+                    var calv = document.getElementById('tareasViewCalendar');
+                    if (cv) cv.style.display = 'none';  // cards legacy siempre oculto
+                    if (mode === 'calendar') {
+                        if (lv)   lv.style.display   = 'none';
+                        if (calv) calv.style.display = 'flex';
+                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';
+                        if (typeof renderTareasCRM === 'function') renderTareasCRM();
+                    } else {
+                        if (lv)   lv.style.display   = '';
+                        if (calv) calv.style.display = 'none';
+                        if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+                    }
+                }
+                var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'list';
+                if (_tareasViewMode === 'cards') _tareasViewMode = 'list';  // migración: cards → list
+                applyTareasView(_tareasViewMode);
+                btnView.addEventListener('click', function(){
+                    _tareasViewMode = _tareasViewMode === 'list' ? 'calendar' : 'list';
+                    localStorage.setItem('tareasViewMode', _tareasViewMode);
+                    applyTareasView(_tareasViewMode);
+                });
+
+                // Wire navegación del calendario
+                var btnPrev = document.getElementById('btnTareasWeekPrev');
+                var btnNext = document.getElementById('btnTareasWeekNext');
+                var btnToday = document.getElementById('btnTareasWeekToday');
+                if (btnPrev) btnPrev.addEventListener('click', function(){ if (typeof window._tareasCalShiftWeek === 'function') window._tareasCalShiftWeek(-1); });
+                if (btnNext) btnNext.addEventListener('click', function(){ if (typeof window._tareasCalShiftWeek === 'function') window._tareasCalShiftWeek(1); });
+                if (btnToday) btnToday.addEventListener('click', function(){ if (typeof window._tareasCalGoToday === 'function') window._tareasCalGoToday(); });
+
+                // Cerrar popovers al click fuera / Escape
+                document.addEventListener('click', function(e){
+                    if (bar.contains(e.target)) return;
+                    if (popField.contains(e.target) || popValue.contains(e.target) || popSort.contains(e.target)) return;
+                    closeAll();
+                });
+                document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeAll(); });
+
+                setTimeout(renderChips, 300);
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+            else init();
         })();
 
         // ── Dropdown para asignar oportunidad a tarea ──
@@ -6558,6 +7375,17 @@
         }
 
         window.crmTaskCrearSubtarea = crmTaskCrearSubtarea;
+
+        // Variante que acepta el id desde la fila de lista (no requiere tener el detalle abierto)
+        window.crmTaskCrearSubtareaDesdeFila = function(padreId) {
+            if (!padreId) return;
+            crmTaskAbrirCrear();
+            // Pequeño delay para asegurar que el modal esté montado y el input exista
+            setTimeout(function(){
+                var padreEl = document.getElementById('crmTaskPadreId');
+                if (padreEl) padreEl.value = padreId;
+            }, 50);
+        };
         window.crmTaskAbrirCrear = crmTaskAbrirCrear;
         window.crmTaskCerrarCrear = crmTaskCerrarCrear;
         window.crmTaskCrear = crmTaskCrear;

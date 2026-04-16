@@ -167,11 +167,16 @@ def _get_empleado_mes_data():
 
 
 def _calcular_total_desglose(mes, anio):
-    """Calcula el total facturado sumando datos_json — misma lógica que api_desglose_facturacion."""
+    """Calcula el total facturado sumando datos_json — misma lógica que api_desglose_facturacion.
+    mes puede ser 'todos', un valor único ('04'), o comma-separated ('04,03').
+    """
     total = Decimal('0')
     try:
-        if mes == 'todos':
+        if mes == 'todos' or mes is None:
             afs = list(ArchivoFacturacion.objects.filter(anio=anio))
+        elif ',' in str(mes):
+            meses = [m.strip().zfill(2) for m in str(mes).split(',') if m.strip()]
+            afs = list(ArchivoFacturacion.objects.filter(mes__in=meses, anio=anio))
         else:
             afs = [ArchivoFacturacion.objects.get(mes=mes, anio=anio)]
     except ArchivoFacturacion.DoesNotExist:
@@ -216,9 +221,29 @@ def crm_home(request):
     }
     MES_NAME_TO_CODE = {v: k for k, v in MES_CODE_TO_NAME.items()}
 
+    # Parseo multi-valor: mes y año pueden ser 'todos', un valor, o lista comma-separated
+    def _parse_multi(raw, is_int=False):
+        if raw is None or raw == '' or raw == 'todos':
+            return None  # None = todos
+        items = [x.strip() for x in str(raw).split(',') if x.strip()]
+        if not items:
+            return None
+        if is_int:
+            out = []
+            for x in items:
+                try: out.append(int(x))
+                except ValueError: pass
+            return out or None
+        return items
+
+    meses_list = _parse_multi(mes_filter)
+    anios_list = _parse_multi(anio_filter, is_int=True)
+
+    # Legacy: anio_int (un solo valor) para funciones que aún no soportan multi.
+    anio_todos = (anios_list is None)
     try:
-        anio_int = int(anio_filter)
-    except ValueError:
+        anio_int = anios_list[0] if anios_list else now.year
+    except (ValueError, IndexError, TypeError):
         anio_int = now.year
 
     # MES_CHOICES para template (con opción "Todos" al inicio)
@@ -234,12 +259,30 @@ def crm_home(request):
     if vendedores_filter:
         vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()]
 
-    # Base queryset - oportunidades filtradas por anio_cierre/mes_cierre
-    base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-        anio_cierre=anio_int
-    )
-    if mes_filter != 'todos':
-        base_qs = base_qs.filter(mes_cierre=mes_filter)
+    # Rango de fechas (desde/hasta) — cuando alguno está presente, IGNORA el filtro
+    # de periodo (mes/año) y filtra por fecha_creacion.
+    desde_raw = (request.GET.get('desde', '') or '').strip()
+    hasta_raw = (request.GET.get('hasta', '') or '').strip()
+    desde_date = hasta_date = None
+    try:
+        if desde_raw: desde_date = datetime.strptime(desde_raw, '%Y-%m-%d').date()
+    except ValueError: desde_date = None
+    try:
+        if hasta_raw: hasta_date = datetime.strptime(hasta_raw, '%Y-%m-%d').date()
+    except ValueError: hasta_date = None
+
+    # Base queryset - oportunidades
+    base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
+    if desde_date or hasta_date:
+        # Rango de fechas activo → override del periodo
+        if desde_date: base_qs = base_qs.filter(fecha_creacion__date__gte=desde_date)
+        if hasta_date: base_qs = base_qs.filter(fecha_creacion__date__lte=hasta_date)
+    else:
+        # Filtro por periodo (multi-valor)
+        if anios_list is not None:
+            base_qs = base_qs.filter(anio_cierre__in=anios_list)
+        if meses_list is not None:
+            base_qs = base_qs.filter(mes_cierre__in=meses_list)
 
     # Filtrado por visibilidad: supervisor global ve todo, grupos de trabajo amplían visibilidad
     if not es_supervisor:
@@ -250,15 +293,23 @@ def crm_home(request):
             base_qs = base_qs.filter(usuario=user)
         else:
             base_qs = base_qs.filter(usuario_id__in=usuarios_visibles)
-    elif vendedores_ids:
+
+    # Guardar qs "antes del filtro de vendedor" para poblar el selector.
+    # Así el picker muestra todos los vendedores CON oportunidades en el periodo,
+    # independiente de qué vendedor esté filtrado actualmente.
+    base_qs_sin_vendedor = base_qs
+
+    if es_supervisor and vendedores_ids:
         # Supervisor con filtro de vendedores específicos
         base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
 
-    # Lista de vendedores para el filtro (supervisores globales ven todos; supervisores de grupo ven su grupo)
+    # Lista de vendedores para el filtro — SOLO los que tienen al menos una
+    # oportunidad en el periodo filtrado (o rango de fechas).
+    usuarios_con_opp = set(base_qs_sin_vendedor.values_list('usuario_id', flat=True))
     vendedores_list = []
     if es_supervisor:
         vendedores_list = User.objects.filter(
-            is_active=True
+            is_active=True, id__in=usuarios_con_opp
         ).exclude(
             groups__name='Supervisores'
         ).order_by('first_name', 'last_name')
@@ -268,7 +319,7 @@ def crm_home(request):
         if usuarios_visibles_ids and len(usuarios_visibles_ids) > 1:
             vendedores_list = User.objects.filter(
                 id__in=usuarios_visibles_ids, is_active=True
-            ).order_by('first_name', 'last_name')
+            ).filter(id__in=usuarios_con_opp).order_by('first_name', 'last_name')
 
     # ── Meta (calculada antes para usar en running meta) ──
     # Determinar qué campo de meta usar según el tab activo
@@ -304,30 +355,55 @@ def crm_home(request):
         ahora_tz = timezone.now()
         tabla_data_list = list(tabla_data_qs)
         for item in tabla_data_list:
-            # Actividad del calendario vencida (solo las de los últimos 30 días,
-            # para evitar falsos positivos de actividades viejas nunca cerradas)
-            limite_vencida = ahora_tz - timedelta(days=30)
-            act_vencida = Actividad.objects.filter(
+            # Actividad del calendario vencida — TODA actividad pasada no completada
+            # cuenta (sin tope de antigüedad). Si quedan actividades viejas sin cerrar,
+            # son acciones pendientes reales y la oportunidad debe seguir en rojo.
+            act_mas_vencida = Actividad.objects.filter(
                 oportunidad=item,
                 fecha_fin__lt=ahora_tz,
-                fecha_fin__gte=limite_vencida,
                 completada=False,
-            ).exists()
+            ).order_by('fecha_fin').first()
             # Tarea de oportunidad vencida (sin tope de antigüedad — son acciones pendientes)
-            tarea_vencida = TareaOportunidad.objects.filter(
+            tarea_mas_vencida = TareaOportunidad.objects.filter(
                 oportunidad=item,
                 fecha_limite__lt=ahora_tz,
-            ).exclude(estado='completada').exists()
-            item.tiene_actividad_vencida = act_vencida or tarea_vencida
+            ).exclude(estado='completada').order_by('fecha_limite').first()
+            item.tiene_actividad_vencida = bool(act_mas_vencida or tarea_mas_vencida)
+            # Días vencidos (máximo entre actividad y tarea) — 0 si no está vencida
+            dias = 0
+            if act_mas_vencida and act_mas_vencida.fecha_fin:
+                dias = max(dias, (ahora_tz - act_mas_vencida.fecha_fin).days)
+            if tarea_mas_vencida and tarea_mas_vencida.fecha_limite:
+                dias = max(dias, (ahora_tz - tarea_mas_vencida.fecha_limite).days)
+            item.dias_vencida = dias
             # Actividad próxima (la más cercana no completada)
             proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
             item.actividad_proxima = proxima.titulo if proxima else None
+            # Días hasta próxima actividad o tarea (no vencida aún) — para warm gradient
+            # Queremos la fecha limite más cercana FUTURA, sin incluir vencidas
+            dias_hasta = None
+            try:
+                prox_act = Actividad.objects.filter(
+                    oportunidad=item, completada=False, fecha_fin__gte=ahora_tz
+                ).order_by('fecha_fin').first()
+                if prox_act and prox_act.fecha_fin:
+                    d = (prox_act.fecha_fin - ahora_tz).days
+                    dias_hasta = d if dias_hasta is None else min(dias_hasta, d)
+                prox_tar = TareaOportunidad.objects.filter(
+                    oportunidad=item, fecha_limite__gte=ahora_tz
+                ).exclude(estado='completada').order_by('fecha_limite').first()
+                if prox_tar and prox_tar.fecha_limite:
+                    d = (prox_tar.fecha_limite - ahora_tz).days
+                    dias_hasta = d if dias_hasta is None else min(dias_hasta, d)
+            except Exception:
+                dias_hasta = None
+            item.dias_hasta_proxima = dias_hasta  # None = sin actividad futura
         # Obtener IDs ancladas del usuario
         ancladas_ids = set(profile.oportunidades_ancladas or [])
         for item in tabla_data_list:
             item.esta_anclada = item.id in ancladas_ids
-        # Ordenar: ancladas primero, luego vencidas, luego el resto
-        tabla_data_list.sort(key=lambda x: (not x.esta_anclada, not x.tiene_actividad_vencida))
+        # Ordenar: ancladas primero, luego vencidas (más días vencidas arriba), luego el resto
+        tabla_data_list.sort(key=lambda x: (not x.esta_anclada, not x.tiene_actividad_vencida, -getattr(x, 'dias_vencida', 0)))
         tabla_data = tabla_data_list
 
     # ── Tab Facturado: Datos del XLS por cliente + desglose por producto ──
@@ -538,6 +614,13 @@ def crm_home(request):
         'es_ingeniero': es_ingeniero,
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
+        'vendedores_json': [
+            {'id': v.id, 'nombre': v.get_full_name() or v.username}
+            for v in vendedores_list
+        ],
+        'years_range_list': list(range(2024, now.year + 2)),
+        'meses_selected': meses_list if meses_list is not None else [],   # [] = todos
+        'anios_selected': anios_list if anios_list is not None else [],   # [] = todos
         'novedades_config': NovedadesConfig.get(),
         'empleado_mes_data': _get_empleado_mes_data(),
         'mis_grupos': _get_mis_grupos_ctx(user),
@@ -588,10 +671,25 @@ def api_crm_table_data(request):
         '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre',
     }
 
-    try:
-        anio_int = int(anio_filter)
-    except ValueError:
-        anio_int = now.year
+    # Helpers multi-valor — mes/anio pueden venir como 'todos', valor único, o comma-separated
+    def _parse_ints(s):
+        if not s or s == 'todos':
+            return None  # None = todos / no filter
+        parts = [p.strip() for p in str(s).split(',') if p.strip()]
+        out = []
+        for p in parts:
+            try: out.append(int(p))
+            except ValueError: pass
+        return out or None
+    def _first_int(s, default):
+        lst = _parse_ints(s)
+        return lst[0] if lst else default
+
+    anios_list = _parse_ints(anio_filter)
+    meses_list = _parse_ints(mes_filter)
+    anio_int = anios_list[0] if anios_list else now.year
+    # mes_filter queda como string (backward-compat). mes_int (primer mes) para casos single-value
+    mes_int_primero = meses_list[0] if meses_list else None
 
     mes_nombre_db = MES_CODE_TO_NAME.get(mes_filter, mes_filter)
 
@@ -613,11 +711,12 @@ def api_crm_table_data(request):
             fecha_creacion__date__lte=hasta_filter,
         )
     else:
-        base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-            anio_cierre=anio_int
-        )
-        if mes_filter != 'todos':
-            base_qs = base_qs.filter(mes_cierre=mes_filter)
+        base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
+        if anios_list is not None:
+            base_qs = base_qs.filter(anio_cierre__in=anios_list)
+        if meses_list is not None:
+            # meses_list son ints, pero mes_cierre es string con zero-padding. Convertir.
+            base_qs = base_qs.filter(mes_cierre__in=[str(m).zfill(2) for m in meses_list])
 
     if not es_supervisor:
         usuarios_visibles_r = get_usuarios_visibles_ids(user)
@@ -688,12 +787,22 @@ def api_crm_table_data(request):
             fecha_limite__isnull=False,
             fecha_limite__lte=_now,
         )
+        # También revisar Actividad del calendario — toda actividad pasada no completada
+        # cuenta como vencida (independiente de si fue creada desde el chat o el calendario).
+        from .models import Actividad as _Actividad
+        _vencida_act_sq = _Actividad.objects.filter(
+            oportunidad=OuterRef('pk'),
+            completada=False,
+            fecha_fin__lt=_now,
+        )
         _pendiente_opp_sq = TareaOportunidad.objects.filter(
             oportunidad=OuterRef('pk'),
         ).exclude(estado='completada')
 
         items = base_qs.select_related('cliente', 'contacto', 'usuario').annotate(
-            _tiene_vencida=_Exists(_vencida_opp_sq) | _Exists(_vencida_tarea_sq),
+            _tiene_vencida=(
+                _Exists(_vencida_opp_sq) | _Exists(_vencida_tarea_sq) | _Exists(_vencida_act_sq)
+            ),
             _tiene_pendiente=_Exists(_pendiente_opp_sq),
         ).order_by('-fecha_actualizacion')
 
@@ -856,6 +965,11 @@ def api_crm_table_data(request):
                     data_af = af.datos_json.get('datos', {})
                     for c_name, val in data_af.items():
                         facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
+            elif meses_list is not None and len(meses_list) > 1:
+                for af in ArchivoFacturacion.objects.filter(mes__in=[str(m).zfill(2) for m in meses_list], anio=anio_int):
+                    data_af = af.datos_json.get('datos', {})
+                    for c_name, val in data_af.items():
+                        facturado_por_cliente_obj[c_name] = facturado_por_cliente_obj.get(c_name, Decimal('0')) + Decimal(str(val))
             else:
                 af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
                 data_af = af.datos_json.get('datos', {})
@@ -953,11 +1067,11 @@ def api_crm_table_data(request):
                     fecha_creacion__date__lte=hasta_filter,
                 )
             else:
-                base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile').filter(
-                    fecha_creacion__year=anio_int
-                )
-                if mes_filter != 'todos':
-                    base_qs = base_qs.filter(fecha_creacion__month=int(mes_filter))
+                base_qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto', 'usuario__userprofile')
+                if anios_list is not None:
+                    base_qs = base_qs.filter(fecha_creacion__year__in=anios_list)
+                if meses_list is not None:
+                    base_qs = base_qs.filter(fecha_creacion__month__in=meses_list)
             # Re-aplicar filtros de usuario/vendedor
             if not es_supervisor:
                 usuarios_visibles_r = get_usuarios_visibles_ids(user)
@@ -985,12 +1099,14 @@ def api_crm_table_data(request):
         _prev_by_id_cl = {}  # previous month totals per client (oportunidades only)
         _prev_sum = Decimal('0')  # previous month global total for this vista
 
-        # Helper: compute prev month params
+        # Helper: compute prev month params (solo aplica si hay UN solo mes seleccionado)
         def _get_prev_params():
             if mes_filter in ('todos',) or usando_periodo or q_search:
                 return None, None
+            if not meses_list or len(meses_list) != 1:
+                return None, None
             try:
-                pm = int(mes_filter)
+                pm = meses_list[0]
                 return str(pm - 1 if pm > 1 else 12).zfill(2), anio_int if pm > 1 else anio_int - 1
             except (ValueError, TypeError):
                 return None, None
@@ -1043,6 +1159,9 @@ def api_crm_table_data(request):
                         cur = cur.replace(month=cur.month % 12 + 1, day=1) if cur.month < 12 else cur.replace(year=cur.year + 1, month=1, day=1)
                 elif mes_filter == 'todos':
                     for af in ArchivoFacturacion.objects.filter(anio=anio_int):
+                        _facturado_entries.extend(_load_af(af))
+                elif meses_list is not None and len(meses_list) > 1:
+                    for af in ArchivoFacturacion.objects.filter(mes__in=[str(m).zfill(2) for m in meses_list], anio=anio_int):
                         _facturado_entries.extend(_load_af(af))
                 else:
                     af = ArchivoFacturacion.objects.get(mes=mes_filter, anio=anio_int)
@@ -1128,6 +1247,9 @@ def api_crm_table_data(request):
                 elif mes_filter == 'todos':
                     for ac in ArchivoCobrado.objects.filter(anio=anio_int):
                         _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
+                elif meses_list is not None and len(meses_list) > 1:
+                    for ac in ArchivoCobrado.objects.filter(mes__in=[str(m).zfill(2) for m in meses_list], anio=anio_int):
+                        _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
                 else:
                     ac = ArchivoCobrado.objects.get(mes=mes_filter, anio=anio_int)
                     _cobrado_entries.extend(_extract_cobrado_entries(ac.datos_json))
@@ -1188,9 +1310,9 @@ def api_crm_table_data(request):
             vista_label = 'Oportunidades'
             # Previous month totals per client (for trend badge) — usa fecha_creacion
             _prev_by_id_cl = {}
-            if mes_filter not in ('todos',) and not usando_periodo and not q_search:
+            if mes_filter not in ('todos',) and not usando_periodo and not q_search and meses_list and len(meses_list) == 1:
                 try:
-                    _pm = int(mes_filter)
+                    _pm = meses_list[0]
                     _prev_mes = _pm - 1 if _pm > 1 else 12
                     _prev_anio = anio_int if _pm > 1 else anio_int - 1
                     _prev_qs = TodoItem.objects.filter(fecha_creacion__year=_prev_anio, fecha_creacion__month=_prev_mes)
@@ -1215,9 +1337,11 @@ def api_crm_table_data(request):
                     Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__date__gte=desde_filter, fecha_creacion__date__lte=hasta_filter)
                 )
             else:
-                _cot_sueltas_q = Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
-                if mes_filter != 'todos':
-                    _cot_sueltas_q &= Q(fecha_creacion__month=int(mes_filter))
+                _cot_sueltas_q = Q(oportunidad__isnull=True)
+                if anios_list is not None:
+                    _cot_sueltas_q &= Q(fecha_creacion__year__in=anios_list)
+                if meses_list is not None:
+                    _cot_sueltas_q &= Q(fecha_creacion__month__in=meses_list)
                 cot_qs = Cotizacion.objects.select_related('cliente', 'oportunidad').filter(
                     Q(oportunidad_id__in=opp_ids) | _cot_sueltas_q
                 )
@@ -1277,12 +1401,9 @@ def api_crm_table_data(request):
             else:
                 clientes_qs = Cliente.objects.filter(get_clientes_visibles_q(user))
 
-            prospectos_qs = Prospecto.objects.filter(fecha_creacion__year=anio_int)
-            if mes_filter and mes_filter != 'todos':
-                try:
-                    prospectos_qs = prospectos_qs.filter(fecha_creacion__month=int(mes_filter))
-                except ValueError:
-                    pass
+            prospectos_qs = Prospecto.objects.filter(fecha_creacion__year__in=anios_list) if anios_list is not None else Prospecto.objects.filter(fecha_creacion__year=anio_int)
+            if meses_list is not None:
+                prospectos_qs = prospectos_qs.filter(fecha_creacion__month__in=meses_list)
             if not es_supervisor:
                 _gids = get_usuarios_visibles_ids(user)
                 prospectos_qs = prospectos_qs.filter(usuario_id__in=_gids) if _gids and len(_gids) > 1 else prospectos_qs.filter(usuario=user)
@@ -1305,12 +1426,9 @@ def api_crm_table_data(request):
             total_respondidos = 0
             total_favorables = 0
             try:
-                envios_qs = CampanaEnvio.objects.filter(fecha_envio__year=anio_int)
-                if mes_filter and mes_filter != 'todos':
-                    try:
-                        envios_qs = envios_qs.filter(fecha_envio__month=int(mes_filter))
-                    except ValueError:
-                        pass
+                envios_qs = CampanaEnvio.objects.filter(fecha_envio__year__in=anios_list) if anios_list is not None else CampanaEnvio.objects.filter(fecha_envio__year=anio_int)
+                if meses_list is not None:
+                    envios_qs = envios_qs.filter(fecha_envio__month__in=meses_list)
                 if not es_supervisor:
                     envios_qs = envios_qs.filter(enviado_por=user)
                 elif vendedores_ids:
@@ -1628,7 +1746,20 @@ def api_desglose_facturacion(request):
     """Desglose completo de facturación del Excel por cliente (sin filtro de match)"""
     try:
         mes = request.GET.get('mes', 'todos')
-        anio = int(request.GET.get('anio', 2026))
+        anio_raw = request.GET.get('anio', '2026')
+
+        def _parse_ints(s, default=None):
+            if not s or s == 'todos':
+                return None
+            parts = [p.strip() for p in str(s).split(',') if p.strip()]
+            out = []
+            for p in parts:
+                try: out.append(int(p))
+                except ValueError: pass
+            return out or default
+
+        anios_list = _parse_ints(anio_raw, default=[2026])
+        meses_list = _parse_ints(mes)
         acumulado = {}  # {key: {nombre, rfc, monto}}
 
         def _procesar_af(af):
@@ -1653,14 +1784,11 @@ def api_desglose_facturacion(request):
                 else:
                     acumulado[k] = {'nombre': nombre, 'rfc': rfc, 'monto': monto}
 
-        if mes == 'todos':
-            for af in ArchivoFacturacion.objects.filter(anio=anio):
-                _procesar_af(af)
-        else:
-            try:
-                _procesar_af(ArchivoFacturacion.objects.get(mes=mes, anio=anio))
-            except ArchivoFacturacion.DoesNotExist:
-                pass
+        af_qs = ArchivoFacturacion.objects.filter(anio__in=anios_list) if anios_list else ArchivoFacturacion.objects.all()
+        if meses_list is not None:
+            af_qs = af_qs.filter(mes__in=[str(m).zfill(2) for m in meses_list])
+        for af in af_qs:
+            _procesar_af(af)
 
         rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
         total = sum(r['monto'] for r in rows)
@@ -1832,13 +1960,29 @@ def api_subir_cobrado(request):
                 fecha_str = (row.get('Fecha') or '').strip()
                 if not fecha_str:
                     continue
-                try:
-                    fecha = dt_now.strptime(fecha_str, '%d/%m/%Y %I:%M:%S %p')
-                except ValueError:
+                # Probar varios formatos — el CSV puede venir con año 2 o 4 dígitos,
+                # con o sin segundos, con o sin AM/PM.
+                fecha = None
+                _fecha_formats = [
+                    '%d/%m/%Y %I:%M:%S %p',
+                    '%d/%m/%Y %H:%M:%S',
+                    '%d/%m/%Y %I:%M %p',
+                    '%d/%m/%Y %H:%M',
+                    '%d/%m/%y %I:%M:%S %p',
+                    '%d/%m/%y %H:%M:%S',
+                    '%d/%m/%y %I:%M %p',
+                    '%d/%m/%y %H:%M',
+                    '%d/%m/%Y',
+                    '%d/%m/%y',
+                ]
+                for _fmt in _fecha_formats:
                     try:
-                        fecha = dt_now.strptime(fecha_str, '%d/%m/%Y %H:%M:%S')
+                        fecha = dt_now.strptime(fecha_str, _fmt)
+                        break
                     except ValueError:
                         continue
+                if fecha is None:
+                    continue
 
                 row_mes = str(fecha.month).zfill(2)
                 row_anio = fecha.year
@@ -1970,7 +2114,21 @@ def api_desglose_cobrado(request):
     """Desglose de cobrado con match a clientes, vendedor, meta y facturas."""
     try:
         mes = request.GET.get('mes', 'todos')
-        anio = int(request.GET.get('anio', 2026))
+        anio_raw = request.GET.get('anio', '2026')
+
+        def _parse_ints(s, default=None):
+            if not s or s == 'todos':
+                return None
+            parts = [p.strip() for p in str(s).split(',') if p.strip()]
+            out = []
+            for p in parts:
+                try: out.append(int(p))
+                except ValueError: pass
+            return out or default
+
+        anios_list = _parse_ints(anio_raw, default=[2026])
+        meses_list = _parse_ints(mes)
+        anio = anios_list[0] if anios_list else 2026
         acumulado = {}  # {nombre: {nombre, monto, facturas[]}}
 
         def _procesar(ac):
@@ -1988,14 +2146,12 @@ def api_desglose_cobrado(request):
                 else:
                     acumulado[nombre] = {'nombre': nombre, 'monto': monto, 'facturas': facturas}
 
-        if mes == 'todos':
-            for ac in ArchivoCobrado.objects.filter(anio=anio):
-                _procesar(ac)
-        else:
-            try:
-                _procesar(ArchivoCobrado.objects.get(mes=mes, anio=anio))
-            except ArchivoCobrado.DoesNotExist:
-                pass
+        # Construir queryset sobre ArchivoCobrado con filtros multi-valor
+        ac_qs = ArchivoCobrado.objects.filter(anio__in=anios_list) if anios_list else ArchivoCobrado.objects.all()
+        if meses_list is not None:
+            ac_qs = ac_qs.filter(mes__in=[str(m).zfill(2) for m in meses_list])
+        for ac in ac_qs:
+            _procesar(ac)
 
         # Cargar alias manuales
         alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
@@ -2014,11 +2170,12 @@ def api_desglose_cobrado(request):
                     if m.asignado_a:
                         vendedor = (m.asignado_a.get_full_name() or m.asignado_a.username)
                         break
-                # Meta: sumar meta_cobrado de TODAS las variantes
+                # Meta: sumar meta_cobrado de TODAS las variantes.
+                # Multiplicar por número de meses en el rango (12 si 'todos').
+                meses_multiplier = 12 if meses_list is None else len(meses_list)
                 for m in matches:
                     mc = float(m.meta_cobrado or 0)
-                    if mes == 'todos':
-                        mc = mc * 12
+                    mc = mc * meses_multiplier
                     meta_cobrado += mc
             faltante = meta_cobrado - entry['monto']
             rows.append({
@@ -2066,22 +2223,33 @@ def api_cliente_oportunidades(request, cliente_id):
     # Filtrar por fecha_creacion si se indica (usado en tab Clientes)
     por_creacion = request.GET.get('por_creacion', '')
 
-    # Aplicar filtros solo si no son 'todos'
-    if anio_filter != 'todos':
-        try:
-            anio_int = int(anio_filter)
-            if por_creacion:
-                qs = qs.filter(fecha_creacion__year=anio_int)
-            else:
-                qs = qs.filter(anio_cierre=anio_int)
-        except (ValueError, TypeError):
-            pass
+    # Aplicar filtros solo si no son 'todos' (soporta multi-valor comma-separado)
+    def _parse_ints_local(s):
+        if not s or s == 'todos':
+            return None
+        parts = [p.strip() for p in str(s).split(',') if p.strip()]
+        out = []
+        for p in parts:
+            try:
+                out.append(int(p))
+            except ValueError:
+                pass
+        return out or None
 
-    if mes_filter != 'todos':
+    anios_local = _parse_ints_local(anio_filter)
+    meses_local = _parse_ints_local(mes_filter)
+
+    if anios_local is not None:
         if por_creacion:
-            qs = qs.filter(fecha_creacion__month=int(mes_filter))
+            qs = qs.filter(fecha_creacion__year__in=anios_local)
         else:
-            qs = qs.filter(mes_cierre=mes_filter)
+            qs = qs.filter(anio_cierre__in=anios_local)
+
+    if meses_local is not None:
+        if por_creacion:
+            qs = qs.filter(fecha_creacion__month__in=meses_local)
+        else:
+            qs = qs.filter(mes_cierre__in=[str(m).zfill(2) for m in meses_local])
 
     if not es_supervisor:
         _gids = get_usuarios_visibles_ids(user)
@@ -4622,15 +4790,29 @@ def api_desglose_cotizaciones(request):
     vendedores_filter = request.GET.get('vendedores', '')
     vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()] if vendedores_filter else []
 
-    try:
-        anio_int = int(anio_filter)
-    except ValueError:
-        anio_int = now.year
+    def _parse_ints_local(s):
+        if not s or s == 'todos':
+            return None
+        parts = [p.strip() for p in str(s).split(',') if p.strip()]
+        out = []
+        for p in parts:
+            try:
+                out.append(int(p))
+            except ValueError:
+                pass
+        return out or None
+
+    anios_local = _parse_ints_local(anio_filter)
+    meses_local = _parse_ints_local(mes_filter)
+    anio_int = anios_local[0] if anios_local else now.year
 
     # Base queryset
-    base_qs = TodoItem.objects.filter(anio_cierre=anio_int)
-    if mes_filter != 'todos':
-        base_qs = base_qs.filter(mes_cierre=mes_filter)
+    if anios_local is not None:
+        base_qs = TodoItem.objects.filter(anio_cierre__in=anios_local)
+    else:
+        base_qs = TodoItem.objects.filter(anio_cierre=anio_int)
+    if meses_local is not None:
+        base_qs = base_qs.filter(mes_cierre__in=[str(m).zfill(2) for m in meses_local])
     if not es_supervisor:
         usuarios_visibles = get_usuarios_visibles_ids(user)
         if usuarios_visibles and len(usuarios_visibles) > 1:
@@ -4641,8 +4823,15 @@ def api_desglose_cotizaciones(request):
         base_qs = base_qs.filter(usuario_id__in=vendedores_ids)
 
     opp_ids = base_qs.values_list('id', flat=True)
+    _sueltas_q = Q(oportunidad__isnull=True)
+    if anios_local is not None:
+        _sueltas_q &= Q(fecha_creacion__year__in=anios_local)
+    else:
+        _sueltas_q &= Q(fecha_creacion__year=anio_int)
+    if meses_local is not None:
+        _sueltas_q &= Q(fecha_creacion__month__in=meses_local)
     cot_qs = Cotizacion.objects.select_related('cliente').filter(
-        Q(oportunidad_id__in=opp_ids) | Q(oportunidad__isnull=True, fecha_creacion__year=anio_int)
+        Q(oportunidad_id__in=opp_ids) | _sueltas_q
     )
 
     # Contar por cliente

@@ -500,6 +500,12 @@ def api_proyecto_detalle(request, proyecto_id):
     utilidad_real = ingresos - costos_prov - gastos_aprobados
     margen = (utilidad_real / ingresos * 100) if ingresos > 0 else Decimal('0')
 
+    # Gastado: OCs (no canceladas) + Gastos operativos (no rechazados, es decir pendientes + aprobados)
+    gastado_oc = proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or Decimal('0')
+    gastos_no_rechazados = proyecto.gastos.exclude(estado_aprobacion='rejected').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    gastado_total = float(gastado_oc) + float(gastos_no_rechazados)
+
+    d['current_user_is_supervisor'] = is_supervisor(request.user)
     d['kpis'] = {
         'total_costo_partidas': float(partidas_agg['total_costo'] or 0),
         'total_venta_partidas': float(partidas_agg['total_venta'] or 0),
@@ -512,8 +518,8 @@ def api_proyecto_detalle(request, proyecto_id):
         'alertas_pendientes': proyecto.alertas.filter(resuelta=False).count(),
         'tareas_pendientes': proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count(),
         'ordenes_compra_activas': proyecto.ordenes_compra.exclude(status='cancelled').count(),
-        # Gastado: sum of OC montos (not cancelled)
-        'gastado': float(proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or 0),
+        # Gastado: OCs (no canceladas) + Gastos operativos (no rechazados)
+        'gastado': gastado_total,
         # Cobrado: sum of facturas ingreso
         'cobrado': float(proyecto.facturas_ingreso.aggregate(t=Sum('monto'))['t'] or 0),
         # KPIs operativos
@@ -1404,6 +1410,110 @@ def api_financiero_upload_factura_ingreso(request, proyecto_id):
     })
 
 
+@login_required
+@require_http_methods(["POST"])
+def api_financiero_upload_factura_proveedor(request, proyecto_id):
+    """Subir un PDF de Factura de Proveedor manualmente."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo requerido'}, status=400)
+
+    from decimal import Decimal as D
+    nombre = archivo.name
+    ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
+
+    pdf_data = {}
+    if ext == 'pdf':
+        try:
+            archivo.seek(0)
+            content = archivo.read()
+            archivo.seek(0)
+            from .services_financiero import _extraer_datos_pdf_from_bytes
+            pdf_data = _extraer_datos_pdf_from_bytes(content)
+        except Exception as exc:
+            import logging
+            logging.warning(f"[Financiero] Error parseando Factura Proveedor PDF: {exc}")
+
+    from .services_financiero import _extraer_numero_factura, _extraer_proveedor_de_nombre, _acortar_nombre
+    monto = pdf_data.get('monto') or D('0')
+    fecha = pdf_data.get('fecha')
+    numero = pdf_data.get('numero_factura') or _extraer_numero_factura(nombre)
+    proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
+
+    # Verificar duplicado
+    if ProyectoFacturaProveedor.objects.filter(proyecto=proyecto, numero_factura=numero).exists():
+        return JsonResponse({'success': False, 'error': f'Ya existe una factura de proveedor con número {numero} en este proyecto'}, status=409)
+
+    factura = ProyectoFacturaProveedor.objects.create(
+        proyecto=proyecto,
+        numero_factura=numero,
+        proveedor=_acortar_nombre(proveedor),
+        monto=monto,
+        fecha_factura=fecha or timezone.localdate(),
+        status='received',
+        notas=f'Subida manualmente. Archivo: {nombre}',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': _factura_prov_to_dict(factura),
+        'monto_extraido': float(monto),
+    })
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_factura_proveedor_eliminar(request, factura_id):
+    """Elimina una factura de proveedor."""
+    try:
+        factura = ProyectoFacturaProveedor.objects.select_related('proyecto').get(id=factura_id)
+    except ProyectoFacturaProveedor.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Factura no encontrada'}, status=404)
+
+    if not _check_access(request.user, factura.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    factura.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_factura_ingreso_eliminar(request, factura_id):
+    """Elimina una factura de ingreso."""
+    try:
+        factura = ProyectoFacturaIngreso.objects.select_related('proyecto').get(id=factura_id)
+    except ProyectoFacturaIngreso.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Factura no encontrada'}, status=404)
+
+    if not _check_access(request.user, factura.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    factura.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_gasto_eliminar(request, gasto_id):
+    """Elimina un gasto operativo."""
+    try:
+        gasto = ProyectoGasto.objects.select_related('proyecto').get(id=gasto_id)
+    except ProyectoGasto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Gasto no encontrado'}, status=404)
+
+    if not _check_access(request.user, gasto.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    gasto.delete()
+    return JsonResponse({'success': True})
+
+
 # ═══════════════════════════════════════════════════════════════
 #  TAREAS PROYECTO
 # ═══════════════════════════════════════════════════════════════
@@ -2153,3 +2263,45 @@ def api_restaurar_version(request, proyecto_id):
     proyecto.save(update_fields=['utilidad_presupuestada'])
 
     return JsonResponse({'ok': True, 'restored': restored})
+
+
+# ═══════════════════════════════════════════════════════════════
+#  CFDI XML → PDF (modulo independiente de prueba)
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["GET"])
+def cfdi_convertidor_page(request):
+    """Pagina standalone con form para subir XML CFDI y descargar PDF."""
+    from django.shortcuts import render
+    return render(request, 'crm/cfdi_convertidor.html')
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_cfdi_convertir(request):
+    """Recibe un XML CFDI, retorna PDF inline."""
+    from django.http import HttpResponse
+    archivo = request.FILES.get('xml')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo XML requerido'}, status=400)
+
+    try:
+        xml_bytes = archivo.read()
+        from .services_cfdi import generate_cfdi_pdf
+        pdf_bytes, data = generate_cfdi_pdf(xml_bytes)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {str(e)}'}, status=500)
+
+    # Nombre de archivo: Factura_<RFC_EMISOR>_<SERIE><FOLIO>_<RFC_RECEPTOR>.pdf
+    rfc_e = data.get('emisor', {}).get('rfc', 'EMISOR')
+    rfc_r = data.get('receptor', {}).get('rfc', 'RECEPTOR')
+    serie_folio = f"{data.get('serie', '')}{data.get('folio', '')}"
+    filename = f"Factura_{rfc_e}_{serie_folio}_{rfc_r}.pdf"
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    # Inline para verlo en el navegador; descarga con el nombre correcto si el usuario usa "Guardar como"
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response

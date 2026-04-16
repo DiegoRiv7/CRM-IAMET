@@ -71,8 +71,10 @@ document.addEventListener('click', function(ev) {
     // A. MAIN TABLE: Load clients with prospecto counts
     // ══════════════════════════════════════════════════════════════
     function cargarClientesProspeccion() {
-        var tbody = document.getElementById('prospeccionTbody');
-        if (!tbody) return;
+        // Preferir el nuevo contenedor de filas sueltas; fallback al legacy tbody
+        var body = document.getElementById('prospeccionListBody');
+        var head = document.getElementById('prospeccionListHead');
+        if (!body) return;
 
         var params = new URLSearchParams(window.location.search);
         var mes = params.get('mes') || '';
@@ -83,63 +85,58 @@ document.addEventListener('click', function(ev) {
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.rows) return;
-                tbody.innerHTML = '';
+                body.innerHTML = '';
 
                 var prodKeys = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza', 'otros'];
                 var prodLabels = ['Zebra', 'Panduit', 'APC', 'Avig.', 'Genet.', 'Axis', 'Soft.', 'RR', 'Pol.', 'Otros'];
+                var prodChoicesMap = {
+                    'zebra': 'ZEBRA', 'panduit': 'PANDUIT', 'apc': 'APC',
+                    'avigilon': 'AVIGILION', 'genetec': 'GENETEC', 'axis': 'AXIS',
+                    'software': 'SOFTWARE', 'runrate': 'RUNRATE', 'poliza': 'POLIZA', 'otros': ''
+                };
 
-                // Build thead from JS to guarantee alignment with data cells
-                var thead = document.getElementById('prospeccionThead');
-                if (thead) {
-                    var hStyle = 'text-align:right;padding:12px 8px;font-size:9px;font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.1em;';
-                    var hRow = '<tr style="border-bottom:1px solid #E5E7EB;background:rgba(249,250,251,0.8);">';
-                    hRow += '<td style="text-align:left;padding:12px 8px;font-size:9px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;width:120px;min-width:120px;max-width:120px;">Cliente</td>';
-                    prodLabels.forEach(function(l){ hRow += '<td style="' + hStyle + '">' + l + '</td>'; });
-                    hRow += '</tr>';
-                    thead.innerHTML = hRow;
+                // Header (labels) — usa mismo estilo que .crm-list-head
+                if (head) {
+                    var hHtml = '<div class="crm-list-hcell" style="flex:2.6;padding-left:22px;">Cliente</div>';
+                    prodLabels.forEach(function(l){
+                        hHtml += '<div class="crm-list-hcell" style="flex:1;text-align:right;">' + l + '</div>';
+                    });
+                    head.innerHTML = hHtml;
                 }
 
                 data.rows.forEach(function(row) {
-                    var tr = document.createElement('tr');
-                    tr.className = 'crm-data-row';
-                    tr.dataset.clienteId = row.cliente_id;
+                    var rowEl = document.createElement('div');
+                    // Reutilizamos la clase .crm-list-row (mismo dise;o que oportunidades) + modifier --prospect
+                    rowEl.className = 'crm-list-row crm-list-row--prospect crm-data-row';
+                    rowEl.dataset.clienteId = row.cliente_id;
 
-                    // Product key to PRODUCTO_CHOICES value mapping
-                    var prodChoicesMap = {
-                        'zebra': 'ZEBRA', 'panduit': 'PANDUIT', 'apc': 'APC',
-                        'avigilon': 'AVIGILION', 'genetec': 'GENETEC', 'axis': 'AXIS',
-                        'software': 'SOFTWARE', 'runrate': 'RUNRATE', 'poliza': 'POLIZA', 'otros': ''
-                    };
-
-                    // Client name cell — use inline onclick
-                    var clienteOnclick = 'onclick="window._prospeccionClickCliente(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + escapeHtml(row.rfc).replace(/'/g, "\\'") + '\')"';
-                    var html = '<td style="padding:16px 8px;width:120px;min-width:120px;max-width:120px;">' +
-                        '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-                        '<span style="cursor:pointer;color:#1C1C1E;font-weight:600;font-size:11px;" ' + clienteOnclick + '>' +
-                            escapeHtml(row.cliente) +
-                        '</span></div>';
+                    // Cliente cell (equivalente a la columna "Oportunidad / Cliente")
+                    var clienteOnclick = 'onclick="event.stopPropagation();window._prospeccionClickCliente(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + escapeHtml(row.rfc).replace(/'/g, "\\'") + '\')"';
+                    var html = '<div class="crm-list-cell cell-cliente" style="flex:2.6;padding-left:22px;">' +
+                        '<div class="crm-list-title"><span class="cliente-prospeccion-link" data-cliente-id="' + row.cliente_id + '" data-cliente-nombre="' + escapeHtml(row.cliente).replace(/"/g,'&quot;') + '" ' + clienteOnclick + '>' + escapeHtml(row.cliente) + '</span></div>';
                     if (row.rfc) {
-                        html += '<div style="font-size:9px;color:#86868B;font-weight:500;text-transform:uppercase;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">RFC: ' + escapeHtml(row.rfc) + '</div>';
+                        html += '<div class="crm-list-sub">RFC: ' + escapeHtml(row.rfc) + '</div>';
                     }
-                    html += '</td>';
+                    html += '</div>';
 
-                    // Product columns — use inline onclick for maximum compatibility
+                    // Product cells — cada uno como .crm-list-cell con flex:1
                     prodKeys.forEach(function(key) {
                         var val = row[key] || 0;
                         var prodValue = prodChoicesMap[key] || '';
-                        var onclickCode = prodValue
-                            ? 'onclick="console.log(\'[PROSPECCION] ONCLICK producto\');window._prospeccionClickProducto(' + row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") + '\',\'' + prodValue + '\')"'
-                            : '';
-                        var cursorStyle = prodValue ? 'cursor:pointer;' : '';
-                        if (val === 0) {
-                            html += '<td style="text-align:right;padding:16px 8px;' + cursorStyle + '" ' + onclickCode + '><span style="color:#D1D5DB;">0</span></td>';
+                        var cellAttrs = '';
+                        if (prodValue) {
+                            cellAttrs = ' onclick="event.stopPropagation();window._prospeccionClickProducto(' +
+                                row.cliente_id + ',\'' + escapeHtml(row.cliente).replace(/'/g, "\\'") +
+                                '\',\'' + prodValue + '\')" style="flex:1;cursor:pointer;"';
                         } else {
-                            html += '<td style="text-align:right;padding:16px 8px;' + cursorStyle + '" ' + onclickCode + '><span style="color:#2563EB;font-weight:700;">' + val + '</span></td>';
+                            cellAttrs = ' style="flex:1;"';
                         }
+                        var cls = val === 0 ? 'cell-prod zero' : 'cell-prod filled';
+                        html += '<div class="crm-list-cell ' + cls + '"' + cellAttrs + '>' + val + '</div>';
                     });
 
-                    tr.innerHTML = html;
-                    tbody.appendChild(tr);
+                    rowEl.innerHTML = html;
+                    body.appendChild(rowEl);
                 });
 
                 // Footer
@@ -148,19 +145,18 @@ document.addEventListener('click', function(ev) {
                     footer.innerHTML = '<span style="font-size:11px;color:#86868B;">' + (data.footer.left || '') + '</span><span style="font-size:11px;font-weight:600;color:#1C1C1E;">' + (data.footer.right || '') + '</span>';
                     footer.style.display = 'flex';
                     footer.style.justifyContent = 'space-between';
-                    footer.style.padding = '8px 12px';
+                    footer.style.padding = '12px 8px 0';
                 }
 
-
-                console.log('[PROSPECCION] Tabla cargada con', data.rows.length, 'clientes');
+                console.log('[PROSPECCION] Lista cargada con', data.rows.length, 'clientes');
             });
     }
 
     // ── Global event delegation for ALL clicks in prospeccion table ──
     // Using document-level delegation — works regardless of DOM timing
     document.addEventListener('click', function(e) {
-        // Only process if we're inside prospeccionTbody
-        var tbody = e.target.closest('#prospeccionTbody');
+        // Procesar si está dentro del legacy tbody o del nuevo listBody
+        var tbody = e.target.closest('#prospeccionTbody') || e.target.closest('#prospeccionListBody');
         if (!tbody) return;
 
         console.log('[PROSPECCION] Click dentro de prospeccionTbody, target:', e.target.tagName, e.target.className, e.target.textContent.substring(0, 30));

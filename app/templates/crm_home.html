@@ -5,14 +5,16 @@
 {% endblock %}
 {% block content %}
 
-<div class="crm-page">
+<div class="crm-page {% if not es_ingeniero %}crm-page-sidebar{% endif %}">
     <form style="display:none;">{% csrf_token %}</form>
 
     {% if es_ingeniero %}
     {% include "crm/_topbar_ingeniero.html" %}
     {% else %}
-    {% include "crm/_topbar.html" %}
+    {% include "crm/_sidebar.html" %}
     {% endif %}
+
+    <div class="crm-main">
 
     {% include "crm/_widget_mail.html" %}
     {% if not es_ingeniero %}
@@ -45,6 +47,7 @@
     {% include "crm/_widget_grupo.html" %}
     {% endif %}
 
+    </div><!-- /.crm-main -->
 </div>
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
