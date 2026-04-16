@@ -367,6 +367,7 @@
                     <input type="hidden" id="filterProbMin" value="">
                     <input type="hidden" id="filterProbMax" value="">
                     <input type="hidden" id="filterMesCierre" value="">
+                    <input type="hidden" id="filterVencida" value="">
                     <div class="crm-filter-actions">
                         <button type="button" class="crm-filter-export" id="btnExportExcel" title="Exportar a Excel">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
@@ -2235,7 +2236,8 @@
         { k: 'fecha:desc', lbl: 'Recientes primero', field: 'fecha', v: 'desc' },
         { k: 'fecha:asc',  lbl: 'Antiguos primero',  field: 'fecha', v: 'asc'  },
         { k: 'monto:desc', lbl: 'Monto: mayor a menor', field: 'monto', v: 'desc' },
-        { k: 'monto:asc',  lbl: 'Monto: menor a mayor', field: 'monto', v: 'asc'  }
+        { k: 'monto:asc',  lbl: 'Monto: menor a mayor', field: 'monto', v: 'asc'  },
+        { k: 'vencidas',   lbl: 'Solo vencidas',     field: 'vencida', v: 'only' }
     ];
 
     // La facet-bar se fusionó con la crm-bar (unificada). Detectamos su presencia
@@ -3088,12 +3090,17 @@
         var item = e.target.closest('.crm-pop-item');
         if (!item) return;
         var sk = item.dataset.sort;
-        // Limpiar ambos selects
+        // Limpiar todos los sort inputs
         setInputValue('filterMonto', '');
         setInputValue('filterFecha', '');
+        setInputValue('filterVencida', '');
         if (sk) {
             var s = SORTS.find(function(x){ return x.k === sk; });
-            if (s) setInputValue('filter' + (s.field === 'monto' ? 'Monto' : 'Fecha'), s.v);
+            if (s) {
+                if (s.field === 'monto') setInputValue('filterMonto', s.v);
+                else if (s.field === 'vencida') setInputValue('filterVencida', s.v);
+                else setInputValue('filterFecha', s.v);
+            }
         }
         popSort.classList.remove('open');
         renderChips();

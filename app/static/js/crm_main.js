@@ -3169,6 +3169,11 @@
                 loadAllClientesPanels();
                 return;
             }
+            // Guardar estado de vencida ANTES del refresh para detectar cambios
+            var _prevVencidaMap = {};
+            document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(r){
+                _prevVencidaMap[r.dataset.oppId] = r.dataset.vencida === '1';
+            });
             var vendedores = getVendedoresParam();
             var url = '/app/api/crm-table-data/?tab=' + currentTab + '&mes=' + currentMes + '&anio=' + currentAnio;
             if (vendedores) url += '&vendedores=' + vendedores;
@@ -3217,6 +3222,43 @@
 
                     bindTableEvents();
                     populateIslandFilters();
+
+                    // Sincronizar data-attributes de cards/rows del nuevo list/cards view
+                    // y detectar cambios de vencida para animación de "healing"
+                    var _apiMap = {};
+                    (data.rows || []).forEach(function(r){ _apiMap[String(r.id)] = r; });
+                    document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(el){
+                        var apiRow = _apiMap[el.dataset.oppId];
+                        if (!apiRow) return;
+                        var wasVencida = _prevVencidaMap[el.dataset.oppId];
+                        var nowVencida = !!apiRow.tiene_actividad_vencida;
+                        el.dataset.vencida = nowVencida ? '1' : '0';
+                        el.dataset.diasVencida = nowVencida ? (el.dataset.diasVencida || '0') : '0';
+                        // Strip de color
+                        var strip = el.querySelector('.crm-list-strip');
+                        if (strip && !nowVencida) {
+                            strip.className = 'crm-list-strip ' + (apiRow.tipo_negociacion === 'proyecto' ? 'proyecto' : 'runrate');
+                        }
+                        // Healing: era vencida, ya no lo es → animación
+                        if (wasVencida && !nowVencida) {
+                            el.classList.add('crm-healing');
+                            el.addEventListener('animationend', function _h(){
+                                el.classList.remove('crm-healing');
+                                el.removeEventListener('animationend', _h);
+                                if (typeof applySortToViews === 'function') applySortToViews();
+                                if (typeof window._crmRenderKanban === 'function') window._crmRenderKanban();
+                            });
+                        }
+                    });
+                    // Re-sort y re-render kanban (si no hay healing, se ejecuta directo)
+                    var anyHealing = document.querySelector('.crm-healing');
+                    if (!anyHealing) {
+                        if (typeof applySortToViews === 'function') applySortToViews();
+                        if (typeof window._crmRenderKanban === 'function') {
+                            var kv = document.getElementById('crmViewKanban');
+                            if (kv && kv.style.display !== 'none') window._crmRenderKanban();
+                        }
+                    }
                 })
                 .catch(function (err) { console.error('Error refreshing table:', err); });
         }
@@ -4104,6 +4146,10 @@
                 if (show && probMax !== null && prob > probMax) show = false;
                 // Mes de cierre (multi)
                 if (show && mesCierreList && mesCierreList.indexOf(mesCierre) === -1) show = false;
+
+                // Solo vencidas (sort = 'vencidas')
+                var filterVencida = (document.getElementById('filterVencida') || {}).value || '';
+                if (show && filterVencida === 'only' && card.dataset.vencida !== '1') show = false;
 
                 // Rango de fechas (por fecha de creacion)
                 if (show && (currentFilters.desde || currentFilters.hasta)) {

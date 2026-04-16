@@ -7144,6 +7144,25 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 .crm-list-row:has(.crm-list-strip.vencida):hover { border-color: #FCA5A5; }
 .crm-list-row:has(.crm-list-strip.vencida.heat-max) { border-color: #FECACA; background: #FFFBFB; }
 
+/* Animación "healing": oportunidad deja de estar vencida → transición suave */
+@keyframes crmHealRipple {
+    0%   { background: #FEE2E2; border-color: #FCA5A5; }
+    30%  { background: #D1FAE5; border-color: #6EE7B7; }
+    100% { background: #FFFFFF; border-color: #E5E7EB; }
+}
+.crm-list-row.crm-healing,
+.crm-postit.crm-healing {
+    animation: crmHealRipple 1.2s ease-out forwards;
+}
+.crm-list-row.crm-healing .crm-list-strip {
+    transition: background 0.6s ease;
+    background: linear-gradient(180deg, #4ADE80 0%, #16A34A 100%) !important;
+    box-shadow: 0 0 8px rgba(22,163,74,0.3) !important;
+}
+.crm-postit.crm-healing {
+    border-left-color: #16A34A !important;
+}
+
 /* Tarea completada — mismo look que .tareas-card.done del calendario */
 .crm-list-strip.completada {
     background: linear-gradient(180deg, #4ADE80 0%, #16A34A 100%);
