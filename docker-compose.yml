@@ -42,7 +42,9 @@ services:
 
 volumes:
   db_data: # Define el volumen nombrado para la persistencia de la base de datos
-  media_files: # Volumen para archivos media subidos
+  media_files:
+    external: true
+    name: crm-iamet_media_files  # Volumen REAL con todo el Drive de oportunidades (~9.9GB)
 
 # Añade esta sección al final del archivo
 networks:
