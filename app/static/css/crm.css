@@ -4315,7 +4315,7 @@
         color: #1E293B;
         background: transparent;
         resize: none;
-        min-height: 280px;
+        min-height: 360px;
         padding: 0;
     }
     .crm-ctw-desc::placeholder { color: #94A3B8; }
@@ -4323,7 +4323,7 @@
     @media (max-width: 1100px) {
         .crm-ctw-canvas { padding: 14px 36px 32px; }
         .crm-ctw-title { font-size: 30px; }
-        .crm-ctw-desc { min-height: 220px; font-size: 15.5px; }
+        .crm-ctw-desc { min-height: 280px; font-size: 15.5px; }
     }
 
     /* Toolbar */
