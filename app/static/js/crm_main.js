@@ -6048,15 +6048,43 @@
             var prioSidebarWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
             if (prioSidebarWrap) prioSidebarWrap.style.display = 'none';
 
-            // Botón terminar / reabrir
+            // Botón terminar / reabrir (topbar)
             var btnTerminar = document.getElementById('crmTaskBtnTerminar');
             var btnReabrir = document.getElementById('crmTaskBtnReabrir');
+            var completarHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completar</span>';
             if (tarea.estado === 'completada') {
-                if (btnTerminar) { btnTerminar.classList.add('completada'); btnTerminar.textContent = 'Completada'; btnTerminar.disabled = true; btnTerminar.style.display = 'none'; }
-                if (btnReabrir) btnReabrir.style.display = 'flex';
+                if (btnTerminar) { btnTerminar.classList.add('completada'); btnTerminar.disabled = true; btnTerminar.style.display = 'none'; }
+                if (btnReabrir) btnReabrir.style.display = 'inline-flex';
             } else {
-                if (btnTerminar) { btnTerminar.classList.remove('completada'); btnTerminar.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Completar tarea'; btnTerminar.disabled = false; btnTerminar.style.display = ''; }
+                if (btnTerminar) { btnTerminar.classList.remove('completada'); btnTerminar.innerHTML = completarHTML; btnTerminar.disabled = false; btnTerminar.style.display = 'inline-flex'; }
                 if (btnReabrir) btnReabrir.style.display = 'none';
+            }
+
+            // Checkbox al lado del título
+            var titleCheck = document.getElementById('crmTaskTitleCheck');
+            if (titleCheck) {
+                titleCheck.classList.toggle('completada', tarea.estado === 'completada');
+            }
+
+            // Sidebar pill de estado (refleja estado del badge principal)
+            var estadoSidePill = document.getElementById('crm-task-estado-sidebar-pill');
+            if (estadoSidePill) {
+                var estadoTxt = tarea.estado === 'completada' ? 'Completada' : (tarea.estado === 'en_progreso' ? 'En progreso' : 'Pendiente');
+                estadoSidePill.textContent = estadoTxt;
+                estadoSidePill.className = 'crm-task-status-pill estado' + (tarea.estado === 'completada' ? ' completada' : '');
+            }
+
+            // Sidebar valor de prioridad
+            var prioSideVal = document.getElementById('crm-task-prioridad');
+            var prioSideWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
+            if (prioSideVal && prioSideWrap) {
+                if (tarea.prioridad === 'alta') {
+                    prioSideVal.innerHTML = '<span class="crm-task-status-pill prioridad"><svg width="7" height="7" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>Alta</span>';
+                    prioSideWrap.style.display = '';
+                } else {
+                    prioSideVal.innerHTML = '<span style="font-size:0.82rem;color:#9CA3AF;">Normal</span>';
+                    prioSideWrap.style.display = '';
+                }
             }
 
             // Info sidebar
@@ -6131,12 +6159,21 @@
                             '<svg width="14" height="14" fill="none" stroke="#93C5FD" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
                         '</div>';
                 } else {
-                    // Es tarea normal: mostrar subtareas
+                    // Es tarea normal: mostrar subtareas con barra de progreso
                     var subs = tarea.subtareas || [];
-                    var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
-                        '<h3 style="margin:0;">Subtareas</h3>' +
+                    var total = subs.length;
+                    var done = subs.filter(function (s) { return s.estado === 'completada'; }).length;
+                    var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                    var progressHtml = total > 0
+                        ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+                          '<div style="flex:1;height:6px;background:#EEF0F3;border-radius:999px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#22C55E,#0EA5E9);border-radius:999px;transition:width 0.3s;"></div></div>' +
+                          '<span style="font-size:0.72rem;color:#6B7280;font-weight:600;white-space:nowrap;">' + done + '/' + total + ' · ' + pct + '%</span>' +
+                          '</div>'
+                        : '';
+                    var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                        '<div class="crm-task-section-label" style="margin:0;"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Subtareas</div>' +
                         '<button onclick="crmTaskCrearSubtarea()" title="Crear subtarea" style="background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:2px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;">' +
-                        '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Subtarea</button></div>';
+                        '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Subtarea</button></div>' + progressHtml;
                     var listHtml = '';
                     if (subs.length > 0) {
                         var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
@@ -6665,11 +6702,21 @@
             });
         }
 
+        // Toggle desde el checkbox del título
+        window.crmTaskToggleCompletar = function () {
+            if (!_crmTaskLastData) return;
+            if (_crmTaskLastData.estado === 'completada') {
+                crmTaskReabrir();
+            } else {
+                crmTaskCompletar();
+            }
+        };
+
         // ── Terminar tarea ──
         function crmTaskCompletar() {
             if (!_crmCurrentTaskId) return;
             var btn = document.getElementById('crmTaskBtnTerminar');
-            if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span>Guardando...</span>'; }
             var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
             fetch('/app/api/tarea/' + _crmCurrentTaskId + '/completar/', {
                 method: 'POST',
@@ -6680,9 +6727,11 @@
                     if (data.success !== false) {
                         if (btn) {
                             btn.classList.add('completada');
-                            btn.textContent = 'Completada';
+                            btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completada</span>';
                             btn.disabled = true;
                         }
+                        var titleCheck = document.getElementById('crmTaskTitleCheck');
+                        if (titleCheck) titleCheck.classList.add('completada');
 
                         var estadoEl = document.getElementById('crm-task-estado');
                         if (estadoEl) estadoEl.innerHTML = getEstadoBadgeCRM('completada');
@@ -6725,12 +6774,12 @@
                             }
                         }
                     } else {
-                        if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completar</span>'; }
                         showToast(data.error || 'Error al completar', 'error');
                     }
                 })
                 .catch(function () {
-                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completar</span>'; }
                     showToast('Error de conexión', 'error');
                 });
         }
