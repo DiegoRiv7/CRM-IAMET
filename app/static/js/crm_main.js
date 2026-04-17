@@ -6075,23 +6075,26 @@
             var prioSidebarWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
             if (prioSidebarWrap) prioSidebarWrap.style.display = 'none';
 
-            // Botón terminar (oculto — el checkbox del título actúa como trigger)
-            // Botón reabrir (solo visible si la tarea está completada)
-            var btnTerminar = document.getElementById('crmTaskBtnTerminar');
+            // Acción principal: Completar / Reabrir / Pill Completada (según estado)
+            var btnTerminar = document.getElementById('crmTaskBtnTerminar'); // legacy oculto
+            var btnCompletarPrimary = document.getElementById('crmTaskBtnCompletarPrimary');
             var btnReabrir = document.getElementById('crmTaskBtnReabrir');
+            var completadaPill = document.getElementById('crmTaskCompletadaPill');
+            var isCompletada = (tarea.estado === 'completada');
             if (btnTerminar) {
-                btnTerminar.disabled = (tarea.estado === 'completada');
+                btnTerminar.disabled = isCompletada;
                 btnTerminar.style.display = 'none';
             }
-            if (btnReabrir) {
-                btnReabrir.style.display = (tarea.estado === 'completada') ? 'inline-flex' : 'none';
+            if (btnCompletarPrimary) {
+                btnCompletarPrimary.disabled = false;
+                btnCompletarPrimary.classList.remove('bursting');
+                btnCompletarPrimary.innerHTML =
+                    '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+                    '<span>Completar tarea</span>';
+                btnCompletarPrimary.style.display = isCompletada ? 'none' : 'inline-flex';
             }
-
-            // Checkbox al lado del título
-            var titleCheck = document.getElementById('crmTaskTitleCheck');
-            if (titleCheck) {
-                titleCheck.classList.toggle('completada', tarea.estado === 'completada');
-            }
+            if (btnReabrir) btnReabrir.style.display = isCompletada ? 'inline-flex' : 'none';
+            if (completadaPill) completadaPill.style.display = isCompletada ? 'inline-flex' : 'none';
 
             // Sidebar pill de estado (refleja estado del badge principal)
             var estadoSidePill = document.getElementById('crm-task-estado-sidebar-pill');
@@ -6104,10 +6107,9 @@
                 estadoDot.className = 'crm-tw-sb-dot ' + (tarea.estado || 'pendiente');
             }
 
-            // Sidebar valor de prioridad + flag inline en título
+            // Sidebar valor de prioridad (alta / normal)
             var prioSideVal = document.getElementById('crm-task-prioridad');
             var prioSideWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
-            var prioFlag = document.getElementById('crmTaskPrioFlag');
             var esAlta = (tarea.prioridad === 'alta');
             if (prioSideVal && prioSideWrap) {
                 if (esAlta) {
@@ -6119,7 +6121,6 @@
                 }
                 prioSideWrap.style.display = '';
             }
-            if (prioFlag) prioFlag.style.display = esAlta ? 'inline-flex' : 'none';
 
             // Info sidebar — fecha límite inteligente (relativa + color auto)
             var fechaLimiteEl = document.getElementById('crm-task-fecha-limite');
@@ -6812,19 +6813,18 @@
             });
         }
 
-        // Toggle desde el checkbox del título (con burst animation al completar)
+        // Toggle desde el botón principal "Completar tarea" (burst animation al completar)
         window.crmTaskToggleCompletar = function () {
             if (!_crmTaskLastData) return;
             if (_crmTaskLastData.estado === 'completada') {
                 crmTaskReabrir();
             } else {
-                var chk = document.getElementById('crmTaskTitleCheck');
-                if (chk) {
-                    chk.classList.remove('bursting');
-                    // reflow para reiniciar la animación si se dispara de nuevo
-                    void chk.offsetWidth;
-                    chk.classList.add('bursting');
-                    setTimeout(function () { chk.classList.remove('bursting'); }, 600);
+                var btn = document.getElementById('crmTaskBtnCompletarPrimary');
+                if (btn) {
+                    btn.classList.remove('bursting');
+                    void btn.offsetWidth;
+                    btn.classList.add('bursting');
+                    setTimeout(function () { btn.classList.remove('bursting'); }, 620);
                 }
                 crmTaskCompletar();
             }
@@ -6848,8 +6848,13 @@
                             btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completada</span>';
                             btn.disabled = true;
                         }
-                        var titleCheck = document.getElementById('crmTaskTitleCheck');
-                        if (titleCheck) titleCheck.classList.add('completada');
+                        // Swap botón Completar → pill Completada + mostrar Reabrir
+                        var btnCompPrim = document.getElementById('crmTaskBtnCompletarPrimary');
+                        if (btnCompPrim) btnCompPrim.style.display = 'none';
+                        var compPill = document.getElementById('crmTaskCompletadaPill');
+                        if (compPill) compPill.style.display = 'inline-flex';
+                        var btnReab = document.getElementById('crmTaskBtnReabrir');
+                        if (btnReab) btnReab.style.display = 'inline-flex';
 
                         var estadoEl = document.getElementById('crm-task-estado');
                         if (estadoEl) estadoEl.innerHTML = getEstadoBadgeCRM('completada');

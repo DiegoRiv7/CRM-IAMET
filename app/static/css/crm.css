@@ -3062,18 +3062,23 @@
     .crm-tw-crumb-pill:hover { background: #F1F5F9; color: #1E293B; }
     .crm-tw-chev { color: #CBD5E1; flex-shrink: 0; }
     .crm-tw-cliente-crumb {
-        color: #64748B;
-        font-size: 13px;
-        font-weight: 500;
-        letter-spacing: -0.005em;
-        cursor: pointer;
-        transition: color 0.15s;
+        display: inline-flex;
+        align-items: center;
         max-width: 260px;
+        padding: 5px 12px;
+        margin-right: 4px;
+        background: #F8FAFC;
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        border-radius: 999px;
+        color: #475569;
+        font-size: 12.5px;
+        font-weight: 600;
+        letter-spacing: -0.003em;
+        cursor: default;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    .crm-tw-cliente-crumb:hover { color: #2563EB; }
     /* Legacy: ocultar si aún está en DOM */
     .crm-tw-taskid { display: none; }
 
@@ -3163,72 +3168,80 @@
         .crm-tw-main-scroll { padding: 24px 24px; }
     }
 
-    /* ── Título + checkbox ── */
+    /* ── Título + acción completar ── */
     .crm-tw-title-row {
         display: flex;
         align-items: flex-start;
         gap: 16px;
-        margin-bottom: 40px;
+        margin-bottom: 36px;
     }
-    .crm-tw-check {
-        margin-top: 6px;
-        flex-shrink: 0;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        border: 2px solid #CBD5E1;
-        background: #fff;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: transparent;
-        transition: all 0.25s ease;
-        padding: 0;
-    }
-    .crm-tw-check:hover {
-        border-color: #10B981;
-        color: #A7F3D0;
-        background: rgba(236, 253, 245, 0.5);
-    }
-    .crm-tw-check.completada {
-        background: #10B981;
-        border-color: #10B981;
-        color: #fff;
-        box-shadow: 0 4px 8px -2px rgba(16, 185, 129, 0.2);
-        transform: scale(1.05);
-    }
-    .crm-tw-check.bursting {
-        animation: crmTwBurst 520ms cubic-bezier(.2,.85,.3,1.1);
-    }
-    @keyframes crmTwBurst {
-        0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(16,185,129,0); }
-        35%  { transform: scale(1.35); box-shadow: 0 0 0 10px rgba(16,185,129,0.22); }
-        70%  { transform: scale(0.95); box-shadow: 0 0 0 18px rgba(16,185,129,0); }
-        100% { transform: scale(1.05); box-shadow: 0 4px 8px -2px rgba(16,185,129,0.2); }
-    }
+    /* Legacy — la casilla ya no se usa, pero dejamos la regla por si quedó en caché */
+    .crm-tw-check, .crm-tw-title-wrap, .crm-tw-title-flag { display: none !important; }
 
-    .crm-tw-title-wrap {
+    .crm-tw-title-actions {
         display: flex;
         align-items: center;
         gap: 10px;
+        margin-top: 14px;
         flex-wrap: wrap;
     }
-    .crm-tw-title-flag {
+
+    /* Botón principal: Completar tarea */
+    .crm-tw-complete-btn {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        color: #E11D48;
-        background: #FFF1F2;
-        flex-shrink: 0;
-        animation: crmTwFlagIn 240ms ease-out;
+        gap: 8px;
+        padding: 9px 16px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.005em;
+        color: #fff;
+        background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+        border: 1px solid rgba(5, 150, 105, 0.4);
+        border-radius: 10px;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(5, 150, 105, 0.18), 0 0 0 1px rgba(16, 185, 129, 0.08);
+        transition: all 0.18s ease;
     }
-    @keyframes crmTwFlagIn {
-        from { opacity: 0; transform: scale(0.6) rotate(-12deg); }
-        to   { opacity: 1; transform: scale(1) rotate(0); }
+    .crm-tw-complete-btn:hover {
+        background: linear-gradient(180deg, #059669 0%, #047857 100%);
+        box-shadow: 0 6px 14px -4px rgba(5, 150, 105, 0.35), 0 0 0 1px rgba(5, 150, 105, 0.2);
+        transform: translateY(-1px);
+    }
+    .crm-tw-complete-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+    }
+    .crm-tw-complete-btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+        transform: none;
+    }
+    .crm-tw-complete-btn svg { flex-shrink: 0; }
+    .crm-tw-complete-btn.bursting {
+        animation: crmTwCompleteBurst 560ms cubic-bezier(.2,.85,.3,1.1);
+    }
+    @keyframes crmTwCompleteBurst {
+        0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        35%  { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(16,185,129,0.25); }
+        70%  { transform: scale(0.98); box-shadow: 0 0 0 18px rgba(16,185,129,0); }
+        100% { transform: scale(1);    box-shadow: 0 1px 2px rgba(5,150,105,0.18); }
+    }
+
+    /* Pill "Completada" mostrado después del complete */
+    .crm-tw-completada-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #ECFDF5;
+        color: #047857;
+        border: 1px solid #A7F3D0;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
     }
     .crm-tw-title-stack {
         display: flex;
