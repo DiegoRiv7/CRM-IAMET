@@ -452,13 +452,13 @@
                 {% for item in tabla_data %}
                 {% if item.etapa_corta != 'Ganado' and item.etapa_corta != 'Perdido' and item.etapa_corta != 'Pagado' %}
                 <div class="crm-data-row crm-postit{% if item.tiene_actividad_vencida %} card-vencida heat-{% if item.dias_vencida >= 30 %}max{% elif item.dias_vencida >= 14 %}5{% elif item.dias_vencida >= 7 %}4{% elif item.dias_vencida >= 3 %}3{% elif item.dias_vencida >= 1 %}2{% else %}1{% endif %}{% elif item.dias_hasta_proxima is not None and item.dias_hasta_proxima <= 14 %} warm-{% if item.dias_hasta_proxima <= 1 %}3{% elif item.dias_hasta_proxima <= 7 %}2{% else %}1{% endif %}{% endif %}" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-probabilidad="{{ item.probabilidad_cierre|default:0 }}" data-mes-cierre="{{ item.mes_cierre|default:'' }}" data-tipo="{{ item.tipo_negociacion }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}" data-creacion="{{ item.fecha_creacion|date:'Y-m-d' }}" data-vencida="{% if item.tiene_actividad_vencida %}1{% else %}0{% endif %}" data-dias-vencida="{{ item.dias_vencida|default:0 }}" data-dias-hasta-proxima="{% if item.dias_hasta_proxima is not None %}{{ item.dias_hasta_proxima }}{% else %}-1{% endif %}" data-anclada="{% if item.esta_anclada %}1{% else %}0{% endif %}"
-                     onclick="openDetalle('{{ item.id }}')"
+                     onclick="openDetalle('{{ item.id }}')">
                     <!-- Franja superior de color (heat/warm via classes en la .crm-postit) -->
                     <div class="crm-postit-strip"></div>
                     <!-- Sombra interna sutil -->
                     <div class="absolute inset-0 pointer-events-none rounded-2xl" style="box-shadow:inset 0 1px 1px rgba(255,255,255,0.8);"></div>
                     <!-- Pin de anclaje -->
-                    <div class="crm-pin {% if item.esta_anclada %}pinned{% endif %}" data-pin-id="{{ item.pk }}">
+                    <div class="crm-pin {% if item.esta_anclada %}pinned{% endif %}" data-pin-id="{{ item.id }}">
                         <svg width="26" height="26" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#B0B8C4{% endif %}" stroke="none" style="filter:drop-shadow(1px 2px 3px rgba(0,0,0,0.35));"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
                     </div>
                     {% if item.esta_anclada %}

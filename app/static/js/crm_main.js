@@ -154,37 +154,37 @@
                         }
                     });
 
-                    // 2) Actualizar TODAS las cards/rows originales (no clones) con este oppId
-                    var originalCard = document.querySelector('#crmCardsGrid .crm-postit[data-opp-id="' + oppId + '"]');
-                    var originalRow  = document.querySelector('#crmListBody .crm-list-row[data-opp-id="' + oppId + '"]');
-                    console.log('[PIN] originalCard:', !!originalCard, 'originalRow:', !!originalRow);
-                    [originalCard, originalRow].forEach(function(node){
-                        if (!node) return;
+                    // 2) Actualizar TODAS las cards/rows que matcheen este oppId
+                    //    (originales en #crmCardsGrid/#crmListBody + clones dentro de #crmKanbanBoard)
+                    var allNodes = document.querySelectorAll(
+                        '.crm-postit[data-opp-id="' + oppId + '"], .crm-list-row[data-opp-id="' + oppId + '"]'
+                    );
+                    allNodes.forEach(function(node){
                         node.dataset.anclada = anclada ? '1' : '0';
                         node.classList.toggle('pinned-row', anclada);
+                        // Gestionar el agujero visual (solo en postit cards)
+                        if (node.classList.contains('crm-postit')) {
+                            var existingHole = node.querySelector('.crm-pin-hole-dyn');
+                            if (anclada && !existingHole) {
+                                var h = document.createElement('div');
+                                h.className = 'crm-pin-hole-dyn';
+                                h.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
+                                node.appendChild(h);
+                            } else if (!anclada && existingHole) {
+                                existingHole.remove();
+                            }
+                        }
                     });
 
-                    // 3) Mover originales al spot correcto
+                    // 3) Mover originales al spot correcto (los clones del kanban se re-sortean en render)
+                    var originalCard = document.querySelector('#crmCardsGrid .crm-postit[data-opp-id="' + oppId + '"]');
+                    var originalRow  = document.querySelector('#crmListBody .crm-list-row[data-opp-id="' + oppId + '"]');
                     if (anclada) {
-                        // Agujero en el card original
-                        if (originalCard && !originalCard.querySelector('.crm-pin-hole-dyn')) {
-                            var hole = document.createElement('div');
-                            hole.className = 'crm-pin-hole-dyn';
-                            hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
-                            originalCard.appendChild(hole);
-                        }
-                        // Mover al inicio
                         var cg = document.getElementById('crmCardsGrid');
                         if (originalCard && cg) cg.insertBefore(originalCard, cg.firstChild);
                         var lb = document.getElementById('crmListBody');
                         if (originalRow  && lb) lb.insertBefore(originalRow, lb.firstChild);
                     } else {
-                        // Quitar agujero
-                        if (originalCard) {
-                            var h = originalCard.querySelector('.crm-pin-hole-dyn');
-                            if (h) h.remove();
-                        }
-                        // Mover después de ancladas + vencidas
                         function reubicar(container, node){
                             if (!container || !node) return;
                             var insertBefore = null;
@@ -203,17 +203,12 @@
                         reubicar(document.getElementById('crmListBody'),   originalRow);
                     }
 
-                    // 4) Re-render kanban
+                    // 4) Re-render kanban para que el sort refleje el nuevo estado de anclaje
                     if (typeof window._crmRenderKanban === 'function') {
                         var kv = document.getElementById('crmViewKanban');
-                        console.log('[PIN] Kanban visible:', kv ? kv.style.display : 'NO EXISTE');
                         if (kv && kv.style.display !== 'none') {
-                            console.log('[PIN] Re-rendering kanban...');
                             window._crmRenderKanban();
-                            console.log('[PIN] Kanban re-rendered ✓');
                         }
-                    } else {
-                        console.warn('[PIN] _crmRenderKanban NO está definida');
                     }
                 });
             })(pin);
@@ -3272,23 +3267,36 @@
                                     ((apiRow.tipo_negociacion || 'runrate') === 'proyecto' ? 'proyecto' : 'runrate');
                             }
                         }
-                        // Healing animation: de vencida → no vencida
+                        // Healing animation: de vencida → no vencida.
+                        // Limpieza al final busca por oppId para cubrir clones nuevos
+                        // del kanban creados por el render inmediato de abajo.
                         if (wasVencida && !nowVencida) {
                             _hadHealing = true;
+                            var _oid = el.dataset.oppId;
                             el.classList.add('crm-healing');
                             setTimeout(function(){
-                                el.classList.remove('crm-healing');
+                                document.querySelectorAll('.crm-data-row[data-opp-id="' + _oid + '"]').forEach(function(n){
+                                    n.classList.remove('crm-healing');
+                                });
                             }, 1300);
                         }
                     });
-                    // Re-sort y re-render después de un breve delay para la animación
+                    // Render kanban INMEDIATAMENTE: los clones se regeneran desde los
+                    // originales que ya tienen card-vencida/heat-* removidas (+ crm-healing).
+                    // Evita el estado "rojo atrapado" durante los 1.4s de animación.
+                    if (typeof window._crmRenderKanban === 'function') {
+                        var kvImm = document.getElementById('crmViewKanban');
+                        if (kvImm && kvImm.style.display !== 'none') window._crmRenderKanban();
+                    }
+                    // Re-sort/re-filter tras la animación para no cortar el fade.
                     setTimeout(function(){
                         if (typeof applySortToViews === 'function') applySortToViews();
-                        if (typeof window._crmRenderKanban === 'function') {
-                            var kv = document.getElementById('crmViewKanban');
-                            if (kv && kv.style.display !== 'none') window._crmRenderKanban();
-                        }
                         if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
+                        // Render final del kanban para reflejar el nuevo orden post-sort.
+                        if (typeof window._crmRenderKanban === 'function') {
+                            var kvFin = document.getElementById('crmViewKanban');
+                            if (kvFin && kvFin.style.display !== 'none') window._crmRenderKanban();
+                        }
                     }, _hadHealing ? 1400 : 50);
                     } catch(syncErr) { console.error('[CRM] sync error:', syncErr); }
                 })
