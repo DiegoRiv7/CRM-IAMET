@@ -1152,8 +1152,25 @@ def api_tareas(request):
             else:
                 # Mostrar TODAS las tareas
                 estado_filter = request.GET.get('estado', '')  # 'pendientes' | 'completadas' | ''
+                # Ver tareas de otro usuario (para el selector del calendario):
+                # ?user_id=X muestra las tareas que X vería (creador / asignado /
+                # participante / observador). Permitido para cualquier autenticado.
+                user_id_param = request.GET.get('user_id', '').strip()
 
-                if request.user.is_superuser:
+                if user_id_param:
+                    try:
+                        uid = int(user_id_param)
+                        ids_part = set(Tarea.objects.filter(participantes__id=uid).values_list('id', flat=True))
+                        ids_obs  = set(Tarea.objects.filter(observadores__id=uid).values_list('id', flat=True))
+                        ids_m2m_u = ids_part | ids_obs
+                        tareas = Tarea.objects.filter(
+                            Q(creado_por_id=uid) | Q(asignado_a_id=uid) | Q(id__in=ids_m2m_u)
+                        ).defer('descripcion').select_related(
+                            'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
+                        ).order_by('-fecha_creacion')
+                    except (ValueError, TypeError):
+                        tareas = Tarea.objects.none()
+                elif request.user.is_superuser:
                     tareas = Tarea.objects.defer('descripcion').select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
@@ -2253,10 +2270,23 @@ def actividad_list_create(request):
     """
     try:
         if request.method == 'GET':
-            if is_supervisor(request.user):
+            # Ver calendario de otro usuario: ?user_id=X muestra todas las
+            # actividades donde X es creador o participante (el calendario
+            # completo tal como lo vería X). Permitido para cualquier usuario
+            # autenticado — no sensible en este CRM.
+            user_id_param = request.GET.get('user_id', '').strip()
+            if user_id_param:
+                try:
+                    uid = int(user_id_param)
+                    actividades = Actividad.objects.filter(
+                        Q(creado_por_id=uid) | Q(participantes__id=uid)
+                    ).distinct()
+                except (ValueError, TypeError):
+                    actividades = Actividad.objects.none()
+            elif is_supervisor(request.user):
                 actividades = Actividad.objects.all()
             else:
-                    actividades = Actividad.objects.filter(Q(creado_por=request.user) | Q(participantes=request.user)).distinct()
+                actividades = Actividad.objects.filter(Q(creado_por=request.user) | Q(participantes=request.user)).distinct()
 
             # Filtro por vendedores (IDs separados por coma)
             vendedores_param = request.GET.get('vendedores', '').strip()

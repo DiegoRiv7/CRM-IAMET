@@ -1425,10 +1425,14 @@
     }
 
     /* ─── FETCH EVENTS ─── */
-    window.calGlobalRefetch = function () {
+    // userId opcional: cuando se pasa, refetchea el calendario como lo vería
+    // ese usuario (actividades + tareas donde es creador/participante/asignado).
+    // Permite al selector mostrar el calendario completo de otra persona.
+    window.calGlobalRefetch = function (userId) {
         var csrf = (typeof getCsrf==='function')?getCsrf():(function(){ var v=document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v?v.pop():''; })();
-        var pActividades = fetch('/app/api/actividades/',{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
-        var pTareas = fetch('/app/api/tareas/').then(function(r){return r.json();});
+        var qs = (userId && userId !== 'all') ? ('?user_id=' + encodeURIComponent(userId)) : '';
+        var pActividades = fetch('/app/api/actividades/' + qs,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
+        var pTareas = fetch('/app/api/tareas/' + qs).then(function(r){return r.json();});
 
         Promise.all([pActividades,pTareas]).then(function(results){
             var actividades=results[0];
@@ -1459,7 +1463,10 @@
             });
             window._calAllEvents = _globalEvents.slice();
             var sel=document.getElementById('calUserFilter');
-            var filterVal=sel?sel.value:'all';
+            // Si la petición ya se hizo con user_id (vista de otro usuario), el
+            // servidor ya devolvió el conjunto correcto; pasamos 'all' para no
+            // perder tareas donde el usuario sólo es participante/observador.
+            var filterVal = userId ? 'all' : (sel ? sel.value : 'all');
             calApplyFilter(filterVal);
             calUpdateSidePanel();
             if (_calViewMode==='day') { calRenderDayView(_calCurrentDay); }
@@ -1490,10 +1497,10 @@
     }
 
     window.calFilterByUser = function (val) {
-        calApplyFilter(val);
-        calUpdateSidePanel();
-        if (_calViewMode==='day') { calRenderDayView(_calCurrentDay); }
-        else if (_calViewMode==='week') { calRenderWeekView(_calWeekStart); }
+        // Refetch con user_id: el servidor devuelve el calendario completo
+        // de ese usuario (no sólo los eventos que el requester comparte con él).
+        // calGlobalRefetch hace el re-render (side panel, vistas day/week) en su .then().
+        calGlobalRefetch(val);
     };
 
     function calApplyFilter(filterVal) {
