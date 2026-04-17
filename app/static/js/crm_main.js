@@ -5978,17 +5978,21 @@
             }
 
             crmTaskSetText('crm-task-titulo', tarea.titulo);
-            var descHtml = tarea.descripcion_html || (tarea.descripcion ? tarea.descripcion.replace(/\n/g, '<br>') : 'Sin descripción');
+            var tieneDesc = !!(tarea.descripcion_html || tarea.descripcion);
+            var descHtml = tieneDesc
+                ? (tarea.descripcion_html || tarea.descripcion.replace(/\n/g, '<br>'))
+                : 'Agrega una descripción — qué hay que hacer, contexto, criterios…';
             crmTaskSetHTML('crm-task-descripcion', descHtml);
 
-            // Collapse long descriptions
+            // Collapse long descriptions + marcar "sin descripción" con estilo suave
             var descEl = document.getElementById('crm-task-descripcion');
             var toggleBtn = document.getElementById('crm-task-desc-toggle');
+            if (descEl) descEl.classList.toggle('is-empty', !tieneDesc);
             if (descEl && toggleBtn) {
                 descEl.classList.remove('collapsed');
                 toggleBtn.style.display = 'none';
                 requestAnimationFrame(function () {
-                    if (descEl.scrollHeight > 140) {
+                    if (descEl.scrollHeight > 240) {
                         descEl.classList.add('collapsed');
                         toggleBtn.style.display = 'inline';
                         toggleBtn.textContent = 'Mostrar más';
@@ -5996,18 +6000,33 @@
                 });
             }
 
-            // Breadcrumb: Proyecto (pill) › Cliente (texto) — Cliente reemplaza TASK-ID
+            // Breadcrumb: Proyecto (pill, solo si existe) › Cliente (texto, solo si existe)
             var bcCliente = document.getElementById('crm-task-breadcrumb-cliente');
             var bcProyecto = document.getElementById('crm-task-breadcrumb-proyecto');
             var crumbChev = document.getElementById('crmTaskCrumbChev');
             var crumbProyWrap = document.getElementById('crmTaskCrumbProyecto');
-            if (bcProyecto) bcProyecto.textContent = tarea.proyecto_nombre || 'Sin proyecto';
-            if (crumbProyWrap) crumbProyWrap.style.display = '';
+            var hayProyecto = !!(tarea.proyecto_id && tarea.proyecto_nombre && tarea.proyecto_nombre !== 'Sin proyecto');
+            if (crumbProyWrap) {
+                if (hayProyecto) {
+                    crumbProyWrap.style.display = '';
+                    if (bcProyecto) bcProyecto.textContent = tarea.proyecto_nombre;
+                    crumbProyWrap.onclick = function () {
+                        if (typeof window.proyectosVerDetalle === 'function') {
+                            window.proyectosVerDetalle(tarea.proyecto_id);
+                        } else if (typeof window.ingenieroAbrirProyecto === 'function') {
+                            window.ingenieroAbrirProyecto(tarea.proyecto_id);
+                        }
+                    };
+                } else {
+                    crumbProyWrap.style.display = 'none';
+                    crumbProyWrap.onclick = null;
+                }
+            }
             if (bcCliente) {
                 if (tarea.cliente_nombre) {
                     bcCliente.textContent = tarea.cliente_nombre;
                     bcCliente.style.display = '';
-                    if (crumbChev) crumbChev.style.display = '';
+                    if (crumbChev) crumbChev.style.display = hayProyecto ? '' : 'none';
                 } else {
                     bcCliente.style.display = 'none';
                     if (crumbChev) crumbChev.style.display = 'none';
@@ -6219,9 +6238,9 @@
                     if (total === 0) {
                         var emptyState =
                             '<div class="crm-tw-empty" onclick="crmTaskCrearSubtarea()" role="button">' +
-                                '<span class="crm-tw-empty-ico"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>' +
-                                '<span class="crm-tw-empty-title">Divide esta tarea en pasos</span>' +
-                                '<span class="crm-tw-empty-hint">Agrega la primera subtarea</span>' +
+                                '<span class="crm-tw-empty-ico"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
+                                '<span class="crm-tw-empty-title">Añadir subtarea</span>' +
+                                '<span class="crm-tw-empty-hint">Divide la tarea en pasos</span>' +
                             '</div>';
                         subtareasSection.innerHTML = headHtml + emptyState;
                     } else {
