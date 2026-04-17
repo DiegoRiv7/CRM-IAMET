@@ -3309,9 +3309,13 @@
                         // Siempre sincronizar data-attributes
                         el.dataset.vencida = nowVencida ? '1' : '0';
                         if (!nowVencida) el.dataset.diasVencida = '0';
-                        // Quitar clases de vencida/heat/warm si ya no está vencida
+                        // Quitar clases de vencida/heat si ya no está vencida.
+                        // IMPORTANTE: NO tocar warm-* — representan "vence pronto"
+                        // (pre-vencida) y son independientes de tiene_actividad_vencida.
+                        // Si las borramos aquí, las cards pierden su aviso rojo/naranja
+                        // ~5s después del reload cuando el sync corre por primera vez.
                         if (!nowVencida) {
-                            _heatCls.concat(_warmCls).forEach(function(c){ el.classList.remove(c); });
+                            _heatCls.forEach(function(c){ el.classList.remove(c); });
                             var strip = el.querySelector('.crm-list-strip');
                             if (strip) {
                                 strip.className = 'crm-list-strip ' +
