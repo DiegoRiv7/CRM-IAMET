@@ -4252,3 +4252,72 @@ def api_oportunidad_proyectos_buscar(request, opp_id):
         })
 
     return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+
+# ═══════════════════════════════════════════════════
+# TAREA — compartir vista previa pública + eliminar
+# ═══════════════════════════════════════════════════
+
+@login_required
+def api_tarea_share_link(request, tarea_id):
+    """Genera un enlace firmado (sin expiración) para vista previa pública de la tarea."""
+    from django.core import signing
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+    tarea = get_object_or_404(Tarea, id=tarea_id)
+    # Cualquier usuario autenticado que pueda ver la tarea puede compartirla
+    token = signing.dumps({'t': tarea.id}, salt='tarea-preview')
+    from django.urls import reverse
+    url = reverse('ver_tarea_compartida', args=[token])
+    return JsonResponse({'success': True, 'url': url, 'token': token})
+
+
+def ver_tarea_compartida(request, token):
+    """Vista pública read-only de una tarea a partir de un token firmado.
+    No requiere login. Renderiza el template tarea_compartida.html.
+    """
+    from django.core import signing
+    from django.http import Http404
+    try:
+        data = signing.loads(token, salt='tarea-preview')
+    except signing.BadSignature:
+        raise Http404('Enlace inválido o expirado')
+    tarea_id = data.get('t')
+    tarea = get_object_or_404(Tarea, id=tarea_id)
+
+    # Preparar datos seguros (sin exponer info sensible innecesaria)
+    creador_nombre = (tarea.creado_por.get_full_name() or tarea.creado_por.username) if tarea.creado_por else '—'
+    responsable_nombre = None
+    if tarea.asignado_a:
+        responsable_nombre = tarea.asignado_a.get_full_name() or tarea.asignado_a.username
+
+    subtareas = [{
+        'id': st.id,
+        'titulo': st.titulo,
+        'estado': st.estado,
+    } for st in tarea.subtareas.all()] if hasattr(tarea, 'subtareas') else []
+
+    ctx = {
+        'tarea': tarea,
+        'creador_nombre': creador_nombre,
+        'responsable_nombre': responsable_nombre,
+        'subtareas': subtareas,
+        'total_subtareas': len(subtareas),
+        'subtareas_done': sum(1 for s in subtareas if s['estado'] == 'completada'),
+        'autenticado': request.user.is_authenticated,
+        'preview_token': token,
+    }
+    return render(request, 'crm/tarea_compartida.html', ctx)
+
+
+@login_required
+def api_eliminar_tarea(request, tarea_id):
+    """Elimina una tarea. Solo el creador o un superuser pueden hacerlo."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+    tarea = get_object_or_404(Tarea, id=tarea_id)
+    es_creador = (tarea.creado_por_id == request.user.id)
+    if not (es_creador or request.user.is_superuser):
+        return JsonResponse({'error': 'Solo el creador puede eliminar esta tarea'}, status=403)
+    tarea.delete()
+    return JsonResponse({'success': True})

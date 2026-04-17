@@ -6145,14 +6145,11 @@
             crmTaskSetText('crm-task-creado-por', tarea.creado_por_data ? tarea.creado_por_data.nombre : tarea.creado_por);
             crmTaskSetText('crm-task-fecha-creacion', tarea.fecha_creacion ? formatearFechaCRM(tarea.fecha_creacion) : '--');
 
-            // Cliente
+            // Cliente: solo en el header breadcrumb; el row del sidebar queda oculto
+            // (pero guardamos el nombre en el span por compat con editores legacy)
             var clienteRow = document.getElementById('crmTaskClienteRow');
-            if (tarea.cliente_nombre) {
-                crmTaskSetText('crm-task-cliente-nombre', tarea.cliente_nombre);
-                if (clienteRow) clienteRow.style.display = '';
-            } else {
-                if (clienteRow) clienteRow.style.display = 'none';
-            }
+            crmTaskSetText('crm-task-cliente-nombre', tarea.cliente_nombre || '');
+            if (clienteRow) clienteRow.style.display = 'none';
 
             // Oportunidad card (in sidebar)
             _crmTaskCurrentOppId = tarea.oportunidad_id || null;
@@ -6186,6 +6183,32 @@
                 } else {
                     respContainer.innerHTML = '<span style="color:#94A3B8;font-size:13px;">Sin asignar</span>';
                 }
+            }
+
+            // Creador (bajo Responsable — read-only)
+            var creaContainer = document.getElementById('crm-task-creador-container');
+            if (creaContainer) {
+                var cd = tarea.creado_por_data;
+                if (cd) {
+                    var initC = crmTaskGetInitials(cd.nombre);
+                    var avatarC = cd.avatar_url
+                        ? '<img src="' + cd.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                        : initC;
+                    creaContainer.innerHTML =
+                        '<span style="width:22px;height:22px;border-radius:50%;background:#8B5CF6;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avatarC + '</span>' +
+                        '<span style="font-weight:500;font-size:13px;color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + cd.nombre + '</span>';
+                } else {
+                    creaContainer.innerHTML = '<span style="color:#94A3B8;font-size:13px;">' + (tarea.creado_por || '—') + '</span>';
+                }
+            }
+
+            // Menú 3-dots: mostrar "Eliminar" solo al creador o superuser
+            var menuEliminar = document.getElementById('crmTaskMenuEliminar');
+            if (menuEliminar) {
+                var _cur = _CRM_CONFIG.userId;
+                var _su = _CRM_CONFIG.isSuperuser;
+                var _crId = (tarea.creado_por_data && tarea.creado_por_data.id) ? tarea.creado_por_data.id : null;
+                menuEliminar.style.display = (_su || (_cur && _crId && _cur === _crId)) ? 'flex' : 'none';
             }
 
             // Subtareas O Tarea padre (mutuamente excluyentes)
@@ -6784,15 +6807,12 @@
         }
 
         // Copiar enlace directo a la tarea
-        window.crmTaskCopiarEnlace = function () {
-            if (!_crmCurrentTaskId) return;
-            var url = window.location.origin + '/app/?tarea=' + _crmCurrentTaskId;
+        function crmTaskCopyToClipboard(url, okMsg) {
+            okMsg = okMsg || 'Enlace copiado';
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(url).then(function () {
-                    showToast('Enlace copiado', 'success', 1800);
-                }, function () {
-                    showToast('No se pudo copiar', 'error');
-                });
+                    showToast(okMsg, 'success', 2200);
+                }, function () { showToast('No se pudo copiar', 'error'); });
             } else {
                 try {
                     var ta = document.createElement('textarea');
@@ -6800,9 +6820,79 @@
                     document.body.appendChild(ta); ta.select();
                     document.execCommand('copy');
                     document.body.removeChild(ta);
-                    showToast('Enlace copiado', 'success', 1800);
+                    showToast(okMsg, 'success', 2200);
                 } catch (e) { showToast('No se pudo copiar', 'error'); }
             }
+        }
+        window.crmTaskCopiarEnlace = function () {
+            if (!_crmCurrentTaskId) return;
+            crmTaskCopyToClipboard(window.location.origin + '/app/?tarea=' + _crmCurrentTaskId);
+        };
+
+        // Dropdown 3-dots en el header
+        window.crmTaskToggleMenu = function (e) {
+            if (e) { e.stopPropagation(); }
+            var menu = document.getElementById('crmTaskMenu');
+            var btn = document.getElementById('crmTaskMenuBtn');
+            if (!menu || !btn) return;
+            var isOpen = menu.style.display !== 'none';
+            menu.style.display = isOpen ? 'none' : 'block';
+            btn.classList.toggle('is-open', !isOpen);
+            btn.setAttribute('aria-expanded', String(!isOpen));
+        };
+        document.addEventListener('click', function (e) {
+            var menu = document.getElementById('crmTaskMenu');
+            var btn = document.getElementById('crmTaskMenuBtn');
+            if (!menu || !btn) return;
+            if (menu.style.display === 'none') return;
+            if (btn.contains(e.target) || menu.contains(e.target)) return;
+            menu.style.display = 'none';
+            btn.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+
+        // Compartir vista previa (link sin login)
+        window.crmTaskCompartirPreview = function () {
+            if (!_crmCurrentTaskId) return;
+            var menu = document.getElementById('crmTaskMenu');
+            if (menu) menu.style.display = 'none';
+            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/share-link/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data && data.url) {
+                        var full = data.url.indexOf('http') === 0 ? data.url : (window.location.origin + data.url);
+                        crmTaskCopyToClipboard(full, 'Enlace de vista previa copiado');
+                    } else {
+                        showToast(data.error || 'No se pudo generar el enlace', 'error');
+                    }
+                })
+                .catch(function () { showToast('Error de conexión', 'error'); });
+        };
+
+        // Eliminar tarea (solo creador / superuser — se valida en backend)
+        window.crmTaskEliminarTarea = function () {
+            if (!_crmCurrentTaskId) return;
+            var menu = document.getElementById('crmTaskMenu');
+            if (menu) menu.style.display = 'none';
+            var confirmar = window.confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.');
+            if (!confirmar) return;
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/eliminar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfEl ? csrfEl.value : '' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data && data.success) {
+                        showToast('Tarea eliminada', 'success');
+                        crmTaskCerrarModal();
+                        _tareasPollHash = null;
+                        if (typeof recargarTareasCRM === 'function') recargarTareasCRM();
+                    } else {
+                        showToast(data.error || 'No se pudo eliminar', 'error');
+                    }
+                })
+                .catch(function () { showToast('Error de conexión', 'error'); });
         };
 
         // Click outside to close
