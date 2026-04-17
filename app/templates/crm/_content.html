@@ -462,7 +462,7 @@
                         <svg width="26" height="26" viewBox="0 0 24 24" fill="{% if item.esta_anclada %}#EF4444{% else %}#B0B8C4{% endif %}" stroke="none" style="filter:drop-shadow(1px 2px 3px rgba(0,0,0,0.35));"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>
                     </div>
                     {% if item.esta_anclada %}
-                    <div style="position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;"></div>
+                    <div class="crm-pin-hole-dyn" style="position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;"></div>
                     {% endif %}
                     <!-- Cabecera -->
                     <div style="margin-bottom:12px;position:relative;z-index:1;padding-right:8px;">
@@ -490,10 +490,10 @@
                     <!-- Etapa + probabilidad -->
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1;">
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="position:relative;width:40px;height:40px;flex-shrink:0;">
+                            <div style="position:relative;width:40px;height:40px;flex-shrink:0;" data-etapa-color="{{ item.etapa_color|default:'#3B82F6' }}">
                                 <svg viewBox="0 0 36 36" style="width:40px;height:40px;transform:rotate(-90deg);">
                                     <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="2.5" pathLength="100"/>
-                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#3B82F6' }}{% endif %}" stroke-width="2.5" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
+                                    <circle class="crm-progress-circle" cx="18" cy="18" r="15.5" fill="none" stroke="{% if item.tiene_actividad_vencida %}#EF4444{% else %}{{ item.etapa_color|default:'#3B82F6' }}{% endif %}" stroke-width="2.5" pathLength="100" stroke-dasharray="{{ item.probabilidad_cierre }} 100" stroke-linecap="round"/>
                                 </svg>
                                 <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.55rem;font-weight:800;color:#0F172A;">{{ item.probabilidad_cierre }}%</span>
                             </div>
