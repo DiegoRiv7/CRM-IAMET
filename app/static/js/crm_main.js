@@ -7554,6 +7554,8 @@
                     var pad = function (n) { return n < 10 ? '0' + n : n; };
                     dueDateEl.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
                 }
+                // Refrescar labels del composer (fecha default, sin asignaciones, etc.)
+                if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
                 var titleInput = document.getElementById('crmTaskTitleInput');
                 if (titleInput) titleInput.focus();
             }
@@ -7565,9 +7567,10 @@
             document.body.style.overflow = '';
             // Reset form
             var ti = document.getElementById('crmTaskTitleInput'); if (ti) ti.value = '';
-            var de = document.getElementById('crmTaskDescEditor'); if (de) de.innerHTML = '';
+            var de = document.getElementById('crmTaskDescEditor');
+            if (de) { if (de.value !== undefined) de.value = ''; else de.innerHTML = ''; }
             var hp = document.getElementById('crmTaskHighPriority'); if (hp) hp.checked = false;
-            var dd = document.getElementById('crmTaskDueDate'); if (dd) dd.value = '';
+            var dd2 = document.getElementById('crmTaskDueDate'); if (dd2) dd2.value = '';
             ['crmTaskSelectedResponsible', 'crmTaskSelectedParticipants', 'crmTaskSelectedObservers'].forEach(function (id) {
                 var el = document.getElementById(id); if (el) el.innerHTML = '';
             });
@@ -7578,27 +7581,127 @@
             // Reset oportunidad and tarea padre
             var oid = document.getElementById('crmTaskOppId'); if (oid) oid.value = '';
             var pid = document.getElementById('crmTaskPadreId'); if (pid) pid.value = '';
+            // Reset tool labels del composer + cerrar popovers
+            crmCreateRefreshLabels();
+            crmCreateCloseAllPops();
             // Remove any open user dropdown
-            var dd = document.querySelector('.crm-user-dropdown'); if (dd) dd.remove();
+            var dd3 = document.querySelector('.crm-user-dropdown'); if (dd3) dd3.remove();
         }
 
-        // Close create modal on outside click
+        // ── Composer: popovers de meta-tools ──
+        function crmCreateCloseAllPops() {
+            ['crmCreatePopResp', 'crmCreatePopParts', 'crmCreatePopObs', 'crmCreatePopFecha']
+                .forEach(function (id) { var p = document.getElementById(id); if (p) p.style.display = 'none'; });
+            ['crmCreateRespBtn', 'crmCreatePartsBtn', 'crmCreateObsBtn', 'crmCreateFechaBtn']
+                .forEach(function (id) { var b = document.getElementById(id); if (b) b.classList.remove('active'); });
+        }
+        window.crmCreateOpenPop = function (which, e) {
+            if (e) e.stopPropagation();
+            var mapPop = { resp: 'crmCreatePopResp', parts: 'crmCreatePopParts', obs: 'crmCreatePopObs', fecha: 'crmCreatePopFecha' };
+            var mapBtn = { resp: 'crmCreateRespBtn', parts: 'crmCreatePartsBtn', obs: 'crmCreateObsBtn', fecha: 'crmCreateFechaBtn' };
+            var mapInput = { resp: 'crmTaskResponsibleSearch', parts: 'crmTaskParticipantsSearch', obs: 'crmTaskObserversSearch', fecha: 'crmTaskDueDate' };
+            var pop = document.getElementById(mapPop[which]);
+            var btn = document.getElementById(mapBtn[which]);
+            if (!pop || !btn) return;
+            var isOpen = pop.style.display !== 'none';
+            crmCreateCloseAllPops();
+            if (!isOpen) {
+                pop.style.display = 'block';
+                btn.classList.add('active');
+                var inp = document.getElementById(mapInput[which]);
+                if (inp && inp.focus) setTimeout(function () { inp.focus(); }, 30);
+            }
+        };
+        // Cerrar popover al hacer click fuera
+        document.addEventListener('click', function (e) {
+            var modal = document.getElementById('crmCreateTaskModal');
+            if (!modal || !modal.classList.contains('active')) return;
+            var wraps = modal.querySelectorAll('.crm-ctw-popwrap');
+            for (var i = 0; i < wraps.length; i++) {
+                if (wraps[i].contains(e.target)) return;
+            }
+            crmCreateCloseAllPops();
+        });
+
+        // Actualiza los labels de las pills según selecciones actuales
+        function crmCreateRefreshLabels() {
+            var rl = document.getElementById('crmCreateRespLabel');
+            if (rl) rl.textContent = _crmTaskSelectedResp ? (_crmTaskSelectedResp.nombre || _crmTaskSelectedResp.username || 'Responsable') : 'Responsable';
+            var pl = document.getElementById('crmCreatePartsLabel');
+            if (pl) pl.textContent = (_crmTaskSelectedParts && _crmTaskSelectedParts.length) ? ('Participantes · ' + _crmTaskSelectedParts.length) : 'Participantes';
+            var ol = document.getElementById('crmCreateObsLabel');
+            if (ol) ol.textContent = (_crmTaskSelectedObs && _crmTaskSelectedObs.length) ? ('Observadores · ' + _crmTaskSelectedObs.length) : 'Observadores';
+
+            // Prioridad
+            var hp = document.getElementById('crmTaskHighPriority');
+            var prioBtn = document.getElementById('crmCreatePrioBtn');
+            var prioLabel = document.getElementById('crmCreatePrioLabel');
+            if (prioBtn && prioLabel) {
+                if (hp && hp.checked) { prioBtn.classList.add('prio-alta'); prioLabel.textContent = 'Alta'; }
+                else { prioBtn.classList.remove('prio-alta'); prioLabel.textContent = 'Prioridad'; }
+            }
+
+            // Fecha
+            var dd = document.getElementById('crmTaskDueDate');
+            var fBtn = document.getElementById('crmCreateFechaBtn');
+            var fLabel = document.getElementById('crmCreateFechaLabel');
+            if (fLabel && fBtn) {
+                if (dd && dd.value) {
+                    fBtn.classList.add('active');
+                    try {
+                        var d = new Date(dd.value);
+                        var opts = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
+                        fLabel.textContent = d.toLocaleDateString('es-MX', opts).replace(',', ' ·');
+                    } catch (_) { fLabel.textContent = dd.value; }
+                } else {
+                    fBtn.classList.remove('active');
+                    fLabel.textContent = 'Fecha';
+                }
+            }
+        }
+        window.crmCreateTogglePriority = function () {
+            var hp = document.getElementById('crmTaskHighPriority');
+            if (!hp) return;
+            hp.checked = !hp.checked;
+            crmCreateRefreshLabels();
+        };
+        window.crmCreateClearFecha = function () {
+            var dd = document.getElementById('crmTaskDueDate');
+            if (dd) dd.value = '';
+            crmCreateRefreshLabels();
+            crmCreateCloseAllPops();
+        };
+
+        // Close create modal on outside click + ⌘/Ctrl+Enter para enviar
         var createModal = document.getElementById('crmCreateTaskModal');
         if (createModal) {
             createModal.addEventListener('click', function (e) {
                 if (e.target === createModal) crmTaskCerrarCrear();
             });
+            createModal.addEventListener('keydown', function (e) {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (typeof crmTaskCrear === 'function') crmTaskCrear();
+                } else if (e.key === 'Escape') {
+                    crmTaskCerrarCrear();
+                }
+            });
         }
 
-        // Cap fecha límite de tarea a las 18:00
+        // Cap fecha límite de tarea a las 18:00 + refrescar label del composer
         var dueDateInp = document.getElementById('crmTaskDueDate');
         if (dueDateInp) {
             dueDateInp.addEventListener('change', function () {
-                if (!this.value) return;
-                var parts = this.value.split('T');
-                if (parts.length === 2 && parts[1] > '18:00') {
-                    this.value = parts[0] + 'T18:00';
+                if (this.value) {
+                    var parts = this.value.split('T');
+                    if (parts.length === 2 && parts[1] > '18:00') {
+                        this.value = parts[0] + 'T18:00';
+                    }
                 }
+                if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
+            });
+            dueDateInp.addEventListener('input', function () {
+                if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
             });
         }
 
@@ -7681,9 +7784,10 @@
                         chip.className = 'crm-user-chip';
                         var initials = u.iniciales || (u.nombre || u.username || '?')[0].toUpperCase();
                         chip.innerHTML = '<span class="crm-user-avatar-sm">' + initials + '</span><span>' + (u.nombre || u.username) + '</span><button type="button" class="crm-chip-remove">&times;</button>';
-                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedResp = null; chip.remove(); };
+                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedResp = null; chip.remove(); crmCreateRefreshLabels(); };
                         var prevChip = container.querySelector('.crm-user-chip'); if (prevChip) prevChip.remove();
                         container.appendChild(chip);
+                        crmCreateRefreshLabels();
                     });
                 });
             });
@@ -7705,8 +7809,9 @@
                         chip.className = 'crm-user-chip';
                         var initials = u.iniciales || (u.nombre || u.username || '?')[0].toUpperCase();
                         chip.innerHTML = '<span class="crm-user-avatar-sm">' + initials + '</span><span>' + (u.nombre || u.username) + '</span><button type="button" class="crm-chip-remove">&times;</button>';
-                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedParts = _crmTaskSelectedParts.filter(function (p) { return p.id !== u.id; }); chip.remove(); };
+                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedParts = _crmTaskSelectedParts.filter(function (p) { return p.id !== u.id; }); chip.remove(); crmCreateRefreshLabels(); };
                         container.appendChild(chip);
+                        crmCreateRefreshLabels();
                     });
                 });
             });
@@ -7728,8 +7833,9 @@
                         chip.className = 'crm-user-chip';
                         var initials = u.iniciales || (u.nombre || u.username || '?')[0].toUpperCase();
                         chip.innerHTML = '<span class="crm-user-avatar-sm">' + initials + '</span><span>' + (u.nombre || u.username) + '</span><button type="button" class="crm-chip-remove">&times;</button>';
-                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedObs = _crmTaskSelectedObs.filter(function (o) { return o.id !== u.id; }); chip.remove(); };
+                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedObs = _crmTaskSelectedObs.filter(function (o) { return o.id !== u.id; }); chip.remove(); crmCreateRefreshLabels(); };
                         container.appendChild(chip);
+                        crmCreateRefreshLabels();
                     });
                 });
             });
@@ -7737,10 +7843,16 @@
 
         function crmTaskCrear() {
             var titulo = (document.getElementById('crmTaskTitleInput') || {}).value || '';
-            if (!titulo.trim()) { alert('El nombre de la tarea es requerido'); return; }
+            if (!titulo.trim()) { showToast('El nombre de la tarea es requerido', 'error'); return; }
 
             var descEditor = document.getElementById('crmTaskDescEditor');
-            var descripcion = descEditor ? (descEditor.innerText || descEditor.textContent) : '';
+            var descripcion = '';
+            if (descEditor) {
+                // Soporta tanto textarea (composer nuevo) como contenteditable (legacy)
+                descripcion = (descEditor.value !== undefined)
+                    ? descEditor.value
+                    : (descEditor.innerText || descEditor.textContent || '');
+            }
             var highPriority = (document.getElementById('crmTaskHighPriority') || {}).checked;
             var dueDate = (document.getElementById('crmTaskDueDate') || {}).value || '';
 
