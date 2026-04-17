@@ -6006,6 +6006,10 @@
             if (bcCliente) bcCliente.style.display = tarea.cliente_nombre ? '' : 'none';
             if (bcProyecto) bcProyecto.style.display = tarea.proyecto_nombre ? '' : 'none';
 
+            // TASK-ID en header
+            var tidEl = document.getElementById('crm-tw-taskid');
+            if (tidEl) tidEl.textContent = 'TASK-' + tarea.id;
+
             // Status pill: estado
             var estadoBadge = document.getElementById('crm-task-estado-badge');
             if (estadoBadge) {
@@ -6048,16 +6052,16 @@
             var prioSidebarWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
             if (prioSidebarWrap) prioSidebarWrap.style.display = 'none';
 
-            // Botón terminar / reabrir (topbar)
+            // Botón terminar (oculto — el checkbox del título actúa como trigger)
+            // Botón reabrir (solo visible si la tarea está completada)
             var btnTerminar = document.getElementById('crmTaskBtnTerminar');
             var btnReabrir = document.getElementById('crmTaskBtnReabrir');
-            var completarHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completar</span>';
-            if (tarea.estado === 'completada') {
-                if (btnTerminar) { btnTerminar.classList.add('completada'); btnTerminar.disabled = true; btnTerminar.style.display = 'none'; }
-                if (btnReabrir) btnReabrir.style.display = 'inline-flex';
-            } else {
-                if (btnTerminar) { btnTerminar.classList.remove('completada'); btnTerminar.innerHTML = completarHTML; btnTerminar.disabled = false; btnTerminar.style.display = 'inline-flex'; }
-                if (btnReabrir) btnReabrir.style.display = 'none';
+            if (btnTerminar) {
+                btnTerminar.disabled = (tarea.estado === 'completada');
+                btnTerminar.style.display = 'none';
+            }
+            if (btnReabrir) {
+                btnReabrir.style.display = (tarea.estado === 'completada') ? 'inline-flex' : 'none';
             }
 
             // Checkbox al lado del título
@@ -6068,10 +6072,13 @@
 
             // Sidebar pill de estado (refleja estado del badge principal)
             var estadoSidePill = document.getElementById('crm-task-estado-sidebar-pill');
+            var estadoDot = document.getElementById('crm-tw-estado-dot');
+            var estadoSbLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
             if (estadoSidePill) {
-                var estadoTxt = tarea.estado === 'completada' ? 'Completada' : (tarea.estado === 'en_progreso' ? 'En progreso' : 'Pendiente');
-                estadoSidePill.textContent = estadoTxt;
-                estadoSidePill.className = 'crm-task-status-pill estado' + (tarea.estado === 'completada' ? ' completada' : '');
+                estadoSidePill.textContent = estadoSbLabels[tarea.estado] || 'Pendiente';
+            }
+            if (estadoDot) {
+                estadoDot.className = 'crm-tw-sb-dot ' + (tarea.estado || 'pendiente');
             }
 
             // Sidebar valor de prioridad
@@ -6079,12 +6086,13 @@
             var prioSideWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
             if (prioSideVal && prioSideWrap) {
                 if (tarea.prioridad === 'alta') {
-                    prioSideVal.innerHTML = '<span class="crm-task-status-pill prioridad"><svg width="7" height="7" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>Alta</span>';
-                    prioSideWrap.style.display = '';
+                    prioSideVal.className = 'crm-tw-sb-prio-alta';
+                    prioSideVal.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span>Alta</span>';
                 } else {
-                    prioSideVal.innerHTML = '<span style="font-size:0.82rem;color:#9CA3AF;">Normal</span>';
-                    prioSideWrap.style.display = '';
+                    prioSideVal.className = 'crm-tw-sb-prio-normal';
+                    prioSideVal.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span>Normal</span>';
                 }
+                prioSideWrap.style.display = '';
             }
 
             // Info sidebar
@@ -6137,24 +6145,28 @@
                 if (tarea.responsable_data) {
                     var rd = tarea.responsable_data;
                     var initials = crmTaskGetInitials(rd.nombre);
-                    respContainer.innerHTML = '<div class="crm-task-avatar" style="width:30px;height:30px;font-size:0.65rem;background:#0052D4;">' + (rd.avatar_url ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">' : initials) + '</div><span style="font-weight:500;font-size:0.82rem;flex:1;min-width:0;">' + rd.nombre + '</span>';
+                    var avatarInner = rd.avatar_url
+                        ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                        : initials;
+                    respContainer.innerHTML =
+                        '<span style="width:22px;height:22px;border-radius:50%;background:#3B82F6;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avatarInner + '</span>' +
+                        '<span style="font-weight:500;font-size:13px;color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + rd.nombre + '</span>';
                 } else {
-                    respContainer.innerHTML = '<span style="color:#9CA3AF;font-size:0.82rem;">Sin asignar</span>';
+                    respContainer.innerHTML = '<span style="color:#94A3B8;font-size:13px;">Sin asignar</span>';
                 }
             }
 
             // Subtareas O Tarea padre (mutuamente excluyentes)
             var subtareasSection = document.getElementById('crmTaskSubtareasSection');
-            var subtareasList = document.getElementById('crmTaskSubtareasList');
             if (subtareasSection) {
                 if (tarea.tarea_padre_id && tarea.tarea_padre_titulo) {
-                    // Es subtarea: mostrar card de tarea padre en vez de subtareas
+                    // Es subtarea: mostrar card de tarea padre
                     subtareasSection.innerHTML =
-                        '<h3 style="margin:0 0 6px;">Tarea Principal</h3>' +
-                        '<div onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:#F0F7FF;border:1px solid #BFDBFE;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#DBEAFE\'" onmouseleave="this.style.background=\'#F0F7FF\'">' +
+                        '<h3 class="crm-tw-section-title"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>Tarea principal</h3>' +
+                        '<div class="crm-tw-parent-card" onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')">' +
                             '<svg width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>' +
                             '<div style="flex:1;min-width:0;">' +
-                                '<div style="font-size:0.82rem;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
+                                '<div style="font-size:13px;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
                             '</div>' +
                             '<svg width="14" height="14" fill="none" stroke="#93C5FD" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
                         '</div>';
@@ -6164,36 +6176,36 @@
                     var total = subs.length;
                     var done = subs.filter(function (s) { return s.estado === 'completada'; }).length;
                     var pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                    var progressHtml = total > 0
-                        ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
-                          '<div style="flex:1;height:6px;background:#EEF0F3;border-radius:999px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#22C55E,#0EA5E9);border-radius:999px;transition:width 0.3s;"></div></div>' +
-                          '<span style="font-size:0.72rem;color:#6B7280;font-weight:600;white-space:nowrap;">' + done + '/' + total + ' · ' + pct + '%</span>' +
-                          '</div>'
-                        : '';
-                    var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
-                        '<div class="crm-task-section-label" style="margin:0;"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Subtareas</div>' +
-                        '<button onclick="crmTaskCrearSubtarea()" title="Crear subtarea" style="background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:2px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;">' +
-                        '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Subtarea</button></div>' + progressHtml;
+                    var isFull = total > 0 && done === total;
+                    var headHtml =
+                        '<h3 class="crm-tw-section-title">' +
+                            '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
+                            'Subtareas' +
+                        '</h3>' +
+                        (total > 0
+                            ? '<div class="crm-tw-subtareas-head">' +
+                                '<div class="crm-tw-subtareas-progress"><div class="crm-tw-subtareas-progress-fill' + (isFull ? ' full' : '') + '" style="width:' + pct + '%;"></div></div>' +
+                                '<span class="crm-tw-subtareas-count">' + done + '/' + total + ' · ' + pct + '%</span>' +
+                              '</div>'
+                            : '');
                     var listHtml = '';
                     if (subs.length > 0) {
-                        var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
-                        var estadoLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
-                        listHtml = '<div style="display:flex;flex-direction:column;gap:4px;">' + subs.map(function(st) {
-                            var ec = estadoColors[st.estado] || ['#F3F4F6','#6B7280'];
+                        listHtml = '<div class="crm-tw-subtareas-list">' + subs.map(function (st) {
                             var isComplete = st.estado === 'completada';
-                            return '<div onclick="crmTaskVerDetalle(' + st.id + ')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#F9FAFB;border:1px solid #E5E7EB;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#F3F4F6\'" onmouseleave="this.style.background=\'#F9FAFB\'">' +
-                                '<svg width="14" height="14" fill="none" stroke="' + (isComplete ? '#059669' : '#D1D5DB') + '" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;">' + (isComplete ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : '<circle cx="12" cy="12" r="10"/>') + '</svg>' +
-                                '<div style="flex:1;min-width:0;">' +
-                                    '<div style="font-size:0.8rem;font-weight:500;color:' + (isComplete ? '#9CA3AF' : '#1D1D1F') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (isComplete ? 'text-decoration:line-through;' : '') + '">' + (st.titulo || '') + '</div>' +
-                                    (st.asignado_a ? '<div style="font-size:0.68rem;color:#9CA3AF;margin-top:1px;">' + st.asignado_a + '</div>' : '') +
-                                '</div>' +
-                                '<span style="font-size:0.65rem;padding:2px 6px;border-radius:4px;background:' + ec[0] + ';color:' + ec[1] + ';white-space:nowrap;">' + (estadoLabels[st.estado] || st.estado) + '</span>' +
+                            var checkSvg = isComplete
+                                ? '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+                                : '';
+                            return '<div class="crm-tw-subtarea-row' + (isComplete ? ' done' : '') + '" onclick="crmTaskVerDetalle(' + st.id + ')">' +
+                                '<span class="crm-tw-subtarea-check' + (isComplete ? ' done' : '') + '">' + checkSvg + '</span>' +
+                                '<span class="crm-tw-subtarea-title">' + (st.titulo || '') + '</span>' +
                             '</div>';
                         }).join('') + '</div>';
-                    } else {
-                        listHtml = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin subtareas</div>';
                     }
-                    subtareasSection.innerHTML = headerHtml + listHtml;
+                    var addBtn = '<button type="button" class="crm-tw-subtarea-add" onclick="crmTaskCrearSubtarea()">' +
+                        '<span class="crm-tw-subtarea-add-ico"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
+                        '<span>Añadir subtarea</span>' +
+                    '</button>';
+                    subtareasSection.innerHTML = headHtml + listHtml + addBtn;
                 }
             }
 
@@ -6283,37 +6295,38 @@
             _crmTaskLastData = tarea;
             crmTaskHideSaveBar();
 
-            var partContainer = document.getElementById('crm-task-participantes-container');
-            if (partContainer) {
-                var parts = tarea.participantes || [];
-                var html = parts.map(function (p) {
-                    var rm = _crmTaskCanEdit ? '<span onclick="crmTaskRemoverInvolucrado(\'participantes\',' + p.id + ')" style="position:absolute;top:-3px;right:-3px;background:#EF4444;color:white;border-radius:50%;width:13px;height:13px;font-size:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;">x</span>' : '';
-                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#6366f1;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;overflow:hidden;" title="' + p.nombre + '">' + crmAvatarHtml(p.nombre, p.avatar_url) + rm + '</div>';
+            function crmTaskRenderSbList(containerId, people, grupo, bgColor) {
+                var cont = document.getElementById(containerId);
+                if (!cont) return;
+                if (!people.length) {
+                    cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
+                    return;
+                }
+                cont.innerHTML = people.map(function (p) {
+                    var avInner = p.avatar_url
+                        ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                        : crmTaskGetInitials(p.nombre);
+                    var rm = _crmTaskCanEdit
+                        ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + grupo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
+                        : '';
+                    return '<div class="crm-tw-sb-row" title="' + p.nombre + '">' +
+                        '<div class="crm-tw-sb-row-left">' +
+                            '<span style="width:22px;height:22px;border-radius:50%;background:' + bgColor + ';color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
+                            '<span class="crm-tw-sb-row-name">' + p.nombre + '</span>' +
+                        '</div>' +
+                        rm +
+                    '</div>';
                 }).join('');
-                if (_crmTaskCanEdit) html += '<button onclick="crmTaskAgregarInvolucrado(\'participantes\')" style="width:28px;height:28px;border-radius:50%;border:1.5px dashed #D1D5DB;background:none;color:#9CA3AF;cursor:pointer;font-size:1rem;line-height:1;vertical-align:middle;">+</button>';
-                partContainer.innerHTML = html || '<span style="color:#9CA3AF;font-size:0.78rem;">Ninguno</span>';
             }
-
-            var obsContainer = document.getElementById('crm-task-observadores-container');
-            if (obsContainer) {
-                var obs = tarea.observadores || [];
-                var html2 = obs.map(function (o) {
-                    var rm = _crmTaskCanEdit ? '<span onclick="crmTaskRemoverInvolucrado(\'observadores\',' + o.id + ')" style="position:absolute;top:-3px;right:-3px;background:#EF4444;color:white;border-radius:50%;width:13px;height:13px;font-size:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;">x</span>' : '';
-                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#8B5CF6;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;overflow:hidden;" title="' + o.nombre + '">' + crmAvatarHtml(o.nombre, o.avatar_url) + rm + '</div>';
-                }).join('');
-                if (_crmTaskCanEdit) html2 += '<button onclick="crmTaskAgregarInvolucrado(\'observadores\')" style="width:28px;height:28px;border-radius:50%;border:1.5px dashed #D1D5DB;background:none;color:#9CA3AF;cursor:pointer;font-size:1rem;line-height:1;vertical-align:middle;">+</button>';
-                obsContainer.innerHTML = html2 || '<span style="color:#9CA3AF;font-size:0.78rem;">Ninguno</span>';
-            }
+            crmTaskRenderSbList('crm-task-participantes-container', tarea.participantes || [], 'participantes', '#6366F1');
+            crmTaskRenderSbList('crm-task-observadores-container', tarea.observadores || [], 'observadores', '#8B5CF6');
 
             if (_crmTaskCanEdit) {
                 var respContainer = document.getElementById('crm-task-responsable-container');
-                if (respContainer && !respContainer.querySelector('.crm-resp-edit-btn')) {
-                    var editBtn = document.createElement('button');
-                    editBtn.className = 'crm-resp-edit-btn';
-                    editBtn.onclick = crmTaskEditarResponsable;
-                    editBtn.style.cssText = 'margin-left:auto;background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:1px 7px;border-radius:4px;';
-                    editBtn.textContent = 'editar';
-                    respContainer.appendChild(editBtn);
+                if (respContainer) {
+                    respContainer.style.cursor = 'pointer';
+                    respContainer.title = 'Clic para cambiar responsable';
+                    respContainer.onclick = crmTaskEditarResponsable;
                 }
                 var titleEl2 = document.getElementById('crm-task-titulo');
                 if (titleEl2 && titleEl2.tagName === 'H1') {
@@ -6442,10 +6455,14 @@
                             _crmTaskEdits.asignado_a_nombre = nombre;
                             _crmTaskEdits.asignado_a_avatar = u.avatar_url || null;
                             crmTaskShowSaveBar();
-                            respContainer.innerHTML = '<div class="crm-task-avatar" style="background:#0052D4;overflow:hidden;">' + crmAvatarHtml(nombre, u.avatar_url) + '</div><span style="font-weight:500;font-size:0.85rem;">' + nombre + '</span>';
-                            var eb = document.createElement('button'); eb.className = 'crm-resp-edit-btn'; eb.onclick = crmTaskEditarResponsable;
-                            eb.style.cssText = 'margin-left:auto;background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:1px 7px;border-radius:4px;'; eb.textContent = 'editar';
-                            respContainer.appendChild(eb);
+                            var avInner = u.avatar_url
+                                ? '<img src="' + u.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                                : crmTaskGetInitials(nombre);
+                            respContainer.innerHTML =
+                                '<span style="width:22px;height:22px;border-radius:50%;background:#3B82F6;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
+                                '<span style="font-weight:500;font-size:13px;color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + nombre + '</span>';
+                            respContainer.style.cursor = 'pointer';
+                            respContainer.onclick = crmTaskEditarResponsable;
                         });
                         dd.appendChild(div);
                     }); dd.style.display = 'block';
@@ -6693,6 +6710,28 @@
             _crmFilesRender();
             _crmMentionClose();
         }
+
+        // Copiar enlace directo a la tarea
+        window.crmTaskCopiarEnlace = function () {
+            if (!_crmCurrentTaskId) return;
+            var url = window.location.origin + '/app/?tarea=' + _crmCurrentTaskId;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                    showToast('Enlace copiado', 'success', 1800);
+                }, function () {
+                    showToast('No se pudo copiar', 'error');
+                });
+            } else {
+                try {
+                    var ta = document.createElement('textarea');
+                    ta.value = url; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+                    document.body.appendChild(ta); ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showToast('Enlace copiado', 'success', 1800);
+                } catch (e) { showToast('No se pudo copiar', 'error'); }
+            }
+        };
 
         // Click outside to close
         var taskModal = document.getElementById('crmTaskDetailModal');
