@@ -2984,9 +2984,10 @@
         align-items: center;
         justify-content: center;
         z-index: 10400;
-        padding: 1rem;
+        padding: 24px;
         backdrop-filter: blur(4px);
     }
+    @media (max-width: 1100px) { .crm-task-modal-overlay { padding: 12px; } }
 
     .crm-task-modal-overlay.active {
         display: flex;
@@ -2998,8 +2999,8 @@
     .crm-task-modal {
         background: #fff;
         width: 100%;
-        max-width: 1200px;
-        max-height: 92vh;
+        max-width: 1440px;
+        max-height: 94vh;
         height: auto;
         border-radius: 1rem;
         border: 1px solid rgba(226, 232, 240, 0.6);
@@ -3147,7 +3148,7 @@
     .crm-tw-main-scroll {
         flex: 1;
         overflow-y: auto;
-        padding: 40px 56px;
+        padding: 48px 72px 40px;
         min-height: 0;
     }
     .crm-tw-main-scroll::-webkit-scrollbar { width: 5px; }
@@ -3155,6 +3156,9 @@
     .crm-tw-main-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
     .crm-tw-main-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
+    @media (max-width: 1200px) {
+        .crm-tw-main-scroll { padding: 36px 44px 32px; }
+    }
     @media (max-width: 960px) {
         .crm-tw-main-scroll { padding: 24px 24px; }
     }
@@ -3234,12 +3238,12 @@
         min-width: 0;
     }
     .crm-tw-title {
-        font-size: 32px;
+        font-size: 36px;
         font-weight: 900;
-        color: #1E293B;
+        color: #0F172A;
         margin: 0;
-        line-height: 1.2;
-        letter-spacing: -0.01em;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
         transition: all 0.2s;
         word-break: break-word;
     }
@@ -3273,7 +3277,7 @@
     }
 
     /* ── Secciones ── */
-    .crm-tw-section { margin-bottom: 32px; }
+    .crm-tw-section { margin-bottom: 36px; }
     .crm-tw-section-title {
         display: inline-flex;
         align-items: center;
@@ -3288,20 +3292,29 @@
     }
     .crm-tw-section-title svg { opacity: 0.9; }
 
+    /* Descripción: sección con más aire, sin label ruidoso */
+    .crm-tw-section.crm-tw-section-desc {
+        margin-top: 12px;
+        margin-bottom: 44px;
+    }
+    .crm-tw-section.crm-tw-section-desc .crm-tw-section-title {
+        margin-bottom: 16px;
+    }
+
     /* ── Descripción: protagonista visual del widget ── */
     .crm-task-desc-wrap {
         position: relative;
     }
     .crm-task-desc-content,
     .crm-tw-desc {
-        font-size: 15px;
+        font-size: 16.5px;
         color: #1E293B;
-        line-height: 1.75;
-        letter-spacing: -0.003em;
+        line-height: 1.78;
+        letter-spacing: -0.005em;
         white-space: pre-line;
-        padding: 16px 18px;
+        padding: 4px 0;
         margin: 0;
-        border-radius: 14px;
+        border-radius: 10px;
         border: 1px solid transparent;
         cursor: text;
         transition: all 0.2s;
@@ -3310,7 +3323,7 @@
         font-family: inherit;
     }
     .crm-task-desc-content p,
-    .crm-tw-desc p { margin: 0 0 10px; }
+    .crm-tw-desc p { margin: 0 0 14px; }
     .crm-task-desc-content p:last-child,
     .crm-tw-desc p:last-child { margin-bottom: 0; }
     .crm-task-desc-content strong,
@@ -3324,33 +3337,32 @@
     .crm-tw-desc a:hover { border-bottom-color: #2563EB; }
     .crm-task-desc-content ul,
     .crm-task-desc-content ol,
-    .crm-tw-desc ul, .crm-tw-desc ol { padding-left: 22px; margin: 6px 0 12px; }
+    .crm-tw-desc ul, .crm-tw-desc ol { padding-left: 26px; margin: 8px 0 14px; }
     .crm-task-desc-content li,
-    .crm-tw-desc li { margin: 3px 0; }
+    .crm-tw-desc li { margin: 4px 0; }
     .crm-task-desc-content:hover,
-    .crm-tw-desc:hover {
-        background: #F8FAFC;
-    }
+    .crm-tw-desc:hover { background: transparent; }
     .crm-task-desc-content:focus,
     .crm-tw-desc:focus {
         background: #fff;
+        padding: 14px 16px;
         border-color: #BFDBFE;
         box-shadow: 0 0 0 4px rgba(191, 219, 254, 0.35);
         outline: none;
     }
-    /* Estado "sin descripción" — más suave, italiano */
+    /* Estado "sin descripción" — placeholder discreto */
     .crm-task-desc-content.is-empty,
     .crm-tw-desc.is-empty {
         color: #94A3B8;
         font-style: italic;
-        font-size: 14px;
+        font-size: 15px;
     }
-    .crm-task-desc-content.collapsed { max-height: 220px; position: relative; }
+    .crm-task-desc-content.collapsed { max-height: 280px; position: relative; }
     .crm-task-desc-content.collapsed::after {
         content: '';
         position: absolute;
         left: 0; right: 0; bottom: 0;
-        height: 60px;
+        height: 72px;
         background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 90%);
         pointer-events: none;
     }
@@ -3359,10 +3371,10 @@
         background: none;
         border: none;
         color: #2563EB;
-        font-size: 12.5px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
-        padding: 6px 2px 0;
+        padding: 8px 2px 0;
         font-family: inherit;
         letter-spacing: 0.005em;
     }
@@ -3819,7 +3831,7 @@
        SIDEBAR DERECHO
        ══════════════════════════════════════════════ */
     .crm-tw-sidebar {
-        width: 320px;
+        width: 340px;
         flex-shrink: 0;
         background: #fbfbfc;
         overflow-y: auto;
