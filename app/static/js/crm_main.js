@@ -4418,6 +4418,19 @@
             document.querySelectorAll('.island-nav-btn, .crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
             if (activeBtn) activeBtn.classList.add('active');
+            // Al salir del CRM (tareas/proyectos) quitar el scroll-lock que el
+            // kanban del CRM pudo haber dejado — si no, el body/main quedan con
+            // height:100vh + overflow:hidden y el scroll de la lista de tareas
+            // queda trabado.
+            var mainEl = document.querySelector('.crm-main');
+            if (view !== 'crm') {
+                document.body.classList.remove('kanban-scroll-lock');
+                if (mainEl) mainEl.classList.remove('kanban-active');
+            } else if (localStorage.getItem('crmViewMode') === 'kanban') {
+                // Re-aplicar si volvemos a CRM en modo kanban
+                document.body.classList.add('kanban-scroll-lock');
+                if (mainEl) mainEl.classList.add('kanban-active');
+            }
             // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +
             // en crm-bar-right. No sobrescribimos su contenido (el SVG debe quedarse).
         }
