@@ -2146,6 +2146,30 @@
         </div>
     </div>
 
+    <!-- ── Confirm eliminar TAREA completa ── -->
+    <div id="crmTaskDeleteOverlay"
+        style="display:none;position:absolute;inset:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(2px);z-index:600;align-items:center;justify-content:center;border-radius:inherit;">
+        <div style="background:#fff;border-radius:16px;padding:28px 28px 22px;max-width:380px;width:92%;box-shadow:0 20px 60px -10px rgba(15,23,42,0.35);text-align:center;animation:crmTwMenuIn 160ms ease-out;">
+            <div style="width:52px;height:52px;border-radius:50%;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#E11D48" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+            </div>
+            <p style="font-weight:700;font-size:1.02rem;color:#0F172A;margin:0 0 6px;letter-spacing:-0.01em;">¿Eliminar esta tarea?</p>
+            <p id="crmTaskDeleteSubtitle" style="font-size:0.85rem;color:#64748B;margin:0 0 4px;line-height:1.5;"></p>
+            <p style="font-size:0.8rem;color:#94A3B8;margin:4px 0 22px;">Esta acción no se puede deshacer. Se eliminarán también subtareas, comentarios y archivos asociados.</p>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button type="button" onclick="crmTaskDeleteCancel()"
+                    style="flex:1;padding:10px 0;border:1px solid #E2E8F0;border-radius:9px;background:#fff;color:#475569;font-size:0.88rem;cursor:pointer;font-weight:600;font-family:inherit;transition:all 0.15s;">Cancelar</button>
+                <button id="crmTaskDeleteConfirmBtn" type="button" onclick="crmTaskDeleteConfirm()"
+                    style="flex:1;padding:10px 0;border:none;border-radius:9px;background:linear-gradient(180deg,#EF4444 0%,#DC2626 100%);color:#fff;font-size:0.88rem;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 2px 8px -2px rgba(239,68,68,0.4);transition:all 0.15s;">Eliminar tarea</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ── Confirm eliminar comentario ── -->
     <div id="crmCommentConfirmOverlay"
         style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:500;align-items:center;justify-content:center;border-radius:inherit;">

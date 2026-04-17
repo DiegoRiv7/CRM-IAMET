@@ -6870,12 +6870,29 @@
         };
 
         // Eliminar tarea (solo creador / superuser — se valida en backend)
+        // Abre un overlay de confirmación en vez de window.confirm()
         window.crmTaskEliminarTarea = function () {
             if (!_crmCurrentTaskId) return;
             var menu = document.getElementById('crmTaskMenu');
             if (menu) menu.style.display = 'none';
-            var confirmar = window.confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.');
-            if (!confirmar) return;
+            var overlay = document.getElementById('crmTaskDeleteOverlay');
+            var subtitle = document.getElementById('crmTaskDeleteSubtitle');
+            if (subtitle) {
+                var titulo = _crmTaskLastData && _crmTaskLastData.titulo ? _crmTaskLastData.titulo : '';
+                subtitle.textContent = titulo ? '"' + titulo + '"' : '';
+            }
+            if (overlay) overlay.style.display = 'flex';
+        };
+        window.crmTaskDeleteCancel = function () {
+            var overlay = document.getElementById('crmTaskDeleteOverlay');
+            if (overlay) overlay.style.display = 'none';
+            var btn = document.getElementById('crmTaskDeleteConfirmBtn');
+            if (btn) { btn.disabled = false; btn.textContent = 'Eliminar tarea'; }
+        };
+        window.crmTaskDeleteConfirm = function () {
+            if (!_crmCurrentTaskId) return;
+            var btn = document.getElementById('crmTaskDeleteConfirmBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Eliminando…'; btn.style.opacity = '0.75'; }
             var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
             fetch('/app/api/tarea/' + _crmCurrentTaskId + '/eliminar/', {
                 method: 'POST',
@@ -6885,15 +6902,35 @@
                 .then(function (data) {
                     if (data && data.success) {
                         showToast('Tarea eliminada', 'success');
+                        crmTaskDeleteCancel();
                         crmTaskCerrarModal();
                         _tareasPollHash = null;
                         if (typeof recargarTareasCRM === 'function') recargarTareasCRM();
                     } else {
+                        if (btn) { btn.disabled = false; btn.textContent = 'Eliminar tarea'; btn.style.opacity = ''; }
                         showToast(data.error || 'No se pudo eliminar', 'error');
                     }
                 })
-                .catch(function () { showToast('Error de conexión', 'error'); });
+                .catch(function () {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Eliminar tarea'; btn.style.opacity = ''; }
+                    showToast('Error de conexión', 'error');
+                });
         };
+        // Click fuera del card o ESC para cancelar
+        (function () {
+            var overlay = document.getElementById('crmTaskDeleteOverlay');
+            if (overlay) {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) crmTaskDeleteCancel();
+                });
+            }
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    var ov = document.getElementById('crmTaskDeleteOverlay');
+                    if (ov && ov.style.display === 'flex') crmTaskDeleteCancel();
+                }
+            });
+        })();
 
         // Click outside to close
         var taskModal = document.getElementById('crmTaskDetailModal');
