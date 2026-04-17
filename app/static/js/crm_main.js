@@ -3292,8 +3292,14 @@
                     var _heatCls = ['card-vencida','heat-1','heat-2','heat-3','heat-4','heat-5','heat-max'];
                     var _warmCls = ['warm-1','warm-2','warm-3'];
                     var _hadHealing = false;
+                    // Normalizar lookup: dataset.oppId puede venir como "1,198" (Django
+                    // USE_THOUSAND_SEPARATOR) o con whitespace — strip antes de matchear
+                    // contra _apiMap cuyas keys son "1198" (JSON int).
+                    function _normId(s){
+                        return (s || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
+                    }
                     document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(el){
-                        var apiRow = _apiMap[el.dataset.oppId];
+                        var apiRow = _apiMap[_normId(el.dataset.oppId)];
                         if (!apiRow) return;
                         var wasVencida = el.dataset.vencida === '1';
                         var nowVencida = !!apiRow.tiene_actividad_vencida;
