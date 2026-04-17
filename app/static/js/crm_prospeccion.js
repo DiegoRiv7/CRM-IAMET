@@ -885,16 +885,16 @@ document.addEventListener('click', function(ev) {
     // Agregar actividad (formulario nuevo con fecha + hora separados)
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpBtnAgregarActividad' || e.target.closest('#wpBtnAgregarActividad')) {
+            // Validación reactiva (marca campos vacíos en rojo + shake; sin alerts)
+            if (typeof window.wactValidate === 'function' && !window.wactValidate('wp')) return;
+
             var tipo = document.getElementById('wpActTipo').value;
             var desc = document.getElementById('wpActDescripcion').value.trim();
             var fechaDate = document.getElementById('wpActFechaDate').value;
             var horaInicio = document.getElementById('wpActHoraInicio').value;
             var horaFin = document.getElementById('wpActHoraFin').value;
 
-            if (!desc) { alert('El nombre de la actividad es obligatorio'); return; }
-            if (!fechaDate) { alert('La fecha es obligatoria'); return; }
-            if (!horaInicio || !horaFin) { alert('Las horas son obligatorias'); return; }
-            if (horaInicio >= horaFin) { alert('La hora de fin debe ser posterior a la de inicio'); return; }
+            if (horaInicio >= horaFin) { showToast('La hora de fin debe ser posterior a la de inicio', 'error'); return; }
             if (!window._currentProspectoId) return;
 
             var fechaProgramada = fechaDate + 'T' + horaInicio + ':00';

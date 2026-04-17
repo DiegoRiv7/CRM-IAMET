@@ -2655,6 +2655,315 @@
         .wn-ctw-title { font-size: 24px; }
     }
 
+    /* ═══════════════════════════════════════════════
+       WIDGET AGENDAR ACTIVIDAD — Composer Canvas (shared .wact-*)
+       Usado por widgetOppCrearActividad, widgetGlobalCrearActividad,
+       widgetProspectoActividades
+    ═══════════════════════════════════════════════ */
+    .wact-overlay {
+        display: none;
+        position: fixed; top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(15, 23, 42, 0.42);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        align-items: center; justify-content: center;
+        padding: 40px;
+        z-index: 10200;
+    }
+    /* El contenedor widget-overlay existente también acepta estas reglas si
+       agregamos la clase .wact-overlay al mismo elemento */
+    .wact-shell {
+        width: 100%;
+        max-width: 760px;
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.30), 0 0 0 1px rgba(15, 23, 42, 0.04);
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+        animation: widgetIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        font-family: inherit;
+    }
+
+    /* Header */
+    .wact-header {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px 0 24px;
+        flex-shrink: 0;
+    }
+    .wact-breadcrumb {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 13px; font-weight: 500;
+        color: #64748B;
+    }
+    .wact-breadcrumb svg { color: #94A3B8; flex-shrink: 0; }
+    .wact-crumb-current { color: #0F172A; font-weight: 600; }
+    .wact-close {
+        width: 30px; height: 30px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: none; background: none;
+        color: #94A3B8; border-radius: 7px; cursor: pointer;
+        transition: all 0.15s;
+    }
+    .wact-close:hover { background: #F1F5F9; color: #334155; }
+
+    /* Canvas */
+    .wact-canvas {
+        padding: 20px 32px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .wact-title {
+        width: 100%;
+        border: none; outline: none;
+        font-family: inherit;
+        font-size: 28px;
+        font-weight: 700;
+        color: #0F172A;
+        background: transparent;
+        letter-spacing: -0.015em;
+        line-height: 1.2;
+        padding: 0;
+        margin: 0 0 6px;
+    }
+    .wact-title::placeholder { color: #CBD5E1; font-weight: 700; }
+    .wact-title.title-error { color: #E11D48; }
+    .wact-title.title-error::placeholder { color: #FCA5A5; }
+
+    /* Date-time pill row */
+    .wact-dt-row {
+        display: flex; align-items: center; flex-wrap: wrap;
+        gap: 8px;
+        margin: 2px 0 4px;
+    }
+    .wact-connector {
+        font-size: 13px; color: #94A3B8; font-weight: 500;
+    }
+
+    .wact-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13px; font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+        background: transparent;
+        border: 1px dashed #CBD5E1;
+        color: #64748B;
+    }
+    .wact-pill:hover { border-color: #3B82F6; background: #EFF6FF; color: #2563EB; }
+    .wact-pill svg { flex-shrink: 0; opacity: 0.85; }
+    .wact-pill.filled {
+        background: #F1F5F9;
+        border: 1px solid #E2E8F0;
+        border-style: solid;
+        color: #0F172A;
+    }
+    .wact-pill.filled:hover { background: #E2E8F0; }
+    .wact-pill.filled svg { color: #2563EB; opacity: 1; }
+    .wact-pill.active {
+        border-color: #BFDBFE;
+        border-style: solid;
+        background: #EFF6FF;
+        color: #1E40AF;
+    }
+    .wact-pill.soft-error {
+        background: #FEF2F2 !important;
+        border: 1px dashed #FCA5A5 !important;
+        color: #E11D48 !important;
+    }
+
+    /* Textarea desc */
+    .wact-desc {
+        width: 100%;
+        border: none; outline: none;
+        font-family: inherit;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1E293B;
+        background: transparent;
+        resize: none;
+        min-height: 110px;
+        padding: 0;
+        margin-top: 4px;
+    }
+    .wact-desc::placeholder { color: #94A3B8; }
+
+    /* Popovers */
+    .wact-popwrap { position: relative; }
+    .wact-pop {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        min-width: 240px;
+        max-width: 340px;
+        background: #fff;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 12px;
+        box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.05);
+        padding: 12px;
+        z-index: 60;
+        animation: wnCtwPopIn 150ms cubic-bezier(.16, 1, .3, 1);
+    }
+    .wact-pop-wide { min-width: 320px; max-width: 400px; }
+    /* Popovers de la toolbar abren hacia arriba */
+    .wact-toolbar .wact-pop {
+        top: auto;
+        bottom: calc(100% + 8px);
+    }
+    .wact-pop-title {
+        font-size: 10.5px; font-weight: 700;
+        color: #94A3B8;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        margin: 0 2px 8px;
+    }
+    .wact-pop-input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #E2E8F0;
+        border-radius: 7px;
+        font-family: inherit; font-size: 13px;
+        color: #0F172A;
+        outline: none;
+        background: #fff;
+        box-sizing: border-box;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .wact-pop-input:focus {
+        border-color: #93C5FD;
+        box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.22);
+    }
+    .wact-pop-chips {
+        display: flex; flex-wrap: wrap; gap: 6px;
+        margin-top: 8px;
+    }
+    .wact-pop-dropdown {
+        margin-top: 6px;
+        max-height: 180px;
+        overflow-y: auto;
+        border: 1px solid #E2E8F0;
+        border-radius: 7px;
+        background: #fff;
+    }
+    .wact-pop-dropdown:empty { display: none; }
+
+    /* Toolbar inferior */
+    .wact-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 20px;
+        background: #F8FAFC;
+        border-top: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 0 0 16px 16px;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+    .wact-tools {
+        display: flex; align-items: center; flex-wrap: wrap;
+        gap: 4px;
+        flex: 1; min-width: 0;
+    }
+    .wact-tool-ghost {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: #64748B;
+        border-radius: 7px;
+        font-family: inherit; font-size: 12.5px; font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    .wact-tool-ghost:hover { background: #F1F5F9; color: #0F172A; }
+    .wact-tool-ghost.active { background: #EFF6FF; color: #1E40AF; border-color: #BFDBFE; }
+    .wact-tool-ghost.filled { color: #334155; font-weight: 600; }
+    .wact-tool-ghost svg { color: #94A3B8; flex-shrink: 0; }
+    .wact-tool-ghost:hover svg, .wact-tool-ghost.filled svg { color: #2563EB; }
+    .wact-tool-sep {
+        width: 1px; height: 16px;
+        background: #E2E8F0;
+        margin: 0 4px;
+    }
+    .wact-avatar-mini {
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        background: #3B82F6; color: #fff;
+        font-size: 8.5px; font-weight: 700;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    /* Acciones */
+    .wact-actions {
+        display: flex; align-items: center; gap: 10px;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+    .wact-cancel {
+        padding: 7px 14px;
+        border: none; background: none;
+        font-family: inherit;
+        font-size: 13px; font-weight: 600;
+        color: #64748B;
+        cursor: pointer;
+        border-radius: 7px;
+        transition: all 0.15s;
+    }
+    .wact-cancel:hover { background: #E2E8F0; color: #0F172A; }
+
+    .wact-submit {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 8px 16px;
+        border: none;
+        background: #E2E8F0;
+        color: #94A3B8;
+        font-family: inherit;
+        font-size: 13px; font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: none;
+        transition: all 0.18s;
+    }
+    .wact-submit:hover { background: #CBD5E1; color: #64748B; }
+    .wact-submit.is-ready {
+        background: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+        color: #fff;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.28), 0 2px 8px -2px rgba(37, 99, 235, 0.3);
+    }
+    .wact-submit.is-ready:hover {
+        background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+        box-shadow: 0 6px 14px -4px rgba(37, 99, 235, 0.4), 0 2px 4px rgba(37, 99, 235, 0.2);
+        transform: translateY(-1px);
+    }
+    .wact-kbd {
+        font-family: ui-monospace, monospace;
+        font-size: 10.5px; font-weight: 500;
+        opacity: 0.75; letter-spacing: 0.05em;
+    }
+
+    /* Shake animation compartida */
+    @keyframes wactShake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        75% { transform: translateX(4px); }
+    }
+    .wact-shake { animation: wactShake 0.32s ease-in-out; }
+
+    @media (max-width: 768px) {
+        .wact-overlay { padding: 16px; }
+        .wact-canvas { padding: 16px 20px 20px; }
+        .wact-title { font-size: 24px; }
+        .wact-toolbar { padding: 12px 16px; }
+    }
+
     /* Legacy wn-card fallback (por si otro código accede) */
     .wn-overlay .wn-card {
         background: rgba(255, 255, 255, 0.92);

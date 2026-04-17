@@ -449,75 +449,92 @@
     </div>
 </div>
 
-<!-- ═══ WIDGET: CREAR ACTIVIDAD (TAREA) ═══ -->
-<div class="widget-overlay" id="widgetOppCrearActividad" style="z-index:99990;display:none;"><!-- CAPA TOP - siempre encima -->
-    <div class="widget-card widget-card-md"
-        style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
-        <div
-            style="padding:1.5rem;border-bottom:1px solid #E5E5EA;display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-weight:600;font-size:1.1rem;color:#1D1D1F;">Agendar Actividad</div>
-            <button type="button" class="widget-close"
-                onclick="document.getElementById('widgetOppCrearActividad').style.display='none'">&times;</button>
-        </div>
-        <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:70vh;">
-            <div>
-                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">NOMBRE
-                    DE LA ACTIVIDAD</label>
-                <input type="text" id="woFormActNombre"
-                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;"
-                    placeholder="Ej. Llamada de seguimiento">
+<!-- ═══ WIDGET: CREAR ACTIVIDAD (composer canvas) ═══ -->
+<div class="widget-overlay" id="widgetOppCrearActividad" style="z-index:99990;display:none;" data-wact-prefix="wo">
+    <div class="wact-shell">
+        <header class="wact-header">
+            <div class="wact-breadcrumb">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                <span>Actividades</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <span class="wact-crumb-current">Agendar Actividad</span>
             </div>
-            <div style="display:flex;gap:1rem;">
-                <div style="flex:1;">
-                    <label
-                        style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FECHA</label>
-                    <input type="date" id="woFormActFecha"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;">
+            <button type="button" class="wact-close" title="Cerrar (Esc)"
+                onclick="document.getElementById('widgetOppCrearActividad').style.display='none'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </header>
+
+        <main class="wact-canvas">
+            <input type="text" class="wact-title" id="woFormActNombre" placeholder="Ej. Llamada de seguimiento…" autocomplete="off">
+
+            <div class="wact-dt-row">
+                <!-- Fecha -->
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-pill" data-wact-btn="fecha" onclick="wactOpenPop('wo', 'fecha', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span data-wact-label="fecha">Fecha (requerida)</span>
+                    </button>
+                    <div class="wact-pop" data-wact-pop="fecha" style="display:none;">
+                        <div class="wact-pop-title">Fecha</div>
+                        <input type="date" class="wact-pop-input" id="woFormActFecha">
+                    </div>
                 </div>
-                <div style="width:140px;">
-                    <label
-                        style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">INICIO</label>
-                    <input type="time" id="woFormActInicio"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;"
-                        onfocus="woMostrarCalendarioDia(this)">
+                <span class="wact-connector">de</span>
+                <!-- Inicio -->
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-pill" data-wact-btn="inicio" onclick="wactOpenPop('wo', 'inicio', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span data-wact-label="inicio">Inicio</span>
+                    </button>
+                    <div class="wact-pop" data-wact-pop="inicio" style="display:none;">
+                        <div class="wact-pop-title">Hora de inicio</div>
+                        <input type="time" class="wact-pop-input" id="woFormActInicio" onfocus="woMostrarCalendarioDia(this)">
+                    </div>
                 </div>
-                <div style="width:140px;">
-                    <label
-                        style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FIN</label>
-                    <input type="time" id="woFormActFin"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;background:#fff;"
-                        onfocus="woMostrarCalendarioDia(this)">
-                </div>
-            </div>
-            <div>
-                <label
-                    style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">DESCRIPCIÓN</label>
-                <textarea id="woFormActDesc" rows="3"
-                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;resize:none;"
-                    placeholder="Detalles de la actividad..."></textarea>
-            </div>
-            <div style="position:relative;">
-                <label
-                    style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">PARTICIPANTES</label>
-                <div id="woFormActParticipantesContainer"
-                    style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0.5rem;min-height:30px;padding:4px;border:1px solid #D1D1D6;border-radius:8px;background:#F9FAFB;">
-                </div>
-                <input type="text" id="woFormActParticipantesSearch"
-                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;"
-                    placeholder="Buscar usuario por nombre..." oninput="woSearchParticipantes(this.value)">
-                <div id="woFormActParticipantesDropdown"
-                    style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.15);z-index:10030;max-height:220px;overflow-y:auto;margin-top:4px;">
+                <span class="wact-connector">a</span>
+                <!-- Fin -->
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-pill" data-wact-btn="fin" onclick="wactOpenPop('wo', 'fin', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span data-wact-label="fin">Fin</span>
+                    </button>
+                    <div class="wact-pop" data-wact-pop="fin" style="display:none;">
+                        <div class="wact-pop-title">Hora de fin</div>
+                        <input type="time" class="wact-pop-input" id="woFormActFin" onfocus="woMostrarCalendarioDia(this)">
+                    </div>
                 </div>
             </div>
-        </div>
-        <div
-            style="padding:1rem 1.5rem;border-top:1px solid #E5E5EA;background:#F9FAFB;display:flex;justify-content:flex-end;gap:0.8rem;border-radius:0 0 12px 12px;">
-            <button onclick="document.getElementById('widgetOppCrearActividad').style.display='none'"
-                style="padding:0.7rem 1.2rem;background:none;border:none;color:#86868B;font-weight:500;cursor:pointer;">Cancelar</button>
-            <button onclick="woCrearActividad()"
-                style="padding:0.7rem 1.5rem;background:#0052D4;border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;">Agendar
-                y Notificar</button>
-        </div>
+
+            <textarea class="wact-desc" id="woFormActDesc" placeholder="Añade detalles de la actividad, temas a tratar…"></textarea>
+        </main>
+
+        <footer class="wact-toolbar">
+            <div class="wact-tools">
+                <!-- Participantes -->
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-tool-ghost" data-wact-btn="participantes" onclick="wactOpenPop('wo', 'participantes', event)" title="Añadir participantes">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span data-wact-label="participantes">Participantes</span>
+                    </button>
+                    <div class="wact-pop wact-pop-wide" data-wact-pop="participantes" style="display:none;">
+                        <div class="wact-pop-title">Participantes</div>
+                        <input type="text" id="woFormActParticipantesSearch" class="wact-pop-input" placeholder="Buscar usuario por nombre…" oninput="woSearchParticipantes(this.value)">
+                        <div id="woFormActParticipantesDropdown" class="wact-pop-dropdown" style="display:none;"></div>
+                        <div id="woFormActParticipantesContainer" class="wact-pop-chips"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wact-actions">
+                <button type="button" class="wact-cancel" onclick="document.getElementById('widgetOppCrearActividad').style.display='none'">Cancelar</button>
+                <button type="button" class="wact-submit" id="woFormActSubmit" onclick="wactTrySubmit('wo', woCrearActividad)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Agendar y Notificar
+                    <span class="wact-kbd">⌘ ↵</span>
+                </button>
+            </div>
+        </footer>
     </div>
 </div>
 
@@ -2493,4 +2510,201 @@
         };
 
     })();
+</script>
+
+<script>
+/* ═══ Helpers compartidos para widgets de Agendar Actividad (wact) ═══
+   Usados por widgetOppCrearActividad (wo), widgetGlobalCrearActividad (cal),
+   widgetProspectoActividades (wp)
+*/
+(function() {
+    'use strict';
+
+    // Map prefix → IDs de inputs (por tipo de campo)
+    var WACT_FIELDS = {
+        wo:  { titulo: 'woFormActNombre', fecha: 'woFormActFecha', inicio: 'woFormActInicio', fin: 'woFormActFin', modalId: 'widgetOppCrearActividad' },
+        cal: { titulo: 'calFormActNombre', fecha: 'calFormActFecha', inicio: 'calFormActInicio', fin: 'calFormActFin', modalId: 'widgetGlobalCrearActividad' },
+        wp:  { titulo: 'wpActDescripcion', fecha: 'wpActFechaDate', inicio: 'wpActHoraInicio', fin: 'wpActHoraFin', modalId: 'widgetProspectoActividades' }
+    };
+
+    function _modal(prefix) { return document.getElementById(WACT_FIELDS[prefix].modalId); }
+
+    function _closeAllPops(prefix) {
+        var m = _modal(prefix); if (!m) return;
+        m.querySelectorAll('[data-wact-pop]').forEach(function(p) { p.style.display = 'none'; });
+        m.querySelectorAll('[data-wact-btn]').forEach(function(b) { b.classList.remove('active'); });
+    }
+
+    window.wactOpenPop = function(prefix, which, e) {
+        if (e) e.stopPropagation();
+        var m = _modal(prefix); if (!m) return;
+        var btn = m.querySelector('[data-wact-btn="' + which + '"]');
+        var pop = m.querySelector('[data-wact-pop="' + which + '"]');
+        if (!btn || !pop) return;
+        var isOpen = pop.style.display !== 'none';
+        _closeAllPops(prefix);
+        if (!isOpen) {
+            pop.style.display = 'block';
+            btn.classList.add('active');
+            setTimeout(function() {
+                var input = pop.querySelector('input, select, textarea');
+                if (input && input.focus) input.focus();
+            }, 30);
+        }
+    };
+
+    // Click fuera → cerrar popovers
+    document.addEventListener('click', function(e) {
+        Object.keys(WACT_FIELDS).forEach(function(prefix) {
+            var m = _modal(prefix);
+            if (!m || m.style.display === 'none') return;
+            var wraps = m.querySelectorAll('.wact-popwrap');
+            for (var i = 0; i < wraps.length; i++) {
+                if (wraps[i].contains(e.target)) return;
+            }
+            _closeAllPops(prefix);
+        });
+    });
+
+    function _formatDate(val) {
+        if (!val) return '';
+        var parts = val.split('-'); // yyyy-mm-dd
+        if (parts.length !== 3) return val;
+        var months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        return parseInt(parts[2], 10) + ' ' + months[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+    }
+
+    window.wactRefreshLabels = function(prefix) {
+        var m = _modal(prefix); if (!m) return;
+        var f = WACT_FIELDS[prefix];
+
+        // Fecha
+        var fechaInp = document.getElementById(f.fecha);
+        var fechaBtn = m.querySelector('[data-wact-btn="fecha"]');
+        var fechaLbl = m.querySelector('[data-wact-label="fecha"]');
+        if (fechaLbl && fechaInp) {
+            if (fechaInp.value) {
+                fechaLbl.textContent = _formatDate(fechaInp.value);
+                if (fechaBtn) { fechaBtn.classList.add('filled'); fechaBtn.classList.remove('soft-error'); }
+            } else {
+                fechaLbl.textContent = 'Fecha (requerida)';
+                if (fechaBtn) fechaBtn.classList.remove('filled');
+            }
+        }
+
+        // Inicio / Fin
+        ['inicio', 'fin'].forEach(function(k) {
+            var inp = document.getElementById(f[k]);
+            var btn = m.querySelector('[data-wact-btn="' + k + '"]');
+            var lbl = m.querySelector('[data-wact-label="' + k + '"]');
+            if (!lbl || !inp) return;
+            var cap = k === 'inicio' ? 'Inicio' : 'Fin';
+            if (inp.value) {
+                lbl.textContent = inp.value;
+                if (btn) { btn.classList.add('filled'); btn.classList.remove('soft-error'); }
+            } else {
+                lbl.textContent = cap;
+                if (btn) btn.classList.remove('filled');
+            }
+        });
+
+        // Submit toggle
+        var tituloOk = !!((document.getElementById(f.titulo) || {}).value || '').trim();
+        var fechaOk = !!((fechaInp || {}).value || '');
+        var inicioOk = !!((document.getElementById(f.inicio) || {}).value || '');
+        var finOk = !!((document.getElementById(f.fin) || {}).value || '');
+        var allReady = tituloOk && fechaOk && inicioOk && finOk;
+        var submitBtn = m.querySelector('.wact-submit');
+        if (submitBtn) submitBtn.classList.toggle('is-ready', allReady);
+    };
+
+    function _shake(el) {
+        if (!el) return;
+        el.classList.remove('wact-shake');
+        void el.offsetWidth;
+        el.classList.add('wact-shake');
+        setTimeout(function() { el && el.classList.remove('wact-shake'); }, 340);
+    }
+
+    // Valida required; si falla, marca los campos y hace shake. Devuelve true si OK.
+    window.wactValidate = function(prefix) {
+        var m = _modal(prefix); if (!m) return true;
+        var f = WACT_FIELDS[prefix];
+        var ok = true;
+        var tituloEl = document.getElementById(f.titulo);
+        if (tituloEl) {
+            if (!(tituloEl.value || '').trim()) {
+                tituloEl.classList.add('title-error');
+                _shake(tituloEl);
+                ok = false;
+            } else {
+                tituloEl.classList.remove('title-error');
+            }
+        }
+        ['fecha', 'inicio', 'fin'].forEach(function(k) {
+            var inp = document.getElementById(f[k]);
+            var btn = m.querySelector('[data-wact-btn="' + k + '"]');
+            if (!btn) return;
+            if (!(inp && inp.value)) {
+                btn.classList.remove('filled');
+                btn.classList.add('soft-error');
+                _shake(btn);
+                ok = false;
+            } else {
+                btn.classList.remove('soft-error');
+            }
+        });
+        return ok;
+    };
+
+    // Wrapper: valida antes de llamar al submit real; si falla, no llama.
+    window.wactTrySubmit = function(prefix, realSubmitFn) {
+        if (!wactValidate(prefix)) return;
+        if (typeof realSubmitFn === 'function') realSubmitFn();
+    };
+
+    // Hookear inputs → refresh labels cuando cambia el valor
+    function _attachListeners(prefix) {
+        var f = WACT_FIELDS[prefix];
+        ['titulo', 'fecha', 'inicio', 'fin'].forEach(function(k) {
+            var inp = document.getElementById(f[k]);
+            if (!inp || inp._wactHooked) return;
+            inp._wactHooked = true;
+            inp.addEventListener('input', function() {
+                if (k === 'titulo' && inp.value.trim()) inp.classList.remove('title-error');
+                wactRefreshLabels(prefix);
+            });
+            inp.addEventListener('change', function() { wactRefreshLabels(prefix); });
+        });
+    }
+
+    // Refrescar al cambiar visibilidad del modal
+    Object.keys(WACT_FIELDS).forEach(function(prefix) {
+        var m = _modal(prefix); if (!m) return;
+        _attachListeners(prefix);
+
+        // MutationObserver para detectar cuando se abre/cierra
+        new MutationObserver(function() {
+            var visible = m.style.display !== 'none' && !m.hasAttribute('hidden');
+            if (visible) {
+                _attachListeners(prefix); // por si inputs se crearon después
+                setTimeout(function() { wactRefreshLabels(prefix); }, 50);
+            }
+        }).observe(m, { attributes: true, attributeFilter: ['style', 'class'] });
+
+        // Init una vez
+        setTimeout(function() { wactRefreshLabels(prefix); }, 100);
+
+        // ⌘/Ctrl+Enter submite
+        m.addEventListener('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                var btn = m.querySelector('.wact-submit');
+                if (btn) btn.click();
+            } else if (e.key === 'Escape') {
+                _closeAllPops(prefix);
+            }
+        });
+    });
+})();
 </script>

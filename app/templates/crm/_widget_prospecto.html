@@ -172,74 +172,98 @@
     </div>
 </div>
 
-<!-- ═══ PANEL: ACTIVIDADES DEL PROSPECTO (diseño igual a oportunidades) ═══ -->
-<div class="widget-overlay" id="widgetProspectoActividades" style="z-index:10300;display:none;">
-    <div class="widget-card widget-card-md"
-        style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
-        <div style="padding:1.5rem;border-bottom:1px solid #E5E5EA;display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-weight:600;font-size:1.1rem;color:#1D1D1F;">Agendar Actividad</div>
-            <button type="button" class="widget-close"
-                onclick="document.getElementById('widgetProspectoActividades').style.display='none';document.getElementById('widgetProspectoActividades').classList.remove('active');">&times;</button>
-        </div>
+<!-- ═══ PANEL: ACTIVIDADES DEL PROSPECTO (composer canvas) ═══ -->
+<div class="widget-overlay" id="widgetProspectoActividades" style="z-index:10300;display:none;" data-wact-prefix="wp">
+    <div class="wact-shell">
+        <header class="wact-header">
+            <div class="wact-breadcrumb">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                <span>Actividades</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <span class="wact-crumb-current">Agendar Actividad</span>
+            </div>
+            <button type="button" class="wact-close" title="Cerrar (Esc)"
+                onclick="document.getElementById('widgetProspectoActividades').style.display='none';document.getElementById('widgetProspectoActividades').classList.remove('active');">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </header>
+
         <div id="wpActividadesFullList" style="display:none;"></div>
-        <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto;max-height:70vh;">
-            <div>
-                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">NOMBRE DE LA ACTIVIDAD</label>
-                <input type="text" id="wpActDescripcion"
-                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;"
-                    placeholder="Ej. Llamada de seguimiento">
-            </div>
-            <div style="display:flex;gap:1rem;">
-                <div style="flex:1;">
-                    <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FECHA</label>
-                    <input type="date" id="wpActFechaDate"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;">
+
+        <main class="wact-canvas">
+            <input type="text" class="wact-title" id="wpActDescripcion" placeholder="Ej. Llamada de seguimiento…" autocomplete="off">
+
+            <div class="wact-dt-row">
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-pill" data-wact-btn="fecha" onclick="wactOpenPop('wp', 'fecha', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span data-wact-label="fecha">Fecha (requerida)</span>
+                    </button>
+                    <div class="wact-pop" data-wact-pop="fecha" style="display:none;">
+                        <div class="wact-pop-title">Fecha</div>
+                        <input type="date" class="wact-pop-input" id="wpActFechaDate">
+                    </div>
                 </div>
-                <div style="width:130px;">
-                    <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">INICIO</label>
-                    <input type="time" id="wpActHoraInicio" value="09:00"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;">
+                <span class="wact-connector">de</span>
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-pill" data-wact-btn="inicio" onclick="wactOpenPop('wp', 'inicio', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span data-wact-label="inicio">Inicio</span>
+                    </button>
+                    <div class="wact-pop" data-wact-pop="inicio" style="display:none;">
+                        <div class="wact-pop-title">Hora de inicio</div>
+                        <input type="time" class="wact-pop-input" id="wpActHoraInicio" value="09:00">
+                    </div>
                 </div>
-                <div style="width:130px;">
-                    <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">FIN</label>
-                    <input type="time" id="wpActHoraFin" value="10:00"
-                        style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;">
-                </div>
-            </div>
-            <div>
-                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">DESCRIPCION</label>
-                <textarea id="wpActDescExtra" rows="3"
-                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;resize:none;box-sizing:border-box;"
-                    placeholder="Detalles de la actividad..."></textarea>
-            </div>
-            <div>
-                <label style="display:block;font-size:0.8rem;color:#86868B;margin-bottom:0.4rem;font-weight:600;">PARTICIPANTES</label>
-                <div id="wpActParticipantesContainer"
-                    style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0.5rem;min-height:30px;padding:4px;border:1px solid #D1D1D6;border-radius:8px;background:#F9FAFB;">
-                </div>
-                <input type="text" id="wpActParticipantesSearch"
-                    style="width:100%;padding:0.8rem;border:1px solid #D1D1D6;border-radius:8px;font-size:0.95rem;outline:none;box-sizing:border-box;"
-                    placeholder="Buscar usuario por nombre..." oninput="wpSearchParticipantes(this.value)">
-                <div id="wpActParticipantesDropdown"
-                    style="display:none;position:absolute;left:1.5rem;right:1.5rem;background:#fff;border:1px solid #E5E5EA;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.15);z-index:10400;max-height:180px;overflow-y:auto;margin-top:4px;">
+                <span class="wact-connector">a</span>
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-pill" data-wact-btn="fin" onclick="wactOpenPop('wp', 'fin', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span data-wact-label="fin">Fin</span>
+                    </button>
+                    <div class="wact-pop" data-wact-pop="fin" style="display:none;">
+                        <div class="wact-pop-title">Hora de fin</div>
+                        <input type="time" class="wact-pop-input" id="wpActHoraFin" value="10:00">
+                    </div>
                 </div>
             </div>
-            <div style="display:none;">
-                <select id="wpActTipo">
-                    <option value="tarea" selected>Tarea</option>
-                    <option value="llamada">Llamada</option>
-                    <option value="correo">Correo</option>
-                    <option value="reunion">Reunion</option>
-                    <option value="otro">Otro</option>
-                </select>
+
+            <textarea class="wact-desc" id="wpActDescExtra" placeholder="Añade detalles de la actividad, temas a tratar…"></textarea>
+        </main>
+
+        <footer class="wact-toolbar">
+            <div class="wact-tools">
+                <div class="wact-popwrap">
+                    <button type="button" class="wact-tool-ghost" data-wact-btn="participantes" onclick="wactOpenPop('wp', 'participantes', event)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span data-wact-label="participantes">Participantes</span>
+                    </button>
+                    <div class="wact-pop wact-pop-wide" data-wact-pop="participantes" style="display:none;">
+                        <div class="wact-pop-title">Participantes</div>
+                        <input type="text" id="wpActParticipantesSearch" class="wact-pop-input" placeholder="Buscar usuario por nombre…" oninput="wpSearchParticipantes(this.value)">
+                        <div id="wpActParticipantesDropdown" class="wact-pop-dropdown" style="display:none;"></div>
+                        <div id="wpActParticipantesContainer" class="wact-pop-chips"></div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div style="padding:1rem 1.5rem;border-top:1px solid #E5E5EA;background:#F9FAFB;display:flex;justify-content:flex-end;gap:0.8rem;border-radius:0 0 12px 12px;">
-            <button onclick="document.getElementById('widgetProspectoActividades').style.display='none';document.getElementById('widgetProspectoActividades').classList.remove('active');"
-                style="padding:0.7rem 1.2rem;background:none;border:none;color:#86868B;font-weight:500;cursor:pointer;">Cancelar</button>
-            <button type="button" id="wpBtnAgregarActividad"
-                style="padding:0.7rem 1.5rem;background:#5856D6;border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;">Agendar y Notificar</button>
-        </div>
+            <div class="wact-actions">
+                <button type="button" class="wact-cancel"
+                    onclick="document.getElementById('widgetProspectoActividades').style.display='none';document.getElementById('widgetProspectoActividades').classList.remove('active');">Cancelar</button>
+                <button type="button" id="wpBtnAgregarActividad" class="wact-submit">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Agendar y Notificar
+                    <span class="wact-kbd">⌘ ↵</span>
+                </button>
+            </div>
+            <!-- Hidden: tipo (valor por defecto "tarea") -->
+            <select id="wpActTipo" style="display:none;">
+                <option value="tarea" selected>Tarea</option>
+                <option value="llamada">Llamada</option>
+                <option value="correo">Correo</option>
+                <option value="reunion">Reunion</option>
+                <option value="otro">Otro</option>
+            </select>
+        </footer>
     </div>
 </div>
 
