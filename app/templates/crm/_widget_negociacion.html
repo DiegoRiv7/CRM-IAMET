@@ -3,7 +3,7 @@
         onclick="if(event.target===this){this.classList.add('closing');var self=this;setTimeout(function(){self.classList.remove('active','closing');},220);}"><!-- CAPA 1 -->
         <div class="wn-card wn-composer">
 
-            <form id="formNegociacion" autocomplete="off" style="display:contents;">
+            <form id="formNegociacion" autocomplete="off" novalidate style="display:contents;">
                 {% csrf_token %}
 
                 <!-- ─── Header minimal: breadcrumb + cerrar ─── -->
@@ -24,7 +24,7 @@
                 <main class="wn-ctw-canvas">
 
                     <!-- Título grande -->
-                    <input type="text" class="wn-ctw-title" id="wfOportunidad" placeholder="Nombre de la oportunidad…" autocomplete="off" required>
+                    <input type="text" class="wn-ctw-title" id="wfOportunidad" placeholder="Nombre de la oportunidad…" autocomplete="off">
 
                     <!-- Para [Cliente] — lenguaje natural -->
                     <div class="wn-ctw-nl-row">
@@ -36,7 +36,7 @@
                             </button>
                             <div class="wn-ctw-pop wn-ctw-pop-wide" id="wnPopCli" style="display:none;">
                                 <div class="wn-ctw-pop-title">Cliente</div>
-                                <input type="text" class="wn-ctw-pop-input wf-input" id="wfCliente" placeholder="Buscar o escribir cliente…" required>
+                                <input type="text" class="wn-ctw-pop-input wf-input" id="wfCliente" placeholder="Buscar o escribir cliente…">
                                 <div class="wf-autocomplete" id="wfClienteAC"></div>
                                 <button type="button" class="wn-ctw-pop-add" id="wnAddClienteBtn">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -63,7 +63,7 @@
                             </button>
                             <div class="wn-ctw-pop" id="wnPopTipo" style="display:none;">
                                 <div class="wn-ctw-pop-title">Tipo de pipeline</div>
-                                <select class="wn-ctw-pop-input" id="wfTipo" required>
+                                <select class="wn-ctw-pop-input" id="wfTipo">
                                     <option value="">Selecciona un tipo</option>
                                     <option value="runrate">Runrate</option>
                                     <option value="proyecto">Proyecto</option>
@@ -80,10 +80,19 @@
                             <div class="wn-ctw-pop" id="wnPopCierre" style="display:none;">
                                 <div class="wn-ctw-pop-title">Mes de cierre estimado</div>
                                 <select class="wn-ctw-pop-input" id="wfMesCierre">
-                                    <option value="">Selecciona un mes</option>
-                                    {% for code, name in mes_choices %}
-                                    {% if code != 'todos' %}<option value="{{ code }}">{{ name }}</option>{% endif %}
-                                    {% endfor %}
+                                    <option value="" selected>Selecciona un mes</option>
+                                    <option value="01">Enero</option>
+                                    <option value="02">Febrero</option>
+                                    <option value="03">Marzo</option>
+                                    <option value="04">Abril</option>
+                                    <option value="05">Mayo</option>
+                                    <option value="06">Junio</option>
+                                    <option value="07">Julio</option>
+                                    <option value="08">Agosto</option>
+                                    <option value="09">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
                                 </select>
                             </div>
                         </div>
@@ -364,10 +373,35 @@
             el.addEventListener('input', function() { wnRefreshLabels(); });
         });
 
+        // Reset a estado "vacío" en cada apertura (asegura Cierre / Tipo / etc.
+        // empiecen sin default y pills en estado empty)
+        function _wnResetFormEmpty() {
+            var setEmpty = function(id) { var el = document.getElementById(id); if (el) el.value = ''; };
+            setEmpty('wfOportunidad');
+            setEmpty('wfCliente');
+            setEmpty('wfContacto');
+            setEmpty('wfTipo');
+            setEmpty('wfMesCierre');
+            setEmpty('wfProducto');
+            setEmpty('wfArea');
+            setEmpty('wfComentarios');
+            var prob = document.getElementById('wfProbabilidad'); if (prob) prob.value = '20';
+            // Limpiar estados visuales de error
+            var tituloEl = document.getElementById('wfOportunidad');
+            if (tituloEl) tituloEl.classList.remove('title-error');
+            ['wnClienteBtn', 'wnTipoBtn', 'wnCierreBtn'].forEach(function(id) {
+                var b = document.getElementById(id);
+                if (b) {
+                    b.classList.remove('soft-error', 'filled', 'active');
+                    b.classList.add('empty');
+                }
+            });
+        }
         // Refrescar al abrir el modal
         var openObserver = new MutationObserver(function(mutList) {
             var modal = document.getElementById('widgetNegociacion');
             if (modal && modal.classList.contains('active')) {
+                _wnResetFormEmpty();
                 setTimeout(wnRefreshLabels, 50);
             }
         });
