@@ -2045,6 +2045,52 @@
                 }).catch(function (e) { console.error(e); dropdown.style.display = 'none'; });
         };
 
+        /* Sync inline de las cards SSR (postit / kanban / list row) cuando
+           se crea una actividad — evita esperar un re-fetch completo. */
+        function _woSyncCardsWithActividad(oppId, titulo) {
+            if (!oppId || !titulo) return;
+            var idStr = String(oppId);
+
+            // 1) Cards con .card-act-bar (postit + kanban): cambiar texto +
+            //    aplicar estilo "has-activity" (bg azul claro, texto azul)
+            document.querySelectorAll('.card-act-bar[data-opp-act="' + idStr + '"]').forEach(function(bar) {
+                bar.style.borderColor = '#BFDBFE';
+                bar.style.background = '#EFF6FF';
+                var txt = bar.querySelector('.card-act-text');
+                if (txt) {
+                    txt.textContent = titulo;
+                    txt.style.fontWeight = '700';
+                    txt.style.color = '#1E40AF';
+                }
+                var svgs = bar.querySelectorAll('svg');
+                if (svgs[0]) svgs[0].setAttribute('stroke', '#3B82F6');
+                if (svgs[1]) svgs[1].setAttribute('stroke', '#93C5FD');
+            });
+
+            // 2) List view row: la pill .crm-list-activity-pill con texto
+            //    "Sin pendientes" cambia a variante .has-activity con el título
+            var rows = document.querySelectorAll('.crm-data-row[data-opp-id]');
+            rows.forEach(function(row) {
+                var rowId = (row.dataset.oppId || '').replace(/[\s,\u00A0]/g, '');
+                if (rowId !== idStr) return;
+                var pill = row.querySelector('.crm-list-activity-pill');
+                if (!pill) return;
+                pill.classList.add('has-activity');
+                pill.style.cursor = 'pointer';
+                // Reconstruir el contenido: ícono calendario + span con título
+                pill.innerHTML =
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+                    '<span>' + (titulo.length > 28 ? titulo.slice(0, 28) + '…' : titulo) + '</span>';
+                pill.onclick = function(e) {
+                    e.stopPropagation();
+                    if (typeof openDetalle === 'function') openDetalle(idStr);
+                    setTimeout(function() {
+                        if (typeof woAbrirActividadReciente === 'function') woAbrirActividadReciente();
+                    }, 400);
+                };
+            });
+        }
+
         window.woAbrirWidgetCrearActividad = function () {
             document.getElementById('woFormActNombre').value = '';
             var now = new Date();
@@ -2150,14 +2196,16 @@
                     if (typeof calGlobalRefetch === 'function') {
                         calGlobalRefetch();
                     }
-                    // Refrescar la tabla/kanban principal CRM para que la nueva
-                    // actividad aparezca en la fila/card sin recargar página
+                    // Refrescar la tabla/kanban principal CRM
                     if (typeof window.refreshCrmTable === 'function') {
                         window.refreshCrmTable();
                     }
                     if (typeof window.recargarTareasCRM === 'function') {
                         window.recargarTareasCRM();
                     }
+                    // Actualizar inline las cards SSR (postit + kanban + list row)
+                    // del opp actual para reflejar la actividad sin esperar re-fetch
+                    try { _woSyncCardsWithActividad(_woCurrentOppId, titulo); } catch (e) {}
                 } else {
                     woDialogConfirm('Error', res.error, null, null, true);
                 }
