@@ -2048,13 +2048,16 @@
         window.woAbrirWidgetCrearActividad = function () {
             document.getElementById('woFormActNombre').value = '';
             var now = new Date();
-            var dStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
+            var pad = function (n) { return String(n).padStart(2, '0'); };
+            var dStr = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
             document.getElementById('woFormActFecha').value = dStr;
 
-            var startHours = now.getHours();
-            var endHours = startHours + 1;
-            document.getElementById('woFormActInicio').value = String(startHours).padStart(2, '0') + ":00";
-            document.getElementById('woFormActFin').value = String(endHours % 24).padStart(2, '0') + ":00";
+            // Hora actual CON minutos reales (ej. 16:44, no 16:00)
+            var startHHMM = pad(now.getHours()) + ':' + pad(now.getMinutes());
+            var endDate = new Date(now.getTime() + 60 * 60 * 1000);
+            var endHHMM = pad(endDate.getHours()) + ':' + pad(endDate.getMinutes());
+            document.getElementById('woFormActInicio').value = startHHMM;
+            document.getElementById('woFormActFin').value = endHHMM;
 
             document.getElementById('woFormActDesc').value = '';
             document.getElementById('woFormActParticipantesSearch').value = '';
@@ -2146,6 +2149,14 @@
                     woCargarActividadReciente(_woCurrentOppId);
                     if (typeof calGlobalRefetch === 'function') {
                         calGlobalRefetch();
+                    }
+                    // Refrescar la tabla/kanban principal CRM para que la nueva
+                    // actividad aparezca en la fila/card sin recargar página
+                    if (typeof window.refreshCrmTable === 'function') {
+                        window.refreshCrmTable();
+                    }
+                    if (typeof window.recargarTareasCRM === 'function') {
+                        window.recargarTareasCRM();
                     }
                 } else {
                     woDialogConfirm('Error', res.error, null, null, true);
