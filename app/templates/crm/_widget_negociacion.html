@@ -63,13 +63,10 @@
                             </button>
                             <div class="wn-ctw-pop" id="wnPopTipo" style="display:none;">
                                 <div class="wn-ctw-pop-title">Tipo de pipeline</div>
-                                <select class="wn-ctw-pop-input" id="wfTipo">
-                                    {% for pipeline_key in pipelines_list %}
-                                    <option value="{{ pipeline_key }}">{{ pipeline_key|title }}</option>
-                                    {% empty %}
+                                <select class="wn-ctw-pop-input" id="wfTipo" required>
+                                    <option value="">Selecciona un tipo</option>
                                     <option value="runrate">Runrate</option>
                                     <option value="proyecto">Proyecto</option>
-                                    {% endfor %}
                                 </select>
                             </div>
                         </div>
@@ -138,13 +135,14 @@
                             <div class="wn-ctw-pop" id="wnPopProd" style="display:none;">
                                 <div class="wn-ctw-pop-title">Producto</div>
                                 <select class="wn-ctw-pop-input" id="wfProducto">
+                                    <option value="">Selecciona un producto</option>
                                     <option value="ZEBRA">Zebra</option>
                                     <option value="PANDUIT">Panduit</option>
                                     <option value="APC">APC</option>
                                     <option value="AVIGILION">Avigilon</option>
                                     <option value="GENETEC">Genetec</option>
                                     <option value="AXIS">Axis</option>
-                                    <option value="SOFTWARE" selected>Software</option>
+                                    <option value="SOFTWARE">Software</option>
                                     <option value="RUNRATE">Runrate</option>
                                     <option value="PÓLIZA">Póliza</option>
                                     <option value="CISCO">Cisco</option>
@@ -162,6 +160,7 @@
                             <div class="wn-ctw-pop" id="wnPopArea" style="display:none;">
                                 <div class="wn-ctw-pop-title">Área</div>
                                 <select class="wn-ctw-pop-input" id="wfArea">
+                                    <option value="">Selecciona un área</option>
                                     <option value="SISTEMAS">Sistemas</option>
                                     <option value="Recursos Humanos">Recursos Humanos</option>
                                     <option value="Compras">Compras</option>
@@ -181,7 +180,7 @@
                             <div class="wn-ctw-pop" id="wnPopProb" style="display:none;">
                                 <div class="wn-ctw-pop-title">Probabilidad de cierre (%)</div>
                                 <div class="wn-ctw-prob-wrap">
-                                    <input type="number" class="wn-ctw-pop-input" id="wfProbabilidad" value="25" min="5" max="100" step="5">
+                                    <input type="number" class="wn-ctw-pop-input" id="wfProbabilidad" value="20" min="5" max="100" step="5">
                                     <span class="wn-ctw-prob-suffix">%</span>
                                 </div>
                             </div>
@@ -307,10 +306,55 @@
             document.getElementById('wnAreaBtn').classList.toggle('filled', true);
 
             // Probabilidad
-            var prob = (document.getElementById('wfProbabilidad') || {}).value || '25';
+            var prob = (document.getElementById('wfProbabilidad') || {}).value || '20';
             document.getElementById('wnProbLabel').textContent = 'Probabilidad · ' + prob + '%';
             document.getElementById('wnProbBtn').classList.toggle('filled', true);
+
+            // ── Botón submit: gris hasta que todos los required estén llenos ──
+            var titulo = (document.getElementById('wfOportunidad') || {}).value || '';
+            var clienteOk = !!((document.getElementById('wfCliente') || {}).value || '').trim();
+            var tipoOk = !!((document.getElementById('wfTipo') || {}).value || '');
+            var cierreOk = !!((document.getElementById('wfMesCierre') || {}).value || '');
+            var allReady = titulo.trim().length > 0 && clienteOk && tipoOk && cierreOk;
+            var submitBtn = document.getElementById('wfSubmit');
+            if (submitBtn) submitBtn.classList.toggle('is-ready', allReady);
         };
+
+        // ── Validación reactiva al intentar crear ──
+        function _wnValidateRequired() {
+            var titulo = (document.getElementById('wfOportunidad') || {}).value || '';
+            var clienteVal = ((document.getElementById('wfCliente') || {}).value || '').trim();
+            var tipoVal = (document.getElementById('wfTipo') || {}).value || '';
+            var cierreVal = (document.getElementById('wfMesCierre') || {}).value || '';
+            var missing = [];
+
+            var tituloEl = document.getElementById('wfOportunidad');
+            if (!titulo.trim()) {
+                missing.push('titulo');
+                if (tituloEl) {
+                    tituloEl.classList.add('title-error', 'wn-ctw-shake');
+                    setTimeout(function() { if (tituloEl) tituloEl.classList.remove('wn-ctw-shake'); }, 320);
+                }
+            } else if (tituloEl) {
+                tituloEl.classList.remove('title-error');
+            }
+
+            ['cliente', 'tipo', 'cierre'].forEach(function(key) {
+                var btnId = { cliente: 'wnClienteBtn', tipo: 'wnTipoBtn', cierre: 'wnCierreBtn' }[key];
+                var val = { cliente: clienteVal, tipo: tipoVal, cierre: cierreVal }[key];
+                var btn = document.getElementById(btnId);
+                if (!btn) return;
+                if (!val) {
+                    missing.push(key);
+                    btn.classList.remove('empty', 'filled');
+                    btn.classList.add('soft-error', 'wn-ctw-shake');
+                    setTimeout(function() { if (btn) btn.classList.remove('wn-ctw-shake'); }, 320);
+                } else {
+                    btn.classList.remove('soft-error');
+                }
+            });
+            return missing.length === 0;
+        }
 
         // Hook changes → refresh labels
         ['wfTipo', 'wfMesCierre', 'wfProducto', 'wfArea', 'wfProbabilidad', 'wfCliente', 'wfContacto'].forEach(function(id) {
@@ -433,6 +477,24 @@
                     var btn = document.getElementById('wfSubmit');
                     if (btn) btn.click();
                 }
+            });
+
+            // Validación reactiva: si faltan required, preventDefault en capture
+            // antes de que el handler real (crm_main.js) intente crear la opp
+            formEl.addEventListener('submit', function(e) {
+                if (!_wnValidateRequired()) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        }
+
+        // Limpiar error del título al empezar a escribir
+        var tituloInp = document.getElementById('wfOportunidad');
+        if (tituloInp) {
+            tituloInp.addEventListener('input', function() {
+                if (this.value.trim()) this.classList.remove('title-error');
+                wnRefreshLabels();
             });
         }
     })();
