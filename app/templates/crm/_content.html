@@ -2199,12 +2199,11 @@
 <!-- ═══ MODAL CREAR TAREA (composer style) ═══ -->
 <div class="crm-create-task-overlay" id="crmCreateTaskModal">
     <div class="crm-create-task-container crm-ctw">
-        <!-- Header: proyecto + cerrar -->
+        <!-- Header: oportunidad + cerrar -->
         <header class="crm-ctw-header">
-            <button type="button" class="crm-ctw-project" id="crmCreateProjectBtn">
-                <svg class="crm-ctw-project-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                <span id="crmCreateProjectName">Sin proyecto</span>
-                <svg class="crm-ctw-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <button type="button" class="crm-ctw-project" id="crmCreateProjectBtn" title="Oportunidad vinculada">
+                <svg class="crm-ctw-project-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span id="crmCreateProjectName">Sin oportunidad</span>
             </button>
             <button type="button" class="crm-ctw-close" onclick="crmTaskCerrarCrear()" title="Cerrar (Esc)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -2215,6 +2214,8 @@
         <main class="crm-ctw-canvas">
             <input type="text" id="crmTaskTitleInput" class="crm-ctw-title" placeholder="Título de la tarea" autocomplete="off">
             <textarea id="crmTaskDescEditor" class="crm-ctw-desc" rows="4" placeholder="Añade una descripción… (soporta Markdown)"></textarea>
+            <!-- Chips de archivos adjuntos (aparece cuando hay archivos) -->
+            <div id="crmCreateFilesPreview" class="crm-ctw-files-preview" style="display:none;"></div>
         </main>
 
         <!-- Toolbar: metadatos como pills + acciones a la derecha -->
@@ -2285,13 +2286,12 @@
 
                 <div class="crm-ctw-sep"></div>
 
-                <!-- Acciones fantasma (sin interacción todavía: placeholders para futuro) -->
-                <button type="button" class="crm-ctw-tool-ghost" title="Etiquetas (próximamente)" disabled>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                </button>
-                <button type="button" class="crm-ctw-tool-ghost" title="Adjuntar (próximamente)" disabled>
+                <!-- Adjuntar archivos -->
+                <button type="button" class="crm-ctw-tool-ghost" id="crmCreateAttachBtn" title="Adjuntar archivos" onclick="document.getElementById('crmCreateFilesInput').click()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    <span id="crmCreateAttachCount" class="crm-ctw-attach-count" style="display:none;"></span>
                 </button>
+                <input type="file" id="crmCreateFilesInput" multiple style="display:none;" onchange="crmCreateOnFilesPicked(this)">
             </div>
 
             <div class="crm-ctw-actions">

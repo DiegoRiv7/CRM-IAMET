@@ -7556,6 +7556,7 @@
                 }
                 // Refrescar labels del composer (fecha default, sin asignaciones, etc.)
                 if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
+                if (typeof crmCreateUpdateOppLabel === 'function') crmCreateUpdateOppLabel();
                 var titleInput = document.getElementById('crmTaskTitleInput');
                 if (titleInput) titleInput.focus();
             }
@@ -7581,7 +7582,8 @@
             // Reset oportunidad and tarea padre
             var oid = document.getElementById('crmTaskOppId'); if (oid) oid.value = '';
             var pid = document.getElementById('crmTaskPadreId'); if (pid) pid.value = '';
-            // Reset tool labels del composer + cerrar popovers
+            // Reset tool labels del composer + cerrar popovers + limpiar archivos
+            if (typeof _crmCreateClearFiles === 'function') _crmCreateClearFiles();
             crmCreateRefreshLabels();
             crmCreateCloseAllPops();
             // Remove any open user dropdown
@@ -7670,6 +7672,75 @@
             if (dd) dd.value = '';
             crmCreateRefreshLabels();
             crmCreateCloseAllPops();
+        };
+
+        // ── Adjuntar archivos al crear tarea ──
+        var _crmCreateFiles = [];
+        function _crmCreateFormatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+        }
+        function _crmCreateRenderFiles() {
+            var preview = document.getElementById('crmCreateFilesPreview');
+            var btn = document.getElementById('crmCreateAttachBtn');
+            var count = document.getElementById('crmCreateAttachCount');
+            if (!preview) return;
+            if (_crmCreateFiles.length === 0) {
+                preview.innerHTML = '';
+                preview.style.display = 'none';
+                if (btn) btn.classList.remove('has-files');
+                if (count) { count.style.display = 'none'; count.textContent = ''; }
+                return;
+            }
+            preview.style.display = 'flex';
+            preview.innerHTML = _crmCreateFiles.map(function (f, i) {
+                var nm = f.name.length > 32 ? f.name.slice(0, 28) + '…' + f.name.split('.').pop() : f.name;
+                return '<div class="crm-ctw-file-chip">' +
+                    '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>' +
+                    '<span class="crm-ctw-file-chip-name" title="' + f.name + '">' + nm + '</span>' +
+                    '<span class="crm-ctw-file-chip-size">' + _crmCreateFormatSize(f.size) + '</span>' +
+                    '<button type="button" class="crm-ctw-file-chip-rm" onclick="crmCreateRemoveFile(' + i + ')" title="Quitar">' +
+                        '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+                    '</button>' +
+                '</div>';
+            }).join('');
+            if (btn) btn.classList.add('has-files');
+            if (count) { count.style.display = ''; count.textContent = _crmCreateFiles.length; }
+        }
+        window.crmCreateOnFilesPicked = function (inp) {
+            if (!inp || !inp.files) return;
+            for (var i = 0; i < inp.files.length; i++) {
+                _crmCreateFiles.push(inp.files[i]);
+            }
+            inp.value = ''; // permite re-seleccionar el mismo archivo
+            _crmCreateRenderFiles();
+        };
+        window.crmCreateRemoveFile = function (idx) {
+            _crmCreateFiles.splice(idx, 1);
+            _crmCreateRenderFiles();
+        };
+        window._crmCreateGetFiles = function () { return _crmCreateFiles.slice(); };
+        window._crmCreateClearFiles = function () { _crmCreateFiles = []; _crmCreateRenderFiles(); };
+
+        // ── Header: fetch nombre de oportunidad (si oppId presente) ──
+        window.crmCreateUpdateOppLabel = function () {
+            var oppIdEl = document.getElementById('crmTaskOppId');
+            var label = document.getElementById('crmCreateProjectName');
+            if (!label) return;
+            var oppId = oppIdEl ? (oppIdEl.value || '') : '';
+            if (!oppId) {
+                label.textContent = 'Sin oportunidad';
+                return;
+            }
+            label.textContent = 'Cargando…';
+            fetch('/app/api/oportunidad/' + oppId + '/detalle/')
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (data && data.oportunidad) label.textContent = data.oportunidad;
+                    else label.textContent = 'Oportunidad #' + oppId;
+                })
+                .catch(function () { label.textContent = 'Oportunidad #' + oppId; });
         };
 
         // Close create modal on outside click + ⌘/Ctrl+Enter para enviar
@@ -7887,6 +7958,20 @@
                     if (data.success) {
                         var oppId = oppIdEl ? oppIdEl.value : '';
                         var padreId = padreIdEl ? padreIdEl.value : '';
+                        // Subir archivos adjuntos (si hay) como comentario inicial con files
+                        var pendingFiles = (typeof window._crmCreateGetFiles === 'function') ? window._crmCreateGetFiles() : [];
+                        if (pendingFiles.length > 0 && data.id) {
+                            var fd = new FormData();
+                            fd.append('contenido', '📎 Archivos adjuntos al crear la tarea');
+                            pendingFiles.forEach(function (f, i) { fd.append('archivo_' + i, f); });
+                            fetch('/app/api/tarea/' + data.id + '/comentarios/agregar/', {
+                                method: 'POST',
+                                headers: { 'X-CSRFToken': getCsrf() },
+                                body: fd
+                            }).catch(function () {
+                                showToast('Tarea creada, pero algunos archivos no se subieron', 'warning');
+                            });
+                        }
                         crmTaskCerrarCrear();
                         recargarTareasCRM();
                         showToast(padreId ? 'Subtarea creada exitosamente' : 'Tarea creada exitosamente', 'success');
@@ -7912,13 +7997,13 @@
                             });
                         }
                     } else {
-                        alert(data.error || 'Error al crear la tarea');
+                        showToast(data.error || 'Error al crear la tarea', 'error');
                     }
                 })
                 .catch(function (err) {
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Crear tarea'; }
                     console.error('Error creando tarea:', err);
-                    alert('Error al crear la tarea. Intenta recargar la página e intentarlo de nuevo.');
+                    showToast('Error al crear la tarea. Intenta recargar la página.', 'error');
                 });
         }
 

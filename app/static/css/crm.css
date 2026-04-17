@@ -4221,16 +4221,16 @@
         backdrop-filter: blur(3px);
         -webkit-backdrop-filter: blur(3px);
         display: none;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
         z-index: 10450;
-        padding: 10vh 24px 24px;
+        padding: 32px;
     }
     .crm-create-task-overlay.active { display: flex; }
 
     .crm-ctw {
         width: 100%;
-        max-width: 860px;
+        max-width: 960px;
         background: #fff;
         border-radius: 16px;
         border: 1px solid rgba(226, 232, 240, 0.7);
@@ -4285,37 +4285,37 @@
 
     /* Canvas: título + descripción (sin bordes) */
     .crm-ctw-canvas {
-        padding: 8px 28px 28px;
+        padding: 12px 36px 32px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
     }
     .crm-ctw-title {
         width: 100%;
         border: none;
         outline: none;
         font-family: inherit;
-        font-size: 26px;
-        font-weight: 700;
+        font-size: 30px;
+        font-weight: 800;
         color: #0F172A;
         background: transparent;
-        letter-spacing: -0.015em;
+        letter-spacing: -0.018em;
         padding: 0;
-        line-height: 1.25;
+        line-height: 1.2;
     }
-    .crm-ctw-title::placeholder { color: #CBD5E1; font-weight: 700; }
+    .crm-ctw-title::placeholder { color: #CBD5E1; font-weight: 800; }
 
     .crm-ctw-desc {
         width: 100%;
         border: none;
         outline: none;
         font-family: inherit;
-        font-size: 15px;
-        line-height: 1.65;
+        font-size: 15.5px;
+        line-height: 1.7;
         color: #1E293B;
         background: transparent;
         resize: none;
-        min-height: 140px;
+        min-height: 160px;
         padding: 0;
     }
     .crm-ctw-desc::placeholder { color: #94A3B8; }
@@ -4386,8 +4386,9 @@
 
     .crm-ctw-tool-ghost {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 28px; height: 28px;
-        padding: 0;
+        gap: 4px;
+        min-width: 28px; height: 28px;
+        padding: 0 6px;
         border: none; background: transparent;
         color: #94A3B8; cursor: pointer;
         border-radius: 7px;
@@ -4396,6 +4397,55 @@
     .crm-ctw-tool-ghost:hover { background: #E2E8F0; color: #475569; }
     .crm-ctw-tool-ghost:disabled { opacity: 0.4; cursor: default; }
     .crm-ctw-tool-ghost:disabled:hover { background: transparent; color: #94A3B8; }
+    .crm-ctw-tool-ghost.has-files { background: #EFF6FF; color: #2563EB; }
+    .crm-ctw-tool-ghost.has-files:hover { background: #DBEAFE; color: #1D4ED8; }
+    .crm-ctw-attach-count {
+        font-size: 11px;
+        font-weight: 700;
+        color: inherit;
+    }
+
+    /* Chips de archivos adjuntos */
+    .crm-ctw-files-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 14px;
+    }
+    .crm-ctw-file-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px 5px 8px;
+        background: #F1F5F9;
+        border: 1px solid #E2E8F0;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #334155;
+        max-width: 240px;
+    }
+    .crm-ctw-file-chip svg { color: #64748B; flex-shrink: 0; }
+    .crm-ctw-file-chip-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .crm-ctw-file-chip-size {
+        color: #94A3B8;
+        font-size: 11px;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    .crm-ctw-file-chip-rm {
+        border: none; background: none;
+        color: #94A3B8; cursor: pointer;
+        padding: 2px; margin-left: 2px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 4px;
+        transition: all 0.15s;
+    }
+    .crm-ctw-file-chip-rm:hover { background: #FEE2E2; color: #E11D48; }
 
     .crm-ctw-sep {
         width: 1px; height: 18px;
