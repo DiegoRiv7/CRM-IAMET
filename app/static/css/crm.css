@@ -3060,15 +3060,21 @@
     }
     .crm-tw-crumb-pill:hover { background: #F1F5F9; color: #1E293B; }
     .crm-tw-chev { color: #CBD5E1; flex-shrink: 0; }
-    .crm-tw-taskid {
+    .crm-tw-cliente-crumb {
         color: #64748B;
-        font-family: 'SF Mono', ui-monospace, 'Cascadia Code', 'Fira Code', Menlo, monospace;
-        letter-spacing: -0.01em;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
         cursor: pointer;
         transition: color 0.15s;
-        font-size: 12.5px;
+        max-width: 260px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
-    .crm-tw-taskid:hover { color: #2563EB; }
+    .crm-tw-cliente-crumb:hover { color: #2563EB; }
+    /* Legacy: ocultar si aún está en DOM */
+    .crm-tw-taskid { display: none; }
 
     .crm-tw-icon-btn {
         width: 30px;
@@ -3187,6 +3193,38 @@
         color: #fff;
         box-shadow: 0 4px 8px -2px rgba(16, 185, 129, 0.2);
         transform: scale(1.05);
+    }
+    .crm-tw-check.bursting {
+        animation: crmTwBurst 520ms cubic-bezier(.2,.85,.3,1.1);
+    }
+    @keyframes crmTwBurst {
+        0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        35%  { transform: scale(1.35); box-shadow: 0 0 0 10px rgba(16,185,129,0.22); }
+        70%  { transform: scale(0.95); box-shadow: 0 0 0 18px rgba(16,185,129,0); }
+        100% { transform: scale(1.05); box-shadow: 0 4px 8px -2px rgba(16,185,129,0.2); }
+    }
+
+    .crm-tw-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .crm-tw-title-flag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        color: #E11D48;
+        background: #FFF1F2;
+        flex-shrink: 0;
+        animation: crmTwFlagIn 240ms ease-out;
+    }
+    @keyframes crmTwFlagIn {
+        from { opacity: 0; transform: scale(0.6) rotate(-12deg); }
+        to   { opacity: 1; transform: scale(1) rotate(0); }
     }
     .crm-tw-title-stack {
         display: flex;
@@ -3317,16 +3355,26 @@
     }
     .crm-tw-rel-chip:hover .crm-tw-rel-value { color: #2563EB; }
     .crm-tw-rel-chip.crm-tw-rel-drive:hover {
-        border-color: #6EE7B7;
-        background: rgba(236, 253, 245, 0.5);
+        border-color: #BBF7D0;
+        background: rgba(240, 253, 244, 0.6);
     }
-    .crm-tw-rel-chip.crm-tw-rel-drive:hover .crm-tw-rel-value { color: #059669; }
+    .crm-tw-rel-chip.crm-tw-rel-drive:hover .crm-tw-rel-value { color: #047857; }
+    .crm-tw-rel-chip.crm-tw-rel-opp {
+        color: #A78BFA;
+    }
+    .crm-tw-rel-chip.crm-tw-rel-opp:hover {
+        border-color: #C4B5FD;
+        background: rgba(245, 243, 255, 0.6);
+        color: #7C3AED;
+    }
+    .crm-tw-rel-chip.crm-tw-rel-opp svg { color: inherit; }
+    .crm-tw-drive-ico { flex-shrink: 0; }
     .crm-tw-rel-label { color: #94A3B8; font-weight: 500; }
     .crm-tw-rel-value {
         font-weight: 600;
         color: #334155;
         transition: color 0.15s;
-        max-width: 200px;
+        max-width: 220px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -3360,6 +3408,61 @@
         color: #94A3B8;
         flex-shrink: 0;
     }
+    .crm-tw-sub-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 18px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: #F1F5F9;
+        color: #64748B;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0;
+        margin-left: 4px;
+    }
+    .crm-tw-sub-badge.full { background: #D1FAE5; color: #047857; }
+
+    /* Empty state world-class */
+    .crm-tw-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 6px;
+        padding: 24px 16px;
+        margin: 4px 0;
+        border: 1.5px dashed #E2E8F0;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #FAFBFC 0%, #F8FAFC 100%);
+        color: #94A3B8;
+        transition: all 0.2s;
+    }
+    .crm-tw-empty:hover {
+        border-color: #BFDBFE;
+        background: linear-gradient(180deg, #F5F9FF 0%, #EFF6FF 100%);
+        color: #3B82F6;
+    }
+    .crm-tw-empty-ico {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        color: #CBD5E1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2px;
+        transition: all 0.2s;
+    }
+    .crm-tw-empty:hover .crm-tw-empty-ico { color: #3B82F6; }
+    .crm-tw-empty-title { font-size: 13px; font-weight: 600; color: #475569; }
+    .crm-tw-empty-hint { font-size: 12px; color: #94A3B8; }
+    .crm-tw-empty:hover .crm-tw-empty-title { color: #2563EB; }
     .crm-tw-subtareas-list {
         display: flex;
         flex-direction: column;
@@ -3753,7 +3856,34 @@
     .crm-tw-sb-dot.completada { background: #10B981; }
     .crm-tw-sb-dot.cancelada { background: #EF4444; }
 
-    .crm-tw-sb-cal-ico { color: #F43F5E; flex-shrink: 0; }
+    .crm-tw-sb-cal-ico { color: #F43F5E; flex-shrink: 0; transition: color 0.2s; }
+    /* Fecha inteligente: colorea el bloque entero según urgencia */
+    .crm-tw-sb-btn.fecha-vencida {
+        background: #FFF1F2;
+        border-color: #FECDD3;
+        color: #BE123C;
+    }
+    .crm-tw-sb-btn.fecha-vencida .crm-tw-sb-cal-ico { color: #E11D48; }
+    .crm-tw-sb-btn.fecha-urgente {
+        background: #FFFBEB;
+        border-color: #FEF3C7;
+        color: #B45309;
+    }
+    .crm-tw-sb-btn.fecha-urgente .crm-tw-sb-cal-ico { color: #F59E0B; }
+    .crm-tw-fecha-meta {
+        display: block;
+        font-size: 11px;
+        font-weight: 500;
+        color: inherit;
+        opacity: 0.75;
+        margin-top: 1px;
+    }
+    .crm-tw-fecha-main {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: inherit;
+    }
 
     /* Prioridad pill */
     .crm-tw-sb-prio-alta {

@@ -1882,13 +1882,12 @@
         <!-- ═════ HEADER SUPERIOR (Global Tools) ═════ -->
         <header class="crm-tw-header">
             <div class="crm-tw-header-left">
-                <button type="button" class="crm-tw-crumb-pill">
+                <button type="button" class="crm-tw-crumb-pill" id="crmTaskCrumbProyecto">
                     <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg>
                     <span id="crm-task-breadcrumb-proyecto">Proyecto</span>
-                    <span id="crm-task-breadcrumb-cliente" style="display:none;"></span>
                 </button>
-                <svg class="crm-tw-chev" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="crm-tw-taskid" id="crm-tw-taskid">TASK-</span>
+                <svg class="crm-tw-chev" id="crmTaskCrumbChev" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><polyline points="9 18 15 12 9 6"/></svg>
+                <span class="crm-tw-cliente-crumb" id="crm-task-breadcrumb-cliente" style="display:none;"></span>
                 <span class="crm-task-breadcrumb-sep" style="display:none;"></span>
             </div>
             <div class="crm-tw-header-right">
@@ -1924,7 +1923,12 @@
                             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                         </button>
                         <div class="crm-tw-title-stack">
-                            <h1 id="crm-task-titulo" class="crm-tw-title"></h1>
+                            <div class="crm-tw-title-wrap">
+                                <h1 id="crm-task-titulo" class="crm-tw-title"></h1>
+                                <span id="crmTaskPrioFlag" class="crm-tw-title-flag" title="Prioridad alta" style="display:none;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15" stroke-linecap="round"/></svg>
+                                </span>
+                            </div>
                             <button type="button" id="crmTaskBtnReabrir" class="crm-tw-reabrir-btn" onclick="crmTaskReabrir()" style="display:none;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
                                 Reabrir tarea
@@ -1955,14 +1959,14 @@
 
                     <!-- ENLACES / RELACIONES (chips) -->
                     <div class="crm-tw-relations" id="crmTaskSidebarLinks" style="display:none;">
-                        <div class="crm-tw-rel-chip" id="crmTaskOppCard" onclick="crmTaskAbrirOportunidad()" style="display:none;">
-                            <span class="crm-tw-rel-label">Oportunidad:</span>
+                        <div class="crm-tw-rel-chip crm-tw-rel-opp" id="crmTaskOppCard" onclick="crmTaskAbrirOportunidad()" style="display:none;" title="Abrir oportunidad">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                             <span class="crm-tw-rel-value" id="crmTaskOppNombre">--</span>
                             <span id="crmTaskOppCliente" style="display:none;"></span>
                         </div>
-                        <div class="crm-tw-rel-chip crm-tw-rel-drive" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()" style="display:none;">
-                            <span class="crm-tw-rel-label">Archivos:</span>
-                            <span class="crm-tw-rel-value">Google Drive</span>
+                        <div class="crm-tw-rel-chip crm-tw-rel-drive" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()" style="display:none;" title="Abrir carpeta en Google Drive">
+                            <svg class="crm-tw-drive-ico" width="14" height="14" viewBox="0 0 87.3 78"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 48.5C.4 49.9 0 51.45 0 53h27.5z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.85 11.5z" fill="#ea4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.95c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="M73.4 26.5L60.55 4.5c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
+                            <span class="crm-tw-rel-value">Drive</span>
                         </div>
                     </div>
 
@@ -2093,12 +2097,9 @@
                         <div id="crm-task-observadores-container" class="crm-tw-sb-list"></div>
                     </div>
 
-                    <!-- CLIENTE (condicional) -->
-                    <div class="crm-tw-sb-group" id="crmTaskClienteRow" style="display:none;">
-                        <h4 class="crm-tw-sb-group-title">Cliente</h4>
-                        <div class="crm-tw-sb-btn">
-                            <span id="crm-task-cliente-nombre" style="color:#2563EB;font-weight:600;"></span>
-                        </div>
+                    <!-- Cliente ahora vive en el header; mantenemos id oculto por compat JS -->
+                    <div id="crmTaskClienteRow" style="display:none;">
+                        <span id="crm-task-cliente-nombre"></span>
                     </div>
 
                     <!-- 3. Footer -->
