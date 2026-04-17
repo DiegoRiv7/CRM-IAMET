@@ -2439,16 +2439,38 @@
         btnClear.style.display = anyActive ? '' : 'none';
 
         // Sort label + estado visual
+        // En vista kanban, el label incluye el flujo activo (Solo Proyectos, Solo Runrate)
+        // para que el usuario vea rápido qué está filtrando.
         var s = readSort();
+        var kanbanActive = localStorage.getItem('crmViewMode') === 'kanban';
+        var kFlow = localStorage.getItem('kanbanFlow') || 'proyecto';
+        var flowLbl = '';
+        if (kanbanActive) {
+            if (kFlow === 'proyecto') flowLbl = 'Proyectos';
+            else if (kFlow === 'runrate') flowLbl = 'Runrate';
+            // 'both' → sin sufijo
+        }
+        var hasAnySort = !!s || !!flowLbl;
         if (s) {
             var sd = SORTS.find(function(x){ return x.k === s; });
-            sortLabel.textContent = sd ? sd.lbl : 'Ordenar';
-            btnSort.classList.add('has-sort');
+            var base = sd ? sd.lbl : 'Ordenar';
+            // Si hay flujo: "Solo vencidas de Proyectos" / "Monto: mayor a menor · Proyectos"
+            if (flowLbl) {
+                if (s === 'vencidas') sortLabel.textContent = base + ' de ' + flowLbl;
+                else sortLabel.textContent = base + ' · ' + flowLbl;
+            } else {
+                sortLabel.textContent = base;
+            }
+        } else if (flowLbl) {
+            // Sin sort pero con flujo: "Solo Proyectos"
+            sortLabel.textContent = 'Solo ' + flowLbl;
         } else {
             sortLabel.textContent = 'Ordenar';
-            btnSort.classList.remove('has-sort');
         }
+        btnSort.classList.toggle('has-sort', hasAnySort);
     }
+    // Exponer para que setFlow() del kanban pueda re-renderizar el label
+    window._crmRenderFacetChips = renderChips;
 
     // ── Popover: field picker ──────────────────────────────────────────────
     function openFieldPicker(){
@@ -3091,6 +3113,8 @@
     popSort.addEventListener('click', function(e){
         var item = e.target.closest('.crm-pop-item');
         if (!item) return;
+        // Ignorar items del kanban flow/options (tienen sus propios handlers); sólo data-sort
+        if (!item.hasAttribute('data-sort')) return;
         var sk = item.dataset.sort;
         // Limpiar todos los sort inputs
         setInputValue('filterMonto', '');
@@ -3104,6 +3128,8 @@
                 else setInputValue('filterFecha', s.v);
             }
         }
+        // Persistir sort activo para que sobreviva al reload
+        try { localStorage.setItem('crmSort', sk || ''); } catch(_){}
         popSort.classList.remove('open');
         renderChips();
         if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
@@ -3176,7 +3202,7 @@
         if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
     }
     ['filterCliente','filterArea','filterContacto','filterProducto','filterTipo','filterEtapa',
-     'filterMonto','filterFecha','filterDesde','filterHasta',
+     'filterMonto','filterFecha','filterVencida','filterDesde','filterHasta',
      'filterMontoMin','filterMontoMax','filterProbMin','filterProbMax','filterMesCierre'].forEach(function(id){
         var el = $in(id);
         if (!el) return;
@@ -3184,8 +3210,28 @@
         el.addEventListener('input',  onFilterChange);
     });
 
+    // Restaurar sort persistido en localStorage (sobrevive al reload hasta que
+    // el usuario elija otro o "Por defecto").
+    try {
+        var savedSort = localStorage.getItem('crmSort') || '';
+        if (savedSort) {
+            var ss = SORTS.find(function(x){ return x.k === savedSort; });
+            if (ss) {
+                if (ss.field === 'monto')        setInputValue('filterMonto',   ss.v);
+                else if (ss.field === 'vencida') setInputValue('filterVencida', ss.v);
+                else                             setInputValue('filterFecha',   ss.v);
+            }
+        }
+    } catch(_){}
+
     // Render inicial (tras crm_main.js para que los selects estén poblados)
-    setTimeout(function(){ try { renderChips(); } catch(e){ console.error('[FacetBar] renderChips error:', e); } }, 300);
+    setTimeout(function(){
+        try { renderChips(); } catch(e){ console.error('[FacetBar] renderChips error:', e); }
+        try {
+            if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
+            applySortToViews();
+        } catch(e){ console.error('[FacetBar] post-restore error:', e); }
+    }, 300);
     console.log('[FacetBar] init OK');
     } catch(e) {
         console.error('[FacetBar] init FAILED:', e);
@@ -3216,6 +3262,8 @@
         _kanbanFlow = flow;
         localStorage.setItem('kanbanFlow', flow);
         render();
+        // Refrescar label del sort (incluye el flujo como parte de la descripción)
+        if (typeof window._crmRenderFacetChips === 'function') window._crmRenderFacetChips();
     }
     window._crmSetKanbanFlow = setFlow;
     window._crmGetKanbanFlow = function(){ return _kanbanFlow; };
@@ -3247,9 +3295,13 @@
 
         // Filtrar postit cards: excluye las que están display:none por los filtros del facet bar
         // Así el kanban respeta todos los filtros activos (cliente, monto, probabilidad, etc.)
+        // Además: aplica "Solo vencidas" directo aquí para no depender del estado de display
+        // inline (que puede quedar desincronizado en re-renders).
+        var _filterVencidaKb = (document.getElementById('filterVencida') || {}).value || '';
         var allCards = Array.prototype.slice.call(sourceGrid.querySelectorAll('.crm-postit'));
         var filtered = allCards.filter(function(c){
             if (c.style.display === 'none') return false;  // filtro in-memory aplicó
+            if (_filterVencidaKb === 'only' && c.dataset.vencida !== '1') return false;
             var tipo = (c.dataset.tipo || '').toLowerCase();
             if (_kanbanFlow === 'proyecto') return tipo === 'proyecto' || tipo === 'bitrix_proyecto';
             if (_kanbanFlow === 'runrate')  return tipo === 'runrate';

@@ -338,6 +338,9 @@
             if (_crmViewMode === 'kanban' && typeof window._crmRenderKanban === 'function') {
                 window._crmRenderKanban();
             }
+            // El label del sort depende de la vista (kanban añade sufijo de flujo):
+            // re-render al cambiar de vista.
+            if (typeof window._crmRenderFacetChips === 'function') window._crmRenderFacetChips();
             if (icon) {
                 if (_crmViewMode === 'list') {
                     // 3 filas horizontales
