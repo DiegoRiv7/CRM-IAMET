@@ -122,21 +122,25 @@
                 }).then(function(r) { return r.json(); }).then(function(data) {
                     if (!data.success) { console.warn('[PIN] API sin success:', data); return; }
                     var anclada = !!data.anclada;
+                    console.log('[PIN] API →', anclada ? 'ANCLADA' : 'DESANCLADA', 'para opp', oppId);
+
+                    var newFill   = anclada ? '#EF4444' : '#B0B8C4';
 
                     // 1) Actualizar TODOS los .crm-pin con este oppId (original + clones en kanban)
                     var pinsFound = document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]');
+                    console.log('[PIN] pins encontrados:', pinsFound.length);
                     if (pinsFound.length === 0) {
                         // Fallback: solo el pin clickeado
                         clickedPin.classList.toggle('pinned', anclada);
                         var _svg = clickedPin.querySelector('svg');
-                        if (_svg) { _svg.setAttribute('fill', anclada ? '#EF4444' : '#B0B8C4'); }
+                        if (_svg) { _svg.setAttribute('fill', newFill); }
                     }
                     pinsFound.forEach(function(p){
                         if (p.classList.contains('tarea-action-btn')) return;
                         p.classList.toggle('pinned', anclada);
                         var svg = p.querySelector('svg');
                         if (svg) {
-                            svg.setAttribute('fill', anclada ? '#EF4444' : '#B0B8C4');
+                            svg.setAttribute('fill', newFill);
                             svg.setAttribute('stroke', 'none');
                         }
                     });
@@ -146,6 +150,7 @@
                     var allNodes = document.querySelectorAll(
                         '.crm-postit[data-opp-id="' + oppId + '"], .crm-list-row[data-opp-id="' + oppId + '"]'
                     );
+                    console.log('[PIN] cards/rows encontradas:', allNodes.length);
                     allNodes.forEach(function(node){
                         node.dataset.anclada = anclada ? '1' : '0';
                         node.classList.toggle('pinned-row', anclada);
@@ -162,6 +167,25 @@
                             }
                         }
                     });
+
+                    // 2.b) Belt-and-suspenders: scrub del kanban board — aunque el re-render
+                    //      debería replazar los clones, forzamos también aquí el estado visual
+                    //      por si algún clon legacy está colgado o el re-render se posterga.
+                    var kBoard = document.getElementById('crmKanbanBoard');
+                    if (kBoard) {
+                        kBoard.querySelectorAll('.crm-postit[data-opp-id="' + oppId + '"]').forEach(function(k){
+                            k.dataset.anclada = anclada ? '1' : '0';
+                            k.classList.toggle('pinned-row', anclada);
+                            var kHole = k.querySelector('.crm-pin-hole-dyn');
+                            if (!anclada && kHole) kHole.remove();
+                            var kPin = k.querySelector('.crm-pin[data-pin-id="' + oppId + '"]');
+                            if (kPin) {
+                                kPin.classList.toggle('pinned', anclada);
+                                var kSvg = kPin.querySelector('svg');
+                                if (kSvg) { kSvg.setAttribute('fill', newFill); kSvg.setAttribute('stroke', 'none'); }
+                            }
+                        });
+                    }
 
                     // 3) Mover originales al spot correcto (los clones del kanban se re-sortean en render)
                     var originalCard = document.querySelector('#crmCardsGrid .crm-postit[data-opp-id="' + oppId + '"]');
@@ -190,13 +214,21 @@
                         reubicar(document.getElementById('crmListBody'),   originalRow);
                     }
 
-                    // 4) Re-render kanban para que el sort refleje el nuevo estado de anclaje
-                    if (typeof window._crmRenderKanban === 'function') {
+                    // 4) Re-render kanban para que el sort refleje el nuevo estado de anclaje.
+                    //    Doble trigger: inmediato + setTimeout 0 (gana contra el MutationObserver
+                    //    que también re-renderiza al detectar el cambio de data-anclada).
+                    function _kanbanRerender(){
+                        if (typeof window._crmRenderKanban !== 'function') return;
                         var kv = document.getElementById('crmViewKanban');
                         if (kv && kv.style.display !== 'none') {
+                            console.log('[PIN] re-render kanban');
                             window._crmRenderKanban();
                         }
                     }
+                    _kanbanRerender();
+                    setTimeout(_kanbanRerender, 0);
+                }).catch(function(err){
+                    console.error('[PIN] error en fetch:', err);
                 });
             })(pin);
         }, true);
