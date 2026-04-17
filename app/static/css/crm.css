@@ -7144,73 +7144,40 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 .crm-list-row:has(.crm-list-strip.vencida):hover { border-color: #FCA5A5; }
 .crm-list-row:has(.crm-list-strip.vencida.heat-max) { border-color: #FECACA; background: #FFFBFB; }
 
-/* Animación "healing": oportunidad deja de estar vencida → transición suave.
-   Secuencia: rojo → amarillo/naranja transitorio → flash verde (celebración)
-   → verde suave → blanco neutral. Box-shadow expansivo simula "ripple". */
-@keyframes crmHealRipple {
+/* Animación "healing": oportunidad deja de estar vencida → el rojo se
+   desvanece suavemente hasta quedar en blanco neutral. Sin verde, sin flash. */
+@keyframes crmHealFade {
     0% {
         background: #FEE2E2;
         border-color: #FCA5A5;
         box-shadow: inset 0 0 20px rgba(239,68,68,0.18),
-                    0 0 0 0 rgba(239,68,68,0.28),
                     0 2px 6px -2px rgba(239,68,68,0.25);
-    }
-    18% {
-        background: #FEF3F2;
-        border-color: #FCD9B0;
-        box-shadow: inset 0 0 12px rgba(239,68,68,0.06),
-                    0 0 0 4px rgba(251,146,60,0.18),
-                    0 3px 10px -2px rgba(251,146,60,0.25);
-    }
-    42% {
-        background: #ECFDF5;
-        border-color: #86EFAC;
-        box-shadow: inset 0 0 14px rgba(16,185,129,0.16),
-                    0 0 0 10px rgba(16,185,129,0.22),
-                    0 8px 22px -6px rgba(16,185,129,0.4);
-    }
-    65% {
-        background: #F0FDF4;
-        border-color: #BBF7D0;
-        box-shadow: inset 0 0 6px rgba(16,185,129,0.06),
-                    0 0 0 5px rgba(16,185,129,0.08),
-                    0 4px 12px -4px rgba(16,185,129,0.18);
     }
     100% {
         background: #FFFFFF;
         border-color: #E5E7EB;
-        box-shadow: inset 0 0 0 rgba(16,185,129,0),
-                    0 0 0 0 rgba(16,185,129,0),
+        box-shadow: inset 0 0 0 rgba(239,68,68,0),
                     0 1px 3px rgba(15,23,42,0.04);
     }
 }
-/* Strip superior: flash verde breve luego se deja al default (tipo). */
-@keyframes crmHealStripPostit {
-    0%   { background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%); box-shadow: 0 2px 10px rgba(220,38,38,0.45); }
-    35%  { background: linear-gradient(180deg, #4ADE80 0%, #16A34A 100%); box-shadow: 0 2px 16px rgba(22,163,74,0.55); }
-    65%  { background: linear-gradient(180deg, #86EFAC 0%, #34D399 100%); box-shadow: 0 2px 10px rgba(52,211,153,0.3); }
-    100% { background: linear-gradient(180deg, #A7F3D0 0%, #6EE7B7 100%); box-shadow: 0 2px 6px rgba(110,231,183,0.2); }
-}
-@keyframes crmHealStripList {
-    0%   { background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%); box-shadow: 0 0 10px rgba(220,38,38,0.4); }
-    35%  { background: linear-gradient(180deg, #4ADE80 0%, #16A34A 100%); box-shadow: 0 0 14px rgba(22,163,74,0.55); }
-    100% { background: linear-gradient(180deg, #86EFAC 0%, #34D399 100%); box-shadow: 0 0 6px rgba(52,211,153,0.25); }
+/* Strip superior: rojo se desvanece hasta transparente (deja ver el color base). */
+@keyframes crmHealStripFade {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 .crm-list-row.crm-healing,
 .crm-postit.crm-healing {
-    animation: crmHealRipple 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: crmHealFade 0.9s ease-out forwards;
 }
-.crm-list-row.crm-healing .crm-list-strip {
-    animation: crmHealStripList 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
+.crm-list-row.crm-healing .crm-list-strip,
 .crm-postit.crm-healing .crm-postit-strip {
-    animation: crmHealStripPostit 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: crmHealStripFade 0.9s ease-out forwards;
 }
 /* Fade out del ícono de alerta crítica al sanar */
 .crm-postit.crm-healing .crm-alert-critical,
 .crm-list-row.crm-healing .crm-alert-critical {
-    animation: crmHealAlertFade 0.6s ease-out forwards;
+    animation: crmHealAlertFade 0.5s ease-out forwards;
 }
 @keyframes crmHealAlertFade {
     0%   { opacity: 1; transform: scale(1); }

@@ -3322,11 +3322,11 @@
                                 var defStroke = (wrap && wrap.dataset.etapaColor) || '#3B82F6';
                                 circle.setAttribute('stroke', defStroke);
                             }
-                            // Ícono de alerta crítica: fade-out vía CSS (crmHealAlertFade 0.6s),
+                            // Ícono de alerta crítica: fade-out vía CSS (crmHealAlertFade 0.5s),
                             // luego display:none para que no ocupe layout.
                             var alertIcon = el.querySelector('.crm-alert-critical');
                             if (alertIcon) {
-                                setTimeout(function(){ alertIcon.style.display = 'none'; }, 650);
+                                setTimeout(function(){ alertIcon.style.display = 'none'; }, 520);
                             }
                         }
                         // Healing animation: de vencida → no vencida.
@@ -3340,7 +3340,7 @@
                                 document.querySelectorAll('.crm-data-row[data-opp-id="' + _oid + '"]').forEach(function(n){
                                     n.classList.remove('crm-healing');
                                 });
-                            }, 1700);
+                            }, 950);
                         }
                     });
                     // Render kanban INMEDIATAMENTE: los clones se regeneran desde los
@@ -3350,7 +3350,8 @@
                         var kvImm = document.getElementById('crmViewKanban');
                         if (kvImm && kvImm.style.display !== 'none') window._crmRenderKanban();
                     }
-                    // Re-sort/re-filter tras la animación para no cortar el fade (1.6s + buffer).
+                    // Re-sort/re-filter al finalizar el fade (0.9s) para que el usuario
+                    // vea el rojo desvanecer y luego la tarjeta reacomodarse bajo las rojas.
                     setTimeout(function(){
                         if (typeof applySortToViews === 'function') applySortToViews();
                         if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
@@ -3359,7 +3360,7 @@
                             var kvFin = document.getElementById('crmViewKanban');
                             if (kvFin && kvFin.style.display !== 'none') window._crmRenderKanban();
                         }
-                    }, _hadHealing ? 1800 : 50);
+                    }, _hadHealing ? 950 : 50);
                     } catch(syncErr) { console.error('[CRM] sync error:', syncErr); }
                 })
                 .catch(function (err) { console.error('Error refreshing table:', err); });
