@@ -3322,9 +3322,12 @@
                                 var defStroke = (wrap && wrap.dataset.etapaColor) || '#3B82F6';
                                 circle.setAttribute('stroke', defStroke);
                             }
-                            // Ocultar ícono de alerta crítica (SSR lo dejó visible cuando >=30 días).
+                            // Ícono de alerta crítica: fade-out vía CSS (crmHealAlertFade 0.6s),
+                            // luego display:none para que no ocupe layout.
                             var alertIcon = el.querySelector('.crm-alert-critical');
-                            if (alertIcon) alertIcon.style.display = 'none';
+                            if (alertIcon) {
+                                setTimeout(function(){ alertIcon.style.display = 'none'; }, 650);
+                            }
                         }
                         // Healing animation: de vencida → no vencida.
                         // Limpieza al final busca por oppId para cubrir clones nuevos
@@ -3337,17 +3340,17 @@
                                 document.querySelectorAll('.crm-data-row[data-opp-id="' + _oid + '"]').forEach(function(n){
                                     n.classList.remove('crm-healing');
                                 });
-                            }, 1300);
+                            }, 1700);
                         }
                     });
                     // Render kanban INMEDIATAMENTE: los clones se regeneran desde los
                     // originales que ya tienen card-vencida/heat-* removidas (+ crm-healing).
-                    // Evita el estado "rojo atrapado" durante los 1.4s de animación.
+                    // Evita el estado "rojo atrapado" durante la animación.
                     if (typeof window._crmRenderKanban === 'function') {
                         var kvImm = document.getElementById('crmViewKanban');
                         if (kvImm && kvImm.style.display !== 'none') window._crmRenderKanban();
                     }
-                    // Re-sort/re-filter tras la animación para no cortar el fade.
+                    // Re-sort/re-filter tras la animación para no cortar el fade (1.6s + buffer).
                     setTimeout(function(){
                         if (typeof applySortToViews === 'function') applySortToViews();
                         if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
@@ -3356,7 +3359,7 @@
                             var kvFin = document.getElementById('crmViewKanban');
                             if (kvFin && kvFin.style.display !== 'none') window._crmRenderKanban();
                         }
-                    }, _hadHealing ? 1400 : 50);
+                    }, _hadHealing ? 1800 : 50);
                     } catch(syncErr) { console.error('[CRM] sync error:', syncErr); }
                 })
                 .catch(function (err) { console.error('Error refreshing table:', err); });
