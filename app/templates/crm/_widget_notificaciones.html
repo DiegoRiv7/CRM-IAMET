@@ -951,20 +951,36 @@
             </div>`;
         }
 
-        // Pasa por el array acumulando runs de mismo titulo+fecha+leida; >=3 → cluster
+        // ── Clustering: solo cuando MÚLTIPLES notifs apuntan al MISMO objeto ──
+        // Se cluster-iza SOLO si comparten entidad objetivo (misma tarea,
+        // misma oportunidad, misma tarea_opp). Notifs del mismo título genérico
+        // pero de objetos distintos (ej: 5 "Tarea asignada" para 5 tareas
+        // diferentes) quedan como filas individuales.
+        function _clusterKey(n) {
+            // Prioridad: tarea > tarea_opp > oportunidad
+            if (n.tarea_id) return 'T' + n.tarea_id;
+            if (n.tarea_opp_id) return 'X' + n.tarea_opp_id;
+            if (n.oportunidad_id) return 'O' + n.oportunidad_id;
+            return null; // notifs globales / sin objeto no se cluster-izan
+        }
+
         const CLUSTER_MIN = 3;
         let i = 0;
         while (i < filtered.length) {
             const cur = filtered[i];
             const curGroup = _dateGroup(cur.fecha);
+            const curKey = _clusterKey(cur);
             const run = [cur];
             let j = i + 1;
-            while (j < filtered.length
-                   && filtered[j].titulo === cur.titulo
-                   && filtered[j].leida === cur.leida
-                   && _dateGroup(filtered[j].fecha) === curGroup) {
-                run.push(filtered[j]);
-                j++;
+            // Agrupar solo si hay clave de objeto y es la misma
+            if (curKey) {
+                while (j < filtered.length
+                       && filtered[j].leida === cur.leida
+                       && _dateGroup(filtered[j].fecha) === curGroup
+                       && _clusterKey(filtered[j]) === curKey) {
+                    run.push(filtered[j]);
+                    j++;
+                }
             }
             // Header de grupo si cambió la fecha
             if (curGroup !== lastGroup) {
