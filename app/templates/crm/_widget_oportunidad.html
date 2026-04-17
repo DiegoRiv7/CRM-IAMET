@@ -2678,18 +2678,53 @@
         });
     }
 
+    // Al abrir: autofocus en título + defaults de hora (inicio = ahora, fin = +1h)
+    function _onModalOpen(prefix) {
+        var m = _modal(prefix); if (!m) return;
+        var f = WACT_FIELDS[prefix];
+
+        // Detección "modo edición" — aplica solo al calendario (otros widgets
+        // siempre crean desde cero)
+        var esEdicion = (prefix === 'cal' && window._calEditandoId);
+
+        if (!esEdicion) {
+            var inicioEl = document.getElementById(f.inicio);
+            var finEl = document.getElementById(f.fin);
+            var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+            var now = new Date();
+            var currentHHMM = pad(now.getHours()) + ':' + pad(now.getMinutes());
+            if (inicioEl && !inicioEl.value) inicioEl.value = currentHHMM;
+            if (finEl && !finEl.value) {
+                var end = new Date(now.getTime() + 60 * 60 * 1000);
+                finEl.value = pad(end.getHours()) + ':' + pad(end.getMinutes());
+            }
+        }
+
+        _attachListeners(prefix);
+        setTimeout(function() { wactRefreshLabels(prefix); }, 30);
+
+        // Autofocus en el título (para empezar a escribir de inmediato)
+        setTimeout(function() {
+            var titulo = document.getElementById(f.titulo);
+            if (titulo && titulo.focus) {
+                titulo.focus();
+                // Si tiene contenido (ej. edición), selecciona todo para facilitar reemplazo
+                if (titulo.value) titulo.select();
+            }
+        }, 80);
+    }
+
     // Refrescar al cambiar visibilidad del modal
     Object.keys(WACT_FIELDS).forEach(function(prefix) {
         var m = _modal(prefix); if (!m) return;
         _attachListeners(prefix);
 
         // MutationObserver para detectar cuando se abre/cierra
+        var wasVisible = m.style.display !== 'none' && !m.hasAttribute('hidden');
         new MutationObserver(function() {
             var visible = m.style.display !== 'none' && !m.hasAttribute('hidden');
-            if (visible) {
-                _attachListeners(prefix); // por si inputs se crearon después
-                setTimeout(function() { wactRefreshLabels(prefix); }, 50);
-            }
+            if (visible && !wasVisible) _onModalOpen(prefix);
+            wasVisible = visible;
         }).observe(m, { attributes: true, attributeFilter: ['style', 'class'] });
 
         // Init una vez
