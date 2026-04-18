@@ -3786,6 +3786,34 @@ class MensajeGrupo(models.Model):
         return f'[{self.grupo.nombre}] {self.autor or "Sistema"}: {self.contenido[:50]}'
 
 
+class MensajeGrupoArchivo(models.Model):
+    """Archivos adjuntos de un mensaje de grupo (fotos, documentos, capturas)."""
+    mensaje = models.ForeignKey(
+        MensajeGrupo,
+        on_delete=models.CASCADE,
+        related_name='archivos',
+        verbose_name='Mensaje',
+    )
+    archivo = models.FileField(upload_to='grupos/archivos/%Y/%m/', verbose_name='Archivo')
+    nombre_original = models.CharField(max_length=255, verbose_name='Nombre original')
+    tamaño = models.PositiveIntegerField(verbose_name='Tamaño (bytes)')
+    tipo_contenido = models.CharField(max_length=100, blank=True, default='',
+                                       verbose_name='Tipo MIME')
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Archivo de Mensaje de Grupo'
+        verbose_name_plural = 'Archivos de Mensajes de Grupo'
+        ordering = ['fecha_subida']
+
+    def __str__(self):
+        return f'{self.nombre_original} ({self.tamaño} bytes)'
+
+    @property
+    def es_imagen(self):
+        return (self.tipo_contenido or '').lower().startswith('image/')
+
+
 class LecturaGrupo(models.Model):
     """Marca hasta qué mensaje ha leído cada usuario en cada grupo."""
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lecturas_grupo')

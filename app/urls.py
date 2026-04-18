@@ -299,6 +299,7 @@ urlpatterns = [
     path('api/grupos/<int:grupo_id>/toggle/', views_grupos.api_grupos_toggle, name='api_grupos_toggle'),
     path('api/grupos/<int:grupo_id>/chat/', views_grupos.api_grupo_chat, name='api_grupo_chat'),
     path('api/grupos/<int:grupo_id>/chat/enviar/', views_grupos.api_grupo_chat_enviar, name='api_grupo_chat_enviar'),
+    path('api/grupos/archivo/<int:archivo_id>/', views_grupos.api_grupo_archivo, name='api_grupo_archivo'),
     path('api/grupos/<int:grupo_id>/chat/leer/', views_grupos.api_grupo_chat_leer, name='api_grupo_chat_leer'),
     path('api/grupos/<int:grupo_id>/no-leidos/', views_grupos.api_grupo_no_leidos, name='api_grupo_no_leidos'),
     path('api/grupos/<int:grupo_id>/miembros/agregar/', views_grupos.api_grupo_agregar_miembro, name='api_grupo_agregar_miembro'),
