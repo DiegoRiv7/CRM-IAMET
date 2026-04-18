@@ -3293,7 +3293,7 @@
                     var _apiMap = {};
                     (data.rows || []).forEach(function(r){ _apiMap[String(r.id)] = r; });
                     var _heatCls = ['card-vencida','heat-1','heat-2','heat-3','heat-4','heat-5','heat-max'];
-                    var _warmCls = ['warm-1','warm-2','warm-3'];
+                    var _warmCls = ['warm-1','warm-2','warm-3','warm-4','warm-5'];
                     var _hadHealing = false;
                     // Normalizar lookup: dataset.oppId puede venir como "1,198" (Django
                     // USE_THOUSAND_SEPARATOR) o con whitespace — strip antes de matchear
@@ -3301,22 +3301,29 @@
                     function _normId(s){
                         return (s || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
                     }
-                    // Helper: recalcula heat-N / warm-N según días — refleja
-                    // gradient en tiempo real a medida que el tiempo pasa.
-                    function _pickHeat(diasV) {
-                        if (diasV >= 30) return 'heat-max';
-                        if (diasV >= 14) return 'heat-5';
-                        if (diasV >= 7)  return 'heat-4';
-                        if (diasV >= 3)  return 'heat-3';
-                        if (diasV >= 1)  return 'heat-2';
+                    // Pickers granulares por minutos (más preciso que días cuando
+                    // una actividad vence en la próxima hora).
+                    //  heat: tiempo desde que venció
+                    //  warm: tiempo hasta que vence
+                    function _pickHeat(minsV) {
+                        // minsV = minutos transcurridos desde que venció
+                        var dias = Math.floor(minsV / 1440);
+                        if (dias >= 30) return 'heat-max';
+                        if (dias >= 14) return 'heat-5';
+                        if (dias >= 7)  return 'heat-4';
+                        if (dias >= 3)  return 'heat-3';
+                        if (dias >= 1)  return 'heat-2';
                         return 'heat-1';
                     }
-                    function _pickWarm(diasH) {
-                        if (diasH === null || diasH === undefined || diasH < 0) return null;
-                        if (diasH > 14) return null;
-                        if (diasH <= 1) return 'warm-3';
-                        if (diasH <= 7) return 'warm-2';
-                        return 'warm-1';
+                    function _pickWarm(minsH) {
+                        // minsH = minutos hasta que vence (positivo si en el futuro)
+                        if (minsH === null || minsH === undefined || minsH < 0) return null;
+                        if (minsH > 20160) return null;       // > 14 días
+                        if (minsH > 10080) return 'warm-1';   // 7-14 días
+                        if (minsH > 2880)  return 'warm-2';   // 2-7 días
+                        if (minsH > 720)   return 'warm-3';   // 12-48 horas
+                        if (minsH > 60)    return 'warm-4';   // 1-12 horas
+                        return 'warm-5';                      // <= 1 hora (inminente)
                     }
 
                     document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(el){
@@ -3325,23 +3332,28 @@
                         var wasVencida = el.dataset.vencida === '1';
                         var nowVencida = !!apiRow.tiene_actividad_vencida;
                         var diasV = apiRow.dias_vencida || 0;
+                        var minsV = (apiRow.minutos_vencida === undefined || apiRow.minutos_vencida === null)
+                            ? diasV * 1440 : apiRow.minutos_vencida;
                         var diasH = (apiRow.dias_hasta_proxima === null || apiRow.dias_hasta_proxima === undefined) ? null : apiRow.dias_hasta_proxima;
+                        var minsH = (apiRow.minutos_hasta_proxima === null || apiRow.minutos_hasta_proxima === undefined)
+                            ? (diasH !== null ? diasH * 1440 : null)
+                            : apiRow.minutos_hasta_proxima;
 
                         // Sincronizar data-attributes
                         el.dataset.vencida = nowVencida ? '1' : '0';
                         el.dataset.diasVencida = String(diasV);
                         el.dataset.diasHastaProxima = diasH !== null ? String(diasH) : '-1';
 
-                        // Recalcular clases heat / warm según API (gradient progresivo
-                        // sin reload — si algo se acerca a vencerse, el color va
-                        // avanzando solo cada vez que esta función corre)
+                        // Recalcular clases heat / warm según minutos (granularidad fina:
+                        // una actividad que vence en 2 min se ve casi roja; una que vence
+                        // en 12 días apenas un tinte. Gradient progresivo sin reload)
                         _heatCls.forEach(function(c){ el.classList.remove(c); });
                         _warmCls.forEach(function(c){ el.classList.remove(c); });
                         if (nowVencida) {
                             el.classList.add('card-vencida');
-                            el.classList.add(_pickHeat(diasV));
+                            el.classList.add(_pickHeat(minsV));
                         } else {
-                            var warmCls = _pickWarm(diasH);
+                            var warmCls = _pickWarm(minsH);
                             if (warmCls) el.classList.add(warmCls);
                         }
 
@@ -4545,10 +4557,9 @@
         }
 
         // ── Refresh periódico del gradient heat/warm del CRM ──
-        // Recalcula dias_vencida / dias_hasta_proxima cada 2 min para que
-        // el color rojo/naranja de las cards vaya avanzando en tiempo real
-        // a medida que las tareas se acercan a su fecha límite, sin que el
-        // usuario tenga que recargar la página.
+        // Recalcula minutos_hasta_proxima / minutos_vencida cada minuto
+        // para que el rojo avance visiblemente a medida que una actividad
+        // se acerca a vencer — el usuario ve el color moverse sin recargar.
         setInterval(function() {
             if (window._crmTareasMode) return; // solo en vista CRM
             var tabActivo = document.querySelector('.crm-tab.active');
@@ -4556,7 +4567,7 @@
             if (typeof refreshCrmTable === 'function') {
                 try { refreshCrmTable(); } catch(e) { console.warn('[CRM] gradient refresh:', e); }
             }
-        }, 120000); // 2 minutos
+        }, 60000); // 1 minuto
 
         // ── Polling ligero: detectar tareas nuevas/cambiadas de grupo cada 15s ──
         var _tareasPollHash = null;

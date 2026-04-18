@@ -370,25 +370,32 @@ def crm_home(request):
             # Actividad próxima (la más cercana no completada)
             proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
             item.actividad_proxima = proxima.titulo if proxima else None
-            # Días hasta próxima actividad o tarea (no vencida aún) — para warm gradient
+            # Días / minutos hasta próxima actividad o tarea — para warm gradient
             # Queremos la fecha limite más cercana FUTURA, sin incluir vencidas
             dias_hasta = None
+            minutos_hasta = None
             try:
+                _candidatos_fechas = []
                 prox_act = Actividad.objects.filter(
                     oportunidad=item, completada=False, fecha_fin__gte=ahora_tz
                 ).order_by('fecha_fin').first()
                 if prox_act and prox_act.fecha_fin:
-                    d = (prox_act.fecha_fin - ahora_tz).days
-                    dias_hasta = d if dias_hasta is None else min(dias_hasta, d)
+                    _candidatos_fechas.append(prox_act.fecha_fin)
                 prox_tar = TareaOportunidad.objects.filter(
                     oportunidad=item, fecha_limite__gte=ahora_tz
                 ).exclude(estado='completada').order_by('fecha_limite').first()
                 if prox_tar and prox_tar.fecha_limite:
-                    d = (prox_tar.fecha_limite - ahora_tz).days
-                    dias_hasta = d if dias_hasta is None else min(dias_hasta, d)
+                    _candidatos_fechas.append(prox_tar.fecha_limite)
+                if _candidatos_fechas:
+                    _min_fecha = min(_candidatos_fechas)
+                    _delta = _min_fecha - ahora_tz
+                    dias_hasta = max(0, _delta.days)
+                    minutos_hasta = max(0, int(_delta.total_seconds() / 60))
             except Exception:
                 dias_hasta = None
-            item.dias_hasta_proxima = dias_hasta  # None = sin actividad futura
+                minutos_hasta = None
+            item.dias_hasta_proxima = dias_hasta            # None = sin actividad futura
+            item.minutos_hasta_proxima = minutos_hasta      # granularidad fina
         # Obtener IDs ancladas del usuario
         ancladas_ids = set(profile.oportunidades_ancladas or [])
         for item in tabla_data_list:
@@ -832,20 +839,27 @@ def api_crm_table_data(request):
             tiene_pendiente = item._tiene_pendiente
             es_bitrix = item.tipo_negociacion == 'bitrix_proyecto'
 
-            # dias_vencida: max de (ahora - fecha_limite vencida más antigua)
+            # dias_vencida + minutos_vencida: granularidad fina (un heat que
+            # acaba de vencer hace 5 min no es lo mismo que uno vencido hace 30 días)
             dias_vencida = 0
+            minutos_vencida = 0
             if tiene_vencida:
                 _candidatos = [x for x in [_vencidas_min_opp.get(item.id), _vencidas_min_tarea.get(item.id)] if x]
                 if _candidatos:
                     _min_vencida = min(_candidatos)
-                    dias_vencida = max(0, (_now - _min_vencida).days)
+                    _delta = _now - _min_vencida
+                    dias_vencida = max(0, _delta.days)
+                    minutos_vencida = max(0, int(_delta.total_seconds() / 60))
 
-            # dias_hasta_proxima: días hasta la fecha_limite FUTURA más cercana
+            # dias_hasta_proxima + minutos_hasta_proxima
             dias_hasta_proxima = None
+            minutos_hasta_proxima = None
             _prox = [x for x in [_proxima_opp.get(item.id), _proxima_tarea.get(item.id)] if x]
             if _prox:
                 _min_prox = min(_prox)
-                dias_hasta_proxima = max(0, (_min_prox - _now).days)
+                _delta = _min_prox - _now
+                dias_hasta_proxima = max(0, _delta.days)
+                minutos_hasta_proxima = max(0, int(_delta.total_seconds() / 60))
 
             rows.append({
                 'id': item.id,
@@ -862,7 +876,9 @@ def api_crm_table_data(request):
                 'etapa_color': item.etapa_color or '#6B7280',
                 'tiene_actividad_vencida': tiene_vencida,
                 'dias_vencida': dias_vencida,
+                'minutos_vencida': minutos_vencida,
                 'dias_hasta_proxima': dias_hasta_proxima,
+                'minutos_hasta_proxima': minutos_hasta_proxima,
                 'sin_actividad_pendiente': not tiene_pendiente,
                 'tipo_negociacion': item.tipo_negociacion or 'runrate',
             })
