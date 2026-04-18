@@ -2046,14 +2046,23 @@
         };
 
         /* Sync inline de las cards SSR (postit / kanban / list row) cuando
-           se crea una actividad — evita esperar un re-fetch completo. */
+           se crea una actividad — evita esperar un re-fetch completo.
+
+           Nota crítica: Django con USE_THOUSAND_SEPARATOR renderiza IDs
+           ≥ 1000 como "1,198" en los atributos data-*. El selector
+           querySelectorAll('[data-opp-id="1198"]') NO matchea "1,198".
+           Por eso (como hace el toggle pin), iteramos todos los nodos y
+           comparamos contra una versión normalizada del dataset. */
+        function _woNormId(s) {
+            return (s || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
+        }
         function _woSyncCardsWithActividad(oppId, titulo) {
             if (!oppId || !titulo) return;
-            var idStr = String(oppId);
+            var idStr = _woNormId(String(oppId));
 
-            // 1) Cards con .card-act-bar (postit + kanban): cambiar texto +
-            //    aplicar estilo "has-activity" (bg azul claro, texto azul)
-            document.querySelectorAll('.card-act-bar[data-opp-act="' + idStr + '"]').forEach(function(bar) {
+            // 1) Cards con .card-act-bar (postit + kanban)
+            document.querySelectorAll('.card-act-bar[data-opp-act]').forEach(function(bar) {
+                if (_woNormId(bar.dataset.oppAct) !== idStr) return;
                 bar.style.borderColor = '#BFDBFE';
                 bar.style.background = '#EFF6FF';
                 var txt = bar.querySelector('.card-act-text');
@@ -2067,17 +2076,13 @@
                 if (svgs[1]) svgs[1].setAttribute('stroke', '#93C5FD');
             });
 
-            // 2) List view row: la pill .crm-list-activity-pill con texto
-            //    "Sin pendientes" cambia a variante .has-activity con el título
-            var rows = document.querySelectorAll('.crm-data-row[data-opp-id]');
-            rows.forEach(function(row) {
-                var rowId = (row.dataset.oppId || '').replace(/[\s,\u00A0]/g, '');
-                if (rowId !== idStr) return;
+            // 2) List view row: pill .crm-list-activity-pill
+            document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(row) {
+                if (_woNormId(row.dataset.oppId) !== idStr) return;
                 var pill = row.querySelector('.crm-list-activity-pill');
                 if (!pill) return;
                 pill.classList.add('has-activity');
                 pill.style.cursor = 'pointer';
-                // Reconstruir el contenido: ícono calendario + span con título
                 pill.innerHTML =
                     '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
                     '<span>' + (titulo.length > 28 ? titulo.slice(0, 28) + '…' : titulo) + '</span>';
@@ -2088,6 +2093,16 @@
                         if (typeof woAbrirActividadReciente === 'function') woAbrirActividadReciente();
                     }, 400);
                 };
+            });
+
+            // 3) Marcar data-dias-hasta-proxima = 0 en la card postit para que
+            //    el heat-timer (si existe) recalcule warm/heat sin esperar reload.
+            document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(row) {
+                if (_woNormId(row.dataset.oppId) !== idStr) return;
+                // Nuevo pendiente = fecha_fin de la actividad hoy/próximo. No
+                // tenemos la fecha exacta aquí; dejamos que el próximo tick del
+                // gradient-updater recompute desde el servidor.
+                row.dataset.tieneActividad = '1';
             });
         }
 

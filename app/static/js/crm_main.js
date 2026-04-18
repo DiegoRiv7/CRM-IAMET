@@ -3301,21 +3301,52 @@
                     function _normId(s){
                         return (s || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
                     }
+                    // Helper: recalcula heat-N / warm-N según días — refleja
+                    // gradient en tiempo real a medida que el tiempo pasa.
+                    function _pickHeat(diasV) {
+                        if (diasV >= 30) return 'heat-max';
+                        if (diasV >= 14) return 'heat-5';
+                        if (diasV >= 7)  return 'heat-4';
+                        if (diasV >= 3)  return 'heat-3';
+                        if (diasV >= 1)  return 'heat-2';
+                        return 'heat-1';
+                    }
+                    function _pickWarm(diasH) {
+                        if (diasH === null || diasH === undefined || diasH < 0) return null;
+                        if (diasH > 14) return null;
+                        if (diasH <= 1) return 'warm-3';
+                        if (diasH <= 7) return 'warm-2';
+                        return 'warm-1';
+                    }
+
                     document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(el){
                         var apiRow = _apiMap[_normId(el.dataset.oppId)];
                         if (!apiRow) return;
                         var wasVencida = el.dataset.vencida === '1';
                         var nowVencida = !!apiRow.tiene_actividad_vencida;
-                        // Siempre sincronizar data-attributes
+                        var diasV = apiRow.dias_vencida || 0;
+                        var diasH = (apiRow.dias_hasta_proxima === null || apiRow.dias_hasta_proxima === undefined) ? null : apiRow.dias_hasta_proxima;
+
+                        // Sincronizar data-attributes
                         el.dataset.vencida = nowVencida ? '1' : '0';
-                        if (!nowVencida) el.dataset.diasVencida = '0';
-                        // Quitar clases de vencida/heat si ya no está vencida.
-                        // IMPORTANTE: NO tocar warm-* — representan "vence pronto"
-                        // (pre-vencida) y son independientes de tiene_actividad_vencida.
-                        // Si las borramos aquí, las cards pierden su aviso rojo/naranja
-                        // ~5s después del reload cuando el sync corre por primera vez.
+                        el.dataset.diasVencida = String(diasV);
+                        el.dataset.diasHastaProxima = diasH !== null ? String(diasH) : '-1';
+
+                        // Recalcular clases heat / warm según API (gradient progresivo
+                        // sin reload — si algo se acerca a vencerse, el color va
+                        // avanzando solo cada vez que esta función corre)
+                        _heatCls.forEach(function(c){ el.classList.remove(c); });
+                        _warmCls.forEach(function(c){ el.classList.remove(c); });
+                        if (nowVencida) {
+                            el.classList.add('card-vencida');
+                            el.classList.add(_pickHeat(diasV));
+                        } else {
+                            var warmCls = _pickWarm(diasH);
+                            if (warmCls) el.classList.add(warmCls);
+                        }
+
+                        // El bloque original continúa abajo para heal / strip / circle
                         if (!nowVencida) {
-                            _heatCls.forEach(function(c){ el.classList.remove(c); });
                             var strip = el.querySelector('.crm-list-strip');
                             if (strip) {
                                 strip.className = 'crm-list-strip ' +
@@ -4512,6 +4543,20 @@
             _crmTareasCache = {};  // invalidar caché completo
             cargarTareasCRM(_crmCurrentFilter);
         }
+
+        // ── Refresh periódico del gradient heat/warm del CRM ──
+        // Recalcula dias_vencida / dias_hasta_proxima cada 2 min para que
+        // el color rojo/naranja de las cards vaya avanzando en tiempo real
+        // a medida que las tareas se acercan a su fecha límite, sin que el
+        // usuario tenga que recargar la página.
+        setInterval(function() {
+            if (window._crmTareasMode) return; // solo en vista CRM
+            var tabActivo = document.querySelector('.crm-tab.active');
+            if (!tabActivo) return;
+            if (typeof refreshCrmTable === 'function') {
+                try { refreshCrmTable(); } catch(e) { console.warn('[CRM] gradient refresh:', e); }
+            }
+        }, 120000); // 2 minutos
 
         // ── Polling ligero: detectar tareas nuevas/cambiadas de grupo cada 15s ──
         var _tareasPollHash = null;

@@ -789,11 +789,64 @@ def api_crm_table_data(request):
             _tiene_pendiente=_Exists(_pendiente_opp_sq),
         ).order_by('-fecha_actualizacion')
 
+        # Prefetch de fecha_limite mínima vencida y próxima — usadas para
+        # calcular dias_vencida / dias_hasta_proxima (gradient heat/warm
+        # sin tener que re-render todo desde SSR)
+        _ids = [i.id for i in items]
+        _vencidas_min_opp = dict(TareaOportunidad.objects.filter(
+            oportunidad_id__in=_ids,
+            estado__in=['pendiente', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lte=_now,
+        ).values_list('oportunidad_id').annotate(
+            minf=models.Min('fecha_limite')
+        ).values_list('oportunidad_id', 'minf'))
+        _vencidas_min_tarea = dict(Tarea.objects.filter(
+            oportunidad_id__in=_ids,
+            estado__in=_ESTADOS_ACTIVOS,
+            fecha_limite__isnull=False,
+            fecha_limite__lte=_now,
+        ).values_list('oportunidad_id').annotate(
+            minf=models.Min('fecha_limite')
+        ).values_list('oportunidad_id', 'minf'))
+        _proxima_opp = dict(TareaOportunidad.objects.filter(
+            oportunidad_id__in=_ids,
+            estado__in=['pendiente', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__gt=_now,
+        ).values_list('oportunidad_id').annotate(
+            minf=models.Min('fecha_limite')
+        ).values_list('oportunidad_id', 'minf'))
+        _proxima_tarea = dict(Tarea.objects.filter(
+            oportunidad_id__in=_ids,
+            estado__in=_ESTADOS_ACTIVOS,
+            fecha_limite__isnull=False,
+            fecha_limite__gt=_now,
+        ).values_list('oportunidad_id').annotate(
+            minf=models.Min('fecha_limite')
+        ).values_list('oportunidad_id', 'minf'))
+
         rows = []
         for item in items:
             tiene_vencida = item._tiene_vencida
             tiene_pendiente = item._tiene_pendiente
             es_bitrix = item.tipo_negociacion == 'bitrix_proyecto'
+
+            # dias_vencida: max de (ahora - fecha_limite vencida más antigua)
+            dias_vencida = 0
+            if tiene_vencida:
+                _candidatos = [x for x in [_vencidas_min_opp.get(item.id), _vencidas_min_tarea.get(item.id)] if x]
+                if _candidatos:
+                    _min_vencida = min(_candidatos)
+                    dias_vencida = max(0, (_now - _min_vencida).days)
+
+            # dias_hasta_proxima: días hasta la fecha_limite FUTURA más cercana
+            dias_hasta_proxima = None
+            _prox = [x for x in [_proxima_opp.get(item.id), _proxima_tarea.get(item.id)] if x]
+            if _prox:
+                _min_prox = min(_prox)
+                dias_hasta_proxima = max(0, (_min_prox - _now).days)
+
             rows.append({
                 'id': item.id,
                 'oportunidad': (item.oportunidad or '')[:35],
@@ -808,6 +861,8 @@ def api_crm_table_data(request):
                 'etapa': item.etapa_corta or '',
                 'etapa_color': item.etapa_color or '#6B7280',
                 'tiene_actividad_vencida': tiene_vencida,
+                'dias_vencida': dias_vencida,
+                'dias_hasta_proxima': dias_hasta_proxima,
                 'sin_actividad_pendiente': not tiene_pendiente,
                 'tipo_negociacion': item.tipo_negociacion or 'runrate',
             })
