@@ -666,6 +666,51 @@
             if (container) { container.onmousedown = null; container.ontouchstart = null; container.ontouchmove = null; container.ontouchend = null; }
         };
 
+        // Actualiza TODOS los avatares del usuario en la página (widget + topbar + sidebar
+        // + cualquier otro lugar donde aparezca la misma URL) sin recargar. Soporta el caso
+        // en que el usuario nunca tuvo foto (iniciales).
+        function updateAllAvatarDisplays(url) {
+            // 1) Capturar la URL anterior ANTES de actualizar (para el catch-all)
+            var display = document.getElementById('userAvatarWidgetDisplay');
+            var oldImg = display ? display.querySelector('img') : null;
+            var oldSrcPath = oldImg && oldImg.src ? oldImg.src.split('?')[0] : null;
+
+            // 2) Widget de perfil
+            if (display) display.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;">';
+
+            // 3) Topbar (Dynamic Island)
+            var topbar = document.querySelector('.crm-avatar.crm-avatar-lg');
+            if (topbar) {
+                var topImg = topbar.querySelector('img');
+                if (topImg) {
+                    topImg.src = url;
+                } else {
+                    topbar.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                }
+            }
+
+            // 4) Sidebar
+            var sb = document.querySelector('.crm-sb-avatar');
+            if (sb) {
+                var sbImg = sb.querySelector('img');
+                if (sbImg) {
+                    sbImg.src = url;
+                } else {
+                    sb.innerHTML = '<img src="' + url + '" alt="avatar">';
+                }
+            }
+
+            // 5) Catch-all: cualquier otro <img> que apuntaba a la URL anterior del avatar
+            //    (comentarios del muro, listas, cards, etc.)
+            if (oldSrcPath) {
+                document.querySelectorAll('img').forEach(function (im) {
+                    if (im.src && im.src.split('?')[0] === oldSrcPath) {
+                        im.src = url;
+                    }
+                });
+            }
+        }
+
         window.saveCroppedAvatar = function () {
             var container = document.getElementById('cropContainer');
             var img = document.getElementById('cropImage');
@@ -711,13 +756,7 @@
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.success) {
-                        // Update all avatar displays on the page
-                        var url = data.avatar_url + '?t=' + Date.now();
-                        var display = document.getElementById('userAvatarWidgetDisplay');
-                        if (display) display.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;">';
-                        // Also update topbar avatar if exists
-                        var topAvatar = document.querySelector('.topbar-avatar img, .crm-user-avatar img');
-                        if (topAvatar) topAvatar.src = url;
+                        updateAllAvatarDisplays(data.avatar_url + '?t=' + Date.now());
                         closeCropModal();
                     } else {
                         alert(data.error || 'Error al subir avatar');
