@@ -7585,8 +7585,8 @@
    ═══════════════════════════════════════════════ */
 .tcp-shell {
     display: flex;
+    height: calc(100vh - 130px);
     min-height: 420px;
-    max-height: calc(100vh - 160px);
     background: #fff;
     border: 1px solid rgba(226, 232, 240, 0.7);
     border-radius: 14px;
@@ -7617,9 +7617,6 @@
     user-select: none;
     border-bottom: 1px solid rgba(226, 232, 240, 0.5);
     background: #FAFBFC;
-    position: sticky;
-    top: 0;
-    z-index: 2;
 }
 .tcp-section-head.atrasadas { color: #B91C1C; }
 .tcp-section-head .tcp-sec-chev {
@@ -7641,20 +7638,42 @@
 .tcp-section-body { display: block; }
 .tcp-section-head.collapsed + .tcp-section-body { display: none; }
 
-/* Fila de tarea — grid layout para alineación consistente de columnas */
-.tcp-row {
+/* Grid template compartido entre cabeza y filas */
+.tcp-row, .tcp-col-head {
     display: grid;
     grid-template-columns:
         17px                    /* check */
         58px                    /* T-ID */
         minmax(0, 1fr)          /* título (absorbe espacio, trunca si largo) */
-        120px                   /* estado pill */
-        22px                    /* avatar */
-        76px                    /* primer nombre */
-        108px                   /* cliente */
+        118px                   /* estado pill */
+        110px                   /* responsable */
+        160px                   /* oportunidad (clickable) */
         96px;                   /* fecha */
     gap: 12px;
     align-items: center;
+}
+
+/* Cabecera de columnas (sticky) */
+.tcp-col-head {
+    padding: 10px 20px 10px 16px;
+    border-bottom: 1px solid #E2E8F0;
+    background: #FAFBFC;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    user-select: none;
+}
+.tcp-col-head > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcp-col-head > span:first-child { pointer-events: none; }  /* espacio del check */
+.tcp-col-head .tcp-col-fecha { text-align: right; }
+
+/* Fila de tarea */
+.tcp-row {
     padding: 9px 20px 9px 16px;
     border-bottom: 1px solid rgba(241, 245, 249, 0.8);
     cursor: pointer;
@@ -7744,32 +7763,36 @@
 .tcp-row-estado.enviada     { background: #E0F2FE; color: #0369A1; }
 .tcp-row-estado.pagado      { background: #D1FAE5; color: #047857; }
 
-.tcp-row-avatar {
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    color: #fff;
-    font-size: 9.5px; font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
+/* Responsable — solo nombre, sin avatar colorido, texto muted */
 .tcp-row-resp {
+    font-size: 12.5px;
+    color: #64748B;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tcp-row-resp.empty { color: #CBD5E1; }
+
+/* Oportunidad — link clickable que abre el widget de la oportunidad */
+.tcp-row-opp {
     font-size: 12px;
+    color: #64748B;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: default;
+    padding: 2px 0;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+.tcp-row-opp.linked {
     color: #475569;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    cursor: pointer;
 }
-.tcp-row-cliente {
-    font-size: 12px;
-    color: #94A3B8;
-    font-weight: 500;
-    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+.tcp-row-opp.linked:hover { color: #2563EB; text-decoration: underline; text-underline-offset: 3px; }
+.tcp-row-opp.empty { color: #CBD5E1; }
 .tcp-row-fecha {
     font-family: 'SF Mono', ui-monospace, Menlo, monospace;
     font-size: 11.5px;

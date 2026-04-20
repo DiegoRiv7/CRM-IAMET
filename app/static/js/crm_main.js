@@ -5142,7 +5142,17 @@
                 { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues,   cls: '' },
             ];
 
-            var html = '';
+            // Cabecera de columnas sticky (siempre primera)
+            var html = '<div class="tcp-col-head">' +
+                '<span></span>' +                               // check col (vacío)
+                '<span>ID</span>' +
+                '<span>TAREA</span>' +
+                '<span>ESTADO</span>' +
+                '<span>RESPONSABLE</span>' +
+                '<span>OPORTUNIDAD</span>' +
+                '<span class="tcp-col-fecha">FECHA LÍMITE</span>' +
+                '</div>';
+
             secciones.forEach(function(sec) {
                 if (sec.items.length === 0) return;
                 var collapsed = _tcpCollapsedSections[sec.key] ? ' collapsed' : '';
@@ -5249,25 +5259,36 @@
             var estadoCls = _tcpEstadoClass(t.estado);
             var estadoLbl = _tcpEstadoLabel(t.estado).toUpperCase();
             var resp = t.responsable || '';
-            var avColor = _tcpAvatarColor(resp);
-            var ini = _tcpInitials(resp);
-            var cliente = t.cliente_nombre || t.oportunidad_nombre || '';
+            var respTxt = _tcpFirstName(resp);
+            var oppNombre = t.oportunidad_nombre || '';
+            var oppId = t.oportunidad_id || '';
             var doneCls = t.estado === 'completada' ? ' done' : '';
             var atrCls = esAtrasada ? ' atrasada' : '';
             var checkInner = t.estado === 'completada'
                 ? '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
                 : '';
+
+            // Celda oportunidad: clickable solo si hay oppId
+            var oppCell = oppId
+                ? '<span class="tcp-row-opp linked" title="' + _tcpEsc(oppNombre) + '" onclick="event.stopPropagation();tcpAbrirOportunidad(' + oppId + ')">' + _tcpEsc(oppNombre) + '</span>'
+                : '<span class="tcp-row-opp' + (oppNombre ? '' : ' empty') + '">' + _tcpEsc(oppNombre || '—') + '</span>';
+
             return '<div class="tcp-row' + doneCls + atrCls + '" data-tid="' + t.id + '" onclick="tcpSelectTask(' + t.id + ')">' +
                 '<button class="tcp-row-check' + (t.estado === 'completada' ? ' done' : '') + '" onclick="event.stopPropagation();tcpToggleCheck(' + t.id + ')" title="Completar">' + checkInner + '</button>' +
                 '<span class="tcp-row-tid">T-' + t.id + '</span>' +
                 '<span class="tcp-row-title">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
                 '<span class="tcp-row-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
-                '<span class="tcp-row-avatar" style="background:' + avColor + '">' + ini + '</span>' +
-                '<span class="tcp-row-resp">' + _tcpEsc(_tcpFirstName(resp)) + '</span>' +
-                '<span class="tcp-row-cliente">' + _tcpEsc(cliente === '—' ? '' : cliente) + '</span>' +
+                '<span class="tcp-row-resp' + (respTxt ? '' : ' empty') + '">' + _tcpEsc(respTxt || '—') + '</span>' +
+                oppCell +
                 '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + _tcpFmtFecha(t.fecha_limite) + '</span>' +
                 '</div>';
         }
+
+        // Abrir widget de oportunidad desde la celda
+        window.tcpAbrirOportunidad = function(oppId) {
+            if (!oppId) return;
+            if (typeof window.openDetalle === 'function') window.openDetalle(oppId);
+        };
 
         function _tcpEsc(s) {
             if (!s) return '';
