@@ -5135,11 +5135,11 @@
             var hoyLabel = MES_HOY[today.getDay()] + ' ' + today.getDate() + ' ' + ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][today.getMonth()];
 
             var secciones = [
-                { key: 'atrasadas', label: 'ATRASADAS', extra: '', items: groups.atrasadas, cls: 'atrasadas' },
-                { key: 'hoy',       label: 'HOY',       extra: ' · ' + hoyLabel, items: groups.hoy, cls: '' },
-                { key: 'semana',    label: 'ESTA SEMANA', extra: '', items: groups.semana, cls: '' },
-                { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues, cls: '' },
-                { key: 'sinFecha',  label: 'SIN FECHA',   extra: '', items: groups.sinFecha, cls: '' },
+                { key: 'atrasadas', label: 'ATRASADAS',   extra: '', items: groups.atrasadas, cls: 'atrasadas' },
+                { key: 'hoy',       label: 'HOY',         extra: ' · ' + hoyLabel, items: groups.hoy, cls: '' },
+                { key: 'semana',    label: 'ESTA SEMANA', extra: '', items: groups.semana,    cls: '' },
+                { key: 'sinFecha',  label: 'SIN FECHA',   extra: '', items: groups.sinFecha,  cls: '' },
+                { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues,   cls: '' },
             ];
 
             var html = '';
@@ -5163,7 +5163,86 @@
             if (_tcpSelectedId) {
                 var rowSel = list.querySelector('.tcp-row[data-tid="' + _tcpSelectedId + '"]');
                 if (rowSel) rowSel.classList.add('active');
+            } else {
+                // Sin selección → renderizar dashboard de resumen en el panel derecho
+                _tcpRenderSummary(tareas, now);
             }
+        }
+
+        function _tcpRenderSummary(tareas, now) {
+            var panel = document.getElementById('tcpDetail');
+            if (!panel) return;
+            var miId = (typeof _CRM_CONFIG !== 'undefined' && _CRM_CONFIG.userId) ? _CRM_CONFIG.userId : null;
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+            // Filtrar tareas del usuario actual (donde él es responsable)
+            var misTareas = (_crmAllTareas || []).filter(function(t) {
+                return miId && String(t.asignado_a_id || '') === String(miId);
+            });
+
+            var vencidas = 0, hoy = 0, completadasHoy = 0, totalAbiertas = 0;
+            misTareas.forEach(function(t) {
+                if (t.estado === 'completada') {
+                    // Aproximación: si tiene fecha_completada o updated_at hoy, cuenta.
+                    // Si solo tenemos 'estado', contamos todas las completadas del usuario
+                    // que aún aparecen en la lista (el backend suele traer recientes).
+                    var fc = t.fecha_completada || t.fecha_actualizacion || t.updated_at;
+                    if (fc) {
+                        var d = new Date(fc);
+                        if (!isNaN(d.getTime()) && d >= today && d < tomorrow) completadasHoy++;
+                    } else {
+                        completadasHoy++;
+                    }
+                    return;
+                }
+                totalAbiertas++;
+                if (!t.fecha_limite) return;
+                var fl = new Date(t.fecha_limite);
+                if (isNaN(fl.getTime())) return;
+                if (fl < today) vencidas++;
+                else if (fl < tomorrow) hoy++;
+            });
+
+            var nombre = (typeof _CRM_CONFIG !== 'undefined' && _CRM_CONFIG.usuarioNombre)
+                ? _CRM_CONFIG.usuarioNombre.split(' ')[0] : '';
+            var horaN = now.getHours();
+            var saludo = horaN < 12 ? 'Buenos días' : (horaN < 19 ? 'Buenas tardes' : 'Buenas noches');
+
+            var html = '<div class="tcp-empty">' +
+                '<div class="tcp-summary-label">Tu día</div>' +
+                '<h2 class="tcp-summary-greeting">' + saludo + (nombre ? ', ' + _tcpEsc(nombre) : '') + '</h2>' +
+                '<p class="tcp-summary-sub">' +
+                    (totalAbiertas === 0
+                        ? 'No tienes tareas pendientes asignadas.'
+                        : 'Tienes <strong>' + totalAbiertas + '</strong> tarea' + (totalAbiertas === 1 ? '' : 's') + ' abierta' + (totalAbiertas === 1 ? '' : 's') + '.') +
+                '</p>' +
+
+                _tcpSummaryCard(vencidas, 'tareas vencidas', vencidas > 0 ? 'tone-danger' : 'tone-neutral',
+                    '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>') +
+
+                _tcpSummaryCard(hoy, 'pendientes para hoy', hoy > 0 ? 'tone-warning' : 'tone-neutral',
+                    '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>') +
+
+                _tcpSummaryCard(completadasHoy, 'completadas hoy', completadasHoy > 0 ? 'tone-success' : 'tone-neutral',
+                    '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>') +
+
+                '<div style="flex:1;"></div>' +
+                '<div style="text-align:center;font-size:12px;color:#94A3B8;padding:20px 0 4px;">' +
+                    'Haz clic en cualquier tarea para ver sus detalles aquí.' +
+                '</div>' +
+                '</div>';
+            panel.innerHTML = html;
+        }
+
+        function _tcpSummaryCard(num, label, tone, iconSvg) {
+            return '<div class="tcp-summary-card ' + tone + '">' +
+                '<div class="tcp-summary-ico">' + iconSvg + '</div>' +
+                '<div class="tcp-summary-body">' +
+                    '<span class="tcp-summary-num">' + num + '</span>' +
+                    '<span class="tcp-summary-name">' + label + '</span>' +
+                '</div>' +
+                '</div>';
         }
 
         function _tcpRowHtml(t, esAtrasada) {
@@ -5298,14 +5377,9 @@
 
         window.tcpCloseDetail = function() {
             _tcpSelectedId = null;
-            var panel = document.getElementById('tcpDetail');
-            if (!panel) return;
-            panel.innerHTML = '<div class="tcp-empty">' +
-                '<svg width="36" height="36" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
-                '<div class="tcp-empty-title">Selecciona una tarea</div>' +
-                '<div class="tcp-empty-hint">Haz clic en cualquier fila a la izquierda para ver sus detalles aquí</div>' +
-                '</div>';
             document.querySelectorAll('#tcpList .tcp-row').forEach(function(r) { r.classList.remove('active'); });
+            // Volver a mostrar el dashboard de resumen
+            _tcpRenderSummary(_crmAllTareas || [], new Date());
         };
 
         window.tcpExpandir = function(tid) {

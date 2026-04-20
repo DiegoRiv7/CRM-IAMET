@@ -7585,8 +7585,8 @@
    ═══════════════════════════════════════════════ */
 .tcp-shell {
     display: flex;
-    height: calc(100vh - 220px);
-    min-height: 520px;
+    min-height: 420px;
+    max-height: calc(100vh - 160px);
     background: #fff;
     border: 1px solid rgba(226, 232, 240, 0.7);
     border-radius: 14px;
@@ -7801,14 +7801,88 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    padding: 28px 24px;
+    overflow-y: auto;
+}
+.tcp-empty-title { font-size: 14px; font-weight: 700; color: #334155; }
+.tcp-empty-hint { font-size: 12.5px; color: #94A3B8; line-height: 1.5; }
+
+/* Dashboard de resumen del usuario (cuando no hay tarea seleccionada) */
+.tcp-summary-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #94A3B8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+}
+.tcp-summary-greeting {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    margin: 0 0 4px;
+}
+.tcp-summary-sub {
+    font-size: 13px;
+    color: #64748B;
+    margin: 0 0 22px;
+}
+
+.tcp-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background: #fff;
+    transition: all 0.15s;
+}
+.tcp-summary-card.tone-danger { background: #FEF2F2; border-color: #FECACA; }
+.tcp-summary-card.tone-warning { background: #FFFBEB; border-color: #FDE68A; }
+.tcp-summary-card.tone-success { background: #F0FDF4; border-color: #BBF7D0; }
+.tcp-summary-card.tone-neutral { background: #F8FAFC; border-color: #E2E8F0; }
+
+.tcp-summary-ico {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 40px 32px;
-    text-align: center;
+    flex-shrink: 0;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
-.tcp-empty-title { font-size: 14px; font-weight: 700; color: #334155; margin-top: 8px; }
-.tcp-empty-hint { font-size: 12.5px; color: #94A3B8; line-height: 1.5; }
+.tcp-summary-card.tone-danger .tcp-summary-ico { background: linear-gradient(180deg, #EF4444, #DC2626); }
+.tcp-summary-card.tone-warning .tcp-summary-ico { background: linear-gradient(180deg, #F59E0B, #D97706); }
+.tcp-summary-card.tone-success .tcp-summary-ico { background: linear-gradient(180deg, #10B981, #059669); }
+.tcp-summary-card.tone-neutral .tcp-summary-ico { background: linear-gradient(180deg, #64748B, #475569); }
+
+.tcp-summary-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.tcp-summary-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+.tcp-summary-name {
+    font-size: 12px;
+    color: #64748B;
+    font-weight: 500;
+}
+.tcp-summary-card.tone-danger .tcp-summary-num { color: #B91C1C; }
+.tcp-summary-card.tone-warning .tcp-summary-num { color: #B45309; }
+.tcp-summary-card.tone-success .tcp-summary-num { color: #047857; }
 
 .tcp-detail-head {
     display: flex;
