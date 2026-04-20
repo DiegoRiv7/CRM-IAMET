@@ -6,26 +6,24 @@
 .lw-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.60);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: #fff;
     z-index: 10600;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2vh 2vw;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
     animation: lw-fade 0.18s ease;
 }
 @keyframes lw-fade { from { opacity: 0; } to { opacity: 1; } }
 
 .lw-container {
-    width: 100%;
-    max-width: 1440px;
-    height: 96vh;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
     background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 30px 60px -10px rgba(15, 23, 42, 0.45);
+    border-radius: 0;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -57,22 +55,17 @@
     gap: 8px;
     flex-shrink: 0;
 }
-.lw-back {
+.lw-brand {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    border: none;
-    background: transparent;
-    color: #64748B;
-    font-size: 12.5px;
-    font-weight: 500;
-    cursor: pointer;
+    gap: 6px;
     padding: 4px 6px;
-    border-radius: 6px;
-    font-family: inherit;
-    transition: color 0.12s ease, background 0.12s ease;
+    color: #2563EB;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
 }
-.lw-back:hover { background: #F1F5F9; color: #1E293B; }
 .lw-sep { color: #CBD5E1; font-size: 14px; }
 .lw-title {
     font-size: 13.5px;

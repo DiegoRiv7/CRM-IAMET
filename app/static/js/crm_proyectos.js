@@ -252,47 +252,98 @@
     }
 
     function renderProjectsTable(projects) {
-        var tbody = el('proyTableBody');
+        var body = el('proyListBody');
         var emptyEl = el('proyEmpty');
-        var wrap = el('proyTableWrap');
-        if (!tbody) return;
+        var view = el('proyListView');
+        if (!body) return;
 
         if (!projects || projects.length === 0) {
-            tbody.innerHTML = '';
-            if (wrap) wrap.style.display = 'none';
+            body.innerHTML = '';
+            if (view) view.style.display = 'none';
             if (emptyEl) emptyEl.style.display = '';
             return;
         }
-        if (wrap) wrap.style.display = '';
+        if (view) view.style.display = '';
         if (emptyEl) emptyEl.style.display = 'none';
 
         var html = '';
         projects.forEach(function (p) {
-            var cliente = p.cliente_nombre || '\u2014';
+            var cliente = p.cliente_nombre || '—';
             var monto = p.oportunidad_monto || p.utilidad_presupuestada || 0;
-            var montoHtml = monto > 0 ? ('$' + monto.toLocaleString('es-MX', {minimumFractionDigits:0,maximumFractionDigits:0})) : '\u2014';
+            var montoHtml = '$' + Number(monto).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             var status = p.status || 'planning';
-            var statusLbl = statusLabel(status);
-            var servicio = p.oportunidad_producto;
-            var oppHtml = p.oportunidad_id
-                ? '<a class="proy-tv2-opp-link" onclick="event.stopPropagation(); proyectosAbrirOportunidad(' + p.oportunidad_id + ')" title="' + _esc(p.oportunidad_nombre || '') + '">' + _esc(p.oportunidad_nombre || 'Ver oportunidad') + '</a>'
-                : '<span class="proy-tv2-opp-empty">Sin oportunidad</span>';
+            var statusLbl = statusLabel(status).toUpperCase();
+            var servicio = p.oportunidad_producto || 'SIN SERVICIO';
+            // Progreso: porcentaje basado en fase_max de levantamientos
+            var fasePct = Math.round(((p.levantamiento_fase_max || 0) / 5) * 100);
+            var faseLbl = (p.levantamiento_fase_max || 0) + '/5';
+            var etapaCorta = p.oportunidad_etapa ? p.oportunidad_etapa.toUpperCase() : faseLbl;
+            // Stroke neutro (sin color-logic)
+            var strokeColor = '#3B82F6';
 
-            html += '<tr onclick="proyectosVerDetalle(' + p.id + ')">' +
-                '<td><span class="proy-tv2-name" title="' + _esc(p.nombre) + '">' + _esc(p.nombre) + '</span></td>' +
-                '<td>' +
-                    '<div class="proy-tv2-client-main" title="' + _esc(cliente) + '">' + _esc(cliente) + '</div>' +
-                    (p.usuario_nombre ? '<div class="proy-tv2-client-sub">' + _esc(p.usuario_nombre) + '</div>' : '') +
-                '</td>' +
-                '<td>' + _servicioChipHtml(servicio) + '</td>' +
-                '<td style="text-align:right;"><span class="proy-tv2-monto">' + montoHtml + '</span></td>' +
-                '<td>' + _phasesBarHtml(p.levantamiento_fase_max || 0, p.levantamientos_count || 0) + '</td>' +
-                '<td><span class="proy-tv2-status proy-tv2-status-' + status + '"><i></i>' + statusLbl + '</span></td>' +
-                '<td>' + oppHtml + '</td>' +
-                '<td><span class="proy-tv2-fecha">' + _fmtShortDate(p.created_at) + '</span></td>' +
-            '</tr>';
+            var oppPillHtml;
+            if (p.oportunidad_id) {
+                oppPillHtml = '<div class="crm-list-activity-pill has-activity" onclick="event.stopPropagation(); proyectosAbrirOportunidad(' + p.oportunidad_id + ')" title="' + _esc(p.oportunidad_nombre || '') + '">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+                    '<span>' + _esc(p.oportunidad_nombre || 'Ver oportunidad') + '</span>' +
+                '</div>';
+            } else {
+                oppPillHtml = '<div class="crm-list-activity-pill">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>' +
+                    '<span>Sin oportunidad</span>' +
+                '</div>';
+            }
+
+            html += '<div class="crm-data-row crm-list-row" onclick="proyectosVerDetalle(' + p.id + ')">' +
+                // Strip neutro (sin colores/warm)
+                '<div class="crm-list-strip"></div>' +
+                // Columna 1: Proyecto / Cliente
+                '<div class="crm-list-cell" style="flex:2.6;padding-left:22px;">' +
+                    '<div class="crm-list-title">' +
+                        '<span>' + _esc(_truncate(p.nombre, 42)) + '</span>' +
+                    '</div>' +
+                    '<div class="crm-list-sub">' + _esc(_truncate(cliente, 34)) + '</div>' +
+                '</div>' +
+                // Columna 2: Monto
+                '<div class="crm-list-cell" style="flex:1;">' +
+                    '<span class="crm-list-value">' + montoHtml + '</span>' +
+                '</div>' +
+                // Columna 3: Servicio
+                '<div class="crm-list-cell" style="flex:0.9;">' +
+                    '<span class="crm-list-brand-badge">' + _esc(servicio) + '</span>' +
+                '</div>' +
+                // Columna 4: Estado (donut + label)
+                '<div class="crm-list-cell" style="flex:1.3;">' +
+                    '<div class="crm-list-state">' +
+                        '<div class="crm-list-progress">' +
+                            '<svg viewBox="0 0 36 36" style="width:36px;height:36px;transform:rotate(-90deg);">' +
+                                '<circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="2.5" pathLength="100"/>' +
+                                '<circle cx="18" cy="18" r="15.5" fill="none" stroke="' + strokeColor + '" stroke-width="2.5" pathLength="100" stroke-dasharray="' + fasePct + ' 100" stroke-linecap="round"/>' +
+                            '</svg>' +
+                            '<span>' + fasePct + '%</span>' +
+                        '</div>' +
+                        '<div class="crm-list-state-text">' +
+                            '<div class="crm-list-state-label">' + statusLbl + '</div>' +
+                            '<div class="crm-list-state-stage">' + _esc(etapaCorta) + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                // Columna 5: Oportunidad (pill style)
+                '<div class="crm-list-cell" style="flex:1.7;">' + oppPillHtml + '</div>' +
+                // Columna 6: Fecha
+                '<div class="crm-list-cell" style="flex:0.8;text-align:right;padding-right:18px;">' +
+                    '<span style="font-size:0.72rem;color:#94A3B8;white-space:nowrap;">' + _fmtShortDate(p.created_at) + '</span>' +
+                '</div>' +
+            '</div>';
         });
-        tbody.innerHTML = html;
+        body.innerHTML = html;
+    }
+
+    // Helper truncate
+    function _truncate(s, n) {
+        if (!s) return '';
+        s = String(s);
+        return s.length > n ? s.slice(0, n - 1) + '…' : s;
     }
 
     // Abre la oportunidad desde el link en la fila del proyecto
