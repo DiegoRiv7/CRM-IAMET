@@ -72,72 +72,93 @@
         <!-- ── Phase content ── -->
         <div class="lw-content" id="lwContent">
 
-            <!-- ═══ PHASE 1 — LEVANTAMIENTO ═══ -->
+            <!-- ═══ PHASE 1 — LEVANTAMIENTO (Canvas Experience) ═══ -->
             <div class="lw-phase lw-phase-active" data-phase="1" id="lwPhase1">
-                <div class="lw-p1-wrap">
-                    <!-- Datos Generales -->
-                    <div class="lw-section">
-                        <div class="lw-section-label">Datos Generales</div>
-                        <div class="lw-grid-3">
-                            <div class="lw-field">
-                                <label>Cliente *</label>
-                                <input type="text" id="lw_f1_cliente" placeholder="Ej. Luxshare Precision" oninput="lwFieldChange()">
-                            </div>
-                            <div class="lw-field">
-                                <label>Contacto *</label>
-                                <input type="text" id="lw_f1_contacto" placeholder="Ing. Miguel Chen" oninput="lwFieldChange()">
-                            </div>
-                            <div class="lw-field">
-                                <label>Área / Ubicación</label>
-                                <input type="text" id="lw_f1_area" placeholder="Nave 3, Tijuana, B.C." oninput="lwFieldChange()">
-                            </div>
-                            <div class="lw-field">
-                                <label>Fecha</label>
-                                <input type="date" id="lw_f1_fecha" oninput="lwFieldChange()">
-                            </div>
-                            <div class="lw-field">
-                                <label>Correo Electrónico</label>
-                                <input type="email" id="lw_f1_email" placeholder="contacto@cliente.com" oninput="lwFieldChange()">
-                            </div>
-                            <div class="lw-field">
-                                <label>Teléfono</label>
-                                <input type="tel" id="lw_f1_telefono" placeholder="+52 664 123 4567" oninput="lwFieldChange()">
-                            </div>
+                <div class="lw-canvas">
+
+                    <!-- ─── HERO ZONE ─────────────────────────────── -->
+                    <div class="lw-canvas-hero">
+                        <!-- Título gigante sin borde — autofocus -->
+                        <input type="text"
+                               class="lw-canvas-title"
+                               id="lw_f1_titulo"
+                               placeholder="Nombre del levantamiento"
+                               spellcheck="false"
+                               oninput="lwUpdateNombre(this.value)">
+
+                        <!-- "Para [cliente]" en lenguaje natural -->
+                        <div class="lw-canvas-forline">
+                            <span class="lw-canvas-forword">Para</span>
+                            <label class="lw-meta-pill lw-meta-pill-cliente" data-field="cliente">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <input type="text"
+                                       id="lw_f1_cliente"
+                                       placeholder="nombre del cliente"
+                                       oninput="lwMetaInput(this)">
+                            </label>
                         </div>
+
+                        <!-- Descripción doc-style -->
+                        <textarea class="lw-canvas-desc"
+                                  id="lw_f1_descripcion"
+                                  rows="3"
+                                  placeholder="Escribe la necesidad del cliente, el problema a resolver y el alcance del trabajo…"
+                                  oninput="lwFieldChange(); lwAutoGrow(this)"></textarea>
                     </div>
 
-                    <!-- Necesidad Reportada -->
-                    <div class="lw-section">
-                        <div class="lw-section-label">Necesidad Reportada</div>
-                        <textarea id="lw_f1_descripcion" rows="4"
-                            placeholder="Describe la necesidad del cliente, el problema a resolver y el alcance del trabajo…"
-                            oninput="lwFieldChange()"></textarea>
+                    <!-- ─── META TOOLBAR (ghost pills) ────────────── -->
+                    <div class="lw-canvas-meta">
+                        <label class="lw-meta-pill" data-field="contacto">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <input type="text" id="lw_f1_contacto" placeholder="Contacto" oninput="lwMetaInput(this)">
+                        </label>
+                        <label class="lw-meta-pill" data-field="area">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <input type="text" id="lw_f1_area" placeholder="Área / ubicación" oninput="lwMetaInput(this)">
+                        </label>
+                        <label class="lw-meta-pill" data-field="fecha">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <input type="date" id="lw_f1_fecha" oninput="lwMetaInput(this)">
+                        </label>
+                        <label class="lw-meta-pill" data-field="email">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+                            <input type="email" id="lw_f1_email" placeholder="Correo" oninput="lwMetaInput(this)">
+                        </label>
+                        <label class="lw-meta-pill" data-field="telefono">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <input type="tel" id="lw_f1_telefono" placeholder="Teléfono" oninput="lwMetaInput(this)">
+                        </label>
                     </div>
 
-                    <!-- Tipo de Servicio (chips) -->
-                    <div class="lw-section">
-                        <div class="lw-section-label">Tipo de Servicio</div>
+                    <!-- ─── ALCANCE (chips) ───────────────────────── -->
+                    <div class="lw-canvas-section">
+                        <div class="lw-canvas-section-label">Tipo de servicio</div>
                         <div class="lw-chips" id="lw_f1_servicios"></div>
                     </div>
 
-                    <!-- Componentes de la Solución (chips) -->
-                    <div class="lw-section">
-                        <div class="lw-section-label">Componentes de la Solución</div>
+                    <div class="lw-canvas-section">
+                        <div class="lw-canvas-section-label">Componentes de la solución</div>
                         <div class="lw-chips" id="lw_f1_componentes"></div>
                     </div>
 
-                    <!-- Partidas / Productos -->
-                    <div class="lw-section">
-                        <div class="lw-section-row">
-                            <div class="lw-section-label">Partidas / Productos</div>
-                            <button type="button" class="lw-add-btn" onclick="lwP1OpenCatalog()">
-                                <span style="font-size:14px;">+</span> Agregar Producto
+                    <!-- ─── PRODUCTOS ─────────────────────────────── -->
+                    <div class="lw-canvas-section">
+                        <div class="lw-canvas-section-row">
+                            <div class="lw-canvas-section-label">Productos &amp; partidas</div>
+                            <button type="button" class="lw-ghost-btn" onclick="lwP1OpenCatalog()">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                                Agregar producto
+                                <kbd class="lw-kbd">⌘K</kbd>
                             </button>
                         </div>
 
                         <div class="lw-catalog-box" id="lwCatalogBox" style="display:none;">
                             <div class="lw-catalog-search">
-                                <input type="text" id="lwCatalogSearch" placeholder="Buscar en catálogo…" oninput="lwP1CatalogSearch()">
+                                <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                <input type="text" id="lwCatalogSearch" placeholder="Buscar por descripción, marca, No. de parte…" oninput="lwP1CatalogSearch()">
+                                <button type="button" class="lw-catalog-close" onclick="lwP1CloseCatalog()" title="Cerrar">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                </button>
                             </div>
                             <div class="lw-catalog-list" id="lwCatalogList"></div>
                         </div>

@@ -243,33 +243,97 @@
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  PHASE 1 — LEVANTAMIENTO
+    //  PHASE 1 — LEVANTAMIENTO (Canvas Experience)
     // ═══════════════════════════════════════════════════════════════
+
+    // Helper: marca/desmarca .is-filled en un pill según su input
+    function lwRefreshMetaPill(inputEl) {
+        if (!inputEl) return;
+        var pill = inputEl.closest('.lw-meta-pill');
+        if (!pill) return;
+        var has = (inputEl.value || '').toString().trim().length > 0;
+        pill.classList.toggle('is-filled', has);
+    }
+
+    // Handler de inputs en píldoras (metadata toolbar)
+    window.lwMetaInput = function (el) {
+        lwRefreshMetaPill(el);
+        lwFieldChange();
+    };
+
+    // Auto-grow del textarea de descripción (doc style)
+    window.lwAutoGrow = function (ta) {
+        if (!ta) return;
+        ta.style.height = 'auto';
+        ta.style.height = (ta.scrollHeight + 2) + 'px';
+    };
+
+    // Actualiza el nombre del levantamiento (hero title) — persiste en
+    // el modelo (no es fase1_data). Autosave debounced.
+    var _nombreTimer = null;
+    window.lwUpdateNombre = function (val) {
+        if (!state.lev) return;
+        state.lev.nombre = val || '';
+        // Refrescar el título en el header también
+        var t = $('lwTitle');
+        if (t) t.textContent = state.lev.nombre || 'Levantamiento';
+        state.dirty = true;
+        if (_nombreTimer) clearTimeout(_nombreTimer);
+        _nombreTimer = setTimeout(function () {
+            apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/actualizar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: state.lev.nombre }),
+            }).then(function (r) {
+                if (r.success) { state.dirty = false; showSaveFlash(); }
+            });
+        }, 700);
+    };
+
     function renderPhase1() {
         var d = state.lev.fase1_data || {};
-        $('lw_f1_cliente').value = d.cliente || '';
-        $('lw_f1_contacto').value = d.contacto || '';
-        $('lw_f1_area').value = d.area || '';
-        $('lw_f1_fecha').value = d.fecha || '';
-        $('lw_f1_email').value = d.email || '';
-        $('lw_f1_telefono').value = d.telefono || '';
-        $('lw_f1_descripcion').value = d.descripcion || '';
 
-        // Servicios chips
+        // Título hero (viene del nombre del levantamiento, no de fase1_data)
+        var titleInput = $('lw_f1_titulo');
+        if (titleInput) {
+            titleInput.value = state.lev.nombre || '';
+            // Autofocus sólo si está vacío (nueva creación)
+            if (!titleInput.value) {
+                setTimeout(function () { titleInput.focus(); }, 60);
+            }
+        }
+
+        // Cliente + metadatos
+        var mapping = { cliente: 'lw_f1_cliente', contacto: 'lw_f1_contacto', area: 'lw_f1_area', fecha: 'lw_f1_fecha', email: 'lw_f1_email', telefono: 'lw_f1_telefono' };
+        Object.keys(mapping).forEach(function (k) {
+            var el = $(mapping[k]);
+            if (el) {
+                el.value = d[k] || '';
+                lwRefreshMetaPill(el);
+            }
+        });
+
+        // Descripción + auto-grow
+        var desc = $('lw_f1_descripcion');
+        if (desc) {
+            desc.value = d.descripcion || '';
+            setTimeout(function () { lwAutoGrow(desc); }, 40);
+        }
+
+        // Chips de servicios
         var sv = $('lw_f1_servicios');
         sv.innerHTML = SERVICIOS.map(function (s) {
             var on = (d.servicios || []).indexOf(s) !== -1;
             return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1ToggleServicio(\'' + esc(s).replace(/'/g, "\\'") + '\')">' +
                 (on ? '<i></i>' : '') + esc(s) + '</button>';
         }).join('');
-        // Componentes chips
+        // Chips de componentes
         var cp = $('lw_f1_componentes');
         cp.innerHTML = COMPONENTES.map(function (c) {
             var on = (d.componentes || []).indexOf(c) !== -1;
             return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1ToggleComponente(\'' + esc(c).replace(/'/g, "\\'") + '\')">' +
                 (on ? '<i></i>' : '') + esc(c) + '</button>';
         }).join('');
-        // Productos
         renderPhase1Productos();
     }
 
@@ -299,9 +363,11 @@
         if (!prods.length) {
             wrap.innerHTML =
                 '<div class="lw-empty-prods" onclick="lwP1OpenCatalog()">' +
-                    '<div class="lw-empty-prods-icon">📦</div>' +
-                    '<div class="lw-empty-prods-title">Sin productos agregados</div>' +
-                    '<div class="lw-empty-prods-hint">Haz clic para buscar en el catálogo maestro</div>' +
+                    '<div class="lw-empty-prods-icon">' +
+                        '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>' +
+                    '</div>' +
+                    '<div class="lw-empty-prods-title">Busca un producto del catálogo</div>' +
+                    '<div class="lw-empty-prods-hint">Teclea descripción, marca o número de parte · <kbd>⌘K</kbd></div>' +
                 '</div>';
             return;
         }
@@ -895,14 +961,20 @@
     };
     function collectPhase5() { return state.lev.fase5_data || {}; }
 
-    // ── ESC cierra el wizard ─────────────────────────────────
+    // Atajos de teclado dentro del wizard:
+    //  - ⌘K / Ctrl+K: abrir catálogo de productos en Fase 1
+    //  - ⌘S / Ctrl+S: guardar fase actual
+    //  - NO hay ESC para cerrar (sólo la X, protege trabajo de campo).
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            var ov = $('levantamientoWizard');
-            if (ov && ov.style.display !== 'none') {
-                e.preventDefault();
-                levantamientoWizardClose();
-            }
+        var ov = $('levantamientoWizard');
+        if (!ov || ov.style.display === 'none') return;
+        var mod = e.metaKey || e.ctrlKey;
+        if (mod && (e.key === 'k' || e.key === 'K') && state.phase === 1) {
+            e.preventDefault();
+            lwP1OpenCatalog();
+        } else if (mod && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            lwSave(true);
         }
     });
 

@@ -347,40 +347,6 @@
     gap: 12px 16px;
 }
 
-.lw-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.lw-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    background: #fff;
-    color: #475569;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.12s ease;
-}
-.lw-chip:hover { background: #F8FAFC; }
-.lw-chip.sel {
-    background: #EFF6FF;
-    border-color: #BFDBFE;
-    color: #1D4ED8;
-    font-weight: 600;
-}
-.lw-chip.sel i {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #2563EB;
-    flex-shrink: 0;
-}
 
 .lw-add-btn {
     display: inline-flex;
@@ -399,102 +365,349 @@
 }
 .lw-add-btn:hover { border-color: #CBD5E1; background: #F8FAFC; }
 
-/* ── PHASE 1 specifics ── */
-.lw-p1-wrap {
-    padding: 24px 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 26px;
-    overflow-y: auto;
+/* ══════════════════════════════════════════════════════════════
+   PHASE 1 — CANVAS EXPERIENCE
+   Principios: ghost inputs, ghost pills, doc-style typography,
+   sin box-fatigue, metadatos en toolbar secundaria.
+   ══════════════════════════════════════════════════════════════ */
+
+.lw-canvas {
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
+    padding: 36px 72px 56px;
+    max-width: 920px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
 }
-.lw-p1-wrap textarea {
-    resize: vertical;
-    line-height: 1.55;
-    min-height: 90px;
+
+/* ── Hero ── */
+.lw-canvas-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
+
+/* Título gigante sin borde — documento en blanco */
+.lw-canvas-title {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: inherit;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: #0F172A;
+    line-height: 1.2;
+    padding: 4px 0;
+    width: 100%;
+    transition: background 0.12s ease;
+    border-radius: 6px;
+}
+.lw-canvas-title:hover:not(:focus) { background: rgba(241, 245, 249, 0.6); }
+.lw-canvas-title:focus { background: transparent; }
+.lw-canvas-title::placeholder {
+    color: #CBD5E1;
+    font-weight: 800;
+}
+
+/* "Para [pill cliente]" - natural language line */
+.lw-canvas-forline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.lw-canvas-forword {
+    font-size: 15px;
+    font-weight: 500;
+    color: #64748B;
+    letter-spacing: -0.01em;
+}
+.lw-meta-pill-cliente {
+    font-weight: 600;
+}
+.lw-meta-pill-cliente input { min-width: 180px; width: 180px; }
+
+/* Descripción doc-style */
+.lw-canvas-desc {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #334155;
+    padding: 8px 0;
+    width: 100%;
+    resize: none;
+    overflow: hidden;
+    min-height: 60px;
+    transition: background 0.12s ease;
+    border-radius: 6px;
+}
+.lw-canvas-desc:hover:not(:focus) { background: rgba(241, 245, 249, 0.5); }
+.lw-canvas-desc::placeholder {
+    color: #94A3B8;
+    font-weight: 400;
+}
+
+/* ── Meta toolbar (ghost pills) ── */
+.lw-canvas-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 16px 0 4px;
+    border-top: 1px solid #E2E8F0;
+}
+
+.lw-meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px dashed #CBD5E1;
+    background: transparent;
+    cursor: text;
+    color: #94A3B8;
+    transition: all 0.15s ease;
+    font-size: 13px;
+    max-width: 100%;
+}
+.lw-meta-pill:hover {
+    background: rgba(241, 245, 249, 0.6);
+    border-color: #94A3B8;
+    color: #64748B;
+}
+.lw-meta-pill:focus-within {
+    background: #fff;
+    border: 1px solid #93C5FD;
+    border-style: solid;
+    box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.28);
+    color: #475569;
+}
+.lw-meta-pill.is-filled {
+    background: #F1F5F9;
+    border: 1px solid transparent;
+    color: #334155;
+}
+.lw-meta-pill.is-filled:hover {
+    background: #E2E8F0;
+    border-color: transparent;
+}
+.lw-meta-pill.is-filled:focus-within {
+    background: #fff;
+    border: 1px solid #93C5FD;
+    box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.28);
+}
+.lw-meta-pill svg {
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+.lw-meta-pill input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: inherit;
+    min-width: 100px;
+    width: 100px;
+    padding: 0;
+    letter-spacing: -0.005em;
+}
+.lw-meta-pill.is-filled input { color: #1E293B; }
+.lw-meta-pill input::placeholder {
+    color: inherit;
+    opacity: 0.9;
+    font-weight: 500;
+}
+/* Inputs de date: el valor, cuando está vacío, Chrome muestra "mm/dd/yyyy"; queremos el placeholder */
+.lw-meta-pill input[type="date"] { min-width: 140px; width: 140px; }
+.lw-meta-pill input[type="email"] { min-width: 160px; width: 160px; }
+.lw-meta-pill input[type="tel"] { min-width: 130px; width: 130px; }
+
+/* ── Sections (Alcance / Productos) ── */
+.lw-canvas-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.lw-canvas-section-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+.lw-canvas-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94A3B8;
+}
+
+/* ── Ghost Button (reemplaza el lw-add-btn con esquemas rígidos) ── */
+.lw-ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #64748B;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+.lw-ghost-btn:hover {
+    background: #F1F5F9;
+    color: #2563EB;
+}
+.lw-ghost-btn:focus-visible {
+    outline: none;
+    border-color: #93C5FD;
+    box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.28);
+    background: #F8FAFC;
+    color: #2563EB;
+}
+.lw-ghost-btn svg { stroke: currentColor; flex-shrink: 0; }
+.lw-ghost-btn .lw-kbd {
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94A3B8;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 5px;
+    padding: 1px 5px;
+    margin-left: 2px;
+    letter-spacing: 0.02em;
+}
+
+/* ── Catalog box — search con icono y close ── */
 .lw-catalog-box {
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
+    border-radius: 14px;
     background: #fff;
-    box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.18);
-    margin-bottom: 8px;
+    box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.22), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
     overflow: hidden;
     animation: lw-menu 150ms cubic-bezier(.16, 1, .3, 1);
 }
-.lw-catalog-search { padding: 8px 12px; border-bottom: 1px solid #E2E8F0; }
-.lw-catalog-search input {
-    width: 100%;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    font-size: 13px;
-    color: #1E293B;
-    outline: none;
-    font-family: inherit;
+.lw-catalog-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #E2E8F0;
 }
-.lw-catalog-list { max-height: 260px; overflow-y: auto; }
+.lw-catalog-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    color: #0F172A;
+    padding: 0;
+}
+.lw-catalog-search input::placeholder { color: #94A3B8; font-weight: 400; }
+.lw-catalog-close {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #94A3B8;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+}
+.lw-catalog-close:hover { background: #F1F5F9; color: #475569; }
+.lw-catalog-list { max-height: 320px; overflow-y: auto; padding: 4px; }
 .lw-catalog-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 14px;
+    padding: 10px 12px;
     cursor: pointer;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+    border-radius: 8px;
     transition: background 0.1s;
+    border-bottom: none;
 }
 .lw-catalog-row:hover { background: #F8FAFC; }
 .lw-catalog-desc { font-size: 13px; font-weight: 600; color: #0F172A; }
 .lw-catalog-sub { font-size: 11.5px; color: #94A3B8; margin-top: 2px; }
-.lw-catalog-price { font-size: 12.5px; font-weight: 600; color: #64748B; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.lw-catalog-empty { padding: 26px 16px; text-align: center; color: #94A3B8; font-size: 12.5px; }
+.lw-catalog-price { font-size: 12.5px; font-weight: 600; color: #64748B; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: 'SF Mono', ui-monospace, Menlo, monospace; }
+.lw-catalog-empty { padding: 32px 16px; text-align: center; color: #94A3B8; font-size: 12.5px; }
 
-.lw-p1-tbl-wrap { border: 1px solid #E2E8F0; border-radius: 10px; overflow: auto; }
+/* ── Productos table en Phase 1 — adaptación ghost ── */
+.lw-p1-tbl-wrap {
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    overflow: auto;
+    background: #fff;
+}
 .lw-p1-tbl { width: 100%; border-collapse: collapse; }
-.lw-p1-tbl thead { background: #FAFBFC; }
+.lw-p1-tbl thead { background: #F8FAFC; }
 .lw-p1-tbl th {
-    padding: 8px 12px;
+    padding: 8px 14px;
     text-align: left;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #94A3B8;
     border-bottom: 1px solid #E2E8F0;
     white-space: nowrap;
 }
-.lw-p1-tbl td { padding: 8px 12px; vertical-align: middle; border-bottom: 1px solid rgba(226, 232, 240, 0.5); }
-.lw-p1-partida { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #94A3B8; }
-.lw-p1-unidad { font-size: 12px; color: #64748B; }
-.lw-p1-muted { font-size: 12px; color: #64748B; }
-.lw-p1-mono { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 11px; }
+.lw-p1-tbl td {
+    padding: 10px 14px;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    font-size: 13px;
+}
+.lw-p1-tbl tr:last-child td { border-bottom: none; }
+.lw-p1-tbl tr:hover td { background: rgba(248, 250, 252, 0.7); }
+.lw-p1-partida { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #CBD5E1; font-variant-numeric: tabular-nums; }
+.lw-p1-unidad { font-size: 11.5px; color: #94A3B8; font-weight: 500; }
+.lw-p1-muted { font-size: 12.5px; color: #64748B; }
+.lw-p1-mono { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #94A3B8; }
 
+/* cell-input (ghost en tabla) */
 .lw-cell-input {
     border: 1px solid transparent;
     border-radius: 6px;
     padding: 4px 8px;
     background: transparent;
+    font-family: inherit;
     font-size: 13px;
     color: #1E293B;
     outline: none;
-    font-family: inherit;
     transition: all 0.12s ease;
 }
-.lw-cell-input:focus, .lw-cell-input:hover {
-    border-color: #E2E8F0;
-    background: #fff;
-}
+.lw-cell-input:hover { background: #F8FAFC; }
 .lw-cell-input:focus {
+    background: #fff;
     border-color: #93C5FD;
     box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.22);
 }
 .lw-cell-wide { width: 100%; }
 .lw-cell-del {
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
     border: none;
     background: transparent;
     color: #CBD5E1;
@@ -507,26 +720,102 @@
     padding: 0;
     line-height: 1;
 }
-.lw-cell-del:hover {
-    color: #DC2626;
-    background: #FEE2E2;
-}
+.lw-cell-del:hover { color: #DC2626; background: #FEE2E2; }
 
+/* ── Empty state productos (poka-yoke: dashed, no rojo) ── */
 .lw-empty-prods {
-    border: 1.5px dashed #E2E8F0;
-    border-radius: 12px;
+    border: 1.5px dashed #CBD5E1;
+    border-radius: 14px;
     background: linear-gradient(180deg, #FAFBFC, #F8FAFC);
-    padding: 32px 24px;
+    padding: 36px 24px;
     text-align: center;
     cursor: pointer;
-    color: #94A3B8;
-    font-size: 12px;
-    transition: all 0.15s ease;
+    transition: all 0.18s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
-.lw-empty-prods:hover { border-color: #93C5FD; color: #2563EB; }
-.lw-empty-prods-icon { font-size: 24px; margin-bottom: 6px; opacity: 0.5; }
-.lw-empty-prods-title { font-size: 13px; font-weight: 600; color: inherit; }
-.lw-empty-prods-hint { font-size: 12px; margin-top: 3px; }
+.lw-empty-prods:hover {
+    border-color: #93C5FD;
+    background: linear-gradient(180deg, #F0F9FF, #EFF6FF);
+}
+.lw-empty-prods-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #F1F5F9;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #94A3B8;
+    margin-bottom: 4px;
+    transition: all 0.18s ease;
+}
+.lw-empty-prods:hover .lw-empty-prods-icon {
+    background: #DBEAFE;
+    color: #2563EB;
+}
+.lw-empty-prods-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    letter-spacing: -0.01em;
+}
+.lw-empty-prods-hint {
+    font-size: 12.5px;
+    color: #94A3B8;
+}
+.lw-empty-prods-hint kbd {
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #64748B;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin: 0 2px;
+}
+
+/* ── Chips (alcance) — polish ── */
+.lw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lw-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid #E2E8F0;
+    background: #fff;
+    color: #475569;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    letter-spacing: -0.005em;
+}
+.lw-chip:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+    color: #334155;
+}
+.lw-chip.sel {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+    color: #1D4ED8;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(29, 78, 216, 0.08);
+}
+.lw-chip.sel:hover { background: #DBEAFE; border-color: #93C5FD; }
+.lw-chip.sel i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #2563EB;
+    flex-shrink: 0;
+}
 
 /* ── PHASE 2 specifics ── */
 .lw-p2-wrap {
