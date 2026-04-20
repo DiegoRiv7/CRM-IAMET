@@ -5115,19 +5115,18 @@
                 return;
             }
 
-            // Agrupar por: atrasadas / hoy / esta semana / más tarde / sin fecha
+            // Agrupar en 3 secciones: ATRASADAS / HOY / MÁS TARDE
+            // (MÁS TARDE absorbe sin-fecha + esta-semana + futuras + completadas)
             var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-            var endOfWeek = new Date(today); endOfWeek.setDate(endOfWeek.getDate() + (7 - today.getDay()));
-            var groups = { atrasadas: [], hoy: [], semana: [], despues: [], sinFecha: [] };
+            var groups = { atrasadas: [], hoy: [], despues: [] };
 
             tareas.forEach(function(t) {
                 if (t.estado === 'completada') { groups.despues.push(t); return; }
-                if (!t.fecha_limite) { groups.sinFecha.push(t); return; }
+                if (!t.fecha_limite) { groups.despues.push(t); return; }
                 var fl = new Date(t.fecha_limite);
                 if (fl < today) groups.atrasadas.push(t);
                 else if (fl < tomorrow) groups.hoy.push(t);
-                else if (fl <= endOfWeek) groups.semana.push(t);
                 else groups.despues.push(t);
             });
 
@@ -5137,20 +5136,17 @@
             var secciones = [
                 { key: 'atrasadas', label: 'ATRASADAS',   extra: '', items: groups.atrasadas, cls: 'atrasadas' },
                 { key: 'hoy',       label: 'HOY',         extra: ' · ' + hoyLabel, items: groups.hoy, cls: '' },
-                { key: 'semana',    label: 'ESTA SEMANA', extra: '', items: groups.semana,    cls: '' },
-                { key: 'sinFecha',  label: 'SIN FECHA',   extra: '', items: groups.sinFecha,  cls: '' },
                 { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues,   cls: '' },
             ];
 
             // Cabecera de columnas sticky (siempre primera)
             var html = '<div class="tcp-col-head">' +
-                '<span></span>' +                               // check col (vacío)
-                '<span>ID</span>' +
                 '<span>TAREA</span>' +
                 '<span>ESTADO</span>' +
                 '<span>RESPONSABLE</span>' +
+                '<span>CREADOR</span>' +
+                '<span>FECHA LÍMITE</span>' +
                 '<span>OPORTUNIDAD</span>' +
-                '<span class="tcp-col-fecha">FECHA LÍMITE</span>' +
                 '</div>';
 
             secciones.forEach(function(sec) {
@@ -5259,28 +5255,41 @@
             var estadoCls = _tcpEstadoClass(t.estado);
             var estadoLbl = _tcpEstadoLabel(t.estado).toUpperCase();
             var resp = t.responsable || '';
+            var creador = t.creado_por || t.creador || '';
             var respTxt = _tcpFirstName(resp);
+            var creaTxt = _tcpFirstName(creador);
             var oppNombre = t.oportunidad_nombre || '';
             var oppId = t.oportunidad_id || '';
             var doneCls = t.estado === 'completada' ? ' done' : '';
             var atrCls = esAtrasada ? ' atrasada' : '';
-            var checkInner = t.estado === 'completada'
-                ? '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+
+            // TAREA: warning icon (solo atrasadas) + título
+            var warnIcon = esAtrasada
+                ? '<span class="tcp-row-warn" title="Vencida"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="0" fill="#EF4444"/><path d="M12 9v4M12 17h.01" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span>'
                 : '';
 
-            // Celda oportunidad: clickable solo si hay oppId
+            // OPORTUNIDAD: clickable si hay oppId
             var oppCell = oppId
-                ? '<span class="tcp-row-opp linked" title="' + _tcpEsc(oppNombre) + '" onclick="event.stopPropagation();tcpAbrirOportunidad(' + oppId + ')">' + _tcpEsc(oppNombre) + '</span>'
+                ? '<span class="tcp-row-opp linked" title="' + _tcpEsc(oppNombre) + '" onclick="event.stopPropagation();tcpAbrirOportunidad(' + oppId + ')">' + _tcpEsc(oppNombre || '—') + '</span>'
                 : '<span class="tcp-row-opp' + (oppNombre ? '' : ' empty') + '">' + _tcpEsc(oppNombre || '—') + '</span>';
 
+            // FECHA: pill con calendar icon
+            var calSvg = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+            var fechaTxt = t.fecha_limite ? _tcpFmtFecha(t.fecha_limite) : '';
+            var fechaCell = fechaTxt
+                ? '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + calSvg + ' ' + fechaTxt + '</span>'
+                : '<span class="tcp-row-fecha" style="background:transparent;color:#CBD5E1;padding:0;">—</span>';
+
             return '<div class="tcp-row' + doneCls + atrCls + '" data-tid="' + t.id + '" onclick="tcpSelectTask(' + t.id + ')">' +
-                '<button class="tcp-row-check' + (t.estado === 'completada' ? ' done' : '') + '" onclick="event.stopPropagation();tcpToggleCheck(' + t.id + ')" title="Completar">' + checkInner + '</button>' +
-                '<span class="tcp-row-tid">T-' + t.id + '</span>' +
-                '<span class="tcp-row-title">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
+                '<span class="tcp-row-tarea">' +
+                    warnIcon +
+                    '<span class="tcp-row-title">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
+                '</span>' +
                 '<span class="tcp-row-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
                 '<span class="tcp-row-resp' + (respTxt ? '' : ' empty') + '">' + _tcpEsc(respTxt || '—') + '</span>' +
+                '<span class="tcp-row-creador' + (creaTxt ? '' : ' empty') + '">' + _tcpEsc(creaTxt || '—') + '</span>' +
+                fechaCell +
                 oppCell +
-                '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + _tcpFmtFecha(t.fecha_limite) + '</span>' +
                 '</div>';
         }
 
@@ -6217,15 +6226,15 @@
                         if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
                     }
                 }
-                var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'list';
-                if (_tareasViewMode === 'cards') _tareasViewMode = 'list';  // migración: cards → list
-                if (['list','calendar','cockpit'].indexOf(_tareasViewMode) === -1) _tareasViewMode = 'list';
+                // Cockpit es ahora la vista default (reemplaza lista).
+                // Migración: cards/list/viejo → cockpit.
+                var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'cockpit';
+                if (_tareasViewMode === 'cards' || _tareasViewMode === 'list') _tareasViewMode = 'cockpit';
+                if (['calendar','cockpit'].indexOf(_tareasViewMode) === -1) _tareasViewMode = 'cockpit';
                 applyTareasView(_tareasViewMode);
                 btnView.addEventListener('click', function(){
-                    // Ciclo: list → calendar → cockpit → list
-                    _tareasViewMode = _tareasViewMode === 'list' ? 'calendar'
-                                   : _tareasViewMode === 'calendar' ? 'cockpit'
-                                   : 'list';
+                    // Ciclo simplificado: cockpit ↔ calendar (list queda fuera del ciclo)
+                    _tareasViewMode = _tareasViewMode === 'cockpit' ? 'calendar' : 'cockpit';
                     localStorage.setItem('tareasViewMode', _tareasViewMode);
                     applyTareasView(_tareasViewMode);
                 });

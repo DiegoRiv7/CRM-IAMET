@@ -7638,18 +7638,19 @@
 .tcp-section-body { display: block; }
 .tcp-section-head.collapsed + .tcp-section-body { display: none; }
 
-/* Grid template compartido entre cabeza y filas */
+/* Grid template compartido entre cabeza y filas.
+   Columnas: TAREA | ESTADO | RESPONSABLE | CREADOR | FECHA | OPORTUNIDAD
+   TAREA flex 2fr, OPORTUNIDAD flex 1fr → TAREA prioriza espacio. */
 .tcp-row, .tcp-col-head {
     display: grid;
     grid-template-columns:
-        17px                    /* check */
-        58px                    /* T-ID */
-        minmax(0, 1fr)          /* título (absorbe espacio, trunca si largo) */
-        118px                   /* estado pill */
-        110px                   /* responsable */
-        160px                   /* oportunidad (clickable) */
-        96px;                   /* fecha */
-    gap: 12px;
+        minmax(0, 2fr)          /* TAREA */
+        112px                   /* ESTADO pill */
+        128px                   /* RESPONSABLE */
+        128px                   /* CREADOR */
+        120px                   /* FECHA LÍMITE */
+        minmax(0, 1fr);         /* OPORTUNIDAD */
+    gap: 14px;
     align-items: center;
 }
 
@@ -7669,12 +7670,10 @@
     user-select: none;
 }
 .tcp-col-head > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tcp-col-head > span:first-child { pointer-events: none; }  /* espacio del check */
-.tcp-col-head .tcp-col-fecha { text-align: right; }
 
 /* Fila de tarea */
 .tcp-row {
-    padding: 9px 20px 9px 16px;
+    padding: 11px 20px 11px 18px;
     border-bottom: 1px solid rgba(241, 245, 249, 0.8);
     cursor: pointer;
     position: relative;
@@ -7682,6 +7681,10 @@
 }
 .tcp-row:hover { background: #F8FAFC; }
 .tcp-row.active { background: #EFF6FF; }
+/* Atrasadas: bg rose sutil + borde vertical rojo + ícono warning inline */
+.tcp-row.atrasada { background: rgba(254, 242, 242, 0.55); }
+.tcp-row.atrasada:hover { background: rgba(254, 226, 226, 0.5); }
+.tcp-row.atrasada.active { background: #FEF2F2; }
 .tcp-row.atrasada::before {
     content: '';
     position: absolute;
@@ -7690,32 +7693,20 @@
     background: #EF4444;
 }
 
-.tcp-row-check {
-    width: 17px; height: 17px;
-    border-radius: 50%;
-    border: 1.4px solid #CBD5E1;
-    background: #fff;
-    cursor: pointer;
+/* Columna TAREA: ícono opcional de warning + título */
+.tcp-row-tarea {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.tcp-row-warn {
+    width: 15px; height: 15px;
+    flex-shrink: 0;
+    color: #EF4444;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: transparent;
-    transition: all 0.15s;
-    padding: 0;
-}
-.tcp-row-check:hover { border-color: #10B981; color: #A7F3D0; }
-.tcp-row-check.done {
-    background: #10B981;
-    border-color: #10B981;
-    color: #fff;
-}
-
-.tcp-row-tid {
-    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
-    font-size: 11px;
-    color: #94A3B8;
-    font-weight: 500;
-    letter-spacing: -0.01em;
 }
 .tcp-row-title {
     min-width: 0;
@@ -7725,6 +7716,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
 }
 .tcp-row.done .tcp-row-title {
     color: #94A3B8;
@@ -7763,8 +7755,9 @@
 .tcp-row-estado.enviada     { background: #E0F2FE; color: #0369A1; }
 .tcp-row-estado.pagado      { background: #D1FAE5; color: #047857; }
 
-/* Responsable — solo nombre, sin avatar colorido, texto muted */
-.tcp-row-resp {
+/* Responsable y Creador — solo nombre, sin avatar colorido, texto muted */
+.tcp-row-resp,
+.tcp-row-creador {
     font-size: 12.5px;
     color: #64748B;
     font-weight: 500;
@@ -7772,7 +7765,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.tcp-row-resp.empty { color: #CBD5E1; }
+.tcp-row-resp.empty,
+.tcp-row-creador.empty { color: #CBD5E1; }
 
 /* Oportunidad — link clickable que abre el widget de la oportunidad */
 .tcp-row-opp {
@@ -7793,15 +7787,28 @@
 }
 .tcp-row-opp.linked:hover { color: #2563EB; text-decoration: underline; text-underline-offset: 3px; }
 .tcp-row-opp.empty { color: #CBD5E1; }
+/* Fecha como pill (estilo de la lista vieja) con ícono de calendario */
 .tcp-row-fecha {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    background: #F1F5F9;
+    color: #475569;
     font-family: 'SF Mono', ui-monospace, Menlo, monospace;
     font-size: 11.5px;
-    font-weight: 500;
-    color: #64748B;
-    text-align: right;
+    font-weight: 600;
     white-space: nowrap;
+    width: fit-content;
+    justify-self: start;
 }
-.tcp-row-fecha.atrasada { color: #DC2626; font-weight: 700; }
+.tcp-row-fecha svg { color: #94A3B8; flex-shrink: 0; }
+.tcp-row-fecha.atrasada {
+    background: #FEE2E2;
+    color: #B91C1C;
+}
+.tcp-row-fecha.atrasada svg { color: #EF4444; }
 
 .tcp-row-empty {
     text-align: center;
