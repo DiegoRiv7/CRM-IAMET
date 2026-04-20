@@ -18,6 +18,19 @@
     var SERVICIOS   = ['CCTV', 'Alarma Intrusión', 'Control de Acceso', 'Cableado Estructurado', 'Voceo', 'Telefonía', 'Otros'];
     var COMPONENTES = ['Cámara IP', 'Cámara Analógica', 'NVR', 'Cableado', 'Gabinete/Rack', 'Switches', 'UPS', 'Access Point'];
 
+    // Mapa: qué componentes son relevantes para cada servicio.
+    // Si no hay servicios seleccionados, se muestran todos (fallback).
+    // Si el usuario marca "Otros", también se muestran todos.
+    var SERVICIO_COMPONENTES = {
+        'CCTV':                  ['Cámara IP', 'Cámara Analógica', 'NVR', 'Cableado', 'Gabinete/Rack', 'Switches', 'UPS'],
+        'Alarma Intrusión':      ['Cableado', 'Gabinete/Rack', 'UPS'],
+        'Control de Acceso':     ['Cableado', 'Gabinete/Rack', 'Switches', 'UPS'],
+        'Cableado Estructurado': ['Cableado', 'Gabinete/Rack', 'Switches', 'Access Point'],
+        'Voceo':                 ['Cableado', 'Gabinete/Rack', 'UPS'],
+        'Telefonía':             ['Cableado', 'Switches', 'UPS', 'Access Point'],
+        'Otros':                 null, // null = todos
+    };
+
     // Demo catalog (fallback si el endpoint real no devuelve nada)
     var DEMO_CATALOG = [
         { id: 'D001', desc: 'Cámara IP Domo 4MP IR 30m',     marca: 'Hikvision', modelo: 'DS-2CD2347G2-LU', unidad: 'PZA', precio: 2850 },
@@ -99,6 +112,33 @@
         if (dot) dot.style.background = cfg.dot;
         if (lbl) { lbl.textContent = cfg.label; lbl.style.color = cfg.color; }
         if (btn) btn.style.color = cfg.color;
+        renderSaveStamp();
+    }
+
+    // Formatea fecha relativa: hoy, hace 2m, hace 3h, ayer, hace 5d...
+    function fmtRelative(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var now = new Date();
+        var diff = Math.max(0, (now.getTime() - d.getTime()) / 1000);
+        if (diff < 50) return 'hace unos segundos';
+        if (diff < 3600) return 'hace ' + Math.round(diff / 60) + ' min';
+        if (diff < 86400) return 'hace ' + Math.round(diff / 3600) + ' h';
+        if (diff < 172800) return 'ayer';
+        if (diff < 604800) return 'hace ' + Math.round(diff / 86400) + ' d';
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+    }
+
+    // Render "Guardado hace X · por Y" en el header (junto al botón Guardar)
+    function renderSaveStamp() {
+        var el = $('lwSaveStamp');
+        if (!el) return;
+        var ts = state.lev && state.lev.fecha_actualizacion;
+        var by = state.lev && state.lev.creado_por_nombre;
+        if (!ts) { el.textContent = ''; return; }
+        var rel = fmtRelative(ts);
+        el.textContent = 'Guardado ' + rel + (by ? ' · por ' + by : '');
     }
 
     window.lwToggleStatusMenu = function (e) {
@@ -127,7 +167,12 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: status }),
         }).then(function (r) {
-            if (r.success) { state.dirty = false; showSaveFlash(); }
+            if (r.success) {
+                state.dirty = false;
+                if (r.data && r.data.fecha_actualizacion) state.lev.fecha_actualizacion = r.data.fecha_actualizacion;
+                renderSaveStamp();
+                showSaveFlash();
+            }
         });
     };
 
@@ -220,6 +265,11 @@
         }).then(function (r) {
             if (r.success) {
                 state.dirty = false;
+                // Actualizar timestamp desde la respuesta del servidor
+                if (r.data && r.data.fecha_actualizacion) {
+                    state.lev.fecha_actualizacion = r.data.fecha_actualizacion;
+                }
+                renderSaveStamp();
                 if (showFlash) showSaveFlash();
             }
         });
@@ -285,7 +335,12 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre: state.lev.nombre }),
             }).then(function (r) {
-                if (r.success) { state.dirty = false; showSaveFlash(); }
+                if (r.success) {
+                    state.dirty = false;
+                    if (r.data && r.data.fecha_actualizacion) state.lev.fecha_actualizacion = r.data.fecha_actualizacion;
+                    renderSaveStamp();
+                    showSaveFlash();
+                }
             });
         }, 700);
     };
@@ -313,6 +368,9 @@
             }
         });
 
+        // Si hay cliente_id guardado, pre-fetch contactos para el dropdown
+        if (d.cliente_id) _prefetchContactos(d.cliente_id);
+
         // Descripción + auto-grow
         var desc = $('lw_f1_descripcion');
         if (desc) {
@@ -327,14 +385,50 @@
             return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1ToggleServicio(\'' + esc(s).replace(/'/g, "\\'") + '\')">' +
                 (on ? '<i></i>' : '') + esc(s) + '</button>';
         }).join('');
-        // Chips de componentes
+        // Componentes — filtrados por servicios seleccionados
+        renderPhase1Componentes();
+
+        // Estado "locked" del cliente si tiene cliente_id
+        lwRefreshClienteLock();
+
+        renderPhase1Productos();
+        lwRecomputeSummary();
+    }
+
+    // Renderea chips de componentes filtrando por servicios activos.
+    // Si hay servicios seleccionados, solo muestra los componentes relevantes.
+    // Si no, muestra todos. Mantiene el estado (seleccionado) incluso si el
+    // componente ya no aplica (se marca con un badge pero sigue visible).
+    function renderPhase1Componentes() {
+        var d = state.lev.fase1_data || {};
+        var servicios = d.servicios || [];
+        var selectedComps = d.componentes || [];
+        var relevantSet = null;
+        if (servicios.length > 0 && servicios.indexOf('Otros') === -1) {
+            relevantSet = {};
+            servicios.forEach(function (s) {
+                var list = SERVICIO_COMPONENTES[s];
+                if (list === null) { relevantSet = null; return; }
+                if (Array.isArray(list)) list.forEach(function (c) { relevantSet[c] = true; });
+            });
+        }
+        // Unir: los relevantes + los ya seleccionados (para no ocultarlos si
+        // cambia el servicio después)
+        var toShow;
+        if (relevantSet) {
+            var merged = {};
+            Object.keys(relevantSet).forEach(function (k) { merged[k] = true; });
+            selectedComps.forEach(function (c) { merged[c] = true; });
+            toShow = COMPONENTES.filter(function (c) { return merged[c]; });
+        } else {
+            toShow = COMPONENTES;
+        }
         var cp = $('lw_f1_componentes');
-        cp.innerHTML = COMPONENTES.map(function (c) {
-            var on = (d.componentes || []).indexOf(c) !== -1;
+        cp.innerHTML = toShow.map(function (c) {
+            var on = selectedComps.indexOf(c) !== -1;
             return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1ToggleComponente(\'' + esc(c).replace(/'/g, "\\'") + '\')">' +
                 (on ? '<i></i>' : '') + esc(c) + '</button>';
         }).join('');
-        renderPhase1Productos();
     }
 
     window.lwP1ToggleServicio = function (s) {
@@ -343,7 +437,10 @@
         var idx = d.servicios.indexOf(s);
         if (idx === -1) d.servicios.push(s); else d.servicios.splice(idx, 1);
         state.lev.fase1_data = d;
-        renderPhase1();
+        // Re-render solo el chip row afectado y los componentes (se filtran)
+        renderPhase1Chip('servicios');
+        renderPhase1Componentes();
+        lwRecomputeSummary();
         lwFieldChange();
     };
     window.lwP1ToggleComponente = function (c) {
@@ -352,9 +449,271 @@
         var idx = d.componentes.indexOf(c);
         if (idx === -1) d.componentes.push(c); else d.componentes.splice(idx, 1);
         state.lev.fase1_data = d;
-        renderPhase1();
+        renderPhase1Chip('componentes');
+        lwRecomputeSummary();
         lwFieldChange();
     };
+
+    // Re-render solo una fila de chips (sin re-render de toda la fase)
+    function renderPhase1Chip(kind) {
+        var d = state.lev.fase1_data || {};
+        if (kind === 'servicios') {
+            var sv = $('lw_f1_servicios');
+            if (sv) sv.innerHTML = SERVICIOS.map(function (s) {
+                var on = (d.servicios || []).indexOf(s) !== -1;
+                return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1ToggleServicio(\'' + esc(s).replace(/'/g, "\\'") + '\')">' +
+                    (on ? '<i></i>' : '') + esc(s) + '</button>';
+            }).join('');
+        } else if (kind === 'componentes') {
+            renderPhase1Componentes();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CLIENTE / CONTACTO AUTOCOMPLETE
+    // ═══════════════════════════════════════════════════════════════
+
+    var _clienteSearchTimer = null;
+    var _contactoSearchTimer = null;
+    var _clienteBlurTimer = null;
+    var _contactoBlurTimer = null;
+    var _cachedClienteContactos = []; // para pre-llenar dropdown de contacto
+
+    function lwInitials(name) {
+        if (!name) return '?';
+        var parts = name.trim().split(/\s+/);
+        var a = parts[0] ? parts[0][0] : '';
+        var b = parts[1] ? parts[1][0] : '';
+        return (a + b).toUpperCase() || '?';
+    }
+
+    // Input en el campo cliente → buscar en /api/buscar-clientes/
+    window.lwClienteInput = function (inp) {
+        var q = (inp.value || '').trim();
+        lwFieldChange();
+        lwRefreshMetaPill(inp);
+        // Si el usuario empieza a teclear, desbloqueamos el estado "locked"
+        // (cambiar de cliente implica limpiar el cliente_id previo)
+        var d = state.lev.fase1_data || {};
+        if (d.cliente_id && d.cliente !== inp.value) {
+            d.cliente_id = null;
+            state.lev.fase1_data = d;
+            lwRefreshClienteLock();
+        }
+        if (_clienteSearchTimer) clearTimeout(_clienteSearchTimer);
+        if (q.length < 2) { lwHideClienteDropdown(); return; }
+        _clienteSearchTimer = setTimeout(function () {
+            apiFetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q)).then(function (r) {
+                var list = r.clientes || [];
+                lwShowClienteDropdown(list);
+            });
+        }, 180);
+    };
+
+    window.lwClienteBlur = function () {
+        // Delay para que el click en un row de dropdown alcance a disparar
+        if (_clienteBlurTimer) clearTimeout(_clienteBlurTimer);
+        _clienteBlurTimer = setTimeout(lwHideClienteDropdown, 160);
+    };
+
+    function lwShowClienteDropdown(list) {
+        var dd = $('lw_f1_cliente_ac');
+        if (!dd) return;
+        if (!list.length) {
+            dd.innerHTML = '<div class="lw-ac-empty">Sin resultados. Puedes teclear un nombre nuevo.</div>';
+            dd.style.display = 'block';
+            return;
+        }
+        dd.innerHTML = list.map(function (c, i) {
+            var ini = lwInitials(c.nombre);
+            var sub = [c.contacto_principal, c.email, c.telefono].filter(Boolean).join(' · ');
+            return '<div class="lw-ac-row" data-id="' + c.id + '" data-idx="' + i + '" onmousedown="lwClienteSelect(' + i + ')">' +
+                '<div class="lw-ac-row-avatar">' + esc(ini) + '</div>' +
+                '<div class="lw-ac-row-main">' +
+                    '<div class="lw-ac-row-name">' + esc(c.nombre) + '</div>' +
+                    (sub ? '<div class="lw-ac-row-sub">' + esc(sub) + '</div>' : '') +
+                '</div>' +
+            '</div>';
+        }).join('');
+        dd.style.display = 'block';
+        window._lwClienteResults = list;
+    }
+
+    function lwHideClienteDropdown() {
+        var dd = $('lw_f1_cliente_ac');
+        if (dd) dd.style.display = 'none';
+    }
+
+    window.lwClienteSelect = function (idx) {
+        var list = window._lwClienteResults || [];
+        var c = list[idx];
+        if (!c) return;
+        var d = state.lev.fase1_data || {};
+        d.cliente_id = c.id;
+        d.cliente = c.nombre;
+        // Auto-fill si los campos están vacíos
+        if (!d.email && c.email) d.email = c.email;
+        if (!d.telefono && c.telefono) d.telefono = c.telefono;
+        // Contacto: si no hay contacto escrito, usa contacto_principal como sugerencia
+        if (!d.contacto && c.contacto_principal) d.contacto = c.contacto_principal;
+        state.lev.fase1_data = d;
+        // Reflejar en inputs
+        $('lw_f1_cliente').value = d.cliente;
+        $('lw_f1_contacto').value = d.contacto || '';
+        $('lw_f1_email').value = d.email || '';
+        $('lw_f1_telefono').value = d.telefono || '';
+        [ 'lw_f1_cliente','lw_f1_contacto','lw_f1_email','lw_f1_telefono' ].forEach(function(id){
+            var el = $(id); if (el) lwRefreshMetaPill(el);
+        });
+        lwHideClienteDropdown();
+        lwRefreshClienteLock();
+        // Prefetch contactos del cliente para el dropdown de contactos
+        _prefetchContactos(c.id);
+        lwRecomputeSummary();
+        lwFieldChange();
+    };
+
+    window.lwClienteClear = function (e) {
+        if (e) { e.stopPropagation(); e.preventDefault(); }
+        var d = state.lev.fase1_data || {};
+        d.cliente_id = null;
+        d.cliente = '';
+        state.lev.fase1_data = d;
+        $('lw_f1_cliente').value = '';
+        lwRefreshMetaPill($('lw_f1_cliente'));
+        lwRefreshClienteLock();
+        _cachedClienteContactos = [];
+        lwRecomputeSummary();
+        lwFieldChange();
+        $('lw_f1_cliente').focus();
+    };
+
+    function lwRefreshClienteLock() {
+        var d = state.lev.fase1_data || {};
+        var pill = document.querySelector('.lw-meta-pill-cliente');
+        var clearBtn = $('lwClienteClearBtn');
+        if (!pill) return;
+        if (d.cliente_id) {
+            pill.classList.add('is-locked');
+            if (clearBtn) clearBtn.style.display = '';
+        } else {
+            pill.classList.remove('is-locked');
+            if (clearBtn) clearBtn.style.display = 'none';
+        }
+    }
+
+    function _prefetchContactos(clienteId) {
+        if (!clienteId) { _cachedClienteContactos = []; return; }
+        apiFetch('/app/api/buscar-contactos/?cliente_id=' + encodeURIComponent(clienteId)).then(function (r) {
+            _cachedClienteContactos = (r.contactos || []);
+        });
+    }
+
+    // ── Contacto autocomplete ──
+    window.lwContactoInput = function (inp) {
+        var q = (inp.value || '').trim();
+        lwFieldChange();
+        lwRefreshMetaPill(inp);
+        var d = state.lev.fase1_data || {};
+        // Si no hay cliente seleccionado, no hay lista — solo input libre
+        if (!d.cliente_id) { lwHideContactoDropdown(); return; }
+        // Si tenemos contactos cacheados, filtrar en cliente
+        if (_contactoSearchTimer) clearTimeout(_contactoSearchTimer);
+        _contactoSearchTimer = setTimeout(function () {
+            var list;
+            if (_cachedClienteContactos.length) {
+                var ql = q.toLowerCase();
+                list = _cachedClienteContactos.filter(function (c) {
+                    return !q || (c.nombre_completo || '').toLowerCase().indexOf(ql) !== -1;
+                });
+                lwShowContactoDropdown(list);
+            } else {
+                apiFetch('/app/api/buscar-contactos/?cliente_id=' + d.cliente_id + '&q=' + encodeURIComponent(q))
+                    .then(function (r) {
+                        var ll = r.contactos || [];
+                        _cachedClienteContactos = ll;
+                        lwShowContactoDropdown(ll);
+                    });
+            }
+        }, 140);
+    };
+
+    window.lwContactoBlur = function () {
+        if (_contactoBlurTimer) clearTimeout(_contactoBlurTimer);
+        _contactoBlurTimer = setTimeout(lwHideContactoDropdown, 160);
+    };
+
+    function lwShowContactoDropdown(list) {
+        var dd = $('lw_f1_contacto_ac');
+        if (!dd) return;
+        if (!list.length) {
+            dd.innerHTML = '<div class="lw-ac-empty">Sin contactos en este cliente. Puedes teclear uno nuevo.</div>';
+            dd.style.display = 'block';
+            return;
+        }
+        dd.innerHTML = list.map(function (c, i) {
+            return '<div class="lw-ac-row" data-idx="' + i + '" onmousedown="lwContactoSelect(' + i + ')">' +
+                '<div class="lw-ac-row-avatar" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);">' + esc(lwInitials(c.nombre_completo)) + '</div>' +
+                '<div class="lw-ac-row-main">' +
+                    '<div class="lw-ac-row-name">' + esc(c.nombre_completo) + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        dd.style.display = 'block';
+        window._lwContactoResults = list;
+    }
+
+    function lwHideContactoDropdown() {
+        var dd = $('lw_f1_contacto_ac');
+        if (dd) dd.style.display = 'none';
+    }
+
+    window.lwContactoSelect = function (idx) {
+        var list = window._lwContactoResults || [];
+        var c = list[idx];
+        if (!c) return;
+        var d = state.lev.fase1_data || {};
+        d.contacto = c.nombre_completo;
+        state.lev.fase1_data = d;
+        $('lw_f1_contacto').value = d.contacto;
+        lwRefreshMetaPill($('lw_f1_contacto'));
+        lwHideContactoDropdown();
+        lwFieldChange();
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    //  RESUMEN VIVO (sidebar stats)
+    // ═══════════════════════════════════════════════════════════════
+
+    function lwRecomputeSummary() {
+        if (!state.lev) return;
+        var d = state.lev.fase1_data || {};
+        var nServ = (d.servicios || []).length;
+        var nComp = (d.componentes || []).length;
+        var prods = d.productos || [];
+        var nProd = prods.length;
+        var monto = prods.reduce(function (a, p) {
+            var qty = Number(p.qty) || 0;
+            var precio = Number(p.precio) || 0;
+            return a + qty * precio;
+        }, 0);
+        var elS = $('lwSumServicios');
+        var elC = $('lwSumComponentes');
+        var elP = $('lwSumProductos');
+        var elM = $('lwSumMonto');
+        if (elS) elS.textContent = nServ;
+        if (elC) elC.textContent = nComp;
+        if (elP) elP.textContent = nProd;
+        if (elM) elM.textContent = '$' + monto.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+        // Progress bar (fase actual / 5)
+        var phase = state.phase || 1;
+        var pct = Math.min(100, phase * 20);
+        var fill = $('lwSumProgressFill');
+        var lbl = $('lwSumProgressLbl');
+        if (fill) fill.style.width = pct + '%';
+        if (lbl) lbl.textContent = 'Fase ' + phase + ' · ' + pct + '%';
+    }
 
     function renderPhase1Productos() {
         var d = state.lev.fase1_data || {};
@@ -372,10 +731,18 @@
             return;
         }
         var html = '<div class="lw-p1-tbl-wrap"><table class="lw-p1-tbl"><thead><tr>' +
-            '<th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th><th>Marca</th><th>Modelo</th><th></th>' +
+            '<th style="width:24px;"></th><th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th><th>Marca</th><th>Modelo</th><th></th>' +
             '</tr></thead><tbody>';
         prods.forEach(function (p, idx) {
-            html += '<tr>' +
+            html += '<tr draggable="true" data-idx="' + idx + '"' +
+                ' ondragstart="lwP1DragStart(event,' + idx + ')"' +
+                ' ondragover="lwP1DragOver(event,' + idx + ')"' +
+                ' ondragleave="lwP1DragLeave(event)"' +
+                ' ondrop="lwP1Drop(event,' + idx + ')"' +
+                ' ondragend="lwP1DragEnd(event)">' +
+                '<td><span class="lw-p1-drag-handle" title="Arrastra para reordenar">' +
+                    '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>' +
+                '</span></td>' +
                 '<td><span class="lw-p1-partida">' + (idx + 1) + '</span></td>' +
                 '<td><input type="number" min="1" value="' + (p.qty || 1) + '" class="lw-cell-input" style="width:48px;" oninput="lwP1UpdateProd(' + idx + ', \'qty\', this.value)"></td>' +
                 '<td><span class="lw-p1-unidad">' + esc(p.unidad || 'PZA') + '</span></td>' +
@@ -388,12 +755,54 @@
         html += '</tbody></table></div>';
         wrap.innerHTML = html;
     }
+
+    // ── Drag & drop reorder ───────────────────────────────────
+    var _dragIdx = null;
+    window.lwP1DragStart = function (e, idx) {
+        _dragIdx = idx;
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', String(idx)); } catch (_) {}
+        var tr = e.currentTarget;
+        tr.classList.add('lw-dragging');
+    };
+    window.lwP1DragOver = function (e, idx) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        // Quitar drag-over de todas las filas y marcar la actual
+        document.querySelectorAll('.lw-p1-tbl tr.lw-drag-over').forEach(function (r) { r.classList.remove('lw-drag-over'); });
+        if (idx !== _dragIdx) e.currentTarget.classList.add('lw-drag-over');
+    };
+    window.lwP1DragLeave = function (e) {
+        e.currentTarget.classList.remove('lw-drag-over');
+    };
+    window.lwP1Drop = function (e, targetIdx) {
+        e.preventDefault();
+        var src = _dragIdx;
+        if (src == null || src === targetIdx) { lwP1DragEnd(e); return; }
+        var d = state.lev.fase1_data || {};
+        if (!d.productos) return;
+        var moved = d.productos.splice(src, 1)[0];
+        d.productos.splice(targetIdx, 0, moved);
+        d.productos.forEach(function (p, i) { p.partida = i + 1; });
+        state.lev.fase1_data = d;
+        _dragIdx = null;
+        renderPhase1Productos();
+        lwRecomputeSummary();
+        lwFieldChange();
+    };
+    window.lwP1DragEnd = function () {
+        _dragIdx = null;
+        document.querySelectorAll('.lw-p1-tbl tr.lw-dragging, .lw-p1-tbl tr.lw-drag-over').forEach(function (r) {
+            r.classList.remove('lw-dragging'); r.classList.remove('lw-drag-over');
+        });
+    };
     window.lwP1UpdateProd = function (idx, field, val) {
         var d = state.lev.fase1_data || {};
         if (!d.productos) return;
         if (field === 'qty') val = parseFloat(val) || 1;
         d.productos[idx][field] = val;
         state.lev.fase1_data = d;
+        lwRecomputeSummary();
         lwFieldChange();
     };
     window.lwP1DelProd = function (idx) {
@@ -402,6 +811,7 @@
         d.productos.forEach(function (p, i) { p.partida = i + 1; });
         state.lev.fase1_data = d;
         renderPhase1Productos();
+        lwRecomputeSummary();
         lwFieldChange();
     };
 
@@ -470,6 +880,7 @@
         state.lev.fase1_data = d;
         $('lwCatalogBox').style.display = 'none';
         renderPhase1Productos();
+        lwRecomputeSummary();
         lwFieldChange();
     };
 

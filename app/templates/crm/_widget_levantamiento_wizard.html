@@ -33,12 +33,13 @@
                 </div>
             </div>
             <div class="lw-header-right">
+                <span class="lw-save-stamp" id="lwSaveStamp"></span>
                 <span class="lw-save-indicator" id="lwSaveIndicator"></span>
                 <button type="button" class="lw-btn lw-btn-primary" onclick="lwSave(true)">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Guardar
                 </button>
-                <button type="button" class="lw-btn lw-btn-ghost" onclick="levantamientoWizardClose()" title="Cerrar (Esc)">
+                <button type="button" class="lw-btn lw-btn-ghost" onclick="levantamientoWizardClose()" title="Cerrar">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
@@ -86,16 +87,25 @@
                                spellcheck="false"
                                oninput="lwUpdateNombre(this.value)">
 
-                        <!-- "Para [cliente]" en lenguaje natural -->
+                        <!-- "Para [cliente]" en lenguaje natural con autocomplete -->
                         <div class="lw-canvas-forline">
                             <span class="lw-canvas-forword">Para</span>
-                            <label class="lw-meta-pill lw-meta-pill-cliente" data-field="cliente">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                <input type="text"
-                                       id="lw_f1_cliente"
-                                       placeholder="nombre del cliente"
-                                       oninput="lwMetaInput(this)">
-                            </label>
+                            <div class="lw-ac-wrap">
+                                <label class="lw-meta-pill lw-meta-pill-cliente" data-field="cliente">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <input type="text"
+                                           id="lw_f1_cliente"
+                                           placeholder="nombre del cliente"
+                                           autocomplete="off"
+                                           oninput="lwClienteInput(this)"
+                                           onfocus="lwClienteInput(this)"
+                                           onblur="lwClienteBlur()">
+                                    <button type="button" class="lw-ac-clear" id="lwClienteClearBtn" style="display:none;" onclick="lwClienteClear(event)" title="Quitar cliente">
+                                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                    </button>
+                                </label>
+                                <div class="lw-ac-dropdown" id="lw_f1_cliente_ac" style="display:none;"></div>
+                            </div>
                         </div>
 
                         <!-- Descripción doc-style -->
@@ -108,10 +118,18 @@
 
                     <!-- ─── META TOOLBAR (ghost pills) ────────────── -->
                     <div class="lw-canvas-meta">
-                        <label class="lw-meta-pill" data-field="contacto">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            <input type="text" id="lw_f1_contacto" placeholder="Contacto" oninput="lwMetaInput(this)">
-                        </label>
+                        <div class="lw-ac-wrap" style="width:100%;">
+                            <label class="lw-meta-pill" data-field="contacto">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <input type="text" id="lw_f1_contacto"
+                                       placeholder="Contacto"
+                                       autocomplete="off"
+                                       oninput="lwContactoInput(this)"
+                                       onfocus="lwContactoInput(this)"
+                                       onblur="lwContactoBlur()">
+                            </label>
+                            <div class="lw-ac-dropdown" id="lw_f1_contacto_ac" style="display:none;"></div>
+                        </div>
                         <label class="lw-meta-pill" data-field="area">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                             <input type="text" id="lw_f1_area" placeholder="Área / ubicación" oninput="lwMetaInput(this)">
@@ -128,6 +146,40 @@
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                             <input type="tel" id="lw_f1_telefono" placeholder="Teléfono" oninput="lwMetaInput(this)">
                         </label>
+
+                        <!-- Panel de resumen vivo (stats) -->
+                        <div class="lw-canvas-summary" id="lwCanvasSummary">
+                            <div class="lw-summary-label">Resumen del levantamiento</div>
+                            <div class="lw-summary-row">
+                                <span class="lw-summary-icon" style="background:#EFF6FF;color:#2563EB;">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                                </span>
+                                <span class="lw-summary-text"><b id="lwSumServicios">0</b> servicios</span>
+                            </div>
+                            <div class="lw-summary-row">
+                                <span class="lw-summary-icon" style="background:#F5F3FF;color:#7C3AED;">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                                </span>
+                                <span class="lw-summary-text"><b id="lwSumComponentes">0</b> componentes</span>
+                            </div>
+                            <div class="lw-summary-row">
+                                <span class="lw-summary-icon" style="background:#FFF7ED;color:#B45309;">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                                </span>
+                                <span class="lw-summary-text"><b id="lwSumProductos">0</b> productos</span>
+                            </div>
+                            <div class="lw-summary-divider"></div>
+                            <div class="lw-summary-row lw-summary-monto">
+                                <span class="lw-summary-monto-lbl">Monto estimado</span>
+                                <span class="lw-summary-monto-val" id="lwSumMonto">$0</span>
+                            </div>
+                            <div class="lw-summary-progress">
+                                <div class="lw-summary-progress-track">
+                                    <div class="lw-summary-progress-fill" id="lwSumProgressFill"></div>
+                                </div>
+                                <span class="lw-summary-progress-lbl" id="lwSumProgressLbl">Fase 1 · 20%</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ─── ALCANCE (chips) ───────────────────────── -->
