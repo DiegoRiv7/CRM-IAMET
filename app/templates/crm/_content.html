@@ -1477,6 +1477,22 @@
             <div class="tareas-cal-board" id="tareasCalBoard"></div>
         </div>
 
+        <!-- ═══ VISTA COCKPIT: split list + detail panel ═══ -->
+        <div id="tareasViewCockpit" style="display:none;">
+            <div class="tcp-shell" id="tcpShell">
+                <!-- LISTA (izquierda) -->
+                <div class="tcp-list" id="tcpList"></div>
+                <!-- DETALLE (derecha, se popula al hacer clic) -->
+                <aside class="tcp-detail" id="tcpDetail">
+                    <div class="tcp-empty">
+                        <svg width="36" height="36" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <div class="tcp-empty-title">Selecciona una tarea</div>
+                        <div class="tcp-empty-hint">Haz clic en cualquier fila a la izquierda para ver sus detalles aquí</div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
         <!-- ═══ GRID DE CARDS (legacy, cambia con el toggle) ═══ -->
         <div id="tareasCardsGrid" style="display:none;"></div>
         <div class="tareas-footer" id="tareasFooter"></div>

@@ -5023,6 +5023,8 @@
             }
             // Render calendar si visible
             renderTareasCalendar(tareas, now);
+            // Render cockpit si visible
+            if (typeof renderTareasCockpit === 'function') renderTareasCockpit(tareas, now);
 
             // Clear button visibility
             var clrBtn = document.getElementById('btnTareasFacetClear');
@@ -5062,6 +5064,267 @@
         window._tareasCalGoToday = function() {
             _tareasCalWeekStart = _getMondayOf(new Date());
             renderTareasCRM();
+        };
+
+        // ═══ Vista COCKPIT (split: list + detail panel) ═══
+        var _tcpSelectedId = null;
+        var _tcpCollapsedSections = {};
+
+        function _tcpAvatarColor(nombre) {
+            var colors = ['#E11D48','#DC2626','#F59E0B','#CA8A04','#16A34A','#0891B2','#2563EB','#7C3AED','#DB2777','#0EA5E9'];
+            var h = 0;
+            var s = nombre || '?';
+            for (var i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+            return colors[Math.abs(h) % colors.length];
+        }
+        function _tcpInitials(nombre) {
+            if (!nombre) return '?';
+            var parts = nombre.trim().split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+        function _tcpFirstName(nombre) {
+            if (!nombre) return '';
+            return (nombre.trim().split(/\s+/)[0] || '').slice(0, 12);
+        }
+        function _tcpFmtFecha(iso) {
+            if (!iso) return 'Sin fecha';
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) return '';
+            var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            var hh = String(d.getHours()).padStart(2, '0');
+            var mm = String(d.getMinutes()).padStart(2, '0');
+            return d.getDate() + ' ' + MES[d.getMonth()] + ', ' + hh + ':' + mm;
+        }
+        function _tcpEstadoClass(estado) {
+            return (estado || 'pendiente').toLowerCase().replace(/\s+/g, '_');
+        }
+        function _tcpEstadoLabel(estado) {
+            var map = {
+                pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso',
+                completada: 'Completada', cancelada: 'Cancelada'
+            };
+            return map[estado] || (estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'Pendiente');
+        }
+
+        function renderTareasCockpit(tareas, now) {
+            var list = document.getElementById('tcpList');
+            if (!list) return;
+            if (!tareas || tareas.length === 0) {
+                list.innerHTML = '<div class="tcp-row-empty">No hay tareas con los filtros actuales.</div>';
+                return;
+            }
+
+            // Agrupar por: atrasadas / hoy / esta semana / más tarde / sin fecha
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+            var endOfWeek = new Date(today); endOfWeek.setDate(endOfWeek.getDate() + (7 - today.getDay()));
+            var groups = { atrasadas: [], hoy: [], semana: [], despues: [], sinFecha: [] };
+
+            tareas.forEach(function(t) {
+                if (t.estado === 'completada') { groups.despues.push(t); return; }
+                if (!t.fecha_limite) { groups.sinFecha.push(t); return; }
+                var fl = new Date(t.fecha_limite);
+                if (fl < today) groups.atrasadas.push(t);
+                else if (fl < tomorrow) groups.hoy.push(t);
+                else if (fl <= endOfWeek) groups.semana.push(t);
+                else groups.despues.push(t);
+            });
+
+            var MES_HOY = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+            var hoyLabel = MES_HOY[today.getDay()] + ' ' + today.getDate() + ' ' + ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][today.getMonth()];
+
+            var secciones = [
+                { key: 'atrasadas', label: 'ATRASADAS', extra: '', items: groups.atrasadas, cls: 'atrasadas' },
+                { key: 'hoy',       label: 'HOY',       extra: ' · ' + hoyLabel, items: groups.hoy, cls: '' },
+                { key: 'semana',    label: 'ESTA SEMANA', extra: '', items: groups.semana, cls: '' },
+                { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues, cls: '' },
+                { key: 'sinFecha',  label: 'SIN FECHA',   extra: '', items: groups.sinFecha, cls: '' },
+            ];
+
+            var html = '';
+            secciones.forEach(function(sec) {
+                if (sec.items.length === 0) return;
+                var collapsed = _tcpCollapsedSections[sec.key] ? ' collapsed' : '';
+                html += '<div class="tcp-section-head ' + sec.cls + collapsed + '" data-tcp-sec="' + sec.key + '">' +
+                    '<svg class="tcp-sec-chev" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+                    '<span>' + sec.label + sec.extra + '</span>' +
+                    '<span class="tcp-sec-count">' + sec.items.length + '</span>' +
+                    '</div>';
+                html += '<div class="tcp-section-body">';
+                sec.items.forEach(function(t) {
+                    html += _tcpRowHtml(t, sec.key === 'atrasadas');
+                });
+                html += '</div>';
+            });
+            list.innerHTML = html;
+
+            // Restaurar selección
+            if (_tcpSelectedId) {
+                var rowSel = list.querySelector('.tcp-row[data-tid="' + _tcpSelectedId + '"]');
+                if (rowSel) rowSel.classList.add('active');
+            }
+        }
+
+        function _tcpRowHtml(t, esAtrasada) {
+            var estadoCls = _tcpEstadoClass(t.estado);
+            var estadoLbl = _tcpEstadoLabel(t.estado).toUpperCase();
+            var resp = t.responsable || '';
+            var avColor = _tcpAvatarColor(resp);
+            var ini = _tcpInitials(resp);
+            var cliente = t.cliente_nombre || t.oportunidad_nombre || '—';
+            var doneCls = t.estado === 'completada' ? ' done' : '';
+            var atrCls = esAtrasada ? ' atrasada' : '';
+            var checkInner = t.estado === 'completada'
+                ? '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+                : '';
+            return '<div class="tcp-row' + doneCls + atrCls + '" data-tid="' + t.id + '" onclick="tcpSelectTask(' + t.id + ')">' +
+                '<button class="tcp-row-check' + (t.estado === 'completada' ? ' done' : '') + '" onclick="event.stopPropagation();tcpToggleCheck(' + t.id + ')" title="Completar">' + checkInner + '</button>' +
+                '<span class="tcp-row-tid">T-' + t.id + '</span>' +
+                '<span class="tcp-row-title">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
+                '<span class="tcp-row-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                '<span class="tcp-row-avatar" style="background:' + avColor + '">' + ini + '</span>' +
+                '<span class="tcp-row-resp">' + _tcpEsc(_tcpFirstName(resp) || '—') + '</span>' +
+                '<span class="tcp-row-cliente">' + _tcpEsc(cliente) + '</span>' +
+                '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + _tcpFmtFecha(t.fecha_limite) + '</span>' +
+                '</div>';
+        }
+
+        function _tcpEsc(s) {
+            if (!s) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Toggle sección collapse/expand
+        document.addEventListener('click', function(e) {
+            var head = e.target.closest && e.target.closest('.tcp-section-head');
+            if (!head) return;
+            var key = head.dataset.tcpSec;
+            if (!key) return;
+            var isCol = head.classList.toggle('collapsed');
+            _tcpCollapsedSections[key] = isCol;
+        });
+
+        // Selección de fila → poblar panel derecho
+        window.tcpSelectTask = function(tid) {
+            _tcpSelectedId = tid;
+            document.querySelectorAll('#tcpList .tcp-row').forEach(function(r) { r.classList.remove('active'); });
+            var row = document.querySelector('#tcpList .tcp-row[data-tid="' + tid + '"]');
+            if (row) row.classList.add('active');
+
+            var t = (_crmAllTareas || []).find(function(x) { return x.id === tid; });
+            var panel = document.getElementById('tcpDetail');
+            if (!panel || !t) return;
+
+            var estadoCls = _tcpEstadoClass(t.estado);
+            var estadoLbl = _tcpEstadoLabel(t.estado).toUpperCase();
+            var resp = t.responsable || '';
+            var avColor = _tcpAvatarColor(resp);
+            var ini = _tcpInitials(resp);
+            var cliente = t.cliente_nombre || t.oportunidad_nombre || '';
+            var fechaIso = t.fecha_limite || '';
+            var vencida = false;
+            if (fechaIso) {
+                try { vencida = new Date(fechaIso) < new Date() && t.estado !== 'completada'; } catch(_){}
+            }
+            var fechaTxt = _tcpFmtFecha(fechaIso);
+            var prioLabel = t.prioridad === 'alta' ? 'Alta' : 'Normal';
+            var tipo = t.oportunidad_tipo || '';
+            var categoria = tipo ? (tipo.charAt(0).toUpperCase() + tipo.slice(1)) : '—';
+
+            // Subtareas
+            var subtsHtml = '<div class="tcp-subt-empty">Sin subtareas</div>';
+            var subtHead = 'SUBTAREAS';
+            var subs = t.subtareas || [];
+            if (subs.length > 0) {
+                var doneN = subs.filter(function(s) { return s.estado === 'completada'; }).length;
+                subtHead = 'SUBTAREAS (' + doneN + '/' + subs.length + ')';
+                subtsHtml = '<div class="tcp-subt-list">' + subs.map(function(s) {
+                    var dn = s.estado === 'completada';
+                    return '<div class="tcp-subt-row' + (dn ? ' done' : '') + '" onclick="crmTaskVerDetalle(' + s.id + ')">' +
+                        '<span class="tcp-subt-check' + (dn ? ' done' : '') + '">' + (dn ? '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '') + '</span>' +
+                        '<span class="tcp-subt-title">' + _tcpEsc(s.titulo || '') + '</span>' +
+                        '</div>';
+                }).join('') + '</div>';
+            }
+
+            var descHtml = t.descripcion
+                ? '<div class="tcp-detail-desc">' + _tcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>'
+                : '<div class="tcp-detail-desc empty">Sin descripción.</div>';
+
+            panel.innerHTML =
+                '<div class="tcp-detail-head">' +
+                    '<span class="tcp-detail-tid">T-' + t.id + '</span>' +
+                    '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                    '<div class="tcp-detail-actions">' +
+                        '<button class="tcp-detail-iconbtn" title="Copiar enlace" onclick="tcpCopiarEnlace(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>' +
+                        '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="tcpCloseDetail()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+                    '</div>' +
+                '</div>' +
+                '<button class="tcp-detail-expand" onclick="tcpExpandir(' + t.id + ')" title="Abrir vista completa con comentarios">' +
+                    '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>' +
+                    '<span>Expandir · ver comentarios</span>' +
+                '</button>' +
+                '<div class="tcp-detail-scroll">' +
+                    '<h1 class="tcp-detail-title">' + _tcpEsc(t.titulo || 'Sin título') + '</h1>' +
+                    descHtml +
+                    '<div class="tcp-detail-meta">' +
+                        _tcpMetaRow('Responsable', resp
+                            ? '<span class="tcp-mini-avatar" style="background:' + avColor + '">' + ini + '</span>' + _tcpEsc(resp)
+                            : '<span class="muted">Sin asignar</span>', 'user') +
+                        _tcpMetaRow('Cliente', cliente ? _tcpEsc(cliente) : '<span class="muted">—</span>', 'briefcase') +
+                        _tcpMetaRow('Fecha límite', fechaIso
+                            ? '<span class="tcp-pill-fecha' + (vencida ? '' : ' normal') + '">' + (vencida ? '⚠ ' : '') + fechaTxt + '</span>'
+                            : '<span class="muted">Sin fecha</span>', 'calendar') +
+                        _tcpMetaRow('Categoría', categoria, 'tag') +
+                        _tcpMetaRow('Prioridad', prioLabel, 'flag') +
+                    '</div>' +
+                    '<div class="tcp-detail-subt-head">' + subtHead + '</div>' +
+                    subtsHtml +
+                '</div>';
+        };
+
+        function _tcpMetaRow(label, valueHtml, icon) {
+            var icons = {
+                user:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+                briefcase: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+                calendar:  '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+                tag:       '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>',
+                flag:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+            };
+            return '<div class="tcp-meta-row"><span class="tcp-meta-label">' + icons[icon] + label + '</span>' +
+                   '<span class="tcp-meta-value">' + valueHtml + '</span></div>';
+        }
+
+        window.tcpCloseDetail = function() {
+            _tcpSelectedId = null;
+            var panel = document.getElementById('tcpDetail');
+            if (!panel) return;
+            panel.innerHTML = '<div class="tcp-empty">' +
+                '<svg width="36" height="36" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
+                '<div class="tcp-empty-title">Selecciona una tarea</div>' +
+                '<div class="tcp-empty-hint">Haz clic en cualquier fila a la izquierda para ver sus detalles aquí</div>' +
+                '</div>';
+            document.querySelectorAll('#tcpList .tcp-row').forEach(function(r) { r.classList.remove('active'); });
+        };
+
+        window.tcpExpandir = function(tid) {
+            // Abre el widget de detalle completo (con comentarios, subtareas editables, etc.)
+            if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(tid);
+        };
+
+        window.tcpCopiarEnlace = function(tid) {
+            var url = window.location.origin + '/app/?tarea=' + tid;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function() {
+                    if (typeof showToast === 'function') showToast('Enlace copiado', 'success', 1800);
+                });
+            }
+        };
+
+        window.tcpToggleCheck = function(tid) {
+            // Abre el widget de detalle; desde allí el usuario puede completar con el botón
+            if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(tid);
         };
 
         function renderTareasCalendar(tareas, now) {
@@ -5834,28 +6097,40 @@
                     renderChips(); renderTareasCRM();
                 });
 
-                // View toggle (list ⇄ calendar)
+                // View toggle: list → calendar → cockpit → list
                 function applyTareasView(mode){
-                    var lv = document.getElementById('tareasViewList');
-                    var cv = document.getElementById('tareasCardsGrid');
+                    var lv   = document.getElementById('tareasViewList');
+                    var cv   = document.getElementById('tareasCardsGrid');
                     var calv = document.getElementById('tareasViewCalendar');
+                    var cpv  = document.getElementById('tareasViewCockpit');
                     if (cv) cv.style.display = 'none';  // cards legacy siempre oculto
+                    // Reset all
+                    if (lv)   lv.style.display   = 'none';
+                    if (calv) calv.style.display = 'none';
+                    if (cpv)  cpv.style.display  = 'none';
                     if (mode === 'calendar') {
-                        if (lv)   lv.style.display   = 'none';
                         if (calv) calv.style.display = 'flex';
                         if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';
                         if (typeof renderTareasCRM === 'function') renderTareasCRM();
+                    } else if (mode === 'cockpit') {
+                        if (cpv) cpv.style.display = '';
+                        // Ícono split-panels
+                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/>';
+                        if (typeof renderTareasCRM === 'function') renderTareasCRM();
                     } else {
-                        if (lv)   lv.style.display   = '';
-                        if (calv) calv.style.display = 'none';
+                        if (lv) lv.style.display = '';
                         if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
                     }
                 }
                 var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'list';
                 if (_tareasViewMode === 'cards') _tareasViewMode = 'list';  // migración: cards → list
+                if (['list','calendar','cockpit'].indexOf(_tareasViewMode) === -1) _tareasViewMode = 'list';
                 applyTareasView(_tareasViewMode);
                 btnView.addEventListener('click', function(){
-                    _tareasViewMode = _tareasViewMode === 'list' ? 'calendar' : 'list';
+                    // Ciclo: list → calendar → cockpit → list
+                    _tareasViewMode = _tareasViewMode === 'list' ? 'calendar'
+                                   : _tareasViewMode === 'calendar' ? 'cockpit'
+                                   : 'list';
                     localStorage.setItem('tareasViewMode', _tareasViewMode);
                     applyTareasView(_tareasViewMode);
                 });
