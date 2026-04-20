@@ -5419,13 +5419,21 @@
             // Clock SVG para fechas (usado en pill vencida, sin icono ⚠)
             var clockIcon = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
 
+            // Oportunidad con link si existe (reemplaza el renglón "Cliente")
+            var oppVal;
+            if (t.oportunidad_id && t.oportunidad_nombre) {
+                oppVal = '<span class="tcp-opp-link" onclick="tcpAbrirOportunidad(' + t.oportunidad_id + ')" title="Abrir oportunidad">' + _tcpEsc(t.oportunidad_nombre) + '</span>';
+            } else if (t.oportunidad_nombre) {
+                oppVal = _tcpEsc(t.oportunidad_nombre);
+            } else {
+                oppVal = '<span class="muted">Sin oportunidad</span>';
+            }
+
             panel.innerHTML =
                 '<div class="tcp-detail-head">' +
-                    '<span class="tcp-detail-tid">T-' + t.id + '</span>' +
                     '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
                     '<div class="tcp-detail-actions">' +
                         '<button class="tcp-detail-iconbtn tcp-expand-btn" title="Expandir · ver comentarios" onclick="tcpExpandir(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>' +
-                        '<button class="tcp-detail-iconbtn" title="Copiar enlace" onclick="tcpCopiarEnlace(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>' +
                         '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="tcpCloseDetail()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
                     '</div>' +
                 '</div>' +
@@ -5436,7 +5444,7 @@
                         _tcpMetaRow('Responsable', resp
                             ? '<span class="tcp-mini-avatar" style="background:' + avColor + '">' + ini + '</span>' + _tcpEsc(resp)
                             : '<span class="muted">Sin asignar</span>', 'user') +
-                        _tcpMetaRow('Cliente', cliente ? _tcpEsc(cliente) : '<span class="muted">—</span>', 'briefcase') +
+                        _tcpMetaRow('Oportunidad', oppVal, 'briefcase') +
                         _tcpMetaRow('Fecha límite', fechaIso
                             ? '<span class="tcp-pill-fecha' + (vencida ? '' : ' normal') + '">' + clockIcon + ' ' + fechaTxt + '</span>'
                             : '<span class="muted">Sin fecha</span>', 'calendar') +
@@ -6281,11 +6289,13 @@
                         if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
                     }
                 }
-                // Cockpit es ahora la vista default (reemplaza lista).
-                // Migración: cards/list/viejo → cockpit.
-                var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'cockpit';
-                if (_tareasViewMode === 'cards' || _tareasViewMode === 'list') _tareasViewMode = 'cockpit';
-                if (['calendar','cockpit'].indexOf(_tareasViewMode) === -1) _tareasViewMode = 'cockpit';
+                // Cockpit es la vista default en tareas. Migración firme:
+                // cualquier valor legacy (cards/list/null) → cockpit y persiste.
+                var _tareasViewMode = localStorage.getItem('tareasViewMode');
+                if (!_tareasViewMode || ['calendar','cockpit'].indexOf(_tareasViewMode) === -1) {
+                    _tareasViewMode = 'cockpit';
+                    localStorage.setItem('tareasViewMode', 'cockpit');
+                }
                 applyTareasView(_tareasViewMode);
                 btnView.addEventListener('click', function(){
                     // Ciclo simplificado: cockpit ↔ calendar (list queda fuera del ciclo)
