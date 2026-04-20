@@ -6803,6 +6803,8 @@
             _crmTaskCurrentOppId = null;
             var modal = document.getElementById('crmTaskDetailModal');
             if (!modal) return;
+            // Limpiar contenido stale ANTES de abrir para evitar flash de la tarea previa
+            _crmTaskClearForLoading();
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             fetch('/app/api/tarea/' + tareaId + '/')
@@ -6812,6 +6814,9 @@
                 })
                 .then(function (tarea) {
                     if (tarea.error) { showToast(tarea.error, 'error'); return; }
+                    // Solo aplicar si aún estamos en la misma tarea (evita race condition
+                    // si el usuario clickea otra tarea mientras la primera fetch no resolvía)
+                    if (_crmCurrentTaskId !== tareaId) return;
                     crmTaskRenderData(tarea);
                     crmTaskCargarComentarios(tareaId);
                 })
@@ -6819,6 +6824,69 @@
                     console.error('Error cargando tarea:', err);
                     showToast('Error al cargar la tarea', 'error');
                 });
+        }
+
+        // Limpia el DOM del modal de detalle de tarea antes de que resuelva la
+        // petición — evita el "flash" de mostrar datos de la tarea anterior.
+        function _crmTaskClearForLoading() {
+            var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val || ''; };
+            var setHtml = function(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html || ''; };
+
+            // Título, descripción, breadcrumb
+            set('crm-task-titulo', '');
+            setHtml('crm-task-descripcion', '');
+            set('crm-task-breadcrumb-proyecto', '');
+            set('crm-task-breadcrumb-cliente', '');
+            set('crm-tw-taskid', '');
+
+            // Pills y estados (resetear a estado neutro)
+            set('crm-task-estado-badge', '');
+            set('crm-task-prioridad-text', '');
+            set('crm-task-vence-badge', '');
+            set('crm-task-estado-sidebar-pill', '');
+            var estadoDot = document.getElementById('crm-tw-estado-dot');
+            if (estadoDot) estadoDot.className = 'crm-tw-sb-dot';
+
+            // Fecha límite
+            setHtml('crm-task-fecha-limite', '');
+
+            // Responsable, participantes, observadores
+            setHtml('crm-task-responsable-container', '');
+            setHtml('crm-task-participantes-container', '');
+            setHtml('crm-task-observadores-container', '');
+
+            // Cliente + oportunidad + drive
+            set('crm-task-cliente-nombre', '');
+            set('crmTaskOppNombre', '');
+            var oppCard = document.getElementById('crmTaskOppCard');
+            if (oppCard) oppCard.style.display = 'none';
+            var driveCard = document.getElementById('crmTaskDriveCard');
+            if (driveCard) driveCard.style.display = 'none';
+            var sidebarLinks = document.getElementById('crmTaskSidebarLinks');
+            if (sidebarLinks) sidebarLinks.style.display = 'none';
+
+            // Subtareas + activity feed
+            setHtml('crmTaskSubtareasSection', '');
+            setHtml('crm-task-activity-feed', '<div style="padding:20px;text-align:center;color:#94A3B8;font-size:13px;">Cargando…</div>');
+
+            // Fecha creación + creado por
+            set('crm-task-fecha-creacion', '');
+            set('crm-task-creado-por', '');
+
+            // Botones a estado neutro
+            var btnReabrir = document.getElementById('crmTaskBtnReabrir');
+            if (btnReabrir) btnReabrir.style.display = 'none';
+            var btnComp = document.getElementById('crmTaskBtnCompletarPrimary');
+            if (btnComp) btnComp.style.display = 'none';  // se mostrará tras render correcto
+            var compPill = document.getElementById('crmTaskCompletadaPill');
+            if (compPill) compPill.style.display = 'none';
+
+            // Input del comentario y archivos
+            var commInp = document.getElementById('crm-task-comment-input');
+            if (commInp) commInp.value = '';
+            setHtml('crm-task-files-preview', '');
+
+            _crmTaskLastData = null;
         }
 
         function crmTaskSetText(id, text) {
