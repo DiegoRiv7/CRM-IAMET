@@ -1,0 +1,313 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     WIDGET: WIZARD LEVANTAMIENTO (5 fases)
+     Modal overlay a pantalla completa. Se abre desde la sección
+     Levantamientos del detalle de un proyecto IAMET.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="lw-overlay" id="levantamientoWizard" style="display:none;">
+    <div class="lw-container">
+
+        <!-- ── Header ── -->
+        <div class="lw-header">
+            <div class="lw-header-left">
+                <button type="button" class="lw-back" onclick="levantamientoWizardClose()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    Proyectos
+                </button>
+                <span class="lw-sep">›</span>
+                <span class="lw-title" id="lwTitle">Levantamiento</span>
+                <!-- Status pill / dropdown -->
+                <div class="lw-status-wrap">
+                    <button type="button" class="lw-status-btn" id="lwStatusBtn" onclick="lwToggleStatusMenu(event)">
+                        <i id="lwStatusDot"></i>
+                        <span id="lwStatusLabel">Borrador</span>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="lw-status-menu" id="lwStatusMenu" style="display:none;">
+                        <div class="lw-status-item" data-status="borrador"   onclick="lwSetStatus('borrador')"><i style="background:#F59E0B"></i>Borrador</div>
+                        <div class="lw-status-item" data-status="revision"   onclick="lwSetStatus('revision')"><i style="background:#3B82F6"></i>En Revisión</div>
+                        <div class="lw-status-item" data-status="aprobado"   onclick="lwSetStatus('aprobado')"><i style="background:#10B981"></i>Aprobado</div>
+                        <div class="lw-status-item" data-status="rechazado"  onclick="lwSetStatus('rechazado')"><i style="background:#EF4444"></i>Rechazado</div>
+                        <div class="lw-status-item" data-status="ejecutando" onclick="lwSetStatus('ejecutando')"><i style="background:#2563EB"></i>Ejecutando</div>
+                        <div class="lw-status-item" data-status="completado" onclick="lwSetStatus('completado')"><i style="background:#059669"></i>Completado</div>
+                    </div>
+                </div>
+            </div>
+            <div class="lw-header-right">
+                <span class="lw-save-indicator" id="lwSaveIndicator"></span>
+                <button type="button" class="lw-btn lw-btn-primary" onclick="lwSave(true)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Guardar
+                </button>
+                <button type="button" class="lw-btn lw-btn-ghost" onclick="levantamientoWizardClose()" title="Cerrar (Esc)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Phase tabs ── -->
+        <div class="lw-tabs" id="lwTabs">
+            <button type="button" class="lw-tab" data-phase="1" onclick="lwGoPhase(1)">
+                <span class="lw-tab-num">1</span><span class="lw-tab-label">Levantamiento</span>
+            </button>
+            <button type="button" class="lw-tab" data-phase="2" onclick="lwGoPhase(2)">
+                <span class="lw-tab-num">2</span><span class="lw-tab-label">Propuesta Técnica</span>
+            </button>
+            <button type="button" class="lw-tab" data-phase="3" onclick="lwGoPhase(3)">
+                <span class="lw-tab-num">3</span><span class="lw-tab-label">Volumetría</span>
+            </button>
+            <button type="button" class="lw-tab" data-phase="4" onclick="lwGoPhase(4)">
+                <span class="lw-tab-num">4</span><span class="lw-tab-label">Programa de Obra</span>
+            </button>
+            <button type="button" class="lw-tab" data-phase="5" onclick="lwGoPhase(5)">
+                <span class="lw-tab-num">5</span><span class="lw-tab-label">Reportes</span>
+            </button>
+            <div class="lw-tabs-progress">
+                <div class="lw-tabs-progress-track">
+                    <div class="lw-tabs-progress-fill" id="lwProgressFill"></div>
+                </div>
+                <span class="lw-tabs-progress-label" id="lwProgressLabel">0/5</span>
+            </div>
+        </div>
+
+        <!-- ── Phase content ── -->
+        <div class="lw-content" id="lwContent">
+
+            <!-- ═══ PHASE 1 — LEVANTAMIENTO ═══ -->
+            <div class="lw-phase lw-phase-active" data-phase="1" id="lwPhase1">
+                <div class="lw-p1-wrap">
+                    <!-- Datos Generales -->
+                    <div class="lw-section">
+                        <div class="lw-section-label">Datos Generales</div>
+                        <div class="lw-grid-3">
+                            <div class="lw-field">
+                                <label>Cliente *</label>
+                                <input type="text" id="lw_f1_cliente" placeholder="Ej. Luxshare Precision" oninput="lwFieldChange()">
+                            </div>
+                            <div class="lw-field">
+                                <label>Contacto *</label>
+                                <input type="text" id="lw_f1_contacto" placeholder="Ing. Miguel Chen" oninput="lwFieldChange()">
+                            </div>
+                            <div class="lw-field">
+                                <label>Área / Ubicación</label>
+                                <input type="text" id="lw_f1_area" placeholder="Nave 3, Tijuana, B.C." oninput="lwFieldChange()">
+                            </div>
+                            <div class="lw-field">
+                                <label>Fecha</label>
+                                <input type="date" id="lw_f1_fecha" oninput="lwFieldChange()">
+                            </div>
+                            <div class="lw-field">
+                                <label>Correo Electrónico</label>
+                                <input type="email" id="lw_f1_email" placeholder="contacto@cliente.com" oninput="lwFieldChange()">
+                            </div>
+                            <div class="lw-field">
+                                <label>Teléfono</label>
+                                <input type="tel" id="lw_f1_telefono" placeholder="+52 664 123 4567" oninput="lwFieldChange()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Necesidad Reportada -->
+                    <div class="lw-section">
+                        <div class="lw-section-label">Necesidad Reportada</div>
+                        <textarea id="lw_f1_descripcion" rows="4"
+                            placeholder="Describe la necesidad del cliente, el problema a resolver y el alcance del trabajo…"
+                            oninput="lwFieldChange()"></textarea>
+                    </div>
+
+                    <!-- Tipo de Servicio (chips) -->
+                    <div class="lw-section">
+                        <div class="lw-section-label">Tipo de Servicio</div>
+                        <div class="lw-chips" id="lw_f1_servicios"></div>
+                    </div>
+
+                    <!-- Componentes de la Solución (chips) -->
+                    <div class="lw-section">
+                        <div class="lw-section-label">Componentes de la Solución</div>
+                        <div class="lw-chips" id="lw_f1_componentes"></div>
+                    </div>
+
+                    <!-- Partidas / Productos -->
+                    <div class="lw-section">
+                        <div class="lw-section-row">
+                            <div class="lw-section-label">Partidas / Productos</div>
+                            <button type="button" class="lw-add-btn" onclick="lwP1OpenCatalog()">
+                                <span style="font-size:14px;">+</span> Agregar Producto
+                            </button>
+                        </div>
+
+                        <div class="lw-catalog-box" id="lwCatalogBox" style="display:none;">
+                            <div class="lw-catalog-search">
+                                <input type="text" id="lwCatalogSearch" placeholder="Buscar en catálogo…" oninput="lwP1CatalogSearch()">
+                            </div>
+                            <div class="lw-catalog-list" id="lwCatalogList"></div>
+                        </div>
+
+                        <div id="lw_f1_productos_wrap"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PHASE 2 — PROPUESTA TÉCNICA ═══ -->
+            <div class="lw-phase" data-phase="2" id="lwPhase2" style="display:none;">
+                <div class="lw-p2-wrap">
+                    <div class="lw-section">
+                        <div class="lw-section-label">Partidas con Comentarios de Instalación</div>
+                        <div id="lw_f2_partidas"></div>
+                    </div>
+
+                    <div class="lw-section">
+                        <div class="lw-section-label">Evidencia Fotográfica</div>
+                        <div class="lw-drop" id="lwDropZone">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <div class="lw-drop-text">Arrastra fotos aquí o pega desde portapapeles</div>
+                            <div class="lw-drop-hint">PNG, JPG, WebP · máx. 10 MB c/u</div>
+                            <label class="lw-drop-btn">
+                                <input type="file" accept="image/*" multiple style="display:none;" onchange="lwP2UploadFiles(this.files)">
+                                Seleccionar archivos
+                            </label>
+                        </div>
+                        <div class="lw-photo-grid" id="lw_f2_photos"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PHASE 3 — VOLUMETRÍA ═══ -->
+            <div class="lw-phase" data-phase="3" id="lwPhase3" style="display:none;">
+                <div class="lw-p3-wrap">
+                    <div class="lw-p3-tables">
+                        <!-- Materiales -->
+                        <div class="lw-section">
+                            <div class="lw-section-row">
+                                <div class="lw-section-label">Tabla 1 — Equipamiento / Materiales</div>
+                                <button type="button" class="lw-add-btn" onclick="lwP3AddRow('materiales')">+ Fila</button>
+                            </div>
+                            <div class="lw-p3-tbl-wrap">
+                                <table class="lw-p3-tbl lw-p3-tbl-mat">
+                                    <thead><tr>
+                                        <th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th><th>Marca</th><th>Modelo</th>
+                                        <th>Costo U.</th><th>P. Lista</th><th>Desc.C%</th><th>Desc.V%</th>
+                                        <th class="num">Costo Total</th><th class="num">P. Venta</th>
+                                        <th>Proveedor</th><th>Entrega</th><th></th>
+                                    </tr></thead>
+                                    <tbody id="lw_f3_mat_body"></tbody>
+                                    <tfoot id="lw_f3_mat_foot"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Mano de Obra -->
+                        <div class="lw-section">
+                            <div class="lw-section-row">
+                                <div class="lw-section-label">Tabla 2 — Mano de Obra / Servicios</div>
+                                <button type="button" class="lw-add-btn" onclick="lwP3AddRow('manoObra')">+ Fila</button>
+                            </div>
+                            <div class="lw-p3-tbl-wrap">
+                                <table class="lw-p3-tbl">
+                                    <thead><tr>
+                                        <th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th>
+                                        <th>Precio Unit</th><th class="num">Total</th><th></th>
+                                    </tr></thead>
+                                    <tbody id="lw_f3_mo_body"></tbody>
+                                    <tfoot id="lw_f3_mo_foot"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Gastos -->
+                        <div class="lw-section">
+                            <div class="lw-section-row">
+                                <div class="lw-section-label">Tabla 3 — Gastos Operativos / Viáticos</div>
+                                <button type="button" class="lw-add-btn" onclick="lwP3AddRow('gastos')">+ Fila</button>
+                            </div>
+                            <div class="lw-p3-tbl-wrap">
+                                <table class="lw-p3-tbl">
+                                    <thead><tr>
+                                        <th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th>
+                                        <th>Costo Unit</th><th class="num">Total</th><th></th>
+                                    </tr></thead>
+                                    <tbody id="lw_f3_gas_body"></tbody>
+                                    <tfoot id="lw_f3_gas_foot"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen sticky -->
+                    <div class="lw-p3-summary" id="lwP3Summary">
+                        <div class="lw-section-label" style="margin-bottom:6px;">Resumen Financiero</div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Materiales</span><span id="lwSumMat">$0</span></div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Mano de Obra</span><span id="lwSumMO">$0</span></div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Gastos</span><span id="lwSumGas">$0</span></div>
+                        <div class="lw-p3-sum-divider"></div>
+                        <div class="lw-p3-sum-row lw-p3-sum-strong"><span>TOTAL VENTA</span><span id="lwSumVenta">$0</span></div>
+                        <div class="lw-p3-sum-row"><span>Total Costos</span><span id="lwSumCosto">$0</span></div>
+                        <div class="lw-p3-sum-divider"></div>
+                        <div class="lw-p3-sum-row"><span id="lwSumUtilLbl" style="font-weight:700;">Utilidad Bruta</span><span id="lwSumUtil" style="font-weight:700;">$0</span></div>
+                        <div class="lw-p3-margin-badge" id="lwP3Badge">
+                            <span class="lw-p3-margin-pct" id="lwP3MarginPct">0%</span>
+                            <span class="lw-p3-margin-lbl">Margen Bruto</span>
+                            <div class="lw-p3-margin-bar"><div id="lwP3MarginBar"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PHASE 4 — PROGRAMA DE OBRA ═══ -->
+            <div class="lw-phase" data-phase="4" id="lwPhase4" style="display:none;">
+                <div class="lw-p4-wrap">
+                    <div class="lw-section">
+                        <div class="lw-section-row">
+                            <div class="lw-section-label">Actividades del Programa de Obra</div>
+                            <button type="button" class="lw-add-btn" onclick="lwP4AddActividad()">+ Actividad</button>
+                        </div>
+                        <div class="lw-p4-list" id="lw_f4_actividades"></div>
+                        <div class="lw-p4-empty" id="lw_f4_empty" style="display:none;">
+                            <div class="lw-p4-empty-inner">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <div class="lw-p4-empty-title">Sin actividades</div>
+                                <div class="lw-p4-empty-hint">Agrega la primera actividad para armar el programa de obra</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PHASE 5 — REPORTES ═══ -->
+            <div class="lw-phase" data-phase="5" id="lwPhase5" style="display:none;">
+                <div class="lw-p5-wrap">
+                    <div class="lw-p5-toolbar">
+                        <div class="lw-section-label">Vista Previa del Reporte</div>
+                        <div class="lw-p5-actions">
+                            <button type="button" class="lw-btn lw-btn-outline" onclick="lwP5Imprimir()">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                Imprimir
+                            </button>
+                            <button type="button" class="lw-btn lw-btn-primary" onclick="lwP5ExportarPDF()">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Exportar PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lw-p5-a4-wrap">
+                        <div class="lw-p5-a4" id="lw_f5_preview">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Footer (solo cuando no estamos en fase 5) ── -->
+        <div class="lw-footer" id="lwFooter">
+            <button type="button" class="lw-btn lw-btn-outline" id="lwFooterPrev" onclick="lwPrevPhase()">← Fase anterior</button>
+            <span class="lw-footer-center" id="lwFooterCenter">Fase 1 de 5</span>
+            <button type="button" class="lw-btn lw-btn-primary" id="lwFooterNext" onclick="lwNextPhase()">Siguiente fase →</button>
+        </div>
+
+    </div>
+
+    <!-- Lightbox de fotos -->
+    <div class="lw-lightbox" id="lwLightbox" style="display:none;" onclick="this.style.display='none'">
+        <img id="lwLightboxImg" src="">
+    </div>
+</div>

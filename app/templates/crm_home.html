@@ -2,6 +2,7 @@
 {% block title %}Sistema CRM{% endblock %}
 {% block extra_head %}{% include "crm/_styles.html" %}
 <link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
+<link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}">
 {% endblock %}
 {% block content %}
 
@@ -56,6 +57,7 @@
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
 <script src="{% static 'js/crm_proyectos.js' %}"></script>
+<script src="{% static 'js/crm_levantamiento.js' %}"></script>
 {% if es_ingeniero %}
 {% include "crm/_scripts_ingeniero.html" %}
 {% endif %}
