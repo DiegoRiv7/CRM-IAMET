@@ -170,7 +170,7 @@
                                 d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                     </label>
-                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none;"
+                    <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;"
                         onchange="handleNewAvatarSelection(this)">
                 </div>
                 <div style="text-align:left;">
@@ -569,9 +569,19 @@
         window.handleNewAvatarSelection = function (input) {
             if (!input.files || !input.files[0]) return;
             _cropFile = input.files[0];
+            // Validar tipo — HEIC del iPhone no se puede renderizar en el browser
+            var validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (_cropFile.type && validTypes.indexOf(_cropFile.type.toLowerCase()) === -1) {
+                alert('Formato no soportado. Usa JPG, PNG, GIF o WEBP.\n\nLas fotos HEIC del iPhone deben convertirse primero (en el iPhone: Ajustes → Cámara → Formatos → Más Compatible).');
+                input.value = '';
+                return;
+            }
             var reader = new FileReader();
             reader.onload = function (e) {
                 openCropModal(e.target.result);
+            };
+            reader.onerror = function () {
+                alert('No se pudo leer el archivo. Intenta con otra imagen.');
             };
             reader.readAsDataURL(_cropFile);
             input.value = ''; // Reset para poder seleccionar el mismo archivo
@@ -583,17 +593,21 @@
             var zoom = document.getElementById('cropZoom');
             if (!modal || !img) return;
 
-            img.src = src;
             _cropX = 0; _cropY = 0; _cropScale = 1;
             zoom.value = 100;
             modal.style.display = 'flex';
 
+            // IMPORTANTE: registrar onload/onerror ANTES de asignar src — para
+            // data URLs el browser puede disparar load sincrónicamente.
             img.onload = function () {
-                // Center image initially
                 var container = document.getElementById('cropContainer');
                 var cw = container.offsetWidth, ch = container.offsetHeight;
                 var iw = img.naturalWidth, ih = img.naturalHeight;
-                // Scale to cover the container
+                if (!iw || !ih) {
+                    alert('No se pudo leer la imagen. Prueba otro archivo (JPG o PNG).');
+                    closeCropModal();
+                    return;
+                }
                 var coverScale = Math.max(cw / iw, ch / ih);
                 _cropScale = coverScale;
                 zoom.min = Math.round(coverScale * 100);
@@ -603,6 +617,11 @@
                 _cropY = (ch - ih * _cropScale) / 2;
                 updateCropPosition();
             };
+            img.onerror = function () {
+                alert('No se pudo cargar la imagen. Usa un formato compatible (JPG, PNG o WEBP). Las fotos HEIC del iPhone no son soportadas.');
+                closeCropModal();
+            };
+            img.src = src;
 
             // Drag handlers
             var container = document.getElementById('cropContainer');
@@ -651,6 +670,10 @@
             var container = document.getElementById('cropContainer');
             var img = document.getElementById('cropImage');
             if (!container || !img) return;
+            if (!img.complete || !img.naturalWidth || !img.naturalHeight) {
+                alert('La imagen aún no ha terminado de cargar. Espera un momento o elige otro archivo.');
+                return;
+            }
 
             var size = 400; // Output size
             var canvas = document.createElement('canvas');
