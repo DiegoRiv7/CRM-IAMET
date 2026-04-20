@@ -181,13 +181,16 @@ def spotlight_search_api(request):
     if scope in ('all', 'oportunidad') and (query or filter_user_obj):
         opp_qs = TodoItem.objects.all().select_related('cliente', 'usuario')
         if query:
-            opp_qs = opp_qs.filter(
+            opp_filter = (
                 Q(oportunidad__icontains=query) |
                 Q(cliente__nombre_empresa__icontains=query) |
                 Q(comentarios__icontains=query) |
                 Q(po_number__icontains=query) |
                 Q(factura_numero__icontains=query)
             )
+            if is_numeric:
+                opp_filter |= Q(id__icontains=numeric_query)
+            opp_qs = opp_qs.filter(opp_filter)
         if filter_user_obj:
             opp_qs = opp_qs.filter(usuario=filter_user_obj)
         if not is_supervisor(request.user):
@@ -225,7 +228,8 @@ def spotlight_search_api(request):
         if query:
             base_q |= Q(nombre_cotizacion__icontains=query) | Q(cliente__nombre_empresa__icontains=query) | Q(descripcion__icontains=query)
             if is_numeric:
-                base_q |= Q(id__exact=int(numeric_query))
+                # icontains sobre id permite que "119" matchee #1198, #1199, etc.
+                base_q |= Q(id__icontains=numeric_query)
         cot_qs = Cotizacion.objects.filter(base_q) if query else Cotizacion.objects.all()
         cot_qs = cot_qs.filter(oportunidad__isnull=False).select_related('cliente', 'created_by', 'oportunidad')
         if filter_user_obj:

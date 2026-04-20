@@ -176,10 +176,9 @@ window.addEventListener('resize', () => {
             c.innerHTML =
                 '<div class="sp-empty">' +
                     '<div class="sp-empty-icon">' +
-                        '<svg width="42" height="42" fill="none" stroke="#CBD5E1" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+                        '<svg width="38" height="38" fill="none" stroke="#CBD5E1" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
                     '</div>' +
                     '<div class="sp-empty-title">Sin resultados</div>' +
-                    '<div class="sp-empty-hint">Intenta otro nombre, PO, factura, <kbd>#123</kbd> o <kbd>/o</kbd> para acotar</div>' +
                 '</div>';
             return;
         }
@@ -227,35 +226,23 @@ window.addEventListener('resize', () => {
         var c = $sp('spotlight-results');
         if (!c) return;
         var html = '';
-        // Sugerencias (acciones rápidas - mostramos 4)
-        html += renderSectionHeader('sugerido');
-        var acts = QUICK_ACTIONS.slice(0, 4);
         currentResults = [];
-        acts.forEach(function (a, i) {
-            var r = { type: 'accion', _action_id: a.id, title: a.title, subtitle: a.subtitle, _action: true };
-            currentResults.push(r);
-            html += renderResultItem(r, i, '');
-        });
-        // Recientes
+        // Recientes primero si existen
         var recents = getRecents();
         if (recents.length) {
-            html += renderSectionHeader('reciente', recents.length);
+            html += renderSectionHeader('reciente');
             recents.forEach(function (r) {
                 currentResults.push(r);
                 html += renderResultItem(r, currentResults.length - 1, '');
             });
         }
-        // Hint de comandos
-        html += '<div class="sp-command-hint">' +
-            '<span><kbd>/t</kbd> tareas</span>' +
-            '<span><kbd>/o</kbd> oportunidades</span>' +
-            '<span><kbd>/q</kbd> cotizaciones</span>' +
-            '<span><kbd>/c</kbd> clientes</span>' +
-            '<span><kbd>/p</kbd> proyectos</span>' +
-            '<span><kbd>@</kbd>usuario</span>' +
-            '<span><kbd>#</kbd>123</span>' +
-            '<span><kbd>&gt;</kbd>acción</span>' +
-            '</div>';
+        // Sugerencias (acciones rápidas)
+        html += renderSectionHeader('sugerido');
+        QUICK_ACTIONS.slice(0, 4).forEach(function (a) {
+            var r = { type: 'accion', _action_id: a.id, title: a.title, subtitle: a.subtitle, _action: true };
+            currentResults.push(r);
+            html += renderResultItem(r, currentResults.length - 1, '');
+        });
         c.innerHTML = html;
     }
 
