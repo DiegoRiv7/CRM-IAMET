@@ -1,248 +1,535 @@
-    <!-- ═══ WIDGET: NUEVA NEGOCIACIÓN ═══ -->
+    <!-- ═══ WIDGET: NUEVA OPORTUNIDAD (composer style) ═══ -->
     <div class="widget-overlay wn-overlay" id="widgetNegociacion" style="z-index:10100;"
         onclick="if(event.target===this){this.classList.add('closing');var self=this;setTimeout(function(){self.classList.remove('active','closing');},220);}"><!-- CAPA 1 -->
-        <div class="wn-card">
+        <div class="wn-card wn-composer">
 
-            <!-- Header -->
-            <div class="wn-header">
-                <div class="wn-header-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                </div>
-                <div>
-                    <div class="wn-title">Nueva Oportunidad</div>
-                    <div class="wn-subtitle">Ingresa los datos para registrar la negociación</div>
-                </div>
-                <button type="button" class="wn-close" id="widgetClose"
-                    onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">&times;</button>
-            </div>
+            <form id="formNegociacion" autocomplete="off" novalidate style="display:contents;">
+                {% csrf_token %}
 
-            <!-- Body -->
-            <div class="wn-body">
-                <form id="formNegociacion" autocomplete="off">
-                    {% csrf_token %}
-
-                    <!-- Nombre -->
-                    <div class="wn-field">
-                        <label class="wn-label">Nombre de la oportunidad</label>
-                        <input type="text" class="wn-input" id="wfOportunidad"
-                            placeholder="Ej: Implementación de sistema RFID..." required>
+                <!-- ─── Header minimal: breadcrumb + cerrar ─── -->
+                <header class="wn-ctw-header">
+                    <div class="wn-ctw-breadcrumb">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        <span class="wn-ctw-crumb-muted">Oportunidades</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                        <span class="wn-ctw-crumb-current">Nueva oportunidad</span>
                     </div>
+                    <button type="button" class="wn-ctw-close" id="widgetClose" title="Cerrar (Esc)"
+                        onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </header>
 
-                    <!-- Cliente -->
-                    <div class="wn-field">
-                        <div class="wn-label-row">
-                            <label class="wn-label">Cliente</label>
-                            <button type="button" class="wn-add-btn" id="wnAddClienteBtn" title="Crear nuevo cliente">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                <!-- ─── Canvas: Título + "Para [Cliente]" + pills Tipo/Cierre + Notas ─── -->
+                <main class="wn-ctw-canvas">
+
+                    <!-- Título grande -->
+                    <input type="text" class="wn-ctw-title" id="wfOportunidad" placeholder="Nombre de la oportunidad…" autocomplete="off">
+
+                    <!-- Para [Cliente] — lenguaje natural -->
+                    <div class="wn-ctw-nl-row">
+                        <span class="wn-ctw-nl-label">Para</span>
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-pill-large empty" id="wnClienteBtn" onclick="wnOpenPop('cli', event)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <span id="wnClienteLabel">Selecciona un cliente (requerido)</span>
                             </button>
-                        </div>
-                        <input type="text" class="wn-input wf-input" id="wfCliente" placeholder="Buscar o escribir cliente..." required>
-                        <div class="wf-autocomplete" id="wfClienteAC"></div>
-                        <!-- Mini-form crear cliente -->
-                        <div class="wn-mini-form" id="wnMiniCliente" style="display:none;">
-                            <div class="wn-mini-title">Nuevo cliente</div>
-                            <input type="text" class="wn-input wn-mini-input" id="wfNuevoClienteNombre" placeholder="Nombre de la empresa">
-                            <div class="wn-mini-actions">
-                                <button type="button" class="wn-mini-cancel" id="wfNuevoClienteCancel">Cancelar</button>
-                                <button type="button" class="wn-mini-save" id="wfNuevoClienteGuardar">Guardar cliente</button>
+                            <div class="wn-ctw-pop wn-ctw-pop-wide" id="wnPopCli" style="display:none;">
+                                <div class="wn-ctw-pop-title">Cliente</div>
+                                <input type="text" class="wn-ctw-pop-input wf-input" id="wfCliente" placeholder="Buscar o escribir cliente…">
+                                <div class="wf-autocomplete" id="wfClienteAC"></div>
+                                <button type="button" class="wn-ctw-pop-add" id="wnAddClienteBtn">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Crear cliente nuevo
+                                </button>
+                                <div class="wn-ctw-mini" id="wnMiniCliente" style="display:none;">
+                                    <input type="text" class="wn-ctw-pop-input" id="wfNuevoClienteNombre" placeholder="Nombre de la empresa">
+                                    <div class="wn-ctw-mini-actions">
+                                        <button type="button" class="wn-mini-cancel" id="wfNuevoClienteCancel">Cancelar</button>
+                                        <button type="button" class="wn-mini-save" id="wfNuevoClienteGuardar">Guardar cliente</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Contacto -->
-                    <div class="wn-field">
-                        <div class="wn-label-row">
-                            <label class="wn-label">Contacto</label>
-                            <button type="button" class="wn-add-btn" id="wnAddContactoBtn" title="Crear nuevo contacto">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    <!-- Pills obligatorios: Tipo + Cierre -->
+                    <div class="wn-ctw-meta-row">
+                        <!-- Tipo -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-pill-meta empty" id="wnTipoBtn" onclick="wnOpenPop('tipo', event)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                                <span id="wnTipoLabel">Tipo (requerido)</span>
                             </button>
-                        </div>
-                        <input type="text" class="wn-input wf-input" id="wfContacto" placeholder="Nombre del contacto...">
-                        <div class="wf-autocomplete" id="wfContactoAC"></div>
-                        <!-- Mini-form crear contacto -->
-                        <div class="wn-mini-form" id="wnMiniContacto" style="display:none;">
-                            <div class="wn-mini-title">Nuevo contacto</div>
-                            <div class="wn-mini-row">
-                                <input type="text" class="wn-input wn-mini-input" id="wfNuevoContactoNombre" placeholder="Nombre">
-                                <input type="text" class="wn-input wn-mini-input" id="wfNuevoContactoApellido" placeholder="Apellido">
-                            </div>
-                            <div class="wn-mini-actions">
-                                <button type="button" class="wn-mini-cancel" id="wfNuevoContactoCancel">Cancelar</button>
-                                <button type="button" class="wn-mini-save" id="wfNuevoContactoGuardar">Guardar contacto</button>
+                            <div class="wn-ctw-pop" id="wnPopTipo" style="display:none;">
+                                <div class="wn-ctw-pop-title">Tipo de pipeline</div>
+                                <select class="wn-ctw-pop-input" id="wfTipo">
+                                    <option value="">Selecciona un tipo</option>
+                                    <option value="runrate">Runrate</option>
+                                    <option value="proyecto">Proyecto</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Divider -->
-                    <div class="wn-divider"></div>
-
-                    <!-- Monto + Probabilidad -->
-                    <div class="wn-row">
-                        <div class="wn-field">
-                            <label class="wn-label">Monto estimado</label>
-                            <div class="wn-input-prefix">
-                                <span class="wn-prefix">$</span>
-                                <input type="number" class="wn-input wn-input--prefixed" id="wfMonto" placeholder="0.00" step="0.01" min="0" required>
+                        <!-- Cierre -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-pill-meta empty" id="wnCierreBtn" onclick="wnOpenPop('cierre', event)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <span id="wnCierreLabel">Cierre (requerido)</span>
+                            </button>
+                            <div class="wn-ctw-pop" id="wnPopCierre" style="display:none;">
+                                <div class="wn-ctw-pop-title">Mes de cierre estimado</div>
+                                <select class="wn-ctw-pop-input" id="wfMesCierre">
+                                    <option value="" selected>Selecciona un mes</option>
+                                    <option value="01">Enero</option>
+                                    <option value="02">Febrero</option>
+                                    <option value="03">Marzo</option>
+                                    <option value="04">Abril</option>
+                                    <option value="05">Mayo</option>
+                                    <option value="06">Junio</option>
+                                    <option value="07">Julio</option>
+                                    <option value="08">Agosto</option>
+                                    <option value="09">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="wn-field">
-                            <label class="wn-label">Probabilidad</label>
-                            <div class="wn-input-prefix">
-                                <input type="number" class="wn-input wn-input--suffixed" id="wfProbabilidad" value="25" min="5" max="100" step="5">
-                                <span class="wn-suffix">%</span>
+                    </div>
+
+                    <!-- Notas (opcional) -->
+                    <textarea class="wn-ctw-desc" id="wfComentarios" placeholder="Añade contexto de la negociación, siguientes pasos o notas…" rows="4"></textarea>
+                </main>
+
+                <!-- ─── Toolbar: campos secundarios como ghost buttons ─── -->
+                <footer class="wn-ctw-toolbar">
+                    <div class="wn-ctw-tools">
+
+                        <!-- Contacto -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-tool-ghost" id="wnContactoBtn" onclick="wnOpenPop('contacto', event)" title="Añadir contacto">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                                <span id="wnContactoLabel">Contacto</span>
+                            </button>
+                            <div class="wn-ctw-pop wn-ctw-pop-wide" id="wnPopContacto" style="display:none;">
+                                <div class="wn-ctw-pop-title">Contacto</div>
+                                <input type="text" class="wn-ctw-pop-input wf-input" id="wfContacto" placeholder="Nombre del contacto…">
+                                <div class="wf-autocomplete" id="wfContactoAC"></div>
+                                <button type="button" class="wn-ctw-pop-add" id="wnAddContactoBtn">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Crear contacto nuevo
+                                </button>
+                                <div class="wn-ctw-mini" id="wnMiniContacto" style="display:none;">
+                                    <div class="wn-ctw-mini-row">
+                                        <input type="text" class="wn-ctw-pop-input" id="wfNuevoContactoNombre" placeholder="Nombre">
+                                        <input type="text" class="wn-ctw-pop-input" id="wfNuevoContactoApellido" placeholder="Apellido">
+                                    </div>
+                                    <div class="wn-ctw-mini-actions">
+                                        <button type="button" class="wn-mini-cancel" id="wfNuevoContactoCancel">Cancelar</button>
+                                        <button type="button" class="wn-mini-save" id="wfNuevoContactoGuardar">Guardar contacto</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="wn-ctw-tool-sep"></div>
+
+                        <!-- Producto -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-tool-ghost" id="wnProdBtn" onclick="wnOpenPop('prod', event)" title="Producto">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                <span id="wnProdLabel">Producto</span>
+                            </button>
+                            <div class="wn-ctw-pop" id="wnPopProd" style="display:none;">
+                                <div class="wn-ctw-pop-title">Producto</div>
+                                <select class="wn-ctw-pop-input" id="wfProducto">
+                                    <option value="">Selecciona un producto</option>
+                                    <option value="ZEBRA">Zebra</option>
+                                    <option value="PANDUIT">Panduit</option>
+                                    <option value="APC">APC</option>
+                                    <option value="AVIGILION">Avigilon</option>
+                                    <option value="GENETEC">Genetec</option>
+                                    <option value="AXIS">Axis</option>
+                                    <option value="SOFTWARE">Software</option>
+                                    <option value="RUNRATE">Runrate</option>
+                                    <option value="PÓLIZA">Póliza</option>
+                                    <option value="CISCO">Cisco</option>
+                                    <option value="SERVICIO">Servicio</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Área -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-tool-ghost" id="wnAreaBtn" onclick="wnOpenPop('area', event)" title="Área">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                                <span id="wnAreaLabel">Área</span>
+                            </button>
+                            <div class="wn-ctw-pop" id="wnPopArea" style="display:none;">
+                                <div class="wn-ctw-pop-title">Área</div>
+                                <select class="wn-ctw-pop-input" id="wfArea">
+                                    <option value="">Selecciona un área</option>
+                                    <option value="SISTEMAS">Sistemas</option>
+                                    <option value="Recursos Humanos">Recursos Humanos</option>
+                                    <option value="Compras">Compras</option>
+                                    <option value="Seguridad">Seguridad</option>
+                                    <option value="Mantenimiento">Mantenimiento</option>
+                                    <option value="Almacén">Almacén</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Probabilidad -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-tool-ghost" id="wnProbBtn" onclick="wnOpenPop('prob', event)" title="Probabilidad de cierre">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                                <span id="wnProbLabel">Probabilidad</span>
+                            </button>
+                            <div class="wn-ctw-pop" id="wnPopProb" style="display:none;">
+                                <div class="wn-ctw-pop-title">Probabilidad de cierre (%)</div>
+                                <div class="wn-ctw-prob-wrap">
+                                    <input type="number" class="wn-ctw-pop-input" id="wfProbabilidad" value="20" min="5" max="100" step="5">
+                                    <span class="wn-ctw-prob-suffix">%</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <!-- Área + Producto -->
-                    <div class="wn-row">
-                        <div class="wn-field">
-                            <label class="wn-label">Área</label>
-                            <select class="wn-input wn-select" id="wfArea">
-                                <option value="SISTEMAS">Sistemas</option>
-                                <option value="Recursos Humanos">Recursos Humanos</option>
-                                <option value="Compras">Compras</option>
-                                <option value="Seguridad">Seguridad</option>
-                                <option value="Mantenimiento">Mantenimiento</option>
-                                <option value="Almacén">Almacén</option>
-                            </select>
-                        </div>
-                        <div class="wn-field">
-                            <label class="wn-label">Producto</label>
-                            <select class="wn-input wn-select" id="wfProducto">
-                                <option value="ZEBRA">Zebra</option>
-                                <option value="PANDUIT">Panduit</option>
-                                <option value="APC">APC</option>
-                                <option value="AVIGILION">Avigilon</option>
-                                <option value="GENETEC">Genetec</option>
-                                <option value="AXIS">Axis</option>
-                                <option value="SOFTWARE" selected>Software</option>
-                                <option value="RUNRATE">Runrate</option>
-                                <option value="PÓLIZA">Póliza</option>
-                                <option value="CISCO">Cisco</option>
-                                <option value="SERVICIO">Servicio</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Mes cierre + Tipo -->
-                    <div class="wn-row">
-                        <div class="wn-field">
-                            <label class="wn-label">Mes de cierre</label>
-                            <select class="wn-input wn-select" id="wfMesCierre">
-                                {% for code, name in mes_choices %}
-                                <option value="{{ code }}">{{ name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="wn-field">
-                            <label class="wn-label">Tipo</label>
-                            <select class="wn-input wn-select" id="wfTipo">
-                                {% for pipeline_key in pipelines_list %}
-                                <option value="{{ pipeline_key }}">{{ pipeline_key|title }}</option>
-                                {% empty %}
-                                <option value="runrate">Runrate</option>
-                                <option value="proyecto">Proyecto</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Comentarios -->
-                    <div class="wn-field">
-                        <label class="wn-label">Comentarios <span class="wn-optional">opcional</span></label>
-                        <textarea class="wn-input wn-textarea" id="wfComentarios"
-                            placeholder="Contexto adicional, notas, próximos pasos..." rows="2"></textarea>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="wn-actions">
-                        <button type="button" class="wn-btn wn-btn--cancel" id="wfCancel"
+                    <div class="wn-ctw-actions">
+                        <button type="button" class="wn-ctw-cancel" id="wfCancel"
                             onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">Cancelar</button>
-                        <button type="submit" class="wn-btn wn-btn--submit" id="wfSubmit">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M12 5v14M5 12h14"/></svg>
+                        <button type="submit" class="wn-ctw-submit" id="wfSubmit">
                             Crear oportunidad
+                            <span class="wn-ctw-kbd">⌘ ↵</span>
                         </button>
                     </div>
-                </form>
-            </div>
+                </footer>
+
+                <!-- Monto: ya no se edita manualmente (lo calcula el sistema desde las cotizaciones) -->
+                <input type="hidden" id="wfMonto" value="0">
+            </form>
         </div>
     </div>
 
+    <div id="widgetToast" class="widget-toast" aria-hidden="true"></div>
+
     <script>
     (function() {
-        var csrf = function() { return document.querySelector('[name=csrfmiddlewaretoken]').value; };
+        var csrf = function() {
+            var el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : '';
+        };
 
-        // ── Botón + Cliente ──
-        document.getElementById('wnAddClienteBtn').addEventListener('click', function() {
-            var mini = document.getElementById('wnMiniCliente');
-            mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
-            if (mini.style.display === 'block') document.getElementById('wfNuevoClienteNombre').focus();
-        });
-        document.getElementById('wfNuevoClienteCancel').addEventListener('click', function() {
-            document.getElementById('wnMiniCliente').style.display = 'none';
-            document.getElementById('wfNuevoClienteNombre').value = '';
-        });
-        document.getElementById('wfNuevoClienteGuardar').addEventListener('click', function() {
-            var nombre = document.getElementById('wfNuevoClienteNombre').value.trim();
-            if (!nombre) { document.getElementById('wfNuevoClienteNombre').focus(); return; }
-            var btn = this;
-            btn.disabled = true; btn.textContent = 'Guardando...';
-            fetch('/app/api/quick-crear-cliente/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({ nombre_empresa: nombre })
-            }).then(function(r) { return r.json(); }).then(function(res) {
-                if (res.success) {
-                    document.getElementById('wfCliente').value = res.nombre;
-                    // Set selectedClienteId used by contacto autocomplete
-                    if (typeof window._wfSelectedClienteId !== 'undefined') window._wfSelectedClienteId = res.id;
-                    document.getElementById('wfCliente').dispatchEvent(new CustomEvent('wn:cliente-set', { detail: { id: res.id, nombre: res.nombre } }));
-                    document.getElementById('wnMiniCliente').style.display = 'none';
-                    document.getElementById('wfNuevoClienteNombre').value = '';
-                } else {
-                    alert(res.error || 'Error al crear cliente');
-                }
-                btn.disabled = false; btn.textContent = 'Guardar cliente';
-            }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar cliente'; });
+        // ── Popovers (tipo, cierre, cliente, contacto, prod, area, prob) ──
+        var POP_IDS = {
+            cli: 'wnPopCli', tipo: 'wnPopTipo', cierre: 'wnPopCierre',
+            contacto: 'wnPopContacto', prod: 'wnPopProd', area: 'wnPopArea', prob: 'wnPopProb'
+        };
+        var BTN_IDS = {
+            cli: 'wnClienteBtn', tipo: 'wnTipoBtn', cierre: 'wnCierreBtn',
+            contacto: 'wnContactoBtn', prod: 'wnProdBtn', area: 'wnAreaBtn', prob: 'wnProbBtn'
+        };
+        function _wnCloseAllPops() {
+            Object.keys(POP_IDS).forEach(function(k) {
+                var p = document.getElementById(POP_IDS[k]); if (p) p.style.display = 'none';
+                var b = document.getElementById(BTN_IDS[k]); if (b) b.classList.remove('active');
+            });
+        }
+        window.wnOpenPop = function(which, e) {
+            if (e) e.stopPropagation();
+            var pop = document.getElementById(POP_IDS[which]);
+            var btn = document.getElementById(BTN_IDS[which]);
+            if (!pop || !btn) return;
+            var isOpen = pop.style.display !== 'none';
+            _wnCloseAllPops();
+            if (!isOpen) {
+                pop.style.display = 'block';
+                btn.classList.add('active');
+                // Autofocus en el primer input visible del popover
+                setTimeout(function() {
+                    var firstInput = pop.querySelector('input, select, textarea');
+                    if (firstInput && firstInput.focus) firstInput.focus();
+                }, 30);
+            }
+        };
+        // Cerrar al hacer click fuera
+        document.addEventListener('click', function(e) {
+            var modal = document.getElementById('widgetNegociacion');
+            if (!modal || !modal.classList.contains('active')) return;
+            var wraps = modal.querySelectorAll('.wn-ctw-popwrap');
+            for (var i = 0; i < wraps.length; i++) {
+                if (wraps[i].contains(e.target)) return;
+            }
+            _wnCloseAllPops();
         });
 
-        // ── Botón + Contacto ──
-        document.getElementById('wnAddContactoBtn').addEventListener('click', function() {
-            var mini = document.getElementById('wnMiniContacto');
-            mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
-            if (mini.style.display === 'block') document.getElementById('wfNuevoContactoNombre').focus();
-        });
-        document.getElementById('wfNuevoContactoCancel').addEventListener('click', function() {
-            document.getElementById('wnMiniContacto').style.display = 'none';
-            document.getElementById('wfNuevoContactoNombre').value = '';
-            document.getElementById('wfNuevoContactoApellido').value = '';
-        });
-        document.getElementById('wfNuevoContactoGuardar').addEventListener('click', function() {
-            var nombre = document.getElementById('wfNuevoContactoNombre').value.trim();
-            if (!nombre) { document.getElementById('wfNuevoContactoNombre').focus(); return; }
-            var btn = this;
-            btn.disabled = true; btn.textContent = 'Guardando...';
-            var empresaId = typeof window._wfSelectedClienteId !== 'undefined' ? window._wfSelectedClienteId : null;
-            fetch('/app/api/quick-crear-contacto/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({
-                    nombre: nombre,
-                    apellido: document.getElementById('wfNuevoContactoApellido').value.trim(),
-                    empresa_id: empresaId
-                })
-            }).then(function(r) { return r.json(); }).then(function(res) {
-                if (res.success) {
-                    document.getElementById('wfContacto').value = res.nombre_completo;
-                    document.getElementById('wnMiniContacto').style.display = 'none';
-                    document.getElementById('wfNuevoContactoNombre').value = '';
-                    document.getElementById('wfNuevoContactoApellido').value = '';
-                } else {
-                    alert(res.error || 'Error al crear contacto');
+        // ── Labels dinámicas: refresca el texto de cada pill según selección ──
+        function _labelOf(selectId, emptyText) {
+            var el = document.getElementById(selectId);
+            if (!el) return emptyText;
+            var v = el.value;
+            if (!v) return emptyText;
+            if (el.tagName === 'SELECT') {
+                return el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : v;
+            }
+            return v;
+        }
+        function _setPillFilled(btnId, filled) {
+            var b = document.getElementById(btnId);
+            if (!b) return;
+            b.classList.toggle('empty', !filled);
+            b.classList.toggle('filled', !!filled);
+            b.classList.remove('soft-error');
+        }
+        window.wnRefreshLabels = function() {
+            // Tipo
+            var tipoEl = document.getElementById('wfTipo');
+            var tipoVal = tipoEl ? tipoEl.value : '';
+            document.getElementById('wnTipoLabel').textContent = tipoVal ? _labelOf('wfTipo', 'Tipo (requerido)') : 'Tipo (requerido)';
+            _setPillFilled('wnTipoBtn', !!tipoVal);
+
+            // Cierre
+            var mesEl = document.getElementById('wfMesCierre');
+            var mesVal = mesEl ? mesEl.value : '';
+            document.getElementById('wnCierreLabel').textContent = mesVal ? 'Cierre · ' + _labelOf('wfMesCierre', '') : 'Cierre (requerido)';
+            _setPillFilled('wnCierreBtn', !!mesVal);
+
+            // Cliente
+            var cliVal = (document.getElementById('wfCliente') || {}).value || '';
+            document.getElementById('wnClienteLabel').textContent = cliVal.trim() ? cliVal.trim() : 'Selecciona un cliente (requerido)';
+            _setPillFilled('wnClienteBtn', !!cliVal.trim());
+
+            // Contacto (opcional)
+            var ctVal = (document.getElementById('wfContacto') || {}).value || '';
+            document.getElementById('wnContactoLabel').textContent = ctVal.trim() ? ctVal.trim() : 'Contacto';
+            document.getElementById('wnContactoBtn').classList.toggle('filled', !!ctVal.trim());
+
+            // Producto
+            document.getElementById('wnProdLabel').textContent = _labelOf('wfProducto', 'Producto');
+            document.getElementById('wnProdBtn').classList.toggle('filled', true);
+
+            // Área
+            document.getElementById('wnAreaLabel').textContent = _labelOf('wfArea', 'Área');
+            document.getElementById('wnAreaBtn').classList.toggle('filled', true);
+
+            // Probabilidad
+            var prob = (document.getElementById('wfProbabilidad') || {}).value || '20';
+            document.getElementById('wnProbLabel').textContent = 'Probabilidad · ' + prob + '%';
+            document.getElementById('wnProbBtn').classList.toggle('filled', true);
+
+            // ── Botón submit: gris hasta que todos los required estén llenos ──
+            var titulo = (document.getElementById('wfOportunidad') || {}).value || '';
+            var clienteOk = !!((document.getElementById('wfCliente') || {}).value || '').trim();
+            var tipoOk = !!((document.getElementById('wfTipo') || {}).value || '');
+            var cierreOk = !!((document.getElementById('wfMesCierre') || {}).value || '');
+            var allReady = titulo.trim().length > 0 && clienteOk && tipoOk && cierreOk;
+            var submitBtn = document.getElementById('wfSubmit');
+            if (submitBtn) submitBtn.classList.toggle('is-ready', allReady);
+        };
+
+        // ── Validación reactiva al intentar crear ──
+        function _wnValidateRequired() {
+            var titulo = (document.getElementById('wfOportunidad') || {}).value || '';
+            var clienteVal = ((document.getElementById('wfCliente') || {}).value || '').trim();
+            var tipoVal = (document.getElementById('wfTipo') || {}).value || '';
+            var cierreVal = (document.getElementById('wfMesCierre') || {}).value || '';
+            var missing = [];
+
+            var tituloEl = document.getElementById('wfOportunidad');
+            if (!titulo.trim()) {
+                missing.push('titulo');
+                if (tituloEl) {
+                    tituloEl.classList.add('title-error', 'wn-ctw-shake');
+                    setTimeout(function() { if (tituloEl) tituloEl.classList.remove('wn-ctw-shake'); }, 320);
                 }
-                btn.disabled = false; btn.textContent = 'Guardar contacto';
-            }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar contacto'; });
+            } else if (tituloEl) {
+                tituloEl.classList.remove('title-error');
+            }
+
+            ['cliente', 'tipo', 'cierre'].forEach(function(key) {
+                var btnId = { cliente: 'wnClienteBtn', tipo: 'wnTipoBtn', cierre: 'wnCierreBtn' }[key];
+                var val = { cliente: clienteVal, tipo: tipoVal, cierre: cierreVal }[key];
+                var btn = document.getElementById(btnId);
+                if (!btn) return;
+                if (!val) {
+                    missing.push(key);
+                    btn.classList.remove('empty', 'filled');
+                    btn.classList.add('soft-error', 'wn-ctw-shake');
+                    setTimeout(function() { if (btn) btn.classList.remove('wn-ctw-shake'); }, 320);
+                } else {
+                    btn.classList.remove('soft-error');
+                }
+            });
+            return missing.length === 0;
+        }
+
+        // Hook changes → refresh labels
+        ['wfTipo', 'wfMesCierre', 'wfProducto', 'wfArea', 'wfProbabilidad', 'wfCliente', 'wfContacto'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('change', function() { wnRefreshLabels(); });
+            el.addEventListener('input', function() { wnRefreshLabels(); });
         });
+
+        // Reset a estado "vacío" en cada apertura (asegura Cierre / Tipo / etc.
+        // empiecen sin default y pills en estado empty)
+        function _wnResetFormEmpty() {
+            var setEmpty = function(id) { var el = document.getElementById(id); if (el) el.value = ''; };
+            setEmpty('wfOportunidad');
+            setEmpty('wfCliente');
+            setEmpty('wfContacto');
+            setEmpty('wfTipo');
+            setEmpty('wfMesCierre');
+            setEmpty('wfProducto');
+            setEmpty('wfArea');
+            setEmpty('wfComentarios');
+            var prob = document.getElementById('wfProbabilidad'); if (prob) prob.value = '20';
+            // Limpiar estados visuales de error
+            var tituloEl = document.getElementById('wfOportunidad');
+            if (tituloEl) tituloEl.classList.remove('title-error');
+            ['wnClienteBtn', 'wnTipoBtn', 'wnCierreBtn'].forEach(function(id) {
+                var b = document.getElementById(id);
+                if (b) {
+                    b.classList.remove('soft-error', 'filled', 'active');
+                    b.classList.add('empty');
+                }
+            });
+        }
+        // Refrescar al abrir el modal
+        var openObserver = new MutationObserver(function(mutList) {
+            var modal = document.getElementById('widgetNegociacion');
+            if (modal && modal.classList.contains('active')) {
+                _wnResetFormEmpty();
+                setTimeout(wnRefreshLabels, 50);
+            }
+        });
+        var modalEl = document.getElementById('widgetNegociacion');
+        if (modalEl) openObserver.observe(modalEl, { attributes: true, attributeFilter: ['class'] });
+
+        // Primera inicialización
+        setTimeout(wnRefreshLabels, 100);
+
+        // ── Botón + Cliente (mini-form) ──
+        var btnAddCli = document.getElementById('wnAddClienteBtn');
+        if (btnAddCli) {
+            btnAddCli.addEventListener('click', function() {
+                var mini = document.getElementById('wnMiniCliente');
+                mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
+                if (mini.style.display === 'block') document.getElementById('wfNuevoClienteNombre').focus();
+            });
+        }
+        var btnNuevoCliCancel = document.getElementById('wfNuevoClienteCancel');
+        if (btnNuevoCliCancel) {
+            btnNuevoCliCancel.addEventListener('click', function() {
+                document.getElementById('wnMiniCliente').style.display = 'none';
+                document.getElementById('wfNuevoClienteNombre').value = '';
+            });
+        }
+        var btnNuevoCliSave = document.getElementById('wfNuevoClienteGuardar');
+        if (btnNuevoCliSave) {
+            btnNuevoCliSave.addEventListener('click', function() {
+                var nombre = document.getElementById('wfNuevoClienteNombre').value.trim();
+                if (!nombre) { document.getElementById('wfNuevoClienteNombre').focus(); return; }
+                var btn = this;
+                btn.disabled = true; btn.textContent = 'Guardando…';
+                fetch('/app/api/quick-crear-cliente/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body: JSON.stringify({ nombre_empresa: nombre })
+                }).then(function(r) { return r.json(); }).then(function(res) {
+                    if (res.success) {
+                        document.getElementById('wfCliente').value = res.nombre;
+                        if (typeof window._wfSelectedClienteId !== 'undefined') window._wfSelectedClienteId = res.id;
+                        document.getElementById('wfCliente').dispatchEvent(new CustomEvent('wn:cliente-set', { detail: { id: res.id, nombre: res.nombre } }));
+                        document.getElementById('wnMiniCliente').style.display = 'none';
+                        document.getElementById('wfNuevoClienteNombre').value = '';
+                        wnRefreshLabels();
+                    } else {
+                        alert(res.error || 'Error al crear cliente');
+                    }
+                    btn.disabled = false; btn.textContent = 'Guardar cliente';
+                }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar cliente'; });
+            });
+        }
+
+        // ── Botón + Contacto (mini-form) ──
+        var btnAddCt = document.getElementById('wnAddContactoBtn');
+        if (btnAddCt) {
+            btnAddCt.addEventListener('click', function() {
+                var mini = document.getElementById('wnMiniContacto');
+                mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
+                if (mini.style.display === 'block') document.getElementById('wfNuevoContactoNombre').focus();
+            });
+        }
+        var btnNuevoCtCancel = document.getElementById('wfNuevoContactoCancel');
+        if (btnNuevoCtCancel) {
+            btnNuevoCtCancel.addEventListener('click', function() {
+                document.getElementById('wnMiniContacto').style.display = 'none';
+                document.getElementById('wfNuevoContactoNombre').value = '';
+                document.getElementById('wfNuevoContactoApellido').value = '';
+            });
+        }
+        var btnNuevoCtSave = document.getElementById('wfNuevoContactoGuardar');
+        if (btnNuevoCtSave) {
+            btnNuevoCtSave.addEventListener('click', function() {
+                var nombre = document.getElementById('wfNuevoContactoNombre').value.trim();
+                if (!nombre) { document.getElementById('wfNuevoContactoNombre').focus(); return; }
+                var btn = this;
+                btn.disabled = true; btn.textContent = 'Guardando…';
+                var empresaId = typeof window._wfSelectedClienteId !== 'undefined' ? window._wfSelectedClienteId : null;
+                fetch('/app/api/quick-crear-contacto/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        apellido: document.getElementById('wfNuevoContactoApellido').value.trim(),
+                        empresa_id: empresaId
+                    })
+                }).then(function(r) { return r.json(); }).then(function(res) {
+                    if (res.success) {
+                        document.getElementById('wfContacto').value = res.nombre_completo;
+                        document.getElementById('wnMiniContacto').style.display = 'none';
+                        document.getElementById('wfNuevoContactoNombre').value = '';
+                        document.getElementById('wfNuevoContactoApellido').value = '';
+                        wnRefreshLabels();
+                    } else {
+                        alert(res.error || 'Error al crear contacto');
+                    }
+                    btn.disabled = false; btn.textContent = 'Guardar contacto';
+                }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar contacto'; });
+            });
+        }
+
+        // ⌘/Ctrl+Enter submite
+        var formEl = document.getElementById('formNegociacion');
+        if (formEl) {
+            formEl.addEventListener('keydown', function(e) {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    var btn = document.getElementById('wfSubmit');
+                    if (btn) btn.click();
+                }
+            });
+
+            // Validación reactiva: si faltan required, preventDefault en capture
+            // antes de que el handler real (crm_main.js) intente crear la opp
+            formEl.addEventListener('submit', function(e) {
+                if (!_wnValidateRequired()) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        }
+
+        // Limpiar error del título al empezar a escribir
+        var tituloInp = document.getElementById('wfOportunidad');
+        if (tituloInp) {
+            tituloInp.addEventListener('input', function() {
+                if (this.value.trim()) this.classList.remove('title-error');
+                wnRefreshLabels();
+            });
+        }
     })();
     </script>

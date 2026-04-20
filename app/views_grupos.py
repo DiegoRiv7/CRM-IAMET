@@ -288,6 +288,20 @@ def _serializar_mensaje(msg, request_user=None):
     if msg.autor:
         autor_nombre = (msg.autor.first_name + ' ' + msg.autor.last_name).strip() or msg.autor.username
         autor_username = msg.autor.username
+    # Adjuntos (si el mensaje tiene archivos)
+    archivos = []
+    try:
+        for arch in msg.archivos.all():
+            archivos.append({
+                'id': arch.id,
+                'nombre': arch.nombre_original,
+                'tamano': arch.tamaño,
+                'tipo': arch.tipo_contenido or '',
+                'es_imagen': (arch.tipo_contenido or '').lower().startswith('image/'),
+                'url': f'/app/api/grupos/archivo/{arch.id}/',
+            })
+    except Exception:
+        pass
     return {
         'id': msg.id,
         'tipo': msg.tipo,
@@ -301,6 +315,7 @@ def _serializar_mensaje(msg, request_user=None):
         'objeto_titulo': msg.objeto_titulo,
         'fecha': msg.fecha.strftime('%d/%m/%Y %H:%M'),
         'fecha_iso': msg.fecha.isoformat(),
+        'archivos': archivos,
     }
 
 
@@ -392,7 +407,7 @@ def api_grupo_chat(request, grupo_id):
 @login_required
 @require_http_methods(['POST'])
 def api_grupo_chat_enviar(request, grupo_id):
-    """Envía un mensaje al chat del grupo."""
+    """Envía un mensaje al chat del grupo. Acepta JSON o multipart con archivos."""
     try:
         grupo = GrupoTrabajo.objects.get(id=grupo_id)
     except GrupoTrabajo.DoesNotExist:
@@ -400,13 +415,23 @@ def api_grupo_chat_enviar(request, grupo_id):
     if not usuario_puede_acceder_grupo(request.user, grupo):
         return JsonResponse({'error': 'Sin acceso'}, status=403)
 
-    try:
-        data = json.loads(request.body)
-    except Exception:
-        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    # Soportar tanto JSON como multipart/form-data para adjuntos
+    content_type = (request.content_type or '').lower()
+    if 'multipart/form-data' in content_type:
+        contenido = (request.POST.get('contenido') or '').strip()
+        archivos_files = []
+        for key in request.FILES:
+            if key.startswith('archivo_'):
+                archivos_files.append(request.FILES[key])
+    else:
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        contenido = (data.get('contenido') or '').strip()
+        archivos_files = []
 
-    contenido = (data.get('contenido') or '').strip()
-    if not contenido:
+    if not contenido and not archivos_files:
         return JsonResponse({'error': 'Mensaje vacío'}, status=400)
 
     msg = MensajeGrupo.objects.create(
@@ -415,6 +440,20 @@ def api_grupo_chat_enviar(request, grupo_id):
         tipo='mensaje',
         contenido=contenido,
     )
+
+    # Crear adjuntos
+    from .models import MensajeGrupoArchivo
+    for f in archivos_files:
+        try:
+            MensajeGrupoArchivo.objects.create(
+                mensaje=msg,
+                archivo=f,
+                nombre_original=f.name[:255],
+                tamaño=f.size,
+                tipo_contenido=(getattr(f, 'content_type', '') or 'application/octet-stream')[:100],
+            )
+        except Exception:
+            pass
 
     # Notificar a los demás miembros del grupo
     try:
@@ -440,6 +479,26 @@ def api_grupo_chat_enviar(request, grupo_id):
         pass
 
     return JsonResponse({'success': True, 'mensaje': _serializar_mensaje(msg, request.user)})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_grupo_archivo(request, archivo_id):
+    """Sirve un archivo adjunto de mensaje. Solo miembros del grupo."""
+    from django.http import FileResponse, Http404
+    from .models import MensajeGrupoArchivo
+    try:
+        arch = MensajeGrupoArchivo.objects.select_related('mensaje__grupo').get(id=archivo_id)
+    except MensajeGrupoArchivo.DoesNotExist:
+        raise Http404('Archivo no encontrado')
+    if not usuario_puede_acceder_grupo(request.user, arch.mensaje.grupo):
+        return JsonResponse({'error': 'Sin acceso'}, status=403)
+    try:
+        resp = FileResponse(arch.archivo.open('rb'), content_type=arch.tipo_contenido or 'application/octet-stream')
+        resp['Content-Disposition'] = f'inline; filename="{arch.nombre_original}"'
+        return resp
+    except Exception:
+        raise Http404('Archivo no disponible')
 
 
 @login_required

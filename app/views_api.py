@@ -53,140 +53,311 @@ def api_jornada_ayer(request):
 @login_required
 def spotlight_search_api(request):
     """
-    API Spotlight - Búsqueda universal de cotizaciones y oportunidades
+    API Spotlight v2 — Búsqueda universal rica.
+
+    Parámetros:
+      q:     texto a buscar (mínimo 2 chars si no hay user_filter)
+      scope: all | oportunidad | cotizacion | tarea | cliente | proyecto
+      user:  username / nombre para filtrar por responsable
     """
     query = request.GET.get('q', '').strip()
-    
-    if len(query) < 2:  # Mínimo 2 caracteres para buscar
-        return JsonResponse({'results': []})
-    
+    scope = request.GET.get('scope', 'all').strip().lower()
+    user_filter = request.GET.get('user', '').strip()
+
+    VALID_SCOPES = {'all', 'tarea', 'oportunidad', 'cotizacion', 'cliente', 'proyecto'}
+    if scope not in VALID_SCOPES:
+        scope = 'all'
+
+    # Si no hay query ni filtro de usuario, nada
+    if len(query) < 2 and not user_filter:
+        return JsonResponse({'results': [], 'query': query, 'scope': scope})
+
+    # Resolver user_filter → User object
+    filter_user_obj = None
+    if user_filter:
+        filter_user_obj = User.objects.filter(
+            Q(username__iexact=user_filter) |
+            Q(first_name__icontains=user_filter) |
+            Q(last_name__icontains=user_filter)
+        ).first()
+
+    numeric_query = query.replace('#', '').strip() if query else ''
+    is_numeric = numeric_query.isdigit() if numeric_query else False
+
+    # ── Helpers ──────────────────────────────────────────
+    def _user_dict(u):
+        if not u:
+            return None
+        full = (u.get_full_name() or u.username or '').strip()
+        parts = full.split()
+        if parts:
+            inic = (parts[0][:1] + (parts[1][:1] if len(parts) > 1 else '')).upper()
+        else:
+            inic = '?'
+        avatar_url = None
+        try:
+            prof = getattr(u, 'userprofile', None)
+            if prof and prof.avatar:
+                avatar_url = prof.avatar.url
+        except Exception:
+            pass
+        return {'id': u.id, 'nombre': full, 'iniciales': inic, 'avatar_url': avatar_url}
+
+    def _fmt_monto(v):
+        if v is None:
+            return None
+        try:
+            n = float(v)
+        except (TypeError, ValueError):
+            return None
+        if n == 0:
+            return None
+        if abs(n) >= 1_000_000:
+            return f'${n/1_000_000:.1f}M'
+        if abs(n) >= 1_000:
+            return f'${n/1_000:.0f}k'
+        return f'${n:.0f}'
+
+    def _rel_date(dt):
+        if not dt:
+            return None
+        try:
+            now = timezone.now()
+            diff = now - dt
+            days = diff.days
+        except Exception:
+            return None
+        if days == 0 and diff.total_seconds() >= 0:
+            return 'hoy'
+        if days == 1:
+            return 'ayer'
+        if 1 < days < 7:
+            return f'hace {days}d'
+        if 7 <= days < 30:
+            return f'hace {days // 7}sem'
+        if 30 <= days < 365:
+            return f'hace {days // 30}m'
+        if days >= 365:
+            return f'hace {days // 365}a'
+        # futuro
+        fut = -days
+        if fut == 0:
+            return 'hoy'
+        if fut == 1:
+            return 'mañana'
+        if fut < 7:
+            return f'en {fut}d'
+        if fut < 30:
+            return f'en {fut // 7}sem'
+        return f'en {fut // 30}m'
+
+    def _opp_status(opp):
+        """Devuelve (status_class, status_label)."""
+        etapa = (opp.etapa_corta or '').strip()
+        estado = (opp.estado_crm or '').strip().lower()
+        src = (etapa or estado or '').lower()
+        label = etapa or estado.title() or 'Sin estatus'
+        if any(k in src for k in ['ganad', 'won', 'cerrad']):
+            return ('success', label)
+        if any(k in src for k in ['perdid', 'lost', 'cancel']):
+            return ('danger', label)
+        if any(k in src for k in ['captura', 'nueva', 'borrador', 'nuevo']):
+            return ('info', label)
+        if src:
+            return ('warning', label)
+        return ('neutral', 'Sin etapa')
+
+    # Limits per scope
+    limits = {
+        'all': {'oportunidad': 6, 'cotizacion': 5, 'tarea': 5, 'cliente': 4, 'proyecto': 4},
+    }
+    for s in ('oportunidad', 'cotizacion', 'tarea', 'cliente', 'proyecto'):
+        limits[s] = {s: 12}
+
+    lim = limits.get(scope, limits['all'])
     results = []
-    
-    # Búsqueda de Cotizaciones (incluyendo búsqueda por número con #)
-    # Detectar si buscan por número (#123 o solo 123)
-    numeric_query = query.replace('#', '').strip()
-    is_numeric_search = numeric_query.isdigit()
-    
-    cotizaciones_query = Q(nombre_cotizacion__icontains=query) | Q(cliente__nombre_empresa__icontains=query) | Q(descripcion__icontains=query)
-    
-    # Si es una búsqueda numérica, darle prioridad
-    if is_numeric_search:
-        cotizaciones_query |= Q(id__exact=int(numeric_query))
-    else:
-        # Búsqueda regular por ID como string
-        cotizaciones_query |= Q(id__icontains=query)
-    
-    cotizaciones = Cotizacion.objects.filter(cotizaciones_query).filter(
-        oportunidad__isnull=False
-    ).select_related('cliente', 'created_by', 'oportunidad')
-    
-    # Filtrar por permisos de usuario
-    if not is_supervisor(request.user):
-        from .views_grupos import get_usuarios_visibles_ids
-        _gids = get_usuarios_visibles_ids(request.user)
-        if _gids and len(_gids) > 1:
-            cotizaciones = cotizaciones.filter(Q(created_by_id__in=_gids) | Q(oportunidad__usuario_id__in=_gids))
-        else:
-            cotizaciones = cotizaciones.filter(created_by=request.user)
 
-    for cotizacion in cotizaciones[:10]:  # Limitar a 10 resultados
-        # Marcar si es una coincidencia exacta de número para priorizar
-        is_exact_match = is_numeric_search and str(cotizacion.id) == numeric_query
-        
-        # Si la cotización tiene una oportunidad asociada, ir a cotizaciones por oportunidad
-        # Si no, ir a la página general de cotizaciones
-        if cotizacion.oportunidad:
-            cotizacion_url = f'/app/cotizaciones/oportunidad/{cotizacion.oportunidad.id}/'
-        else:
-            cotizacion_url = f'/app/cotizaciones/'
-        
-        opp = cotizacion.oportunidad
-        opp_id = opp.id if opp else None
-        if opp_id:
-            anio_opp = opp.anio_cierre or opp.fecha_creacion.year
-            crm_opp_url = f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_opp={opp_id}'
-        else:
-            crm_opp_url = '/app/todos/?tab=crm'
-        results.append({
-            'type': 'cotizacion',
-            'id': cotizacion.id,
-            'opp_id': opp_id,
-            'title': cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}',
-            'subtitle': f'{cotizacion.cliente.nombre_empresa} • #{cotizacion.id}',
-            'description': f'Creada por {cotizacion.created_by.get_full_name() or cotizacion.created_by.username if cotizacion.created_by else "Usuario desconocido"}',
-            'date': convert_to_tijuana_time(cotizacion.fecha_creacion).strftime('%d/%m/%Y'),
-            'icon': 'document',
-            'url': crm_opp_url,
-            'priority': 1 if is_exact_match else 2,
-        })
-    
-    # Búsqueda de Oportunidades (TodoItem)
-    oportunidades = TodoItem.objects.filter(
-        Q(oportunidad__icontains=query) |
-        Q(cliente__nombre_empresa__icontains=query) |
-        Q(comentarios__icontains=query) |
-        Q(po_number__icontains=query) |
-        Q(factura_numero__icontains=query)
-    ).select_related('cliente', 'usuario')
-    
-    # Filtrar por permisos de usuario
-    if not is_supervisor(request.user):
-        from .views_grupos import get_usuarios_visibles_ids
-        _gids = get_usuarios_visibles_ids(request.user)
-        if _gids and len(_gids) > 1:
-            oportunidades = oportunidades.filter(usuario_id__in=_gids)
-        else:
-            oportunidades = oportunidades.filter(usuario=request.user)
+    # ── Oportunidades ────────────────────────────────────
+    if scope in ('all', 'oportunidad') and (query or filter_user_obj):
+        opp_qs = TodoItem.objects.all().select_related('cliente', 'usuario')
+        if query:
+            opp_filter = (
+                Q(oportunidad__icontains=query) |
+                Q(cliente__nombre_empresa__icontains=query) |
+                Q(comentarios__icontains=query) |
+                Q(po_number__icontains=query) |
+                Q(factura_numero__icontains=query)
+            )
+            if is_numeric:
+                opp_filter |= Q(id__icontains=numeric_query)
+            opp_qs = opp_qs.filter(opp_filter)
+        if filter_user_obj:
+            opp_qs = opp_qs.filter(usuario=filter_user_obj)
+        if not is_supervisor(request.user):
+            from .views_grupos import get_usuarios_visibles_ids
+            _gids = get_usuarios_visibles_ids(request.user)
+            if _gids and len(_gids) > 1:
+                opp_qs = opp_qs.filter(usuario_id__in=_gids)
+            else:
+                opp_qs = opp_qs.filter(usuario=request.user)
+        opp_qs = opp_qs.order_by('-fecha_actualizacion')
+        for opp in opp_qs[:lim.get('oportunidad', 6)]:
+            anio = opp.anio_cierre or opp.fecha_creacion.year
+            st_class, st_label = _opp_status(opp)
+            results.append({
+                'type': 'oportunidad',
+                'id': opp.id,
+                'opp_id': opp.id,
+                'title': opp.oportunidad,
+                'subtitle': opp.cliente.nombre_empresa if opp.cliente else 'Sin cliente',
+                'url': f'/app/todos/?tab=crm&anio={anio}&mes=todos&open_opp={opp.id}',
+                'status_class': st_class,
+                'status_label': st_label,
+                'monto_formatted': _fmt_monto(opp.monto),
+                'responsable': _user_dict(opp.usuario),
+                'fecha_iso': opp.fecha_actualizacion.isoformat() if opp.fecha_actualizacion else None,
+                'fecha_relative': _rel_date(opp.fecha_actualizacion),
+                'po_number': opp.po_number or '',
+                'factura_numero': opp.factura_numero or '',
+                'priority': 3,
+            })
 
-    for oportunidad in oportunidades[:8]:  # Limitar a 8 resultados
-        anio = oportunidad.anio_cierre or oportunidad.fecha_creacion.year
-        mes = oportunidad.mes_cierre or str(oportunidad.fecha_creacion.month).zfill(2)
-        crm_url = f'/app/todos/?tab=crm&anio={anio}&mes=todos&open_opp={oportunidad.id}'
-        results.append({
-            'type': 'oportunidad',
-            'id': oportunidad.id,
-            'title': oportunidad.oportunidad,
-            'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • {oportunidad.etapa_corta or oportunidad.mes_cierre}',
-            'description': f'Año {anio} • {oportunidad.get_area_display()} • ${oportunidad.monto:,.0f}',
-            'date': convert_to_tijuana_time(oportunidad.fecha_creacion).strftime('%d/%m/%Y'),
-            'po_number': oportunidad.po_number or '',
-            'factura_numero': oportunidad.factura_numero or '',
-            'icon': 'star',
-            'url': crm_url,
-            'priority': 3,
-            'actions': [
-                {'name': 'Ver en CRM', 'action': 'view', 'color': 'blue'}
-            ]
-        })
-    
-    # Búsqueda de Tareas
-    tareas = Tarea.objects.filter(
-        Q(titulo__icontains=query)
-    ).select_related('proyecto', 'creado_por', 'asignado_a')
+    # ── Cotizaciones ─────────────────────────────────────
+    if scope in ('all', 'cotizacion') and (query or filter_user_obj):
+        base_q = Q()
+        if query:
+            base_q |= Q(nombre_cotizacion__icontains=query) | Q(cliente__nombre_empresa__icontains=query) | Q(descripcion__icontains=query)
+            if is_numeric:
+                # icontains sobre id permite que "119" matchee #1198, #1199, etc.
+                base_q |= Q(id__icontains=numeric_query)
+        cot_qs = Cotizacion.objects.filter(base_q) if query else Cotizacion.objects.all()
+        cot_qs = cot_qs.filter(oportunidad__isnull=False).select_related('cliente', 'created_by', 'oportunidad')
+        if filter_user_obj:
+            cot_qs = cot_qs.filter(Q(created_by=filter_user_obj) | Q(oportunidad__usuario=filter_user_obj))
+        if not is_supervisor(request.user):
+            from .views_grupos import get_usuarios_visibles_ids
+            _gids = get_usuarios_visibles_ids(request.user)
+            if _gids and len(_gids) > 1:
+                cot_qs = cot_qs.filter(Q(created_by_id__in=_gids) | Q(oportunidad__usuario_id__in=_gids))
+            else:
+                cot_qs = cot_qs.filter(created_by=request.user)
+        cot_qs = cot_qs.order_by('-fecha_creacion')
+        for cot in cot_qs[:lim.get('cotizacion', 5)]:
+            is_exact = is_numeric and str(cot.id) == numeric_query
+            opp = cot.oportunidad
+            opp_id = opp.id if opp else None
+            if opp_id:
+                anio = opp.anio_cierre or opp.fecha_creacion.year
+                url = f'/app/todos/?tab=crm&anio={anio}&mes=todos&open_opp={opp_id}'
+            else:
+                url = '/app/todos/?tab=crm'
+            results.append({
+                'type': 'cotizacion',
+                'id': cot.id,
+                'opp_id': opp_id,
+                'title': cot.nombre_cotizacion or f'Cotización #{cot.id}',
+                'subtitle': (cot.cliente.nombre_empresa if cot.cliente else 'Sin cliente') + f' · #{cot.id}',
+                'url': url,
+                'responsable': _user_dict(cot.created_by),
+                'fecha_iso': cot.fecha_creacion.isoformat() if cot.fecha_creacion else None,
+                'fecha_relative': _rel_date(cot.fecha_creacion),
+                'priority': 1 if is_exact else 2,
+            })
 
-    if not is_supervisor(request.user):
-        tareas = tareas.filter(
-            Q(creado_por=request.user) | Q(asignado_a=request.user)
-        )
+    # ── Tareas ───────────────────────────────────────────
+    if scope in ('all', 'tarea') and (query or filter_user_obj):
+        tareas_qs = Tarea.objects.all().select_related('proyecto', 'creado_por', 'asignado_a')
+        if query:
+            tareas_qs = tareas_qs.filter(Q(titulo__icontains=query) | Q(descripcion__icontains=query))
+        if filter_user_obj:
+            tareas_qs = tareas_qs.filter(Q(asignado_a=filter_user_obj) | Q(creado_por=filter_user_obj))
+        if not is_supervisor(request.user):
+            tareas_qs = tareas_qs.filter(Q(creado_por=request.user) | Q(asignado_a=request.user))
+        tareas_qs = tareas_qs.order_by('-id').distinct()
+        ESTADO_MAP = {
+            'pendiente': 'warning', 'iniciada': 'info', 'en_progreso': 'warning',
+            'completada': 'success', 'cancelada': 'danger',
+        }
+        for tarea in tareas_qs[:lim.get('tarea', 5)]:
+            responsable_user = tarea.asignado_a or tarea.creado_por
+            proyecto_nombre = tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto'
+            results.append({
+                'type': 'tarea',
+                'id': tarea.id,
+                'title': tarea.titulo,
+                'subtitle': proyecto_nombre,
+                'url': f'/app/todos/?tab=crm&open_task={tarea.id}',
+                'status_class': ESTADO_MAP.get(tarea.estado, 'neutral'),
+                'status_label': tarea.get_estado_display(),
+                'responsable': _user_dict(responsable_user),
+                'fecha_iso': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
+                'fecha_relative': _rel_date(tarea.fecha_limite),
+                'priority': 4,
+            })
 
-    for tarea in tareas[:6]:
-        proyecto_nombre = tarea.proyecto.nombre if tarea.proyecto else ''
-        results.append({
-            'type': 'tarea',
-            'id': tarea.id,
-            'title': tarea.titulo,
-            'subtitle': proyecto_nombre or tarea.get_estado_display(),
-            'url': f'/app/todos/?tab=crm&open_task={tarea.id}',
-            'priority': 4,
-        })
+    # ── Clientes ─────────────────────────────────────────
+    if scope in ('all', 'cliente') and query:
+        cli_qs = Cliente.objects.filter(
+            Q(nombre_empresa__icontains=query) |
+            Q(rfc__icontains=query) |
+            Q(contacto_principal__icontains=query)
+        ).select_related('asignado_a')
+        if filter_user_obj:
+            cli_qs = cli_qs.filter(asignado_a=filter_user_obj)
+        if not is_supervisor(request.user):
+            from .views_grupos import get_usuarios_visibles_ids
+            _gids = get_usuarios_visibles_ids(request.user)
+            if _gids:
+                cli_qs = cli_qs.filter(Q(asignado_a_id__in=_gids) | Q(asignado_a__isnull=True))
+        CAT_MAP = {'A': ('success', 'Cat. A'), 'B': ('info', 'Cat. B'), 'C': ('neutral', 'Cat. C')}
+        for cli in cli_qs[:lim.get('cliente', 4)]:
+            st_class, st_label = CAT_MAP.get(cli.categoria, ('neutral', ''))
+            results.append({
+                'type': 'cliente',
+                'id': cli.id,
+                'title': cli.nombre_empresa,
+                'subtitle': cli.contacto_principal or cli.rfc or 'Sin contacto',
+                'url': f'/app/oportunidades-cliente/{cli.id}/',
+                'status_class': st_class,
+                'status_label': st_label,
+                'responsable': _user_dict(cli.asignado_a),
+                'priority': 5,
+            })
 
-    # Ordenar resultados por prioridad (1=exacto, 2=cotización, 3=oportunidad, 4=tarea), luego por título
-    results.sort(key=lambda x: (x.get('priority', 3), x['title'].lower()))
-    
+    # ── Proyectos ────────────────────────────────────────
+    if scope in ('all', 'proyecto') and query:
+        proy_qs = Proyecto.objects.filter(
+            Q(nombre__icontains=query) | Q(descripcion__icontains=query)
+        ).select_related('creado_por')
+        if filter_user_obj:
+            proy_qs = proy_qs.filter(Q(creado_por=filter_user_obj) | Q(miembros=filter_user_obj)).distinct()
+        if not is_supervisor(request.user):
+            proy_qs = proy_qs.filter(
+                Q(privacidad='publico') | Q(creado_por=request.user) | Q(miembros=request.user)
+            ).distinct()
+        for proy in proy_qs[:lim.get('proyecto', 4)]:
+            results.append({
+                'type': 'proyecto',
+                'id': proy.id,
+                'title': proy.nombre,
+                'subtitle': proy.get_tipo_display() or 'Proyecto',
+                'url': f'/app/todos/?tab=crm',
+                'status_class': 'info' if proy.privacidad == 'privado' else 'neutral',
+                'status_label': proy.get_privacidad_display(),
+                'responsable': _user_dict(proy.creado_por),
+                'fecha_iso': proy.fecha_creacion.isoformat() if proy.fecha_creacion else None,
+                'fecha_relative': _rel_date(proy.fecha_creacion),
+                'priority': 6,
+            })
+
+    results.sort(key=lambda x: (x.get('priority', 5), x['title'].lower()))
+
     return JsonResponse({
-        'results': results[:15],  # Máximo 15 resultados totales
+        'results': results[:30],
         'query': query,
-        'total': len(results)
+        'scope': scope,
+        'user_filter': filter_user_obj.username if filter_user_obj else None,
+        'total': len(results),
     })
 
 

@@ -113,57 +113,112 @@
             e.preventDefault();
             (function(clickedPin){
                 var oppId = (pidAttr || '').replace(/\s/g, '').replace(/\u00A0/g, '');
+                // Normalizar: strip espacios + nbsp + commas (USE_THOUSAND_SEPARATOR
+                // de Django puede renderizar "1,198" para IDs >= 1000).
+                oppId = oppId.replace(/,/g, '');
                 if (!oppId) return;
+                console.log('[PIN] Toggle pin para opp:', oppId);
                 var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
                 fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
                 }).then(function(r) { return r.json(); }).then(function(data) {
-                    if (!data.success) return;
+                    if (!data.success) { console.warn('[PIN] API sin success:', data); return; }
                     var anclada = !!data.anclada;
+                    console.log('[PIN] API →', anclada ? 'ANCLADA' : 'DESANCLADA', 'para opp', oppId);
 
-                    // 1) Actualizar TODOS los .crm-pin con este oppId (original + clones en kanban)
-                    document.querySelectorAll('.crm-pin[data-pin-id="' + oppId + '"]').forEach(function(p){
+                    var newFill   = anclada ? '#EF4444' : '#B0B8C4';
+
+                    // DIAG: dump de qué hay realmente en el DOM para el oppId buscado
+                    var _allPins = document.querySelectorAll('.crm-pin[data-pin-id]');
+                    var _sample = [];
+                    for (var _i = 0; _i < Math.min(4, _allPins.length); _i++) {
+                        var _a = _allPins[_i].getAttribute('data-pin-id');
+                        _sample.push(_a + '(len=' + _a.length + ')');
+                    }
+                    console.log('[PIN] total pins DOM:', _allPins.length, 'muestras:', _sample, 'buscando:', JSON.stringify(oppId), 'len=', oppId.length);
+
+                    // Comparación robusta: usamos dataset.pinId en lugar de querySelectorAll con
+                    // attribute equality — evita problemas si el attr tiene whitespace u otros
+                    // caracteres raros que el selector CSS no tolera.
+                    var pinsFound = [];
+                    _allPins.forEach(function(p){
+                        var raw = (p.dataset.pinId || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
+                        if (raw === oppId) pinsFound.push(p);
+                    });
+                    console.log('[PIN] pins encontrados (match robusto):', pinsFound.length);
+                    if (pinsFound.length === 0) {
+                        // Fallback: solo el pin clickeado
+                        clickedPin.classList.toggle('pinned', anclada);
+                        var _svg = clickedPin.querySelector('svg');
+                        if (_svg) { _svg.setAttribute('fill', newFill); }
+                    }
+                    pinsFound.forEach(function(p){
                         if (p.classList.contains('tarea-action-btn')) return;
                         p.classList.toggle('pinned', anclada);
                         var svg = p.querySelector('svg');
                         if (svg) {
-                            svg.setAttribute('fill', anclada ? '#EF4444' : '#9CA3AF');
+                            svg.setAttribute('fill', newFill);
                             svg.setAttribute('stroke', 'none');
                         }
                     });
 
-                    // 2) Actualizar TODAS las cards/rows originales (no clones) con este oppId
-                    //    Los clones del kanban se re-renderizan automáticamente por el MutationObserver
-                    var originalCard = document.querySelector('#crmCardsGrid .crm-postit[data-opp-id="' + oppId + '"]');
-                    var originalRow  = document.querySelector('#crmListBody .crm-list-row[data-opp-id="' + oppId + '"]');
-                    [originalCard, originalRow].forEach(function(node){
-                        if (!node) return;
+                    // 2) Actualizar TODAS las cards/rows que matcheen este oppId.
+                    //    Match robusto: normalizar dataset.oppId (strip whitespace + comma).
+                    var allNodes = [];
+                    document.querySelectorAll('.crm-postit[data-opp-id], .crm-list-row[data-opp-id]').forEach(function(n){
+                        var raw = (n.dataset.oppId || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
+                        if (raw === oppId) allNodes.push(n);
+                    });
+                    console.log('[PIN] cards/rows encontradas (match robusto):', allNodes.length);
+                    allNodes.forEach(function(node){
                         node.dataset.anclada = anclada ? '1' : '0';
                         node.classList.toggle('pinned-row', anclada);
+                        // Gestionar el agujero visual (solo en postit cards)
+                        if (node.classList.contains('crm-postit')) {
+                            var existingHole = node.querySelector('.crm-pin-hole-dyn');
+                            if (anclada && !existingHole) {
+                                var h = document.createElement('div');
+                                h.className = 'crm-pin-hole-dyn';
+                                h.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
+                                node.appendChild(h);
+                            } else if (!anclada && existingHole) {
+                                existingHole.remove();
+                            }
+                        }
                     });
 
-                    // 3) Mover originales al spot correcto
+                    // 2.b) Belt-and-suspenders: scrub del kanban board — aunque el re-render
+                    //      debería replazar los clones, forzamos también aquí el estado visual.
+                    //      (Usamos allNodes filtrados por match robusto, subset .crm-postit dentro de #crmKanbanBoard.)
+                    var kBoard = document.getElementById('crmKanbanBoard');
+                    if (kBoard) {
+                        allNodes.forEach(function(k){
+                            if (!kBoard.contains(k)) return;
+                            var kPin = k.querySelector('.crm-pin');
+                            if (kPin) {
+                                kPin.classList.toggle('pinned', anclada);
+                                var kSvg = kPin.querySelector('svg');
+                                if (kSvg) { kSvg.setAttribute('fill', newFill); kSvg.setAttribute('stroke', 'none'); }
+                            }
+                        });
+                    }
+
+                    // 3) Mover originales al spot correcto (los clones del kanban se re-sortean en render).
+                    //    Seleccionar de allNodes el que esté dentro de #crmCardsGrid y #crmListBody.
+                    var _cgNode = document.getElementById('crmCardsGrid');
+                    var _lbNode = document.getElementById('crmListBody');
+                    var originalCard = null, originalRow = null;
+                    allNodes.forEach(function(n){
+                        if (_cgNode && _cgNode.contains(n) && n.classList.contains('crm-postit')) originalCard = n;
+                        if (_lbNode && _lbNode.contains(n) && n.classList.contains('crm-list-row')) originalRow = n;
+                    });
                     if (anclada) {
-                        // Agujero en el card original
-                        if (originalCard && !originalCard.querySelector('.crm-pin-hole-dyn')) {
-                            var hole = document.createElement('div');
-                            hole.className = 'crm-pin-hole-dyn';
-                            hole.style.cssText = 'position:absolute;top:18px;right:16px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#A0AAB8 0%,#C8CDD4 60%,#E2E5EA 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3),0 0 0 0.5px rgba(0,0,0,0.08);z-index:4;';
-                            originalCard.appendChild(hole);
-                        }
-                        // Mover al inicio
-                        var cg = document.getElementById('crmCardsGrid');
+                        var cg = _cgNode;
                         if (originalCard && cg) cg.insertBefore(originalCard, cg.firstChild);
-                        var lb = document.getElementById('crmListBody');
+                        var lb = _lbNode;
                         if (originalRow  && lb) lb.insertBefore(originalRow, lb.firstChild);
                     } else {
-                        // Quitar agujero
-                        if (originalCard) {
-                            var h = originalCard.querySelector('.crm-pin-hole-dyn');
-                            if (h) h.remove();
-                        }
-                        // Mover después de ancladas + vencidas
                         function reubicar(container, node){
                             if (!container || !node) return;
                             var insertBefore = null;
@@ -178,15 +233,25 @@
                             if (insertBefore) container.insertBefore(node, insertBefore);
                             else container.appendChild(node);
                         }
-                        reubicar(document.getElementById('crmCardsGrid'), originalCard);
-                        reubicar(document.getElementById('crmListBody'),   originalRow);
+                        reubicar(_cgNode, originalCard);
+                        reubicar(_lbNode, originalRow);
                     }
 
-                    // 4) Re-render kanban (el MutationObserver debería detectarlo, pero forzamos por seguridad)
-                    if (typeof window._crmRenderKanban === 'function') {
+                    // 4) Re-render kanban para que el sort refleje el nuevo estado de anclaje.
+                    //    Doble trigger: inmediato + setTimeout 0 (gana contra el MutationObserver
+                    //    que también re-renderiza al detectar el cambio de data-anclada).
+                    function _kanbanRerender(){
+                        if (typeof window._crmRenderKanban !== 'function') return;
                         var kv = document.getElementById('crmViewKanban');
-                        if (kv && kv.style.display !== 'none') window._crmRenderKanban();
+                        if (kv && kv.style.display !== 'none') {
+                            console.log('[PIN] re-render kanban');
+                            window._crmRenderKanban();
+                        }
                     }
+                    _kanbanRerender();
+                    setTimeout(_kanbanRerender, 0);
+                }).catch(function(err){
+                    console.error('[PIN] error en fetch:', err);
                 });
             })(pin);
         }, true);
@@ -273,6 +338,9 @@
             if (_crmViewMode === 'kanban' && typeof window._crmRenderKanban === 'function') {
                 window._crmRenderKanban();
             }
+            // El label del sort depende de la vista (kanban añade sufijo de flujo):
+            // re-render al cambiar de vista.
+            if (typeof window._crmRenderFacetChips === 'function') window._crmRenderFacetChips();
             if (icon) {
                 if (_crmViewMode === 'list') {
                     // 3 filas horizontales
@@ -3217,6 +3285,133 @@
 
                     bindTableEvents();
                     populateIslandFilters();
+
+                    // ── Sync reactivo: actualizar cards/rows SSR con datos frescos del API ──
+                    // Esto permite que cambios (completar tarea, etc.) se reflejen sin
+                    // recargar la página.
+                    try {
+                    var _apiMap = {};
+                    (data.rows || []).forEach(function(r){ _apiMap[String(r.id)] = r; });
+                    var _heatCls = ['card-vencida','heat-1','heat-2','heat-3','heat-4','heat-5','heat-max'];
+                    var _warmCls = ['warm-1','warm-2','warm-3','warm-4','warm-5'];
+                    var _hadHealing = false;
+                    // Normalizar lookup: dataset.oppId puede venir como "1,198" (Django
+                    // USE_THOUSAND_SEPARATOR) o con whitespace — strip antes de matchear
+                    // contra _apiMap cuyas keys son "1198" (JSON int).
+                    function _normId(s){
+                        return (s || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
+                    }
+                    // Pickers granulares por minutos (más preciso que días cuando
+                    // una actividad vence en la próxima hora).
+                    //  heat: tiempo desde que venció
+                    //  warm: tiempo hasta que vence
+                    function _pickHeat(minsV) {
+                        // minsV = minutos transcurridos desde que venció
+                        var dias = Math.floor(minsV / 1440);
+                        if (dias >= 30) return 'heat-max';
+                        if (dias >= 14) return 'heat-5';
+                        if (dias >= 7)  return 'heat-4';
+                        if (dias >= 3)  return 'heat-3';
+                        if (dias >= 1)  return 'heat-2';
+                        return 'heat-1';
+                    }
+                    function _pickWarm(minsH) {
+                        // minsH = minutos hasta que vence (positivo si en el futuro)
+                        if (minsH === null || minsH === undefined || minsH < 0) return null;
+                        if (minsH > 20160) return null;       // > 14 días
+                        if (minsH > 10080) return 'warm-1';   // 7-14 días
+                        if (minsH > 2880)  return 'warm-2';   // 2-7 días
+                        if (minsH > 720)   return 'warm-3';   // 12-48 horas
+                        if (minsH > 60)    return 'warm-4';   // 1-12 horas
+                        return 'warm-5';                      // <= 1 hora (inminente)
+                    }
+
+                    document.querySelectorAll('.crm-data-row[data-opp-id]').forEach(function(el){
+                        var apiRow = _apiMap[_normId(el.dataset.oppId)];
+                        if (!apiRow) return;
+                        var wasVencida = el.dataset.vencida === '1';
+                        var nowVencida = !!apiRow.tiene_actividad_vencida;
+                        var diasV = apiRow.dias_vencida || 0;
+                        var minsV = (apiRow.minutos_vencida === undefined || apiRow.minutos_vencida === null)
+                            ? diasV * 1440 : apiRow.minutos_vencida;
+                        var diasH = (apiRow.dias_hasta_proxima === null || apiRow.dias_hasta_proxima === undefined) ? null : apiRow.dias_hasta_proxima;
+                        var minsH = (apiRow.minutos_hasta_proxima === null || apiRow.minutos_hasta_proxima === undefined)
+                            ? (diasH !== null ? diasH * 1440 : null)
+                            : apiRow.minutos_hasta_proxima;
+
+                        // Sincronizar data-attributes
+                        el.dataset.vencida = nowVencida ? '1' : '0';
+                        el.dataset.diasVencida = String(diasV);
+                        el.dataset.diasHastaProxima = diasH !== null ? String(diasH) : '-1';
+
+                        // Recalcular clases heat / warm según minutos (granularidad fina:
+                        // una actividad que vence en 2 min se ve casi roja; una que vence
+                        // en 12 días apenas un tinte. Gradient progresivo sin reload)
+                        _heatCls.forEach(function(c){ el.classList.remove(c); });
+                        _warmCls.forEach(function(c){ el.classList.remove(c); });
+                        if (nowVencida) {
+                            el.classList.add('card-vencida');
+                            el.classList.add(_pickHeat(minsV));
+                        } else {
+                            var warmCls = _pickWarm(minsH);
+                            if (warmCls) el.classList.add(warmCls);
+                        }
+
+                        // El bloque original continúa abajo para heal / strip / circle
+                        if (!nowVencida) {
+                            var strip = el.querySelector('.crm-list-strip');
+                            if (strip) {
+                                strip.className = 'crm-list-strip ' +
+                                    ((apiRow.tipo_negociacion || 'runrate') === 'proyecto' ? 'proyecto' : 'runrate');
+                            }
+                            // Restaurar color del círculo de progreso (stroke inline del SSR
+                            // se queda rojo; lo volvemos al color de etapa guardado en data-etapa-color).
+                            var circle = el.querySelector('.crm-progress-circle');
+                            if (circle) {
+                                var wrap = circle.closest('[data-etapa-color]');
+                                var defStroke = (wrap && wrap.dataset.etapaColor) || '#3B82F6';
+                                circle.setAttribute('stroke', defStroke);
+                            }
+                            // Ícono de alerta crítica: fade-out vía CSS (crmHealAlertFade 0.5s),
+                            // luego display:none para que no ocupe layout.
+                            var alertIcon = el.querySelector('.crm-alert-critical');
+                            if (alertIcon) {
+                                setTimeout(function(){ alertIcon.style.display = 'none'; }, 520);
+                            }
+                        }
+                        // Healing animation: de vencida → no vencida.
+                        // Limpieza al final busca por oppId para cubrir clones nuevos
+                        // del kanban creados por el render inmediato de abajo.
+                        if (wasVencida && !nowVencida) {
+                            _hadHealing = true;
+                            var _oid = el.dataset.oppId;
+                            el.classList.add('crm-healing');
+                            setTimeout(function(){
+                                document.querySelectorAll('.crm-data-row[data-opp-id="' + _oid + '"]').forEach(function(n){
+                                    n.classList.remove('crm-healing');
+                                });
+                            }, 950);
+                        }
+                    });
+                    // Render kanban INMEDIATAMENTE: los clones se regeneran desde los
+                    // originales que ya tienen card-vencida/heat-* removidas (+ crm-healing).
+                    // Evita el estado "rojo atrapado" durante la animación.
+                    if (typeof window._crmRenderKanban === 'function') {
+                        var kvImm = document.getElementById('crmViewKanban');
+                        if (kvImm && kvImm.style.display !== 'none') window._crmRenderKanban();
+                    }
+                    // Re-sort/re-filter al finalizar el fade (0.9s) para que el usuario
+                    // vea el rojo desvanecer y luego la tarjeta reacomodarse bajo las rojas.
+                    setTimeout(function(){
+                        if (typeof applySortToViews === 'function') applySortToViews();
+                        if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();
+                        // Render final del kanban para reflejar el nuevo orden post-sort.
+                        if (typeof window._crmRenderKanban === 'function') {
+                            var kvFin = document.getElementById('crmViewKanban');
+                            if (kvFin && kvFin.style.display !== 'none') window._crmRenderKanban();
+                        }
+                    }, _hadHealing ? 950 : 50);
+                    } catch(syncErr) { console.error('[CRM] sync error:', syncErr); }
                 })
                 .catch(function (err) { console.error('Error refreshing table:', err); });
         }
@@ -4105,6 +4300,10 @@
                 // Mes de cierre (multi)
                 if (show && mesCierreList && mesCierreList.indexOf(mesCierre) === -1) show = false;
 
+                // Solo vencidas (sort = 'vencidas')
+                var filterVencida = (document.getElementById('filterVencida') || {}).value || '';
+                if (show && filterVencida === 'only' && card.dataset.vencida !== '1') show = false;
+
                 // Rango de fechas (por fecha de creacion)
                 if (show && (currentFilters.desde || currentFilters.hasta)) {
                     var fechaCreacion = card.dataset.creacion || '';
@@ -4266,6 +4465,19 @@
             document.querySelectorAll('.island-nav-btn, .crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
             if (activeBtn) activeBtn.classList.add('active');
+            // Al salir del CRM (tareas/proyectos) quitar el scroll-lock que el
+            // kanban del CRM pudo haber dejado — si no, el body/main quedan con
+            // height:100vh + overflow:hidden y el scroll de la lista de tareas
+            // queda trabado.
+            var mainEl = document.querySelector('.crm-main');
+            if (view !== 'crm') {
+                document.body.classList.remove('kanban-scroll-lock');
+                if (mainEl) mainEl.classList.remove('kanban-active');
+            } else if (localStorage.getItem('crmViewMode') === 'kanban') {
+                // Re-aplicar si volvemos a CRM en modo kanban
+                document.body.classList.add('kanban-scroll-lock');
+                if (mainEl) mainEl.classList.add('kanban-active');
+            }
             // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +
             // en crm-bar-right. No sobrescribimos su contenido (el SVG debe quedarse).
         }
@@ -4343,6 +4555,19 @@
             _crmTareasCache = {};  // invalidar caché completo
             cargarTareasCRM(_crmCurrentFilter);
         }
+
+        // ── Refresh periódico del gradient heat/warm del CRM ──
+        // Recalcula minutos_hasta_proxima / minutos_vencida cada minuto
+        // para que el rojo avance visiblemente a medida que una actividad
+        // se acerca a vencer — el usuario ve el color moverse sin recargar.
+        setInterval(function() {
+            if (window._crmTareasMode) return; // solo en vista CRM
+            var tabActivo = document.querySelector('.crm-tab.active');
+            if (!tabActivo) return;
+            if (typeof refreshCrmTable === 'function') {
+                try { refreshCrmTable(); } catch(e) { console.warn('[CRM] gradient refresh:', e); }
+            }
+        }, 60000); // 1 minuto
 
         // ── Polling ligero: detectar tareas nuevas/cambiadas de grupo cada 15s ──
         var _tareasPollHash = null;
@@ -4798,6 +5023,8 @@
             }
             // Render calendar si visible
             renderTareasCalendar(tareas, now);
+            // Render cockpit si visible
+            if (typeof renderTareasCockpit === 'function') renderTareasCockpit(tareas, now);
 
             // Clear button visibility
             var clrBtn = document.getElementById('btnTareasFacetClear');
@@ -4837,6 +5064,434 @@
         window._tareasCalGoToday = function() {
             _tareasCalWeekStart = _getMondayOf(new Date());
             renderTareasCRM();
+        };
+
+        // ═══ Vista COCKPIT (split: list + detail panel) ═══
+        var _tcpSelectedId = null;
+        var _tcpCollapsedSections = {};
+
+        function _tcpAvatarColor(nombre) {
+            var colors = ['#E11D48','#DC2626','#F59E0B','#CA8A04','#16A34A','#0891B2','#2563EB','#7C3AED','#DB2777','#0EA5E9'];
+            var h = 0;
+            var s = nombre || '?';
+            for (var i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+            return colors[Math.abs(h) % colors.length];
+        }
+        function _tcpInitials(nombre) {
+            if (!nombre) return '?';
+            var parts = nombre.trim().split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+        function _tcpFirstName(nombre) {
+            if (!nombre) return '';
+            return (nombre.trim().split(/\s+/)[0] || '').slice(0, 12);
+        }
+        function _tcpFmtFecha(iso) {
+            if (!iso) return 'Sin fecha';
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) return '';
+            var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            var hh = String(d.getHours()).padStart(2, '0');
+            var mm = String(d.getMinutes()).padStart(2, '0');
+            return d.getDate() + ' ' + MES[d.getMonth()] + ', ' + hh + ':' + mm;
+        }
+        function _tcpEstadoClass(estado) {
+            return (estado || 'pendiente').toLowerCase().replace(/\s+/g, '_');
+        }
+        function _tcpEstadoLabel(estado) {
+            var map = {
+                pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso',
+                completada: 'Completada', cancelada: 'Cancelada'
+            };
+            return map[estado] || (estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'Pendiente');
+        }
+
+        function renderTareasCockpit(tareas, now) {
+            var list = document.getElementById('tcpList');
+            if (!list) return;
+            if (!tareas || tareas.length === 0) {
+                list.innerHTML = '<div class="tcp-row-empty">No hay tareas con los filtros actuales.</div>';
+                return;
+            }
+
+            // Agrupar en 3 secciones: ATRASADAS / HOY / MÁS TARDE
+            // (MÁS TARDE absorbe sin-fecha + esta-semana + futuras + completadas)
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+            var groups = { atrasadas: [], hoy: [], despues: [] };
+
+            tareas.forEach(function(t) {
+                if (t.estado === 'completada') { groups.despues.push(t); return; }
+                if (!t.fecha_limite) { groups.despues.push(t); return; }
+                var fl = new Date(t.fecha_limite);
+                if (fl < today) groups.atrasadas.push(t);
+                else if (fl < tomorrow) groups.hoy.push(t);
+                else groups.despues.push(t);
+            });
+
+            var MES_HOY = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+            var hoyLabel = MES_HOY[today.getDay()] + ' ' + today.getDate() + ' ' + ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][today.getMonth()];
+
+            var secciones = [
+                { key: 'atrasadas', label: 'ATRASADAS',   extra: '', items: groups.atrasadas, cls: 'atrasadas' },
+                { key: 'hoy',       label: 'HOY',         extra: ' · ' + hoyLabel, items: groups.hoy, cls: '' },
+                { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues,   cls: '' },
+            ];
+
+            // Cabecera de columnas sticky (siempre primera)
+            var html = '<div class="tcp-col-head">' +
+                '<span>TAREA</span>' +
+                '<span>ESTADO</span>' +
+                '<span>RESPONSABLE</span>' +
+                '<span>CREADOR</span>' +
+                '<span>FECHA LÍMITE</span>' +
+                '<span>OPORTUNIDAD</span>' +
+                '</div>';
+
+            secciones.forEach(function(sec) {
+                // HOY se muestra siempre (incluso con 0); atrasadas y más tarde solo si tienen items
+                if (sec.items.length === 0 && sec.key !== 'hoy') return;
+                var collapsed = _tcpCollapsedSections[sec.key] ? ' collapsed' : '';
+                html += '<div class="tcp-section-head ' + sec.cls + collapsed + '" data-tcp-sec="' + sec.key + '">' +
+                    '<svg class="tcp-sec-chev" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+                    '<span>' + sec.label + sec.extra + '</span>' +
+                    '<span class="tcp-sec-count">' + sec.items.length + '</span>' +
+                    '</div>';
+                html += '<div class="tcp-section-body">';
+                if (sec.items.length === 0) {
+                    html += '<div style="padding:18px 24px;color:#94A3B8;font-size:12.5px;font-style:italic;">No tienes tareas para hoy.</div>';
+                } else {
+                    sec.items.forEach(function(t) {
+                        html += _tcpRowHtml(t, sec.key === 'atrasadas');
+                    });
+                }
+                html += '</div>';
+            });
+            list.innerHTML = html;
+
+            // Restaurar selección
+            if (_tcpSelectedId) {
+                var rowSel = list.querySelector('.tcp-row[data-tid="' + _tcpSelectedId + '"]');
+                if (rowSel) rowSel.classList.add('active');
+            } else {
+                // Sin selección → renderizar dashboard de resumen en el panel derecho
+                _tcpRenderSummary(tareas, now);
+            }
+        }
+
+        function _tcpRenderSummary(tareas, now) {
+            var panel = document.getElementById('tcpDetail');
+            if (!panel) return;
+            var miId = (typeof _CRM_CONFIG !== 'undefined' && _CRM_CONFIG.userId) ? _CRM_CONFIG.userId : null;
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+            // Filtrar tareas del usuario (como responsable)
+            var misTareas = (_crmAllTareas || []).filter(function(t) {
+                return miId && String(t.asignado_a_id || '') === String(miId);
+            });
+
+            var vencidas = 0, hoy = 0, completadasHoy = 0, totalAbiertas = 0;
+            var proximasCandidatas = [];  // tareas abiertas ordenables por fecha
+
+            misTareas.forEach(function(t) {
+                if (t.estado === 'completada') {
+                    var fc = t.fecha_completada || t.fecha_actualizacion || t.updated_at;
+                    if (fc) {
+                        var d = new Date(fc);
+                        if (!isNaN(d.getTime()) && d >= today && d < tomorrow) completadasHoy++;
+                    } else {
+                        completadasHoy++;
+                    }
+                    return;
+                }
+                totalAbiertas++;
+                if (t.fecha_limite) {
+                    var fl = new Date(t.fecha_limite);
+                    if (!isNaN(fl.getTime())) {
+                        if (fl < today) vencidas++;
+                        else if (fl < tomorrow) hoy++;
+                        proximasCandidatas.push({ t: t, fl: fl });
+                    }
+                }
+            });
+
+            // Top 4 próximas por fecha ascendente (incluye vencidas al inicio)
+            proximasCandidatas.sort(function(a, b) { return a.fl - b.fl; });
+            var proximas = proximasCandidatas.slice(0, 4);
+
+            var nombre = (typeof _CRM_CONFIG !== 'undefined' && _CRM_CONFIG.usuarioNombre)
+                ? _CRM_CONFIG.usuarioNombre.split(' ')[0] : '';
+            var horaN = now.getHours();
+            var saludo = horaN < 12 ? 'Buenos días' : (horaN < 19 ? 'Buenas tardes' : 'Buenas noches');
+
+            var subtexto;
+            if (totalAbiertas === 0) subtexto = 'No tienes tareas pendientes asignadas.';
+            else if (vencidas > 0) subtexto = 'Tienes <strong>' + vencidas + '</strong> tarea' + (vencidas === 1 ? '' : 's') + ' vencida' + (vencidas === 1 ? '' : 's') + ' que atender.';
+            else if (hoy > 0) subtexto = '<strong>' + hoy + '</strong> tarea' + (hoy === 1 ? '' : 's') + ' para hoy.';
+            else subtexto = 'Tienes ' + totalAbiertas + ' tarea' + (totalAbiertas === 1 ? '' : 's') + ' abierta' + (totalAbiertas === 1 ? '' : 's') + '. No hay nada urgente.';
+
+            var html = '<div class="tcp-empty">' +
+                '<div class="tcp-summary-label">Tu día</div>' +
+                '<h2 class="tcp-summary-greeting">' + saludo + (nombre ? ', ' + _tcpEsc(nombre) : '') + '</h2>' +
+                '<p class="tcp-summary-sub">' + subtexto + '</p>' +
+
+                // Trío horizontal compacto
+                '<div class="tcp-summary-row">' +
+                    _tcpSummaryStat('vencidas', vencidas, 'Vencidas') +
+                    _tcpSummaryStat('hoy', hoy, 'Hoy') +
+                    _tcpSummaryStat('done', completadasHoy, 'Hechas hoy') +
+                '</div>' +
+
+                // Próximas tareas
+                '<div class="tcp-summary-section">' +
+                    '<div class="tcp-summary-sec-label">' +
+                        '<span>Próximas</span>' +
+                        (proximas.length > 0 ? '<span class="count">' + proximas.length + '</span>' : '') +
+                    '</div>' +
+                    (proximas.length > 0
+                        ? '<div class="tcp-summary-upcoming">' + proximas.map(function(x) { return _tcpUpcomingRow(x.t, x.fl, today, tomorrow); }).join('') + '</div>'
+                        : '<div class="tcp-summary-empty">Nada próximo en tu calendario.</div>') +
+                '</div>' +
+
+                '<div style="flex:1;"></div>' +
+                '<div style="text-align:center;font-size:11.5px;color:#CBD5E1;padding:18px 0 2px;">' +
+                    'Haz clic en una tarea para ver el detalle aquí.' +
+                '</div>' +
+                '</div>';
+            panel.innerHTML = html;
+        }
+
+        function _tcpSummaryStat(key, num, label) {
+            var hasCls = num > 0 ? ' has-items' : '';
+            return '<div class="tcp-summary-stat ' + key + hasCls + '">' +
+                '<span class="tcp-summary-stat-num">' + num + '</span>' +
+                '<span class="tcp-summary-stat-lbl">' + label + '</span>' +
+                '</div>';
+        }
+
+        function _tcpUpcomingRow(t, fl, today, tomorrow) {
+            var overdue = fl < today;
+            var urgent = !overdue && fl < tomorrow;
+            var cls = overdue ? ' overdue' : (urgent ? ' urgent' : '');
+            var when = _tcpRelativeWhen(fl, today, tomorrow);
+            return '<div class="tcp-summary-up-row' + cls + '" onclick="tcpSelectTask(' + t.id + ')">' +
+                '<span class="tcp-summary-up-dot"></span>' +
+                '<span class="tcp-summary-up-title" title="' + _tcpEsc(t.titulo || '') + '">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
+                '<span class="tcp-summary-up-when">' + when + '</span>' +
+                '</div>';
+        }
+
+        function _tcpRelativeWhen(fl, today, tomorrow) {
+            var ms = fl - new Date();
+            var absDays = Math.floor(Math.abs(ms) / 86400000);
+            if (fl < today) {
+                if (absDays === 0) return 'hoy';
+                if (absDays === 1) return 'ayer';
+                return 'hace ' + absDays + 'd';
+            }
+            if (fl < tomorrow) {
+                var h = Math.round(ms / 3600000);
+                if (h <= 0) return 'hoy';
+                if (h === 1) return 'en 1h';
+                if (h < 24) return 'en ' + h + 'h';
+                return 'hoy';
+            }
+            var d = Math.ceil(ms / 86400000);
+            if (d === 1) return 'mañana';
+            if (d <= 7) return 'en ' + d + 'd';
+            // Fecha corta
+            var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            return fl.getDate() + ' ' + MES[fl.getMonth()];
+        }
+
+        function _tcpRowHtml(t, esAtrasada) {
+            var estadoCls = _tcpEstadoClass(t.estado);
+            var estadoLbl = _tcpEstadoLabel(t.estado).toUpperCase();
+            var resp = t.responsable || '';
+            var creador = t.creado_por || t.creador || '';
+            var respTxt = _tcpFirstName(resp);
+            var creaTxt = _tcpFirstName(creador);
+            var oppNombre = t.oportunidad_nombre || '';
+            var oppId = t.oportunidad_id || '';
+            var doneCls = t.estado === 'completada' ? ' done' : '';
+            var atrCls = esAtrasada ? ' atrasada' : '';
+
+            // TAREA: warning icon (solo atrasadas) + título
+            var warnIcon = esAtrasada
+                ? '<span class="tcp-row-warn" title="Vencida"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="0" fill="#EF4444"/><path d="M12 9v4M12 17h.01" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span>'
+                : '';
+
+            // OPORTUNIDAD: clickable si hay oppId
+            var oppCell = oppId
+                ? '<span class="tcp-row-opp linked" title="' + _tcpEsc(oppNombre) + '" onclick="event.stopPropagation();tcpAbrirOportunidad(' + oppId + ')">' + _tcpEsc(oppNombre || '—') + '</span>'
+                : '<span class="tcp-row-opp' + (oppNombre ? '' : ' empty') + '">' + _tcpEsc(oppNombre || '—') + '</span>';
+
+            // FECHA: pill con calendar icon
+            var calSvg = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+            var fechaTxt = t.fecha_limite ? _tcpFmtFecha(t.fecha_limite) : '';
+            var fechaCell = fechaTxt
+                ? '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + calSvg + ' ' + fechaTxt + '</span>'
+                : '<span class="tcp-row-fecha" style="background:transparent;color:#CBD5E1;padding:0;">—</span>';
+
+            return '<div class="tcp-row' + doneCls + atrCls + '" data-tid="' + t.id + '" onclick="tcpSelectTask(' + t.id + ')">' +
+                '<span class="tcp-row-tarea">' +
+                    warnIcon +
+                    '<span class="tcp-row-title">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
+                '</span>' +
+                '<span class="tcp-row-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                '<span class="tcp-row-resp' + (respTxt ? '' : ' empty') + '">' + _tcpEsc(respTxt || '—') + '</span>' +
+                '<span class="tcp-row-creador' + (creaTxt ? '' : ' empty') + '">' + _tcpEsc(creaTxt || '—') + '</span>' +
+                fechaCell +
+                oppCell +
+                '</div>';
+        }
+
+        // Abrir widget de oportunidad desde la celda
+        window.tcpAbrirOportunidad = function(oppId) {
+            if (!oppId) return;
+            if (typeof window.openDetalle === 'function') window.openDetalle(oppId);
+        };
+
+        function _tcpEsc(s) {
+            if (!s) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Toggle sección collapse/expand
+        document.addEventListener('click', function(e) {
+            var head = e.target.closest && e.target.closest('.tcp-section-head');
+            if (!head) return;
+            var key = head.dataset.tcpSec;
+            if (!key) return;
+            var isCol = head.classList.toggle('collapsed');
+            _tcpCollapsedSections[key] = isCol;
+        });
+
+        // Selección de fila → poblar panel derecho
+        window.tcpSelectTask = function(tid) {
+            _tcpSelectedId = tid;
+            document.querySelectorAll('#tcpList .tcp-row').forEach(function(r) { r.classList.remove('active'); });
+            var row = document.querySelector('#tcpList .tcp-row[data-tid="' + tid + '"]');
+            if (row) row.classList.add('active');
+
+            var t = (_crmAllTareas || []).find(function(x) { return x.id === tid; });
+            var panel = document.getElementById('tcpDetail');
+            if (!panel || !t) return;
+
+            var estadoCls = _tcpEstadoClass(t.estado);
+            var estadoLbl = _tcpEstadoLabel(t.estado).toUpperCase();
+            var resp = t.responsable || '';
+            var avColor = _tcpAvatarColor(resp);
+            var ini = _tcpInitials(resp);
+            var cliente = t.cliente_nombre || t.oportunidad_nombre || '';
+            var fechaIso = t.fecha_limite || '';
+            var vencida = false;
+            if (fechaIso) {
+                try { vencida = new Date(fechaIso) < new Date() && t.estado !== 'completada'; } catch(_){}
+            }
+            var fechaTxt = _tcpFmtFecha(fechaIso);
+            var prioLabel = t.prioridad === 'alta' ? 'Alta' : 'Normal';
+            var tipo = t.oportunidad_tipo || '';
+            var categoria = tipo ? (tipo.charAt(0).toUpperCase() + tipo.slice(1)) : '—';
+
+            // Subtareas
+            var subtsHtml = '<div class="tcp-subt-empty">Sin subtareas</div>';
+            var subtHead = 'SUBTAREAS';
+            var subs = t.subtareas || [];
+            if (subs.length > 0) {
+                var doneN = subs.filter(function(s) { return s.estado === 'completada'; }).length;
+                subtHead = 'SUBTAREAS (' + doneN + '/' + subs.length + ')';
+                subtsHtml = '<div class="tcp-subt-list">' + subs.map(function(s) {
+                    var dn = s.estado === 'completada';
+                    return '<div class="tcp-subt-row' + (dn ? ' done' : '') + '" onclick="crmTaskVerDetalle(' + s.id + ')">' +
+                        '<span class="tcp-subt-check' + (dn ? ' done' : '') + '">' + (dn ? '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '') + '</span>' +
+                        '<span class="tcp-subt-title">' + _tcpEsc(s.titulo || '') + '</span>' +
+                        '</div>';
+                }).join('') + '</div>';
+            }
+
+            var descHtml = t.descripcion
+                ? '<div class="tcp-detail-desc">' + _tcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>'
+                : '<div class="tcp-detail-desc empty">Sin descripción.</div>';
+
+            // Clock SVG para fechas (usado en pill vencida, sin icono ⚠)
+            var clockIcon = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+            // Oportunidad con link si existe (reemplaza el renglón "Cliente")
+            var oppVal;
+            if (t.oportunidad_id && t.oportunidad_nombre) {
+                oppVal = '<span class="tcp-opp-link" onclick="tcpAbrirOportunidad(' + t.oportunidad_id + ')" title="Abrir oportunidad">' + _tcpEsc(t.oportunidad_nombre) + '</span>';
+            } else if (t.oportunidad_nombre) {
+                oppVal = _tcpEsc(t.oportunidad_nombre);
+            } else {
+                oppVal = '<span class="muted">Sin oportunidad</span>';
+            }
+
+            panel.innerHTML =
+                '<div class="tcp-detail-head">' +
+                    '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                    '<div class="tcp-detail-actions">' +
+                        '<button class="tcp-detail-iconbtn tcp-expand-btn" title="Expandir · ver comentarios" onclick="tcpExpandir(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>' +
+                        '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="tcpCloseDetail()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="tcp-detail-scroll">' +
+                    '<h1 class="tcp-detail-title">' + _tcpEsc(t.titulo || 'Sin título') + '</h1>' +
+                    descHtml +
+                    '<div class="tcp-detail-meta">' +
+                        _tcpMetaRow('Responsable', resp
+                            ? '<span class="tcp-mini-avatar" style="background:' + avColor + '">' + ini + '</span>' + _tcpEsc(resp)
+                            : '<span class="muted">Sin asignar</span>', 'user') +
+                        _tcpMetaRow('Oportunidad', oppVal, 'briefcase') +
+                        _tcpMetaRow('Fecha límite', fechaIso
+                            ? '<span class="tcp-pill-fecha' + (vencida ? '' : ' normal') + '">' + clockIcon + ' ' + fechaTxt + '</span>'
+                            : '<span class="muted">Sin fecha</span>', 'calendar') +
+                        _tcpMetaRow('Categoría', categoria, 'tag') +
+                        _tcpMetaRow('Prioridad', prioLabel, 'flag') +
+                    '</div>' +
+                    '<div class="tcp-detail-subt-head">' + subtHead + '</div>' +
+                    subtsHtml +
+                '</div>';
+        };
+
+        function _tcpMetaRow(label, valueHtml, icon) {
+            var icons = {
+                user:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+                briefcase: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+                calendar:  '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+                tag:       '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>',
+                flag:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+            };
+            return '<div class="tcp-meta-row"><span class="tcp-meta-label">' + icons[icon] + label + '</span>' +
+                   '<span class="tcp-meta-value">' + valueHtml + '</span></div>';
+        }
+
+        window.tcpCloseDetail = function() {
+            _tcpSelectedId = null;
+            document.querySelectorAll('#tcpList .tcp-row').forEach(function(r) { r.classList.remove('active'); });
+            // Volver a mostrar el dashboard de resumen
+            _tcpRenderSummary(_crmAllTareas || [], new Date());
+        };
+
+        window.tcpExpandir = function(tid) {
+            // Abre el widget de detalle completo (con comentarios, subtareas editables, etc.)
+            if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(tid);
+        };
+
+        window.tcpCopiarEnlace = function(tid) {
+            var url = window.location.origin + '/app/?tarea=' + tid;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function() {
+                    if (typeof showToast === 'function') showToast('Enlace copiado', 'success', 1800);
+                });
+            }
+        };
+
+        window.tcpToggleCheck = function(tid) {
+            // Abre el widget de detalle; desde allí el usuario puede completar con el botón
+            if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(tid);
         };
 
         function renderTareasCalendar(tareas, now) {
@@ -4965,13 +5620,15 @@
 
         function createTaskListRowCRM(t, now) {
             var tipo = t.oportunidad_tipo || 'runrate';
-            var vencida = _tareasIsOverdue(t, now);
+            var completada = (t.estado === 'completada');
+            var vencida = !completada && _tareasIsOverdue(t, now);
             var dias = _tareasDiasVencida(t, now);
             var esc = _tareasEscape;
 
-            var stripClass = vencida
-                ? 'vencida ' + _tareasHeatClass(dias)
-                : (tipo === 'proyecto' ? 'proyecto' : 'runrate');
+            var stripClass = completada
+                ? 'completada'
+                : (vencida ? ('vencida ' + _tareasHeatClass(dias))
+                           : (tipo === 'proyecto' ? 'proyecto' : 'runrate'));
 
             var fechaHtml = '';
             if (t.fecha_limite) {
@@ -5005,10 +5662,13 @@
                   '</span>'
                 : '';
 
-            return '<div class="crm-list-row crm-list-row--tarea crm-data-row' + (t.esta_anclada ? ' pinned-row' : '') + '" ' +
+            return '<div class="crm-list-row crm-list-row--tarea crm-data-row' +
+                (completada ? ' crm-list-row--completada' : '') +
+                (t.esta_anclada ? ' pinned-row' : '') + '" ' +
                 'data-tarea-id="' + t.id + '" ' +
                 'data-vencida="' + (vencida ? '1' : '0') + '" ' +
                 'data-dias-vencida="' + dias + '" ' +
+                'data-completada="' + (completada ? '1' : '0') + '" ' +
                 'data-anclada="' + (t.esta_anclada ? '1' : '0') + '" ' +
                 'onclick="if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' +
                 '<div class="crm-list-strip ' + stripClass + '"></div>' +
@@ -5604,28 +6264,42 @@
                     renderChips(); renderTareasCRM();
                 });
 
-                // View toggle (list ⇄ calendar)
+                // View toggle: list → calendar → cockpit → list
                 function applyTareasView(mode){
-                    var lv = document.getElementById('tareasViewList');
-                    var cv = document.getElementById('tareasCardsGrid');
+                    var lv   = document.getElementById('tareasViewList');
+                    var cv   = document.getElementById('tareasCardsGrid');
                     var calv = document.getElementById('tareasViewCalendar');
+                    var cpv  = document.getElementById('tareasViewCockpit');
                     if (cv) cv.style.display = 'none';  // cards legacy siempre oculto
+                    // Reset all
+                    if (lv)   lv.style.display   = 'none';
+                    if (calv) calv.style.display = 'none';
+                    if (cpv)  cpv.style.display  = 'none';
                     if (mode === 'calendar') {
-                        if (lv)   lv.style.display   = 'none';
                         if (calv) calv.style.display = 'flex';
                         if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';
                         if (typeof renderTareasCRM === 'function') renderTareasCRM();
+                    } else if (mode === 'cockpit') {
+                        if (cpv) cpv.style.display = '';
+                        // Ícono split-panels
+                        if (viewIcn) viewIcn.innerHTML = '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/>';
+                        if (typeof renderTareasCRM === 'function') renderTareasCRM();
                     } else {
-                        if (lv)   lv.style.display   = '';
-                        if (calv) calv.style.display = 'none';
+                        if (lv) lv.style.display = '';
                         if (viewIcn) viewIcn.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
                     }
                 }
-                var _tareasViewMode = localStorage.getItem('tareasViewMode') || 'list';
-                if (_tareasViewMode === 'cards') _tareasViewMode = 'list';  // migración: cards → list
+                // Cockpit es la vista default en tareas. Migración firme:
+                // cualquier valor legacy (cards/list/null) → cockpit y persiste.
+                var _tareasViewMode = localStorage.getItem('tareasViewMode');
+                if (!_tareasViewMode || ['calendar','cockpit'].indexOf(_tareasViewMode) === -1) {
+                    _tareasViewMode = 'cockpit';
+                    localStorage.setItem('tareasViewMode', 'cockpit');
+                }
                 applyTareasView(_tareasViewMode);
                 btnView.addEventListener('click', function(){
-                    _tareasViewMode = _tareasViewMode === 'list' ? 'calendar' : 'list';
+                    // Ciclo simplificado: cockpit ↔ calendar (list queda fuera del ciclo)
+                    _tareasViewMode = _tareasViewMode === 'cockpit' ? 'calendar' : 'cockpit';
                     localStorage.setItem('tareasViewMode', _tareasViewMode);
                     applyTareasView(_tareasViewMode);
                 });
@@ -5789,7 +6463,7 @@
             if (titleEl && titleEl.tagName !== 'H1') {
                 var h1 = document.createElement('h1');
                 h1.id = 'crm-task-titulo';
-                h1.className = 'crm-task-title';
+                h1.className = 'crm-tw-title';
                 titleEl.replaceWith(h1);
             }
             var descEl = document.getElementById('crm-task-descripcion');
@@ -5808,17 +6482,21 @@
             }
 
             crmTaskSetText('crm-task-titulo', tarea.titulo);
-            var descHtml = tarea.descripcion_html || (tarea.descripcion ? tarea.descripcion.replace(/\n/g, '<br>') : 'Sin descripción');
+            var tieneDesc = !!(tarea.descripcion_html || tarea.descripcion);
+            var descHtml = tieneDesc
+                ? (tarea.descripcion_html || tarea.descripcion.replace(/\n/g, '<br>'))
+                : 'Agrega una descripción — qué hay que hacer, contexto, criterios…';
             crmTaskSetHTML('crm-task-descripcion', descHtml);
 
-            // Collapse long descriptions
+            // Collapse long descriptions + marcar "sin descripción" con estilo suave
             var descEl = document.getElementById('crm-task-descripcion');
             var toggleBtn = document.getElementById('crm-task-desc-toggle');
+            if (descEl) descEl.classList.toggle('is-empty', !tieneDesc);
             if (descEl && toggleBtn) {
                 descEl.classList.remove('collapsed');
                 toggleBtn.style.display = 'none';
                 requestAnimationFrame(function () {
-                    if (descEl.scrollHeight > 140) {
+                    if (descEl.scrollHeight > 240) {
                         descEl.classList.add('collapsed');
                         toggleBtn.style.display = 'inline';
                         toggleBtn.textContent = 'Mostrar más';
@@ -5826,15 +6504,38 @@
                 });
             }
 
-            // Breadcrumb: Cliente / Proyecto
+            // Breadcrumb: Proyecto (pill, solo si existe) › Cliente (texto, solo si existe)
             var bcCliente = document.getElementById('crm-task-breadcrumb-cliente');
             var bcProyecto = document.getElementById('crm-task-breadcrumb-proyecto');
-            var bcSep = document.querySelector('.crm-task-breadcrumb-sep');
-            if (bcCliente) bcCliente.textContent = tarea.cliente_nombre || '';
-            if (bcProyecto) bcProyecto.textContent = tarea.proyecto_nombre || '';
-            if (bcSep) bcSep.style.display = (tarea.cliente_nombre && tarea.proyecto_nombre) ? '' : 'none';
-            if (bcCliente) bcCliente.style.display = tarea.cliente_nombre ? '' : 'none';
-            if (bcProyecto) bcProyecto.style.display = tarea.proyecto_nombre ? '' : 'none';
+            var crumbChev = document.getElementById('crmTaskCrumbChev');
+            var crumbProyWrap = document.getElementById('crmTaskCrumbProyecto');
+            var hayProyecto = !!(tarea.proyecto_id && tarea.proyecto_nombre && tarea.proyecto_nombre !== 'Sin proyecto');
+            if (crumbProyWrap) {
+                if (hayProyecto) {
+                    crumbProyWrap.style.display = '';
+                    if (bcProyecto) bcProyecto.textContent = tarea.proyecto_nombre;
+                    crumbProyWrap.onclick = function () {
+                        if (typeof window.proyectosVerDetalle === 'function') {
+                            window.proyectosVerDetalle(tarea.proyecto_id);
+                        } else if (typeof window.ingenieroAbrirProyecto === 'function') {
+                            window.ingenieroAbrirProyecto(tarea.proyecto_id);
+                        }
+                    };
+                } else {
+                    crumbProyWrap.style.display = 'none';
+                    crumbProyWrap.onclick = null;
+                }
+            }
+            if (bcCliente) {
+                if (tarea.cliente_nombre) {
+                    bcCliente.textContent = tarea.cliente_nombre;
+                    bcCliente.style.display = '';
+                    if (crumbChev) crumbChev.style.display = hayProyecto ? '' : 'none';
+                } else {
+                    bcCliente.style.display = 'none';
+                    if (crumbChev) crumbChev.style.display = 'none';
+                }
+            }
 
             // Status pill: estado
             var estadoBadge = document.getElementById('crm-task-estado-badge');
@@ -5878,43 +6579,81 @@
             var prioSidebarWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
             if (prioSidebarWrap) prioSidebarWrap.style.display = 'none';
 
-            // Botón terminar / reabrir
-            var btnTerminar = document.getElementById('crmTaskBtnTerminar');
+            // Acción principal: Completar / Reabrir / Pill Completada (según estado)
+            var btnTerminar = document.getElementById('crmTaskBtnTerminar'); // legacy oculto
+            var btnCompletarPrimary = document.getElementById('crmTaskBtnCompletarPrimary');
             var btnReabrir = document.getElementById('crmTaskBtnReabrir');
-            if (tarea.estado === 'completada') {
-                if (btnTerminar) { btnTerminar.classList.add('completada'); btnTerminar.textContent = 'Completada'; btnTerminar.disabled = true; btnTerminar.style.display = 'none'; }
-                if (btnReabrir) btnReabrir.style.display = 'flex';
-            } else {
-                if (btnTerminar) { btnTerminar.classList.remove('completada'); btnTerminar.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Completar tarea'; btnTerminar.disabled = false; btnTerminar.style.display = ''; }
-                if (btnReabrir) btnReabrir.style.display = 'none';
+            var completadaPill = document.getElementById('crmTaskCompletadaPill');
+            var isCompletada = (tarea.estado === 'completada');
+            if (btnTerminar) {
+                btnTerminar.disabled = isCompletada;
+                btnTerminar.style.display = 'none';
+            }
+            if (btnCompletarPrimary) {
+                btnCompletarPrimary.disabled = false;
+                btnCompletarPrimary.classList.remove('bursting');
+                btnCompletarPrimary.innerHTML =
+                    '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+                    '<span>Completar tarea</span>';
+                btnCompletarPrimary.style.display = isCompletada ? 'none' : 'inline-flex';
+            }
+            if (btnReabrir) btnReabrir.style.display = isCompletada ? 'inline-flex' : 'none';
+            if (completadaPill) completadaPill.style.display = isCompletada ? 'inline-flex' : 'none';
+
+            // Sidebar pill de estado (refleja estado del badge principal)
+            var estadoSidePill = document.getElementById('crm-task-estado-sidebar-pill');
+            var estadoDot = document.getElementById('crm-tw-estado-dot');
+            var estadoSbLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
+            if (estadoSidePill) {
+                estadoSidePill.textContent = estadoSbLabels[tarea.estado] || 'Pendiente';
+            }
+            if (estadoDot) {
+                estadoDot.className = 'crm-tw-sb-dot ' + (tarea.estado || 'pendiente');
             }
 
-            // Info sidebar
-            var fechaLimiteEl = document.getElementById('crm-task-fecha-limite');
-            if (fechaLimiteEl) {
-                var flText = tarea.fecha_limite ? formatearFechaCRM(tarea.fecha_limite) : 'Sin fecha';
-                fechaLimiteEl.textContent = flText;
-                if (tarea.fecha_limite) {
-                    var flDate = new Date(tarea.fecha_limite);
-                    var esVencida = flDate < new Date() && tarea.estado !== 'completada';
-                    fechaLimiteEl.style.color = esVencida ? '#DC2626' : '';
-                    fechaLimiteEl.style.fontWeight = esVencida ? '600' : '';
+            // Sidebar valor de prioridad (alta / normal)
+            var prioSideVal = document.getElementById('crm-task-prioridad');
+            var prioSideWrap = document.getElementById('crmTaskPrioridadSidebarWrap');
+            var esAlta = (tarea.prioridad === 'alta');
+            if (prioSideVal && prioSideWrap) {
+                if (esAlta) {
+                    prioSideVal.className = 'crm-tw-sb-prio-alta';
+                    prioSideVal.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg><span>Alta</span>';
                 } else {
-                    fechaLimiteEl.style.color = '';
-                    fechaLimiteEl.style.fontWeight = '';
+                    prioSideVal.className = 'crm-tw-sb-prio-normal';
+                    prioSideVal.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg><span>Normal</span>';
+                }
+                prioSideWrap.style.display = '';
+            }
+
+            // Info sidebar — fecha límite inteligente (relativa + color auto)
+            var fechaLimiteEl = document.getElementById('crm-task-fecha-limite');
+            var fechaBtn = fechaLimiteEl ? fechaLimiteEl.closest('.crm-tw-sb-btn') : null;
+            if (fechaBtn) fechaBtn.classList.remove('fecha-vencida', 'fecha-urgente');
+            if (fechaLimiteEl) {
+                fechaLimiteEl.style.color = '';
+                fechaLimiteEl.style.fontWeight = '';
+                if (!tarea.fecha_limite) {
+                    fechaLimiteEl.innerHTML = '<span style="color:#94A3B8;font-weight:500;">Sin fecha</span>';
+                } else {
+                    var smart = crmTaskFechaInteligente(tarea.fecha_limite, tarea.estado);
+                    fechaLimiteEl.innerHTML =
+                        '<span class="crm-tw-fecha-main">' + smart.main + '</span>' +
+                        '<span class="crm-tw-fecha-meta">' + smart.meta + '</span>';
+                    if (fechaBtn) {
+                        if (smart.tone === 'vencida') fechaBtn.classList.add('fecha-vencida');
+                        else if (smart.tone === 'urgente') fechaBtn.classList.add('fecha-urgente');
+                    }
                 }
             }
             crmTaskSetText('crm-task-creado-por', tarea.creado_por_data ? tarea.creado_por_data.nombre : tarea.creado_por);
             crmTaskSetText('crm-task-fecha-creacion', tarea.fecha_creacion ? formatearFechaCRM(tarea.fecha_creacion) : '--');
 
-            // Cliente
+            // Cliente: solo en el header breadcrumb; el row del sidebar queda oculto
+            // (pero guardamos el nombre en el span por compat con editores legacy)
             var clienteRow = document.getElementById('crmTaskClienteRow');
-            if (tarea.cliente_nombre) {
-                crmTaskSetText('crm-task-cliente-nombre', tarea.cliente_nombre);
-                if (clienteRow) clienteRow.style.display = '';
-            } else {
-                if (clienteRow) clienteRow.style.display = 'none';
-            }
+            crmTaskSetText('crm-task-cliente-nombre', tarea.cliente_nombre || '');
+            if (clienteRow) clienteRow.style.display = 'none';
 
             // Oportunidad card (in sidebar)
             _crmTaskCurrentOppId = tarea.oportunidad_id || null;
@@ -5939,54 +6678,106 @@
                 if (tarea.responsable_data) {
                     var rd = tarea.responsable_data;
                     var initials = crmTaskGetInitials(rd.nombre);
-                    respContainer.innerHTML = '<div class="crm-task-avatar" style="width:30px;height:30px;font-size:0.65rem;background:#0052D4;">' + (rd.avatar_url ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">' : initials) + '</div><span style="font-weight:500;font-size:0.82rem;flex:1;min-width:0;">' + rd.nombre + '</span>';
+                    var avatarInner = rd.avatar_url
+                        ? '<img src="' + rd.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                        : initials;
+                    respContainer.innerHTML =
+                        '<span style="width:22px;height:22px;border-radius:50%;background:#3B82F6;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avatarInner + '</span>' +
+                        '<span style="font-weight:500;font-size:13px;color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + rd.nombre + '</span>';
                 } else {
-                    respContainer.innerHTML = '<span style="color:#9CA3AF;font-size:0.82rem;">Sin asignar</span>';
+                    respContainer.innerHTML = '<span style="color:#94A3B8;font-size:13px;">Sin asignar</span>';
                 }
+            }
+
+            // Creador (bajo Responsable — read-only)
+            var creaContainer = document.getElementById('crm-task-creador-container');
+            if (creaContainer) {
+                var cd = tarea.creado_por_data;
+                if (cd) {
+                    var initC = crmTaskGetInitials(cd.nombre);
+                    var avatarC = cd.avatar_url
+                        ? '<img src="' + cd.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                        : initC;
+                    creaContainer.innerHTML =
+                        '<span style="width:22px;height:22px;border-radius:50%;background:#8B5CF6;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avatarC + '</span>' +
+                        '<span style="font-weight:500;font-size:13px;color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + cd.nombre + '</span>';
+                } else {
+                    creaContainer.innerHTML = '<span style="color:#94A3B8;font-size:13px;">' + (tarea.creado_por || '—') + '</span>';
+                }
+            }
+
+            // Menú 3-dots: mostrar "Eliminar" solo al creador o superuser
+            var menuEliminar = document.getElementById('crmTaskMenuEliminar');
+            if (menuEliminar) {
+                var _cur = _CRM_CONFIG.userId;
+                var _su = _CRM_CONFIG.isSuperuser;
+                var _crId = (tarea.creado_por_data && tarea.creado_por_data.id) ? tarea.creado_por_data.id : null;
+                menuEliminar.style.display = (_su || (_cur && _crId && _cur === _crId)) ? 'flex' : 'none';
             }
 
             // Subtareas O Tarea padre (mutuamente excluyentes)
             var subtareasSection = document.getElementById('crmTaskSubtareasSection');
-            var subtareasList = document.getElementById('crmTaskSubtareasList');
             if (subtareasSection) {
                 if (tarea.tarea_padre_id && tarea.tarea_padre_titulo) {
-                    // Es subtarea: mostrar card de tarea padre en vez de subtareas
+                    // Es subtarea: mostrar card de tarea padre
                     subtareasSection.innerHTML =
-                        '<h3 style="margin:0 0 6px;">Tarea Principal</h3>' +
-                        '<div onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:#F0F7FF;border:1px solid #BFDBFE;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#DBEAFE\'" onmouseleave="this.style.background=\'#F0F7FF\'">' +
+                        '<h3 class="crm-tw-section-title"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>Tarea principal</h3>' +
+                        '<div class="crm-tw-parent-card" onclick="crmTaskVerDetalle(' + tarea.tarea_padre_id + ')">' +
                             '<svg width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l-6-6 6-6"/><path d="M3 12h18"/></svg>' +
                             '<div style="flex:1;min-width:0;">' +
-                                '<div style="font-size:0.82rem;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
+                                '<div style="font-size:13px;font-weight:600;color:#1E40AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tarea.tarea_padre_titulo + '</div>' +
                             '</div>' +
                             '<svg width="14" height="14" fill="none" stroke="#93C5FD" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
                         '</div>';
                 } else {
-                    // Es tarea normal: mostrar subtareas
+                    // Es tarea normal: mostrar subtareas con barra de progreso + badge contador
                     var subs = tarea.subtareas || [];
-                    var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
-                        '<h3 style="margin:0;">Subtareas</h3>' +
-                        '<button onclick="crmTaskCrearSubtarea()" title="Crear subtarea" style="background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:2px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;">' +
-                        '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Subtarea</button></div>';
+                    var total = subs.length;
+                    var done = subs.filter(function (s) { return s.estado === 'completada'; }).length;
+                    var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                    var isFull = total > 0 && done === total;
+                    var badge = total > 0
+                        ? '<span class="crm-tw-sub-badge' + (isFull ? ' full' : '') + '">' + done + '/' + total + '</span>'
+                        : '';
+                    var headHtml =
+                        '<h3 class="crm-tw-section-title">' +
+                            '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
+                            'Subtareas' + badge +
+                        '</h3>' +
+                        (total > 0
+                            ? '<div class="crm-tw-subtareas-head">' +
+                                '<div class="crm-tw-subtareas-progress"><div class="crm-tw-subtareas-progress-fill' + (isFull ? ' full' : '') + '" style="width:' + pct + '%;"></div></div>' +
+                                '<span class="crm-tw-subtareas-count">' + pct + '%</span>' +
+                              '</div>'
+                            : '');
                     var listHtml = '';
                     if (subs.length > 0) {
-                        var estadoColors = { pendiente: ['#FEF3C7','#92400E'], iniciada: ['#DBEAFE','#1E40AF'], en_progreso: ['#ECFDF5','#059669'], completada: ['#F3F4F6','#6B7280'], cancelada: ['#FEE2E2','#991B1B'] };
-                        var estadoLabels = { pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso', completada: 'Completada', cancelada: 'Cancelada' };
-                        listHtml = '<div style="display:flex;flex-direction:column;gap:4px;">' + subs.map(function(st) {
-                            var ec = estadoColors[st.estado] || ['#F3F4F6','#6B7280'];
+                        listHtml = '<div class="crm-tw-subtareas-list">' + subs.map(function (st) {
                             var isComplete = st.estado === 'completada';
-                            return '<div onclick="crmTaskVerDetalle(' + st.id + ')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#F9FAFB;border:1px solid #E5E7EB;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background=\'#F3F4F6\'" onmouseleave="this.style.background=\'#F9FAFB\'">' +
-                                '<svg width="14" height="14" fill="none" stroke="' + (isComplete ? '#059669' : '#D1D5DB') + '" viewBox="0 0 24 24" stroke-width="2" style="flex-shrink:0;">' + (isComplete ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : '<circle cx="12" cy="12" r="10"/>') + '</svg>' +
-                                '<div style="flex:1;min-width:0;">' +
-                                    '<div style="font-size:0.8rem;font-weight:500;color:' + (isComplete ? '#9CA3AF' : '#1D1D1F') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (isComplete ? 'text-decoration:line-through;' : '') + '">' + (st.titulo || '') + '</div>' +
-                                    (st.asignado_a ? '<div style="font-size:0.68rem;color:#9CA3AF;margin-top:1px;">' + st.asignado_a + '</div>' : '') +
-                                '</div>' +
-                                '<span style="font-size:0.65rem;padding:2px 6px;border-radius:4px;background:' + ec[0] + ';color:' + ec[1] + ';white-space:nowrap;">' + (estadoLabels[st.estado] || st.estado) + '</span>' +
+                            var checkSvg = isComplete
+                                ? '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+                                : '';
+                            return '<div class="crm-tw-subtarea-row' + (isComplete ? ' done' : '') + '" onclick="crmTaskVerDetalle(' + st.id + ')">' +
+                                '<span class="crm-tw-subtarea-check' + (isComplete ? ' done' : '') + '">' + checkSvg + '</span>' +
+                                '<span class="crm-tw-subtarea-title">' + (st.titulo || '') + '</span>' +
                             '</div>';
                         }).join('') + '</div>';
-                    } else {
-                        listHtml = '<div style="font-size:0.78rem;color:#9CA3AF;padding:4px 0;">Sin subtareas</div>';
                     }
-                    subtareasSection.innerHTML = headerHtml + listHtml;
+                    if (total === 0) {
+                        var emptyState =
+                            '<div class="crm-tw-empty" onclick="crmTaskCrearSubtarea()" role="button">' +
+                                '<span class="crm-tw-empty-ico"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
+                                '<span class="crm-tw-empty-title">Añadir subtarea</span>' +
+                                '<span class="crm-tw-empty-hint">Divide la tarea en pasos</span>' +
+                            '</div>';
+                        subtareasSection.innerHTML = headHtml + emptyState;
+                    } else {
+                        var addBtn = '<button type="button" class="crm-tw-subtarea-add" onclick="crmTaskCrearSubtarea()">' +
+                            '<span class="crm-tw-subtarea-add-ico"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
+                            '<span>Añadir subtarea</span>' +
+                        '</button>';
+                        subtareasSection.innerHTML = headHtml + listHtml + addBtn;
+                    }
                 }
             }
 
@@ -6012,6 +6803,8 @@
             _crmTaskCurrentOppId = null;
             var modal = document.getElementById('crmTaskDetailModal');
             if (!modal) return;
+            // Limpiar contenido stale ANTES de abrir para evitar flash de la tarea previa
+            _crmTaskClearForLoading();
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             fetch('/app/api/tarea/' + tareaId + '/')
@@ -6021,6 +6814,9 @@
                 })
                 .then(function (tarea) {
                     if (tarea.error) { showToast(tarea.error, 'error'); return; }
+                    // Solo aplicar si aún estamos en la misma tarea (evita race condition
+                    // si el usuario clickea otra tarea mientras la primera fetch no resolvía)
+                    if (_crmCurrentTaskId !== tareaId) return;
                     crmTaskRenderData(tarea);
                     crmTaskCargarComentarios(tareaId);
                 })
@@ -6028,6 +6824,69 @@
                     console.error('Error cargando tarea:', err);
                     showToast('Error al cargar la tarea', 'error');
                 });
+        }
+
+        // Limpia el DOM del modal de detalle de tarea antes de que resuelva la
+        // petición — evita el "flash" de mostrar datos de la tarea anterior.
+        function _crmTaskClearForLoading() {
+            var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val || ''; };
+            var setHtml = function(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html || ''; };
+
+            // Título, descripción, breadcrumb
+            set('crm-task-titulo', '');
+            setHtml('crm-task-descripcion', '');
+            set('crm-task-breadcrumb-proyecto', '');
+            set('crm-task-breadcrumb-cliente', '');
+            set('crm-tw-taskid', '');
+
+            // Pills y estados (resetear a estado neutro)
+            set('crm-task-estado-badge', '');
+            set('crm-task-prioridad-text', '');
+            set('crm-task-vence-badge', '');
+            set('crm-task-estado-sidebar-pill', '');
+            var estadoDot = document.getElementById('crm-tw-estado-dot');
+            if (estadoDot) estadoDot.className = 'crm-tw-sb-dot';
+
+            // Fecha límite
+            setHtml('crm-task-fecha-limite', '');
+
+            // Responsable, participantes, observadores
+            setHtml('crm-task-responsable-container', '');
+            setHtml('crm-task-participantes-container', '');
+            setHtml('crm-task-observadores-container', '');
+
+            // Cliente + oportunidad + drive
+            set('crm-task-cliente-nombre', '');
+            set('crmTaskOppNombre', '');
+            var oppCard = document.getElementById('crmTaskOppCard');
+            if (oppCard) oppCard.style.display = 'none';
+            var driveCard = document.getElementById('crmTaskDriveCard');
+            if (driveCard) driveCard.style.display = 'none';
+            var sidebarLinks = document.getElementById('crmTaskSidebarLinks');
+            if (sidebarLinks) sidebarLinks.style.display = 'none';
+
+            // Subtareas + activity feed
+            setHtml('crmTaskSubtareasSection', '');
+            setHtml('crm-task-activity-feed', '<div style="padding:20px;text-align:center;color:#94A3B8;font-size:13px;">Cargando…</div>');
+
+            // Fecha creación + creado por
+            set('crm-task-fecha-creacion', '');
+            set('crm-task-creado-por', '');
+
+            // Botones a estado neutro
+            var btnReabrir = document.getElementById('crmTaskBtnReabrir');
+            if (btnReabrir) btnReabrir.style.display = 'none';
+            var btnComp = document.getElementById('crmTaskBtnCompletarPrimary');
+            if (btnComp) btnComp.style.display = 'none';  // se mostrará tras render correcto
+            var compPill = document.getElementById('crmTaskCompletadaPill');
+            if (compPill) compPill.style.display = 'none';
+
+            // Input del comentario y archivos
+            var commInp = document.getElementById('crm-task-comment-input');
+            if (commInp) commInp.value = '';
+            setHtml('crm-task-files-preview', '');
+
+            _crmTaskLastData = null;
         }
 
         function crmTaskSetText(id, text) {
@@ -6044,6 +6903,33 @@
             if (!name) return '?';
             var parts = name.trim().split(/\s+/);
             return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
+        }
+
+        // Devuelve {main, meta, tone} para un date-time string
+        // tone ∈ {'vencida','urgente','normal','completada'}
+        function crmTaskFechaInteligente(isoStr, estado) {
+            var d = new Date(isoStr);
+            if (isNaN(d.getTime())) return { main: 'Sin fecha', meta: '', tone: 'normal' };
+            var main = formatearFechaCRM(isoStr);
+            if (estado === 'completada') return { main: main, meta: 'Completada', tone: 'completada' };
+            var now = new Date();
+            var diffMs = d - now;
+            var abs = Math.abs(diffMs);
+            var mins = Math.round(abs / 60000);
+            var hours = Math.round(abs / 3600000);
+            var days = Math.floor(abs / 86400000);
+            function rel() {
+                if (mins < 1) return 'ahora';
+                if (mins < 60) return mins + ' min';
+                if (hours < 24) return hours + (hours === 1 ? ' hora' : ' horas');
+                if (days < 30) return days + (days === 1 ? ' día' : ' días');
+                var months = Math.round(days / 30);
+                return months + (months === 1 ? ' mes' : ' meses');
+            }
+            if (diffMs < 0) return { main: main, meta: 'Vencida hace ' + rel(), tone: 'vencida' };
+            if (hours < 24) return { main: main, meta: 'Vence en ' + rel(), tone: 'urgente' };
+            if (days <= 3) return { main: main, meta: 'Vence en ' + rel(), tone: 'urgente' };
+            return { main: main, meta: 'Vence en ' + rel(), tone: 'normal' };
         }
 
         function crmAvatarHtml(nombre, avatarUrl, size, bg) {
@@ -6076,37 +6962,38 @@
             _crmTaskLastData = tarea;
             crmTaskHideSaveBar();
 
-            var partContainer = document.getElementById('crm-task-participantes-container');
-            if (partContainer) {
-                var parts = tarea.participantes || [];
-                var html = parts.map(function (p) {
-                    var rm = _crmTaskCanEdit ? '<span onclick="crmTaskRemoverInvolucrado(\'participantes\',' + p.id + ')" style="position:absolute;top:-3px;right:-3px;background:#EF4444;color:white;border-radius:50%;width:13px;height:13px;font-size:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;">x</span>' : '';
-                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#6366f1;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;overflow:hidden;" title="' + p.nombre + '">' + crmAvatarHtml(p.nombre, p.avatar_url) + rm + '</div>';
+            function crmTaskRenderSbList(containerId, people, grupo, bgColor) {
+                var cont = document.getElementById(containerId);
+                if (!cont) return;
+                if (!people.length) {
+                    cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
+                    return;
+                }
+                cont.innerHTML = people.map(function (p) {
+                    var avInner = p.avatar_url
+                        ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                        : crmTaskGetInitials(p.nombre);
+                    var rm = _crmTaskCanEdit
+                        ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + grupo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
+                        : '';
+                    return '<div class="crm-tw-sb-row" title="' + p.nombre + '">' +
+                        '<div class="crm-tw-sb-row-left">' +
+                            '<span style="width:22px;height:22px;border-radius:50%;background:' + bgColor + ';color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
+                            '<span class="crm-tw-sb-row-name">' + p.nombre + '</span>' +
+                        '</div>' +
+                        rm +
+                    '</div>';
                 }).join('');
-                if (_crmTaskCanEdit) html += '<button onclick="crmTaskAgregarInvolucrado(\'participantes\')" style="width:28px;height:28px;border-radius:50%;border:1.5px dashed #D1D5DB;background:none;color:#9CA3AF;cursor:pointer;font-size:1rem;line-height:1;vertical-align:middle;">+</button>';
-                partContainer.innerHTML = html || '<span style="color:#9CA3AF;font-size:0.78rem;">Ninguno</span>';
             }
-
-            var obsContainer = document.getElementById('crm-task-observadores-container');
-            if (obsContainer) {
-                var obs = tarea.observadores || [];
-                var html2 = obs.map(function (o) {
-                    var rm = _crmTaskCanEdit ? '<span onclick="crmTaskRemoverInvolucrado(\'observadores\',' + o.id + ')" style="position:absolute;top:-3px;right:-3px;background:#EF4444;color:white;border-radius:50%;width:13px;height:13px;font-size:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;">x</span>' : '';
-                    return '<div style="position:relative;display:inline-flex;width:28px;height:28px;border-radius:50%;background:#8B5CF6;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:700;overflow:hidden;" title="' + o.nombre + '">' + crmAvatarHtml(o.nombre, o.avatar_url) + rm + '</div>';
-                }).join('');
-                if (_crmTaskCanEdit) html2 += '<button onclick="crmTaskAgregarInvolucrado(\'observadores\')" style="width:28px;height:28px;border-radius:50%;border:1.5px dashed #D1D5DB;background:none;color:#9CA3AF;cursor:pointer;font-size:1rem;line-height:1;vertical-align:middle;">+</button>';
-                obsContainer.innerHTML = html2 || '<span style="color:#9CA3AF;font-size:0.78rem;">Ninguno</span>';
-            }
+            crmTaskRenderSbList('crm-task-participantes-container', tarea.participantes || [], 'participantes', '#6366F1');
+            crmTaskRenderSbList('crm-task-observadores-container', tarea.observadores || [], 'observadores', '#8B5CF6');
 
             if (_crmTaskCanEdit) {
                 var respContainer = document.getElementById('crm-task-responsable-container');
-                if (respContainer && !respContainer.querySelector('.crm-resp-edit-btn')) {
-                    var editBtn = document.createElement('button');
-                    editBtn.className = 'crm-resp-edit-btn';
-                    editBtn.onclick = crmTaskEditarResponsable;
-                    editBtn.style.cssText = 'margin-left:auto;background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:1px 7px;border-radius:4px;';
-                    editBtn.textContent = 'editar';
-                    respContainer.appendChild(editBtn);
+                if (respContainer) {
+                    respContainer.style.cursor = 'pointer';
+                    respContainer.title = 'Clic para cambiar responsable';
+                    respContainer.onclick = crmTaskEditarResponsable;
                 }
                 var titleEl2 = document.getElementById('crm-task-titulo');
                 if (titleEl2 && titleEl2.tagName === 'H1') {
@@ -6235,10 +7122,14 @@
                             _crmTaskEdits.asignado_a_nombre = nombre;
                             _crmTaskEdits.asignado_a_avatar = u.avatar_url || null;
                             crmTaskShowSaveBar();
-                            respContainer.innerHTML = '<div class="crm-task-avatar" style="background:#0052D4;overflow:hidden;">' + crmAvatarHtml(nombre, u.avatar_url) + '</div><span style="font-weight:500;font-size:0.85rem;">' + nombre + '</span>';
-                            var eb = document.createElement('button'); eb.className = 'crm-resp-edit-btn'; eb.onclick = crmTaskEditarResponsable;
-                            eb.style.cssText = 'margin-left:auto;background:none;border:1px solid #E5E5EA;color:#6B7280;cursor:pointer;font-size:0.72rem;padding:1px 7px;border-radius:4px;'; eb.textContent = 'editar';
-                            respContainer.appendChild(eb);
+                            var avInner = u.avatar_url
+                                ? '<img src="' + u.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                                : crmTaskGetInitials(nombre);
+                            respContainer.innerHTML =
+                                '<span style="width:22px;height:22px;border-radius:50%;background:#3B82F6;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
+                                '<span style="font-weight:500;font-size:13px;color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + nombre + '</span>';
+                            respContainer.style.cursor = 'pointer';
+                            respContainer.onclick = crmTaskEditarResponsable;
                         });
                         dd.appendChild(div);
                     }); dd.style.display = 'block';
@@ -6487,6 +7378,132 @@
             _crmMentionClose();
         }
 
+        // Copiar enlace directo a la tarea
+        function crmTaskCopyToClipboard(url, okMsg) {
+            okMsg = okMsg || 'Enlace copiado';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                    showToast(okMsg, 'success', 2200);
+                }, function () { showToast('No se pudo copiar', 'error'); });
+            } else {
+                try {
+                    var ta = document.createElement('textarea');
+                    ta.value = url; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+                    document.body.appendChild(ta); ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showToast(okMsg, 'success', 2200);
+                } catch (e) { showToast('No se pudo copiar', 'error'); }
+            }
+        }
+        window.crmTaskCopiarEnlace = function () {
+            if (!_crmCurrentTaskId) return;
+            crmTaskCopyToClipboard(window.location.origin + '/app/?tarea=' + _crmCurrentTaskId);
+        };
+
+        // Dropdown 3-dots en el header
+        window.crmTaskToggleMenu = function (e) {
+            if (e) { e.stopPropagation(); }
+            var menu = document.getElementById('crmTaskMenu');
+            var btn = document.getElementById('crmTaskMenuBtn');
+            if (!menu || !btn) return;
+            var isOpen = menu.style.display !== 'none';
+            menu.style.display = isOpen ? 'none' : 'block';
+            btn.classList.toggle('is-open', !isOpen);
+            btn.setAttribute('aria-expanded', String(!isOpen));
+        };
+        document.addEventListener('click', function (e) {
+            var menu = document.getElementById('crmTaskMenu');
+            var btn = document.getElementById('crmTaskMenuBtn');
+            if (!menu || !btn) return;
+            if (menu.style.display === 'none') return;
+            if (btn.contains(e.target) || menu.contains(e.target)) return;
+            menu.style.display = 'none';
+            btn.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+
+        // Compartir vista previa (link sin login)
+        window.crmTaskCompartirPreview = function () {
+            if (!_crmCurrentTaskId) return;
+            var menu = document.getElementById('crmTaskMenu');
+            if (menu) menu.style.display = 'none';
+            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/share-link/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data && data.url) {
+                        var full = data.url.indexOf('http') === 0 ? data.url : (window.location.origin + data.url);
+                        crmTaskCopyToClipboard(full, 'Enlace de vista previa copiado');
+                    } else {
+                        showToast(data.error || 'No se pudo generar el enlace', 'error');
+                    }
+                })
+                .catch(function () { showToast('Error de conexión', 'error'); });
+        };
+
+        // Eliminar tarea (solo creador / superuser — se valida en backend)
+        // Abre un overlay de confirmación en vez de window.confirm()
+        window.crmTaskEliminarTarea = function () {
+            if (!_crmCurrentTaskId) return;
+            var menu = document.getElementById('crmTaskMenu');
+            if (menu) menu.style.display = 'none';
+            var overlay = document.getElementById('crmTaskDeleteOverlay');
+            var subtitle = document.getElementById('crmTaskDeleteSubtitle');
+            if (subtitle) {
+                var titulo = _crmTaskLastData && _crmTaskLastData.titulo ? _crmTaskLastData.titulo : '';
+                subtitle.textContent = titulo ? '"' + titulo + '"' : '';
+            }
+            if (overlay) overlay.style.display = 'flex';
+        };
+        window.crmTaskDeleteCancel = function () {
+            var overlay = document.getElementById('crmTaskDeleteOverlay');
+            if (overlay) overlay.style.display = 'none';
+            var btn = document.getElementById('crmTaskDeleteConfirmBtn');
+            if (btn) { btn.disabled = false; btn.textContent = 'Eliminar tarea'; }
+        };
+        window.crmTaskDeleteConfirm = function () {
+            if (!_crmCurrentTaskId) return;
+            var btn = document.getElementById('crmTaskDeleteConfirmBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Eliminando…'; btn.style.opacity = '0.75'; }
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/eliminar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfEl ? csrfEl.value : '' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data && data.success) {
+                        showToast('Tarea eliminada', 'success');
+                        crmTaskDeleteCancel();
+                        crmTaskCerrarModal();
+                        _tareasPollHash = null;
+                        if (typeof recargarTareasCRM === 'function') recargarTareasCRM();
+                    } else {
+                        if (btn) { btn.disabled = false; btn.textContent = 'Eliminar tarea'; btn.style.opacity = ''; }
+                        showToast(data.error || 'No se pudo eliminar', 'error');
+                    }
+                })
+                .catch(function () {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Eliminar tarea'; btn.style.opacity = ''; }
+                    showToast('Error de conexión', 'error');
+                });
+        };
+        // Click fuera del card o ESC para cancelar
+        (function () {
+            var overlay = document.getElementById('crmTaskDeleteOverlay');
+            if (overlay) {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) crmTaskDeleteCancel();
+                });
+            }
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    var ov = document.getElementById('crmTaskDeleteOverlay');
+                    if (ov && ov.style.display === 'flex') crmTaskDeleteCancel();
+                }
+            });
+        })();
+
         // Click outside to close
         var taskModal = document.getElementById('crmTaskDetailModal');
         if (taskModal) {
@@ -6495,11 +7512,28 @@
             });
         }
 
+        // Toggle desde el botón principal "Completar tarea" (burst animation al completar)
+        window.crmTaskToggleCompletar = function () {
+            if (!_crmTaskLastData) return;
+            if (_crmTaskLastData.estado === 'completada') {
+                crmTaskReabrir();
+            } else {
+                var btn = document.getElementById('crmTaskBtnCompletarPrimary');
+                if (btn) {
+                    btn.classList.remove('bursting');
+                    void btn.offsetWidth;
+                    btn.classList.add('bursting');
+                    setTimeout(function () { btn.classList.remove('bursting'); }, 620);
+                }
+                crmTaskCompletar();
+            }
+        };
+
         // ── Terminar tarea ──
         function crmTaskCompletar() {
             if (!_crmCurrentTaskId) return;
             var btn = document.getElementById('crmTaskBtnTerminar');
-            if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span>Guardando...</span>'; }
             var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
             fetch('/app/api/tarea/' + _crmCurrentTaskId + '/completar/', {
                 method: 'POST',
@@ -6510,9 +7544,16 @@
                     if (data.success !== false) {
                         if (btn) {
                             btn.classList.add('completada');
-                            btn.textContent = 'Completada';
+                            btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completada</span>';
                             btn.disabled = true;
                         }
+                        // Swap botón Completar → pill Completada + mostrar Reabrir
+                        var btnCompPrim = document.getElementById('crmTaskBtnCompletarPrimary');
+                        if (btnCompPrim) btnCompPrim.style.display = 'none';
+                        var compPill = document.getElementById('crmTaskCompletadaPill');
+                        if (compPill) compPill.style.display = 'inline-flex';
+                        var btnReab = document.getElementById('crmTaskBtnReabrir');
+                        if (btnReab) btnReab.style.display = 'inline-flex';
 
                         var estadoEl = document.getElementById('crm-task-estado');
                         if (estadoEl) estadoEl.innerHTML = getEstadoBadgeCRM('completada');
@@ -6555,12 +7596,12 @@
                             }
                         }
                     } else {
-                        if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completar</span>'; }
                         showToast(data.error || 'Error al completar', 'error');
                     }
                 })
                 .catch(function () {
-                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terminar tarea'; }
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Completar</span>'; }
                     showToast('Error de conexión', 'error');
                 });
         }
@@ -7085,6 +8126,9 @@
                     var pad = function (n) { return n < 10 ? '0' + n : n; };
                     dueDateEl.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
                 }
+                // Refrescar labels del composer (fecha default, sin asignaciones, etc.)
+                if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
+                if (typeof crmCreateUpdateOppLabel === 'function') crmCreateUpdateOppLabel();
                 var titleInput = document.getElementById('crmTaskTitleInput');
                 if (titleInput) titleInput.focus();
             }
@@ -7096,9 +8140,10 @@
             document.body.style.overflow = '';
             // Reset form
             var ti = document.getElementById('crmTaskTitleInput'); if (ti) ti.value = '';
-            var de = document.getElementById('crmTaskDescEditor'); if (de) de.innerHTML = '';
+            var de = document.getElementById('crmTaskDescEditor');
+            if (de) { if (de.value !== undefined) de.value = ''; else de.innerHTML = ''; }
             var hp = document.getElementById('crmTaskHighPriority'); if (hp) hp.checked = false;
-            var dd = document.getElementById('crmTaskDueDate'); if (dd) dd.value = '';
+            var dd2 = document.getElementById('crmTaskDueDate'); if (dd2) dd2.value = '';
             ['crmTaskSelectedResponsible', 'crmTaskSelectedParticipants', 'crmTaskSelectedObservers'].forEach(function (id) {
                 var el = document.getElementById(id); if (el) el.innerHTML = '';
             });
@@ -7109,27 +8154,197 @@
             // Reset oportunidad and tarea padre
             var oid = document.getElementById('crmTaskOppId'); if (oid) oid.value = '';
             var pid = document.getElementById('crmTaskPadreId'); if (pid) pid.value = '';
+            // Reset tool labels del composer + cerrar popovers + limpiar archivos
+            if (typeof _crmCreateClearFiles === 'function') _crmCreateClearFiles();
+            crmCreateRefreshLabels();
+            crmCreateCloseAllPops();
             // Remove any open user dropdown
-            var dd = document.querySelector('.crm-user-dropdown'); if (dd) dd.remove();
+            var dd3 = document.querySelector('.crm-user-dropdown'); if (dd3) dd3.remove();
         }
 
-        // Close create modal on outside click
+        // ── Composer: popovers de meta-tools ──
+        function crmCreateCloseAllPops() {
+            ['crmCreatePopResp', 'crmCreatePopParts', 'crmCreatePopObs', 'crmCreatePopFecha']
+                .forEach(function (id) { var p = document.getElementById(id); if (p) p.style.display = 'none'; });
+            ['crmCreateRespBtn', 'crmCreatePartsBtn', 'crmCreateObsBtn', 'crmCreateFechaBtn']
+                .forEach(function (id) { var b = document.getElementById(id); if (b) b.classList.remove('active'); });
+        }
+        window.crmCreateOpenPop = function (which, e) {
+            if (e) e.stopPropagation();
+            var mapPop = { resp: 'crmCreatePopResp', parts: 'crmCreatePopParts', obs: 'crmCreatePopObs', fecha: 'crmCreatePopFecha' };
+            var mapBtn = { resp: 'crmCreateRespBtn', parts: 'crmCreatePartsBtn', obs: 'crmCreateObsBtn', fecha: 'crmCreateFechaBtn' };
+            var mapInput = { resp: 'crmTaskResponsibleSearch', parts: 'crmTaskParticipantsSearch', obs: 'crmTaskObserversSearch', fecha: 'crmTaskDueDate' };
+            var pop = document.getElementById(mapPop[which]);
+            var btn = document.getElementById(mapBtn[which]);
+            if (!pop || !btn) return;
+            var isOpen = pop.style.display !== 'none';
+            crmCreateCloseAllPops();
+            if (!isOpen) {
+                pop.style.display = 'block';
+                btn.classList.add('active');
+                var inp = document.getElementById(mapInput[which]);
+                if (inp && inp.focus) setTimeout(function () { inp.focus(); }, 30);
+            }
+        };
+        // Cerrar popover al hacer click fuera
+        document.addEventListener('click', function (e) {
+            var modal = document.getElementById('crmCreateTaskModal');
+            if (!modal || !modal.classList.contains('active')) return;
+            var wraps = modal.querySelectorAll('.crm-ctw-popwrap');
+            for (var i = 0; i < wraps.length; i++) {
+                if (wraps[i].contains(e.target)) return;
+            }
+            crmCreateCloseAllPops();
+        });
+
+        // Actualiza los labels de las pills según selecciones actuales
+        function crmCreateRefreshLabels() {
+            var rl = document.getElementById('crmCreateRespLabel');
+            if (rl) rl.textContent = _crmTaskSelectedResp ? (_crmTaskSelectedResp.nombre || _crmTaskSelectedResp.username || 'Responsable') : 'Responsable';
+            var pl = document.getElementById('crmCreatePartsLabel');
+            if (pl) pl.textContent = (_crmTaskSelectedParts && _crmTaskSelectedParts.length) ? ('Participantes · ' + _crmTaskSelectedParts.length) : 'Participantes';
+            var ol = document.getElementById('crmCreateObsLabel');
+            if (ol) ol.textContent = (_crmTaskSelectedObs && _crmTaskSelectedObs.length) ? ('Observadores · ' + _crmTaskSelectedObs.length) : 'Observadores';
+
+            // Prioridad
+            var hp = document.getElementById('crmTaskHighPriority');
+            var prioBtn = document.getElementById('crmCreatePrioBtn');
+            var prioLabel = document.getElementById('crmCreatePrioLabel');
+            if (prioBtn && prioLabel) {
+                if (hp && hp.checked) { prioBtn.classList.add('prio-alta'); prioLabel.textContent = 'Alta'; }
+                else { prioBtn.classList.remove('prio-alta'); prioLabel.textContent = 'Prioridad'; }
+            }
+
+            // Fecha
+            var dd = document.getElementById('crmTaskDueDate');
+            var fBtn = document.getElementById('crmCreateFechaBtn');
+            var fLabel = document.getElementById('crmCreateFechaLabel');
+            if (fLabel && fBtn) {
+                if (dd && dd.value) {
+                    fBtn.classList.add('active');
+                    try {
+                        var d = new Date(dd.value);
+                        var opts = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
+                        fLabel.textContent = d.toLocaleDateString('es-MX', opts).replace(',', ' ·');
+                    } catch (_) { fLabel.textContent = dd.value; }
+                } else {
+                    fBtn.classList.remove('active');
+                    fLabel.textContent = 'Fecha';
+                }
+            }
+        }
+        window.crmCreateTogglePriority = function () {
+            var hp = document.getElementById('crmTaskHighPriority');
+            if (!hp) return;
+            hp.checked = !hp.checked;
+            crmCreateRefreshLabels();
+        };
+        window.crmCreateClearFecha = function () {
+            var dd = document.getElementById('crmTaskDueDate');
+            if (dd) dd.value = '';
+            crmCreateRefreshLabels();
+            crmCreateCloseAllPops();
+        };
+
+        // ── Adjuntar archivos al crear tarea ──
+        var _crmCreateFiles = [];
+        function _crmCreateFormatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+        }
+        function _crmCreateRenderFiles() {
+            var preview = document.getElementById('crmCreateFilesPreview');
+            var btn = document.getElementById('crmCreateAttachBtn');
+            var count = document.getElementById('crmCreateAttachCount');
+            if (!preview) return;
+            if (_crmCreateFiles.length === 0) {
+                preview.innerHTML = '';
+                preview.style.display = 'none';
+                if (btn) btn.classList.remove('has-files');
+                if (count) { count.style.display = 'none'; count.textContent = ''; }
+                return;
+            }
+            preview.style.display = 'flex';
+            preview.innerHTML = _crmCreateFiles.map(function (f, i) {
+                var nm = f.name.length > 32 ? f.name.slice(0, 28) + '…' + f.name.split('.').pop() : f.name;
+                return '<div class="crm-ctw-file-chip">' +
+                    '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>' +
+                    '<span class="crm-ctw-file-chip-name" title="' + f.name + '">' + nm + '</span>' +
+                    '<span class="crm-ctw-file-chip-size">' + _crmCreateFormatSize(f.size) + '</span>' +
+                    '<button type="button" class="crm-ctw-file-chip-rm" onclick="crmCreateRemoveFile(' + i + ')" title="Quitar">' +
+                        '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+                    '</button>' +
+                '</div>';
+            }).join('');
+            if (btn) btn.classList.add('has-files');
+            if (count) { count.style.display = ''; count.textContent = _crmCreateFiles.length; }
+        }
+        window.crmCreateOnFilesPicked = function (inp) {
+            if (!inp || !inp.files) return;
+            for (var i = 0; i < inp.files.length; i++) {
+                _crmCreateFiles.push(inp.files[i]);
+            }
+            inp.value = ''; // permite re-seleccionar el mismo archivo
+            _crmCreateRenderFiles();
+        };
+        window.crmCreateRemoveFile = function (idx) {
+            _crmCreateFiles.splice(idx, 1);
+            _crmCreateRenderFiles();
+        };
+        window._crmCreateGetFiles = function () { return _crmCreateFiles.slice(); };
+        window._crmCreateClearFiles = function () { _crmCreateFiles = []; _crmCreateRenderFiles(); };
+
+        // ── Header: fetch nombre de oportunidad (si oppId presente) ──
+        window.crmCreateUpdateOppLabel = function () {
+            var oppIdEl = document.getElementById('crmTaskOppId');
+            var label = document.getElementById('crmCreateProjectName');
+            if (!label) return;
+            var oppId = oppIdEl ? (oppIdEl.value || '') : '';
+            if (!oppId) {
+                label.textContent = 'Sin oportunidad';
+                return;
+            }
+            label.textContent = 'Cargando…';
+            fetch('/app/api/oportunidad/' + oppId + '/detalle/')
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (data && data.oportunidad) label.textContent = data.oportunidad;
+                    else label.textContent = 'Oportunidad #' + oppId;
+                })
+                .catch(function () { label.textContent = 'Oportunidad #' + oppId; });
+        };
+
+        // Close create modal on outside click + ⌘/Ctrl+Enter para enviar
         var createModal = document.getElementById('crmCreateTaskModal');
         if (createModal) {
             createModal.addEventListener('click', function (e) {
                 if (e.target === createModal) crmTaskCerrarCrear();
             });
+            createModal.addEventListener('keydown', function (e) {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (typeof crmTaskCrear === 'function') crmTaskCrear();
+                } else if (e.key === 'Escape') {
+                    crmTaskCerrarCrear();
+                }
+            });
         }
 
-        // Cap fecha límite de tarea a las 18:00
+        // Cap fecha límite de tarea a las 18:00 + refrescar label del composer
         var dueDateInp = document.getElementById('crmTaskDueDate');
         if (dueDateInp) {
             dueDateInp.addEventListener('change', function () {
-                if (!this.value) return;
-                var parts = this.value.split('T');
-                if (parts.length === 2 && parts[1] > '18:00') {
-                    this.value = parts[0] + 'T18:00';
+                if (this.value) {
+                    var parts = this.value.split('T');
+                    if (parts.length === 2 && parts[1] > '18:00') {
+                        this.value = parts[0] + 'T18:00';
+                    }
                 }
+                if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
+            });
+            dueDateInp.addEventListener('input', function () {
+                if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
             });
         }
 
@@ -7212,9 +8427,10 @@
                         chip.className = 'crm-user-chip';
                         var initials = u.iniciales || (u.nombre || u.username || '?')[0].toUpperCase();
                         chip.innerHTML = '<span class="crm-user-avatar-sm">' + initials + '</span><span>' + (u.nombre || u.username) + '</span><button type="button" class="crm-chip-remove">&times;</button>';
-                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedResp = null; chip.remove(); };
+                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedResp = null; chip.remove(); crmCreateRefreshLabels(); };
                         var prevChip = container.querySelector('.crm-user-chip'); if (prevChip) prevChip.remove();
                         container.appendChild(chip);
+                        crmCreateRefreshLabels();
                     });
                 });
             });
@@ -7236,8 +8452,9 @@
                         chip.className = 'crm-user-chip';
                         var initials = u.iniciales || (u.nombre || u.username || '?')[0].toUpperCase();
                         chip.innerHTML = '<span class="crm-user-avatar-sm">' + initials + '</span><span>' + (u.nombre || u.username) + '</span><button type="button" class="crm-chip-remove">&times;</button>';
-                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedParts = _crmTaskSelectedParts.filter(function (p) { return p.id !== u.id; }); chip.remove(); };
+                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedParts = _crmTaskSelectedParts.filter(function (p) { return p.id !== u.id; }); chip.remove(); crmCreateRefreshLabels(); };
                         container.appendChild(chip);
+                        crmCreateRefreshLabels();
                     });
                 });
             });
@@ -7259,8 +8476,9 @@
                         chip.className = 'crm-user-chip';
                         var initials = u.iniciales || (u.nombre || u.username || '?')[0].toUpperCase();
                         chip.innerHTML = '<span class="crm-user-avatar-sm">' + initials + '</span><span>' + (u.nombre || u.username) + '</span><button type="button" class="crm-chip-remove">&times;</button>';
-                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedObs = _crmTaskSelectedObs.filter(function (o) { return o.id !== u.id; }); chip.remove(); };
+                        chip.querySelector('.crm-chip-remove').onclick = function () { _crmTaskSelectedObs = _crmTaskSelectedObs.filter(function (o) { return o.id !== u.id; }); chip.remove(); crmCreateRefreshLabels(); };
                         container.appendChild(chip);
+                        crmCreateRefreshLabels();
                     });
                 });
             });
@@ -7268,10 +8486,16 @@
 
         function crmTaskCrear() {
             var titulo = (document.getElementById('crmTaskTitleInput') || {}).value || '';
-            if (!titulo.trim()) { alert('El nombre de la tarea es requerido'); return; }
+            if (!titulo.trim()) { showToast('El nombre de la tarea es requerido', 'error'); return; }
 
             var descEditor = document.getElementById('crmTaskDescEditor');
-            var descripcion = descEditor ? (descEditor.innerText || descEditor.textContent) : '';
+            var descripcion = '';
+            if (descEditor) {
+                // Soporta tanto textarea (composer nuevo) como contenteditable (legacy)
+                descripcion = (descEditor.value !== undefined)
+                    ? descEditor.value
+                    : (descEditor.innerText || descEditor.textContent || '');
+            }
             var highPriority = (document.getElementById('crmTaskHighPriority') || {}).checked;
             var dueDate = (document.getElementById('crmTaskDueDate') || {}).value || '';
 
@@ -7306,6 +8530,20 @@
                     if (data.success) {
                         var oppId = oppIdEl ? oppIdEl.value : '';
                         var padreId = padreIdEl ? padreIdEl.value : '';
+                        // Subir archivos adjuntos (si hay) como comentario inicial con files
+                        var pendingFiles = (typeof window._crmCreateGetFiles === 'function') ? window._crmCreateGetFiles() : [];
+                        if (pendingFiles.length > 0 && data.id) {
+                            var fd = new FormData();
+                            fd.append('contenido', '📎 Archivos adjuntos al crear la tarea');
+                            pendingFiles.forEach(function (f, i) { fd.append('archivo_' + i, f); });
+                            fetch('/app/api/tarea/' + data.id + '/comentarios/agregar/', {
+                                method: 'POST',
+                                headers: { 'X-CSRFToken': getCsrf() },
+                                body: fd
+                            }).catch(function () {
+                                showToast('Tarea creada, pero algunos archivos no se subieron', 'warning');
+                            });
+                        }
                         crmTaskCerrarCrear();
                         recargarTareasCRM();
                         showToast(padreId ? 'Subtarea creada exitosamente' : 'Tarea creada exitosamente', 'success');
@@ -7331,13 +8569,13 @@
                             });
                         }
                     } else {
-                        alert(data.error || 'Error al crear la tarea');
+                        showToast(data.error || 'Error al crear la tarea', 'error');
                     }
                 })
                 .catch(function (err) {
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Crear tarea'; }
                     console.error('Error creando tarea:', err);
-                    alert('Error al crear la tarea. Intenta recargar la página e intentarlo de nuevo.');
+                    showToast('Error al crear la tarea. Intenta recargar la página.', 'error');
                 });
         }
 

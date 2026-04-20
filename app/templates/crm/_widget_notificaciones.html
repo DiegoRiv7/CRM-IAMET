@@ -2,89 +2,95 @@
 <div class="widget-overlay" id="widgetNotificaciones" style="z-index:10300;"><!-- CAPA 3 -->
     <div class="notif-v2-shell">
 
-        <!-- ── Header ── -->
-        <div class="notif-v2-header">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div class="notif-v2-header-icon">
-                    <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" viewBox="0 0 24 24">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                </div>
-                <div>
-                    <span class="notif-v2-header-title">Notificaciones</span>
-                    <span class="notif-v2-header-count" id="notifHeaderCount"></span>
-                </div>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;">
-                <button class="notif-v2-btn-ghost" onclick="notifMarcarTodoLeido()">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-                    Marcar todo como leído
-                </button>
-                <button class="notif-v2-btn-close"
-                    onclick="document.getElementById('widgetNotificaciones').classList.remove('active'); document.body.style.overflow='auto'; document.querySelectorAll('.z-elevated,.z-elevated-top').forEach(function(el){el.classList.remove('z-elevated','z-elevated-top');});">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- ── Body: Sidebar + Lista ── -->
+        <!-- ── Body: Sidebar (filtros) + Main (lista) ── -->
         <div class="notif-v2-body">
 
-            <!-- Sidebar Filtros -->
-            <div class="notif-v2-sidebar">
-                <div class="notif-v2-sidebar-label">Filtros</div>
+            <!-- Sidebar Filtros (estilo Linear: slate-50, flat nav) -->
+            <aside class="notif-v2-sidebar">
+                <div class="notif-v2-sidebar-head">Notificaciones</div>
+                <div class="notif-v2-sidebar-inner">
+                    <div class="notif-v2-sidebar-label">Filtros</div>
 
-                <button class="notif-v2-filter active" data-filter="all" onclick="notifSetFiltro('all', this)">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-                    Todas
-                    <span class="notif-v2-badge" id="nv2BadgeAll" style="display:none;">0</span>
-                </button>
-                <button class="notif-v2-filter" data-filter="unread" onclick="notifSetFiltro('unread', this)">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>
-                    No leídas
-                    <span class="notif-v2-badge" id="nv2BadgeUnread" style="display:none;">0</span>
-                </button>
+                    <button class="notif-v2-filter active" data-filter="all" onclick="notifSetFiltro('all', this)">
+                        <span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                            Todas
+                        </span>
+                        <span class="notif-v2-badge" id="nv2BadgeAll" style="display:none;">0</span>
+                    </button>
+                    <button class="notif-v2-filter" data-filter="unread" onclick="notifSetFiltro('unread', this)">
+                        <span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                            No leídas
+                        </span>
+                        <span class="notif-v2-badge gray" id="nv2BadgeUnread" style="display:none;">0</span>
+                    </button>
 
-                <div class="notif-v2-sidebar-sep"></div>
-                <div class="notif-v2-sidebar-label">Categorías</div>
+                    <div class="notif-v2-sidebar-label">Categorías</div>
 
-                <button class="notif-v2-filter" data-filter="criticas" onclick="notifSetFiltro('criticas', this)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    Críticas
-                    <span class="notif-v2-badge notif-v2-badge-red" id="nv2BadgeCriticas" style="display:none;">0</span>
-                </button>
-                <button class="notif-v2-filter" data-filter="tareas" onclick="notifSetFiltro('tareas', this)">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                    Tareas & Actividades
-                    <span class="notif-v2-badge" id="nv2BadgeTareas" style="display:none;">0</span>
-                </button>
-                <button class="notif-v2-filter" data-filter="oportunidades" onclick="notifSetFiltro('oportunidades', this)">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                    Oportunidades
-                    <span class="notif-v2-badge" id="nv2BadgeOportunidades" style="display:none;">0</span>
-                </button>
-                <button class="notif-v2-filter" data-filter="equipo" onclick="notifSetFiltro('equipo', this)">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    Equipo & Muro
-                    <span class="notif-v2-badge" id="nv2BadgeEquipo" style="display:none;">0</span>
-                </button>
-                {% if request.user.is_superuser %}
-                <button class="notif-v2-filter" data-filter="admin" onclick="notifSetFiltro('admin', this)">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                    Admin & Permisos
-                    <span class="notif-v2-badge notif-v2-badge-amber" id="nv2BadgeAdmin" style="display:none;">0</span>
-                </button>
-                {% endif %}
-            </div>
-
-            <!-- Lista Principal -->
-            <div class="notif-v2-main">
-                <div class="notif-v2-list" id="notifListContainer">
-                    <div class="notif-v2-empty">Cargando notificaciones...</div>
+                    <button class="notif-v2-filter danger" data-filter="criticas" onclick="notifSetFiltro('criticas', this)">
+                        <span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            Críticas
+                        </span>
+                        <span class="notif-v2-badge notif-v2-badge-red" id="nv2BadgeCriticas" style="display:none;">0</span>
+                    </button>
+                    <button class="notif-v2-filter" data-filter="tareas" onclick="notifSetFiltro('tareas', this)">
+                        <span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                            Tareas
+                        </span>
+                        <span class="notif-v2-badge" id="nv2BadgeTareas" style="display:none;">0</span>
+                    </button>
+                    <button class="notif-v2-filter" data-filter="oportunidades" onclick="notifSetFiltro('oportunidades', this)">
+                        <span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                            Oportunidades
+                        </span>
+                        <span class="notif-v2-badge" id="nv2BadgeOportunidades" style="display:none;">0</span>
+                    </button>
+                    <button class="notif-v2-filter" data-filter="equipo" onclick="notifSetFiltro('equipo', this)">
+                        <span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                            Equipo & Muro
+                        </span>
+                        <span class="notif-v2-badge" id="nv2BadgeEquipo" style="display:none;">0</span>
+                    </button>
+                    {% if request.user.is_superuser %}
+                    <button class="notif-v2-filter" data-filter="admin" onclick="notifSetFiltro('admin', this)">
+                        <span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                            Admin & Permisos
+                        </span>
+                        <span class="notif-v2-badge notif-v2-badge-amber" id="nv2BadgeAdmin" style="display:none;">0</span>
+                    </button>
+                    {% endif %}
                 </div>
-            </div>
+            </aside>
+
+            <!-- Main: Bandeja -->
+            <main class="notif-v2-main">
+                <header class="notif-v2-main-head">
+                    <span class="notif-v2-main-title">
+                        Bandeja de entrada
+                        <span id="notifHeaderCount" style="color:#94A3B8;font-weight:500;margin-left:6px;"></span>
+                    </span>
+                    <div class="notif-v2-main-actions">
+                        <button class="notif-v2-btn-ghost" onclick="notifMarcarTodoLeido()">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                            Marcar todo como leído
+                        </button>
+                        <button class="notif-v2-btn-close" title="Cerrar"
+                            onclick="document.getElementById('widgetNotificaciones').classList.remove('active'); document.body.style.overflow='auto'; document.querySelectorAll('.z-elevated,.z-elevated-top').forEach(function(el){el.classList.remove('z-elevated','z-elevated-top');});">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="notif-v2-list" id="notifListContainer">
+                    <div class="notif-v2-empty">Cargando notificaciones…</div>
+                </div>
+            </main>
         </div>
     </div>
 </div>
@@ -135,264 +141,436 @@
 .macos-toast:hover .macos-toast-close { opacity: 1; transform: scale(1); }
 .macos-toast-close:hover { background: rgba(0,0,0,0.15); color: #1D1D1F; transform: scale(1.1); }
 
-/* ═══ Notificaciones v2 — Shell ═══ */
+/* ═══ Notificaciones — Inbox estilo Linear (rediseño) ═══
+   Tamaño mantenido igual al anterior: 94vw × 92vh
+*/
 .notif-v2-shell {
     width: 94vw; max-width: 94vw; height: 92vh; max-height: 92vh;
     display: flex; flex-direction: column;
-    background: #fff; border-radius: 20px; overflow: hidden;
-    box-shadow: 0 25px 80px rgba(0,0,30,0.18);
+    background: #fff; border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.30), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
-/* ── Header ── */
-.notif-v2-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 24px; border-bottom: 1px solid #F0F2F5; flex-shrink: 0;
-    background: #fff;
-}
-.notif-v2-header-icon {
-    width: 38px; height: 38px; border-radius: 12px;
-    background: linear-gradient(135deg, #3B82F6, #1D4ED8);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.notif-v2-header-title {
-    font-size: 1.15rem; font-weight: 700; color: #111827;
-}
-.notif-v2-header-count {
-    font-size: 0.75rem; font-weight: 600; color: #6B7280;
-    margin-left: 8px;
-}
-.notif-v2-btn-ghost {
-    display: flex; align-items: center; gap: 6px;
-    background: #F3F4F6; color: #374151; border: none; border-radius: 10px;
-    padding: 8px 14px; font-size: 0.8rem; font-weight: 600;
-    cursor: pointer; transition: all 0.15s;
-}
-.notif-v2-btn-ghost:hover { background: #E5E7EB; color: #111827; }
-.notif-v2-btn-close {
-    border: none; background: #F9FAFB; cursor: pointer;
-    width: 36px; height: 36px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    color: #6B7280; transition: all 0.15s;
-}
-.notif-v2-btn-close:hover { background: #F0F2F5; color: #374151; }
-
-/* ── Body ── */
+/* ── Layout principal: ahora es sidebar + main (sin header global) ── */
 .notif-v2-body {
-    display: flex; flex: 1; overflow: hidden; background: #F9FAFB;
+    display: flex; flex: 1; overflow: hidden; background: #fff;
 }
 
-/* ── Sidebar ── */
+/* ── Sidebar (filtros a la izquierda) ── */
 .notif-v2-sidebar {
-    width: 220px; background: #fff; display: flex; flex-direction: column;
-    padding: 16px 12px; gap: 4px; border-right: 1px solid #F0F2F5;
-    overflow-y: auto; flex-shrink: 0;
+    width: 240px; background: #fbfbfc;
+    display: flex; flex-direction: column;
+    border-right: 1px solid #E2E8F0;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.notif-v2-sidebar-head {
+    height: 52px;
+    display: flex; align-items: center;
+    padding: 0 16px;
+    font-size: 14px; font-weight: 600;
+    color: #0F172A;
+    flex-shrink: 0;
+}
+.notif-v2-sidebar-inner {
+    padding: 12px 8px;
+    display: flex; flex-direction: column; gap: 2px;
+    overflow-y: auto;
+    flex: 1;
 }
 .notif-v2-sidebar-label {
-    font-size: 0.68rem; font-weight: 700; color: #9CA3AF;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 4px 12px 6px; margin-top: 4px;
+    font-size: 11px; font-weight: 600;
+    color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    margin: 16px 8px 6px;
+    user-select: none;
 }
-.notif-v2-sidebar-sep {
-    height: 1px; background: #F0F2F5; margin: 8px 8px;
-}
-.notif-v2-filter {
-    display: flex; align-items: center; gap: 10px;
-    background: none; border: none; border-radius: 10px;
-    padding: 10px 12px; font-size: 0.85rem; font-weight: 500;
-    color: #4B5563; cursor: pointer; text-align: left;
-    transition: all 0.15s; position: relative; width: 100%;
-}
-.notif-v2-filter:hover { background: #F3F4F6; color: #1F2937; }
-.notif-v2-filter.active { background: #EFF6FF; color: #2563EB; font-weight: 600; }
-.notif-v2-filter svg { flex-shrink: 0; }
+.notif-v2-sidebar-label:first-child { margin-top: 0; }
+.notif-v2-sidebar-sep { display: none; }
 
-/* Badges */
-.notif-v2-badge {
-    position: absolute; right: 10px;
-    background: #3B82F6; color: #fff; border-radius: 10px;
-    font-size: 0.65rem; font-weight: 700; padding: 2px 7px;
-    min-width: 20px; text-align: center; line-height: 1.3;
+.notif-v2-filter {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 8px;
+    background: none; border: none; border-radius: 6px;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    color: #64748B;
+    cursor: pointer; text-align: left; width: 100%;
+    transition: all 0.18s;
 }
+.notif-v2-filter:hover { background: #F1F5F9; color: #0F172A; }
+.notif-v2-filter.active {
+    background: #fff;
+    color: #0F172A;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.02);
+    font-weight: 600;
+}
+.notif-v2-filter > :first-child {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.notif-v2-filter svg { flex-shrink: 0; color: #94A3B8; }
+.notif-v2-filter.active svg { color: #3B82F6; }
+.notif-v2-filter.danger svg { color: #EF4444; }
+
+/* Badges en sidebar */
+.notif-v2-badge {
+    background: #3B82F6; color: #fff;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 100px;
+    min-width: 18px; text-align: center; line-height: 1.4;
+    flex-shrink: 0;
+}
+.notif-v2-badge.gray,
+.notif-v2-badge-gray { background: #E2E8F0; color: #64748B; }
 .notif-v2-badge-red { background: #EF4444; }
 .notif-v2-badge-amber { background: #F59E0B; }
 
-/* ── Main List ── */
+/* ── Main area (lista) ── */
 .notif-v2-main {
-    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    flex: 1;
+    display: flex; flex-direction: column;
+    background: #fff;
+    min-width: 0;
 }
+.notif-v2-main-head {
+    height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0;
+    gap: 12px;
+}
+.notif-v2-main-title {
+    font-size: 14px; font-weight: 600; color: #0F172A;
+}
+.notif-v2-main-actions { display: flex; align-items: center; gap: 8px; }
+.notif-v2-btn-ghost {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    color: #64748B; cursor: pointer;
+    transition: all 0.18s;
+}
+.notif-v2-btn-ghost:hover { background: #F1F5F9; color: #0F172A; }
+.notif-v2-btn-close {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; border: none; border-radius: 6px;
+    color: #94A3B8; cursor: pointer;
+    transition: all 0.18s;
+}
+.notif-v2-btn-close:hover { background: #F1F5F9; color: #0F172A; }
+
 .notif-v2-list {
-    flex: 1; overflow-y: auto; padding: 16px 20px;
+    flex: 1; overflow-y: auto;
+    padding: 0;
 }
 .notif-v2-empty {
-    text-align: center; color: #9CA3AF; padding: 60px 20px;
-    font-size: 0.9rem; font-weight: 500;
+    text-align: center; color: #94A3B8; padding: 60px 20px;
+    font-size: 13px; font-weight: 500;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 
-/* ── Date Group Headers ── */
+/* Encabezados de grupo por fecha — sticky */
 .notif-v2-date-group {
-    font-size: 0.72rem; font-weight: 700; color: #9CA3AF;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    padding: 12px 4px 8px; margin-top: 4px;
+    padding: 16px 24px 8px;
+    font-size: 12px; font-weight: 600;
+    color: #0F172A;
+    position: sticky; top: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 10;
+    user-select: none;
 }
-.notif-v2-date-group:first-child { margin-top: 0; padding-top: 0; }
+.notif-v2-date-group:first-child { padding-top: 12px; }
 
-/* ── Notification Item ── */
+/* ── Fila (cada notificación) ── */
 .notif-v2-item {
-    background: #fff; border-radius: 12px;
-    padding: 14px 16px; margin-bottom: 8px;
-    border: 1px solid #E5E7EB;
-    cursor: pointer; transition: all 0.15s;
-    display: flex; gap: 12px; align-items: flex-start;
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 24px;
+    border: none; border-bottom: 1px solid #E2E8F0;
+    border-radius: 0;
+    background: #fff;
+    cursor: pointer;
+    text-decoration: none; color: inherit;
     position: relative;
+    transition: background 0.15s;
+    margin: 0;
 }
-.notif-v2-item:hover {
-    border-color: #D1D5DB;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-.notif-v2-item:hover .notif-v2-actions { opacity: 1; pointer-events: auto; }
+.notif-v2-item:hover { background: #F8FAFC; }
+.notif-v2-item:hover .notif-v2-time { opacity: 0; }
+.notif-v2-item:hover .notif-v2-actions { opacity: 1; transform: translateX(0); pointer-events: auto; }
 
-/* Priority Indicators */
-.notif-v2-item.priority-critical {
-    border-left: 3px solid #EF4444;
-}
-.notif-v2-item.priority-critical.unread {
-    background: #FEF2F2;
-    border-color: #FECACA;
-    border-left: 3px solid #EF4444;
-}
-.notif-v2-item.priority-important {
-    border-left: 3px solid #F59E0B;
-}
-.notif-v2-item.priority-important.unread {
-    background: #FFFBEB;
-    border-color: #FDE68A;
-    border-left: 3px solid #F59E0B;
-}
-.notif-v2-item.priority-info {
-    border-left: 3px solid #3B82F6;
-}
-.notif-v2-item.priority-info.unread {
-    background: #EFF6FF;
-    border-color: #BFDBFE;
-    border-left: 3px solid #3B82F6;
-}
+/* Estado unread */
+.notif-v2-item.unread { background: #F8FAFC; }
+.notif-v2-item.unread:hover { background: #F1F5F9; }
+.notif-v2-item.unread .notif-v2-text { color: #0F172A; }
 
-/* Unread dot */
-.notif-v2-item.unread::before {
+/* Unread indicator (punto azul absoluto a la izquierda) */
+.notif-v2-item::before {
     content: '';
-    position: absolute; top: 18px; left: 6px;
-    width: 6px; height: 6px; border-radius: 50%;
+    position: absolute;
+    left: 10px; top: 20px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
     background: #3B82F6;
+    opacity: 0;
+    transition: opacity 0.15s;
 }
+.notif-v2-item.unread::before { opacity: 1; }
 .notif-v2-item.priority-critical.unread::before { background: #EF4444; }
 .notif-v2-item.priority-important.unread::before { background: #F59E0B; }
 
-/* Icon */
-.notif-v2-icon {
-    width: 38px; height: 38px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; font-size: 1.1rem;
+/* Avatar circular (sistema/usuario) */
+.notif-v2-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 10px; font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+    overflow: hidden;
 }
-.notif-v2-icon.ic-critical { background: #FEE2E2; }
-.notif-v2-icon.ic-important { background: #FEF3C7; }
-.notif-v2-icon.ic-info { background: #DBEAFE; }
+.notif-v2-avatar svg { color: #fff; }
+.notif-v2-avatar.av-sys { background: #94A3B8; }
+.notif-v2-avatar.av-critical { background: #EF4444; }
+.notif-v2-avatar.av-important { background: #F59E0B; }
+.notif-v2-avatar.av-info { background: #3B82F6; }
+.notif-v2-avatar.av-user-a { background: #534AB7; }
+.notif-v2-avatar.av-user-b { background: #1D9E75; }
+.notif-v2-avatar.av-user-c { background: #DB2777; }
+.notif-v2-avatar.av-user-d { background: #7C3AED; }
+.notif-v2-avatar.av-user-e { background: #0EA5E9; }
 
-/* Content */
-.notif-v2-content { flex: 1; min-width: 0; }
-.notif-v2-title {
-    font-size: 0.88rem; font-weight: 500; color: #374151;
-    line-height: 1.35; margin-bottom: 3px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+/* Legacy: el viejo .notif-v2-icon lo mantenemos como alias del avatar */
+.notif-v2-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+    color: #fff; overflow: hidden;
 }
-.notif-v2-item.unread .notif-v2-title { font-weight: 700; color: #111827; }
+.notif-v2-icon svg { width: 14px; height: 14px; stroke: #fff; color: #fff; fill: none; }
+.notif-v2-icon.ic-critical { background: #EF4444; }
+.notif-v2-icon.ic-important { background: #F59E0B; }
+.notif-v2-icon.ic-info { background: #3B82F6; }
+
+/* Contenido central */
+.notif-v2-content {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 4px;
+}
+.notif-v2-text {
+    font-size: 13px; line-height: 1.5;
+    color: #475569;
+    overflow: hidden;
+}
+.notif-v2-text strong {
+    font-weight: 600;
+    color: #0F172A;
+}
+.notif-v2-title,
 .notif-v2-desc {
-    font-size: 0.8rem; color: #6B7280; line-height: 1.45;
-    overflow: hidden; display: -webkit-box;
+    display: block;
+}
+.notif-v2-title {
+    font-weight: 600; color: #0F172A;
+    font-size: 13px; line-height: 1.5;
+}
+.notif-v2-item.unread .notif-v2-title { font-weight: 700; }
+.notif-v2-desc {
+    font-size: 13px; color: #64748B; font-weight: 400;
+    line-height: 1.5;
+    margin-top: 1px;
+    overflow: hidden;
+    display: -webkit-box;
     -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    word-break: break-word;
 }
+
+/* Contexto (línea pequeña bajo el texto) */
+.notif-v2-context {
+    font-size: 11px; color: #94A3B8;
+    display: inline-flex; align-items: center; gap: 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%;
+}
+.notif-v2-context svg { flex-shrink: 0; color: #94A3B8; }
+/* Meta viejo (usado por el JS legacy) queda como alias */
 .notif-v2-meta {
-    display: flex; align-items: center; gap: 8px;
-    margin-top: 6px; font-size: 0.72rem; color: #9CA3AF; font-weight: 500;
+    font-size: 11px; color: #94A3B8;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 0; font-weight: 500;
 }
-.notif-v2-meta-sep { color: #D1D5DB; }
+.notif-v2-meta-sep { color: #CBD5E1; }
 .notif-v2-tag {
     display: inline-flex; align-items: center; gap: 3px;
-    padding: 1px 6px; border-radius: 4px; font-size: 0.65rem;
-    font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 1px 6px; border-radius: 4px;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.03em;
 }
-.notif-v2-tag-critical { background: #FEE2E2; color: #DC2626; }
-.notif-v2-tag-important { background: #FEF3C7; color: #D97706; }
+.notif-v2-tag-critical { background: #FEE2E2; color: #B91C1C; }
+.notif-v2-tag-important { background: #FEF3C7; color: #B45309; }
 
-/* Hover Actions */
+/* Meta a la derecha (hora / acciones) */
+.notif-v2-right {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0; min-width: 60px;
+    position: relative;
+}
+.notif-v2-time {
+    font-size: 11px; color: #94A3B8;
+    white-space: nowrap;
+    transition: opacity 0.18s;
+}
+
+/* Hover Actions (aparecen sobre la hora) */
 .notif-v2-actions {
-    position: absolute; top: 10px; right: 12px;
-    display: flex; gap: 4px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.15s;
+    display: flex; align-items: center; gap: 4px;
+    position: absolute;
+    right: 0; top: 0;
+    opacity: 0; transform: translateX(4px);
+    pointer-events: none;
+    transition: all 0.18s;
+    background: inherit;
+    padding-left: 8px;
 }
 .notif-v2-action-btn {
-    background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 8px;
-    padding: 5px 10px; font-size: 0.72rem; font-weight: 600;
-    color: #374151; cursor: pointer; transition: all 0.12s;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 26px; height: 26px; padding: 0 6px;
+    border-radius: 5px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    color: #64748B;
+    font-family: inherit; font-size: 11px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
     white-space: nowrap;
 }
-.notif-v2-action-btn:hover { background: #E5E7EB; color: #111827; }
-.notif-v2-action-btn.btn-primary {
-    background: #3B82F6; color: #fff; border-color: #3B82F6;
-}
-.notif-v2-action-btn.btn-primary:hover { background: #2563EB; }
-.notif-v2-action-btn.btn-success {
-    background: #10B981; color: #fff; border-color: #10B981;
-}
+.notif-v2-action-btn:hover { background: #fff; color: #3B82F6; border-color: #CBD5E1; }
+.notif-v2-action-btn.btn-primary { background: #2563EB; color: #fff; border-color: #2563EB; padding: 0 10px; }
+.notif-v2-action-btn.btn-primary:hover { background: #1D4ED8; color: #fff; }
+.notif-v2-action-btn.btn-success { background: #10B981; color: #fff; border-color: #10B981; padding: 0 10px; }
 .notif-v2-action-btn.btn-success:hover { background: #059669; }
-.notif-v2-action-btn.btn-danger {
-    background: #EF4444; color: #fff; border-color: #EF4444;
-}
+.notif-v2-action-btn.btn-danger { background: #EF4444; color: #fff; border-color: #EF4444; padding: 0 10px; }
 .notif-v2-action-btn.btn-danger:hover { background: #DC2626; }
 
-/* Expandable content (solicitud perfil, rendimiento) */
+/* Expandable (solicitud perfil, rendimiento) */
 .notif-v2-item.expanded .notif-v2-desc {
     -webkit-line-clamp: unset; display: block;
 }
 .notif-v2-expand-panel {
-    background: #F9FAFB; border-radius: 10px; padding: 14px;
-    margin-top: 10px; border: 1px solid #F0F2F5;
-    font-size: 0.82rem; animation: nv2FadeIn 0.2s ease;
+    background: #F8FAFC; border-radius: 10px; padding: 14px;
+    margin-top: 10px; border: 1px solid #E2E8F0;
+    font-size: 13px; animation: nv2FadeIn 0.2s ease;
 }
 @keyframes nv2FadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Grouped notification */
+/* Grouped notification (críticas hoy) */
 .notif-v2-grouped {
-    background: #fff; border-radius: 12px;
-    padding: 14px 16px; margin-bottom: 8px;
-    border: 1px solid #E5E7EB; cursor: pointer;
-    transition: all 0.15s;
+    display: flex; flex-direction: column;
+    margin: 0; padding: 12px 24px;
+    background: #fff; border: none; border-bottom: 1px solid #E2E8F0;
+    cursor: pointer;
 }
-.notif-v2-grouped:hover { border-color: #D1D5DB; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.notif-v2-grouped:hover { background: #F8FAFC; }
 .notif-v2-grouped-header {
     display: flex; align-items: center; gap: 10px;
-    font-size: 0.88rem; font-weight: 600; color: #374151;
+    font-size: 13px; font-weight: 600; color: #B91C1C;
 }
 .notif-v2-grouped-count {
-    background: #EF4444; color: #fff; border-radius: 8px;
-    padding: 2px 8px; font-size: 0.7rem; font-weight: 700;
+    background: #FEE2E2; color: #B91C1C;
+    border-radius: 999px;
+    padding: 1px 8px; font-size: 11px; font-weight: 700;
 }
 .notif-v2-grouped-items {
     display: none; margin-top: 10px; padding-top: 10px;
-    border-top: 1px solid #F0F2F5;
+    border-top: 1px solid #E2E8F0;
 }
 .notif-v2-grouped.expanded .notif-v2-grouped-items { display: block; }
 .notif-v2-grouped-sub {
-    padding: 8px 0; border-bottom: 1px solid #F9FAFB;
-    font-size: 0.82rem; color: #4B5563;
+    padding: 8px 0; border-bottom: 1px solid #F1F5F9;
+    font-size: 13px; color: #475569;
     display: flex; align-items: center; gap: 8px;
 }
 .notif-v2-grouped-sub:last-child { border-bottom: none; }
+
+/* ── Cluster (agrupación inteligente) ── */
+.notif-v2-cluster {
+    cursor: pointer;
+    flex-wrap: wrap;
+}
+.notif-v2-cluster .notif-v2-cluster-items {
+    display: none;
+    flex-basis: 100%;
+    margin: 10px 0 2px 40px;
+    padding-top: 8px;
+    border-top: 1px solid #E2E8F0;
+    flex-direction: column;
+    gap: 2px;
+}
+.notif-v2-cluster.expanded .notif-v2-cluster-items { display: flex; }
+.notif-v2-cluster.expanded .notif-v2-cluster-chev { transform: rotate(180deg); }
+.notif-v2-cluster-chev {
+    color: #CBD5E1;
+    transition: transform 0.2s;
+}
+.notif-v2-cluster-badge {
+    background: #F1F5F9; color: #475569;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 999px;
+    line-height: 1.3;
+    min-width: 22px; text-align: center;
+}
+.notif-v2-cluster.unread .notif-v2-cluster-badge { background: #DBEAFE; color: #1D4ED8; }
+
+.notif-v2-cluster-sub {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 4px 6px 6px;
+    font-size: 12.5px;
+    color: #475569;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.notif-v2-cluster-sub:hover { background: #F1F5F9; color: #0F172A; }
+.notif-v2-cluster-bullet {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #CBD5E1; flex-shrink: 0;
+}
+.notif-v2-cluster-bullet.unread { background: #3B82F6; }
+.notif-v2-cluster-sub-text {
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.notif-v2-cluster-sub-time {
+    font-size: 11px; color: #94A3B8; flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Priority left-border (sutil — solo para críticos) */
+.notif-v2-item.priority-critical::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px; background: #EF4444; opacity: 0.8;
+}
+.notif-v2-item.priority-important::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px; background: #F59E0B; opacity: 0.6;
+}
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
     .notif-v2-shell { width: 100vw; height: 100vh; border-radius: 0; }
     .notif-v2-sidebar { display: none; }
+    .notif-v2-main-head { padding: 0 16px; }
+    .notif-v2-item { padding: 12px 16px; }
+    .notif-v2-date-group { padding: 12px 16px 6px; }
 }
 </style>
 
@@ -609,42 +787,213 @@
             filtered = filtered.filter(n => !vencidasIds.has(n.id));
         }
 
-        filtered.forEach(n => {
-            const group = _dateGroup(n.fecha);
-            if (group !== lastGroup) {
-                html += `<div class="notif-v2-date-group">${group}</div>`;
-                lastGroup = group;
+        // ── Simplificador de texto (menos ruido, más velocidad de lectura) ──
+        // Convierte "Sistema creó la tarea \"X\" en la oportunidad \"Y\" al pasar a etapa \"Z\""
+        // en:
+        //   main:   "Se creó: X"
+        //   extras: "Oportunidad: Y" / "Etapa: Z"
+        function _simplifyText(titulo, mensaje, n) {
+            titulo = titulo || '';
+            mensaje = mensaje || '';
+            const info = { titulo: titulo, mensaje: mensaje, extras: [] };
+
+            // Extraer "en la oportunidad \"Y\"" (y variantes con y sin comillas)
+            var mOpp = mensaje.match(/ en la oportunidad ["“]([^"”]+)["”]/i);
+            if (mOpp) {
+                info.extras.push({ label: 'Oportunidad', value: mOpp[1] });
+                mensaje = mensaje.replace(mOpp[0], '');
             }
 
+            // Extraer "al pasar a etapa \"Z\"" / "al pasar la oportunidad a \"Z\""
+            var mEtapa = mensaje.match(/ al pasar (?:la oportunidad )?a (?:etapa )?["“]([^"”]+)["”]\.?/i);
+            if (mEtapa) {
+                info.extras.push({ label: 'Etapa', value: mEtapa[1] });
+                mensaje = mensaje.replace(mEtapa[0], '');
+            }
+
+            // Quitar prefijo "Sistema " cuando el avatar ya lo representa
+            mensaje = mensaje.replace(/^sistema\s+/i, '');
+
+            // Verbos comunes → formato compacto "Verbo: Objeto"
+            var reCreo = /^se creó la tarea ["“]([^"”]+)["”]/i;
+            var reAsign = /^te (asignó|asignaron) la tarea ["“]([^"”]+)["”]/i;
+            var reReprog = /^(reprogramó|se reprogramó) la tarea ["“]([^"”]+)["”]/i;
+            var reComent = /^(comentó|te mencionó) en ["“]?([^"”]+?)["”]?(?:\.|$)/i;
+            var m;
+            if ((m = mensaje.match(reCreo))) {
+                mensaje = 'Se creó: ' + m[1];
+            } else if ((m = mensaje.match(reAsign))) {
+                mensaje = 'Asignada: ' + m[2];
+            } else if ((m = mensaje.match(reReprog))) {
+                mensaje = 'Reprogramada: ' + m[2];
+            } else if ((m = mensaje.match(reComent))) {
+                mensaje = (m[1].toLowerCase() === 'comentó' ? 'Comentó en: ' : 'Mencionó en: ') + m[2];
+            }
+
+            mensaje = mensaje.replace(/\s{2,}/g, ' ').replace(/\s+\./g, '.').trim();
+
+            // Si el titulo se volvió redundante (termina igual que el mensaje compacto),
+            // lo ocultamos — el mensaje ya lo cuenta todo.
+            var tituloLow = titulo.toLowerCase();
+            if (/^tarea asignada autom/i.test(tituloLow) || /^nueva tarea/i.test(tituloLow)) {
+                info.titulo = '';
+            } else {
+                info.titulo = titulo;
+            }
+            info.mensaje = mensaje;
+            return info;
+        }
+
+        // Avatar helpers: genera iniciales y color por nombre
+        const _avColors = ['av-user-a','av-user-b','av-user-c','av-user-d','av-user-e'];
+        function _avatarFor(n) {
             const priority = _getPriority(n.tipo);
-            const iconHtml = ICONS[n.tipo] || '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-            const iconClass = _getIconClass(n.tipo);
+            const rem = n.remitente || '';
+            // Si no hay remitente o es "Sistema", icono en badge gris
+            if (!rem || /sistema/i.test(rem)) {
+                const color = priority === 'critical' ? 'av-critical' : (priority === 'important' ? 'av-important' : 'av-sys');
+                return `<div class="notif-v2-avatar ${color}" title="Sistema">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>`;
+            }
+            const parts = rem.trim().split(/\s+/);
+            const initials = (parts.length >= 2 ? (parts[0][0] + parts[1][0]) : parts[0].slice(0, 2)).toUpperCase();
+            // Color determinista por hash del nombre
+            let hash = 0;
+            for (let i = 0; i < rem.length; i++) hash = (hash * 31 + rem.charCodeAt(i)) >>> 0;
+            const color = _avColors[hash % _avColors.length];
+            return `<div class="notif-v2-avatar ${color}" title="${rem}">${initials}</div>`;
+        }
+
+        function _contextFor(n) {
+            // Línea de contexto: Tipo + referencia (Oportunidad / Tarea / etc.)
+            if (n.oportunidad_id) {
+                return `<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/></svg>Oportunidad${n.remitente && !/sistema/i.test(n.remitente) ? ' · ' + n.remitente : ''}`;
+            }
+            if (n.tarea_id || n.tarea_opp_id) {
+                return `<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/></svg>Tarea${n.remitente && !/sistema/i.test(n.remitente) ? ' · ' + n.remitente : ''}`;
+            }
+            return n.remitente ? `<span>${n.remitente}</span>` : '';
+        }
+
+        // ── Agrupación inteligente: runs de 3+ con mismo título + fecha + leída ──
+        function _renderSingleRow(n) {
+            const priority = _getPriority(n.tipo);
             const unreadClass = n.leida ? '' : ' unread';
             const actionsHtml = _getActions(n);
+            const avatarHtml = _avatarFor(n);
+            const ctxBase = _contextFor(n);
+            const simp = _simplifyText(n.titulo, n.mensaje, n);
 
-            let tagHtml = '';
-            if (priority === 'critical' && !n.leida) {
-                tagHtml = '<span class="notif-v2-tag notif-v2-tag-critical">Urgente</span>';
-            } else if (priority === 'important' && !n.leida) {
-                tagHtml = '<span class="notif-v2-tag notif-v2-tag-important">Importante</span>';
-            }
+            // Construir línea de contexto: combina extras (Oportunidad, Etapa) + base
+            var ctxParts = [];
+            simp.extras.forEach(function (e) {
+                ctxParts.push(`<span>${e.label}: <span style="color:#475569;font-weight:500;">${e.value}</span></span>`);
+            });
+            if (ctxBase) ctxParts.push(`<span>${ctxBase}</span>`);
+            const contextHtml = ctxParts.length
+                ? ctxParts.join('<span style="color:#CBD5E1;margin:0 4px;">·</span>')
+                : '';
 
-            html += `<div class="notif-v2-item priority-${priority}${unreadClass}" id="notif-${n.id}"
+            const textInner = simp.titulo
+                ? `<strong>${simp.titulo}</strong>${simp.mensaje ? '<div class="notif-v2-desc">' + simp.mensaje + '</div>' : ''}`
+                : `<strong>${simp.mensaje || n.mensaje}</strong>`;
+
+            return `<div class="notif-v2-item priority-${priority}${unreadClass}" id="notif-${n.id}"
                 onclick="notifHandleClick(${n.id}, ${n.tarea_id}, ${n.oportunidad_id}, ${n.tarea_opp_id}, '${n.tipo}')">
-                <div class="notif-v2-icon ${iconClass}">${iconHtml}</div>
+                ${avatarHtml}
                 <div class="notif-v2-content">
-                    <div class="notif-v2-title">${n.titulo}</div>
-                    <div class="notif-v2-desc">${n.mensaje}</div>
-                    <div class="notif-v2-meta">
-                        <span>${n.remitente || 'Sistema'}</span>
-                        <span class="notif-v2-meta-sep">&middot;</span>
-                        <span>${_timeAgo(n.fecha)}</span>
-                        ${tagHtml ? '<span class="notif-v2-meta-sep">&middot;</span>' + tagHtml : ''}
+                    <div class="notif-v2-text">${textInner}</div>
+                    ${contextHtml ? `<div class="notif-v2-context">${contextHtml}</div>` : ''}
+                </div>
+                <div class="notif-v2-right">
+                    <span class="notif-v2-time">${_timeAgo(n.fecha)}</span>
+                    <div class="notif-v2-actions">${actionsHtml}</div>
+                </div>
+            </div>`;
+        }
+
+        function _renderTitleCluster(items) {
+            const first = items[0];
+            const unreadCount = items.filter(x => !x.leida).length;
+            const unreadClass = unreadCount > 0 ? ' unread' : '';
+            const priority = _getPriority(first.tipo);
+            const avatarHtml = _avatarFor(first);
+            const cleanTitulo = first.titulo || 'Notificaciones';
+            const clusterId = 'cluster-' + first.id;
+
+            // Sub-items colapsados (se muestran al hacer clic)
+            var subRows = items.map(function (n) {
+                const simp = _simplifyText(n.titulo, n.mensaje, n);
+                const line = simp.mensaje || simp.titulo || n.titulo;
+                const ex = simp.extras.length ? ' · <span style="color:#94A3B8;">' + simp.extras.map(e => e.value).join(' · ') + '</span>' : '';
+                return `<div class="notif-v2-cluster-sub" onclick="event.stopPropagation(); notifHandleClick(${n.id}, ${n.tarea_id}, ${n.oportunidad_id}, ${n.tarea_opp_id}, '${n.tipo}')">
+                    <span class="notif-v2-cluster-bullet${n.leida ? '' : ' unread'}"></span>
+                    <span class="notif-v2-cluster-sub-text">${line}${ex}</span>
+                    <span class="notif-v2-cluster-sub-time">${_timeAgo(n.fecha)}</span>
+                </div>`;
+            }).join('');
+
+            return `<div class="notif-v2-item notif-v2-cluster priority-${priority}${unreadClass}" id="${clusterId}"
+                onclick="this.classList.toggle('expanded')">
+                ${avatarHtml}
+                <div class="notif-v2-content">
+                    <div class="notif-v2-text">
+                        <strong>${cleanTitulo}</strong>
+                        <div class="notif-v2-desc">${items.length} notificaciones agrupadas${unreadCount ? ' · ' + unreadCount + ' sin leer' : ''}</div>
                     </div>
                 </div>
-                <div class="notif-v2-actions">${actionsHtml}</div>
+                <div class="notif-v2-right">
+                    <span class="notif-v2-cluster-badge">${items.length}</span>
+                    <svg class="notif-v2-cluster-chev" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="notif-v2-cluster-items">${subRows}</div>
             </div>`;
-        });
+        }
+
+        // ── Clustering: solo cuando MÚLTIPLES notifs apuntan al MISMO objeto ──
+        // Se cluster-iza SOLO si comparten entidad objetivo (misma tarea,
+        // misma oportunidad, misma tarea_opp). Notifs del mismo título genérico
+        // pero de objetos distintos (ej: 5 "Tarea asignada" para 5 tareas
+        // diferentes) quedan como filas individuales.
+        function _clusterKey(n) {
+            // Prioridad: tarea > tarea_opp > oportunidad
+            if (n.tarea_id) return 'T' + n.tarea_id;
+            if (n.tarea_opp_id) return 'X' + n.tarea_opp_id;
+            if (n.oportunidad_id) return 'O' + n.oportunidad_id;
+            return null; // notifs globales / sin objeto no se cluster-izan
+        }
+
+        const CLUSTER_MIN = 3;
+        let i = 0;
+        while (i < filtered.length) {
+            const cur = filtered[i];
+            const curGroup = _dateGroup(cur.fecha);
+            const curKey = _clusterKey(cur);
+            const run = [cur];
+            let j = i + 1;
+            // Agrupar solo si hay clave de objeto y es la misma
+            if (curKey) {
+                while (j < filtered.length
+                       && filtered[j].leida === cur.leida
+                       && _dateGroup(filtered[j].fecha) === curGroup
+                       && _clusterKey(filtered[j]) === curKey) {
+                    run.push(filtered[j]);
+                    j++;
+                }
+            }
+            // Header de grupo si cambió la fecha
+            if (curGroup !== lastGroup) {
+                html += `<div class="notif-v2-date-group">${curGroup}</div>`;
+                lastGroup = curGroup;
+            }
+            if (run.length >= CLUSTER_MIN) {
+                html += _renderTitleCluster(run);
+            } else {
+                run.forEach(n => { html += _renderSingleRow(n); });
+            }
+            i = j;
+        }
 
         container.innerHTML = html;
     }

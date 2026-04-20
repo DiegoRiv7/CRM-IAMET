@@ -112,8 +112,8 @@
         {% endblock %}
     </div>
 
-    <!-- ═══ SPOTLIGHT SEARCH (doble espacio / ⌘K) ═══ -->
-    <div id="spotlight-modal" class="spotlight-modal">
+    <!-- ═══ SPOTLIGHT SEARCH v2 (doble espacio / ⌘K) ═══ -->
+    <div id="spotlight-modal" class="spotlight-modal spotlight-v2">
         <div class="spotlight-backdrop" onclick="closeSpotlight()"></div>
         <div class="spotlight-container">
             <div class="spotlight-search-box">
@@ -122,17 +122,20 @@
                         <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
                     </svg>
                 </div>
+                <div class="sp-user-chip" id="sp-user-chip" style="display:none;"></div>
                 <input type="text" id="spotlight-input"
-                    placeholder="Buscar por nombre, cliente, cotización, PO o factura..." autocomplete="off"
-                    spellcheck="false" />
+                    placeholder="Buscar" autocomplete="off" spellcheck="false" />
                 <div class="spotlight-shortcut">⌘K</div>
             </div>
-            <div class="spotlight-results" id="spotlight-results">
-                <div class="spotlight-empty">
-                    <div class="spotlight-empty-text">Busca oportunidades, cotizaciones o tareas</div>
-                    <div class="spotlight-empty-hint">Por nombre, PO, número de factura o #cotización</div>
-                </div>
+            <div class="sp-scopes" id="sp-scopes">
+                <button type="button" class="sp-chip active" data-scope="all">Todo</button>
+                <button type="button" class="sp-chip" data-scope="oportunidad">Oportunidades</button>
+                <button type="button" class="sp-chip" data-scope="cotizacion">Cotizaciones</button>
+                <button type="button" class="sp-chip" data-scope="tarea">Tareas</button>
+                <button type="button" class="sp-chip" data-scope="cliente">Clientes</button>
+                <button type="button" class="sp-chip" data-scope="proyecto">Proyectos</button>
             </div>
+            <div class="spotlight-results" id="spotlight-results"></div>
         </div>
     </div>
 

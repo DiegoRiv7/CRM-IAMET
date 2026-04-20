@@ -87,7 +87,7 @@ Gesti-n-de-ventas/
 ## Cómo funciona el CRM (flujo de una request)
 
 1. Usuario abre `crm.iamet.mx/app/todos/`
-2. nginx recibe → proxy_pass al contenedor Docker puerto 8007 (prod) / 8001 (pruebas)
+2. nginx recibe → proxy_pass al contenedor Docker puerto 8000 (prod) / 8001 (pruebas)
 3. Django → `views_crm.py: crm_home()` → renderiza `crm_home.html`
 4. `crm_home.html` incluye todos los partials vía `{% include %}`
 5. `_styles.html` carga `crm.css` desde nginx (estático, cacheado)
@@ -135,11 +135,29 @@ var _ING_CONFIG = { firstName, lastName };
 ```yaml
 web:
   volumes:
-    - .:/app                    # Código fuente bind mount
-    - media_files:/app/media    # Volumen Docker para uploads
-  ports: 8000:8000
+    - .:/app                    # Código fuente bind mount (git pull aplica al instante)
+    - media_files:/app/media    # Volumen Docker para uploads (externo)
+  ports: 8000:8000              # nginx hace proxy_pass a 127.0.0.1:8000
   networks: nginx_default       # Red externa compartida con nginx
+
+volumes:
+  media_files:
+    external: true
+    name: crm-iamet_media_files  # ~9.9GB con todo el drive de oportunidades
 ```
+
+> **CRÍTICO:** `media_files` DEBE ser external apuntando a `crm-iamet_media_files`.
+> Si se quita el `external`, compose crea un volumen nuevo (`gesti-n-de-ventas_media_files`)
+> vacío y los archivos del Drive "desaparecen" para el contenedor. Los datos
+> reales siguen en `crm-iamet_media_files` — sólo se rompe el mount.
+
+> **Compose project name**: `gesti-n-de-ventas` (nombre legado, no coincide con
+> el directorio `~/crm-iamet`). Los contenedores son `gesti-n-de-ventas-web-1`
+> y `gesti-n-de-ventas-db-1`. SIEMPRE pasa `-p gesti-n-de-ventas` a los
+> comandos compose o se crea un stack nuevo vacío bajo `crm-iamet-*`:
+> ```bash
+> sudo docker compose -p gesti-n-de-ventas <comando>
+> ```
 
 ### docker-compose.pruebas.yml (PRUEBAS)
 ```yaml
@@ -154,9 +172,14 @@ web:
 ### nginx (producción: crm.iamet.mx)
 ```nginx
 location /static/ { alias /home/iamet2026/crm-iamet/staticfiles/; }
-location /media/  { alias /home/iamet2026/crm-iamet/media/; }
-location /        { proxy_pass http://127.0.0.1:8007; }
+location /media/  { alias /var/lib/docker/volumes/crm-iamet_media_files/_data/; }
+location /        { proxy_pass http://127.0.0.1:8000; }
 ```
+> **static/** se sirve desde el host (collectstatic los pone en `~/crm-iamet/staticfiles/`).
+> **media/** se sirve desde el Docker volume `crm-iamet_media_files` (avatares, PDFs del drive,
+> facturas subidas). El path del host `~/crm-iamet/media/` NO contiene los archivos porque
+> el volume mount del contenedor lo overridea.
+> **proxy_pass** a 127.0.0.1:8000 → si no coincide con el puerto del contenedor → 502.
 
 ### nginx (pruebas: crm.pruebas.nethive.mx)
 ```nginx
