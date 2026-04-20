@@ -7641,11 +7641,20 @@
 .tcp-section-body { display: block; }
 .tcp-section-head.collapsed + .tcp-section-body { display: none; }
 
-/* Fila de tarea */
+/* Fila de tarea — grid layout para alineación consistente de columnas */
 .tcp-row {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns:
+        17px                    /* check */
+        58px                    /* T-ID */
+        minmax(0, 1fr)          /* título (absorbe espacio, trunca si largo) */
+        120px                   /* estado pill */
+        22px                    /* avatar */
+        76px                    /* primer nombre */
+        108px                   /* cliente */
+        96px;                   /* fecha */
     gap: 12px;
+    align-items: center;
     padding: 9px 20px 9px 16px;
     border-bottom: 1px solid rgba(241, 245, 249, 0.8);
     cursor: pointer;
@@ -7667,13 +7676,13 @@
     border-radius: 50%;
     border: 1.4px solid #CBD5E1;
     background: #fff;
-    flex-shrink: 0;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: transparent;
     transition: all 0.15s;
+    padding: 0;
 }
 .tcp-row-check:hover { border-color: #10B981; color: #A7F3D0; }
 .tcp-row-check.done {
@@ -7687,11 +7696,9 @@
     font-size: 11px;
     color: #94A3B8;
     font-weight: 500;
-    min-width: 62px;
     letter-spacing: -0.01em;
 }
 .tcp-row-title {
-    flex: 1;
     min-width: 0;
     font-size: 13px;
     font-weight: 500;
@@ -7715,8 +7722,10 @@
     text-transform: uppercase;
     padding: 3px 9px;
     border-radius: 999px;
-    flex-shrink: 0;
-    min-width: 112px;
+    white-space: nowrap;
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
 }
 .tcp-row-estado::before {
     content: '';
@@ -7743,20 +7752,20 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
 }
 .tcp-row-resp {
     font-size: 12px;
     color: #475569;
     font-weight: 500;
-    min-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .tcp-row-cliente {
     font-size: 12px;
     color: #94A3B8;
     font-weight: 500;
     font-family: 'SF Mono', ui-monospace, Menlo, monospace;
-    min-width: 100px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7766,8 +7775,8 @@
     font-size: 11.5px;
     font-weight: 500;
     color: #64748B;
-    min-width: 90px;
     text-align: right;
+    white-space: nowrap;
 }
 .tcp-row-fecha.atrasada { color: #DC2626; font-weight: 700; }
 
@@ -7833,28 +7842,9 @@
 }
 .tcp-detail-iconbtn:hover { background: #F1F5F9; color: #334155; }
 
-/* Botón de expandir: abre el widget completo con comentarios */
-.tcp-detail-expand {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 7px 16px;
-    background: #FAFBFC;
-    border: none;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 600;
-    color: #64748B;
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    transition: all 0.15s;
-    flex-shrink: 0;
-}
-.tcp-detail-expand:hover { background: #F1F5F9; color: #2563EB; }
-.tcp-detail-expand svg { transition: transform 0.2s; }
+/* Botón de expandir (ahora vive como icon-button en el header) */
+.tcp-detail-iconbtn.tcp-expand-btn { color: #64748B; }
+.tcp-detail-iconbtn.tcp-expand-btn:hover { background: #EFF6FF; color: #2563EB; }
 
 .tcp-detail-scroll {
     flex: 1;
@@ -7913,7 +7903,8 @@
     font-weight: 500;
     min-width: 0;
 }
-.tcp-meta-value.muted { color: #94A3B8; font-style: italic; }
+.tcp-meta-value.muted,
+.tcp-meta-value .muted { color: #94A3B8; font-style: italic; }
 .tcp-meta-value .tcp-pill-fecha {
     display: inline-flex; align-items: center; gap: 5px;
     background: #FFF1F2;
