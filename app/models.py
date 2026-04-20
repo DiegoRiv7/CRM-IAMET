@@ -4403,3 +4403,83 @@ class EtapaPipeline(models.Model):
 
     def __str__(self):
         return f"{self.pipeline} — {self.nombre}"
+
+
+class ProyectoLevantamiento(models.Model):
+    """
+    Levantamiento técnico y volumetría de un proyecto IAMET.
+    Reemplaza la noción antigua de 'Partidas' como línea de entrada
+    del ingeniero: cada levantamiento es un wizard de 5 fases que
+    captura necesidad, propuesta, volumetría financiera, programa de
+    obra y reportes.
+    """
+    STATUS_CHOICES = [
+        ('borrador',   'Borrador'),
+        ('revision',   'En Revisión'),
+        ('aprobado',   'Aprobado'),
+        ('rechazado',  'Rechazado'),
+        ('ejecutando', 'Ejecutando'),
+        ('completado', 'Completado'),
+    ]
+
+    proyecto = models.ForeignKey(
+        'ProyectoIAMET',
+        on_delete=models.CASCADE,
+        related_name='levantamientos',
+        verbose_name='Proyecto',
+    )
+    nombre = models.CharField(max_length=255, verbose_name='Nombre del Levantamiento')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='borrador')
+    fase_actual = models.IntegerField(default=1)
+
+    # Datos por fase (JSON para flexibilidad; no pagamos por columnas separadas)
+    fase1_data = models.JSONField(default=dict, blank=True, verbose_name='Fase 1 — Levantamiento')
+    fase2_data = models.JSONField(default=dict, blank=True, verbose_name='Fase 2 — Propuesta Técnica')
+    fase3_data = models.JSONField(default=dict, blank=True, verbose_name='Fase 3 — Volumetría')
+    fase4_data = models.JSONField(default=dict, blank=True, verbose_name='Fase 4 — Programa de Obra')
+    fase5_data = models.JSONField(default=dict, blank=True, verbose_name='Fase 5 — Reportes')
+
+    creado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='levantamientos_creados',
+    )
+    fecha_creacion     = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+        verbose_name = 'Levantamiento de Proyecto'
+        verbose_name_plural = 'Levantamientos de Proyecto'
+
+    def __str__(self):
+        return f'{self.nombre} ({self.get_status_display()})'
+
+
+class LevantamientoEvidencia(models.Model):
+    """Fotos de evidencia (Fase 2) de un levantamiento. Se guardan como archivos
+    reales en media/levantamientos/<id>/ — nunca base64 en el JSON."""
+    levantamiento = models.ForeignKey(
+        ProyectoLevantamiento,
+        on_delete=models.CASCADE,
+        related_name='evidencias',
+    )
+    archivo = models.ImageField(upload_to='levantamientos/%Y/%m/', verbose_name='Foto')
+    nombre_original = models.CharField(max_length=255, blank=True, default='')
+    comentario = models.CharField(max_length=255, blank=True, default='')
+    producto_idx = models.IntegerField(
+        null=True, blank=True,
+        help_text='Índice de la partida/producto al que pertenece la evidencia, si aplica',
+    )
+    subido_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='evidencias_levantamiento',
+    )
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_subida']
+        verbose_name = 'Evidencia Fotográfica'
+        verbose_name_plural = 'Evidencias Fotográficas'
+
+    def __str__(self):
+        return f'Evidencia {self.id} — {self.levantamiento.nombre}'

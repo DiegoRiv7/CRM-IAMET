@@ -323,6 +323,18 @@ urlpatterns = [
     path('api/iamet/partidas/importar-excel/', views_iamet.api_importar_excel, name='api_iamet_importar_excel'),
     path('api/iamet/proyectos/<int:proyecto_id>/volumetria-versiones/', views_iamet.api_volumetria_versiones, name='api_iamet_volumetria_versiones'),
     path('api/iamet/proyectos/<int:proyecto_id>/restaurar-version/', views_iamet.api_restaurar_version, name='api_iamet_restaurar_version'),
+
+    # Levantamientos (wizard de 5 fases) ───────────────────────
+    path('api/iamet/proyectos/<int:proyecto_id>/levantamientos/', views_iamet.api_levantamientos_lista, name='api_iamet_levantamientos_lista'),
+    path('api/iamet/proyectos/<int:proyecto_id>/levantamientos/crear/', views_iamet.api_levantamiento_crear, name='api_iamet_levantamiento_crear'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/', views_iamet.api_levantamiento_detalle, name='api_iamet_levantamiento_detalle'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/actualizar/', views_iamet.api_levantamiento_actualizar, name='api_iamet_levantamiento_actualizar'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/fase/', views_iamet.api_levantamiento_fase, name='api_iamet_levantamiento_fase'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/eliminar/', views_iamet.api_levantamiento_eliminar, name='api_iamet_levantamiento_eliminar'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/evidencia/', views_iamet.api_levantamiento_evidencia_subir, name='api_iamet_levantamiento_evidencia_subir'),
+    path('api/iamet/evidencias/<int:evidencia_id>/eliminar/', views_iamet.api_levantamiento_evidencia_eliminar, name='api_iamet_evidencia_eliminar'),
+    path('api/iamet/catalogo-productos/', views_iamet.api_catalogo_productos, name='api_iamet_catalogo_productos'),
+
     # Ordenes de Compra
     path('api/iamet/proyectos/<int:proyecto_id>/oc/', views_iamet.api_oc_lista, name='api_iamet_oc_lista'),
     path('api/iamet/oc/crear/', views_iamet.api_oc_crear, name='api_iamet_oc_crear'),
