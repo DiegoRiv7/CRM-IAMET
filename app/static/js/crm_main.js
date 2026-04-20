@@ -5150,7 +5150,8 @@
                 '</div>';
 
             secciones.forEach(function(sec) {
-                if (sec.items.length === 0) return;
+                // HOY se muestra siempre (incluso con 0); atrasadas y más tarde solo si tienen items
+                if (sec.items.length === 0 && sec.key !== 'hoy') return;
                 var collapsed = _tcpCollapsedSections[sec.key] ? ' collapsed' : '';
                 html += '<div class="tcp-section-head ' + sec.cls + collapsed + '" data-tcp-sec="' + sec.key + '">' +
                     '<svg class="tcp-sec-chev" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
@@ -5158,9 +5159,13 @@
                     '<span class="tcp-sec-count">' + sec.items.length + '</span>' +
                     '</div>';
                 html += '<div class="tcp-section-body">';
-                sec.items.forEach(function(t) {
-                    html += _tcpRowHtml(t, sec.key === 'atrasadas');
-                });
+                if (sec.items.length === 0) {
+                    html += '<div style="padding:18px 24px;color:#94A3B8;font-size:12.5px;font-style:italic;">No tienes tareas para hoy.</div>';
+                } else {
+                    sec.items.forEach(function(t) {
+                        html += _tcpRowHtml(t, sec.key === 'atrasadas');
+                    });
+                }
                 html += '</div>';
             });
             list.innerHTML = html;
@@ -5182,17 +5187,16 @@
             var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
 
-            // Filtrar tareas del usuario actual (donde él es responsable)
+            // Filtrar tareas del usuario (como responsable)
             var misTareas = (_crmAllTareas || []).filter(function(t) {
                 return miId && String(t.asignado_a_id || '') === String(miId);
             });
 
             var vencidas = 0, hoy = 0, completadasHoy = 0, totalAbiertas = 0;
+            var proximasCandidatas = [];  // tareas abiertas ordenables por fecha
+
             misTareas.forEach(function(t) {
                 if (t.estado === 'completada') {
-                    // Aproximación: si tiene fecha_completada o updated_at hoy, cuenta.
-                    // Si solo tenemos 'estado', contamos todas las completadas del usuario
-                    // que aún aparecen en la lista (el backend suele traer recientes).
                     var fc = t.fecha_completada || t.fecha_actualizacion || t.updated_at;
                     if (fc) {
                         var d = new Date(fc);
@@ -5203,52 +5207,103 @@
                     return;
                 }
                 totalAbiertas++;
-                if (!t.fecha_limite) return;
-                var fl = new Date(t.fecha_limite);
-                if (isNaN(fl.getTime())) return;
-                if (fl < today) vencidas++;
-                else if (fl < tomorrow) hoy++;
+                if (t.fecha_limite) {
+                    var fl = new Date(t.fecha_limite);
+                    if (!isNaN(fl.getTime())) {
+                        if (fl < today) vencidas++;
+                        else if (fl < tomorrow) hoy++;
+                        proximasCandidatas.push({ t: t, fl: fl });
+                    }
+                }
             });
+
+            // Top 4 próximas por fecha ascendente (incluye vencidas al inicio)
+            proximasCandidatas.sort(function(a, b) { return a.fl - b.fl; });
+            var proximas = proximasCandidatas.slice(0, 4);
 
             var nombre = (typeof _CRM_CONFIG !== 'undefined' && _CRM_CONFIG.usuarioNombre)
                 ? _CRM_CONFIG.usuarioNombre.split(' ')[0] : '';
             var horaN = now.getHours();
             var saludo = horaN < 12 ? 'Buenos días' : (horaN < 19 ? 'Buenas tardes' : 'Buenas noches');
 
+            var subtexto;
+            if (totalAbiertas === 0) subtexto = 'No tienes tareas pendientes asignadas.';
+            else if (vencidas > 0) subtexto = 'Tienes <strong>' + vencidas + '</strong> tarea' + (vencidas === 1 ? '' : 's') + ' vencida' + (vencidas === 1 ? '' : 's') + ' que atender.';
+            else if (hoy > 0) subtexto = '<strong>' + hoy + '</strong> tarea' + (hoy === 1 ? '' : 's') + ' para hoy.';
+            else subtexto = 'Tienes ' + totalAbiertas + ' tarea' + (totalAbiertas === 1 ? '' : 's') + ' abierta' + (totalAbiertas === 1 ? '' : 's') + '. No hay nada urgente.';
+
             var html = '<div class="tcp-empty">' +
                 '<div class="tcp-summary-label">Tu día</div>' +
                 '<h2 class="tcp-summary-greeting">' + saludo + (nombre ? ', ' + _tcpEsc(nombre) : '') + '</h2>' +
-                '<p class="tcp-summary-sub">' +
-                    (totalAbiertas === 0
-                        ? 'No tienes tareas pendientes asignadas.'
-                        : 'Tienes <strong>' + totalAbiertas + '</strong> tarea' + (totalAbiertas === 1 ? '' : 's') + ' abierta' + (totalAbiertas === 1 ? '' : 's') + '.') +
-                '</p>' +
+                '<p class="tcp-summary-sub">' + subtexto + '</p>' +
 
-                _tcpSummaryCard(vencidas, 'tareas vencidas', vencidas > 0 ? 'tone-danger' : 'tone-neutral',
-                    '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>') +
+                // Trío horizontal compacto
+                '<div class="tcp-summary-row">' +
+                    _tcpSummaryStat('vencidas', vencidas, 'Vencidas') +
+                    _tcpSummaryStat('hoy', hoy, 'Hoy') +
+                    _tcpSummaryStat('done', completadasHoy, 'Hechas hoy') +
+                '</div>' +
 
-                _tcpSummaryCard(hoy, 'pendientes para hoy', hoy > 0 ? 'tone-warning' : 'tone-neutral',
-                    '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>') +
-
-                _tcpSummaryCard(completadasHoy, 'completadas hoy', completadasHoy > 0 ? 'tone-success' : 'tone-neutral',
-                    '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>') +
+                // Próximas tareas
+                '<div class="tcp-summary-section">' +
+                    '<div class="tcp-summary-sec-label">' +
+                        '<span>Próximas</span>' +
+                        (proximas.length > 0 ? '<span class="count">' + proximas.length + '</span>' : '') +
+                    '</div>' +
+                    (proximas.length > 0
+                        ? '<div class="tcp-summary-upcoming">' + proximas.map(function(x) { return _tcpUpcomingRow(x.t, x.fl, today, tomorrow); }).join('') + '</div>'
+                        : '<div class="tcp-summary-empty">Nada próximo en tu calendario.</div>') +
+                '</div>' +
 
                 '<div style="flex:1;"></div>' +
-                '<div style="text-align:center;font-size:12px;color:#94A3B8;padding:20px 0 4px;">' +
-                    'Haz clic en cualquier tarea para ver sus detalles aquí.' +
+                '<div style="text-align:center;font-size:11.5px;color:#CBD5E1;padding:18px 0 2px;">' +
+                    'Haz clic en una tarea para ver el detalle aquí.' +
                 '</div>' +
                 '</div>';
             panel.innerHTML = html;
         }
 
-        function _tcpSummaryCard(num, label, tone, iconSvg) {
-            return '<div class="tcp-summary-card ' + tone + '">' +
-                '<div class="tcp-summary-ico">' + iconSvg + '</div>' +
-                '<div class="tcp-summary-body">' +
-                    '<span class="tcp-summary-num">' + num + '</span>' +
-                    '<span class="tcp-summary-name">' + label + '</span>' +
-                '</div>' +
+        function _tcpSummaryStat(key, num, label) {
+            var hasCls = num > 0 ? ' has-items' : '';
+            return '<div class="tcp-summary-stat ' + key + hasCls + '">' +
+                '<span class="tcp-summary-stat-num">' + num + '</span>' +
+                '<span class="tcp-summary-stat-lbl">' + label + '</span>' +
                 '</div>';
+        }
+
+        function _tcpUpcomingRow(t, fl, today, tomorrow) {
+            var overdue = fl < today;
+            var urgent = !overdue && fl < tomorrow;
+            var cls = overdue ? ' overdue' : (urgent ? ' urgent' : '');
+            var when = _tcpRelativeWhen(fl, today, tomorrow);
+            return '<div class="tcp-summary-up-row' + cls + '" onclick="tcpSelectTask(' + t.id + ')">' +
+                '<span class="tcp-summary-up-dot"></span>' +
+                '<span class="tcp-summary-up-title" title="' + _tcpEsc(t.titulo || '') + '">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
+                '<span class="tcp-summary-up-when">' + when + '</span>' +
+                '</div>';
+        }
+
+        function _tcpRelativeWhen(fl, today, tomorrow) {
+            var ms = fl - new Date();
+            var absDays = Math.floor(Math.abs(ms) / 86400000);
+            if (fl < today) {
+                if (absDays === 0) return 'hoy';
+                if (absDays === 1) return 'ayer';
+                return 'hace ' + absDays + 'd';
+            }
+            if (fl < tomorrow) {
+                var h = Math.round(ms / 3600000);
+                if (h <= 0) return 'hoy';
+                if (h === 1) return 'en 1h';
+                if (h < 24) return 'en ' + h + 'h';
+                return 'hoy';
+            }
+            var d = Math.ceil(ms / 86400000);
+            if (d === 1) return 'mañana';
+            if (d <= 7) return 'en ' + d + 'd';
+            // Fecha corta
+            var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            return fl.getDate() + ' ' + MES[fl.getMonth()];
         }
 
         function _tcpRowHtml(t, esAtrasada) {

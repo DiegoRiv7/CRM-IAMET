@@ -7585,7 +7585,7 @@
    ═══════════════════════════════════════════════ */
 .tcp-shell {
     display: flex;
-    height: calc(100vh - 130px);
+    height: calc(100vh - 100px);
     min-height: 420px;
     background: #fff;
     border: 1px solid rgba(226, 232, 240, 0.7);
@@ -7837,82 +7837,143 @@
 .tcp-empty-title { font-size: 14px; font-weight: 700; color: #334155; }
 .tcp-empty-hint { font-size: 12.5px; color: #94A3B8; line-height: 1.5; }
 
-/* Dashboard de resumen del usuario (cuando no hay tarea seleccionada) */
+/* Dashboard resumen — diseño calmo y útil */
 .tcp-summary-label {
     font-size: 10.5px;
-    font-weight: 800;
+    font-weight: 700;
     color: #94A3B8;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin: 0 0 12px;
+    margin: 0 0 10px;
 }
 .tcp-summary-greeting {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #0F172A;
-    letter-spacing: -0.015em;
-    line-height: 1.25;
+    letter-spacing: -0.018em;
+    line-height: 1.2;
     margin: 0 0 4px;
 }
 .tcp-summary-sub {
     font-size: 13px;
     color: #64748B;
-    margin: 0 0 22px;
+    margin: 0 0 20px;
+    line-height: 1.5;
 }
 
-.tcp-summary-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
+/* Trío horizontal de stats compacto — sin colores agresivos */
+.tcp-summary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+.tcp-summary-stat {
+    padding: 12px 10px;
+    background: #FAFBFC;
     border: 1px solid rgba(226, 232, 240, 0.7);
-    border-radius: 12px;
-    margin-bottom: 10px;
-    background: #fff;
+    border-radius: 10px;
+    text-align: center;
     transition: all 0.15s;
 }
-.tcp-summary-card.tone-danger { background: #FEF2F2; border-color: #FECACA; }
-.tcp-summary-card.tone-warning { background: #FFFBEB; border-color: #FDE68A; }
-.tcp-summary-card.tone-success { background: #F0FDF4; border-color: #BBF7D0; }
-.tcp-summary-card.tone-neutral { background: #F8FAFC; border-color: #E2E8F0; }
-
-.tcp-summary-ico {
-    width: 38px; height: 38px;
-    border-radius: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: #fff;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-}
-.tcp-summary-card.tone-danger .tcp-summary-ico { background: linear-gradient(180deg, #EF4444, #DC2626); }
-.tcp-summary-card.tone-warning .tcp-summary-ico { background: linear-gradient(180deg, #F59E0B, #D97706); }
-.tcp-summary-card.tone-success .tcp-summary-ico { background: linear-gradient(180deg, #10B981, #059669); }
-.tcp-summary-card.tone-neutral .tcp-summary-ico { background: linear-gradient(180deg, #64748B, #475569); }
-
-.tcp-summary-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.tcp-summary-num {
+.tcp-summary-stat-num {
     font-size: 22px;
     font-weight: 800;
     color: #0F172A;
     line-height: 1.1;
     letter-spacing: -0.02em;
 }
-.tcp-summary-name {
-    font-size: 12px;
-    color: #64748B;
-    font-weight: 500;
+.tcp-summary-stat.vencidas.has-items .tcp-summary-stat-num { color: #DC2626; }
+.tcp-summary-stat.hoy.has-items .tcp-summary-stat-num { color: #B45309; }
+.tcp-summary-stat.done.has-items .tcp-summary-stat-num { color: #059669; }
+.tcp-summary-stat-lbl {
+    display: block;
+    margin-top: 3px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94A3B8;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.3;
 }
-.tcp-summary-card.tone-danger .tcp-summary-num { color: #B91C1C; }
-.tcp-summary-card.tone-warning .tcp-summary-num { color: #B45309; }
-.tcp-summary-card.tone-success .tcp-summary-num { color: #047857; }
+
+/* Próximas tareas */
+.tcp-summary-section {
+    margin-top: 8px;
+}
+.tcp-summary-sec-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #94A3B8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.tcp-summary-sec-label .count {
+    background: #F1F5F9;
+    color: #475569;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+.tcp-summary-upcoming {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.tcp-summary-up-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    margin: 0 -10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.tcp-summary-up-row:hover { background: #F8FAFC; }
+.tcp-summary-up-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #CBD5E1;
+    flex-shrink: 0;
+}
+.tcp-summary-up-row.urgent .tcp-summary-up-dot { background: #F59E0B; }
+.tcp-summary-up-row.overdue .tcp-summary-up-dot { background: #EF4444; }
+.tcp-summary-up-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: #334155;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tcp-summary-up-when {
+    font-size: 11px;
+    color: #94A3B8;
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    flex-shrink: 0;
+}
+.tcp-summary-up-row.urgent .tcp-summary-up-when { color: #B45309; }
+.tcp-summary-up-row.overdue .tcp-summary-up-when { color: #DC2626; font-weight: 600; }
+
+.tcp-summary-empty {
+    padding: 18px 12px;
+    text-align: center;
+    font-size: 12.5px;
+    color: #94A3B8;
+    font-style: italic;
+    background: #FAFBFC;
+    border: 1px dashed #E2E8F0;
+    border-radius: 10px;
+}
 
 .tcp-detail-head {
     display: flex;
