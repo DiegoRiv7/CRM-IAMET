@@ -169,6 +169,21 @@ def _proyecto_to_dict(p, include_alerts=False):
     gastos_apr = float(p.gastos.filter(estado_aprobacion='approved').aggregate(t=Sum('monto'))['t'] or 0)
     utilidad_real_calc = ingresos - costos_prov - gastos_apr
 
+    opp = p.oportunidad if hasattr(p, 'oportunidad_id') and p.oportunidad_id else None
+
+    # Agregados de levantamientos (para la lista tipo tabla)
+    lev_qs = getattr(p, 'levantamientos', None)
+    lev_count = 0
+    lev_fase_max = 0
+    if lev_qs is not None:
+        try:
+            lev_count = lev_qs.count()
+            if lev_count:
+                from django.db.models import Max
+                lev_fase_max = lev_qs.aggregate(m=Max('fase_actual'))['m'] or 0
+        except Exception:
+            pass
+
     d = {
         'id': p.id,
         'usuario_id': p.usuario_id,
@@ -183,10 +198,14 @@ def _proyecto_to_dict(p, include_alerts=False):
         'fecha_fin': _fmt(p.fecha_fin),
         'created_at': _fmt(p.created_at),
         'updated_at': _fmt(p.updated_at),
-        'oportunidad_id': p.oportunidad_id if hasattr(p, 'oportunidad_id') else None,
-        'oportunidad_nombre': p.oportunidad.oportunidad if hasattr(p, 'oportunidad_id') and p.oportunidad_id and p.oportunidad else None,
-        'oportunidad_etapa': p.oportunidad.etapa_corta if p.oportunidad else None,
-        'oportunidad_etapa_color': p.oportunidad.etapa_color if p.oportunidad else None,
+        'oportunidad_id': opp.id if opp else None,
+        'oportunidad_nombre': opp.oportunidad if opp else None,
+        'oportunidad_monto': float(opp.monto) if opp and opp.monto is not None else 0.0,
+        'oportunidad_producto': opp.producto if opp else None,
+        'oportunidad_etapa': opp.etapa_corta if opp else None,
+        'oportunidad_etapa_color': opp.etapa_color if opp else None,
+        'levantamientos_count': lev_count,
+        'levantamiento_fase_max': lev_fase_max,
     }
     if include_alerts:
         d['alertas_pendientes'] = p.alertas.filter(resuelta=False).count()
