@@ -225,25 +225,18 @@ window.addEventListener('resize', () => {
     function showInitialState() {
         var c = $sp('spotlight-results');
         if (!c) return;
-        var html = '';
         currentResults = [];
-        // Recientes primero si existen
         var recents = getRecents();
         if (recents.length) {
-            html += renderSectionHeader('reciente');
+            var html = renderSectionHeader('reciente');
             recents.forEach(function (r) {
                 currentResults.push(r);
                 html += renderResultItem(r, currentResults.length - 1, '');
             });
+            c.innerHTML = html;
+        } else {
+            c.innerHTML = '';
         }
-        // Sugerencias (acciones rápidas)
-        html += renderSectionHeader('sugerido');
-        QUICK_ACTIONS.slice(0, 4).forEach(function (a) {
-            var r = { type: 'accion', _action_id: a.id, title: a.title, subtitle: a.subtitle, _action: true };
-            currentResults.push(r);
-            html += renderResultItem(r, currentResults.length - 1, '');
-        });
-        c.innerHTML = html;
     }
 
     // ── User chip (filtro por @usuario) ───────────────────
