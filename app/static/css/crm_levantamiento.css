@@ -375,13 +375,32 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 36px 72px 56px;
-    max-width: 920px;
+    /* Llena la pantalla: 2 columnas (main + meta sidebar). Padding responsive
+       crece en pantallas anchas sin inflar desproporcionadamente. */
+    padding: 40px clamp(32px, 5vw, 80px) 64px;
     width: 100%;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    column-gap: 56px;
+    row-gap: 28px;
+    align-items: start;
+}
+
+/* Hero ocupa toda la columna izquierda en la primera fila */
+.lw-canvas > .lw-canvas-hero { grid-column: 1; grid-row: 1; }
+
+/* Secciones (alcance + productos) también en la columna izquierda */
+.lw-canvas > .lw-canvas-section { grid-column: 1; }
+
+/* En pantallas estrechas, colapsa a 1 columna */
+@media (max-width: 1100px) {
+    .lw-canvas {
+        grid-template-columns: 1fr;
+    }
+    .lw-canvas > .lw-canvas-hero,
+    .lw-canvas > .lw-canvas-section {
+        grid-column: 1;
+    }
 }
 
 /* ── Hero ── */
@@ -389,6 +408,10 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    /* Cap de ancho para lectura cómoda del título/descripción en
+       monitores ultra-anchos; las secciones de abajo (productos) no
+       heredan este límite y pueden estirar. */
+    max-width: 1100px;
 }
 
 /* Título gigante sin borde — documento en blanco */
@@ -455,13 +478,55 @@
     font-weight: 400;
 }
 
-/* ── Meta toolbar (ghost pills) ── */
+/* ── Meta sidebar (ghost pills, stacked) ─────────────────────── */
 .lw-canvas-meta {
+    grid-column: 2;
+    grid-row: 1 / 99;
+    align-self: start;
+    position: sticky;
+    top: 0;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 16px 0 4px;
-    border-top: 1px solid #E2E8F0;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0 0 28px;
+    border-left: 1px solid #E2E8F0;
+    min-height: 240px;
+}
+.lw-canvas-meta::before {
+    content: "Datos de contacto";
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    margin-bottom: 6px;
+}
+
+/* Meta pills en sidebar ocupan todo el ancho disponible */
+.lw-canvas-meta .lw-meta-pill {
+    width: 100%;
+    justify-content: flex-start;
+}
+.lw-canvas-meta .lw-meta-pill input { flex: 1; min-width: 0; width: auto; }
+
+/* Colapso a fila horizontal en pantallas estrechas */
+@media (max-width: 1100px) {
+    .lw-canvas-meta {
+        grid-column: 1;
+        grid-row: auto;
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 14px 0 4px;
+        border-left: none;
+        border-top: 1px solid #E2E8F0;
+        min-height: 0;
+    }
+    .lw-canvas-meta::before { display: none; }
+    .lw-canvas-meta .lw-meta-pill { width: auto; }
+    .lw-canvas-meta .lw-meta-pill input { width: 110px; min-width: 100px; flex: 0 0 auto; }
+    .lw-canvas-meta .lw-meta-pill input[type="date"] { width: 140px; }
+    .lw-canvas-meta .lw-meta-pill input[type="email"] { width: 160px; }
 }
 
 .lw-meta-pill {
