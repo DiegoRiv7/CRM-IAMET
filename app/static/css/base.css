@@ -726,6 +726,479 @@ html[data-theme="perla"] div .apple-card:hover {
     to { transform: rotate(360deg) }
 }
 
+/* ════════════════════════════════════════════════════════
+   SPOTLIGHT v2 — Apple composer + Linear scopes
+   Overrides que solo aplican cuando el modal tiene .spotlight-v2
+   ════════════════════════════════════════════════════════ */
+
+.spotlight-v2.spotlight-modal {
+    padding-top: 8vh;
+}
+
+.spotlight-v2 .spotlight-backdrop {
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.spotlight-v2 .spotlight-container {
+    max-width: 720px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.30),
+                0 0 0 1px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+}
+
+/* ── Search bar ── */
+.spotlight-v2 .spotlight-search-box {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.spotlight-v2 .spotlight-icon {
+    color: #94A3B8;
+    margin-right: 10px;
+    opacity: 1;
+}
+
+.spotlight-v2 #spotlight-input {
+    font-size: 16px;
+    font-weight: 500;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+}
+
+.spotlight-v2 #spotlight-input::placeholder {
+    color: #94A3B8;
+    font-weight: 400;
+}
+
+.spotlight-v2 .spotlight-shortcut {
+    background: #F1F5F9;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+}
+
+/* ── User filter chip dentro del search box ── */
+.spotlight-v2 .sp-user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+    border-radius: 999px;
+    padding: 3px 4px 3px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 8px;
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+}
+.spotlight-v2 .sp-user-chip .sp-chip-close {
+    background: transparent;
+    border: none;
+    color: #1D4ED8;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s ease;
+}
+.spotlight-v2 .sp-user-chip .sp-chip-close:hover {
+    background: rgba(29, 78, 216, 0.15);
+}
+
+/* ── Scopes chips bar ── */
+.spotlight-v2 .sp-scopes {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+    background: #F8FAFC;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.spotlight-v2 .sp-scopes::-webkit-scrollbar { display: none; }
+
+.spotlight-v2 .sp-chip {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #64748B;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+.spotlight-v2 .sp-chip:hover {
+    background: #F1F5F9;
+    color: #334155;
+}
+.spotlight-v2 .sp-chip.active {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border-color: #BFDBFE;
+    box-shadow: 0 1px 2px rgba(29, 78, 216, 0.08);
+}
+
+/* ── Results container ── */
+.spotlight-v2 .spotlight-results {
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 4px 0;
+    background: #fff;
+}
+.spotlight-v2 .spotlight-results::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+}
+
+/* ── Section header ── */
+.spotlight-v2 .sp-section-header {
+    padding: 12px 18px 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.spotlight-v2 .sp-section-count {
+    background: #F1F5F9;
+    color: #64748B;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* ── Result item ── */
+.spotlight-v2 .sp-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    cursor: pointer;
+    border: none;
+    border-left: 2px solid transparent;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.spotlight-v2 .sp-item:hover,
+.spotlight-v2 .sp-item.selected {
+    background: #F8FAFC;
+    border-left-color: #2563EB;
+}
+.spotlight-v2 .sp-item.selected .sp-title {
+    color: #2563EB;
+}
+
+.spotlight-v2 .sp-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.spotlight-v2 .sp-icon svg {
+    width: 15px;
+    height: 15px;
+    stroke: #fff;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.spotlight-v2 .sp-icon-oportunidad { background: linear-gradient(135deg, #FBBF24, #F59E0B); }
+.spotlight-v2 .sp-icon-cotizacion  { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.spotlight-v2 .sp-icon-cliente     { background: linear-gradient(135deg, #34D399, #10B981); }
+.spotlight-v2 .sp-icon-proyecto    { background: linear-gradient(135deg, #A78BFA, #8B5CF6); }
+.spotlight-v2 .sp-icon-tarea       { background: linear-gradient(135deg, #F87171, #EF4444); }
+.spotlight-v2 .sp-icon-accion      { background: linear-gradient(135deg, #64748B, #475569); }
+
+.spotlight-v2 .sp-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.spotlight-v2 .sp-row1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+.spotlight-v2 .sp-row2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #64748B;
+    min-width: 0;
+}
+
+.spotlight-v2 .sp-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+.spotlight-v2 .sp-subtitle {
+    font-size: 12px;
+    color: #64748B;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+.spotlight-v2 .sp-mark {
+    background: rgba(251, 191, 36, 0.30);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 1px;
+}
+
+/* ── Meta row (responsable + monto + fecha) ── */
+.spotlight-v2 .sp-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #64748B;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.spotlight-v2 .sp-dot-sep {
+    color: #CBD5E1;
+    font-size: 10px;
+    line-height: 1;
+}
+.spotlight-v2 .sp-owner-name {
+    font-size: 11.5px;
+    color: #475569;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.spotlight-v2 .sp-monto {
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    font-size: 11.5px;
+    color: #059669;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.spotlight-v2 .sp-date {
+    font-size: 11.5px;
+    color: #94A3B8;
+    white-space: nowrap;
+}
+
+/* ── Avatar ── */
+.spotlight-v2 .sp-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #64748B, #475569);
+    letter-spacing: 0.01em;
+}
+.spotlight-v2 .sp-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ── Pills (estado) ── */
+.spotlight-v2 .sp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.spotlight-v2 .sp-pill i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+}
+.spotlight-v2 .sp-pill-success { background: #DCFCE7; color: #166534; }
+.spotlight-v2 .sp-pill-warning { background: #FEF3C7; color: #9A6700; }
+.spotlight-v2 .sp-pill-danger  { background: #FEE2E2; color: #991B1B; }
+.spotlight-v2 .sp-pill-info    { background: #DBEAFE; color: #1D4ED8; }
+.spotlight-v2 .sp-pill-neutral { background: #F1F5F9; color: #475569; }
+
+/* ── Badges (PO / Factura) ── */
+.spotlight-v2 .sp-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    flex-shrink: 0;
+}
+.spotlight-v2 .sp-badge-po      { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+.spotlight-v2 .sp-badge-factura { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+
+.spotlight-v2 .sp-arrow {
+    color: #CBD5E1;
+    flex-shrink: 0;
+}
+.spotlight-v2 .sp-item:hover .sp-arrow,
+.spotlight-v2 .sp-item.selected .sp-arrow {
+    color: #2563EB;
+    transform: translateX(2px);
+}
+
+/* ── Empty / initial / loading ── */
+.spotlight-v2 .sp-empty {
+    padding: 48px 20px;
+    text-align: center;
+}
+.spotlight-v2 .sp-empty-icon {
+    margin-bottom: 14px;
+}
+.spotlight-v2 .sp-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+}
+.spotlight-v2 .sp-empty-hint {
+    font-size: 12px;
+    color: #94A3B8;
+}
+.spotlight-v2 .sp-empty-hint kbd,
+.spotlight-v2 .sp-command-hint kbd,
+.spotlight-v2 .sp-footer-hints kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    border-radius: 5px;
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #475569;
+    letter-spacing: 0.02em;
+    margin: 0 1px;
+    line-height: 1.3;
+}
+
+.spotlight-v2 .sp-loading {
+    padding: 40px 20px;
+    text-align: center;
+    color: #94A3B8;
+    font-size: 13px;
+}
+.spotlight-v2 .sp-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #E2E8F0;
+    border-top-color: #2563EB;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    animation: spotlight-spin 0.8s linear infinite;
+}
+
+/* ── Command hint (estado inicial al fondo) ── */
+.spotlight-v2 .sp-command-hint {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 14px 18px 12px;
+    margin-top: 6px;
+    border-top: 1px dashed #E2E8F0;
+    font-size: 11.5px;
+    color: #64748B;
+}
+.spotlight-v2 .sp-command-hint span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* ── Footer (keyboard hints) ── */
+.spotlight-v2 .sp-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: #F8FAFC;
+    border-top: 1px solid rgba(226, 232, 240, 0.7);
+    font-size: 11px;
+    color: #94A3B8;
+}
+.spotlight-v2 .sp-footer-hints {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.spotlight-v2 .sp-footer-hints span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.spotlight-v2 .sp-footer-brand {
+    font-weight: 600;
+    color: #94A3B8;
+    letter-spacing: -0.01em;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .spotlight-v2 .spotlight-container { max-width: 100%; margin: 0 12px; }
+    .spotlight-v2 .sp-footer-hints { gap: 8px; font-size: 10px; }
+    .spotlight-v2 .sp-meta { display: none; }
+    .spotlight-v2 .sp-row2 { font-size: 11px; }
+}
+
 /* ═══ AI CHAT STYLES ═══ */
 .ai-msg {
     max-width: 88%;

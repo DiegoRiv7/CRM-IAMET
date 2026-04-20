@@ -31,53 +31,160 @@ window.addEventListener('resize', () => {
 // ═══════════════════════════════════════════════
 (function () {
     // ═══════════════════════════════════════════════
-    // SPOTLIGHT SEARCH (doble espacio / ⌘K)
+    // SPOTLIGHT SEARCH v2 (doble espacio / ⌘K)
+    //   - Prefijos: /t /o /c /q /p  ·  @user  ·  #123  ·  >acción
+    //   - Scopes chips + recientes + resultados ricos
     // ═══════════════════════════════════════════════
     var spotlightTimeout = null;
     var selectedIndex = -1;
     var currentResults = [];
+    var currentScope = 'all';      // scope del chip (all|oportunidad|cotizacion|tarea|cliente|proyecto)
+    var parsedUserFilter = null;   // resultado del parse @user (se aplica al query activo)
+    var RECENTS_KEY = 'crm_spotlight_recents_v2';
 
     var ICONS = {
         oportunidad: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
         cotizacion:  '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
         cliente:     '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
         proyecto:    '<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
-        tarea:       '<svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
+        tarea:       '<svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+        accion:      '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
     };
-    var LABELS = { oportunidad: 'Oportunidades', cotizacion: 'Cotizaciones', cliente: 'Clientes', proyecto: 'Proyectos', tarea: 'Tareas' };
+    var LABELS = { oportunidad: 'Oportunidades', cotizacion: 'Cotizaciones', cliente: 'Clientes', proyecto: 'Proyectos', tarea: 'Tareas', accion: 'Acciones rápidas', reciente: 'Recientes', sugerido: 'Sugerencias' };
+    var PREFIX_MAP = { t: 'tarea', o: 'oportunidad', q: 'cotizacion', c: 'cliente', p: 'proyecto' };
 
-    function showEmptyState() {
-        var c = document.getElementById('spotlight-results');
-        if (c) c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-text">Busca oportunidades, cotizaciones o tareas</div><div class="spotlight-empty-hint">Por nombre, PO, número de factura o #cotización</div></div>';
+    // ── Acciones rápidas (> comandos) ─────────────────────
+    var QUICK_ACTIONS = [
+        { id: 'crear-opp',  title: 'Crear nueva oportunidad', subtitle: 'Abre el formulario de nueva oportunidad', keywords: ['nueva', 'oportunidad', 'crear', 'opp', 'deal'], action: function () { window.location.href = '/app/todos/?tab=crm&action=nueva_opp'; } },
+        { id: 'crear-cot',  title: 'Crear nueva cotización',  subtitle: 'Ir al módulo de cotizaciones', keywords: ['nueva', 'cotizacion', 'cotizar', 'quote'], action: function () { window.location.href = '/app/cotizaciones/'; } },
+        { id: 'crear-tarea', title: 'Crear nueva tarea',       subtitle: 'Abre el panel de tareas del CRM', keywords: ['nueva', 'tarea', 'task', 'todo', 'pendiente'], action: function () { window.location.href = '/app/todos/?tab=crm&action=nueva_tarea'; } },
+        { id: 'ir-crm',     title: 'Ir al CRM',                subtitle: 'Vista principal de oportunidades', keywords: ['crm', 'inicio', 'dashboard', 'oportunidades'], action: function () { window.location.href = '/app/todos/?tab=crm'; } },
+        { id: 'ir-cal',     title: 'Ir al calendario',         subtitle: 'Agenda y actividades programadas', keywords: ['calendario', 'calendar', 'agenda'], action: function () { window.location.href = '/app/calendario/'; } },
+        { id: 'ir-tareas',  title: 'Ir a Tareas',              subtitle: 'Vista cockpit de tareas', keywords: ['tareas', 'cockpit', 'mis tareas'], action: function () { window.location.href = '/app/crm-tareas/'; } }
+    ];
+
+    // ── Helpers ───────────────────────────────────────────
+    function $sp(id) { return document.getElementById(id); }
+
+    function escapeHtml(s) {
+        if (s == null) return '';
+        return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
     }
-    function showLoadingState() {
-        var c = document.getElementById('spotlight-results');
-        if (c) c.innerHTML = '<div class="spotlight-loading"><div class="spotlight-spinner"></div><div>Buscando...</div></div>';
+
+    function highlight(text, q) {
+        if (!q || !text) return escapeHtml(text);
+        var safe = escapeHtml(text);
+        try {
+            var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+            return safe.replace(re, '<mark class="sp-mark">$1</mark>');
+        } catch (e) { return safe; }
     }
-    function performSearch(query) {
-        if (!query || query.length < 2) { showEmptyState(); return; }
-        showLoadingState();
-        var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-        var token = csrf ? csrf.value : '';
-        fetch('/app/api/spotlight-search/?q=' + encodeURIComponent(query), { method: 'GET', headers: { 'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                displayResults(data.results || []);
-                currentResults = data.results || [];
-                selectedIndex = -1;
-            })
-            .catch(function () { showEmptyState(); });
+
+    function parseQuery(raw) {
+        // Devuelve { q, scope, userFilter, actionQuery }
+        var q = (raw || '').trim();
+        var scope = null;
+        var userFilter = null;
+        var actionQuery = null;
+
+        // > acciones  (ej: "> nueva tarea")
+        if (q.charAt(0) === '>') {
+            actionQuery = q.slice(1).trim().toLowerCase();
+            return { q: '', scope: 'accion', userFilter: null, actionQuery: actionQuery };
+        }
+
+        // /prefijo (solo al inicio)
+        var pref = q.match(/^\/([a-z])(\s+(.*))?$/i);
+        if (pref && PREFIX_MAP[pref[1].toLowerCase()]) {
+            scope = PREFIX_MAP[pref[1].toLowerCase()];
+            q = (pref[3] || '').trim();
+        }
+
+        // @usuario (en cualquier parte)
+        var um = q.match(/@(\S+)/);
+        if (um) {
+            userFilter = um[1];
+            q = q.replace(um[0], '').trim();
+        }
+
+        return { q: q, scope: scope, userFilter: userFilter, actionQuery: actionQuery };
     }
-    function displayResults(results) {
-        var c = document.getElementById('spotlight-results');
+
+    // ── Renderers ────────────────────────────────────────
+    function renderAvatar(u) {
+        if (!u) return '';
+        if (u.avatar_url) {
+            return '<span class="sp-avatar" title="' + escapeHtml(u.nombre) + '"><img src="' + escapeHtml(u.avatar_url) + '" alt="' + escapeHtml(u.iniciales || '') + '"></span>';
+        }
+        return '<span class="sp-avatar sp-avatar-initials" title="' + escapeHtml(u.nombre) + '">' + escapeHtml(u.iniciales || '?') + '</span>';
+    }
+
+    function renderStatusPill(r) {
+        if (!r.status_label) return '';
+        var cls = r.status_class || 'neutral';
+        return '<span class="sp-pill sp-pill-' + cls + '"><i></i>' + escapeHtml(r.status_label) + '</span>';
+    }
+
+    function renderBadges(r) {
+        var out = '';
+        if (r.po_number)       out += '<span class="sp-badge sp-badge-po">PO ' + escapeHtml(r.po_number) + '</span>';
+        if (r.factura_numero)  out += '<span class="sp-badge sp-badge-factura">Fac. ' + escapeHtml(r.factura_numero) + '</span>';
+        return out;
+    }
+
+    function renderResultItem(r, idx, q) {
+        var icon = ICONS[r.type] || ICONS.accion;
+        var iconTag = r.type === 'accion' ? ICONS.accion : icon;
+        var title = highlight(r.title, q);
+        var subtitle = highlight(r.subtitle || '', q);
+        var metaParts = [];
+        if (r.responsable) metaParts.push(renderAvatar(r.responsable) + '<span class="sp-owner-name">' + escapeHtml(r.responsable.nombre) + '</span>');
+        if (r.monto_formatted) metaParts.push('<span class="sp-monto">' + escapeHtml(r.monto_formatted) + '</span>');
+        if (r.fecha_relative)  metaParts.push('<span class="sp-date">' + escapeHtml(r.fecha_relative) + '</span>');
+        var metaHtml = metaParts.length ? '<div class="sp-meta">' + metaParts.join('<span class="sp-dot-sep">·</span>') + '</div>' : '';
+
+        return (
+            '<div class="sp-item" data-index="' + idx + '" onclick="selectResult(' + idx + ')">' +
+                '<div class="sp-icon sp-icon-' + escapeHtml(r.type) + '">' + iconTag + '</div>' +
+                '<div class="sp-body">' +
+                    '<div class="sp-row1">' +
+                        '<span class="sp-title">' + title + '</span>' +
+                        renderStatusPill(r) +
+                        renderBadges(r) +
+                    '</div>' +
+                    '<div class="sp-row2">' +
+                        (subtitle ? '<span class="sp-subtitle">' + subtitle + '</span>' : '') +
+                        metaHtml +
+                    '</div>' +
+                '</div>' +
+                '<svg class="sp-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
+            '</div>'
+        );
+    }
+
+    function renderSectionHeader(type, count) {
+        var label = LABELS[type] || type;
+        var badge = (count != null) ? ' <span class="sp-section-count">' + count + '</span>' : '';
+        return '<div class="sp-section-header">' + label + badge + '</div>';
+    }
+
+    function displayResults(results, q) {
+        var c = $sp('spotlight-results');
         if (!c) return;
-        if (results.length === 0) {
-            c.innerHTML = '<div class="spotlight-empty"><div class="spotlight-empty-text">Sin resultados</div><div class="spotlight-empty-hint">Intenta con otro nombre, PO o número</div></div>';
+        currentResults = results;
+        if (!results.length) {
+            c.innerHTML =
+                '<div class="sp-empty">' +
+                    '<div class="sp-empty-icon">' +
+                        '<svg width="42" height="42" fill="none" stroke="#CBD5E1" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+                    '</div>' +
+                    '<div class="sp-empty-title">Sin resultados</div>' +
+                    '<div class="sp-empty-hint">Intenta otro nombre, PO, factura, <kbd>#123</kbd> o <kbd>/o</kbd> para acotar</div>' +
+                '</div>';
             return;
         }
-        // Group by type
-        var groups = {};
-        var order = [];
+        // Group by type conservando orden de appearance
+        var groups = {}, order = [];
         results.forEach(function (r, i) {
             r._idx = i;
             if (!groups[r.type]) { groups[r.type] = []; order.push(r.type); }
@@ -85,90 +192,275 @@ window.addEventListener('resize', () => {
         });
         var html = '';
         order.forEach(function (type) {
-            html += '<div class="spotlight-section-header">' + (LABELS[type] || type) + '</div>';
-            groups[type].forEach(function (r) {
-                var icon = ICONS[r.type] || ICONS.cotizacion;
-                var badges = '';
-                if (r.po_number) badges += '<span class="spotlight-badge po">PO ' + r.po_number + '</span>';
-                if (r.factura_numero) badges += '<span class="spotlight-badge factura">Fac. ' + r.factura_numero + '</span>';
-                html += '<div class="spotlight-item" data-index="' + r._idx + '" onclick="selectResult(' + r._idx + ')">' +
-                    '<div class="spotlight-item-icon ' + r.type + '">' + icon + '</div>' +
-                    '<div class="spotlight-item-content">' +
-                        '<div class="spotlight-item-top">' +
-                            '<span class="spotlight-item-title">' + r.title + '</span>' +
-                            badges +
-                        '</div>' +
-                        '<div class="spotlight-item-subtitle">' + r.subtitle + '</div>' +
-                    '</div>' +
-                    '<svg class="spotlight-item-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
-                    '</div>';
-            });
+            html += renderSectionHeader(type, groups[type].length);
+            groups[type].forEach(function (r) { html += renderResultItem(r, r._idx, q); });
         });
         c.innerHTML = html;
     }
+
+    function showLoading() {
+        var c = $sp('spotlight-results');
+        if (c) c.innerHTML = '<div class="sp-loading"><div class="sp-spinner"></div><div>Buscando…</div></div>';
+    }
+
+    // ── Estado vacío: Acciones rápidas + Recientes + Hint ──
+    function getRecents() {
+        try { return JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]'); } catch (e) { return []; }
+    }
+    function pushRecent(r) {
+        if (!r || !r.type || r.type === 'accion') return;
+        try {
+            var list = getRecents().filter(function (x) { return !(x.type === r.type && x.id === r.id); });
+            list.unshift({
+                type: r.type, id: r.id, opp_id: r.opp_id || null,
+                title: r.title, subtitle: r.subtitle, url: r.url,
+                status_class: r.status_class, status_label: r.status_label,
+                responsable: r.responsable, monto_formatted: r.monto_formatted,
+                fecha_relative: r.fecha_relative,
+                po_number: r.po_number || '', factura_numero: r.factura_numero || '',
+                ts: Date.now()
+            });
+            localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, 8)));
+        } catch (e) {}
+    }
+    function showInitialState() {
+        var c = $sp('spotlight-results');
+        if (!c) return;
+        var html = '';
+        // Sugerencias (acciones rápidas - mostramos 4)
+        html += renderSectionHeader('sugerido');
+        var acts = QUICK_ACTIONS.slice(0, 4);
+        currentResults = [];
+        acts.forEach(function (a, i) {
+            var r = { type: 'accion', _action_id: a.id, title: a.title, subtitle: a.subtitle, _action: true };
+            currentResults.push(r);
+            html += renderResultItem(r, i, '');
+        });
+        // Recientes
+        var recents = getRecents();
+        if (recents.length) {
+            html += renderSectionHeader('reciente', recents.length);
+            recents.forEach(function (r) {
+                currentResults.push(r);
+                html += renderResultItem(r, currentResults.length - 1, '');
+            });
+        }
+        // Hint de comandos
+        html += '<div class="sp-command-hint">' +
+            '<span><kbd>/t</kbd> tareas</span>' +
+            '<span><kbd>/o</kbd> oportunidades</span>' +
+            '<span><kbd>/q</kbd> cotizaciones</span>' +
+            '<span><kbd>/c</kbd> clientes</span>' +
+            '<span><kbd>/p</kbd> proyectos</span>' +
+            '<span><kbd>@</kbd>usuario</span>' +
+            '<span><kbd>#</kbd>123</span>' +
+            '<span><kbd>&gt;</kbd>acción</span>' +
+            '</div>';
+        c.innerHTML = html;
+    }
+
+    // ── User chip (filtro por @usuario) ───────────────────
+    function renderUserChip(uname) {
+        var chip = $sp('sp-user-chip');
+        if (!chip) return;
+        if (!uname) { chip.style.display = 'none'; chip.innerHTML = ''; return; }
+        chip.style.display = 'inline-flex';
+        chip.innerHTML = '<span>@' + escapeHtml(uname) + '</span><button type="button" class="sp-chip-close" onclick="spotlightClearUserFilter(event)" aria-label="Quitar filtro">&times;</button>';
+    }
+    window.spotlightClearUserFilter = function (e) {
+        if (e) e.stopPropagation();
+        var inp = $sp('spotlight-input');
+        if (inp) inp.value = inp.value.replace(/@\S+/g, '').replace(/\s+/g, ' ').trim();
+        parsedUserFilter = null;
+        renderUserChip(null);
+        triggerSearch(inp ? inp.value : '');
+    };
+
+    // ── Búsqueda ─────────────────────────────────────────
+    function triggerSearch(raw) {
+        var parsed = parseQuery(raw);
+
+        // Acciones rápidas (> ...)
+        if (parsed.actionQuery !== null) {
+            showActionResults(parsed.actionQuery);
+            return;
+        }
+
+        // scope override por prefijo
+        var effectiveScope = parsed.scope || currentScope;
+
+        // user filter render
+        parsedUserFilter = parsed.userFilter;
+        renderUserChip(parsed.userFilter);
+
+        // si no hay q ni userFilter -> estado inicial
+        if ((!parsed.q || parsed.q.length < 2) && !parsed.userFilter) {
+            showInitialState();
+            return;
+        }
+
+        showLoading();
+        var params = new URLSearchParams();
+        params.set('q', parsed.q || '');
+        params.set('scope', effectiveScope);
+        if (parsed.userFilter) params.set('user', parsed.userFilter);
+
+        var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+        var token = csrf ? csrf.value : '';
+        fetch('/app/api/spotlight-search/?' + params.toString(), {
+            method: 'GET',
+            headers: { 'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                displayResults(data.results || [], parsed.q);
+                selectedIndex = -1;
+            })
+            .catch(function () { displayResults([], parsed.q); });
+    }
+
+    function showActionResults(actionQuery) {
+        var c = $sp('spotlight-results');
+        if (!c) return;
+        var filtered = QUICK_ACTIONS.filter(function (a) {
+            if (!actionQuery) return true;
+            var hay = (a.title + ' ' + a.subtitle + ' ' + a.keywords.join(' ')).toLowerCase();
+            return hay.indexOf(actionQuery) !== -1;
+        });
+        currentResults = filtered.map(function (a) {
+            return { type: 'accion', _action_id: a.id, title: a.title, subtitle: a.subtitle, _action: true };
+        });
+        selectedIndex = -1;
+        if (!currentResults.length) {
+            c.innerHTML = '<div class="sp-empty"><div class="sp-empty-title">Sin acciones</div><div class="sp-empty-hint">Prueba &quot;&gt; nueva cotización&quot; o &quot;&gt; calendario&quot;</div></div>';
+            return;
+        }
+        var html = renderSectionHeader('accion', currentResults.length);
+        currentResults.forEach(function (r, i) { html += renderResultItem(r, i, actionQuery); });
+        c.innerHTML = html;
+    }
+
+    // ── Selección / navegación ───────────────────────────
     function navigateSpotlight(dir) {
-        if (currentResults.length === 0) return;
-        var items = document.querySelectorAll('#spotlight-results .spotlight-item');
+        if (!currentResults.length) return;
+        var items = document.querySelectorAll('#spotlight-results .sp-item');
         items.forEach(function (i) { i.classList.remove('selected'); });
         selectedIndex += dir;
         if (selectedIndex < 0) selectedIndex = currentResults.length - 1;
         if (selectedIndex >= currentResults.length) selectedIndex = 0;
-        if (items[selectedIndex]) { items[selectedIndex].classList.add('selected'); items[selectedIndex].scrollIntoView({ block: 'nearest' }); }
+        if (items[selectedIndex]) {
+            items[selectedIndex].classList.add('selected');
+            items[selectedIndex].scrollIntoView({ block: 'nearest' });
+        }
     }
-    window.selectResult = function (index) {
-        var r = currentResults[index]; if (!r) return;
+
+    window.selectResult = function (index, opts) {
+        var r = currentResults[index];
+        if (!r) return;
+        opts = opts || {};
+        var newTab = !!opts.newTab;
+
+        // Acciones rápidas
+        if (r._action || r.type === 'accion') {
+            var act = null;
+            for (var i = 0; i < QUICK_ACTIONS.length; i++) {
+                if (QUICK_ACTIONS[i].id === r._action_id) { act = QUICK_ACTIONS[i]; break; }
+            }
+            closeSpotlight();
+            if (act) act.action();
+            return;
+        }
+
+        // Guardar en recientes antes de navegar
+        pushRecent(r);
         closeSpotlight();
+
         var enCRM = window.location.pathname === '/app/todos/';
 
         if (r.type === 'oportunidad' && r.id) {
+            var url = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.id;
+            if (newTab) { window.open(url, '_blank'); return; }
             if (enCRM && typeof window.openDetalle === 'function') { window.openDetalle(r.id); return; }
-            window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.id;
+            window.location.href = url;
             return;
         }
-
         if (r.type === 'cotizacion') {
             if (r.opp_id) {
+                var url2 = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.opp_id;
+                if (newTab) { window.open(url2, '_blank'); return; }
                 if (enCRM && typeof window.openDetalle === 'function') { window.openDetalle(r.opp_id); return; }
-                window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.opp_id;
+                window.location.href = url2;
             } else {
-                window.location.href = '/app/todos/?tab=crm';
+                if (newTab) window.open('/app/todos/?tab=crm', '_blank');
+                else window.location.href = '/app/todos/?tab=crm';
             }
             return;
         }
-
         if (r.type === 'tarea' && r.id) {
+            var url3 = '/app/todos/?tab=crm&open_task=' + r.id;
+            if (newTab) { window.open(url3, '_blank'); return; }
             if (enCRM && typeof window.crmTaskVerDetalle === 'function') { window.crmTaskVerDetalle(r.id); return; }
-            window.location.href = '/app/todos/?tab=crm&open_task=' + r.id;
+            window.location.href = url3;
             return;
         }
-
-        if (r.url) window.location.href = r.url;
+        if (r.url) {
+            if (newTab) window.open(r.url, '_blank');
+            else window.location.href = r.url;
+        }
     };
 
+    // ── Scopes chips ─────────────────────────────────────
+    function wireScopes() {
+        var box = $sp('sp-scopes');
+        if (!box) return;
+        box.addEventListener('click', function (e) {
+            var b = e.target.closest('.sp-chip');
+            if (!b) return;
+            var scope = b.getAttribute('data-scope') || 'all';
+            currentScope = scope;
+            box.querySelectorAll('.sp-chip').forEach(function (x) { x.classList.remove('active'); });
+            b.classList.add('active');
+            triggerSearch($sp('spotlight-input') ? $sp('spotlight-input').value : '');
+        });
+    }
+
+    // ── Open / close ─────────────────────────────────────
     window.openSpotlight = function () {
-        var m = document.getElementById('spotlight-modal');
-        var inp = document.getElementById('spotlight-input');
+        var m = $sp('spotlight-modal');
+        var inp = $sp('spotlight-input');
         m.classList.add('active');
-        selectedIndex = -1; currentResults = []; showEmptyState();
-        setTimeout(function () { if (inp) inp.focus(); }, 100);
+        selectedIndex = -1; currentResults = [];
+        showInitialState();
+        setTimeout(function () { if (inp) { inp.focus(); inp.select(); } }, 100);
     };
     window.closeSpotlight = function () {
-        var m = document.getElementById('spotlight-modal');
-        var inp = document.getElementById('spotlight-input');
+        var m = $sp('spotlight-modal');
+        var inp = $sp('spotlight-input');
         m.classList.remove('active');
         if (inp) inp.value = '';
+        parsedUserFilter = null;
+        renderUserChip(null);
+        currentScope = 'all';
+        var box = $sp('sp-scopes');
+        if (box) {
+            box.querySelectorAll('.sp-chip').forEach(function (x) { x.classList.remove('active'); });
+            var all = box.querySelector('[data-scope="all"]');
+            if (all) all.classList.add('active');
+        }
         if (spotlightTimeout) { clearTimeout(spotlightTimeout); spotlightTimeout = null; }
     };
 
     document.addEventListener('DOMContentLoaded', function () {
-        var inp = document.getElementById('spotlight-input');
+        var inp = $sp('spotlight-input');
         if (inp) {
             inp.addEventListener('input', function (e) {
-                var q = e.target.value.trim();
+                var q = e.target.value;
                 if (spotlightTimeout) clearTimeout(spotlightTimeout);
-                spotlightTimeout = setTimeout(function () { performSearch(q); }, 300);
+                spotlightTimeout = setTimeout(function () { triggerSearch(q); }, 220);
             });
+            // Nota: las flechas/Enter/Esc se manejan en el handler global de keydown (abajo).
         }
+        wireScopes();
     });
 
     // ═══════════════════════════════════════════════
@@ -282,7 +574,10 @@ window.addEventListener('resize', () => {
         if (sm && sm.classList.contains('active')) {
             if (e.key === 'ArrowDown') { e.preventDefault(); navigateSpotlight(1); }
             else if (e.key === 'ArrowUp') { e.preventDefault(); navigateSpotlight(-1); }
-            else if (e.key === 'Enter' && selectedIndex >= 0 && selectedIndex < currentResults.length) { e.preventDefault(); selectResult(selectedIndex); }
+            else if (e.key === 'Enter' && selectedIndex >= 0 && selectedIndex < currentResults.length) {
+                e.preventDefault();
+                selectResult(selectedIndex, { newTab: e.metaKey || e.ctrlKey });
+            }
         }
         // Enter in ayuda chat
         var am = document.getElementById('ayuda-modal');
