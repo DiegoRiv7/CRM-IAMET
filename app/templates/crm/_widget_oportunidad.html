@@ -2788,32 +2788,47 @@
         }, 80);
     }
 
-    // Refrescar al cambiar visibilidad del modal
-    Object.keys(WACT_FIELDS).forEach(function(prefix) {
-        var m = _modal(prefix); if (!m) return;
-        _attachListeners(prefix);
+    // Refrescar al cambiar visibilidad del modal.
+    // IMPORTANTE: Este <script> vive en _widget_oportunidad.html que se incluye
+    // ANTES de _widget_calendario.html en crm_home.html. Si ejecutáramos el init
+    // aquí directamente, document.getElementById('widgetGlobalCrearActividad')
+    // devolvería null porque el DOM de ese widget aún no existe, y el prefix
+    // 'cal' nunca recibiría su MutationObserver ni sus listeners — por eso las
+    // pills de fecha/inicio/fin no se actualizaban al cambiar los inputs.
+    // Envolviendo en DOMContentLoaded garantizamos que TODOS los widgets ya
+    // están parseados y los IDs resuelven correctamente.
+    function _wactInitAll() {
+        Object.keys(WACT_FIELDS).forEach(function(prefix) {
+            var m = _modal(prefix); if (!m) return;
+            _attachListeners(prefix);
 
-        // MutationObserver para detectar cuando se abre/cierra
-        var wasVisible = m.style.display !== 'none' && !m.hasAttribute('hidden');
-        new MutationObserver(function() {
-            var visible = m.style.display !== 'none' && !m.hasAttribute('hidden');
-            if (visible && !wasVisible) _onModalOpen(prefix);
-            wasVisible = visible;
-        }).observe(m, { attributes: true, attributeFilter: ['style', 'class'] });
+            // MutationObserver para detectar cuando se abre/cierra
+            var wasVisible = m.style.display !== 'none' && !m.hasAttribute('hidden');
+            new MutationObserver(function() {
+                var visible = m.style.display !== 'none' && !m.hasAttribute('hidden');
+                if (visible && !wasVisible) _onModalOpen(prefix);
+                wasVisible = visible;
+            }).observe(m, { attributes: true, attributeFilter: ['style', 'class'] });
 
-        // Init una vez
-        setTimeout(function() { wactRefreshLabels(prefix); }, 100);
+            // Init una vez
+            setTimeout(function() { wactRefreshLabels(prefix); }, 100);
 
-        // ⌘/Ctrl+Enter submite
-        m.addEventListener('keydown', function(e) {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault();
-                var btn = m.querySelector('.wact-submit');
-                if (btn) btn.click();
-            } else if (e.key === 'Escape') {
-                _closeAllPops(prefix);
-            }
+            // ⌘/Ctrl+Enter submite
+            m.addEventListener('keydown', function(e) {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    var btn = m.querySelector('.wact-submit');
+                    if (btn) btn.click();
+                } else if (e.key === 'Escape') {
+                    _closeAllPops(prefix);
+                }
+            });
         });
-    });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _wactInitAll);
+    } else {
+        _wactInitAll();
+    }
 })();
 </script>
