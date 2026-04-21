@@ -400,18 +400,24 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Padding-bottom MUY generoso para que ninguna sección quede tapada
-       por el footer del wizard al hacer scroll al final. */
-    padding: 40px clamp(32px, 5vw, 80px) 200px;
+    padding: 40px clamp(32px, 5vw, 80px) 48px;
     width: 100%;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    grid-auto-rows: min-content;
-    column-gap: 56px;
-    row-gap: 28px;
-    align-items: start;
-    /* scroll-behavior suave para mejor UX al click Siguiente/Anterior */
+    /* FLEX en vez de grid-row span 99 — el grid con span 99 creaba 98
+       row-gaps de 28px = ~2700px de whitespace fantasma al final del
+       scroll. Con flex el sidebar es simplemente un hijo sticky que
+       mantiene su altura natural, sin filas implícitas. */
+    display: flex;
+    flex-direction: row;
+    gap: 56px;
+    align-items: flex-start;
     scroll-behavior: smooth;
+}
+.lw-canvas-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
 }
 /* Scrollbar visible del canvas — informa al usuario que hay scroll */
 .lw-canvas::-webkit-scrollbar { width: 10px; }
@@ -423,21 +429,10 @@
 .lw-canvas::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.65); }
 .lw-canvas::-webkit-scrollbar-track { background: transparent; }
 
-/* Hero ocupa toda la columna izquierda en la primera fila */
-.lw-canvas > .lw-canvas-hero { grid-column: 1; grid-row: 1; }
-
-/* Secciones (alcance + productos) también en la columna izquierda */
-.lw-canvas > .lw-canvas-section { grid-column: 1; }
-
-/* En pantallas estrechas, colapsa a 1 columna */
+/* En pantallas estrechas, la sidebar se mueve debajo del contenido
+   (layout de 1 columna con meta como fila horizontal abajo). */
 @media (max-width: 1100px) {
-    .lw-canvas {
-        grid-template-columns: 1fr;
-    }
-    .lw-canvas > .lw-canvas-hero,
-    .lw-canvas > .lw-canvas-section {
-        grid-column: 1;
-    }
+    .lw-canvas { flex-direction: column; }
 }
 
 /* ── Hero ── */
@@ -517,9 +512,9 @@
 
 /* ── Meta sidebar (ghost pills, stacked) ─────────────────────── */
 .lw-canvas-meta {
-    grid-column: 2;
-    grid-row: 1 / span 99;
-    align-self: start;
+    width: 340px;
+    flex-shrink: 0;
+    align-self: flex-start;
     position: sticky;
     top: 0;
     display: flex;
@@ -527,12 +522,6 @@
     gap: 8px;
     padding: 10px 0 0 28px;
     border-left: 1px solid #E2E8F0;
-    min-height: 240px;
-    /* max-height + overflow retirados intencionalmente: afectaban el cálculo
-       de altura del grid y el scroll del canvas externo no alcanzaba al
-       final del contenido. Ahora el sidebar crece libremente y el scroll
-       del canvas está a cargo. Si el resumen es muy largo, el canvas
-       scrollea y la sidebar sticky se acomoda. */
 }
 .lw-canvas-meta::before {
     content: "Datos de contacto";
