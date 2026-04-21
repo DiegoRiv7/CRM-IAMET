@@ -363,19 +363,12 @@
                         </div>
                     </div>
 
-                    <!-- Evidencia Fotográfica -->
+                    <!-- Evidencia Fotográfica — zona UNIFICADA: thumbnails + drop + add en el mismo bloque -->
                     <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Evidencia fotográfica <span class="lw-help-tip" data-tip="Arrastra fotos del sitio aquí, pégalas desde el portapapeles, o selecciona archivos. Solo JPG/PNG/WebP. Se suben al servidor al momento.">?</span></div>
-                        <div class="lw-drop" id="lwDropZone">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <div class="lw-drop-text">Arrastra fotos aquí o pega desde portapapeles</div>
-                            <div class="lw-drop-hint">PNG, JPG, WebP · máx. 10 MB c/u</div>
-                            <label class="lw-drop-btn">
-                                <input type="file" accept="image/*" multiple style="display:none;" onchange="lwP2UploadFiles(this.files)">
-                                Seleccionar archivos
-                            </label>
+                        <div class="lw-canvas-section-label">Evidencia fotográfica <span class="lw-help-tip" data-tip="Arrastra fotos aquí, pégalas con ⌘V, o da click en la tarjeta + para seleccionar. Solo JPG/PNG/WebP.">?</span></div>
+                        <div class="lw-evid-zone" id="lwDropZone" data-dropzone="1">
+                            <!-- Renderizado dinámicamente por renderPhase2Photos(): thumbnails + add card -->
                         </div>
-                        <div class="lw-photo-grid" id="lw_f2_photos"></div>
                     </div>
 
                     <!-- Comentarios por partida (colapsibles, opcional) -->

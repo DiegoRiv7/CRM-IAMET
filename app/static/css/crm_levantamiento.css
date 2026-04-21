@@ -1072,6 +1072,147 @@
     text-overflow: ellipsis;
 }
 
+/* ── Evidencia fotográfica: zona unificada (drop + thumbs + add card) ── */
+.lw-evid-zone {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    border: 1.5px dashed #E2E8F0;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #FAFBFC, #F8FAFC);
+    transition: all 0.15s ease;
+    min-height: 150px;
+    align-content: start;
+}
+.lw-evid-zone.lw-drop-active {
+    border-color: #93C5FD;
+    background: #EFF6FF;
+    box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.22);
+}
+.lw-evid-zone.lw-evid-empty {
+    grid-template-columns: 1fr;
+    min-height: 200px;
+    padding: 18px;
+}
+.lw-evid-thumb {
+    position: relative;
+    height: 120px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #F1F5F9;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.lw-evid-thumb:hover { transform: scale(1.03); }
+.lw-evid-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lw-evid-del {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(15, 23, 42, 0.75);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.lw-evid-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 3px 8px;
+    background: rgba(15, 23, 42, 0.55);
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 500;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.lw-evid-add-card {
+    position: relative;
+    height: 120px;
+    border-radius: 10px;
+    border: 1.5px dashed #CBD5E1;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #64748B;
+    text-align: center;
+    padding: 8px;
+}
+.lw-evid-add-card:hover {
+    border-color: #93C5FD;
+    background: #F8FAFC;
+    color: #2563EB;
+}
+.lw-evid-zone.lw-evid-empty .lw-evid-add-card {
+    height: auto;
+    min-height: 160px;
+    padding: 28px 18px;
+    border: none;
+    background: transparent;
+}
+.lw-evid-add-plus {
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+    color: #94A3B8;
+}
+.lw-evid-add-plus-lg {
+    font-size: 44px;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #FFFFFF;
+    border: 1.5px solid #E2E8F0;
+    margin-bottom: 6px;
+}
+.lw-evid-add-label {
+    font-size: 11.5px;
+    font-weight: 600;
+}
+.lw-evid-add-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+.lw-evid-add-hint {
+    font-size: 12px;
+    color: #64748B;
+}
+.lw-evid-add-hint kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    font-family: inherit;
+    font-size: 11px;
+    border: 1px solid #E2E8F0;
+    border-radius: 4px;
+    background: #F1F5F9;
+    color: #475569;
+}
+.lw-evid-add-hint-sm {
+    font-size: 11px;
+    color: #94A3B8;
+    margin-top: 2px;
+}
+
 .lw-lightbox {
     position: fixed;
     inset: 0;

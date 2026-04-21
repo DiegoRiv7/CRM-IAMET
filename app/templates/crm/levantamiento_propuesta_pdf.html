@@ -202,7 +202,11 @@
         text-align: center;
     }
 
-    /* Evidencia Fotográfica */
+    /* Evidencia Fotográfica — SIEMPRE en hoja aparte */
+    .pt-evid-wrap {
+        page-break-before: always;
+        break-before: page;
+    }
     .pt-evid-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -348,23 +352,25 @@
     </tr>
 </table>
 
-<!-- ═══ Evidencia Fotográfica ═══ -->
-<table class="pt-table" style="margin-bottom:4px;">
-    <tr class="pt-section-row"><td>Evidencia Fotográfica</td></tr>
-</table>
+<!-- ═══ Evidencia Fotográfica — en hoja aparte ═══ -->
+<div class="pt-evid-wrap">
+    <table class="pt-table" style="margin-bottom:4px;">
+        <tr class="pt-section-row"><td>Evidencia Fotográfica</td></tr>
+    </table>
 
-{% if evidencias %}
-<div class="pt-evid-grid">
-    {% for ev in evidencias %}
-    <div class="pt-evid-item">
-        <img src="{{ ev.abs_url }}" alt="Evidencia {{ forloop.counter }}">
-        {% if ev.comentario %}<div class="pt-evid-caption">{{ ev.comentario }}</div>{% endif %}
+    {% if evidencias %}
+    <div class="pt-evid-grid">
+        {% for ev in evidencias %}
+        <div class="pt-evid-item">
+            <img src="{{ ev.abs_url }}" alt="Evidencia {{ forloop.counter }}">
+            {% if ev.comentario %}<div class="pt-evid-caption">{{ ev.comentario }}</div>{% endif %}
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
+    {% else %}
+    <div class="pt-evid-empty">Sin evidencias fotográficas adjuntas.</div>
+    {% endif %}
 </div>
-{% else %}
-<div class="pt-evid-empty">Sin evidencias fotográficas adjuntas.</div>
-{% endif %}
 
 <!-- ═══ Footer con logos de marcas + contacto ═══ -->
 <div class="pt-footer">

@@ -1262,16 +1262,31 @@
     };
 
     function renderPhase2Photos() {
-        var grid = $('lw_f2_photos');
+        var zone = $('lwDropZone');
+        if (!zone) return;
         var evs = state.lev.evidencias || [];
-        if (!evs.length) { grid.innerHTML = ''; return; }
-        grid.innerHTML = evs.map(function (ev) {
-            return '<div class="lw-photo-thumb" onclick="lwP2Lightbox(' + ev.id + ')">' +
+        var hasPhotos = evs.length > 0;
+        zone.classList.toggle('lw-evid-empty', !hasPhotos);
+
+        var thumbs = evs.map(function (ev) {
+            return '<div class="lw-evid-thumb" onclick="lwP2Lightbox(' + ev.id + ')">' +
                 '<img src="' + esc(ev.url) + '" alt="">' +
-                '<button type="button" class="lw-photo-del" title="Eliminar" onclick="event.stopPropagation(); lwP2DeleteEvidencia(' + ev.id + ')">×</button>' +
-                (ev.nombre_original ? '<div class="lw-photo-name">' + esc(ev.nombre_original) + '</div>' : '') +
+                '<button type="button" class="lw-evid-del" title="Eliminar" onclick="event.stopPropagation(); lwP2DeleteEvidencia(' + ev.id + ')">×</button>' +
+                (ev.nombre_original ? '<div class="lw-evid-name">' + esc(ev.nombre_original) + '</div>' : '') +
             '</div>';
         }).join('');
+
+        var addCard = '<label class="lw-evid-add-card" for="lw_f2_photo_input" title="Agregar fotos">' +
+            (hasPhotos
+                ? '<div class="lw-evid-add-plus">+</div><div class="lw-evid-add-label">Agregar</div>'
+                : '<div class="lw-evid-add-plus lw-evid-add-plus-lg">+</div>' +
+                  '<div class="lw-evid-add-title">Arrastra fotos aquí</div>' +
+                  '<div class="lw-evid-add-hint">o pega con <kbd>⌘V</kbd> &middot; click para seleccionar</div>' +
+                  '<div class="lw-evid-add-hint-sm">JPG · PNG · WebP</div>') +
+            '<input type="file" id="lw_f2_photo_input" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="lwP2UploadFiles(this.files); this.value=\'\';">' +
+        '</label>';
+
+        zone.innerHTML = thumbs + addCard;
     }
     window.lwP2Lightbox = function (id) {
         var ev = (state.lev.evidencias || []).find(function (e) { return e.id === id; });
