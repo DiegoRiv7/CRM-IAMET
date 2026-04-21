@@ -1522,33 +1522,55 @@
         renderP3Materiales();
         renderP3ManoObra();
         renderP3Gastos();
+        bindP3Delegation();
         recalcP3Summary();
+    }
+
+    // ── Helpers de celdas (Fase 3) ─────────────────────────────────
+    // Generan el HTML de un input sin usar string concatenación + onevent
+    // inline, para poder volver a atar handlers después de addRow/delete sin
+    // re-generar TODA la tabla (que destruía el foco del usuario).
+    function p3Input(kind, i, field, val, opts) {
+        opts = opts || {};
+        var typeAttr = kind === 'num' ? 'type="number"' : 'type="text"';
+        var cls = kind === 'num' ? 'lw-p3-num-input' : 'lw-p3-txt-input';
+        if (opts.mono) cls += ' lw-p3-mono';
+        var style = opts.style ? ' style="' + opts.style + '"' : '';
+        var v = val == null ? '' : val;
+        if (kind === 'text') v = esc(String(v));
+        return '<input ' + typeAttr + ' class="' + cls + '" value="' + v +
+               '" data-p3-field="' + field + '"' + style + '>';
     }
 
     function renderP3Materiales() {
         var mat = state.lev.fase3_data.materiales || [];
         var body = $('lw_f3_mat_body');
-        var foot = $('lw_f3_mat_foot');
         body.innerHTML = mat.map(function (r, i) {
             var c = calcMatRow(r);
-            return '<tr>' +
+            return '<tr data-p3-row="' + i + '" data-p3-tbl="materiales">' +
                 '<td><span class="lw-p3-num">' + (i + 1) + '</span></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.qty || 0) + '" oninput="lwP3Mat(' + i + ', \'qty\', this.value)"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" style="width:48px;" value="' + esc(r.unid || 'PZA') + '" oninput="lwP3Mat(' + i + ', \'unid\', this.value)"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" value="' + esc(r.desc || '') + '" oninput="lwP3Mat(' + i + ', \'desc\', this.value)" style="min-width:160px;"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" value="' + esc(r.marca || '') + '" oninput="lwP3Mat(' + i + ', \'marca\', this.value)" style="width:84px;"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input lw-p3-mono" value="' + esc(r.modelo || '') + '" oninput="lwP3Mat(' + i + ', \'modelo\', this.value)" style="width:110px;"></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.costoUnit || 0) + '" oninput="lwP3Mat(' + i + ', \'costoUnit\', this.value)"></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.precioLista || 0) + '" oninput="lwP3Mat(' + i + ', \'precioLista\', this.value)"></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.descCompra || 0) + '" oninput="lwP3Mat(' + i + ', \'descCompra\', this.value)"></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.descVenta || 0) + '" oninput="lwP3Mat(' + i + ', \'descVenta\', this.value)"></td>' +
-                '<td class="num"><span class="lw-p3-mono">' + fmtMoney(c.costoTotal) + '</span></td>' +
-                '<td class="num"><span class="lw-p3-mono lw-p3-bold">' + fmtMoney(c.precioVenta) + '</span></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" value="' + esc(r.proveedor || '') + '" oninput="lwP3Mat(' + i + ', \'proveedor\', this.value)" style="width:90px;"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" value="' + esc(r.entrega || '') + '" oninput="lwP3Mat(' + i + ', \'entrega\', this.value)" style="width:72px;"></td>' +
-                '<td><button type="button" class="lw-cell-del" onclick="lwP3DelRow(\'materiales\', ' + i + ')">×</button></td>' +
+                '<td>' + p3Input('num',  i, 'qty',         r.qty || 0) + '</td>' +
+                '<td>' + p3Input('text', i, 'unid',        r.unid || 'PZA', { style: 'width:48px;' }) + '</td>' +
+                '<td>' + p3Input('text', i, 'desc',        r.desc || '',    { style: 'min-width:160px;' }) + '</td>' +
+                '<td>' + p3Input('text', i, 'marca',       r.marca || '',   { style: 'width:84px;' }) + '</td>' +
+                '<td>' + p3Input('text', i, 'modelo',      r.modelo || '',  { style: 'width:110px;', mono: true }) + '</td>' +
+                '<td>' + p3Input('num',  i, 'costoUnit',   r.costoUnit || 0) + '</td>' +
+                '<td>' + p3Input('num',  i, 'precioLista', r.precioLista || 0) + '</td>' +
+                '<td>' + p3Input('num',  i, 'descCompra',  r.descCompra || 0) + '</td>' +
+                '<td>' + p3Input('num',  i, 'descVenta',   r.descVenta || 0) + '</td>' +
+                '<td class="num" data-p3-cell="costoTotal"><span class="lw-p3-mono">' + fmtMoney(c.costoTotal) + '</span></td>' +
+                '<td class="num" data-p3-cell="precioVenta"><span class="lw-p3-mono lw-p3-bold">' + fmtMoney(c.precioVenta) + '</span></td>' +
+                '<td>' + p3Input('text', i, 'proveedor', r.proveedor || '', { style: 'width:90px;' }) + '</td>' +
+                '<td>' + p3Input('text', i, 'entrega',   r.entrega || '',   { style: 'width:72px;' }) + '</td>' +
+                '<td><button type="button" class="lw-cell-del" data-p3-del="1" title="Eliminar fila">×</button></td>' +
             '</tr>';
         }).join('');
+        updateP3MatFooter();
+    }
+
+    function updateP3MatFooter() {
+        var mat = state.lev.fase3_data.materiales || [];
+        var foot = $('lw_f3_mat_foot');
         var tot = mat.reduce(function (a, r) { var c = calcMatRow(r); return { c: a.c + c.costoTotal, v: a.v + c.precioVenta }; }, { c: 0, v: 0 });
         foot.innerHTML = '<tr class="lw-p3-foot">' +
             '<td colspan="10">Subtotal Materiales</td>' +
@@ -1556,41 +1578,53 @@
             '<td class="num lw-p3-mono lw-p3-bold">' + fmtMoney(tot.v) + '</td>' +
             '<td colspan="3"></td></tr>';
     }
+
     function renderP3ManoObra() {
         var rows = state.lev.fase3_data.manoObra || [];
         var body = $('lw_f3_mo_body');
-        var foot = $('lw_f3_mo_foot');
         body.innerHTML = rows.map(function (r, i) {
             var total = (r.precioUnit || 0) * (r.qty || 0);
-            return '<tr>' +
+            return '<tr data-p3-row="' + i + '" data-p3-tbl="manoObra">' +
                 '<td><span class="lw-p3-num">' + (i + 1) + '</span></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.qty || 0) + '" oninput="lwP3MO(' + i + ', \'qty\', this.value)"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" style="width:60px;" value="' + esc(r.unid || 'SERV') + '" oninput="lwP3MO(' + i + ', \'unid\', this.value)"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" value="' + esc(r.desc || '') + '" oninput="lwP3MO(' + i + ', \'desc\', this.value)" style="min-width:220px;"></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.precioUnit || 0) + '" oninput="lwP3MO(' + i + ', \'precioUnit\', this.value)"></td>' +
-                '<td class="num"><span class="lw-p3-mono lw-p3-bold">' + fmtMoney(total) + '</span></td>' +
-                '<td><button type="button" class="lw-cell-del" onclick="lwP3DelRow(\'manoObra\', ' + i + ')">×</button></td>' +
+                '<td>' + p3Input('num',  i, 'qty',        r.qty || 0) + '</td>' +
+                '<td>' + p3Input('text', i, 'unid',       r.unid || 'SERV', { style: 'width:60px;' }) + '</td>' +
+                '<td>' + p3Input('text', i, 'desc',       r.desc || '',     { style: 'min-width:220px;' }) + '</td>' +
+                '<td>' + p3Input('num',  i, 'precioUnit', r.precioUnit || 0) + '</td>' +
+                '<td class="num" data-p3-cell="total"><span class="lw-p3-mono lw-p3-bold">' + fmtMoney(total) + '</span></td>' +
+                '<td><button type="button" class="lw-cell-del" data-p3-del="1" title="Eliminar fila">×</button></td>' +
             '</tr>';
         }).join('');
+        updateP3MOFooter();
+    }
+
+    function updateP3MOFooter() {
+        var rows = state.lev.fase3_data.manoObra || [];
+        var foot = $('lw_f3_mo_foot');
         var tot = rows.reduce(function (a, r) { return a + (r.precioUnit || 0) * (r.qty || 0); }, 0);
         foot.innerHTML = '<tr class="lw-p3-foot"><td colspan="5">Subtotal Mano de Obra</td><td class="num lw-p3-mono lw-p3-bold">' + fmtMoney(tot) + '</td><td></td></tr>';
     }
+
     function renderP3Gastos() {
         var rows = state.lev.fase3_data.gastos || [];
         var body = $('lw_f3_gas_body');
-        var foot = $('lw_f3_gas_foot');
         body.innerHTML = rows.map(function (r, i) {
             var total = (r.costoUnit || 0) * (r.qty || 0);
-            return '<tr>' +
+            return '<tr data-p3-row="' + i + '" data-p3-tbl="gastos">' +
                 '<td><span class="lw-p3-num">' + (i + 1) + '</span></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.qty || 0) + '" oninput="lwP3Gas(' + i + ', \'qty\', this.value)"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" style="width:60px;" value="' + esc(r.unid || 'GLOB') + '" oninput="lwP3Gas(' + i + ', \'unid\', this.value)"></td>' +
-                '<td><input type="text" class="lw-p3-txt-input" value="' + esc(r.desc || '') + '" oninput="lwP3Gas(' + i + ', \'desc\', this.value)" style="min-width:220px;"></td>' +
-                '<td><input type="number" class="lw-p3-num-input" value="' + (r.costoUnit || 0) + '" oninput="lwP3Gas(' + i + ', \'costoUnit\', this.value)"></td>' +
-                '<td class="num"><span class="lw-p3-mono lw-p3-bold">' + fmtMoney(total) + '</span></td>' +
-                '<td><button type="button" class="lw-cell-del" onclick="lwP3DelRow(\'gastos\', ' + i + ')">×</button></td>' +
+                '<td>' + p3Input('num',  i, 'qty',       r.qty || 0) + '</td>' +
+                '<td>' + p3Input('text', i, 'unid',      r.unid || 'GLOB', { style: 'width:60px;' }) + '</td>' +
+                '<td>' + p3Input('text', i, 'desc',      r.desc || '',     { style: 'min-width:220px;' }) + '</td>' +
+                '<td>' + p3Input('num',  i, 'costoUnit', r.costoUnit || 0) + '</td>' +
+                '<td class="num" data-p3-cell="total"><span class="lw-p3-mono lw-p3-bold">' + fmtMoney(total) + '</span></td>' +
+                '<td><button type="button" class="lw-cell-del" data-p3-del="1" title="Eliminar fila">×</button></td>' +
             '</tr>';
         }).join('');
+        updateP3GasFooter();
+    }
+
+    function updateP3GasFooter() {
+        var rows = state.lev.fase3_data.gastos || [];
+        var foot = $('lw_f3_gas_foot');
         var tot = rows.reduce(function (a, r) { return a + (r.costoUnit || 0) * (r.qty || 0); }, 0);
         foot.innerHTML = '<tr class="lw-p3-foot"><td colspan="5">Subtotal Gastos</td><td class="num lw-p3-mono lw-p3-bold">' + fmtMoney(tot) + '</td><td></td></tr>';
     }
@@ -1624,42 +1658,129 @@
         $('lwSumUtil').style.color = color;
     }
 
-    window.lwP3Mat = function (i, field, val) {
-        if (['qty', 'costoUnit', 'precioLista', 'descCompra', 'descVenta'].indexOf(field) !== -1) val = parseFloat(val) || 0;
-        state.lev.fase3_data.materiales[i][field] = val;
-        // Re-render solo totales para no perder foco
-        renderP3Materiales();
+    // ── Campos numéricos por tabla ────────────────────────────────
+    var P3_NUM_FIELDS = {
+        materiales: ['qty', 'costoUnit', 'precioLista', 'descCompra', 'descVenta'],
+        manoObra:   ['qty', 'precioUnit'],
+        gastos:     ['qty', 'costoUnit'],
+    };
+
+    // Actualiza SOLO las celdas calculadas de una fila (sin re-render),
+    // preservando el foco del input que está editando el usuario.
+    function p3UpdateRowTotals(tbl, i) {
+        var tr = document.querySelector('#lw_f3_' + (tbl === 'materiales' ? 'mat' : tbl === 'manoObra' ? 'mo' : 'gas') + '_body tr[data-p3-row="' + i + '"]');
+        if (!tr) return;
+        var r = state.lev.fase3_data[tbl][i];
+        if (!r) return;
+        if (tbl === 'materiales') {
+            var c = calcMatRow(r);
+            var ct = tr.querySelector('[data-p3-cell="costoTotal"] span');
+            var pv = tr.querySelector('[data-p3-cell="precioVenta"] span');
+            if (ct) ct.textContent = fmtMoney(c.costoTotal);
+            if (pv) pv.textContent = fmtMoney(c.precioVenta);
+        } else {
+            var total = tbl === 'manoObra'
+                ? (r.precioUnit || 0) * (r.qty || 0)
+                : (r.costoUnit || 0) * (r.qty || 0);
+            var tot = tr.querySelector('[data-p3-cell="total"] span');
+            if (tot) tot.textContent = fmtMoney(total);
+        }
+    }
+
+    // Handler unificado — llamado desde el listener delegado
+    function p3OnInput(tbl, i, field, val) {
+        if ((P3_NUM_FIELDS[tbl] || []).indexOf(field) !== -1) val = parseFloat(val) || 0;
+        state.lev.fase3_data[tbl][i][field] = val;
+        p3UpdateRowTotals(tbl, i);
+        if (tbl === 'materiales') updateP3MatFooter();
+        else if (tbl === 'manoObra') updateP3MOFooter();
+        else if (tbl === 'gastos') updateP3GasFooter();
         recalcP3Summary();
         lwFieldChange();
-    };
-    window.lwP3MO = function (i, field, val) {
-        if (['qty', 'precioUnit'].indexOf(field) !== -1) val = parseFloat(val) || 0;
-        state.lev.fase3_data.manoObra[i][field] = val;
-        renderP3ManoObra();
-        recalcP3Summary();
-        lwFieldChange();
-    };
-    window.lwP3Gas = function (i, field, val) {
-        if (['qty', 'costoUnit'].indexOf(field) !== -1) val = parseFloat(val) || 0;
-        state.lev.fase3_data.gastos[i][field] = val;
-        renderP3Gastos();
-        recalcP3Summary();
-        lwFieldChange();
-    };
-    window.lwP3AddRow = function (tabla) {
+    }
+
+    // Delegación de eventos: un solo listener por tabla que NO re-renderiza
+    // → el foco del usuario nunca se pierde al escribir.
+    function bindP3Delegation() {
+        ['lw_f3_mat_body', 'lw_f3_mo_body', 'lw_f3_gas_body'].forEach(function (bodyId) {
+            var body = $(bodyId);
+            if (!body || body.dataset.p3Bound) return;
+            body.dataset.p3Bound = '1';
+
+            body.addEventListener('input', function (ev) {
+                var inp = ev.target.closest('input[data-p3-field]');
+                if (!inp) return;
+                var tr = inp.closest('tr[data-p3-row]');
+                if (!tr) return;
+                var tbl = tr.getAttribute('data-p3-tbl');
+                var i = parseInt(tr.getAttribute('data-p3-row'), 10);
+                p3OnInput(tbl, i, inp.getAttribute('data-p3-field'), inp.value);
+            });
+
+            // Enter en último row → nueva fila + foco en descripción
+            // Tab en última celda de última fila → también crea nueva fila
+            body.addEventListener('keydown', function (ev) {
+                if (ev.key !== 'Enter') return;
+                var inp = ev.target.closest('input[data-p3-field]');
+                if (!inp) return;
+                var tr = inp.closest('tr[data-p3-row]');
+                if (!tr) return;
+                var tbl = tr.getAttribute('data-p3-tbl');
+                var i = parseInt(tr.getAttribute('data-p3-row'), 10);
+                var rows = state.lev.fase3_data[tbl] || [];
+                ev.preventDefault();
+                if (i === rows.length - 1) {
+                    lwP3AddRow(tbl, /*focusDesc*/ true);
+                } else {
+                    // Siguiente fila, mismo campo
+                    var field = inp.getAttribute('data-p3-field');
+                    var next = body.querySelector('tr[data-p3-row="' + (i + 1) + '"] input[data-p3-field="' + field + '"]');
+                    if (next) { next.focus(); next.select(); }
+                }
+            });
+
+            body.addEventListener('click', function (ev) {
+                var del = ev.target.closest('button[data-p3-del]');
+                if (!del) return;
+                var tr = del.closest('tr[data-p3-row]');
+                if (!tr) return;
+                var tbl = tr.getAttribute('data-p3-tbl');
+                var i = parseInt(tr.getAttribute('data-p3-row'), 10);
+                lwP3DelRow(tbl, i);
+            });
+        });
+    }
+
+    // Retrocompat: mantenemos los helpers globales por si algo los usa.
+    window.lwP3Mat = function (i, field, val) { p3OnInput('materiales', i, field, val); };
+    window.lwP3MO  = function (i, field, val) { p3OnInput('manoObra', i, field, val); };
+    window.lwP3Gas = function (i, field, val) { p3OnInput('gastos', i, field, val); };
+    window.lwP3AddRow = function (tabla, focusDesc) {
         var d = state.lev.fase3_data;
+        var newIdx;
         if (tabla === 'materiales') {
             d.materiales.push({ partida: d.materiales.length + 1, qty: 1, unid: 'PZA', desc: '', marca: '', modelo: '', costoUnit: 0, precioLista: 0, descCompra: 0, descVenta: 0, proveedor: '', entrega: '' });
+            newIdx = d.materiales.length - 1;
             renderP3Materiales();
         } else if (tabla === 'manoObra') {
             d.manoObra.push({ partida: d.manoObra.length + 1, qty: 1, unid: 'SERV', desc: '', precioUnit: 0 });
+            newIdx = d.manoObra.length - 1;
             renderP3ManoObra();
         } else if (tabla === 'gastos') {
             d.gastos.push({ partida: d.gastos.length + 1, qty: 1, unid: 'GLOB', desc: '', costoUnit: 0 });
+            newIdx = d.gastos.length - 1;
             renderP3Gastos();
         }
         recalcP3Summary();
         lwFieldChange();
+        if (focusDesc && newIdx != null) {
+            var bodyId = tabla === 'materiales' ? 'lw_f3_mat_body' : tabla === 'manoObra' ? 'lw_f3_mo_body' : 'lw_f3_gas_body';
+            setTimeout(function () {
+                var sel = '#' + bodyId + ' tr[data-p3-row="' + newIdx + '"] input[data-p3-field="desc"]';
+                var inp = document.querySelector(sel);
+                if (inp) { inp.focus(); inp.select(); }
+            }, 0);
+        }
     };
     window.lwP3DelRow = function (tabla, idx) {
         state.lev.fase3_data[tabla].splice(idx, 1);
