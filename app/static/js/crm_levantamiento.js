@@ -129,15 +129,25 @@
     }
 
     window.levantamientoWizardClose = function () {
-        if (state.dirty) {
-            lwConfirm('Cambios sin guardar', 'Si cierras ahora perderás los últimos cambios que no alcanzaron a guardarse. ¿Seguro que quieres cerrar?', {
-                textoConfirmar: 'Cerrar sin guardar',
-                color: '#F59E0B',
-                onConfirm: _doCloseWizard,
-            });
+        // Intentar guardar antes de cerrar. Si el save es rápido (red ok),
+        // no vemos el modal. Si hay errores / red caída, caemos al modal
+        // para que el usuario decida.
+        if (!state.dirty && _saveInFlight === 0) {
+            _doCloseWizard();
             return;
         }
-        _doCloseWizard();
+        _saveStatusSet('saving');
+        lwFlushSave().then(function (ok) {
+            if (ok && !state.dirty) {
+                _doCloseWizard();
+            } else {
+                lwConfirm('Cambios sin guardar', 'No pudimos guardar los últimos cambios (posible problema de red). ¿Cerrar de todas formas? Perderás lo que no alcanzó a guardar.', {
+                    textoConfirmar: 'Cerrar sin guardar',
+                    color: '#F59E0B',
+                    onConfirm: _doCloseWizard,
+                });
+            }
+        });
     };
 
     // Toast global (fuera del overlay) para notificaciones post-cierre
@@ -275,8 +285,10 @@
 
     window.lwGoPhase = function (n) {
         if (n < 1 || n > 5) return;
-        // Guardar fase actual antes de movernos
-        lwSave(false);
+        // Flushear lo pendiente de la fase actual ANTES de cambiar.
+        // Si el timer debounce de 600ms no se disparó todavía, forzamos
+        // el save inmediato.
+        lwFlushSave();
         state.phase = n;
         state.lev.fase_actual = Math.max(state.lev.fase_actual || 1, n);
         renderPhaseTabs();
@@ -333,7 +345,34 @@
         else if (n === 5) renderPhase5();
     }
 
-    // ── Auto-save (debounce 600ms) ───────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    //  AUTOSAVE ROBUSTO
+    //  ───────────────
+    //  - Debounce 600ms después de cada edición.
+    //  - Retry exponencial si la red falla (1s, 2s, 4s; hasta 4 intentos).
+    //  - Sequence number: si dos saves se lanzan en paralelo, el segundo
+    //    gana (evita que una respuesta vieja sobrescriba state fresco).
+    //  - Flush sincrónico vía sendBeacon al cerrar pestaña / pagehide.
+    //  - Indicador visual con 3 estados: guardando · guardado · error.
+    // ═══════════════════════════════════════════════════════════════
+
+    var _saveInFlight = 0;     // nº de saves en vuelo
+    var _saveSeq = 0;          // contador de secuencia
+    var _saveLastOk = 0;       // seq del último save exitoso
+    var _saveFailedCount = 0;  // fallos consecutivos
+    var _saveRetryTimer = null;
+
+    function _saveStatusSet(state_, opts) {
+        opts = opts || {};
+        var ind = $('lwSaveIndicator');
+        if (!ind) return;
+        ind.classList.remove('lw-save-saving', 'lw-save-ok', 'lw-save-err');
+        if (state_ === 'saving')  { ind.classList.add('lw-save-saving'); ind.textContent = 'Guardando…'; }
+        else if (state_ === 'ok') { ind.classList.add('lw-save-ok');     ind.textContent = '✓ Guardado'; }
+        else if (state_ === 'err'){ ind.classList.add('lw-save-err');    ind.textContent = opts.msg || '⚠ Error al guardar'; }
+        else                       { ind.textContent = ''; }
+    }
+
     window.lwFieldChange = function () {
         state.dirty = true;
         // Refrescar el checklist y resumen en vivo (Fase 1) — si borras
@@ -345,34 +384,144 @@
         state.saveTimer = setTimeout(function () { lwSave(false); }, 600);
     };
 
+    // Fuerza un save inmediato descartando el debounce (tanto de fase
+    // como del nombre del levantamiento).
+    // Retorna Promise<boolean> (true si guardó, false si no había lev).
+    window.lwFlushSave = function () {
+        if (!state.lev) return Promise.resolve(false);
+        if (state.saveTimer) { clearTimeout(state.saveTimer); state.saveTimer = null; }
+        var p1 = (typeof _nombreFlush === 'function') ? _nombreFlush() : Promise.resolve();
+        var p2 = lwSave(false);
+        return Promise.all([p1, p2]).then(function () { return true; }).catch(function () { return false; });
+    };
+
     window.lwSave = function (showFlash) {
-        if (!state.lev) return;
-        // Recolectar data de la fase actual desde el DOM
+        if (!state.lev) return Promise.resolve(null);
+        var mySeq = ++_saveSeq;
         var data = collectPhaseData(state.phase);
         state.lev['fase' + state.phase + '_data'] = data;
-        return apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/fase/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fase: state.phase, data: data, fase_actual: state.lev.fase_actual }),
-        }).then(function (r) {
-            if (r.success) {
+        _saveInFlight++;
+        _saveStatusSet('saving');
+
+        var body = JSON.stringify({
+            fase: state.phase,
+            data: data,
+            fase_actual: state.lev.fase_actual,
+        });
+
+        function onDone(r) {
+            _saveInFlight--;
+            // Descartar respuestas viejas (ya hubo un save más nuevo que ganó)
+            if (mySeq < _saveLastOk) return r;
+            _saveLastOk = mySeq;
+            if (r && r.success) {
                 state.dirty = false;
-                // Actualizar timestamp desde la respuesta del servidor
+                _saveFailedCount = 0;
                 if (r.data && r.data.fecha_actualizacion) {
                     state.lev.fecha_actualizacion = r.data.fecha_actualizacion;
                 }
                 renderSaveStamp();
+                _saveStatusSet('ok');
                 if (showFlash) showSaveFlash();
+                // Limpiar el "Guardado" a los 2s para volver al stamp
+                setTimeout(function () {
+                    if (_saveInFlight === 0 && !state.dirty) _saveStatusSet('');
+                }, 2000);
+            } else {
+                _scheduleRetry();
             }
+            return r;
+        }
+
+        function onError() {
+            _saveInFlight--;
+            if (mySeq < _saveLastOk) return; // ya hubo uno más nuevo que ganó
+            _scheduleRetry();
+        }
+
+        return apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/fase/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body,
+        }).then(onDone, function (err) {
+            onError();
+            throw err;
         });
     };
+
+    // Retry con backoff exponencial: 1s, 2s, 4s (máx 4 intentos).
+    function _scheduleRetry() {
+        _saveFailedCount++;
+        if (_saveFailedCount > 4) {
+            _saveStatusSet('err', { msg: '⚠ No se pudo guardar — revisa tu conexión' });
+            return;
+        }
+        var delay = Math.min(8000, 500 * Math.pow(2, _saveFailedCount));
+        _saveStatusSet('err', { msg: '⚠ Reintentando…' });
+        if (_saveRetryTimer) clearTimeout(_saveRetryTimer);
+        _saveRetryTimer = setTimeout(function () { lwSave(false); }, delay);
+    }
+
+    // Flush vía sendBeacon al cerrar pestaña (el browser aún procesa la
+    // petición aunque la página esté muriendo). No usa credentials header,
+    // pero incluye cookie de sesión automáticamente.
+    function _beaconFlush() {
+        if (!state.lev) return;
+        var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/';
+        // 1) Data de la fase actual
+        if (state.dirty) {
+            try {
+                var data = collectPhaseData(state.phase);
+                var payload = JSON.stringify({
+                    fase: state.phase,
+                    data: data,
+                    fase_actual: state.lev.fase_actual,
+                });
+                var url = base + 'fase/';
+                var blob = new Blob([payload], { type: 'application/json' });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(url, blob);
+                } else {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, false);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    try { xhr.send(payload); } catch (e) {}
+                }
+            } catch (e) { /* best effort */ }
+        }
+        // 2) Nombre del levantamiento si está pendiente
+        if (_nombreDirty) {
+            try {
+                var payload2 = JSON.stringify({ nombre: state.lev.nombre });
+                var url2 = base + 'actualizar/';
+                var blob2 = new Blob([payload2], { type: 'application/json' });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(url2, blob2);
+                } else {
+                    var xhr2 = new XMLHttpRequest();
+                    xhr2.open('POST', url2, false);
+                    xhr2.setRequestHeader('Content-Type', 'application/json');
+                    try { xhr2.send(payload2); } catch (e) {}
+                }
+            } catch (e) { /* best effort */ }
+        }
+    }
+    window.addEventListener('pagehide', _beaconFlush);
+    // beforeunload también dispara cuando el usuario cierra el tab o recarga
+    window.addEventListener('beforeunload', function (e) {
+        _beaconFlush();
+        // Si todavía hay cosas en vuelo, mostrar aviso nativo del navegador
+        if (state.dirty || _saveInFlight > 0) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
 
     function showSaveFlash() {
         var ind = $('lwSaveIndicator');
         if (!ind) return;
-        ind.textContent = '✓ Guardado';
         ind.classList.add('lw-save-flash');
-        setTimeout(function () { ind.classList.remove('lw-save-flash'); ind.textContent = ''; }, 1600);
+        setTimeout(function () { ind.classList.remove('lw-save-flash'); }, 1600);
     }
 
     function collectPhaseData(phase) {
@@ -413,9 +562,28 @@
     // Actualiza el nombre del levantamiento (hero title) — persiste en
     // el modelo (no es fase1_data). Autosave debounced.
     var _nombreTimer = null;
+    var _nombreDirty = false;
+
+    function _nombreFlush() {
+        if (!state.lev || !_nombreDirty) return Promise.resolve();
+        _nombreDirty = false;
+        if (_nombreTimer) { clearTimeout(_nombreTimer); _nombreTimer = null; }
+        return apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/actualizar/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre: state.lev.nombre }),
+        }).then(function (r) {
+            if (r && r.success) {
+                if (r.data && r.data.fecha_actualizacion) state.lev.fecha_actualizacion = r.data.fecha_actualizacion;
+                renderSaveStamp();
+            }
+        }).catch(function () { _nombreDirty = true; /* se reintenta en próximo flush */ });
+    }
+
     window.lwUpdateNombre = function (val) {
         if (!state.lev) return;
         state.lev.nombre = val || '';
+        _nombreDirty = true;
         // Refrescar el título en el header también
         var t = $('lwTitle');
         if (t) t.textContent = state.lev.nombre || 'Levantamiento';
@@ -425,20 +593,7 @@
             try { lwRecomputeSummary(); } catch (e) { /* silencioso */ }
         }
         if (_nombreTimer) clearTimeout(_nombreTimer);
-        _nombreTimer = setTimeout(function () {
-            apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/actualizar/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre: state.lev.nombre }),
-            }).then(function (r) {
-                if (r.success) {
-                    state.dirty = false;
-                    if (r.data && r.data.fecha_actualizacion) state.lev.fecha_actualizacion = r.data.fecha_actualizacion;
-                    renderSaveStamp();
-                    showSaveFlash();
-                }
-            });
-        }, 700);
+        _nombreTimer = setTimeout(_nombreFlush, 700);
     };
 
     function renderPhase1() {
@@ -1545,9 +1700,8 @@
             var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
             url = base + endpoint + '/' + (mode === 'download' ? '?download=1' : '');
         }
-        // Guardar primero para que el export tenga la data fresca
-        lwSave(false).then(function () { window.open(url, '_blank'); })
-            .catch(function () { window.open(url, '_blank'); });
+        // Flush pendientes primero para que el export tenga la data fresca.
+        lwFlushSave().then(function () { window.open(url, '_blank'); });
     };
 
     // ═══════════════════════════════════════════════════════════════
