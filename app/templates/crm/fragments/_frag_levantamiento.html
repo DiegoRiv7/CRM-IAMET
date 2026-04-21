@@ -1,0 +1,149 @@
+<div class="lw-insert-f1">
+<style>
+.lw-insert-f1 { font-family: 'Inter', Arial, sans-serif; color: #0F172A; font-size: 10pt; line-height: 1.4; margin: 16px 0; }
+.lw-insert-f1 .pt-dept-banner {
+    background: linear-gradient(180deg, #2563EB, #1D4ED8); color: #fff;
+    padding: 10px 18px; border-radius: 10px; margin-bottom: 10px;
+    text-align: center; font-weight: 800; font-size: 12pt;
+    letter-spacing: 0.05em; text-transform: uppercase;
+}
+.lw-insert-f1 .pt-dept-banner small { display: block; font-size: 9pt; font-weight: 600; opacity: 0.85; margin-top: 2px; letter-spacing: 0.12em; }
+.lw-insert-f1 .pt-table {
+    width: 100%; border-collapse: collapse; table-layout: fixed;
+    margin-bottom: 6px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #DBE6F3;
+}
+.lw-insert-f1 .pt-table td { border: 1px solid #DBE6F3; padding: 7px 11px; vertical-align: middle; }
+.lw-insert-f1 .pt-section-row td {
+    background: #E8F1FB; color: #1D4ED8; font-size: 9.5pt; font-weight: 700;
+    text-align: center; letter-spacing: 0.04em; text-transform: uppercase; padding: 7px 10px;
+}
+.lw-insert-f1 .pt-label-cell { font-size: 9pt; font-weight: 700; color: #2563EB; width: 17%; background: #F8FBFF; }
+.lw-insert-f1 .pt-value-cell { font-size: 10.5pt; font-weight: 600; color: #0F172A; text-align: center; }
+.lw-insert-f1 .pt-desc-cell { min-height: 60px; vertical-align: top; font-size: 10pt; font-weight: 400; color: #334155; text-align: justify; padding: 12px 16px; line-height: 1.55; }
+.lw-insert-f1 .pt-check-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 8px; padding: 10px 14px; }
+.lw-insert-f1 .pt-check-item { display: flex; align-items: center; gap: 6px; font-size: 9pt; color: #334155; }
+.lw-insert-f1 .pt-check-item .pt-box { width: 11px; height: 11px; border: 1px solid #CBD5E1; border-radius: 2px; flex-shrink: 0; background: #fff; display: inline-block; position: relative; }
+.lw-insert-f1 .pt-check-item.on .pt-box { background: #2563EB; border-color: #2563EB; }
+.lw-insert-f1 .pt-check-item.on .pt-box::after { content: "✓"; color: #fff; font-size: 9pt; font-weight: bold; position: absolute; top: -3px; left: 1px; line-height: 1; }
+.lw-insert-f1 .pt-check-item.on { color: #0F172A; font-weight: 600; }
+.lw-insert-f1 .pt-qty-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; border-radius: 8px; overflow: hidden; border: 1px solid #DBE6F3; }
+.lw-insert-f1 .pt-qty-table th { background: #E8F1FB; color: #1D4ED8; padding: 7px 10px; font-size: 9pt; font-weight: 700; text-align: left; letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid #DBE6F3; }
+.lw-insert-f1 .pt-qty-table td { padding: 6px 10px; font-size: 9.5pt; color: #0F172A; border: 1px solid #DBE6F3; vertical-align: middle; }
+.lw-insert-f1 .pt-qty-table tr:nth-child(even) td { background: #FAFBFD; }
+.lw-insert-f1 .pt-qty-cantidad { text-align: center; font-weight: 700; width: 8%; }
+.lw-insert-f1 .pt-qty-empty-row td { padding: 20px; text-align: center; color: #94A3B8; font-style: italic; font-weight: 400; font-size: 9pt; }
+.lw-insert-f1 .pt-program-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 8.5pt; font-weight: 700; background: #E8F1FB; color: #1D4ED8; }
+</style>
+
+<div class="pt-dept-banner">
+    Departamento de Instalaciones
+    <small>Levantamiento en Sitio</small>
+</div>
+
+<table class="pt-table">
+    <tr>
+        <td class="pt-label-cell">Cliente:</td>
+        <td class="pt-value-cell">{{ cliente|default:"—" }}</td>
+        <td class="pt-label-cell">Fecha:</td>
+        <td class="pt-value-cell">{{ fecha_fmt|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Contacto:</td>
+        <td class="pt-value-cell">{{ contacto|default:"—" }}</td>
+        <td class="pt-label-cell">Área:</td>
+        <td class="pt-value-cell">{{ area|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Email:</td>
+        <td class="pt-value-cell" colspan="3">{{ email|default:"—" }} &nbsp;·&nbsp; {{ telefono|default:"" }}</td>
+    </tr>
+</table>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Descripción de la necesidad reportada</td></tr>
+    <tr><td class="pt-desc-cell">{{ descripcion|default:"—"|linebreaksbr }}</td></tr>
+</table>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Tipo de servicio</td></tr>
+</table>
+<div class="pt-check-grid">
+    {% for svc in tipos_servicio %}
+    <div class="pt-check-item {% if svc.on %}on{% endif %}"><span class="pt-box"></span>{{ svc.name }}</div>
+    {% endfor %}
+</div>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Componentes de la solución</td></tr>
+</table>
+<div class="pt-check-grid">
+    {% for comp in componentes %}
+    <div class="pt-check-item {% if comp.on %}on{% endif %}"><span class="pt-box"></span>{{ comp.name }}</div>
+    {% endfor %}
+</div>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td colspan="4">Programa de implementación</td></tr>
+    <tr>
+        <td class="pt-label-cell">Fecha inicio:</td>
+        <td class="pt-value-cell">{{ fecha_inicio_fmt|default:"—" }}</td>
+        <td class="pt-label-cell">Fecha fin:</td>
+        <td class="pt-value-cell">{{ fecha_fin_fmt|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Duración:</td>
+        <td class="pt-value-cell">{{ duracion|default:"—" }}</td>
+        <td class="pt-label-cell">Turno:</td>
+        <td class="pt-value-cell">{% if turno %}<span class="pt-program-chip">{{ turno }}</span>{% else %}—{% endif %}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Apoyo del cliente:</td>
+        <td class="pt-value-cell">{{ apoyo_cliente|default:"—" }}</td>
+        <td class="pt-label-cell">Personal requerido:</td>
+        <td class="pt-value-cell">{{ personal_req|default:"—" }}</td>
+    </tr>
+</table>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td colspan="6">Equipo de elevación</td></tr>
+    <tr>
+        <td class="pt-label-cell" style="width:12%;">Alto:</td>
+        <td class="pt-value-cell" style="width:22%;">{{ elev_alto|default:"—" }}</td>
+        <td class="pt-label-cell" style="width:12%;">Ancho:</td>
+        <td class="pt-value-cell" style="width:22%;">{{ elev_ancho|default:"—" }}</td>
+        <td class="pt-label-cell" style="width:12%;">Modelo:</td>
+        <td class="pt-value-cell" style="width:20%;">{{ elev_modelo|default:"—" }}</td>
+    </tr>
+</table>
+
+<table class="pt-table" style="margin-bottom:4px;">
+    <tr class="pt-section-row"><td>Cuantificación primaria</td></tr>
+</table>
+<table class="pt-qty-table">
+    <thead>
+        <tr>
+            <th class="pt-qty-cantidad">Cantidad</th>
+            <th>Descripción</th>
+            <th style="width:15%;">Marca</th>
+            <th style="width:15%;">No. Parte</th>
+            <th style="width:15%;">Ubicación Física</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if productos %}
+            {% for p in productos %}
+            <tr>
+                <td class="pt-qty-cantidad">{{ p.qty|default:1 }} {{ p.unidad|default:"PZA" }}</td>
+                <td>{{ p.desc|default:"—" }}</td>
+                <td>{{ p.marca|default:"—" }}</td>
+                <td>{{ p.modelo|default:"—" }}</td>
+                <td>{{ p.ubicacion|default:"" }}</td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr class="pt-qty-empty-row"><td colspan="5">Sin productos agregados en el levantamiento.</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>

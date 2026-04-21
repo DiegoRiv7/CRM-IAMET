@@ -1,0 +1,84 @@
+<div class="lw-insert-f2">
+<style>
+.lw-insert-f2 { font-family: 'Inter', Arial, sans-serif; color: #0F172A; font-size: 10pt; line-height: 1.4; margin: 16px 0; }
+.lw-insert-f2 .pt-band { width: 100%; border-collapse: collapse; margin-bottom: 6px; border-radius: 10px; overflow: hidden; }
+.lw-insert-f2 .pt-band td { background: linear-gradient(180deg, #2563EB, #1D4ED8); color: #fff; padding: 7px 12px; vertical-align: middle; border: none; font-size: 10pt; }
+.lw-insert-f2 .pt-band .pt-cliente { font-size: 15pt; font-weight: 800; letter-spacing: 0.01em; padding: 12px 16px; width: 54%; }
+.lw-insert-f2 .pt-band .pt-band-lbl { font-size: 8.5pt; font-weight: 600; opacity: 0.82; letter-spacing: 0.02em; text-align: right; padding-right: 6px; width: 14%; }
+.lw-insert-f2 .pt-band .pt-band-val { font-size: 11pt; font-weight: 700; text-align: left; }
+.lw-insert-f2 .pt-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 6px; border-radius: 8px; overflow: hidden; border: 1px solid #DBE6F3; }
+.lw-insert-f2 .pt-table td { border: 1px solid #DBE6F3; padding: 7px 11px; vertical-align: middle; }
+.lw-insert-f2 .pt-section-row td { background: #E8F1FB; color: #1D4ED8; font-size: 9.5pt; font-weight: 700; text-align: center; letter-spacing: 0.04em; text-transform: uppercase; padding: 7px 10px; }
+.lw-insert-f2 .pt-label-cell { font-size: 9pt; font-weight: 700; color: #2563EB; width: 17%; background: #F8FBFF; }
+.lw-insert-f2 .pt-value-cell { font-size: 10.5pt; font-weight: 600; color: #0F172A; text-align: center; }
+.lw-insert-f2 .pt-desc-cell { min-height: 60px; vertical-align: top; font-size: 10pt; font-weight: 400; color: #334155; text-align: justify; padding: 12px 16px; line-height: 1.55; }
+.lw-insert-f2 .pt-specs-head td { background: #E8F1FB; color: #1D4ED8; font-weight: 700; font-size: 9.5pt; text-align: center; padding: 7px 10px; width: 50%; letter-spacing: 0.04em; text-transform: uppercase; }
+.lw-insert-f2 .pt-specs-col { vertical-align: top; padding: 12px 18px; font-size: 10pt; min-height: 60px; line-height: 1.55; }
+.lw-insert-f2 .pt-specs-col ul { list-style: none; padding: 0; margin: 0; }
+.lw-insert-f2 .pt-specs-col li { padding: 3px 0 3px 14px; font-weight: 600; color: #0F172A; position: relative; }
+.lw-insert-f2 .pt-specs-col li::before { content: ""; position: absolute; left: 0; top: 11px; width: 4px; height: 4px; border-radius: 50%; background: #2563EB; }
+.lw-insert-f2 .pt-specs-col.empty { color: #CBD5E1; font-weight: 400; font-style: italic; }
+</style>
+
+<table class="pt-band">
+    <tr>
+        <td class="pt-cliente" rowspan="2">{{ cliente_nombre|default:"Cliente" }}</td>
+        <td class="pt-band-lbl">Fecha:</td>
+        <td class="pt-band-val">{{ doc_fecha_fmt|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-band-lbl">Elaboró:</td>
+        <td class="pt-band-val">{{ elaboro|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-band-lbl" style="width:54%;"><span style="font-size:8.5pt;opacity:0.82;">Proyecto:</span></td>
+        <td class="pt-band-val" colspan="2" style="font-size:11pt;font-weight:700;">{{ lev.nombre|default:"—" }}</td>
+    </tr>
+</table>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td colspan="4">Datos del Solicitante</td></tr>
+    <tr>
+        <td class="pt-label-cell">Nombre:</td>
+        <td class="pt-value-cell" style="width:50%;">{{ solicitante|default:"—" }}</td>
+        <td class="pt-label-cell" style="width:17%;">Departamento:</td>
+        <td class="pt-value-cell">{{ departamento|default:"—" }}</td>
+    </tr>
+</table>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td colspan="4">Información básica del requerimiento</td></tr>
+    <tr>
+        <td class="pt-label-cell">Planta:</td>
+        <td class="pt-value-cell">{{ planta|default:"—" }}</td>
+        <td class="pt-label-cell">Áreas consideradas:</td>
+        <td class="pt-value-cell">{{ areas|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Tipo de Solución:</td>
+        <td class="pt-value-cell">{{ tipo_solucion|default:"—" }}</td>
+        <td class="pt-label-cell">Fecha de Instalación:</td>
+        <td class="pt-value-cell">{{ fecha_inst|default:"Acordar con usuario" }}</td>
+    </tr>
+</table>
+
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Descripción explícita del proyecto</td></tr>
+    <tr><td class="pt-desc-cell">{{ desc_proyecto|default:"—"|linebreaksbr }}</td></tr>
+</table>
+
+<table class="pt-table">
+    <tr class="pt-specs-head">
+        <td>Especificaciones Técnicas</td>
+        <td>Comentarios</td>
+    </tr>
+    <tr>
+        <td class="pt-specs-col {% if not especificaciones %}empty{% endif %}">
+            {% if especificaciones %}<ul>{% for it in especificaciones %}<li>{{ it }}</li>{% endfor %}</ul>{% else %}Sin especificaciones capturadas{% endif %}
+        </td>
+        <td class="pt-specs-col {% if not comentarios_spec %}empty{% endif %}">
+            {% if comentarios_spec %}<ul>{% for it in comentarios_spec %}<li>{{ it }}</li>{% endfor %}</ul>{% else %}Sin comentarios capturados{% endif %}
+        </td>
+    </tr>
+</table>
+</div>

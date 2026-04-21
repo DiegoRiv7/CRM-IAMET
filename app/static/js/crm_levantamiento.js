@@ -2207,281 +2207,39 @@
     });
 
     // Inserta el contenido de una fase en la posición actual del cursor.
-    // Cada fase arma su propio bloque HTML rico (encabezados + tablas)
-    // que replica visualmente lo que sale en el PDF correspondiente.
+    // La idea: traer del servidor el MISMO HTML que sale en el PDF de
+    // esa fase (con su styling inline scoped), para que el reporte
+    // libre literalmente acumule los documentos de las fases previas.
     window.lwP5InsertFase = function (phase) {
         var menu = $('lwP5InsertMenu');
         if (menu) menu.style.display = 'none';
         var editor = $('lw_f5_editor');
-        if (!editor) return;
+        if (!editor || !state.lev) return;
         editor.focus();
 
-        // Programa de Obra (Fase 4) necesita fetch de las actividades
-        if (phase === 4) {
-            if (!state.lev.proyecto_id) {
-                alert('Este levantamiento no está asociado a un proyecto.');
-                return;
-            }
-            _p5InsertProgramaObra();
-            return;
-        }
+        var tipoMap = { 1: 'levantamiento', 2: 'propuesta', 3: 'volumetria', 4: 'programa-obra' };
+        var tipo = tipoMap[phase];
+        if (!tipo) return;
 
-        var html;
-        if (phase === 1)      html = _p5BuildFase1HTML();
-        else if (phase === 2) html = _p5BuildFase2HTML();
-        else if (phase === 3) html = _p5BuildFase3HTML();
-        if (!html) return;
-
-        try { document.execCommand('insertHTML', false, html); } catch (e) {}
-        lwP5EditorInput();
+        // Asegurar que lo capturado esté guardado antes de traer el fragmento.
+        lwFlushSave().then(function () {
+            var url = '/app/api/iamet/levantamientos/' + state.lev.id + '/fragmento/?tipo=' + tipo;
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, text: t }; }); })
+                .then(function (res) {
+                    if (!res.ok) {
+                        alert('No pude generar el fragmento: ' + res.text.replace(/<[^>]+>/g, '').trim());
+                        return;
+                    }
+                    editor.focus();
+                    try { document.execCommand('insertHTML', false, res.text); }
+                    catch (e) { editor.innerHTML += res.text; }
+                    lwP5EditorInput();
+                })
+                .catch(function () { alert('Error de red al insertar la fase.'); });
+        });
     };
 
-    // ── Fase 1 → HTML ───────────────────────────────────────────────
-    function _p5BuildFase1HTML() {
-        var f1 = state.lev.fase1_data || {};
-        var h = '';
-        h += '<h2>Levantamiento</h2>';
-        h += '<table><thead><tr><th style="width:30%;">Dato</th><th>Valor</th></tr></thead><tbody>';
-        var kv = [
-            ['Cliente', f1.cliente],
-            ['Contacto', f1.contacto],
-            ['Área / ubicación', f1.area],
-            ['Fecha', f1.fecha],
-            ['Email', f1.email],
-            ['Teléfono', f1.telefono],
-        ];
-        kv.forEach(function (p) {
-            if (p[1]) h += '<tr><td><b>' + esc(p[0]) + '</b></td><td>' + esc(p[1]) + '</td></tr>';
-        });
-        h += '</tbody></table>';
-
-        if (f1.descripcion) {
-            h += '<h3>Descripción de la necesidad</h3>';
-            h += '<p>' + esc(f1.descripcion).replace(/\n/g, '<br>') + '</p>';
-        }
-        if ((f1.servicios || []).length || (f1.componentes || []).length) {
-            h += '<h3>Alcance</h3>';
-            if ((f1.servicios || []).length) {
-                h += '<p><b>Servicios:</b> ' + esc((f1.servicios || []).join(', ')) + '</p>';
-            }
-            if ((f1.componentes || []).length) {
-                h += '<p><b>Componentes:</b> ' + esc((f1.componentes || []).join(', ')) + '</p>';
-            }
-        }
-        var prods = (f1.productos || []);
-        if (prods.length) {
-            h += '<h3>Productos &amp; partidas</h3>';
-            h += '<table><thead><tr><th style="width:6%;">#</th><th style="width:8%;">Cant</th><th style="width:8%;">Unid</th><th>Descripción</th><th style="width:14%;">Marca</th><th style="width:18%;">Modelo</th></tr></thead><tbody>';
-            prods.forEach(function (p, i) {
-                h += '<tr>' +
-                    '<td>' + (i + 1) + '</td>' +
-                    '<td>' + (p.qty || 1) + '</td>' +
-                    '<td>' + esc(p.unidad || 'PZA') + '</td>' +
-                    '<td>' + esc(p.desc || '') + '</td>' +
-                    '<td>' + esc(p.marca || '') + '</td>' +
-                    '<td>' + esc(p.modelo || '') + '</td>' +
-                '</tr>';
-            });
-            h += '</tbody></table>';
-        }
-        h += '<p>&nbsp;</p>';
-        return h;
-    }
-
-    // ── Fase 2 → HTML ───────────────────────────────────────────────
-    function _p5BuildFase2HTML() {
-        var f2 = state.lev.fase2_data || {};
-        var h = '';
-        h += '<h2>Propuesta Técnica</h2>';
-
-        h += '<h3>Datos del documento</h3>';
-        h += '<table><tbody>';
-        var kv = [
-            ['Elaboró', f2.elaboro],
-            ['Fecha del documento', f2.doc_fecha],
-            ['Solicitante', f2.solicitante],
-            ['Departamento', f2.departamento],
-            ['Planta', f2.planta],
-            ['Áreas consideradas', f2.areas],
-            ['Tipo de solución', f2.tipo_solucion],
-            ['Fecha de instalación', f2.fecha_inst],
-        ];
-        kv.forEach(function (p) {
-            if (p[1]) h += '<tr><td style="width:30%;"><b>' + esc(p[0]) + '</b></td><td>' + esc(p[1]) + '</td></tr>';
-        });
-        h += '</tbody></table>';
-
-        if (f2.desc_proyecto) {
-            h += '<h3>Descripción del proyecto</h3>';
-            h += '<p>' + esc(f2.desc_proyecto).replace(/\n/g, '<br>') + '</p>';
-        }
-        var specs = (f2.especificaciones || []).filter(function (s) { return s && s.trim(); });
-        if (specs.length) {
-            h += '<h3>Especificaciones técnicas</h3><ul>';
-            specs.forEach(function (s) { h += '<li>' + esc(s) + '</li>'; });
-            h += '</ul>';
-        }
-        var coms = (f2.comentarios_spec || []).filter(function (s) { return s && s.trim(); });
-        if (coms.length) {
-            h += '<h3>Comentarios</h3><ul>';
-            coms.forEach(function (s) { h += '<li>' + esc(s) + '</li>'; });
-            h += '</ul>';
-        }
-        h += '<p>&nbsp;</p>';
-        return h;
-    }
-
-    // ── Fase 3 → HTML ───────────────────────────────────────────────
-    function _p5BuildFase3HTML() {
-        var f3 = state.lev.fase3_data || {};
-        var mat = f3.materiales || [];
-        var mo  = f3.manoObra || [];
-        var gas = f3.gastos || [];
-        var totMat = mat.reduce(function (a, r) { var c = calcMatRow(r); return { c: a.c + c.costoTotal, v: a.v + c.precioVenta }; }, { c: 0, v: 0 });
-        var totMO = mo.reduce(function (a, r) { return a + (r.precioUnit || 0) * (r.qty || 0); }, 0);
-        var totGas = gas.reduce(function (a, r) { return a + (r.costoUnit || 0) * (r.qty || 0); }, 0);
-        var totalVenta = totMat.v + totMO + totGas;
-        var totalCosto = totMat.c + totGas;
-        var utilidad = totalVenta - totalCosto;
-        var margen = totalVenta > 0 ? (utilidad / totalVenta * 100) : 0;
-
-        var h = '';
-        h += '<h2>Volumetría</h2>';
-
-        if (mat.length) {
-            h += '<h3>Equipamiento &amp; Materiales</h3>';
-            h += '<table><thead><tr><th style="width:4%;">#</th><th style="width:7%;">Cant</th><th style="width:7%;">Unid</th><th>Descripción</th><th style="width:12%;">Marca</th><th style="width:14%;">No. Parte</th><th style="width:12%;">P. Venta</th></tr></thead><tbody>';
-            mat.forEach(function (r, i) {
-                var c = calcMatRow(r);
-                h += '<tr>' +
-                    '<td>' + (i + 1) + '</td>' +
-                    '<td>' + (r.qty || 0) + '</td>' +
-                    '<td>' + esc(r.unid || 'PZA') + '</td>' +
-                    '<td>' + esc(r.desc || '') + '</td>' +
-                    '<td>' + esc(r.marca || '') + '</td>' +
-                    '<td>' + esc(r.modelo || '') + '</td>' +
-                    '<td style="text-align:right;"><b>' + fmtMoney(c.precioVenta) + '</b></td>' +
-                '</tr>';
-            });
-            h += '</tbody></table>';
-        }
-
-        if (mo.length) {
-            h += '<h3>Mano de Obra &amp; Servicios</h3>';
-            h += '<table><thead><tr><th style="width:4%;">#</th><th style="width:7%;">Cant</th><th style="width:7%;">Unid</th><th>Descripción</th><th style="width:12%;">Precio Unit</th><th style="width:12%;">Total</th></tr></thead><tbody>';
-            mo.forEach(function (r, i) {
-                var total = (r.precioUnit || 0) * (r.qty || 0);
-                h += '<tr>' +
-                    '<td>' + (i + 1) + '</td>' +
-                    '<td>' + (r.qty || 0) + '</td>' +
-                    '<td>' + esc(r.unid || 'SERV') + '</td>' +
-                    '<td>' + esc(r.desc || '') + '</td>' +
-                    '<td style="text-align:right;">' + fmtMoney(r.precioUnit || 0) + '</td>' +
-                    '<td style="text-align:right;"><b>' + fmtMoney(total) + '</b></td>' +
-                '</tr>';
-            });
-            h += '</tbody></table>';
-        }
-
-        if (gas.length) {
-            h += '<h3>Gastos Operativos</h3>';
-            h += '<table><thead><tr><th style="width:4%;">#</th><th style="width:7%;">Cant</th><th style="width:7%;">Unid</th><th>Descripción</th><th style="width:12%;">Costo Unit</th><th style="width:12%;">Total</th></tr></thead><tbody>';
-            gas.forEach(function (r, i) {
-                var total = (r.costoUnit || 0) * (r.qty || 0);
-                h += '<tr>' +
-                    '<td>' + (i + 1) + '</td>' +
-                    '<td>' + (r.qty || 0) + '</td>' +
-                    '<td>' + esc(r.unid || 'GLOB') + '</td>' +
-                    '<td>' + esc(r.desc || '') + '</td>' +
-                    '<td style="text-align:right;">' + fmtMoney(r.costoUnit || 0) + '</td>' +
-                    '<td style="text-align:right;"><b>' + fmtMoney(total) + '</b></td>' +
-                '</tr>';
-            });
-            h += '</tbody></table>';
-        }
-
-        if (totalVenta > 0) {
-            h += '<h3>Resumen financiero</h3>';
-            h += '<table><tbody>';
-            h += '<tr><td style="width:60%;">Subtotal Materiales (Venta)</td><td style="text-align:right;">' + fmtMoney(totMat.v) + '</td></tr>';
-            h += '<tr><td>Subtotal Mano de Obra</td><td style="text-align:right;">' + fmtMoney(totMO) + '</td></tr>';
-            h += '<tr><td>Subtotal Gastos</td><td style="text-align:right;">' + fmtMoney(totGas) + '</td></tr>';
-            h += '<tr style="background:#EFF6FF;"><td><b style="color:#1D4ED8;">TOTAL VENTA</b></td><td style="text-align:right;"><b style="color:#1D4ED8;">' + fmtMoney(totalVenta) + '</b></td></tr>';
-            h += '<tr><td>Total Costos</td><td style="text-align:right;">' + fmtMoney(totalCosto) + '</td></tr>';
-            h += '<tr><td><b style="color:#059669;">Utilidad Bruta (' + margen.toFixed(1) + '%)</b></td><td style="text-align:right;"><b style="color:#059669;">' + fmtMoney(utilidad) + '</b></td></tr>';
-            h += '</tbody></table>';
-        }
-        h += '<p>&nbsp;</p>';
-        return h;
-    }
-
-    // ── Fase 4 (Programa de Obra) → fetch + HTML ─────────────────────
-    function _p5InsertProgramaObra() {
-        var lev = state.lev;
-        apiFetch('/app/api/programacion/actividades/?proyecto_key=proy_' + lev.proyecto_id)
-            .then(function (resp) {
-                if (!resp || (!resp.success && !resp.ok)) {
-                    alert('No pude cargar las actividades.');
-                    return;
-                }
-                var acts = resp.items || resp.data || [];
-                if (!acts.length) {
-                    alert('Este proyecto aún no tiene actividades agendadas. Ve a la Fase 4 y agrégalas primero.');
-                    return;
-                }
-                // Agrupar por fecha → ordenar por fecha+hora
-                acts.sort(function (a, b) {
-                    var fa = (a.fecha || '') + ' ' + (a.hora_inicio || '');
-                    var fb = (b.fecha || '') + ' ' + (b.hora_inicio || '');
-                    return fa.localeCompare(fb);
-                });
-                // Agrupar por semana ISO
-                function weekOf(dateStr) {
-                    var d = new Date(dateStr + 'T00:00:00');
-                    var dow = d.getDay(); // 0=Dom
-                    var mon = new Date(d);
-                    mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-                    return mon.toISOString().slice(0, 10);
-                }
-                var byWeek = {};
-                acts.forEach(function (a) {
-                    if (!a.fecha) return;
-                    var w = weekOf(a.fecha);
-                    (byWeek[w] = byWeek[w] || []).push(a);
-                });
-                var weekKeys = Object.keys(byWeek).sort();
-                var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-                function fmtShort(iso) {
-                    var d = new Date(iso + 'T00:00:00');
-                    return d.getDate() + ' ' + meses[d.getMonth()];
-                }
-                var h = '<h2>Programa de Obra</h2>';
-                weekKeys.forEach(function (wk, i) {
-                    var weekEnd = new Date(wk + 'T00:00:00');
-                    weekEnd.setDate(weekEnd.getDate() + 6);
-                    h += '<h3>Semana ' + (i + 1) + ' · ' + fmtShort(wk) + ' — ' + fmtShort(weekEnd.toISOString().slice(0,10)) + '</h3>';
-                    h += '<table><thead><tr><th style="width:12%;">Fecha</th><th style="width:12%;">Hora</th><th>Actividad</th><th style="width:22%;">Responsables</th><th style="width:10%;">Estado</th></tr></thead><tbody>';
-                    byWeek[wk].forEach(function (a) {
-                        var resp_ = (a.responsables || []).map(function (r) { return r.nombre || r.iniciales; }).join(', ');
-                        var hora = (a.hora_inicio || '') + (a.hora_fin ? ' – ' + a.hora_fin : '');
-                        var estado = a.completada ? '✓ Completada' : 'Pendiente';
-                        h += '<tr>' +
-                            '<td>' + esc(a.fecha || '—') + '</td>' +
-                            '<td>' + esc(hora || '—') + '</td>' +
-                            '<td>' + esc(a.titulo || '') + (a.descripcion ? '<br><small>' + esc(a.descripcion) + '</small>' : '') + '</td>' +
-                            '<td>' + esc(resp_ || '—') + '</td>' +
-                            '<td>' + esc(estado) + '</td>' +
-                        '</tr>';
-                    });
-                    h += '</tbody></table>';
-                });
-                h += '<p>&nbsp;</p>';
-                var editor = $('lw_f5_editor');
-                editor.focus();
-                try { document.execCommand('insertHTML', false, h); } catch (e) {}
-                lwP5EditorInput();
-            });
-    }
 
     function collectPhase5() {
         var f5 = state.lev.fase5_data || {};

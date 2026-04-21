@@ -338,6 +338,7 @@ urlpatterns = [
     path('api/iamet/levantamientos/<int:levantamiento_id>/volumetria-xlsx/', views_iamet.api_levantamiento_volumetria_xlsx, name='api_iamet_levantamiento_volumetria_xlsx'),
     path('api/iamet/proyectos/<int:proyecto_id>/programa-obra-pdf/', views_iamet.api_programa_obra_pdf, name='api_iamet_programa_obra_pdf'),
     path('api/iamet/levantamientos/<int:levantamiento_id>/reporte-pdf/', views_iamet.api_levantamiento_reporte_pdf, name='api_iamet_levantamiento_reporte_pdf'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/fragmento/', views_iamet.api_levantamiento_fragmento, name='api_iamet_levantamiento_fragmento'),
     path('api/iamet/evidencias/<int:evidencia_id>/eliminar/', views_iamet.api_levantamiento_evidencia_eliminar, name='api_iamet_evidencia_eliminar'),
     path('api/iamet/catalogo-productos/', views_iamet.api_catalogo_productos, name='api_iamet_catalogo_productos'),
 

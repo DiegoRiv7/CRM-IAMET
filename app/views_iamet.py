@@ -3263,6 +3263,198 @@ def api_levantamiento_volumetria_xlsx(request, levantamiento_id):
 
 @login_required
 @require_http_methods(["GET"])
+def api_levantamiento_fragmento(request, levantamiento_id):
+    """Devuelve el fragmento HTML (sólo cuerpo, con CSS scoped inline) de
+    una fase del levantamiento — para insertarlo en el editor del reporte
+    libre (Fase 5). El HTML incluye su propio <style> scoped.
+
+    Query params:
+      ?tipo=levantamiento|propuesta|volumetria|programa-obra
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    import datetime as _dt
+
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto', 'creado_por').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return HttpResponse('<div style="color:#DC2626;">Levantamiento no encontrado</div>', status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return HttpResponse('<div style="color:#DC2626;">Sin acceso</div>', status=403)
+
+    tipo = (request.GET.get('tipo') or '').strip()
+
+    meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    def _fmt_fecha(iso):
+        if not iso:
+            return ''
+        try:
+            dt = _dt.datetime.strptime(str(iso)[:10], '%Y-%m-%d')
+        except Exception:
+            return iso
+        return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
+
+    f1 = lev.fase1_data or {}
+    f2 = lev.fase2_data or {}
+
+    if tipo == 'levantamiento':
+        TIPOS_SERVICIO = ['CCTV', 'Alarma Intrusión', 'Control de Acceso', 'Cableado Estructurado', 'Voceo', 'Telefonía', 'Otros']
+        COMPONENTES = [
+            'Cámara IP', 'Cámara Analógica', 'NVR', 'DVR', 'Video Balum',
+            'Tubería', 'Canalización', 'Escalerilla',
+            'Cable Cat5e', 'Cable Cat6', 'Cable Cat6A', 'Fibra Óptica',
+            'Gabinete/Rack', 'Serpentines', 'Controladora',
+            'PBX', 'Teléfonos', 'Work Station', 'Servidor', 'Switches',
+            'Antenas', 'Enlaces', 'Bocinas', 'Cableado',
+            'Fuentes de Poder', 'Amplificadores', 'Access Point', 'UPS',
+        ]
+        selected_svc = set(f1.get('servicios') or [])
+        selected_comp = set(f1.get('componentes') or [])
+        productos = [{
+            'qty': p.get('qty') or 1,
+            'unidad': p.get('unidad') or 'PZA',
+            'desc': p.get('desc') or '',
+            'marca': p.get('marca') or '',
+            'modelo': p.get('modelo') or '',
+            'ubicacion': p.get('ubicacion') or '',
+        } for p in (f1.get('productos') or [])]
+        ctx = {
+            'lev': lev,
+            'cliente': f1.get('cliente') or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
+            'contacto': f1.get('contacto') or '',
+            'area': f1.get('area') or '',
+            'email': f1.get('email') or '',
+            'telefono': f1.get('telefono') or '',
+            'fecha_fmt': _fmt_fecha(f1.get('fecha') or timezone.localdate().isoformat()),
+            'descripcion': f1.get('descripcion') or '',
+            'tipos_servicio': [{'name': s, 'on': s in selected_svc} for s in TIPOS_SERVICIO],
+            'componentes':    [{'name': c, 'on': c in selected_comp} for c in COMPONENTES],
+            'fecha_inicio_fmt': _fmt_fecha(f1.get('fecha_inicio')),
+            'fecha_fin_fmt':    _fmt_fecha(f1.get('fecha_fin')),
+            'duracion':      f1.get('duracion') or '',
+            'turno':         f1.get('turno') or '',
+            'apoyo_cliente': f1.get('apoyo_cliente') or '',
+            'personal_req':  f1.get('personal_req') or '',
+            'elev_alto':     f1.get('elev_alto') or '',
+            'elev_ancho':    f1.get('elev_ancho') or '',
+            'elev_modelo':   f1.get('elev_modelo') or '',
+            'productos': productos,
+        }
+        template = 'crm/fragments/_frag_levantamiento.html'
+
+    elif tipo == 'propuesta':
+        ctx = {
+            'lev': lev,
+            'cliente_nombre': f1.get('cliente') or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
+            'elaboro':       f2.get('elaboro')       or (lev.creado_por.get_full_name() if lev.creado_por else ''),
+            'doc_fecha_fmt': _fmt_fecha(f2.get('doc_fecha') or timezone.localdate().isoformat()),
+            'solicitante':   f2.get('solicitante')   or f1.get('contacto') or '',
+            'departamento':  f2.get('departamento')  or '',
+            'planta':        f2.get('planta')        or f1.get('cliente') or '',
+            'areas':         f2.get('areas')         or f1.get('area') or '',
+            'tipo_solucion': f2.get('tipo_solucion') or ', '.join(f1.get('servicios') or []),
+            'fecha_inst':    f2.get('fecha_inst')    or 'Acordar con usuario',
+            'desc_proyecto': f2.get('desc_proyecto') or f1.get('descripcion') or '',
+            'especificaciones':  [x for x in (f2.get('especificaciones') or []) if x and x.strip()],
+            'comentarios_spec':  [x for x in (f2.get('comentarios_spec') or []) if x and x.strip()],
+        }
+        template = 'crm/fragments/_frag_propuesta.html'
+
+    elif tipo == 'volumetria':
+        ctx = _build_volumetria_ctx(lev, sin_costos=False)
+        ctx['doc_fecha_fmt'] = _fmt_fecha(f2.get('doc_fecha') or timezone.localdate().isoformat())
+        template = 'crm/fragments/_frag_volumetria.html'
+
+    elif tipo == 'programa-obra':
+        if not lev.proyecto_id:
+            return HttpResponse('<div style="color:#DC2626;">Este levantamiento no está asociado a un proyecto.</div>', status=400)
+        proyecto = lev.proyecto
+        f_ini = proyecto.fecha_inicio
+        f_fin = proyecto.fecha_fin
+        if not f_ini or not f_fin:
+            return HttpResponse('<div style="padding:20px;text-align:center;color:#94A3B8;border:1px dashed #CBD5E1;border-radius:8px;">Define fecha de inicio y fin del proyecto para generar el programa de obra.</div>', status=400)
+        from .models import ProgramacionActividad
+        monday_start = f_ini - _dt.timedelta(days=f_ini.weekday())
+        acts_qs = ProgramacionActividad.objects.filter(
+            proyecto_key=f'proy_{proyecto.id}'
+        ).prefetch_related('responsables').order_by('fecha', 'hora_inicio')
+        acts_by_date = {}
+        for a in acts_qs:
+            if a.fecha:
+                acts_by_date.setdefault(a.fecha.isoformat(), []).append(a)
+        def fmt_short(d):
+            return f'{d.day:02d} {meses[d.month - 1]}'
+        weeks = []
+        cur = monday_start
+        week_num = 1
+        total_acts = 0
+        total_done = 0
+        while cur <= f_fin:
+            week_end = cur + _dt.timedelta(days=6)
+            has_weekend = False
+            days = []
+            for i in range(7):
+                day = cur + _dt.timedelta(days=i)
+                day_acts_raw = acts_by_date.get(day.isoformat(), [])
+                day_acts = []
+                for a in day_acts_raw:
+                    total_acts += 1
+                    if a.completada:
+                        total_done += 1
+                    resp_list = list(a.responsables.all())
+                    resp_iniciales = []
+                    for u in resp_list:
+                        full = (u.get_full_name() or u.username or '').strip()
+                        parts = full.split()
+                        if len(parts) >= 2:
+                            ini = (parts[0][0] + parts[1][0]).upper()
+                        else:
+                            ini = (full[:2] or '??').upper()
+                        resp_iniciales.append({'iniciales': ini, 'nombre': full or u.username})
+                    day_acts.append({
+                        'titulo': a.titulo,
+                        'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '—',
+                        'hora_fin':    a.hora_fin.strftime('%H:%M') if a.hora_fin else '—',
+                        'responsables': resp_iniciales,
+                        'completada': a.completada,
+                    })
+                if i >= 5 and day_acts:
+                    has_weekend = True
+                days.append({
+                    'name': ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][i],
+                    'date_short': fmt_short(day),
+                    'is_weekend': i >= 5,
+                    'activities': day_acts,
+                })
+            weeks.append({
+                'num': week_num,
+                'range_label': f'{fmt_short(cur)} — {fmt_short(week_end)}',
+                'days': [d for d in days if (not d['is_weekend']) or has_weekend],
+                'has_weekend': has_weekend,
+            })
+            cur = cur + _dt.timedelta(days=7)
+            week_num += 1
+        ctx = {
+            'proyecto': proyecto,
+            'cliente_nombre': getattr(proyecto, 'cliente_nombre', '') or '',
+            'proyecto_fecha_inicio_fmt': _fmt_fecha(f_ini.isoformat()),
+            'proyecto_fecha_fin_fmt': _fmt_fecha(f_fin.isoformat()),
+            'elaboro': (lev.creado_por.get_full_name() or lev.creado_por.username) if lev.creado_por else '',
+            'weeks': weeks,
+            'total_actividades': total_acts,
+            'total_completadas': total_done,
+            'total_pendientes': total_acts - total_done,
+        }
+        template = 'crm/fragments/_frag_programa_obra.html'
+    else:
+        return HttpResponse('<div style="color:#DC2626;">Tipo inválido. Usa: levantamiento, propuesta, volumetria, programa-obra</div>', status=400)
+
+    html = render_to_string(template, ctx, request=request)
+    return HttpResponse(html, content_type='text/html; charset=utf-8')
+
+
+@login_required
+@require_http_methods(["GET"])
 def api_levantamiento_reporte_pdf(request, levantamiento_id):
     """PDF del reporte libre (Fase 5) — el ingeniero escribe HTML rico
     y lo exportamos con el hero Bajanet arriba y footer estándar.

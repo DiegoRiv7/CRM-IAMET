@@ -1,0 +1,91 @@
+<div class="lw-insert-f4">
+<style>
+.lw-insert-f4 { font-family: 'Inter', Arial, sans-serif; color: #0F172A; font-size: 9pt; line-height: 1.35; margin: 16px 0; }
+.lw-insert-f4 .po-band { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-radius: 8px; overflow: hidden; }
+.lw-insert-f4 .po-band td { background: linear-gradient(180deg, #2563EB, #1D4ED8); color: #fff; padding: 5px 10px; vertical-align: middle; border: none; font-size: 9pt; }
+.lw-insert-f4 .po-band .po-cliente { font-size: 13pt; font-weight: 800; letter-spacing: 0.01em; padding: 10px 14px; width: 36%; }
+.lw-insert-f4 .po-band .po-band-lbl { font-size: 7.5pt; font-weight: 600; opacity: 0.85; letter-spacing: 0.02em; text-align: right; padding-right: 4px; width: 10%; text-transform: uppercase; }
+.lw-insert-f4 .po-band .po-band-val { font-size: 9.5pt; font-weight: 700; text-align: left; }
+.lw-insert-f4 .po-summary { display: flex; gap: 8px; margin-bottom: 12px; }
+.lw-insert-f4 .po-summary-card { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #DBE6F3; background: #F8FBFF; }
+.lw-insert-f4 .po-summary-lbl { font-size: 7.5pt; font-weight: 700; color: #64748B; letter-spacing: 0.05em; text-transform: uppercase; }
+.lw-insert-f4 .po-summary-val { font-size: 18pt; font-weight: 800; color: #1D4ED8; line-height: 1.1; margin-top: 2px; }
+.lw-insert-f4 .po-summary-card.done .po-summary-val { color: #059669; }
+.lw-insert-f4 .po-summary-card.pending .po-summary-val { color: #B45309; }
+.lw-insert-f4 .po-week { margin-bottom: 12px; }
+.lw-insert-f4 .po-week-header { background: linear-gradient(180deg, #E8F1FB, #DCEAFB); border: 1px solid #BFDBFE; border-bottom: none; border-radius: 8px 8px 0 0; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
+.lw-insert-f4 .po-week-title { font-size: 10pt; font-weight: 800; color: #1D4ED8; letter-spacing: 0.04em; text-transform: uppercase; }
+.lw-insert-f4 .po-week-range { font-size: 9pt; color: #475569; font-weight: 600; }
+.lw-insert-f4 .po-days { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 1px solid #BFDBFE; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+.lw-insert-f4 .po-days.has-weekend { grid-template-columns: repeat(7, 1fr); }
+.lw-insert-f4 .po-day { padding: 6px 7px; border-right: 1px solid #DBE6F3; min-height: 100px; background: #fff; vertical-align: top; }
+.lw-insert-f4 .po-day:last-child { border-right: none; }
+.lw-insert-f4 .po-day-weekend { background: #FAFBFC; }
+.lw-insert-f4 .po-day-head { font-size: 8pt; font-weight: 800; color: #1D4ED8; text-transform: uppercase; letter-spacing: 0.04em; }
+.lw-insert-f4 .po-day-date { font-size: 7.5pt; color: #94A3B8; font-weight: 500; margin-bottom: 5px; }
+.lw-insert-f4 .po-day-empty { font-size: 8pt; color: #CBD5E1; font-style: italic; padding: 6px 2px; }
+.lw-insert-f4 .po-act { background: #F0F7FF; border: 1px solid #BFDBFE; border-radius: 6px; padding: 5px 6px; margin-bottom: 4px; }
+.lw-insert-f4 .po-act-done { background: #F0FDF4; border-color: #BBF7D0; }
+.lw-insert-f4 .po-act-title { font-size: 8pt; font-weight: 700; color: #1E40AF; line-height: 1.25; word-wrap: break-word; }
+.lw-insert-f4 .po-act-done .po-act-title { color: #047857; text-decoration: line-through; }
+.lw-insert-f4 .po-act-check { color: #059669; font-weight: 800; margin-right: 3px; }
+.lw-insert-f4 .po-act-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 7pt; color: #64748B; }
+.lw-insert-f4 .po-act-hora { font-weight: 600; }
+.lw-insert-f4 .po-act-resp { display: inline-block; width: 15px; height: 15px; line-height: 15px; border-radius: 50%; background: #2563EB; color: #fff; font-size: 6pt; text-align: center; font-weight: 700; margin-left: 2px; }
+.lw-insert-f4 .po-act-done .po-act-resp { background: #059669; }
+.lw-insert-f4 .po-empty-state { padding: 30px 20px; text-align: center; color: #94A3B8; font-size: 10pt; font-style: italic; border: 1px dashed #CBD5E1; border-radius: 8px; margin: 12px 0; }
+</style>
+
+<table class="po-band">
+    <tr>
+        <td class="po-cliente" rowspan="2">{{ cliente_nombre|default:"Cliente" }}</td>
+        <td class="po-band-lbl">Proyecto:</td><td class="po-band-val">{{ proyecto.nombre|default:"—" }}</td>
+        <td class="po-band-lbl">Inicio:</td><td class="po-band-val">{{ proyecto_fecha_inicio_fmt }}</td>
+    </tr>
+    <tr>
+        <td class="po-band-lbl">Elaboró:</td><td class="po-band-val">{{ elaboro|default:"—" }}</td>
+        <td class="po-band-lbl">Fin:</td><td class="po-band-val">{{ proyecto_fecha_fin_fmt }}</td>
+    </tr>
+</table>
+
+<div class="po-summary">
+    <div class="po-summary-card"><div class="po-summary-lbl">Actividades</div><div class="po-summary-val">{{ total_actividades }}</div></div>
+    <div class="po-summary-card done"><div class="po-summary-lbl">Completadas</div><div class="po-summary-val">{{ total_completadas }}</div></div>
+    <div class="po-summary-card pending"><div class="po-summary-lbl">Pendientes</div><div class="po-summary-val">{{ total_pendientes }}</div></div>
+    <div class="po-summary-card"><div class="po-summary-lbl">Semanas</div><div class="po-summary-val">{{ weeks|length }}</div></div>
+</div>
+
+{% if total_actividades == 0 %}
+<div class="po-empty-state">Aún no se han agendado actividades para este proyecto.</div>
+{% endif %}
+
+{% for week in weeks %}
+<div class="po-week">
+    <div class="po-week-header">
+        <div class="po-week-title">Semana {{ week.num }}</div>
+        <div class="po-week-range">{{ week.range_label }}</div>
+    </div>
+    <div class="po-days {% if week.has_weekend %}has-weekend{% endif %}">
+        {% for day in week.days %}
+        <div class="po-day {% if day.is_weekend %}po-day-weekend{% endif %}">
+            <div class="po-day-head">{{ day.name }}</div>
+            <div class="po-day-date">{{ day.date_short }}</div>
+            {% if day.activities %}
+                {% for a in day.activities %}
+                <div class="po-act {% if a.completada %}po-act-done{% endif %}">
+                    <div class="po-act-title">{% if a.completada %}<span class="po-act-check">&#10003;</span>{% endif %}{{ a.titulo }}</div>
+                    <div class="po-act-meta">
+                        <span class="po-act-hora">{{ a.hora_inicio }}–{{ a.hora_fin }}</span>
+                        {% if a.responsables %}<span>{% for r in a.responsables %}<span class="po-act-resp">{{ r.iniciales }}</span>{% endfor %}</span>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="po-day-empty">—</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+</div>
