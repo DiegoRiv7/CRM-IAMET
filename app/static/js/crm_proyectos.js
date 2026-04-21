@@ -3264,14 +3264,111 @@
     var _cachedLevantamientos = [];
 
     // Crea un levantamiento nuevo y abre el wizard
+    // ═══════════════════════════════════════════════════════════
+    //  PLANTILLAS DE LEVANTAMIENTO (para matar la parálisis de
+    //  la hoja en blanco. Cada plantilla pre-puebla fase1_data con
+    //  servicios, componentes y productos típicos — el ingeniero
+    //  solo ajusta cantidades y detalles.)
+    // ═══════════════════════════════════════════════════════════
+
+    var LEVANTAMIENTO_TEMPLATES = {
+        cctv16: {
+            nombre: 'Instalación CCTV 16 cámaras',
+            servicios: ['CCTV'],
+            componentes: ['Cámara IP', 'NVR', 'Gabinete/Rack', 'Switches', 'UPS', 'Cable Cat6'],
+            productos: [
+                { desc: 'Cámara IP Domo 4MP IR 30m', marca: 'Hikvision', modelo: 'DS-2CD2347G2-LU', unidad: 'PZA', qty: 16, precio: 2850 },
+                { desc: 'NVR 32 canales 4K H.265+', marca: 'Hikvision', modelo: 'DS-7732NI-I4/16P', unidad: 'PZA', qty: 1, precio: 18500 },
+                { desc: 'Disco Duro Surveillance 4TB', marca: 'Seagate', modelo: 'SkyHawk ST4000VX016', unidad: 'PZA', qty: 2, precio: 1650 },
+                { desc: 'Cable UTP Cat6 CCA 305m', marca: 'Belden', modelo: '1700A', unidad: 'BOB', qty: 3, precio: 890 },
+                { desc: 'Switch PoE 24 puertos Gigabit', marca: 'TP-Link', modelo: 'TL-SG1224PE', unidad: 'PZA', qty: 1, precio: 5400 },
+                { desc: 'Gabinete Rack 12U Pared', marca: 'Linkedpro', modelo: 'LP-GB-12U-W', unidad: 'PZA', qty: 1, precio: 3200 },
+            ],
+        },
+        cableado32: {
+            nombre: 'Cableado Estructurado 32 nodos',
+            servicios: ['Cableado Estructurado'],
+            componentes: ['Cable Cat6', 'Gabinete/Rack', 'Switches', 'Tubería', 'Canalización'],
+            productos: [
+                { desc: 'Cable UTP Cat6 CCA 305m', marca: 'PANDUIT', modelo: 'NetKey NUC6C04BU-CEG', unidad: 'BOB', qty: 5, precio: 950 },
+                { desc: 'Jack Cat6 Mini-Com TG Blanco', marca: 'PANDUIT', modelo: 'CJ688TGWH', unidad: 'PZA', qty: 32, precio: 115 },
+                { desc: 'Faceplate 2 puertos blanco', marca: 'PANDUIT', modelo: 'CFPE2IWY', unidad: 'PZA', qty: 16, precio: 42 },
+                { desc: 'Patch Panel Cat6 24 puertos', marca: 'PANDUIT', modelo: 'DP24688TGY', unidad: 'PZA', qty: 2, precio: 1800 },
+                { desc: 'Patch Cord Cat6 2m azul', marca: 'PANDUIT', modelo: 'UTP6X7BU', unidad: 'PZA', qty: 32, precio: 95 },
+                { desc: 'Gabinete Rack 24U Piso', marca: 'Linkedpro', modelo: 'LP-GB-24U-F', unidad: 'PZA', qty: 1, precio: 6200 },
+                { desc: 'Switch 48 puertos Gigabit', marca: 'TP-Link', modelo: 'TL-SG1048', unidad: 'PZA', qty: 1, precio: 7800 },
+            ],
+        },
+        acceso: {
+            nombre: 'Control de Acceso básico',
+            servicios: ['Control de Acceso'],
+            componentes: ['Controladora', 'Cable Cat6', 'Gabinete/Rack', 'UPS', 'Fuentes de Poder'],
+            productos: [
+                { desc: 'Controladora 2 puertas IP', marca: 'Hikvision', modelo: 'DS-K2602T', unidad: 'PZA', qty: 1, precio: 8500 },
+                { desc: 'Lector de tarjeta Mifare', marca: 'Hikvision', modelo: 'DS-K1102MK', unidad: 'PZA', qty: 2, precio: 1450 },
+                { desc: 'Cerradura electromagnética 600 lbs', marca: 'Yli', modelo: 'YM-600', unidad: 'PZA', qty: 2, precio: 2200 },
+                { desc: 'Botón de salida metálico', marca: 'Yli', modelo: 'PBK-815', unidad: 'PZA', qty: 2, precio: 380 },
+                { desc: 'Fuente 12V 5A respaldo', marca: 'Syscom', modelo: 'PL1250', unidad: 'PZA', qty: 1, precio: 950 },
+                { desc: 'Cable multipar 4x22 AWG 305m', marca: 'Syscom', modelo: 'SPT-4X22', unidad: 'BOB', qty: 1, precio: 720 },
+            ],
+        },
+    };
+
+    // Abre el modal-picker de plantillas y delega la creación a
+    // _crearLevantamientoConPlantilla() según lo que elija el usuario.
     window.levantamientoIniciar = function () {
         if (!currentProjectId) return;
+        _abrirPickerPlantillas();
+    };
+
+    // Realmente crea el levantamiento (con o sin plantilla).
+    //   templateKey:  clave de LEVANTAMIENTO_TEMPLATES o 'blank' o 'copy-<id>'
+    function _crearLevantamientoConPlantilla(templateKey) {
         var btn = el('btnIniciarLevantamiento');
         if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+        var body = {};
+        if (templateKey && templateKey !== 'blank') {
+            if (templateKey.indexOf('copy-') === 0) {
+                var levId = templateKey.substring(5);
+                // Caso copiar: fetchea el levantamiento origen y pasa su data
+                _fetch('/app/api/iamet/levantamientos/' + levId + '/').then(function (resp) {
+                    if (resp.ok || resp.success) {
+                        var src = resp.data;
+                        var copyBody = {
+                            nombre: (src.nombre || 'Levantamiento') + ' (copia)',
+                            fase1_data: src.fase1_data || {},
+                        };
+                        _postCrearLev(copyBody);
+                    } else {
+                        if (typeof showToast === 'function') showToast('No se pudo leer el levantamiento original', 'error');
+                        if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                    }
+                });
+                return;
+            }
+            var tpl = LEVANTAMIENTO_TEMPLATES[templateKey];
+            if (tpl) {
+                body = {
+                    nombre: tpl.nombre,
+                    fase1_data: {
+                        servicios: tpl.servicios.slice(),
+                        componentes: tpl.componentes.slice(),
+                        productos: tpl.productos.map(function (p, i) {
+                            return Object.assign({}, p, { partida: i + 1 });
+                        }),
+                    },
+                };
+            }
+        }
+        _postCrearLev(body);
+    }
+
+    function _postCrearLev(body) {
+        var btn = el('btnIniciarLevantamiento');
         _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/levantamientos/crear/', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({}),
+            body: JSON.stringify(body),
         }).then(function (resp) {
             if (resp.success) {
                 renderLevantamientos(currentProjectId);
@@ -3286,6 +3383,70 @@
         }).finally(function () {
             if (btn) { btn.disabled = false; btn.style.opacity = ''; }
         });
+    }
+
+    // Renderea el modal-picker con las 3 plantillas + "copiar" + "en blanco"
+    function _abrirPickerPlantillas() {
+        var existing = el('levTplPicker');
+        if (existing) existing.remove();
+
+        // Construir lista de levantamientos existentes del proyecto para "copiar"
+        var copyOptions = (_cachedLevantamientos || []).slice(0, 5).map(function (l) {
+            return '<button type="button" class="lev-tpl-copy-row" onclick="_levTplPick(\'copy-' + l.id + '\')">' +
+                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+                '<span class="lev-tpl-copy-name">' + _esc(l.nombre || 'Sin nombre') + '</span>' +
+                '<span class="lev-tpl-copy-sub">' + _esc(l.status_label || '') + ' · Fase ' + (l.fase_actual || 1) + '/5</span>' +
+            '</button>';
+        }).join('');
+
+        var html = '' +
+        '<div class="lev-tpl-backdrop" id="levTplPicker" onclick="if(event.target===this)_levTplClose()">' +
+            '<div class="lev-tpl-modal">' +
+                '<div class="lev-tpl-head">' +
+                    '<div>' +
+                        '<div class="lev-tpl-title">¿Con qué quieres empezar?</div>' +
+                        '<div class="lev-tpl-sub">Elige una plantilla para ahorrar tiempo, o arranca desde cero.</div>' +
+                    '</div>' +
+                    '<button type="button" class="lev-tpl-close" onclick="_levTplClose()" aria-label="Cerrar">' +
+                        '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+                    '</button>' +
+                '</div>' +
+
+                '<div class="lev-tpl-grid">' +
+                    _tplCard('cctv16', '📹', 'CCTV 16 cámaras', 'Hikvision · NVR 32ch · Cable Cat6', '$110k estimado') +
+                    _tplCard('cableado32', '🔌', 'Cableado 32 nodos', 'PANDUIT Cat6 · Gabinete 24U · Switch 48p', '$28k estimado') +
+                    _tplCard('acceso', '🔐', 'Control de Acceso básico', '2 puertas · Lectores Mifare · Cerraduras 600lb', '$18k estimado') +
+                    _tplCard('blank', '✏️', 'En blanco', 'Sin datos pre-llenados — captura todo manual', 'Para casos especiales') +
+                '</div>' +
+
+                (copyOptions ? '<div class="lev-tpl-copy-wrap">' +
+                    '<div class="lev-tpl-copy-label">O duplicar un levantamiento previo</div>' +
+                    '<div class="lev-tpl-copy-list">' + copyOptions + '</div>' +
+                '</div>' : '') +
+            '</div>' +
+        '</div>';
+
+        var wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        document.body.appendChild(wrap.firstChild);
+    }
+
+    function _tplCard(key, emoji, title, detail, price) {
+        return '<button type="button" class="lev-tpl-card" onclick="_levTplPick(\'' + key + '\')">' +
+            '<div class="lev-tpl-emoji">' + emoji + '</div>' +
+            '<div class="lev-tpl-card-title">' + title + '</div>' +
+            '<div class="lev-tpl-card-detail">' + detail + '</div>' +
+            '<div class="lev-tpl-card-price">' + price + '</div>' +
+        '</button>';
+    }
+
+    window._levTplPick = function (key) {
+        _levTplClose();
+        _crearLevantamientoConPlantilla(key);
+    };
+    window._levTplClose = function () {
+        var m = el('levTplPicker');
+        if (m) m.remove();
     };
 
     // Abre el wizard cargando el detalle del levantamiento
