@@ -2600,6 +2600,8 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
     """
     from django.http import HttpResponse
     from django.template.loader import render_to_string
+    from django.conf import settings
+    import os
     try:
         lev = ProyectoLevantamiento.objects.select_related(
             'proyecto', 'creado_por'
@@ -2612,16 +2614,35 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
     f1 = lev.fase1_data or {}
     f2 = lev.fase2_data or {}
 
-    # URLs absolutas para que WeasyPrint pueda cargar las imágenes locales
-    def _abs(url):
-        if not url:
-            return url
-        if url.startswith('http://') or url.startswith('https://'):
-            return url
-        return request.build_absolute_uri(url)
+    # Para WeasyPrint: usar rutas filesystem (file://) en lugar de HTTP URLs.
+    # Así evitamos que WeasyPrint haga peticiones HTTP (que pueden fallar por
+    # SSL/auth/red interna del contenedor) y las imágenes cargan directo del disco.
+    def _file_url_for_field(field):
+        if not field:
+            return ''
+        try:
+            return 'file://' + field.path
+        except Exception:
+            try:
+                return request.build_absolute_uri(field.url)
+            except Exception:
+                return ''
+
+    def _static_file_url(rel_path):
+        """Busca un archivo estático en STATIC_ROOT (prod tras collectstatic)
+        o en los directorios STATICFILES_DIRS/BASE_DIR (dev)."""
+        candidates = []
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidates.append(os.path.join(settings.STATIC_ROOT, rel_path))
+        # Dev: el directorio app/static/
+        candidates.append(os.path.join(settings.BASE_DIR, 'app', 'static', rel_path))
+        for p in candidates:
+            if os.path.exists(p):
+                return 'file://' + p
+        return ''
 
     evidencias = [{
-        'abs_url': _abs(e.archivo.url) if e.archivo else '',
+        'abs_url': _file_url_for_field(e.archivo),
         'comentario': e.comentario or '',
     } for e in lev.evidencias.all()]
 
@@ -2652,6 +2673,15 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
         'especificaciones': [x for x in (f2.get('especificaciones') or []) if x and x.strip()],
         'comentarios_spec': [x for x in (f2.get('comentarios_spec') or []) if x and x.strip()],
         'evidencias': evidencias,
+        # Recursos visuales — rutas filesystem para WeasyPrint
+        'logo_url':          _static_file_url('images/iamet-logo.png'),
+        'footer_logos_url':  _static_file_url('images/propuesta/footer_logos.png'),
+        'watermark_url':     _static_file_url('images/propuesta/watermark.jpg'),
+        # Datos de empresa (hardcoded por ahora; en el futuro pueden venir de
+        # una configuración del sistema)
+        'empresa_tel':       '664 000 0000',
+        'empresa_web':       'www.iamet.mx',
+        'empresa_direccion': 'Tijuana, B.C.',
     }
 
     html = render_to_string('crm/levantamiento_propuesta_pdf.html', ctx, request=request)
