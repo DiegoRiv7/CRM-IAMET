@@ -33,6 +33,12 @@
                 </div>
             </div>
             <div class="lw-header-right">
+                <!-- Toggle Modo Simple / Completo -->
+                <label class="lw-mode-toggle" title="Muestra u oculta campos avanzados">
+                    <input type="checkbox" id="lwModeToggle" onchange="lwToggleMode(this.checked)">
+                    <span class="lw-mode-slider"></span>
+                    <span class="lw-mode-label" id="lwModeLabel">Modo simple</span>
+                </label>
                 <span class="lw-save-stamp" id="lwSaveStamp"></span>
                 <span class="lw-save-indicator" id="lwSaveIndicator"></span>
 
@@ -180,7 +186,7 @@
                     </div>
 
                     <!-- ─── Programa e implementación (para PDF de levantamiento) ─── -->
-                    <div class="lw-canvas-section">
+                    <div class="lw-canvas-section lw-advanced">
                         <div class="lw-canvas-section-label">Programa e implementación <span class="lw-help-tip" data-tip="Información de campo para la instalación: fechas, turno, personal requerido y equipo de elevación. Se usa en el PDF de Levantamiento en Sitio.">?</span></div>
                         <div class="lw-impl-grid">
                             <!-- Fechas + Turno -->
@@ -373,7 +379,7 @@
                     </div>
 
                     <!-- Comentarios por partida (colapsibles, opcional) -->
-                    <div class="lw-canvas-section">
+                    <div class="lw-canvas-section lw-advanced">
                         <div class="lw-canvas-section-label">Notas de instalación por partida (opcional)</div>
                         <div id="lw_f2_partidas"></div>
                     </div>

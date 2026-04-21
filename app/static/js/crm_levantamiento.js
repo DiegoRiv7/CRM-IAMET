@@ -90,6 +90,7 @@
         if (!ov) return;
         ov.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        _lwRestoreMode(); // aplica clase lw-mode-simple/full desde localStorage
         renderHeader();
         renderPhaseTabs();
         renderPhase(state.phase);
@@ -830,6 +831,47 @@
         }, 3500);
     }
     window.lwCheer = lwCheer;
+
+    // ═══════════════════════════════════════════════════════════════
+    //  MODO SIMPLE / COMPLETO — oculta campos avanzados para onboarding
+    // ═══════════════════════════════════════════════════════════════
+    var LW_MODE_KEY = 'lw_wizard_mode';  // 'simple' | 'full'
+
+    function _lwApplyMode(mode) {
+        var container = document.querySelector('.lw-container');
+        var toggle    = $('lwModeToggle');
+        var label     = $('lwModeLabel');
+        if (!container) return;
+        if (mode === 'full') {
+            container.classList.remove('lw-mode-simple');
+            container.classList.add('lw-mode-full');
+            if (toggle) toggle.checked = true;
+            if (label) label.textContent = 'Modo completo';
+        } else {
+            container.classList.remove('lw-mode-full');
+            container.classList.add('lw-mode-simple');
+            if (toggle) toggle.checked = false;
+            if (label) label.textContent = 'Modo simple';
+        }
+    }
+
+    window.lwToggleMode = function (isFull) {
+        var mode = isFull ? 'full' : 'simple';
+        try { localStorage.setItem(LW_MODE_KEY, mode); } catch (e) {}
+        _lwApplyMode(mode);
+        // Cheer al cambiar a modo completo la primera vez — sutil, informativo
+        if (isFull) {
+            lwCheer('Modo completo activado', 'Se muestran todos los campos avanzados.', 'info');
+        }
+    };
+
+    // Restore mode al abrir el wizard
+    function _lwRestoreMode() {
+        var saved;
+        try { saved = localStorage.getItem(LW_MODE_KEY); } catch (e) { saved = null; }
+        // Default: modo simple (para ingenieros nuevos)
+        _lwApplyMode(saved === 'full' ? 'full' : 'simple');
+    }
 
     function lwRecomputeSummary() {
         if (!state.lev) return;

@@ -2383,3 +2383,63 @@
     0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
     100% { opacity: 0; transform: translateX(-50%) translateY(14px) scale(0.96); }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TOGGLE Modo Simple / Completo
+   Switch iOS-style en el header. Esconde secciones marcadas
+   .lw-advanced cuando está en modo simple.
+   ══════════════════════════════════════════════════════════════ */
+
+.lw-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    user-select: none;
+    font-family: inherit;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.12s ease;
+}
+.lw-mode-toggle:hover { background: #F1F5F9; }
+.lw-mode-toggle input { display: none; }
+
+.lw-mode-slider {
+    width: 28px;
+    height: 16px;
+    background: #CBD5E1;
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.18s ease;
+    flex-shrink: 0;
+}
+.lw-mode-slider::after {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    top: 2px;
+    left: 2px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.30);
+    transition: left 0.18s cubic-bezier(.34, 1.56, .64, 1);
+}
+.lw-mode-toggle input:checked + .lw-mode-slider {
+    background: #2563EB;
+}
+.lw-mode-toggle input:checked + .lw-mode-slider::after {
+    left: 14px;
+}
+.lw-mode-label {
+    font-size: 11.5px;
+    color: #64748B;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+}
+
+/* Ocultar campos avanzados en modo simple */
+.lw-container.lw-mode-simple .lw-advanced {
+    display: none !important;
+}
