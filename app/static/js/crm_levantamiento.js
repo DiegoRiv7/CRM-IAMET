@@ -239,6 +239,12 @@
             var el = $('lwPhase' + i);
             if (el) el.style.display = (i === n) ? 'block' : 'none';
         }
+        // Botón PDF sólo visible en Fase 2 (Propuesta Técnica)
+        var pdfWrap = $('lwPdfWrap');
+        if (pdfWrap) pdfWrap.style.display = (n === 2) ? '' : 'none';
+        var pdfMenu = $('lwPdfMenu');
+        if (pdfMenu) pdfMenu.style.display = 'none';
+
         if (n === 1) renderPhase1();
         else if (n === 2) renderPhase2();
         else if (n === 3) renderPhase3();
@@ -902,8 +908,33 @@
     //  PHASE 2 — PROPUESTA TÉCNICA
     // ═══════════════════════════════════════════════════════════════
     function renderPhase2() {
-        var productos = (state.lev.fase1_data || {}).productos || [];
         var f2 = state.lev.fase2_data || {};
+        var f1 = state.lev.fase1_data || {};
+
+        // Campos del formato — precargar con defaults inteligentes
+        function setVal(id, val) { var el = $(id); if (el) { el.value = val || ''; lwRefreshMetaPill(el); } }
+        setVal('lw_f2_elaboro',       f2.elaboro       || (state.lev.creado_por_nombre || ''));
+        setVal('lw_f2_doc_fecha',     f2.doc_fecha     || new Date().toISOString().split('T')[0]);
+        setVal('lw_f2_solicitante',   f2.solicitante   || f1.contacto || '');
+        setVal('lw_f2_departamento',  f2.departamento  || '');
+        setVal('lw_f2_planta',        f2.planta        || f1.cliente  || '');
+        setVal('lw_f2_areas',         f2.areas         || f1.area     || '');
+        setVal('lw_f2_tipo_solucion', f2.tipo_solucion || (f1.servicios || []).join(', '));
+        setVal('lw_f2_fecha_inst',    f2.fecha_inst    || 'Acordar con usuario');
+
+        // Descripción del proyecto (pre-llena con descripcion de Fase 1 si vacía)
+        var desc = $('lw_f2_desc_proyecto');
+        if (desc) {
+            desc.value = f2.desc_proyecto || f1.descripcion || '';
+            setTimeout(function () { lwAutoGrow(desc); }, 40);
+        }
+
+        // Listas de Especificaciones + Comentarios
+        renderP2SpecList('especificaciones', f2.especificaciones);
+        renderP2SpecList('comentarios', f2.comentarios_spec);
+
+        // Partidas con comentarios (opcional)
+        var productos = f1.productos || [];
         var wrap = $('lw_f2_partidas');
         if (!productos.length) {
             wrap.innerHTML = '<div class="lw-empty-card">Agrega productos en la Fase 1 primero</div>';
@@ -1030,8 +1061,122 @@
     });
 
     function collectPhase2() {
-        return state.lev.fase2_data || {};
+        var f2 = state.lev.fase2_data || {};
+        // Campos del formato — leídos directo del DOM
+        [
+            ['elaboro','lw_f2_elaboro'], ['doc_fecha','lw_f2_doc_fecha'],
+            ['solicitante','lw_f2_solicitante'], ['departamento','lw_f2_departamento'],
+            ['planta','lw_f2_planta'], ['areas','lw_f2_areas'],
+            ['tipo_solucion','lw_f2_tipo_solucion'], ['fecha_inst','lw_f2_fecha_inst'],
+            ['desc_proyecto','lw_f2_desc_proyecto'],
+        ].forEach(function (pair) {
+            var el = $(pair[1]);
+            if (el) f2[pair[0]] = el.value || '';
+        });
+        // Los arrays de especificaciones + comentarios_spec y comentarios (por partida)
+        // ya están sincronizados en state.lev.fase2_data por los handlers.
+        state.lev.fase2_data = f2;
+        return f2;
     }
+
+    // ── Especificaciones + Comentarios (listas editables tipo bullet) ──
+    function renderP2SpecList(kind, items) {
+        var listEl = $(kind === 'especificaciones' ? 'lw_f2_especif_list' : 'lw_f2_coment_list');
+        if (!listEl) return;
+        items = items || [];
+        listEl.innerHTML = items.map(function (txt, idx) {
+            return '<div class="lw-p2-specs-row">' +
+                '<span class="lw-p2-specs-bullet"></span>' +
+                '<input type="text" class="lw-p2-specs-input" value="' + esc(txt) + '" placeholder="Escribe aquí…" ' +
+                    'oninput="lwP2SpecUpdate(\'' + kind + '\',' + idx + ', this.value)" ' +
+                    'onkeydown="lwP2SpecKey(event, \'' + kind + '\',' + idx + ')">' +
+                '<button type="button" class="lw-p2-specs-del" onclick="lwP2SpecDel(\'' + kind + '\',' + idx + ')" title="Eliminar">×</button>' +
+            '</div>';
+        }).join('');
+    }
+
+    window.lwP2AddSpec = function (kind) {
+        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
+        var f2 = state.lev.fase2_data || {};
+        f2[key] = f2[key] || [];
+        f2[key].push('');
+        state.lev.fase2_data = f2;
+        renderP2SpecList(kind, f2[key]);
+        // Focus en el input recién creado
+        setTimeout(function () {
+            var listEl = $(kind === 'especificaciones' ? 'lw_f2_especif_list' : 'lw_f2_coment_list');
+            if (listEl) {
+                var inputs = listEl.querySelectorAll('.lw-p2-specs-input');
+                if (inputs.length) inputs[inputs.length - 1].focus();
+            }
+        }, 30);
+        lwFieldChange();
+    };
+
+    window.lwP2SpecUpdate = function (kind, idx, val) {
+        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
+        var f2 = state.lev.fase2_data || {};
+        f2[key] = f2[key] || [];
+        f2[key][idx] = val;
+        state.lev.fase2_data = f2;
+        lwFieldChange();
+    };
+
+    window.lwP2SpecDel = function (kind, idx) {
+        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
+        var f2 = state.lev.fase2_data || {};
+        f2[key] = f2[key] || [];
+        f2[key].splice(idx, 1);
+        state.lev.fase2_data = f2;
+        renderP2SpecList(kind, f2[key]);
+        lwFieldChange();
+    };
+
+    // Enter → agrega nueva fila; Backspace en vacío → elimina
+    window.lwP2SpecKey = function (e, kind, idx) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            lwP2AddSpec(kind);
+        } else if (e.key === 'Backspace' && !e.currentTarget.value) {
+            e.preventDefault();
+            var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
+            var f2 = state.lev.fase2_data || {};
+            if ((f2[key] || []).length > 1) lwP2SpecDel(kind, idx);
+        }
+    };
+
+    // ── Dropdown PDF ───────────────────────────────────────
+    window.lwPdfMenuToggle = function (e) {
+        if (e) e.stopPropagation();
+        var m = $('lwPdfMenu');
+        if (!m) return;
+        m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    };
+    document.addEventListener('click', function (e) {
+        var wrap = $('lwPdfWrap');
+        var menu = $('lwPdfMenu');
+        if (!wrap || !menu || menu.style.display !== 'block') return;
+        if (!wrap.contains(e.target)) menu.style.display = 'none';
+    });
+
+    // Genera el PDF usando el endpoint server-side (WeasyPrint).
+    // mode: 'view' → abre en pestaña nueva para previsualizar
+    //       'download' → fuerza descarga
+    window.lwPdfExport = function (mode) {
+        if (!state.lev) return;
+        $('lwPdfMenu').style.display = 'none';
+        // Guardar primero para que el PDF tenga la data fresca
+        lwSave(false).then(function () {
+            var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/propuesta-pdf/';
+            var url = base + (mode === 'download' ? '?download=1' : '');
+            window.open(url, '_blank');
+        }).catch(function () {
+            // Incluso si falla el save, intenta generar con la data actual del servidor
+            var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/propuesta-pdf/';
+            var url = base + (mode === 'download' ? '?download=1' : '');
+            window.open(url, '_blank');
+        });
+    };
 
     // ═══════════════════════════════════════════════════════════════
     //  PHASE 3 — VOLUMETRÍA
