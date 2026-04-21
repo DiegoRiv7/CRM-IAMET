@@ -1,3 +1,4 @@
+{% load static %}
 <!-- ═══════════════════════════════════════════════════════════════
      WIDGET: WIZARD LEVANTAMIENTO (5 fases)
      Modal overlay a pantalla completa. Se abre desde la sección
@@ -107,6 +108,21 @@
                             <div>
                                 <div class="lw-pdf-menu-item-title">Descargar PDF</div>
                                 <div class="lw-pdf-menu-item-sub">Calendario por semanas</div>
+                            </div>
+                        </div>
+                        <!-- Opciones exclusivas de Reporte Técnico (Fase 5) -->
+                        <div class="lw-pdf-menu-item" data-menu-group="rp" onclick="lwPdfExport('view-rp')" style="display:none;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <div>
+                                <div class="lw-pdf-menu-item-title">Ver Reporte</div>
+                                <div class="lw-pdf-menu-item-sub">Previsualizar en nueva pestaña</div>
+                            </div>
+                        </div>
+                        <div class="lw-pdf-menu-item" data-menu-group="rp" onclick="lwPdfExport('dl-rp')" style="display:none;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <div>
+                                <div class="lw-pdf-menu-item-title">Descargar PDF</div>
+                                <div class="lw-pdf-menu-item-sub">Reporte firmado con hero Bajanet</div>
                             </div>
                         </div>
                     </div>
@@ -550,25 +566,69 @@
                 </div>
             </div>
 
-            <!-- ═══ PHASE 5 — REPORTES ═══ -->
+            <!-- ═══ PHASE 5 — REPORTE (editor estilo docs) ═══ -->
             <div class="lw-phase" data-phase="5" id="lwPhase5" style="display:none;">
                 <div class="lw-p5-wrap">
-                    <div class="lw-p5-toolbar">
-                        <div class="lw-section-label">Vista Previa del Reporte</div>
-                        <div class="lw-p5-actions">
-                            <button type="button" class="lw-btn lw-btn-outline" onclick="lwP5Imprimir()">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                                Imprimir
-                            </button>
-                            <button type="button" class="lw-btn lw-btn-primary" onclick="lwP5ExportarPDF()">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                Exportar PDF
-                            </button>
-                        </div>
+                    <!-- Toolbar flotante tipo Google Docs -->
+                    <div class="lw-rt-toolbar">
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('bold')" title="Negrita (⌘B)"><b>B</b></button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('italic')" title="Cursiva (⌘I)"><i>I</i></button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('underline')" title="Subrayado (⌘U)" style="text-decoration:underline;">U</button>
+                        <span class="lw-rt-sep"></span>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5FormatBlock('H2')" title="Título grande" style="font-size:14px;font-weight:800;">H1</button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5FormatBlock('H3')" title="Subtítulo" style="font-size:13px;font-weight:700;">H2</button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5FormatBlock('H4')" title="Encabezado" style="font-size:12px;font-weight:700;">H3</button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5FormatBlock('P')" title="Párrafo">¶</button>
+                        <span class="lw-rt-sep"></span>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('insertUnorderedList')" title="Lista con viñetas">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                        </button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('insertOrderedList')" title="Lista numerada">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                        </button>
+                        <span class="lw-rt-sep"></span>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('justifyLeft')" title="Alinear izquierda">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                        </button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('justifyCenter')" title="Centrar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+                        </button>
+                        <span class="lw-rt-sep"></span>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5InsertTable()" title="Insertar tabla">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                        </button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5InsertDivider()" title="Línea divisoria">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                        </button>
+                        <button type="button" class="lw-rt-btn" onclick="lwP5Format('removeFormat')" title="Limpiar formato">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4L8 20"/><path d="M15 15l5 5M20 15l-5 5"/></svg>
+                        </button>
+                        <span class="lw-rt-sep"></span>
+                        <button type="button" class="lw-rt-btn lw-rt-btn-outline" onclick="lwP5InsertResumen()" title="Inserta resumen automático de fases 1-4">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                            Insertar resumen
+                        </button>
                     </div>
+
+                    <!-- Hoja A4 estilo Pages/Docs -->
                     <div class="lw-p5-a4-wrap">
-                        <div class="lw-p5-a4" id="lw_f5_preview">
-                            <!-- Rendered by JS -->
+                        <div class="lw-p5-a4">
+                            <!-- Hero Bajanet (no editable) -->
+                            <img src="{% static 'images/propuesta/bajanet_hero.jpeg' %}"
+                                 class="lw-p5-hero"
+                                 alt="Bajanet" contenteditable="false">
+                            <div class="lw-p5-doc-title-bar">
+                                <div class="lw-p5-doc-title">Reporte Técnico<span class="lw-p5-doc-sub">Documento del Levantamiento</span></div>
+                            </div>
+
+                            <!-- Editor rico -->
+                            <div class="lw-rt-editor"
+                                 id="lw_f5_editor"
+                                 contenteditable="true"
+                                 spellcheck="true"
+                                 data-placeholder="Empieza a escribir tu reporte aquí…"
+                                 oninput="lwP5EditorInput()"
+                                 onpaste="lwP5OnPaste(event)"></div>
                         </div>
                     </div>
                 </div>

@@ -3263,6 +3263,81 @@ def api_levantamiento_volumetria_xlsx(request, levantamiento_id):
 
 @login_required
 @require_http_methods(["GET"])
+def api_levantamiento_reporte_pdf(request, levantamiento_id):
+    """PDF del reporte libre (Fase 5) — el ingeniero escribe HTML rico
+    y lo exportamos con el hero Bajanet arriba y footer estándar.
+
+    Params:
+      ?download=1 → attachment (por defecto inline para preview)
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    import os, datetime as _dt
+
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto', 'creado_por').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    def _static_file_url(rel_path):
+        candidates = []
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidates.append(os.path.join(settings.STATIC_ROOT, rel_path))
+        candidates.append(os.path.join(settings.BASE_DIR, 'app', 'static', rel_path))
+        for p in candidates:
+            if os.path.exists(p):
+                return 'file://' + p
+        return ''
+
+    f1 = lev.fase1_data or {}
+    f2 = lev.fase2_data or {}
+    f5 = lev.fase5_data or {}
+    reporte_html = f5.get('reporte_html') or ''
+
+    meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    def _fmt_fecha(val):
+        if not val:
+            return ''
+        try:
+            dt = _dt.datetime.strptime(str(val)[:10], '%Y-%m-%d')
+        except Exception:
+            return val
+        return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
+
+    ctx = {
+        'lev': lev,
+        'cliente_nombre': f1.get('cliente') or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
+        'elaboro': f2.get('elaboro') or (lev.creado_por.get_full_name() if lev.creado_por else ''),
+        'doc_fecha_fmt': _fmt_fecha(f2.get('doc_fecha') or timezone.localdate().isoformat()),
+        'reporte_html': reporte_html,
+        'bajanet_hero_url': _static_file_url('images/propuesta/bajanet_hero.jpeg'),
+        'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
+        'empresa_tel': '664 000 0000',
+        'empresa_web': 'www.iamet.mx',
+        'empresa_direccion': 'Tijuana, B.C.',
+    }
+
+    html = render_to_string('crm/levantamiento_reporte_pdf.html', ctx, request=request)
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'reporte')).strip()[:80] or 'reporte'
+    filename = f'Reporte_{safe_name}.pdf'
+    disp = 'attachment' if request.GET.get('download') else 'inline'
+    response['Content-Disposition'] = f'{disp}; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_http_methods(["GET"])
 def api_programa_obra_pdf(request, proyecto_id):
     """PDF del Programa de Obra de un proyecto.
 

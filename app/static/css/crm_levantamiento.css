@@ -1496,7 +1496,7 @@
 .lw-p4-empty-title { font-size: 14px; font-weight: 600; color: #475569; }
 .lw-p4-empty-hint { font-size: 12px; color: #94A3B8; }
 
-/* ── PHASE 5 specifics ── */
+/* ── PHASE 5 specifics (editor rico tipo docs) ── */
 .lw-p5-wrap {
     display: flex;
     flex-direction: column;
@@ -1505,33 +1505,185 @@
     overflow: hidden;
     background: #F1F5F9;
 }
-.lw-p5-toolbar {
+
+/* Toolbar estilo Google Docs */
+.lw-rt-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 14px 24px;
+    gap: 2px;
+    padding: 8px 16px;
     background: #fff;
     border-bottom: 1px solid rgba(226, 232, 240, 0.8);
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    overflow-x: auto;
 }
-.lw-p5-actions { display: flex; gap: 8px; }
+.lw-rt-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 8px;
+    min-width: 28px;
+    height: 28px;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.lw-rt-btn:hover { background: #F1F5F9; color: #0F172A; }
+.lw-rt-btn:active { background: #E2E8F0; }
+.lw-rt-btn svg { display: block; }
+.lw-rt-btn-outline {
+    border-color: #E2E8F0;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #2563EB;
+}
+.lw-rt-btn-outline:hover { background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8; }
+.lw-rt-sep {
+    display: inline-block;
+    width: 1px;
+    height: 20px;
+    background: #E2E8F0;
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
 .lw-p5-a4-wrap {
     flex: 1;
     overflow: auto;
-    padding: 20px;
+    padding: 24px 20px;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
 }
 .lw-p5-a4 {
     background: #fff;
-    width: 210mm;
+    width: 215.9mm; /* Letter */
     max-width: 100%;
-    min-height: 297mm;
-    padding: 20mm;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+    min-height: 279.4mm;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15), 0 4px 12px rgba(15, 23, 42, 0.04);
     font-size: 11.5px;
     color: #1E293B;
     line-height: 1.55;
+    overflow: hidden; /* para el hero full-width */
+}
+
+/* Hero Bajanet en la parte superior del editor (visual; no editable) */
+.lw-p5-hero {
+    display: block;
+    width: 100%;
+    max-height: 90px;
+    object-fit: cover;
+    object-position: center top;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+.lw-p5-doc-title-bar {
+    padding: 12px 18mm 14px;
+    border-bottom: 2px solid #2563EB;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: flex-end;
+}
+.lw-p5-doc-title {
+    color: #2563EB;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.1;
+    text-align: right;
+}
+.lw-p5-doc-sub {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: #94A3B8;
+    letter-spacing: 0.15em;
+    margin-top: 2px;
+    text-transform: uppercase;
+}
+
+/* Editor rico (contenteditable) */
+.lw-rt-editor {
+    padding: 6mm 20mm 20mm;
+    min-height: 500px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: #0F172A;
+    outline: none;
+    caret-color: #2563EB;
+}
+.lw-rt-editor:focus { outline: none; }
+.lw-rt-editor h1, .lw-rt-editor h2 {
+    font-size: 18px; font-weight: 800; color: #1D4ED8;
+    margin: 18px 0 8px; line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+.lw-rt-editor h2 { font-size: 18px; }
+.lw-rt-editor h3 {
+    font-size: 15px; font-weight: 700; color: #2563EB;
+    margin: 14px 0 6px; line-height: 1.25;
+    text-transform: none; letter-spacing: 0;
+}
+.lw-rt-editor h4 {
+    font-size: 13px; font-weight: 700; color: #334155;
+    margin: 12px 0 4px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.lw-rt-editor p { margin: 0 0 10px; }
+.lw-rt-editor ul, .lw-rt-editor ol { margin: 0 0 10px 22px; padding: 0; }
+.lw-rt-editor li { margin-bottom: 4px; }
+.lw-rt-editor b, .lw-rt-editor strong { font-weight: 700; color: #0F172A; }
+.lw-rt-editor a { color: #2563EB; text-decoration: underline; }
+.lw-rt-editor blockquote {
+    margin: 10px 0;
+    padding: 6px 14px;
+    border-left: 3px solid #BFDBFE;
+    background: #F8FBFF;
+    color: #475569;
+    font-style: italic;
+}
+.lw-rt-editor .lw-rt-hr, .lw-rt-editor hr {
+    border: none;
+    border-top: 1px solid #CBD5E1;
+    margin: 18px 0;
+}
+
+/* Tablas dentro del editor */
+.lw-rt-editor .lw-rt-table, .lw-rt-editor table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 12px;
+}
+.lw-rt-editor .lw-rt-table th, .lw-rt-editor table th {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-weight: 700;
+    padding: 6px 10px;
+    border: 1px solid #BFDBFE;
+    text-align: left;
+}
+.lw-rt-editor .lw-rt-table td, .lw-rt-editor table td {
+    padding: 5px 10px;
+    border: 1px solid #E2E8F0;
+    vertical-align: top;
+}
+
+/* Placeholder simulado */
+.lw-rt-editor.is-empty::before {
+    content: attr(data-placeholder);
+    color: #94A3B8;
+    pointer-events: none;
+    display: block;
 }
 .lw-p5-portada {
     text-align: center;

@@ -1,0 +1,204 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Reporte Técnico — {{ lev.nombre }}</title>
+<style>
+    @page {
+        size: Letter;
+        margin: 1.6cm 1.8cm 2.0cm;
+
+        @bottom-center {
+            content: "Reporte Técnico · {{ lev.nombre|escape }} · Página " counter(page) " de " counter(pages);
+            font-family: 'Inter', Arial, sans-serif;
+            font-size: 7.5pt;
+            color: #64748B;
+            font-weight: 500;
+            padding-bottom: 3mm;
+        }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        color: #0F172A;
+        font-size: 10.5pt;
+        line-height: 1.55;
+    }
+
+    /* HERO */
+    .pt-hero-banner {
+        width: 100%;
+        display: block;
+        margin-bottom: 0;
+    }
+    .pt-doc-title-bar {
+        display: flex; justify-content: flex-end; align-items: center;
+        padding: 8px 4px 12px; margin-bottom: 14px;
+        border-bottom: 2px solid #2563EB;
+    }
+    .pt-title {
+        color: #2563EB; font-size: 15pt; font-weight: 800;
+        letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1;
+    }
+    .pt-title-sub {
+        display: block; font-size: 8pt; font-weight: 600; color: #94A3B8;
+        letter-spacing: 0.15em; margin-top: 2px; text-transform: uppercase;
+    }
+
+    /* HEADER BAND */
+    .rp-band {
+        width: 100%; border-collapse: collapse; margin-bottom: 16px;
+        border-radius: 8px; overflow: hidden;
+    }
+    .rp-band td {
+        background: linear-gradient(180deg, #2563EB, #1D4ED8);
+        color: #fff; padding: 6px 12px; vertical-align: middle; border: none;
+        font-size: 10pt;
+    }
+    .rp-band .rp-cliente {
+        font-size: 13pt; font-weight: 800; letter-spacing: 0.01em;
+        padding: 10px 16px; width: 42%;
+    }
+    .rp-band .rp-band-lbl {
+        font-size: 8.5pt; font-weight: 600; opacity: 0.85;
+        letter-spacing: 0.02em; text-align: right; padding-right: 6px;
+        width: 12%; text-transform: uppercase;
+    }
+    .rp-band .rp-band-val {
+        font-size: 10.5pt; font-weight: 700; text-align: left;
+    }
+
+    /* CUERPO DEL REPORTE — respeta el HTML del editor */
+    .rp-body { color: #0F172A; }
+    .rp-body h1, .rp-body h2 {
+        font-size: 16pt; color: #1D4ED8;
+        font-weight: 800; letter-spacing: -0.01em;
+        margin: 16px 0 6px;
+        line-height: 1.2;
+        page-break-after: avoid;
+    }
+    .rp-body h2 { font-size: 15pt; }
+    .rp-body h3 {
+        font-size: 12pt; color: #2563EB;
+        font-weight: 700; margin: 12px 0 4px;
+        page-break-after: avoid;
+    }
+    .rp-body h4 {
+        font-size: 10pt; color: #334155;
+        font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.04em; margin: 10px 0 3px;
+        page-break-after: avoid;
+    }
+    .rp-body p { margin: 0 0 8px; }
+    .rp-body ul, .rp-body ol { margin: 0 0 10px 22px; }
+    .rp-body li { margin-bottom: 3px; }
+    .rp-body b, .rp-body strong { font-weight: 700; color: #0F172A; }
+    .rp-body a { color: #2563EB; text-decoration: underline; }
+    .rp-body blockquote {
+        margin: 10px 0;
+        padding: 6px 14px;
+        border-left: 3px solid #BFDBFE;
+        background: #F8FBFF;
+        color: #475569;
+        font-style: italic;
+    }
+    .rp-body hr {
+        border: none;
+        border-top: 1px solid #CBD5E1;
+        margin: 16px 0;
+    }
+    .rp-body table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+        font-size: 9.5pt;
+        page-break-inside: avoid;
+    }
+    .rp-body table th {
+        background: #EFF6FF;
+        color: #1D4ED8;
+        font-weight: 700;
+        padding: 6px 10px;
+        border: 1px solid #BFDBFE;
+        text-align: left;
+    }
+    .rp-body table td {
+        padding: 5px 10px;
+        border: 1px solid #E2E8F0;
+        vertical-align: top;
+    }
+    .rp-body table tr { page-break-inside: avoid; }
+    .rp-body img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 8px 0;
+    }
+
+    /* Estado vacío */
+    .rp-empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: #94A3B8;
+        font-size: 11pt;
+        font-style: italic;
+        border: 1px dashed #CBD5E1;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+
+    /* Footer */
+    .pt-footer { margin-top: 20px; padding-top: 10px; border-top: 2px solid #E2E8F0; }
+    .pt-footer-brands { width: 100%; height: auto; display: block; margin: 0 auto; }
+    .pt-footer-contact {
+        margin-top: 8px; background: linear-gradient(90deg, #FBBF24, #F59E0B);
+        color: #fff; padding: 6px 14px; font-size: 9pt;
+        text-align: center; font-weight: 600;
+    }
+</style>
+</head>
+<body>
+
+{% if bajanet_hero_url %}<img class="pt-hero-banner" src="{{ bajanet_hero_url }}" alt="Bajanet">{% endif %}
+<div class="pt-doc-title-bar">
+    <div class="pt-title">
+        Reporte Técnico
+        <span class="pt-title-sub">Documento del Levantamiento</span>
+    </div>
+</div>
+
+<!-- ═══ HEADER BAND ═══ -->
+<table class="rp-band">
+    <tr>
+        <td class="rp-cliente" rowspan="2">{{ cliente_nombre|default:"Cliente" }}</td>
+        <td class="rp-band-lbl">Proyecto:</td>
+        <td class="rp-band-val">{{ lev.nombre|default:"—" }}</td>
+        <td class="rp-band-lbl">Fecha:</td>
+        <td class="rp-band-val">{{ doc_fecha_fmt|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="rp-band-lbl">Elaboró:</td>
+        <td class="rp-band-val" colspan="3">{{ elaboro|default:"—" }}</td>
+    </tr>
+</table>
+
+<!-- ═══ CUERPO — HTML escrito por el ingeniero ═══ -->
+<div class="rp-body">
+    {% if reporte_html %}
+        {{ reporte_html|safe }}
+    {% else %}
+        <div class="rp-empty">Aún no se ha redactado contenido en este reporte.<br>Abre la Fase 5 del wizard y empieza a escribir.</div>
+    {% endif %}
+</div>
+
+<!-- Footer -->
+<div class="pt-footer">
+    {% if footer_logos_url %}<img class="pt-footer-brands" src="{{ footer_logos_url }}" alt="Marcas">{% endif %}
+    <div class="pt-footer-contact">
+        Tel. {{ empresa_tel }} &middot; {{ empresa_web }} &middot; {{ empresa_direccion }}
+    </div>
+</div>
+
+</body>
+</html>

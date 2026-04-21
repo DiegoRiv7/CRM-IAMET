@@ -313,9 +313,9 @@
             // no se dispara — resultado: contenido cortado por el footer.
             if (el) el.style.display = (i === n) ? 'flex' : 'none';
         }
-        // Botón PDF visible en Fase 1 (Levantamiento), 2 (Propuesta), 3 (Volumetría) y 4 (Programa de Obra)
+        // Botón PDF visible en Fases 1-5 (cada una con su documento)
         var pdfWrap = $('lwPdfWrap');
-        if (pdfWrap) pdfWrap.style.display = (n === 1 || n === 2 || n === 3 || n === 4) ? '' : 'none';
+        if (pdfWrap) pdfWrap.style.display = (n >= 1 && n <= 5) ? '' : 'none';
         var pdfMenu = $('lwPdfMenu');
         if (pdfMenu) pdfMenu.style.display = 'none';
         // Label del botón
@@ -325,9 +325,11 @@
         var stdItems = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="std"]');
         var volItems = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="vol"]');
         var poItems  = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="po"]');
+        var rpItems  = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="rp"]');
         stdItems.forEach(function (el) { el.style.display = (n === 1 || n === 2) ? '' : 'none'; });
         volItems.forEach(function (el) { el.style.display = (n === 3) ? '' : 'none'; });
         poItems.forEach(function (el)  { el.style.display = (n === 4) ? '' : 'none'; });
+        rpItems.forEach(function (el)  { el.style.display = (n === 5) ? '' : 'none'; });
         // Actualizar labels del menú std según la fase
         if (n === 1 || n === 2) {
             var stdTitles = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="std"] .lw-pdf-menu-item-title');
@@ -1696,6 +1698,15 @@
             } else {
                 return;
             }
+        } else if (state.phase === 5) {
+            var rpBase = base + 'reporte-pdf/';
+            if (mode === 'view-rp') {
+                url = rpBase;
+            } else if (mode === 'dl-rp') {
+                url = rpBase + '?download=1';
+            } else {
+                return;
+            }
         } else {
             var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
             url = base + endpoint + '/' + (mode === 'download' ? '?download=1' : '');
@@ -2050,101 +2061,171 @@
     function collectPhase4() { return state.lev.fase4_data || {}; }
 
     // ═══════════════════════════════════════════════════════════════
-    //  PHASE 5 — REPORTES (preview A4)
+    //  PHASE 5 — REPORTE (editor rico tipo docs)
+    //  ───────────────
+    //  El ingeniero redacta libremente. El HTML se persiste en
+    //  fase5_data.reporte_html y se renderiza en PDF con el logo
+    //  Bajanet arriba.
     // ═══════════════════════════════════════════════════════════════
     function renderPhase5() {
+        var editor = $('lw_f5_editor');
+        if (!editor) return;
+        var f5 = state.lev.fase5_data || {};
+        var levId = String(state.lev.id || '');
+        // Sólo re-montar el HTML cuando cambió el levantamiento (id) —
+        // si ya estás editando el mismo, conservamos el cursor.
+        if (editor.dataset.lwLevId !== levId) {
+            editor.innerHTML = f5.reporte_html || '';
+            editor.dataset.lwLevId = levId;
+        }
+        _p5UpdatePlaceholder();
+    }
+
+    function _p5UpdatePlaceholder() {
+        var editor = $('lw_f5_editor');
+        if (!editor) return;
+        var isEmpty = !editor.textContent.trim() && editor.innerHTML.replace(/<br\s*\/?>|&nbsp;|\s+/g, '') === '';
+        editor.classList.toggle('is-empty', isEmpty);
+    }
+
+    window.lwP5EditorInput = function () {
+        var editor = $('lw_f5_editor');
+        if (!editor) return;
+        var f5 = state.lev.fase5_data || {};
+        f5.reporte_html = editor.innerHTML;
+        state.lev.fase5_data = f5;
+        _p5UpdatePlaceholder();
+        lwFieldChange();
+    };
+
+    // Ejecuta comandos del navegador (bold, italic, lists, etc.).
+    // document.execCommand está "deprecated" pero sigue funcionando en
+    // todos los navegadores y es la forma más simple sin añadir librerías.
+    window.lwP5Format = function (cmd, value) {
+        var editor = $('lw_f5_editor');
+        if (!editor) return;
+        editor.focus();
+        try { document.execCommand(cmd, false, value || null); } catch (e) {}
+        lwP5EditorInput();
+    };
+
+    window.lwP5FormatBlock = function (tag) {
+        var editor = $('lw_f5_editor');
+        if (!editor) return;
+        editor.focus();
+        // Safari/Chrome aceptan "<H2>" con angle brackets; otros sólo "H2"
+        try { document.execCommand('formatBlock', false, tag); } catch (e) {
+            try { document.execCommand('formatBlock', false, '<' + tag + '>'); } catch (e2) {}
+        }
+        lwP5EditorInput();
+    };
+
+    window.lwP5InsertTable = function () {
+        var rowsS = prompt('¿Cuántas filas? (incluye encabezado)', '3');
+        if (!rowsS) return;
+        var colsS = prompt('¿Cuántas columnas?', '3');
+        if (!colsS) return;
+        var rows = Math.max(1, Math.min(20, parseInt(rowsS, 10) || 3));
+        var cols = Math.max(1, Math.min(10, parseInt(colsS, 10) || 3));
+        var html = '<table class="lw-rt-table"><thead><tr>';
+        for (var c = 0; c < cols; c++) html += '<th>Columna ' + (c + 1) + '</th>';
+        html += '</tr></thead><tbody>';
+        for (var r = 1; r < rows; r++) {
+            html += '<tr>';
+            for (var c2 = 0; c2 < cols; c2++) html += '<td>&nbsp;</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table><p>&nbsp;</p>';
+        var editor = $('lw_f5_editor');
+        editor.focus();
+        try { document.execCommand('insertHTML', false, html); } catch (e) {}
+        lwP5EditorInput();
+    };
+
+    window.lwP5InsertDivider = function () {
+        var editor = $('lw_f5_editor');
+        editor.focus();
+        try { document.execCommand('insertHTML', false, '<hr class="lw-rt-hr"><p>&nbsp;</p>'); } catch (e) {}
+        lwP5EditorInput();
+    };
+
+    // Paste con limpieza — si pegan desde Word o páginas, limpiamos
+    // estilos inline pesados para que no ensucien el documento.
+    window.lwP5OnPaste = function (ev) {
+        var cd = ev.clipboardData || window.clipboardData;
+        if (!cd) return;
+        var html = cd.getData('text/html');
+        if (html) {
+            ev.preventDefault();
+            // Eliminar atributos style y class inline que traen suciedad de Word.
+            var clean = html.replace(/<!--[\s\S]*?-->/g, '')
+                .replace(/\s(style|class|lang|id)="[^"]*"/gi, '')
+                .replace(/<o:p[^>]*>[\s\S]*?<\/o:p>/gi, '')
+                .replace(/<\/?(meta|link|span|font)[^>]*>/gi, '');
+            try { document.execCommand('insertHTML', false, clean); } catch (e) {}
+            lwP5EditorInput();
+        }
+        // texto plano: dejamos el default del navegador
+    };
+
+    // Inserta un resumen automático (fases 1-4) en la posición del cursor.
+    // Utilidad para arrancar el reporte sin empezar de cero.
+    window.lwP5InsertResumen = function () {
         var f1 = state.lev.fase1_data || {};
         var f3 = state.lev.fase3_data || {};
-        var f4 = state.lev.fase4_data || {};
+        var f2 = state.lev.fase2_data || {};
         var mat = f3.materiales || [];
-        var mo = f3.manoObra || [];
+        var mo  = f3.manoObra || [];
         var gas = f3.gastos || [];
         var totMat = mat.reduce(function (a, r) { var c = calcMatRow(r); return { c: a.c + c.costoTotal, v: a.v + c.precioVenta }; }, { c: 0, v: 0 });
         var totMO = mo.reduce(function (a, r) { return a + (r.precioUnit || 0) * (r.qty || 0); }, 0);
         var totGas = gas.reduce(function (a, r) { return a + (r.costoUnit || 0) * (r.qty || 0); }, 0);
         var totalVenta = totMat.v + totMO + totGas;
-        var totalCosto = totMat.c + totGas;
-        var utilidad = totalVenta - totalCosto;
-        var margen = totalVenta > 0 ? (utilidad / totalVenta * 100) : 0;
-        var today = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        var html = '<div class="lw-p5-portada">' +
-            '<div class="lw-p5-logo">IAMET</div>' +
-            '<h1>' + esc(state.lev.nombre || 'Levantamiento') + '</h1>' +
-            '<h2>' + esc(f1.cliente || '') + '</h2>' +
-            '<div class="lw-p5-meta">' + esc(f1.area || '') + (f1.fecha ? ' · ' + esc(f1.fecha) : '') + '</div>' +
-            '<div class="lw-p5-date">Emitido el ' + today + '</div>' +
-        '</div>';
-
-        html += '<hr class="lw-p5-sep">';
-
-        html += '<div class="lw-p5-section">' +
-            '<h3>Datos Generales</h3>' +
-            '<div class="lw-p5-grid">' +
-                '<div><span>Cliente:</span> ' + esc(f1.cliente || '—') + '</div>' +
-                '<div><span>Contacto:</span> ' + esc(f1.contacto || '—') + '</div>' +
-                '<div><span>Área:</span> ' + esc(f1.area || '—') + '</div>' +
-                '<div><span>Fecha:</span> ' + esc(f1.fecha || '—') + '</div>' +
-                '<div><span>Email:</span> ' + esc(f1.email || '—') + '</div>' +
-                '<div><span>Teléfono:</span> ' + esc(f1.telefono || '—') + '</div>' +
-            '</div>' +
-        '</div>';
-
-        html += '<div class="lw-p5-section">' +
-            '<h3>Necesidad Reportada</h3>' +
-            '<p>' + esc(f1.descripcion || 'Sin descripción.') + '</p>' +
-        '</div>';
-
-        if ((f1.servicios || []).length || (f1.componentes || []).length) {
-            html += '<div class="lw-p5-section">' +
-                '<h3>Alcance</h3>' +
-                '<div><strong>Servicios:</strong> ' + esc((f1.servicios || []).join(', ') || '—') + '</div>' +
-                '<div style="margin-top:4px;"><strong>Componentes:</strong> ' + esc((f1.componentes || []).join(', ') || '—') + '</div>' +
-            '</div>';
+        var html = '';
+        html += '<h2>' + esc(state.lev.nombre || 'Reporte Técnico') + '</h2>';
+        html += '<p><b>Cliente:</b> ' + esc(f1.cliente || '—') + '<br>';
+        html += '<b>Contacto:</b> ' + esc(f1.contacto || f2.solicitante || '—') + '<br>';
+        html += '<b>Planta / Área:</b> ' + esc(f1.area || f2.planta || '—') + '<br>';
+        html += '<b>Fecha:</b> ' + esc(f1.fecha || f2.doc_fecha || new Date().toISOString().slice(0,10)) + '</p>';
+        if (f1.descripcion) {
+            html += '<h3>Descripción de la necesidad</h3>';
+            html += '<p>' + esc(f1.descripcion).replace(/\n/g, '<br>') + '</p>';
         }
-
-        // Volumetría (resumen)
-        html += '<div class="lw-p5-section">' +
-            '<h3>Resumen Financiero</h3>' +
-            '<table class="lw-p5-table">' +
-                '<tr><td>Subtotal Materiales</td><td class="num">' + fmtMoney(totMat.v) + '</td></tr>' +
-                '<tr><td>Subtotal Mano de Obra</td><td class="num">' + fmtMoney(totMO) + '</td></tr>' +
-                '<tr><td>Subtotal Gastos</td><td class="num">' + fmtMoney(totGas) + '</td></tr>' +
-                '<tr class="lw-p5-strong"><td>TOTAL VENTA</td><td class="num">' + fmtMoney(totalVenta) + '</td></tr>' +
-                '<tr><td>Total Costos</td><td class="num">' + fmtMoney(totalCosto) + '</td></tr>' +
-                '<tr class="lw-p5-strong"><td>Utilidad Bruta</td><td class="num">' + fmtMoney(utilidad) + ' (' + margen.toFixed(1) + '%)</td></tr>' +
-            '</table>' +
-        '</div>';
-
-        // Programa de obra
-        var acts = f4.actividades || [];
-        if (acts.length) {
-            html += '<div class="lw-p5-section">' +
-                '<h3>Programa de Obra</h3>' +
-                '<table class="lw-p5-table">' +
-                    '<tr><th>Actividad</th><th>Responsable</th><th>Inicio</th><th>Fin</th><th class="num">Progreso</th></tr>' +
-                    acts.map(function (a) {
-                        return '<tr>' +
-                            '<td>' + esc(a.nombre || '') + '</td>' +
-                            '<td>' + esc(a.responsable || '') + '</td>' +
-                            '<td>' + esc(a.inicio || '') + '</td>' +
-                            '<td>' + esc(a.fin || '') + '</td>' +
-                            '<td class="num">' + (a.progreso || 0) + '%</td>' +
-                        '</tr>';
-                    }).join('') +
-                '</table>' +
-            '</div>';
+        if ((f1.servicios || []).length) {
+            html += '<h3>Alcance</h3>';
+            html += '<p><b>Servicios:</b> ' + esc((f1.servicios || []).join(', ')) + '</p>';
+            if ((f1.componentes || []).length) {
+                html += '<p><b>Componentes:</b> ' + esc((f1.componentes || []).join(', ')) + '</p>';
+            }
         }
+        if ((f2.especificaciones || []).filter(Boolean).length) {
+            html += '<h3>Especificaciones técnicas</h3><ul>';
+            (f2.especificaciones || []).forEach(function (s) { if (s && s.trim()) html += '<li>' + esc(s) + '</li>'; });
+            html += '</ul>';
+        }
+        if (totalVenta > 0) {
+            html += '<h3>Resumen financiero</h3>';
+            html += '<p><b>Subtotal Materiales:</b> ' + fmtMoney(totMat.v) + '<br>';
+            html += '<b>Subtotal Mano de Obra:</b> ' + fmtMoney(totMO) + '<br>';
+            html += '<b>Subtotal Gastos:</b> ' + fmtMoney(totGas) + '<br>';
+            html += '<b style="color:#1D4ED8;">TOTAL VENTA: ' + fmtMoney(totalVenta) + '</b></p>';
+        }
+        html += '<h3>Conclusiones</h3><p>&nbsp;</p>';
 
-        $('lw_f5_preview').innerHTML = html;
+        var editor = $('lw_f5_editor');
+        editor.focus();
+        try { document.execCommand('insertHTML', false, html); } catch (e) {}
+        lwP5EditorInput();
+    };
+
+    function collectPhase5() {
+        var f5 = state.lev.fase5_data || {};
+        var editor = $('lw_f5_editor');
+        if (editor) f5.reporte_html = editor.innerHTML;
+        state.lev.fase5_data = f5;
+        return f5;
     }
-    window.lwP5Imprimir = function () {
-        window.print();
-    };
-    window.lwP5ExportarPDF = function () {
-        alert('Exportación PDF — pendiente: se implementará del lado del servidor en una iteración posterior. Por ahora usa "Imprimir" → Guardar como PDF.');
-    };
-    function collectPhase5() { return state.lev.fase5_data || {}; }
 
     // Atajos de teclado dentro del wizard:
     //  - ⌘K / Ctrl+K: abrir catálogo de productos en Fase 1
