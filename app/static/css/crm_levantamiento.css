@@ -1882,10 +1882,11 @@
 }
 
 /* ── Phase 1: Programa e implementación ──
-   Se le da un max-height + overflow-y: auto para que nunca
-   quede cortado por el footer del wizard: cuando el contenido no cabe
-   en el viewport, la sección hace su propio scroll interno sin forzar
-   al usuario a pelear con el scroll externo.  */
+   Bloque con su propio scroll interno — siempre muestra una altura
+   acotada (~300px o menos si el viewport es corto) para que las filas
+   de Fechas, Turno, Apoyo, Personal y Equipo de Elevación quepan
+   juntas dentro del wizard sin que el footer las corte. Scroll interno
+   visible para que el usuario sepa que hay más abajo. */
 .lw-impl-grid {
     display: flex;
     flex-direction: column;
@@ -1894,12 +1895,21 @@
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
     border-radius: 12px;
-    max-height: 420px;
+    max-height: min(320px, calc(100vh - 480px));
     overflow-y: auto;
+    /* Indicadores visuales de scroll cuando hay más contenido abajo:
+       un fade sutil en el borde inferior */
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
 }
-/* Scrollbar sutil para no romper el look minimal */
-.lw-impl-grid::-webkit-scrollbar { width: 6px; }
-.lw-impl-grid::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 3px; }
+/* Scrollbar visible (no demasiado) para comunicar scrolleabilidad */
+.lw-impl-grid::-webkit-scrollbar { width: 8px; }
+.lw-impl-grid::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 4px;
+    border: 2px solid #F8FAFC;
+}
+.lw-impl-grid::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 0.55); }
 .lw-impl-grid::-webkit-scrollbar-track { background: transparent; }
 .lw-impl-row {
     display: flex;
