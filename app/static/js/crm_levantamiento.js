@@ -742,8 +742,50 @@
     //  RESUMEN VIVO (sidebar stats)
     // ═══════════════════════════════════════════════════════════════
 
+    // Checklist de Fase 1 — 6 items requeridos. Cada ✓ da feedback
+    // inmediato al ingeniero ("llevo 4 de 6").
+    function lwRenderChecklist() {
+        if (!state.lev) return;
+        var d = state.lev.fase1_data || {};
+        var items = [
+            { key: 'titulo',      label: 'Título del levantamiento',  done: !!(state.lev.nombre || '').trim() },
+            { key: 'cliente',     label: 'Cliente',                   done: !!((d.cliente || '').trim()) },
+            { key: 'contacto',    label: 'Contacto',                  done: !!((d.contacto || '').trim()) },
+            { key: 'descripcion', label: 'Descripción de la necesidad',done: !!((d.descripcion || '').trim()) },
+            { key: 'servicios',   label: 'Al menos 1 servicio',       done: (d.servicios || []).length > 0 },
+            { key: 'productos',   label: 'Al menos 1 producto',       done: (d.productos || []).length > 0 },
+        ];
+        var done = items.filter(function (i) { return i.done; }).length;
+        var total = items.length;
+        var listEl = $('lwChecklistList');
+        var countEl = $('lwChecklistCount');
+        if (!listEl) return;
+        listEl.innerHTML = items.map(function (i) {
+            return '<div class="lw-ck-row' + (i.done ? ' done' : '') + '" data-key="' + i.key + '">' +
+                '<span class="lw-ck-box">' +
+                    (i.done ? '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+                '</span>' +
+                '<span class="lw-ck-text">' + i.label + '</span>' +
+            '</div>';
+        }).join('');
+        if (countEl) countEl.textContent = done + ' / ' + total;
+        // Si llega a 6/6 por primera vez, dispara celebración
+        if (done === total && state.lev._ck_last_done !== total) {
+            _celebrateFase1Done();
+        }
+        state.lev._ck_last_done = done;
+    }
+
+    // Celebración efímera cuando completas la checklist de Fase 1
+    function _celebrateFase1Done() {
+        if (typeof showToast === 'function') {
+            showToast('🎉 ¡Fase 1 completa! Puedes seguir a Propuesta Técnica.', 'success');
+        }
+    }
+
     function lwRecomputeSummary() {
         if (!state.lev) return;
+        lwRenderChecklist();
         var d = state.lev.fase1_data || {};
         var nServ = (d.servicios || []).length;
         var nComp = (d.componentes || []).length;

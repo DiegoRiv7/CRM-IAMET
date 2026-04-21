@@ -270,6 +270,17 @@
                         <input type="tel" id="lw_f1_telefono" placeholder="Teléfono" oninput="lwMetaInput(this)">
                     </label>
 
+                    <!-- Checklist dinámico (gamificación: cada ✓ da dopamina) -->
+                    <div class="lw-checklist" id="lwChecklist">
+                        <div class="lw-checklist-head">
+                            <span class="lw-checklist-label">Progreso de Fase 1</span>
+                            <span class="lw-checklist-count" id="lwChecklistCount">0 / 6</span>
+                        </div>
+                        <div class="lw-checklist-list" id="lwChecklistList">
+                            <!-- renderizado por lwRenderChecklist() -->
+                        </div>
+                    </div>
+
                     <!-- Panel de resumen vivo (stats) -->
                     <div class="lw-canvas-summary" id="lwCanvasSummary">
                         <div class="lw-summary-label">Resumen del levantamiento</div>
