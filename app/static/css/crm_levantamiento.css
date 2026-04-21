@@ -2323,3 +2323,63 @@
     60%  { transform: scale(1.18); }
     100% { transform: scale(1.05); }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TOAST DE CELEBRACIÓN (lwCheer — Fase 1 completa, save, etc)
+   Entra desde abajo con bounce suave, se auto-destruye a los 3.5s.
+   ══════════════════════════════════════════════════════════════ */
+
+.lw-cheer-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10900;
+    min-width: 280px;
+    max-width: 440px;
+    padding: 13px 18px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.30), 0 2px 6px rgba(15, 23, 42, 0.10);
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    animation: lw-cheer-in 0.4s cubic-bezier(.34, 1.56, .64, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+}
+.lw-cheer-success {
+    border-left: 4px solid #10B981;
+}
+.lw-cheer-info {
+    border-left: 4px solid #3B82F6;
+}
+.lw-cheer-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+.lw-cheer-sub {
+    font-size: 12.5px;
+    color: #64748B;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-top: 3px;
+}
+.lw-cheer-out {
+    animation: lw-cheer-out 0.28s ease forwards;
+}
+/* Variante global (fuera del overlay) — mismo estilo */
+.lw-cheer-global { bottom: 48px; }
+
+@keyframes lw-cheer-in {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(24px) scale(0.92); }
+    100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+@keyframes lw-cheer-out {
+    0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(14px) scale(0.96); }
+}

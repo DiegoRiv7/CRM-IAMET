@@ -99,9 +99,19 @@
         if (state.dirty) {
             if (!confirm('Hay cambios sin guardar. ¿Cerrar sin guardar?')) return;
         }
+        // Pequeña celebración al cerrar si hay progreso — refuerza que
+        // el trabajo quedó guardado, evita la ansiedad de "se perdió lo
+        // que hice?".
+        var d = (state.lev && state.lev.fase1_data) || {};
+        var haveName = !!(state.lev && (state.lev.nombre || '').trim());
+        var haveProducts = ((d.productos || []).length > 0);
         var ov = $('levantamientoWizard');
         if (ov) ov.style.display = 'none';
         document.body.style.overflow = '';
+        if (haveName && haveProducts) {
+            // Toast al nivel del documento (no del overlay, que ya se cerró)
+            _globalCheer('✓ Levantamiento guardado', 'Queda en borrador hasta que lo aprueben.');
+        }
         state.lev = null;
         state.phase = 1;
         state.dirty = false;
@@ -109,6 +119,24 @@
             window.levantamientoRefrescarLista();
         }
     };
+
+    // Toast global (fuera del overlay) para notificaciones post-cierre
+    function _globalCheer(title, sub) {
+        var existing = document.getElementById('lwGlobalCheer');
+        if (existing) existing.remove();
+        var d = document.createElement('div');
+        d.id = 'lwGlobalCheer';
+        d.className = 'lw-cheer-toast lw-cheer-success lw-cheer-global';
+        d.innerHTML = '<div class="lw-cheer-title">' + esc(title) + '</div>' +
+                      (sub ? '<div class="lw-cheer-sub">' + esc(sub) + '</div>' : '');
+        document.body.appendChild(d);
+        setTimeout(function () {
+            if (d.parentNode) {
+                d.classList.add('lw-cheer-out');
+                setTimeout(function () { if (d.parentNode) d.remove(); }, 280);
+            }
+        }, 3000);
+    }
 
     // ── Header + Status ──────────────────────────────────────
     function renderHeader() {
@@ -778,10 +806,30 @@
 
     // Celebración efímera cuando completas la checklist de Fase 1
     function _celebrateFase1Done() {
-        if (typeof showToast === 'function') {
-            showToast('🎉 ¡Fase 1 completa! Puedes seguir a Propuesta Técnica.', 'success');
-        }
+        lwCheer('🎉 ¡Fase 1 completa!', 'Puedes seguir a Propuesta Técnica.');
     }
+
+    // Toast propio del wizard — más visible que el showToast global y
+    // siempre disponible dentro del overlay fullscreen.
+    function lwCheer(title, sub, kind) {
+        kind = kind || 'success';
+        var existing = $('lwCheerToast');
+        if (existing) existing.remove();
+        var d = document.createElement('div');
+        d.id = 'lwCheerToast';
+        d.className = 'lw-cheer-toast lw-cheer-' + kind;
+        d.innerHTML = '<div class="lw-cheer-title">' + esc(title) + '</div>' +
+                      (sub ? '<div class="lw-cheer-sub">' + esc(sub) + '</div>' : '');
+        (document.getElementById('levantamientoWizard') || document.body).appendChild(d);
+        // Auto-dismiss a los 3.5s
+        setTimeout(function () {
+            if (d.parentNode) {
+                d.classList.add('lw-cheer-out');
+                setTimeout(function () { if (d.parentNode) d.remove(); }, 280);
+            }
+        }, 3500);
+    }
+    window.lwCheer = lwCheer;
 
     function lwRecomputeSummary() {
         if (!state.lev) return;
