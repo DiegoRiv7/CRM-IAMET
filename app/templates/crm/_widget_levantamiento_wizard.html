@@ -243,6 +243,65 @@
 
                         <div id="lw_f1_productos_wrap"></div>
                     </div>
+
+                    <!-- ─── Programa e implementación (para PDF de levantamiento) ─── -->
+                    <div class="lw-canvas-section">
+                        <div class="lw-canvas-section-label">Programa e implementación</div>
+                        <div class="lw-impl-grid">
+                            <!-- Fechas + Turno -->
+                            <div class="lw-impl-row">
+                                <label class="lw-meta-pill" data-field="fecha_inicio">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <input type="date" id="lw_f1_fecha_inicio" placeholder="Fecha inicio" oninput="lwMetaInput(this)">
+                                </label>
+                                <label class="lw-meta-pill" data-field="fecha_fin">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <input type="date" id="lw_f1_fecha_fin" placeholder="Fecha fin" oninput="lwMetaInput(this)">
+                                </label>
+                                <label class="lw-meta-pill" data-field="duracion">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <input type="text" id="lw_f1_duracion" placeholder="Duración (ej. 10 días)" oninput="lwMetaInput(this)">
+                                </label>
+                            </div>
+
+                            <!-- Turno (chips) -->
+                            <div class="lw-impl-sub">
+                                <span class="lw-impl-sublabel">Turno</span>
+                                <div class="lw-chips" id="lw_f1_turno_chips"></div>
+                            </div>
+
+                            <!-- Apoyo + Personal -->
+                            <div class="lw-impl-row">
+                                <label class="lw-meta-pill lw-meta-pill-wide" data-field="apoyo_cliente">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    <input type="text" id="lw_f1_apoyo_cliente" placeholder="Apoyo del cliente (especifica)" oninput="lwMetaInput(this)">
+                                </label>
+                                <label class="lw-meta-pill" data-field="personal_requerido">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                    <input type="text" id="lw_f1_personal_req" placeholder="Personal requerido" oninput="lwMetaInput(this)">
+                                </label>
+                            </div>
+
+                            <!-- Equipo de elevación -->
+                            <div class="lw-impl-sub">
+                                <span class="lw-impl-sublabel">Equipo de elevación</span>
+                                <div class="lw-impl-row">
+                                    <label class="lw-meta-pill" data-field="elev_alto">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+                                        <input type="text" id="lw_f1_elev_alto" placeholder="Alto" oninput="lwMetaInput(this)">
+                                    </label>
+                                    <label class="lw-meta-pill" data-field="elev_ancho">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+                                        <input type="text" id="lw_f1_elev_ancho" placeholder="Ancho" oninput="lwMetaInput(this)">
+                                    </label>
+                                    <label class="lw-meta-pill" data-field="elev_modelo">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+                                        <input type="text" id="lw_f1_elev_modelo" placeholder="Modelo (ej. Tijera 12m)" oninput="lwMetaInput(this)">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

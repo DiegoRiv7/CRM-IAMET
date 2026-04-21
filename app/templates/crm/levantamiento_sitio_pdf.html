@@ -1,0 +1,353 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Levantamiento en Sitio — {{ lev.nombre }}</title>
+<style>
+    @page {
+        size: Letter;
+        margin: 1.6cm 1.4cm 2.2cm;
+        @bottom-center {
+            content: "Este formato es una representación significativa con los elementos principales de la solución. La cotización final puede contener más o menos elementos para su correcta ejecución.";
+            font-family: 'Inter', Arial, sans-serif;
+            font-size: 7.5pt;
+            color: #64748B;
+            font-weight: 500;
+            padding-bottom: 4mm;
+        }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        color: #0F172A;
+        font-size: 10pt;
+        line-height: 1.4;
+    }
+
+    /* ═══ HERO ═══ */
+    .pt-hero { display: table; width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .pt-hero-left, .pt-hero-right { display: table-cell; vertical-align: middle; }
+    .pt-hero-left { width: 40%; padding: 8px 4px; }
+    .pt-hero-right { width: 60%; text-align: right; padding: 8px 4px; }
+    .pt-logo { height: 48px; vertical-align: middle; }
+    .pt-hero-brand {
+        display: inline-block; vertical-align: middle; margin-left: 10px;
+        color: #0F172A; font-weight: 800; font-size: 14pt; letter-spacing: 0.02em;
+    }
+    .pt-hero-brand small {
+        display: block; font-size: 8pt; font-weight: 600; color: #64748B;
+        letter-spacing: 0.15em; text-transform: uppercase; margin-top: 2px;
+    }
+    .pt-title {
+        color: #2563EB; font-size: 16pt; font-weight: 800;
+        letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.1;
+    }
+    .pt-title-sub {
+        display: block; font-size: 8.5pt; font-weight: 600; color: #94A3B8;
+        letter-spacing: 0.15em; margin-top: 2px; text-transform: uppercase;
+    }
+    .pt-stripes { display: flex; gap: 4px; height: 6px; margin: 4px 0 16px; }
+    .pt-stripe { flex: 1; border-radius: 2px; }
+    .pt-stripe-1 { flex: 2; background: #FDE68A; }
+    .pt-stripe-2 { flex: 1; background: #E2E8F0; }
+    .pt-stripe-3 { flex: 3; background: linear-gradient(90deg, #60A5FA, #2563EB); }
+
+    /* ═══ Departamento banner ═══ */
+    .pt-dept-banner {
+        background: linear-gradient(180deg, #2563EB, #1D4ED8);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 12pt;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .pt-dept-banner small {
+        display: block;
+        font-size: 9pt;
+        font-weight: 600;
+        opacity: 0.85;
+        margin-top: 2px;
+        letter-spacing: 0.12em;
+    }
+
+    /* ═══ BODY TABLES ═══ */
+    .pt-table {
+        width: 100%; border-collapse: collapse; table-layout: fixed;
+        margin-bottom: 6px; border-radius: 8px; overflow: hidden;
+        border: 1px solid #DBE6F3;
+    }
+    .pt-table td { border: 1px solid #DBE6F3; padding: 7px 11px; vertical-align: middle; }
+    .pt-section-row td {
+        background: #E8F1FB; color: #1D4ED8; font-size: 9.5pt; font-weight: 700;
+        text-align: center; letter-spacing: 0.04em; text-transform: uppercase;
+        padding: 7px 10px;
+    }
+    .pt-label-cell {
+        font-size: 9pt; font-weight: 700; color: #2563EB;
+        width: 17%; background: #F8FBFF;
+    }
+    .pt-value-cell {
+        font-size: 10.5pt; font-weight: 600; color: #0F172A; text-align: center;
+    }
+    .pt-desc-cell {
+        min-height: 60px; vertical-align: top; font-size: 10pt; font-weight: 400;
+        color: #334155; text-align: justify; padding: 12px 16px !important;
+        line-height: 1.55;
+    }
+
+    /* Checkbox grid (Tipo de Servicio / Componentes) */
+    .pt-check-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px 8px;
+        padding: 10px 14px;
+    }
+    .pt-check-item {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 9pt; color: #334155;
+    }
+    .pt-check-item .pt-box {
+        width: 11px; height: 11px; border: 1px solid #CBD5E1;
+        border-radius: 2px; flex-shrink: 0; background: #fff;
+        display: inline-block; position: relative;
+    }
+    .pt-check-item.on .pt-box {
+        background: #2563EB; border-color: #2563EB;
+    }
+    .pt-check-item.on .pt-box::after {
+        content: "✓"; color: #fff; font-size: 9pt; font-weight: bold;
+        position: absolute; top: -3px; left: 1px; line-height: 1;
+    }
+    .pt-check-item.on { color: #0F172A; font-weight: 600; }
+    .pt-check-extra {
+        padding: 6px 14px 10px;
+        font-size: 9pt;
+        color: #64748B;
+        border-top: 1px solid #E8F1FB;
+    }
+    .pt-check-extra b { color: #0F172A; font-weight: 600; }
+
+    /* Tabla de cuantificación primaria */
+    .pt-qty-table {
+        width: 100%; border-collapse: collapse;
+        margin-bottom: 6px; border-radius: 8px; overflow: hidden;
+        border: 1px solid #DBE6F3;
+    }
+    .pt-qty-table th {
+        background: #E8F1FB; color: #1D4ED8; padding: 7px 10px;
+        font-size: 9pt; font-weight: 700; text-align: left;
+        letter-spacing: 0.04em; text-transform: uppercase;
+        border: 1px solid #DBE6F3;
+    }
+    .pt-qty-table td {
+        padding: 6px 10px; font-size: 9.5pt; color: #0F172A;
+        border: 1px solid #DBE6F3; vertical-align: middle;
+    }
+    .pt-qty-table tr:nth-child(even) td { background: #FAFBFD; }
+    .pt-qty-cantidad { text-align: center; font-weight: 700; width: 8%; }
+    .pt-qty-marca, .pt-qty-parte, .pt-qty-ubic { width: 15%; }
+    .pt-qty-desc { width: 32%; }
+    .pt-qty-empty-row td {
+        padding: 20px; text-align: center; color: #94A3B8;
+        font-style: italic; font-weight: 400; font-size: 9pt;
+    }
+
+    /* Programa (fechas + turnos + apoyo) */
+    .pt-program-row td {
+        padding: 9px 12px;
+    }
+    .pt-program-chip {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 8.5pt;
+        font-weight: 700;
+        background: #E8F1FB;
+        color: #1D4ED8;
+        margin-left: 6px;
+    }
+    .pt-program-sublabel {
+        font-size: 8.5pt;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    /* Footer */
+    .pt-footer {
+        margin-top: 14px; padding-top: 10px; border-top: 2px solid #E2E8F0;
+    }
+    .pt-footer-brands { width: 100%; height: 42px; object-fit: contain; object-position: left center; }
+    .pt-footer-contact {
+        margin-top: 8px;
+        background: linear-gradient(90deg, #FBBF24, #F59E0B);
+        color: #fff; padding: 6px 14px; font-size: 9pt; font-weight: 700;
+        text-align: center; border-radius: 6px; letter-spacing: 0.01em;
+    }
+</style>
+</head>
+<body>
+
+<!-- ═══ HERO ═══ -->
+<div class="pt-hero">
+    <div class="pt-hero-left">
+        {% if logo_url %}<img class="pt-logo" src="{{ logo_url }}" alt="IAMET">{% endif %}
+        <span class="pt-hero-brand">IAMET<small>Soluciones tecnológicas</small></span>
+    </div>
+    <div class="pt-hero-right">
+        <div class="pt-title">Levantamiento<span class="pt-title-sub">En Sitio · Instalaciones</span></div>
+    </div>
+</div>
+<div class="pt-stripes">
+    <div class="pt-stripe pt-stripe-1"></div>
+    <div class="pt-stripe pt-stripe-2"></div>
+    <div class="pt-stripe pt-stripe-3"></div>
+</div>
+
+<!-- ═══ Banner Departamento ═══ -->
+<div class="pt-dept-banner">
+    Departamento de Instalaciones
+    <small>Levantamiento en Sitio</small>
+</div>
+
+<!-- ═══ Cliente info ═══ -->
+<table class="pt-table">
+    <tr>
+        <td class="pt-label-cell">Cliente:</td>
+        <td class="pt-value-cell">{{ cliente|default:"—" }}</td>
+        <td class="pt-label-cell">Fecha:</td>
+        <td class="pt-value-cell">{{ fecha_fmt|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Contacto:</td>
+        <td class="pt-value-cell">{{ contacto|default:"—" }}</td>
+        <td class="pt-label-cell">Área:</td>
+        <td class="pt-value-cell">{{ area|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Email:</td>
+        <td class="pt-value-cell" colspan="3">{{ email|default:"—" }} &nbsp;·&nbsp; {{ telefono|default:"" }}</td>
+    </tr>
+</table>
+
+<!-- ═══ Descripción de la necesidad ═══ -->
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Descripción de la necesidad reportada</td></tr>
+    <tr><td class="pt-desc-cell">{{ descripcion|default:"—"|linebreaksbr }}</td></tr>
+</table>
+
+<!-- ═══ Tipo de Servicio ═══ -->
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Tipo de servicio</td></tr>
+</table>
+<div class="pt-check-grid">
+    {% for svc in tipos_servicio %}
+    <div class="pt-check-item {% if svc.on %}on{% endif %}">
+        <span class="pt-box"></span>{{ svc.name }}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ═══ Componentes de la Solución ═══ -->
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Componentes de la solución</td></tr>
+</table>
+<div class="pt-check-grid">
+    {% for comp in componentes %}
+    <div class="pt-check-item {% if comp.on %}on{% endif %}">
+        <span class="pt-box"></span>{{ comp.name }}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ═══ Programa de implementación ═══ -->
+<table class="pt-table">
+    <tr class="pt-section-row"><td colspan="4">Programa de implementación</td></tr>
+    <tr>
+        <td class="pt-label-cell">Fecha inicio:</td>
+        <td class="pt-value-cell">{{ fecha_inicio_fmt|default:"—" }}</td>
+        <td class="pt-label-cell">Fecha fin:</td>
+        <td class="pt-value-cell">{{ fecha_fin_fmt|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Duración:</td>
+        <td class="pt-value-cell">{{ duracion|default:"—" }}</td>
+        <td class="pt-label-cell">Turno:</td>
+        <td class="pt-value-cell">
+            {% if turno %}<span class="pt-program-chip">{{ turno }}</span>{% else %}—{% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Apoyo del cliente:</td>
+        <td class="pt-value-cell">{{ apoyo_cliente|default:"—" }}</td>
+        <td class="pt-label-cell">Personal requerido:</td>
+        <td class="pt-value-cell">{{ personal_req|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td class="pt-label-cell">Realizó levantamiento:</td>
+        <td class="pt-value-cell" colspan="3">{{ realizo|default:"—" }}</td>
+    </tr>
+</table>
+
+<!-- ═══ Equipo de elevación ═══ -->
+<table class="pt-table">
+    <tr class="pt-section-row"><td colspan="6">Equipo de elevación</td></tr>
+    <tr>
+        <td class="pt-label-cell" style="width:12%;">Alto:</td>
+        <td class="pt-value-cell" style="width:22%;">{{ elev_alto|default:"—" }}</td>
+        <td class="pt-label-cell" style="width:12%;">Ancho:</td>
+        <td class="pt-value-cell" style="width:22%;">{{ elev_ancho|default:"—" }}</td>
+        <td class="pt-label-cell" style="width:12%;">Modelo:</td>
+        <td class="pt-value-cell" style="width:20%;">{{ elev_modelo|default:"—" }}</td>
+    </tr>
+</table>
+
+<!-- ═══ Cuantificación primaria ═══ -->
+<table class="pt-table" style="margin-bottom:4px;">
+    <tr class="pt-section-row"><td>Cuantificación primaria</td></tr>
+</table>
+<table class="pt-qty-table">
+    <thead>
+        <tr>
+            <th class="pt-qty-cantidad">Cantidad</th>
+            <th class="pt-qty-desc">Descripción</th>
+            <th class="pt-qty-marca">Marca</th>
+            <th class="pt-qty-parte">No. Parte</th>
+            <th class="pt-qty-ubic">Ubicación Física</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if productos %}
+            {% for p in productos %}
+            <tr>
+                <td class="pt-qty-cantidad">{{ p.qty|default:1 }} {{ p.unidad|default:"PZA" }}</td>
+                <td>{{ p.desc|default:"—" }}</td>
+                <td>{{ p.marca|default:"—" }}</td>
+                <td>{{ p.modelo|default:"—" }}</td>
+                <td>{{ p.ubicacion|default:"" }}</td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr class="pt-qty-empty-row"><td colspan="5">Sin productos agregados en el levantamiento.</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<!-- ═══ Footer ═══ -->
+<div class="pt-footer">
+    {% if footer_logos_url %}
+    <img class="pt-footer-brands" src="{{ footer_logos_url }}" alt="Marcas">
+    {% endif %}
+    <div class="pt-footer-contact">
+        Tel. {{ empresa_tel }} &nbsp;·&nbsp; {{ empresa_web }} &nbsp;·&nbsp; {{ empresa_direccion }}
+    </div>
+</div>
+
+</body>
+</html>

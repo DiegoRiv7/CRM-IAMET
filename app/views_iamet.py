@@ -2590,6 +2590,129 @@ def api_levantamiento_evidencia_eliminar(request, evidencia_id):
 
 @login_required
 @require_http_methods(["GET"])
+def api_levantamiento_sitio_pdf(request, levantamiento_id):
+    """Genera el PDF del Levantamiento en Sitio (Fase 1).
+
+    Replica el formato del docx "FORMATO DE LEVANTAMIENTO EN SITIO
+    INSTALACIONES" pero con styling moderno (IAMET branding).
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    import os
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'proyecto', 'creado_por'
+        ).get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    f1 = lev.fase1_data or {}
+
+    def _static_file_url(rel_path):
+        candidates = []
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidates.append(os.path.join(settings.STATIC_ROOT, rel_path))
+        candidates.append(os.path.join(settings.BASE_DIR, 'app', 'static', rel_path))
+        for p in candidates:
+            if os.path.exists(p):
+                return 'file://' + p
+        return ''
+
+    # Formato de fecha: "04 / Nov / 2025"
+    import datetime as _dt
+    def _fmt_fecha(iso):
+        if not iso:
+            return ''
+        try:
+            dt = _dt.datetime.strptime(str(iso)[:10], '%Y-%m-%d')
+        except Exception:
+            return iso
+        meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
+
+    # Listas canónicas de Tipo de Servicio y Componentes (igual al docx)
+    TIPOS_SERVICIO = ['CCTV', 'Alarma Intrusión', 'Control de Acceso', 'Cableado Estructurado', 'Voceo', 'Telefonía', 'Otros']
+    COMPONENTES = [
+        'Cámara IP', 'Cámara Analógica', 'NVR', 'DVR', 'Video Balum',
+        'Tubería', 'Canalización', 'Escalerilla',
+        'Cable Cat5e', 'Cable Cat6', 'Cable Cat6A', 'Fibra Óptica',
+        'Gabinete/Rack', 'Serpentines', 'Controladora',
+        'PBX', 'Teléfonos', 'Work Station', 'Servidor', 'Switches',
+        'Antenas', 'Enlaces', 'Bocinas', 'Cableado',
+        'Fuentes de Poder', 'Amplificadores', 'Access Point', 'UPS',
+    ]
+    selected_svc = set(f1.get('servicios') or [])
+    selected_comp = set(f1.get('componentes') or [])
+
+    productos = [{
+        'qty':       p.get('qty') or 1,
+        'unidad':    p.get('unidad') or 'PZA',
+        'desc':      p.get('desc') or '',
+        'marca':     p.get('marca') or '',
+        'modelo':    p.get('modelo') or '',
+        'ubicacion': p.get('ubicacion') or '',
+    } for p in (f1.get('productos') or [])]
+
+    ctx = {
+        'lev':          lev,
+        'cliente':      f1.get('cliente')  or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
+        'contacto':     f1.get('contacto') or '',
+        'area':         f1.get('area')     or '',
+        'email':        f1.get('email')    or '',
+        'telefono':     f1.get('telefono') or '',
+        'fecha_fmt':    _fmt_fecha(f1.get('fecha') or timezone.localdate().isoformat()),
+        'descripcion':  f1.get('descripcion') or '',
+
+        'tipos_servicio':   [{'name': s, 'on': s in selected_svc} for s in TIPOS_SERVICIO],
+        'componentes':      [{'name': c, 'on': c in selected_comp} for c in COMPONENTES],
+
+        # Programa
+        'fecha_inicio_fmt': _fmt_fecha(f1.get('fecha_inicio')),
+        'fecha_fin_fmt':    _fmt_fecha(f1.get('fecha_fin')),
+        'duracion':         f1.get('duracion') or '',
+        'turno':            f1.get('turno') or '',
+        'apoyo_cliente':    f1.get('apoyo_cliente') or '',
+        'personal_req':     f1.get('personal_req') or '',
+        'realizo':          lev.creado_por.get_full_name() if lev.creado_por else '',
+
+        # Equipo de elevación
+        'elev_alto':   f1.get('elev_alto')   or '',
+        'elev_ancho':  f1.get('elev_ancho')  or '',
+        'elev_modelo': f1.get('elev_modelo') or '',
+
+        'productos': productos,
+
+        # Assets
+        'logo_url':         _static_file_url('images/iamet-logo.png'),
+        'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
+
+        # Empresa (hardcoded por ahora)
+        'empresa_tel':       '664 000 0000',
+        'empresa_web':       'www.iamet.mx',
+        'empresa_direccion': 'Tijuana, B.C.',
+    }
+
+    html = render_to_string('crm/levantamiento_sitio_pdf.html', ctx, request=request)
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'levantamiento')).strip()[:80] or 'levantamiento'
+    filename = f'Levantamiento_{safe_name}.pdf'
+    disp = 'attachment' if request.GET.get('download') else 'inline'
+    response['Content-Disposition'] = f'{disp}; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_http_methods(["GET"])
 def api_levantamiento_propuesta_pdf(request, levantamiento_id):
     """Genera el PDF de la Propuesta Técnica de un levantamiento.
 

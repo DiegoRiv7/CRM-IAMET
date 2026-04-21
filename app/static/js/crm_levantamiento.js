@@ -16,18 +16,27 @@
     };
 
     var SERVICIOS   = ['CCTV', 'Alarma Intrusión', 'Control de Acceso', 'Cableado Estructurado', 'Voceo', 'Telefonía', 'Otros'];
-    var COMPONENTES = ['Cámara IP', 'Cámara Analógica', 'NVR', 'Cableado', 'Gabinete/Rack', 'Switches', 'UPS', 'Access Point'];
+    // Lista ampliada según el Formato de Levantamiento en Sitio (Bajanet docx)
+    var COMPONENTES = [
+        'Cámara IP', 'Cámara Analógica', 'NVR', 'DVR', 'Video Balum',
+        'Tubería', 'Canalización', 'Escalerilla',
+        'Cable Cat5e', 'Cable Cat6', 'Cable Cat6A', 'Fibra Óptica',
+        'Gabinete/Rack', 'Serpentines', 'Controladora',
+        'PBX', 'Teléfonos', 'Work Station', 'Servidor', 'Switches',
+        'Antenas', 'Enlaces', 'Bocinas', 'Cableado',
+        'Fuentes de Poder', 'Amplificadores', 'Access Point', 'UPS',
+    ];
 
     // Mapa: qué componentes son relevantes para cada servicio.
     // Si no hay servicios seleccionados, se muestran todos (fallback).
     // Si el usuario marca "Otros", también se muestran todos.
     var SERVICIO_COMPONENTES = {
-        'CCTV':                  ['Cámara IP', 'Cámara Analógica', 'NVR', 'Cableado', 'Gabinete/Rack', 'Switches', 'UPS'],
-        'Alarma Intrusión':      ['Cableado', 'Gabinete/Rack', 'UPS'],
-        'Control de Acceso':     ['Cableado', 'Gabinete/Rack', 'Switches', 'UPS'],
-        'Cableado Estructurado': ['Cableado', 'Gabinete/Rack', 'Switches', 'Access Point'],
-        'Voceo':                 ['Cableado', 'Gabinete/Rack', 'UPS'],
-        'Telefonía':             ['Cableado', 'Switches', 'UPS', 'Access Point'],
+        'CCTV':                  ['Cámara IP', 'Cámara Analógica', 'NVR', 'DVR', 'Video Balum', 'Tubería', 'Canalización', 'Escalerilla', 'Cable Cat6', 'Cable Cat6A', 'Fibra Óptica', 'Gabinete/Rack', 'Switches', 'UPS', 'Fuentes de Poder'],
+        'Alarma Intrusión':      ['Cable Cat5e', 'Cable Cat6', 'Tubería', 'Canalización', 'Controladora', 'Gabinete/Rack', 'Fuentes de Poder', 'UPS'],
+        'Control de Acceso':     ['Controladora', 'Cable Cat6', 'Tubería', 'Canalización', 'Gabinete/Rack', 'Switches', 'UPS', 'Fuentes de Poder'],
+        'Cableado Estructurado': ['Tubería', 'Canalización', 'Escalerilla', 'Cable Cat5e', 'Cable Cat6', 'Cable Cat6A', 'Fibra Óptica', 'Gabinete/Rack', 'Switches', 'Access Point', 'Work Station', 'Servidor'],
+        'Voceo':                 ['Bocinas', 'Amplificadores', 'Cableado', 'Tubería', 'Canalización', 'Gabinete/Rack', 'UPS', 'Fuentes de Poder'],
+        'Telefonía':             ['PBX', 'Teléfonos', 'Switches', 'Cable Cat5e', 'Cable Cat6', 'Access Point', 'UPS', 'Fuentes de Poder'],
         'Otros':                 null, // null = todos
     };
 
@@ -239,11 +248,18 @@
             var el = $('lwPhase' + i);
             if (el) el.style.display = (i === n) ? 'block' : 'none';
         }
-        // Botón PDF sólo visible en Fase 2 (Propuesta Técnica)
+        // Botón PDF visible en Fase 1 (Levantamiento en Sitio) y Fase 2 (Propuesta)
         var pdfWrap = $('lwPdfWrap');
-        if (pdfWrap) pdfWrap.style.display = (n === 2) ? '' : 'none';
+        if (pdfWrap) pdfWrap.style.display = (n === 1 || n === 2) ? '' : 'none';
         var pdfMenu = $('lwPdfMenu');
         if (pdfMenu) pdfMenu.style.display = 'none';
+        // Actualizar labels del menú según la fase
+        var menuItems = document.querySelectorAll('.lw-pdf-menu-item-title');
+        if (menuItems.length >= 2) {
+            var docLabel = n === 1 ? 'Levantamiento' : 'Propuesta';
+            menuItems[0].textContent = 'Ver ' + docLabel + ' en pestaña';
+            menuItems[1].textContent = 'Descargar ' + docLabel + ' PDF';
+        }
 
         if (n === 1) renderPhase1();
         else if (n === 2) renderPhase2();
@@ -376,6 +392,36 @@
 
         // Si hay cliente_id guardado, pre-fetch contactos para el dropdown
         if (d.cliente_id) _prefetchContactos(d.cliente_id);
+
+        // Campos de "Programa e implementación" (sección nueva)
+        var implMap = {
+            fecha_inicio: 'lw_f1_fecha_inicio',
+            fecha_fin:    'lw_f1_fecha_fin',
+            duracion:     'lw_f1_duracion',
+            apoyo_cliente: 'lw_f1_apoyo_cliente',
+            personal_req: 'lw_f1_personal_req',
+            elev_alto:    'lw_f1_elev_alto',
+            elev_ancho:   'lw_f1_elev_ancho',
+            elev_modelo:  'lw_f1_elev_modelo',
+        };
+        Object.keys(implMap).forEach(function (k) {
+            var el = $(implMap[k]);
+            if (el) {
+                el.value = d[k] || '';
+                lwRefreshMetaPill(el);
+            }
+        });
+
+        // Chips de turno
+        var turnoEl = $('lw_f1_turno_chips');
+        if (turnoEl) {
+            var current = d.turno || '';
+            turnoEl.innerHTML = ['Diurno', 'Nocturno', 'Mixto'].map(function (t) {
+                var on = current === t;
+                return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1SetTurno(\'' + t + '\')">' +
+                    (on ? '<i></i>' : '') + t + '</button>';
+            }).join('');
+        }
 
         // Descripción + auto-grow
         var desc = $('lw_f1_descripcion');
@@ -900,9 +946,30 @@
         d.email       = $('lw_f1_email').value;
         d.telefono    = $('lw_f1_telefono').value;
         d.descripcion = $('lw_f1_descripcion').value;
+        // Programa e implementación (para PDF de levantamiento)
+        ['fecha_inicio','fecha_fin','duracion','apoyo_cliente','personal_req','elev_alto','elev_ancho','elev_modelo'].forEach(function (k) {
+            var el = $('lw_f1_' + k);
+            if (el) d[k] = el.value || '';
+        });
         state.lev.fase1_data = d;
         return d;
     }
+
+    // Turno (single-select chip en Programa e Implementación)
+    window.lwP1SetTurno = function (t) {
+        var d = state.lev.fase1_data || {};
+        d.turno = d.turno === t ? '' : t; // toggle
+        state.lev.fase1_data = d;
+        var turnoEl = $('lw_f1_turno_chips');
+        if (turnoEl) {
+            turnoEl.innerHTML = ['Diurno', 'Nocturno', 'Mixto'].map(function (x) {
+                var on = d.turno === x;
+                return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1SetTurno(\'' + x + '\')">' +
+                    (on ? '<i></i>' : '') + x + '</button>';
+            }).join('');
+        }
+        lwFieldChange();
+    };
 
     // ═══════════════════════════════════════════════════════════════
     //  PHASE 2 — PROPUESTA TÉCNICA
@@ -1160,22 +1227,20 @@
     });
 
     // Genera el PDF usando el endpoint server-side (WeasyPrint).
+    // El endpoint depende de la fase actual:
+    //   Fase 1 → /levantamiento-pdf/ (formato "Levantamiento en Sitio")
+    //   Fase 2 → /propuesta-pdf/     (formato "Propuesta Técnica")
     // mode: 'view' → abre en pestaña nueva para previsualizar
     //       'download' → fuerza descarga
     window.lwPdfExport = function (mode) {
         if (!state.lev) return;
         $('lwPdfMenu').style.display = 'none';
+        var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
+        var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/' + endpoint + '/';
+        var url = base + (mode === 'download' ? '?download=1' : '');
         // Guardar primero para que el PDF tenga la data fresca
-        lwSave(false).then(function () {
-            var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/propuesta-pdf/';
-            var url = base + (mode === 'download' ? '?download=1' : '');
-            window.open(url, '_blank');
-        }).catch(function () {
-            // Incluso si falla el save, intenta generar con la data actual del servidor
-            var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/propuesta-pdf/';
-            var url = base + (mode === 'download' ? '?download=1' : '');
-            window.open(url, '_blank');
-        });
+        lwSave(false).then(function () { window.open(url, '_blank'); })
+            .catch(function () { window.open(url, '_blank'); });
     };
 
     // ═══════════════════════════════════════════════════════════════
