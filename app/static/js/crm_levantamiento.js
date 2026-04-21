@@ -772,11 +772,30 @@
         if (lbl) lbl.textContent = 'Fase ' + phase + ' · ' + pct + '%';
     }
 
+    // Sugerencias rápidas de productos populares (1-click add). Se muestran
+    // como pills abajo del empty state; agrupadas por servicio.
+    var QUICK_ADD_PRODUCTS = [
+        { desc: 'Cámara IP Domo 4MP IR 30m', marca: 'Hikvision', modelo: 'DS-2CD2347G2-LU', unidad: 'PZA', precio: 2850, emoji: '📹' },
+        { desc: 'NVR 32 canales 4K H.265+',   marca: 'Hikvision', modelo: 'DS-7732NI-I4/16P', unidad: 'PZA', precio: 18500, emoji: '🎥' },
+        { desc: 'Cable UTP Cat6 CCA 305m',    marca: 'PANDUIT',   modelo: 'NUC6C04BU-CEG',   unidad: 'BOB', precio: 950, emoji: '🔌' },
+        { desc: 'Switch PoE 24 puertos Gigabit', marca: 'TP-Link', modelo: 'TL-SG1224PE',    unidad: 'PZA', precio: 5400, emoji: '🔀' },
+        { desc: 'Gabinete Rack 12U Pared',    marca: 'Linkedpro', modelo: 'LP-GB-12U-W',    unidad: 'PZA', precio: 3200, emoji: '🗄️' },
+        { desc: 'Controladora acceso 2 puertas', marca: 'Hikvision', modelo: 'DS-K2602T',   unidad: 'PZA', precio: 8500, emoji: '🔐' },
+    ];
+
     function renderPhase1Productos() {
         var d = state.lev.fase1_data || {};
         var prods = d.productos || [];
         var wrap = $('lw_f1_productos_wrap');
         if (!prods.length) {
+            // Empty state con buscador grande + sugerencias rápidas clickeables
+            var suggestionsHtml = QUICK_ADD_PRODUCTS.map(function (p, i) {
+                return '<button type="button" class="lw-quick-add-pill" onclick="lwP1QuickAddProduct(' + i + ')" title="' + esc(p.marca) + ' · ' + esc(p.modelo) + '">' +
+                    '<span class="lw-quick-add-emoji">' + p.emoji + '</span>' +
+                    '<span class="lw-quick-add-text">' + esc(p.desc.split(' ').slice(0, 3).join(' ')) + '</span>' +
+                    '<span class="lw-quick-add-plus">+</span>' +
+                '</button>';
+            }).join('');
             wrap.innerHTML =
                 '<div class="lw-empty-prods" onclick="lwP1OpenCatalog()">' +
                     '<div class="lw-empty-prods-icon">' +
@@ -784,6 +803,10 @@
                     '</div>' +
                     '<div class="lw-empty-prods-title">Busca un producto del catálogo</div>' +
                     '<div class="lw-empty-prods-hint">Teclea descripción, marca o número de parte · <kbd>⌘K</kbd></div>' +
+                '</div>' +
+                '<div class="lw-quick-add-wrap" onclick="event.stopPropagation()">' +
+                    '<div class="lw-quick-add-label">O agrega uno popular con 1 clic</div>' +
+                    '<div class="lw-quick-add-grid">' + suggestionsHtml + '</div>' +
                 '</div>';
             return;
         }
@@ -853,6 +876,23 @@
             r.classList.remove('lw-dragging'); r.classList.remove('lw-drag-over');
         });
     };
+    // Quick-add desde las pill-sugerencias del empty state
+    window.lwP1QuickAddProduct = function (i) {
+        var p = QUICK_ADD_PRODUCTS[i];
+        if (!p) return;
+        var d = state.lev.fase1_data || {};
+        d.productos = d.productos || [];
+        d.productos.push({
+            desc: p.desc, marca: p.marca, modelo: p.modelo,
+            unidad: p.unidad || 'PZA', precio: p.precio || 0,
+            qty: 1, partida: d.productos.length + 1,
+        });
+        state.lev.fase1_data = d;
+        renderPhase1Productos();
+        lwRecomputeSummary();
+        lwFieldChange();
+    };
+
     window.lwP1UpdateProd = function (idx, field, val) {
         var d = state.lev.fase1_data || {};
         if (!d.productos) return;

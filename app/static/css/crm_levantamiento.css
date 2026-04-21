@@ -2098,3 +2098,72 @@
     font-weight: 500;
     flex-shrink: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   QUICK-ADD PRODUCT SUGGESTIONS (empty state de productos)
+   Pills clickables con emoji que agregan un producto popular
+   con 1 clic — elimina la búsqueda manual para casos comunes.
+   ══════════════════════════════════════════════════════════════ */
+
+.lw-quick-add-wrap {
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 12px;
+}
+.lw-quick-add-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    margin-bottom: 10px;
+}
+.lw-quick-add-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.lw-quick-add-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px 6px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: #fff;
+    color: #475569;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+.lw-quick-add-pill:hover {
+    background: #EFF6FF;
+    border-color: #93C5FD;
+    color: #1D4ED8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px -2px rgba(37, 99, 235, 0.20);
+}
+.lw-quick-add-emoji { font-size: 14px; line-height: 1; }
+.lw-quick-add-text { letter-spacing: -0.01em; }
+.lw-quick-add-plus {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    color: #94A3B8;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 2px;
+    transition: all 0.12s ease;
+}
+.lw-quick-add-pill:hover .lw-quick-add-plus {
+    background: #2563EB;
+    color: #fff;
+}
