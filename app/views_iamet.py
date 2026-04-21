@@ -2332,9 +2332,14 @@ def api_cfdi_convertir(request):
 # ══════════════════════════════════════════════════════════════
 
 def _lev_to_dict(lev, include_evidencias=False):
+    # Datos del proyecto padre (útil para Fase 4 — programa de obra — y PDFs)
+    proy = lev.proyecto
     d = {
         'id': lev.id,
         'proyecto_id': lev.proyecto_id,
+        'proyecto_nombre': getattr(proy, 'nombre', '') if proy else '',
+        'proyecto_fecha_inicio': _fmt(getattr(proy, 'fecha_inicio', None)) if proy else None,
+        'proyecto_fecha_fin': _fmt(getattr(proy, 'fecha_fin', None)) if proy else None,
         'nombre': lev.nombre,
         'status': lev.status,
         'status_label': lev.get_status_display(),
@@ -3253,6 +3258,176 @@ def api_levantamiento_volumetria_xlsx(request, levantamiento_id):
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_programa_obra_pdf(request, proyecto_id):
+    """PDF del Programa de Obra de un proyecto.
+
+    Lee las actividades de ProgramacionActividad (proyecto_key=proy_<id>),
+    las agrupa por semana/día según fecha_inicio/fecha_fin del proyecto y
+    las renderiza como calendario semanal.
+
+    Params:
+      ?download=1 → attachment (por defecto inline para preview)
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    from .models import ProyectoIAMET, ProgramacionActividad
+    import os, datetime as _dt
+
+    try:
+        proyecto = ProyectoIAMET.objects.get(id=proyecto_id)
+    except ProyectoIAMET.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    def _static_file_url(rel_path):
+        candidates = []
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidates.append(os.path.join(settings.STATIC_ROOT, rel_path))
+        candidates.append(os.path.join(settings.BASE_DIR, 'app', 'static', rel_path))
+        for p in candidates:
+            if os.path.exists(p):
+                return 'file://' + p
+        return ''
+
+    # Normalizar fechas
+    f_ini = proyecto.fecha_inicio
+    f_fin = proyecto.fecha_fin
+    if not f_ini or not f_fin:
+        return JsonResponse({
+            'success': False,
+            'error': 'Define fecha de inicio y fin del proyecto antes de generar el PDF.'
+        }, status=400)
+
+    # Lunes de la semana del inicio
+    monday_start = f_ini - _dt.timedelta(days=f_ini.weekday())
+
+    # Traer actividades
+    acts_qs = ProgramacionActividad.objects.filter(
+        proyecto_key=f'proy_{proyecto.id}'
+    ).prefetch_related('responsables').order_by('fecha', 'hora_inicio')
+
+    acts_by_date = {}
+    for a in acts_qs:
+        if not a.fecha:
+            continue
+        acts_by_date.setdefault(a.fecha.isoformat(), []).append(a)
+
+    # Construir semanas
+    meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    def fmt_short(d):
+        return f'{d.day:02d} {meses[d.month - 1]}'
+    def fmt_long(d):
+        return f'{d.day:02d} / {meses[d.month - 1]} / {d.year}'
+
+    weeks = []
+    cur = monday_start
+    week_num = 1
+    total_actividades = 0
+    total_completadas = 0
+    while cur <= f_fin:
+        week_end = cur + _dt.timedelta(days=6)
+        # ¿Alguna actividad en sábado/domingo? Si sí, mostramos 7 días
+        has_weekend = False
+        days = []
+        for i in range(7):
+            day = cur + _dt.timedelta(days=i)
+            day_acts_raw = acts_by_date.get(day.isoformat(), [])
+            day_acts = []
+            for a in day_acts_raw:
+                total_actividades += 1
+                if a.completada:
+                    total_completadas += 1
+                resp_list = list(a.responsables.all())
+                resp_iniciales = []
+                for u in resp_list:
+                    full = (u.get_full_name() or u.username or '').strip()
+                    parts = full.split()
+                    if len(parts) >= 2:
+                        ini = (parts[0][0] + parts[1][0]).upper()
+                    else:
+                        ini = (full[:2] or '??').upper()
+                    resp_iniciales.append({'iniciales': ini, 'nombre': full or u.username})
+                day_acts.append({
+                    'id': a.id,
+                    'titulo': a.titulo,
+                    'descripcion': a.descripcion or '',
+                    'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '—',
+                    'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '—',
+                    'responsables': resp_iniciales,
+                    'vehiculos': a.vehiculos or '',
+                    'completada': a.completada,
+                })
+            if i >= 5 and day_acts:
+                has_weekend = True
+            days.append({
+                'name': ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][i],
+                'date': day,
+                'date_short': fmt_short(day),
+                'iso': day.isoformat(),
+                'is_weekend': i >= 5,
+                'activities': day_acts,
+            })
+        # Si la semana está completamente fuera del rango del proyecto (los
+        # días laborales), skip — aunque rara vez pasa.
+        weeks.append({
+            'num': week_num,
+            'start': cur,
+            'end': week_end,
+            'range_label': f'{fmt_short(cur)} — {fmt_short(week_end)}',
+            'days': [d for d in days if (not d['is_weekend']) or has_weekend],
+            'has_weekend': has_weekend,
+        })
+        cur = cur + _dt.timedelta(days=7)
+        week_num += 1
+
+    # Contexto
+    elaboro = ''
+    if getattr(proyecto, 'responsable', None):
+        try:
+            elaboro = proyecto.responsable.get_full_name() or proyecto.responsable.username
+        except Exception:
+            elaboro = ''
+    if not elaboro:
+        elaboro = (request.user.get_full_name() or request.user.username) if request.user.is_authenticated else ''
+
+    ctx = {
+        'proyecto': proyecto,
+        'cliente_nombre': getattr(proyecto, 'cliente_nombre', '') or '',
+        'proyecto_fecha_inicio_fmt': fmt_long(f_ini),
+        'proyecto_fecha_fin_fmt': fmt_long(f_fin),
+        'doc_fecha_fmt': fmt_long(timezone.localdate()),
+        'elaboro': elaboro,
+        'weeks': weeks,
+        'total_actividades': total_actividades,
+        'total_completadas': total_completadas,
+        'total_pendientes': total_actividades - total_completadas,
+        'bajanet_hero_url': _static_file_url('images/propuesta/bajanet_hero.jpeg'),
+        'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
+        'empresa_tel': '664 000 0000',
+        'empresa_web': 'www.iamet.mx',
+        'empresa_direccion': 'Tijuana, B.C.',
+    }
+
+    html = render_to_string('crm/programa_obra_pdf.html', ctx, request=request)
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (proyecto.nombre or 'programa')).strip()[:80] or 'programa'
+    filename = f'ProgramaObra_{safe_name}.pdf'
+    disp = 'attachment' if request.GET.get('download') else 'inline'
+    response['Content-Disposition'] = f'{disp}; filename="{filename}"'
     return response
 
 

@@ -94,6 +94,21 @@
                                 <div class="lw-pdf-menu-item-sub">Formato .xlsx editable</div>
                             </div>
                         </div>
+                        <!-- Opciones exclusivas de Programa de Obra (Fase 4) -->
+                        <div class="lw-pdf-menu-item" data-menu-group="po" onclick="lwPdfExport('view-po')" style="display:none;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <div>
+                                <div class="lw-pdf-menu-item-title">Ver Programa de Obra</div>
+                                <div class="lw-pdf-menu-item-sub">Previsualizar calendario completo</div>
+                            </div>
+                        </div>
+                        <div class="lw-pdf-menu-item" data-menu-group="po" onclick="lwPdfExport('dl-po')" style="display:none;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <div>
+                                <div class="lw-pdf-menu-item-title">Descargar PDF</div>
+                                <div class="lw-pdf-menu-item-sub">Calendario por semanas</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -527,23 +542,15 @@
                 </div>
             </div>
 
-            <!-- ═══ PHASE 4 — PROGRAMA DE OBRA ═══ -->
+            <!-- ═══ PHASE 4 — PROGRAMA DE OBRA ═══
+                 Usa el mismo calendario semanal interactivo que el widget
+                 de Proyectos (window.proyectosRenderProgramaObra) para
+                 tener una sola fuente de verdad: las actividades se
+                 guardan en ProgramacionActividad y se muestran en ambos
+                 lados. -->
             <div class="lw-phase" data-phase="4" id="lwPhase4" style="display:none;">
                 <div class="lw-p4-wrap">
-                    <div class="lw-section">
-                        <div class="lw-section-row">
-                            <div class="lw-section-label">Actividades del Programa de Obra</div>
-                            <button type="button" class="lw-add-btn" onclick="lwP4AddActividad()">+ Actividad</button>
-                        </div>
-                        <div class="lw-p4-list" id="lw_f4_actividades"></div>
-                        <div class="lw-p4-empty" id="lw_f4_empty" style="display:none;">
-                            <div class="lw-p4-empty-inner">
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                <div class="lw-p4-empty-title">Sin actividades</div>
-                                <div class="lw-p4-empty-hint">Agrega la primera actividad para armar el programa de obra</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="lwP4ProgramaWrap"><!-- render dinámico --></div>
                 </div>
             </div>
 

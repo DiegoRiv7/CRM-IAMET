@@ -1,0 +1,357 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Programa de Obra — {{ proyecto.nombre }}</title>
+<style>
+    @page {
+        size: Letter landscape;
+        margin: 1.1cm 1.0cm 1.8cm;
+
+        @bottom-center {
+            content: "Programa de Obra · {{ proyecto.nombre|escape }} · Página " counter(page) " de " counter(pages);
+            font-family: 'Inter', Arial, sans-serif;
+            font-size: 7.5pt;
+            color: #64748B;
+            font-weight: 500;
+            padding-bottom: 3mm;
+        }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        color: #0F172A;
+        font-size: 9pt;
+        line-height: 1.35;
+    }
+
+    /* HERO */
+    .pt-hero-banner { width: 100%; display: block; margin-bottom: 2px; }
+    .pt-doc-title-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 6px 4px 10px; margin-bottom: 8px;
+        border-bottom: 2px solid #2563EB;
+    }
+    .pt-title {
+        color: #2563EB; font-size: 14pt; font-weight: 800;
+        letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1;
+    }
+    .pt-title-sub {
+        display: block; font-size: 7.5pt; font-weight: 600; color: #94A3B8;
+        letter-spacing: 0.15em; margin-top: 2px; text-transform: uppercase;
+    }
+    .po-meta-pills {
+        display: flex; gap: 6px; align-items: center;
+    }
+    .po-meta-pill {
+        display: inline-flex; flex-direction: column; align-items: flex-end;
+        padding: 4px 10px; border-radius: 6px; background: #F1F5F9;
+        font-size: 7.5pt; color: #475569;
+    }
+    .po-meta-pill b { color: #0F172A; font-size: 9pt; font-weight: 700; }
+
+    /* HEADER BAND */
+    .po-band {
+        width: 100%; border-collapse: collapse; margin-bottom: 10px;
+        border-radius: 8px; overflow: hidden;
+    }
+    .po-band td {
+        background: linear-gradient(180deg, #2563EB, #1D4ED8);
+        color: #fff; padding: 5px 10px; vertical-align: middle; border: none;
+        font-size: 9pt;
+    }
+    .po-band .po-band-lbl {
+        font-size: 7.5pt; font-weight: 600; opacity: 0.85;
+        letter-spacing: 0.02em; text-align: right; padding-right: 4px;
+        width: 10%; text-transform: uppercase;
+    }
+    .po-band .po-band-val {
+        font-size: 9.5pt; font-weight: 700; text-align: left;
+    }
+    .po-band .po-cliente {
+        font-size: 13pt; font-weight: 800; letter-spacing: 0.01em;
+        padding: 10px 14px; width: 36%;
+    }
+
+    /* Resumen */
+    .po-summary {
+        display: flex; gap: 8px; margin-bottom: 12px;
+    }
+    .po-summary-card {
+        flex: 1; padding: 8px 10px; border-radius: 8px;
+        border: 1px solid #DBE6F3; background: #F8FBFF;
+    }
+    .po-summary-lbl {
+        font-size: 7.5pt; font-weight: 700; color: #64748B;
+        letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .po-summary-val {
+        font-size: 18pt; font-weight: 800; color: #1D4ED8; line-height: 1.1;
+        margin-top: 2px;
+    }
+    .po-summary-card.done .po-summary-val { color: #059669; }
+    .po-summary-card.pending .po-summary-val { color: #B45309; }
+
+    /* Cada semana se mantiene junta */
+    .po-week {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-bottom: 12px;
+    }
+    .po-week-header {
+        background: linear-gradient(180deg, #E8F1FB, #DCEAFB);
+        border: 1px solid #BFDBFE;
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        padding: 6px 12px;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .po-week-title {
+        font-size: 10pt; font-weight: 800; color: #1D4ED8;
+        letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .po-week-range {
+        font-size: 9pt; color: #475569; font-weight: 600;
+    }
+
+    /* Grid de días */
+    .po-days {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+        border: 1px solid #BFDBFE;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        overflow: hidden;
+    }
+    .po-days.has-weekend { grid-template-columns: repeat(7, 1fr); }
+    .po-day {
+        padding: 6px 7px;
+        border-right: 1px solid #DBE6F3;
+        min-height: 110px;
+        background: #fff;
+        vertical-align: top;
+    }
+    .po-day:last-child { border-right: none; }
+    .po-day-weekend { background: #FAFBFC; }
+    .po-day-head {
+        font-size: 8pt; font-weight: 800; color: #1D4ED8;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        margin-bottom: 1px;
+    }
+    .po-day-date {
+        font-size: 7.5pt; color: #94A3B8; font-weight: 500;
+        margin-bottom: 5px;
+    }
+    .po-day-empty {
+        font-size: 8pt; color: #CBD5E1; font-style: italic; padding: 6px 2px;
+    }
+
+    /* Tarjeta de actividad */
+    .po-act {
+        background: #F0F7FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 5px 6px;
+        margin-bottom: 4px;
+        page-break-inside: avoid; break-inside: avoid;
+    }
+    .po-act-done {
+        background: #F0FDF4;
+        border-color: #BBF7D0;
+    }
+    .po-act-title {
+        font-size: 8pt; font-weight: 700; color: #1E40AF;
+        line-height: 1.25;
+        word-wrap: break-word;
+    }
+    .po-act-done .po-act-title {
+        color: #047857;
+        text-decoration: line-through;
+    }
+    .po-act-check {
+        color: #059669; font-weight: 800; margin-right: 3px;
+    }
+    .po-act-meta {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 3px;
+        font-size: 7pt; color: #64748B;
+    }
+    .po-act-hora {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+    .po-act-responsables {
+        display: flex; gap: 2px;
+    }
+    .po-act-resp {
+        display: inline-block; width: 15px; height: 15px; line-height: 15px;
+        border-radius: 50%; background: #2563EB; color: #fff;
+        font-size: 6pt; text-align: center; font-weight: 700;
+    }
+    .po-act-done .po-act-resp { background: #059669; }
+    .po-act-veh {
+        font-size: 6.5pt; color: #9A3412; margin-top: 2px;
+        padding: 1px 5px; background: #FEF3C7; border-radius: 3px;
+        display: inline-block; font-weight: 600;
+    }
+
+    /* Leyenda */
+    .po-legend {
+        margin-top: 14px;
+        padding: 8px 12px;
+        background: #F8FBFF;
+        border: 1px solid #DBE6F3;
+        border-radius: 8px;
+        display: flex; gap: 20px; align-items: center;
+        font-size: 8pt; color: #475569;
+    }
+    .po-legend-item { display: flex; align-items: center; gap: 5px; }
+    .po-legend-swatch {
+        display: inline-block; width: 14px; height: 10px;
+        border-radius: 3px; border: 1px solid;
+    }
+
+    /* Sin actividades */
+    .po-empty-state {
+        padding: 30px 20px;
+        text-align: center;
+        color: #94A3B8;
+        font-size: 10pt;
+        font-style: italic;
+        border: 1px dashed #CBD5E1;
+        border-radius: 8px;
+        margin: 12px 0;
+    }
+
+    /* Footer */
+    .pt-footer { margin-top: 14px; padding-top: 8px; border-top: 2px solid #E2E8F0; }
+    .pt-footer-brands { width: 100%; height: auto; display: block; margin: 0 auto; }
+    .pt-footer-contact {
+        margin-top: 6px; background: linear-gradient(90deg, #FBBF24, #F59E0B);
+        color: #fff; padding: 5px 14px; font-size: 8.5pt;
+        text-align: center; font-weight: 600;
+    }
+</style>
+</head>
+<body>
+
+{% if bajanet_hero_url %}<img class="pt-hero-banner" src="{{ bajanet_hero_url }}" alt="Bajanet">{% endif %}
+<div class="pt-doc-title-bar">
+    <div class="pt-title">
+        Programa de Obra
+        <span class="pt-title-sub">Calendario de Actividades</span>
+    </div>
+    <div class="po-meta-pills">
+        <div class="po-meta-pill"><span>Generado</span><b>{{ doc_fecha_fmt }}</b></div>
+    </div>
+</div>
+
+<!-- ═══ HEADER BAND ═══ -->
+<table class="po-band">
+    <tr>
+        <td class="po-cliente" rowspan="2">{{ cliente_nombre|default:"Cliente" }}</td>
+        <td class="po-band-lbl">Proyecto:</td>
+        <td class="po-band-val">{{ proyecto.nombre|default:"—" }}</td>
+        <td class="po-band-lbl">Inicio:</td>
+        <td class="po-band-val">{{ proyecto_fecha_inicio_fmt }}</td>
+    </tr>
+    <tr>
+        <td class="po-band-lbl">Elaboró:</td>
+        <td class="po-band-val">{{ elaboro|default:"—" }}</td>
+        <td class="po-band-lbl">Fin:</td>
+        <td class="po-band-val">{{ proyecto_fecha_fin_fmt }}</td>
+    </tr>
+</table>
+
+<!-- ═══ RESUMEN EJECUTIVO ═══ -->
+<div class="po-summary">
+    <div class="po-summary-card">
+        <div class="po-summary-lbl">Actividades</div>
+        <div class="po-summary-val">{{ total_actividades }}</div>
+    </div>
+    <div class="po-summary-card done">
+        <div class="po-summary-lbl">Completadas</div>
+        <div class="po-summary-val">{{ total_completadas }}</div>
+    </div>
+    <div class="po-summary-card pending">
+        <div class="po-summary-lbl">Pendientes</div>
+        <div class="po-summary-val">{{ total_pendientes }}</div>
+    </div>
+    <div class="po-summary-card">
+        <div class="po-summary-lbl">Semanas</div>
+        <div class="po-summary-val">{{ weeks|length }}</div>
+    </div>
+</div>
+
+<!-- ═══ CALENDARIO POR SEMANA ═══ -->
+{% if total_actividades == 0 %}
+<div class="po-empty-state">Aún no se han agendado actividades para este proyecto.</div>
+{% endif %}
+
+{% for week in weeks %}
+<div class="po-week">
+    <div class="po-week-header">
+        <div class="po-week-title">Semana {{ week.num }}</div>
+        <div class="po-week-range">{{ week.range_label }}</div>
+    </div>
+    <div class="po-days {% if week.has_weekend %}has-weekend{% endif %}">
+        {% for day in week.days %}
+        <div class="po-day {% if day.is_weekend %}po-day-weekend{% endif %}">
+            <div class="po-day-head">{{ day.name }}</div>
+            <div class="po-day-date">{{ day.date_short }}</div>
+            {% if day.activities %}
+                {% for a in day.activities %}
+                <div class="po-act {% if a.completada %}po-act-done{% endif %}">
+                    <div class="po-act-title">
+                        {% if a.completada %}<span class="po-act-check">&#10003;</span>{% endif %}{{ a.titulo }}
+                    </div>
+                    <div class="po-act-meta">
+                        <span class="po-act-hora">{{ a.hora_inicio }}–{{ a.hora_fin }}</span>
+                        {% if a.responsables %}
+                        <span class="po-act-responsables">
+                            {% for r in a.responsables %}<span class="po-act-resp" title="{{ r.nombre }}">{{ r.iniciales }}</span>{% endfor %}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if a.vehiculos %}<div class="po-act-veh">🚐 {{ a.vehiculos }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="po-day-empty">—</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+<!-- Leyenda -->
+{% if total_actividades > 0 %}
+<div class="po-legend">
+    <div class="po-legend-item">
+        <span class="po-legend-swatch" style="background:#F0F7FF;border-color:#BFDBFE;"></span>
+        Pendiente
+    </div>
+    <div class="po-legend-item">
+        <span class="po-legend-swatch" style="background:#F0FDF4;border-color:#BBF7D0;"></span>
+        Completada
+    </div>
+    <div class="po-legend-item">
+        <span class="po-act-resp" style="position:static;">AB</span>
+        Iniciales de responsables
+    </div>
+</div>
+{% endif %}
+
+<!-- Footer -->
+<div class="pt-footer">
+    {% if footer_logos_url %}<img class="pt-footer-brands" src="{{ footer_logos_url }}" alt="Marcas">{% endif %}
+    <div class="pt-footer-contact">
+        Tel. {{ empresa_tel }} &middot; {{ empresa_web }} &middot; {{ empresa_direccion }}
+    </div>
+</div>
+
+</body>
+</html>

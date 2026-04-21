@@ -282,22 +282,23 @@
             // no se dispara — resultado: contenido cortado por el footer.
             if (el) el.style.display = (i === n) ? 'flex' : 'none';
         }
-        // Botón PDF visible en Fase 1 (Levantamiento), Fase 2 (Propuesta) y Fase 3 (Volumetría)
+        // Botón PDF visible en Fase 1 (Levantamiento), 2 (Propuesta), 3 (Volumetría) y 4 (Programa de Obra)
         var pdfWrap = $('lwPdfWrap');
-        if (pdfWrap) pdfWrap.style.display = (n === 1 || n === 2 || n === 3) ? '' : 'none';
+        if (pdfWrap) pdfWrap.style.display = (n === 1 || n === 2 || n === 3 || n === 4) ? '' : 'none';
         var pdfMenu = $('lwPdfMenu');
         if (pdfMenu) pdfMenu.style.display = 'none';
         // Label del botón
         var btnLbl = $('lwPdfBtnLbl');
         if (btnLbl) btnLbl.textContent = (n === 3) ? 'Exportar' : 'PDF';
-        // Alternar grupos del menú: 'std' (Fases 1/2) vs 'vol' (Fase 3)
+        // Alternar grupos del menú
         var stdItems = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="std"]');
         var volItems = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="vol"]');
-        var isVol = (n === 3);
-        stdItems.forEach(function (el) { el.style.display = isVol ? 'none' : ''; });
-        volItems.forEach(function (el) { el.style.display = isVol ? '' : 'none'; });
+        var poItems  = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="po"]');
+        stdItems.forEach(function (el) { el.style.display = (n === 1 || n === 2) ? '' : 'none'; });
+        volItems.forEach(function (el) { el.style.display = (n === 3) ? '' : 'none'; });
+        poItems.forEach(function (el)  { el.style.display = (n === 4) ? '' : 'none'; });
         // Actualizar labels del menú std según la fase
-        if (!isVol) {
+        if (n === 1 || n === 2) {
             var stdTitles = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="std"] .lw-pdf-menu-item-title');
             if (stdTitles.length >= 2) {
                 var docLabel = n === 1 ? 'Levantamiento' : 'Propuesta';
@@ -1484,6 +1485,19 @@
             } else {
                 return;
             }
+        } else if (state.phase === 4) {
+            if (!state.lev.proyecto_id) {
+                alert('Este levantamiento no está asociado a un proyecto.');
+                return;
+            }
+            var poBase = '/app/api/iamet/proyectos/' + state.lev.proyecto_id + '/programa-obra-pdf/';
+            if (mode === 'view-po') {
+                url = poBase;
+            } else if (mode === 'dl-po') {
+                url = poBase + '?download=1';
+            } else {
+                return;
+            }
         } else {
             var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
             url = base + endpoint + '/' + (mode === 'download' ? '?download=1' : '');
@@ -1799,61 +1813,43 @@
     // ═══════════════════════════════════════════════════════════════
     //  PHASE 4 — PROGRAMA DE OBRA
     // ═══════════════════════════════════════════════════════════════
+    // Fase 4 reutiliza el calendario semanal del widget de Proyectos.
+    // La data se persiste en la tabla ProgramacionActividad (no en
+    // fase4_data) → misma fuente de verdad que el módulo del proyecto.
     function renderPhase4() {
-        var d = state.lev.fase4_data || {};
-        if (!d.actividades) d.actividades = [];
-        state.lev.fase4_data = d;
-        var list = $('lw_f4_actividades');
-        var empty = $('lw_f4_empty');
-        if (!d.actividades.length) {
-            list.innerHTML = '';
-            empty.style.display = 'flex';
+        var wrap = $('lwP4ProgramaWrap');
+        if (!wrap) return;
+        var lev = state.lev || {};
+
+        if (!lev.proyecto_id) {
+            wrap.innerHTML = '<div class="lw-p4-note">Este levantamiento no está asociado a un proyecto.</div>';
             return;
         }
-        empty.style.display = 'none';
-        list.innerHTML = d.actividades.map(function (a, i) {
-            return '<div class="lw-p4-act">' +
-                '<div class="lw-p4-act-head">' +
-                    '<input class="lw-p4-nombre" type="text" value="' + esc(a.nombre || '') + '" placeholder="Nombre de la actividad" oninput="lwP4Field(' + i + ', \'nombre\', this.value)">' +
-                    '<button type="button" class="lw-cell-del" onclick="lwP4DelActividad(' + i + ')">×</button>' +
-                '</div>' +
-                '<div class="lw-p4-act-grid">' +
-                    '<div class="lw-field"><label>Responsable</label><input type="text" value="' + esc(a.responsable || '') + '" oninput="lwP4Field(' + i + ', \'responsable\', this.value)"></div>' +
-                    '<div class="lw-field"><label>Inicio</label><input type="date" value="' + esc(a.inicio || '') + '" oninput="lwP4Field(' + i + ', \'inicio\', this.value)"></div>' +
-                    '<div class="lw-field"><label>Fin</label><input type="date" value="' + esc(a.fin || '') + '" oninput="lwP4Field(' + i + ', \'fin\', this.value)"></div>' +
-                    '<div class="lw-field"><label>Progreso %</label><input type="number" min="0" max="100" value="' + (a.progreso || 0) + '" oninput="lwP4Field(' + i + ', \'progreso\', this.value)"></div>' +
-                '</div>' +
-                '<div class="lw-p4-bar-wrap"><div class="lw-p4-bar" style="width:' + Math.min(100, Math.max(0, a.progreso || 0)) + '%;"></div></div>' +
-            '</div>';
-        }).join('');
-    }
-    window.lwP4Field = function (i, field, val) {
-        if (field === 'progreso') val = Math.max(0, Math.min(100, parseFloat(val) || 0));
-        state.lev.fase4_data.actividades[i][field] = val;
-        lwFieldChange();
-        // re-render solo la barra (sin reset de inputs para no perder foco)
-        var card = document.querySelectorAll('.lw-p4-act')[i];
-        if (card) {
-            var bar = card.querySelector('.lw-p4-bar');
-            if (bar && field === 'progreso') bar.style.width = val + '%';
+        if (!lev.proyecto_fecha_inicio || !lev.proyecto_fecha_fin) {
+            wrap.innerHTML = '<div class="lw-p4-note">Define <b>Fecha de inicio</b> y <b>Fecha de fin</b> del proyecto para activar el Programa de Obra.<br><small>Esas fechas viven en el widget del proyecto, no en el levantamiento.</small></div>';
+            return;
         }
-    };
-    window.lwP4AddActividad = function () {
-        var today = new Date().toISOString().split('T')[0];
-        var d = state.lev.fase4_data;
-        d.actividades = d.actividades || [];
-        d.actividades.push({
-            id: Date.now(), nombre: 'Nueva actividad', responsable: '',
-            inicio: today, fin: today, progreso: 0,
+        if (typeof window.proyectosRenderProgramaObra !== 'function') {
+            wrap.innerHTML = '<div class="lw-p4-note">Calendario no disponible. Recarga la página.</div>';
+            return;
+        }
+
+        // Dar al contenedor el ID esperado por el renderer interno (no lo
+        // usamos, pero mantenemos un div hijo dedicado para aislar del
+        // widget de proyectos que pueda estar en el DOM).
+        wrap.innerHTML = '<div id="lwP4ProgramaContainer"></div>';
+
+        window.proyectosRenderProgramaObra(lev.proyecto_id, {
+            containerId: 'lwP4ProgramaContainer',
+            projectDetail: {
+                id: lev.proyecto_id,
+                nombre: lev.proyecto_nombre || lev.nombre || '',
+                fecha_inicio: lev.proyecto_fecha_inicio,
+                fecha_fin: lev.proyecto_fecha_fin,
+            },
         });
-        renderPhase4();
-        lwFieldChange();
-    };
-    window.lwP4DelActividad = function (i) {
-        state.lev.fase4_data.actividades.splice(i, 1);
-        renderPhase4();
-        lwFieldChange();
-    };
+    }
+
     function collectPhase4() { return state.lev.fase4_data || {}; }
 
     // ═══════════════════════════════════════════════════════════════

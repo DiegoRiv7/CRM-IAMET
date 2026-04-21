@@ -1409,6 +1409,19 @@
     flex: 1;
     min-height: 0;
 }
+.lw-p4-note {
+    margin: 40px auto;
+    max-width: 520px;
+    padding: 22px 24px;
+    text-align: center;
+    color: #475569;
+    font-size: 13.5px;
+    line-height: 1.55;
+    border: 1px dashed #CBD5E1;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #FAFBFC, #F8FAFC);
+}
+.lw-p4-note small { color: #94A3B8; display: block; margin-top: 4px; font-size: 12px; }
 .lw-p4-list { display: flex; flex-direction: column; gap: 10px; }
 .lw-p4-act {
     border: 1px solid rgba(226, 232, 240, 0.9);

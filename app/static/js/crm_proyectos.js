@@ -1133,15 +1133,25 @@
     //  RENDER: PROGRAMA DE OBRA
     // =========================================
 
-    function renderProgramaObra(projectId) {
-        var container = el('proyProgramaContainer');
+    // opts (opcional): { containerId, projectDetail }
+    //   containerId  — ID alternativo donde renderizar (default: 'proyProgramaContainer')
+    //   projectDetail — usa estos datos en lugar de _cachedProjectDetail (útil cuando
+    //                   el wizard del levantamiento llama esta función sin haber
+    //                   pasado por proyectosVerDetalle primero).
+    function renderProgramaObra(projectId, opts) {
+        opts = opts || {};
+        var containerId = opts.containerId || 'proyProgramaContainer';
+        var container = el(containerId);
         if (!container) return;
 
-        var detail = _cachedProjectDetail;
+        var detail = opts.projectDetail || _cachedProjectDetail;
         if (!detail || !detail.fecha_inicio || !detail.fecha_fin) {
             container.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:40px;">Define las fechas de inicio y fin del proyecto para usar el Programa de Obra</div>';
             return;
         }
+        // Mantener _cachedProjectDetail sincronizado para que _openActividadForm
+        // y el guardado puedan usar detail.nombre, etc.
+        if (opts.projectDetail) { _cachedProjectDetail = detail; currentProjectId = projectId; }
 
         // Calculate weeks from fecha_inicio to fecha_fin
         var start = new Date(detail.fecha_inicio);
@@ -1256,6 +1266,9 @@
 
         renderWeek();
     }
+
+    // Exponer para reutilización desde el wizard del levantamiento.
+    window.proyectosRenderProgramaObra = renderProgramaObra;
 
 
     // =========================================
