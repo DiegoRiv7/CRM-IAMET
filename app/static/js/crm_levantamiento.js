@@ -2169,18 +2169,41 @@
     };
 
     // Toggle del menú "Insertar" (dropdown debajo del botón).
+    // Posicionamos manualmente (position: fixed) para que no sea
+    // recortado por el overflow:hidden de .lw-p5-wrap / .lw-content.
     window.lwP5InsertMenuToggle = function (e) {
         if (e) e.stopPropagation();
         var m = $('lwP5InsertMenu');
         if (!m) return;
-        m.style.display = m.style.display === 'block' ? 'none' : 'block';
+        if (m.style.display === 'block') {
+            m.style.display = 'none';
+            return;
+        }
+        var btn = e && e.currentTarget;
+        if (btn && btn.getBoundingClientRect) {
+            var r = btn.getBoundingClientRect();
+            // Abrir hacia abajo, alineado a la izquierda del botón
+            m.style.top = (r.bottom + 6) + 'px';
+            // Preferimos alineado a izquierda del botón; si se sale por la
+            // derecha, lo pegamos al borde derecho de la ventana.
+            var menuWidth = 340;
+            var left = r.left;
+            if (left + menuWidth > window.innerWidth - 12) {
+                left = Math.max(12, window.innerWidth - menuWidth - 12);
+            }
+            m.style.left = left + 'px';
+        }
+        m.style.display = 'block';
     };
     // Cerrar al click fuera
     document.addEventListener('click', function (e) {
         var menu = $('lwP5InsertMenu');
         if (!menu || menu.style.display !== 'block') return;
-        var wrap = menu.closest('.lw-rt-insert-wrap');
-        if (wrap && !wrap.contains(e.target)) menu.style.display = 'none';
+        // Si el click no fue dentro del menú ni en el botón que lo abre, cerramos
+        if (menu.contains(e.target)) return;
+        var btn = e.target.closest('[onclick*="lwP5InsertMenuToggle"]');
+        if (btn) return;
+        menu.style.display = 'none';
     });
 
     // Inserta el contenido de una fase en la posición actual del cursor.

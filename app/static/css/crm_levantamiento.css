@@ -1506,10 +1506,16 @@
     background: #F1F5F9;
 }
 
-/* Toolbar estilo Google Docs */
+/* Toolbar estilo Google Docs.
+   IMPORTANT: overflow debe ser visible para que el dropdown "Insertar"
+   escape del recuadro del toolbar; por eso flex-wrap permite que los
+   botones caigan a una segunda línea en pantallas estrechas en lugar
+   de meter un scroll horizontal. */
 .lw-rt-toolbar {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    row-gap: 4px;
     gap: 2px;
     padding: 8px 16px;
     background: #fff;
@@ -1518,7 +1524,7 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    overflow-x: auto;
+    overflow: visible;
 }
 .lw-rt-btn {
     background: transparent;
@@ -1556,12 +1562,13 @@
     flex-shrink: 0;
 }
 
-/* Menú "Insertar" — dropdown con 4 opciones de fase */
+/* Menú "Insertar" — dropdown con 4 opciones de fase.
+   Usamos position:fixed + JS para posicionarlo, porque los
+   contenedores padre (.lw-p5-wrap, .lw-content) tienen overflow:hidden
+   que recortaría un position:absolute. */
 .lw-rt-insert-menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 20;
+    position: fixed;
+    z-index: 10000;
     min-width: 320px;
     background: #fff;
     border: 1px solid #E2E8F0;
