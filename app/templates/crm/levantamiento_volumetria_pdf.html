@@ -70,12 +70,18 @@
         padding: 10px 14px; width: 38%;
     }
 
+    /* Bloque de sección (título + tabla) — se mantiene junto si cabe en la página */
+    .vol-section-block {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-top: 10px;
+    }
+
     /* Sección (banda azul clara) */
     .vol-section-row {
         background: #E8F1FB; color: #1D4ED8; font-size: 9pt; font-weight: 800;
         padding: 6px 10px; letter-spacing: 0.05em; text-transform: uppercase;
         border: 1px solid #DBE6F3; border-bottom: none; border-radius: 6px 6px 0 0;
-        margin-top: 10px;
     }
 
     /* Tabla de volumetría */
@@ -83,6 +89,11 @@
         width: 100%; border-collapse: collapse; table-layout: auto;
         margin-bottom: 2px; border: 1px solid #DBE6F3;
     }
+    /* thead se repite en cada página si la tabla sí se parte (caso extremo) */
+    .vol-tbl thead { display: table-header-group; }
+    .vol-tbl tfoot { display: table-footer-group; }
+    /* evitar romper filas individuales por la mitad */
+    .vol-tbl tr { page-break-inside: avoid; break-inside: avoid; }
     .vol-tbl th {
         background: #F1F5F9; color: #475569;
         font-size: 7.5pt; font-weight: 700;
@@ -107,6 +118,10 @@
         padding: 6px 10px; border-top: 2px solid #2563EB;
     }
     .vol-tbl tfoot td.num { font-weight: 800; }
+
+    /* Resumen se mantiene junto y empieza en página nueva si la de materiales
+       quedó larga (evita que el resumen se separe de su tabla de gastos) */
+    .vol-summary { page-break-inside: avoid; break-inside: avoid; }
 
     /* Resumen financiero */
     .vol-summary {
@@ -173,6 +188,7 @@
 </table>
 
 <!-- ═══ TABLA 1 — EQUIPAMIENTO / MATERIALES ═══ -->
+<div class="vol-section-block">
 <div class="vol-section-row">Equipamiento &amp; Materiales</div>
 {% if materiales %}
 <table class="vol-tbl">
@@ -229,9 +245,11 @@
 {% else %}
 <div class="vol-empty">Sin materiales capturados.</div>
 {% endif %}
+</div><!-- /.vol-section-block materiales -->
 
 <!-- ═══ TABLA 2 — MANO DE OBRA ═══ -->
-<div class="vol-section-row" style="margin-top:14px;">Mano de Obra &amp; Servicios</div>
+<div class="vol-section-block">
+<div class="vol-section-row">Mano de Obra &amp; Servicios</div>
 {% if mano_obra %}
 <table class="vol-tbl">
     <thead>
@@ -272,10 +290,12 @@
 {% else %}
 <div class="vol-empty">Sin mano de obra capturada.</div>
 {% endif %}
+</div><!-- /.vol-section-block mano obra -->
 
 <!-- ═══ TABLA 3 — GASTOS ═══ -->
 {% if gastos %}
-<div class="vol-section-row" style="margin-top:14px;">Gastos Operativos &amp; Viáticos</div>
+<div class="vol-section-block">
+<div class="vol-section-row">Gastos Operativos &amp; Viáticos</div>
 <table class="vol-tbl">
     <thead>
         <tr>
@@ -312,6 +332,7 @@
     </tfoot>
     {% endif %}
 </table>
+</div><!-- /.vol-section-block gastos -->
 {% endif %}
 
 <!-- ═══ RESUMEN FINANCIERO (solo modo completo) ═══ -->

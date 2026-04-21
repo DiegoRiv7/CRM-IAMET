@@ -117,8 +117,12 @@
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid #DBE6F3;
+        /* Mantener cada tabla completa en una página si es posible */
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
     .pt-table td { border: 1px solid #DBE6F3; padding: 7px 11px; vertical-align: middle; }
+    .pt-table tr { page-break-inside: avoid; break-inside: avoid; }
 
     /* Section row azul claro */
     .pt-section-row td {
