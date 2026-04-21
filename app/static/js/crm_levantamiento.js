@@ -246,7 +246,12 @@
     function renderPhase(n) {
         for (var i = 1; i <= 5; i++) {
             var el = $('lwPhase' + i);
-            if (el) el.style.display = (i === n) ? 'block' : 'none';
+            // IMPORTANTE: la fase debe usar `display: flex` (NO block) para
+            // que el CSS .lw-phase { display:flex; flex-direction:column }
+            // funcione correctamente. Si usamos block, el hijo .lw-canvas
+            // con `flex: 1` no recibe altura controlada y el scroll interno
+            // no se dispara — resultado: contenido cortado por el footer.
+            if (el) el.style.display = (i === n) ? 'flex' : 'none';
         }
         // Botón PDF visible en Fase 1 (Levantamiento en Sitio) y Fase 2 (Propuesta)
         var pdfWrap = $('lwPdfWrap');
