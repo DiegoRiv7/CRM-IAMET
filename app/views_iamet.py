@@ -2687,6 +2687,7 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
 
         # Assets
         'logo_url':         _static_file_url('images/iamet-logo.png'),
+        'bajanet_hero_url': _static_file_url('images/propuesta/bajanet_hero.jpeg'),
         'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
 
         # Empresa (hardcoded por ahora)
@@ -2798,6 +2799,7 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
         'evidencias': evidencias,
         # Recursos visuales — rutas filesystem para WeasyPrint
         'logo_url':          _static_file_url('images/iamet-logo.png'),
+        'bajanet_hero_url':  _static_file_url('images/propuesta/bajanet_hero.jpeg'),
         'footer_logos_url':  _static_file_url('images/propuesta/footer_logos.png'),
         'watermark_url':     _static_file_url('images/propuesta/watermark.jpg'),
         # Datos de empresa (hardcoded por ahora; en el futuro pueden venir de
