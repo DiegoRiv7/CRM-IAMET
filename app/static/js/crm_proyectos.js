@@ -189,64 +189,172 @@
 
 
     // =========================================
-    //  RENDER: PROJECT CARDS
+    //  RENDER: PROJECTS TABLE (v2 — design system)
+    //  Reemplaza las cards por una tabla sin columna ID,
+    //  con "Oportunidad" antes de la fecha.
     // =========================================
 
-    function renderProjectCards(projects) {
-        var grid = el('proyGrid');
-        var emptyEl = el('proyEmpty');
-        if (!grid) return;
+    // Helper: chip de servicio basado en producto o tipo
+    function _servicioChipHtml(value) {
+        if (!value) return '<span class="proy-tv2-chip proy-tv2-chip-default">—</span>';
+        var v = String(value).toLowerCase();
+        var cls = 'proy-tv2-chip-default';
+        var label = value;
+        if (v.indexOf('cctv') !== -1 || v.indexOf('camara') !== -1 || v.indexOf('video') !== -1 || v.indexOf('avigilion') !== -1 || v.indexOf('axis') !== -1 || v.indexOf('genetec') !== -1) {
+            cls = 'proy-tv2-chip-cctv'; label = 'CCTV';
+        } else if (v.indexOf('acces') !== -1) {
+            cls = 'proy-tv2-chip-acceso'; label = 'Control de Acceso';
+        } else if (v.indexOf('panduit') !== -1 || v.indexOf('cable') !== -1) {
+            cls = 'proy-tv2-chip-cableado'; label = 'Cableado';
+        } else if (v.indexOf('voceo') !== -1) {
+            cls = 'proy-tv2-chip-voceo'; label = 'Voceo';
+        } else if (v.indexOf('alarma') !== -1) {
+            cls = 'proy-tv2-chip-alarma'; label = 'Alarma';
+        } else if (v.indexOf('telefon') !== -1 || v.indexOf('cisco') !== -1) {
+            cls = 'proy-tv2-chip-telefonia'; label = 'Telefonía';
+        } else if (v.indexOf('zebra') !== -1 || v.indexOf('apc') !== -1) {
+            cls = 'proy-tv2-chip-default'; label = value;
+        }
+        return '<span class="proy-tv2-chip ' + cls + '">' + label + '</span>';
+    }
 
-        if (projects.length === 0) {
-            grid.innerHTML = '';
+    // Helper: pip bar 1-5 de fases
+    function _phasesBarHtml(maxFase, total) {
+        var html = '<span class="proy-tv2-phases">';
+        for (var i = 1; i <= 5; i++) {
+            html += '<span class="proy-tv2-phase-pip' + (i <= maxFase ? ' on' : '') + '"></span>';
+        }
+        if (total > 0) {
+            html += '<span class="proy-tv2-phase-count">' + total + '</span>';
+        }
+        html += '</span>';
+        return html;
+    }
+
+    // Helper: fecha corta tipo "15 Abr 2026"
+    function _fmtShortDate(iso) {
+        if (!iso) return '\u2014';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        return d.getDate() + ' ' + MESES[d.getMonth()] + ' ' + d.getFullYear();
+    }
+
+    // Helper: escape html
+    function _esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+    }
+
+    function renderProjectCards(projects) {
+        // Nombre histórico para compatibilidad; delega al nuevo renderer
+        return renderProjectsTable(projects);
+    }
+
+    function renderProjectsTable(projects) {
+        var body = el('proyListBody');
+        var emptyEl = el('proyEmpty');
+        var view = el('proyListView');
+        if (!body) return;
+
+        if (!projects || projects.length === 0) {
+            body.innerHTML = '';
+            if (view) view.style.display = 'none';
             if (emptyEl) emptyEl.style.display = '';
             return;
         }
-
+        if (view) view.style.display = '';
         if (emptyEl) emptyEl.style.display = 'none';
 
         var html = '';
-        projects.forEach(function(p) {
-            var budgeted = p.utilidad_presupuestada || 0;
-            var actual = p.utilidad_real || 0;
-            var pct = budgeted > 0 ? Math.min(Math.round(actual / budgeted * 100), 100) : 0;
-            var profitOk = actual >= budgeted;
-            var barColor = profitOk ? '#10b981' : (pct >= 60 ? '#f59e0b' : '#ef4444');
-            var amountColor = profitOk ? '#10b981' : '#636366';
+        projects.forEach(function (p) {
+            var cliente = p.cliente_nombre || '—';
+            var monto = p.oportunidad_monto || p.utilidad_presupuestada || 0;
+            var montoHtml = '$' + Number(monto).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            var status = p.status || 'planning';
+            var statusLbl = statusLabel(status).toUpperCase();
+            var servicio = p.oportunidad_producto || 'SIN SERVICIO';
+            // Progreso: porcentaje basado en fase_max de levantamientos
+            var fasePct = Math.round(((p.levantamiento_fase_max || 0) / 5) * 100);
+            var faseLbl = (p.levantamiento_fase_max || 0) + '/5';
+            var etapaCorta = p.oportunidad_etapa ? p.oportunidad_etapa.toUpperCase() : faseLbl;
+            // Stroke neutro (sin color-logic)
+            var strokeColor = '#3B82F6';
 
-            var unresolved = p.alertas_count || 0;
-            // Badge: mostrar etapa de la oportunidad si existe
-            var badgeText = p.oportunidad_etapa || statusLabel(p.status);
-            var badgeColor = p.oportunidad_etapa_color || '#6B7280';
+            var oppPillHtml;
+            if (p.oportunidad_id) {
+                oppPillHtml = '<div class="crm-list-activity-pill has-activity" onclick="event.stopPropagation(); proyectosAbrirOportunidad(' + p.oportunidad_id + ')" title="' + _esc(p.oportunidad_nombre || '') + '">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+                    '<span>' + _esc(p.oportunidad_nombre || 'Ver oportunidad') + '</span>' +
+                '</div>';
+            } else {
+                oppPillHtml = '<div class="crm-list-activity-pill">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>' +
+                    '<span>Sin oportunidad</span>' +
+                '</div>';
+            }
 
-            html += '<div class="proy-card" onclick="proyectosVerDetalle(' + p.id + ')">' +
-                '<div class="proy-card-header">' +
-                    '<div style="flex:1;min-width:0">' +
-                        '<div class="proy-card-title">' + truncate(p.nombre, 45) + '</div>' +
-                        '<div class="proy-card-client">' + (p.cliente_nombre || '\u2014') + '</div>' +
+            html += '<div class="crm-data-row crm-list-row" onclick="proyectosVerDetalle(' + p.id + ')">' +
+                // Strip neutro (sin colores/warm)
+                '<div class="crm-list-strip"></div>' +
+                // Columna 1: Proyecto / Cliente
+                '<div class="crm-list-cell" style="flex:2.6;padding-left:22px;">' +
+                    '<div class="crm-list-title">' +
+                        '<span>' + _esc(_truncate(p.nombre, 42)) + '</span>' +
                     '</div>' +
-                    '<span class="proy-badge" style="background:' + badgeColor + '20;color:' + badgeColor + ';border:1px solid ' + badgeColor + ';">' + badgeText + '</span>' +
+                    '<div class="crm-list-sub">' + _esc(_truncate(cliente, 34)) + '</div>' +
                 '</div>' +
-                '<div class="proy-card-desc">' + truncate(p.descripcion, 90) + '</div>' +
-                '<div class="proy-card-profit">' +
-                    '<div class="proy-card-profit-row">' +
-                        '<span class="proy-card-profit-label">Utilidad</span>' +
-                        '<span class="proy-card-profit-amounts" style="color:' + amountColor + '">' + fmtMoney(actual) + ' / ' + fmtMoney(budgeted) + '</span>' +
-                    '</div>' +
-                    '<div class="proy-progress-track">' +
-                        '<div class="proy-progress-fill" style="width:' + pct + '%;background:' + barColor + '"></div>' +
-                    '</div>' +
-                    '<div class="proy-card-profit-pct">' + pct + '%</div>' +
+                // Columna 2: Monto
+                '<div class="crm-list-cell" style="flex:1;">' +
+                    '<span class="crm-list-value">' + montoHtml + '</span>' +
                 '</div>' +
-                '<div class="proy-card-footer">' +
-                    '<span class="proy-card-dates">' + fmtDate(p.fecha_inicio) + ' \u2014 ' + fmtDate(p.fecha_fin) + '</span>' +
-                    (unresolved > 0 ? '<span class="proy-alert-count" title="' + unresolved + ' alertas">' + unresolved + '</span>' : '') +
+                // Columna 3: Servicio
+                '<div class="crm-list-cell" style="flex:0.9;">' +
+                    '<span class="crm-list-brand-badge">' + _esc(servicio) + '</span>' +
+                '</div>' +
+                // Columna 4: Estado (donut + label)
+                '<div class="crm-list-cell" style="flex:1.3;">' +
+                    '<div class="crm-list-state">' +
+                        '<div class="crm-list-progress">' +
+                            '<svg viewBox="0 0 36 36" style="width:36px;height:36px;transform:rotate(-90deg);">' +
+                                '<circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" stroke-width="2.5" pathLength="100"/>' +
+                                '<circle cx="18" cy="18" r="15.5" fill="none" stroke="' + strokeColor + '" stroke-width="2.5" pathLength="100" stroke-dasharray="' + fasePct + ' 100" stroke-linecap="round"/>' +
+                            '</svg>' +
+                            '<span>' + fasePct + '%</span>' +
+                        '</div>' +
+                        '<div class="crm-list-state-text">' +
+                            '<div class="crm-list-state-label">' + statusLbl + '</div>' +
+                            '<div class="crm-list-state-stage">' + _esc(etapaCorta) + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                // Columna 5: Oportunidad (pill style)
+                '<div class="crm-list-cell" style="flex:1.7;">' + oppPillHtml + '</div>' +
+                // Columna 6: Fecha
+                '<div class="crm-list-cell" style="flex:0.8;text-align:right;padding-right:18px;">' +
+                    '<span style="font-size:0.72rem;color:#94A3B8;white-space:nowrap;">' + _fmtShortDate(p.created_at) + '</span>' +
                 '</div>' +
             '</div>';
         });
-
-        grid.innerHTML = html;
+        body.innerHTML = html;
     }
+
+    // Helper truncate
+    function _truncate(s, n) {
+        if (!s) return '';
+        s = String(s);
+        return s.length > n ? s.slice(0, n - 1) + '…' : s;
+    }
+
+    // Abre la oportunidad desde el link en la fila del proyecto
+    window.proyectosAbrirOportunidad = function (oppId) {
+        if (!oppId) return;
+        if (typeof window.openDetalle === 'function') {
+            window.openDetalle(oppId);
+            return;
+        }
+        window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + oppId;
+    };
 
 
     // =========================================
@@ -462,7 +570,7 @@
         if (!currentProjectId) return;
         switch (tabName) {
             case 'info':       renderInfo(); break;
-            case 'partidas':   renderPartidas(currentProjectId); break;
+            case 'partidas':   renderLevantamientos(currentProjectId); break;
             case 'financiero': renderFinanciero(currentProjectId); break;
             case 'programa':   renderProgramaObra(currentProjectId); break;
             case 'tareas':     renderTareas(currentProjectId); break;
@@ -3100,5 +3208,118 @@
             }).join('');
         });
     }
+
+
+    // ════════════════════════════════════════════════════════════
+    //  LEVANTAMIENTOS (reemplaza Partidas en la pestaña)
+    //  Lista de filas clickables. Click abre el wizard de 5 fases.
+    // ════════════════════════════════════════════════════════════
+
+    function _statusPillHtml(status, label) {
+        var cls = 'proy-tv2-status proy-tv2-status-' + status;
+        return '<span class="' + cls + '"><i></i>' + _esc(label) + '</span>';
+    }
+
+    function renderLevantamientos(projectId) {
+        var body = el('levListBody');
+        var emptyEl = el('levListEmpty');
+        if (!body) return;
+        body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#94A3B8;font-size:12.5px;">Cargando levantamientos…</td></tr>';
+
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/levantamientos/').then(function (resp) {
+            if (!(resp.ok || resp.success)) {
+                body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#EF4444;font-size:12.5px;">Error cargando: ' + _esc(resp.error || '') + '</td></tr>';
+                return;
+            }
+            var items = resp.data || [];
+            _cachedLevantamientos = items;
+            if (items.length === 0) {
+                body.innerHTML = '';
+                if (emptyEl) emptyEl.style.display = '';
+                return;
+            }
+            if (emptyEl) emptyEl.style.display = 'none';
+            var html = items.map(function (l) {
+                var fecha = _fmtShortDate(l.fecha_actualizacion || l.fecha_creacion);
+                var creador = l.creado_por_nombre || '—';
+                var faseLbl = 'Fase ' + (l.fase_actual || 1) + '/5';
+                return '<tr class="lev-row" onclick="levantamientoAbrir(' + l.id + ')">' +
+                    '<td><div class="lev-row-name">' + _esc(l.nombre || 'Sin nombre') + '</div></td>' +
+                    '<td>' + _statusPillHtml(l.status, l.status_label) + '</td>' +
+                    '<td><span class="lev-row-fase">' + faseLbl + '</span></td>' +
+                    '<td><span class="lev-row-creador">' + _esc(creador) + '</span></td>' +
+                    '<td class="date"><span class="proy-tv2-fecha">' + fecha + '</span></td>' +
+                    '<td><button class="lev-row-del" title="Eliminar" onclick="event.stopPropagation(); levantamientoEliminar(' + l.id + ')">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+                    '</button></td>' +
+                    '</tr>';
+            }).join('');
+            body.innerHTML = html;
+        }).catch(function (err) {
+            console.error('Error levantamientos:', err);
+            body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#EF4444;font-size:12.5px;">Error de red</td></tr>';
+        });
+    }
+
+    var _cachedLevantamientos = [];
+
+    // Crea un levantamiento nuevo y abre el wizard
+    window.levantamientoIniciar = function () {
+        if (!currentProjectId) return;
+        var btn = el('btnIniciarLevantamiento');
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/levantamientos/crear/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({}),
+        }).then(function (resp) {
+            if (resp.success) {
+                renderLevantamientos(currentProjectId);
+                if (typeof window.levantamientoWizardOpen === 'function') {
+                    window.levantamientoWizardOpen(resp.data);
+                }
+            } else {
+                if (typeof showToast === 'function') showToast(resp.error || 'No se pudo crear el levantamiento', 'error');
+            }
+        }).catch(function () {
+            if (typeof showToast === 'function') showToast('Error de red', 'error');
+        }).finally(function () {
+            if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        });
+    };
+
+    // Abre el wizard cargando el detalle del levantamiento
+    window.levantamientoAbrir = function (levId) {
+        _fetch('/app/api/iamet/levantamientos/' + levId + '/').then(function (resp) {
+            if (resp.ok || resp.success) {
+                if (typeof window.levantamientoWizardOpen === 'function') {
+                    window.levantamientoWizardOpen(resp.data);
+                }
+            } else {
+                if (typeof showToast === 'function') showToast(resp.error || 'No se pudo abrir', 'error');
+            }
+        });
+    };
+
+    // Elimina un levantamiento (con confirmación custom)
+    window.levantamientoEliminar = function (levId) {
+        if (!confirm('¿Eliminar este levantamiento? Esta acción es permanente.')) return;
+        _fetch('/app/api/iamet/levantamientos/' + levId + '/eliminar/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: '{}',
+        }).then(function (resp) {
+            if (resp.success) {
+                renderLevantamientos(currentProjectId);
+            } else if (typeof showToast === 'function') {
+                showToast(resp.error || 'Error', 'error');
+            }
+        });
+    };
+
+    // Refresca la lista tras cambios en el wizard
+    window.levantamientoRefrescarLista = function () {
+        if (currentProjectId) renderLevantamientos(currentProjectId);
+    };
 
 })();

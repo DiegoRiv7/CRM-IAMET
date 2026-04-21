@@ -52,8 +52,19 @@
         <button class="proy-btn-new" onclick="proyectosCrearDialogo()">+ Nuevo Proyecto</button>
       </div>
     </div>
-    <div class="proy-grid" id="proyGrid">
-      <!-- Cards rendered by JS -->
+    <!-- Lista de proyectos (estilo CRM list-row, sin color-logic) -->
+    <div id="proyListView">
+      <div class="crm-list-head">
+        <div class="crm-list-hcell" style="flex:2.6;padding-left:22px;">PROYECTO / CLIENTE</div>
+        <div class="crm-list-hcell" style="flex:1;">MONTO</div>
+        <div class="crm-list-hcell" style="flex:0.9;">SERVICIO</div>
+        <div class="crm-list-hcell" style="flex:1.3;">ESTADO</div>
+        <div class="crm-list-hcell" style="flex:1.7;">OPORTUNIDAD</div>
+        <div class="crm-list-hcell" style="flex:0.8;text-align:right;padding-right:18px;">FECHA</div>
+      </div>
+      <div class="crm-list-body" id="proyListBody">
+        <!-- Rendered by JS -->
+      </div>
     </div>
     <div class="proy-empty" id="proyEmpty" style="display:none;">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;">
@@ -131,12 +142,10 @@
     <div class="proy-tab-bar">
       <button class="proy-tab-btn active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
         </svg>
-        Partidas
+        Levantamientos
       </button>
       <button class="proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
@@ -180,53 +189,40 @@
     <!-- Tab Content -->
     <div class="proy-tab-content">
 
-      <!-- TAB: Partidas -->
+      <!-- TAB: Levantamientos (antes "Partidas") -->
       <div id="proyPane_partidas" class="proy-tab-pane">
         <div class="proy-tab-header">
-          <h3>Partidas de Volumetria</h3>
+          <h3>Levantamientos</h3>
           <div class="proy-tab-actions">
-            <button class="proy-btn proy-btn-outline" onclick="proyectosVerHistorialVolumetria()" style="margin-right:4px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Historial
-            </button>
-            <button class="proy-btn proy-btn-outline" onclick="proyectosImportarExcel()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-              Importar Excel
-            </button>
-            <button class="proy-btn proy-btn-primary" onclick="proyectosCrearPartidaDialogo()">
+            <button class="proy-btn proy-btn-primary" onclick="levantamientoIniciar()" id="btnIniciarLevantamiento">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 5v14M5 12h14"/>
               </svg>
-              Agregar Partida
+              Iniciar levantamiento
             </button>
           </div>
         </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
+        <div class="lev-list-wrap">
+          <table class="lev-list-table">
             <thead>
               <tr>
-                <th>Categoria</th>
-                <th>Descripcion</th>
-                <th>Marca</th>
-                <th>No. Parte</th>
-                <th>Cant.</th>
-                <th>Pendiente</th>
-                <th>P. Lista</th>
-                <th>Desc.%</th>
-                <th>Costo U.</th>
-                <th>Venta U.</th>
-                <th>Ganancia</th>
-                <th>Proveedor</th>
+                <th>Levantamiento</th>
                 <th>Estado</th>
+                <th>Fase</th>
+                <th>Creado por</th>
+                <th class="date">Fecha</th>
                 <th style="width:36px;"></th>
               </tr>
             </thead>
-            <tbody id="proyPartidasBody"></tbody>
-            <tfoot id="proyPartidasFoot"></tfoot>
+            <tbody id="levListBody"><!-- renderizado por JS --></tbody>
           </table>
+          <div id="levListEmpty" class="lev-list-empty" style="display:none;">
+            <div class="lev-list-empty-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div class="lev-list-empty-title">Sin levantamientos todavía</div>
+            <div class="lev-list-empty-hint">Haz clic en <b>Iniciar levantamiento</b> para arrancar el wizard de 5 fases.</div>
+          </div>
         </div>
       </div>
 

@@ -16,6 +16,7 @@ from .models import (
     ProyectoFacturaProveedor, ProyectoFacturaIngreso,
     ProyectoGasto, ProyectoTarea, ProyectoAlerta,
     ProyectoConfiguracion, ProyectoVolumetriaVersion,
+    ProyectoLevantamiento, LevantamientoEvidencia,
 )
 from .views_utils import is_supervisor
 from .views_grupos import get_usuarios_visibles_ids
@@ -168,6 +169,21 @@ def _proyecto_to_dict(p, include_alerts=False):
     gastos_apr = float(p.gastos.filter(estado_aprobacion='approved').aggregate(t=Sum('monto'))['t'] or 0)
     utilidad_real_calc = ingresos - costos_prov - gastos_apr
 
+    opp = p.oportunidad if hasattr(p, 'oportunidad_id') and p.oportunidad_id else None
+
+    # Agregados de levantamientos (para la lista tipo tabla)
+    lev_qs = getattr(p, 'levantamientos', None)
+    lev_count = 0
+    lev_fase_max = 0
+    if lev_qs is not None:
+        try:
+            lev_count = lev_qs.count()
+            if lev_count:
+                from django.db.models import Max
+                lev_fase_max = lev_qs.aggregate(m=Max('fase_actual'))['m'] or 0
+        except Exception:
+            pass
+
     d = {
         'id': p.id,
         'usuario_id': p.usuario_id,
@@ -182,10 +198,14 @@ def _proyecto_to_dict(p, include_alerts=False):
         'fecha_fin': _fmt(p.fecha_fin),
         'created_at': _fmt(p.created_at),
         'updated_at': _fmt(p.updated_at),
-        'oportunidad_id': p.oportunidad_id if hasattr(p, 'oportunidad_id') else None,
-        'oportunidad_nombre': p.oportunidad.oportunidad if hasattr(p, 'oportunidad_id') and p.oportunidad_id and p.oportunidad else None,
-        'oportunidad_etapa': p.oportunidad.etapa_corta if p.oportunidad else None,
-        'oportunidad_etapa_color': p.oportunidad.etapa_color if p.oportunidad else None,
+        'oportunidad_id': opp.id if opp else None,
+        'oportunidad_nombre': opp.oportunidad if opp else None,
+        'oportunidad_monto': float(opp.monto) if opp and opp.monto is not None else 0.0,
+        'oportunidad_producto': opp.producto if opp else None,
+        'oportunidad_etapa': opp.etapa_corta if opp else None,
+        'oportunidad_etapa_color': opp.etapa_color if opp else None,
+        'levantamientos_count': lev_count,
+        'levantamiento_fase_max': lev_fase_max,
     }
     if include_alerts:
         d['alertas_pendientes'] = p.alertas.filter(resuelta=False).count()
@@ -2305,3 +2325,536 @@ def api_cfdi_convertir(request):
     # Inline para verlo en el navegador; descarga con el nombre correcto si el usuario usa "Guardar como"
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
+
+
+# ══════════════════════════════════════════════════════════════
+#  LEVANTAMIENTOS (wizard de 5 fases)
+# ══════════════════════════════════════════════════════════════
+
+def _lev_to_dict(lev, include_evidencias=False):
+    d = {
+        'id': lev.id,
+        'proyecto_id': lev.proyecto_id,
+        'nombre': lev.nombre,
+        'status': lev.status,
+        'status_label': lev.get_status_display(),
+        'fase_actual': lev.fase_actual,
+        'fase1_data': lev.fase1_data or {},
+        'fase2_data': lev.fase2_data or {},
+        'fase3_data': lev.fase3_data or {},
+        'fase4_data': lev.fase4_data or {},
+        'fase5_data': lev.fase5_data or {},
+        'creado_por_id': lev.creado_por_id,
+        'creado_por_nombre': (
+            (lev.creado_por.get_full_name() or lev.creado_por.username)
+            if lev.creado_por else None
+        ),
+        'fecha_creacion': _fmt(lev.fecha_creacion),
+        'fecha_actualizacion': _fmt(lev.fecha_actualizacion),
+    }
+    if include_evidencias:
+        d['evidencias'] = [_evidencia_to_dict(e) for e in lev.evidencias.all()]
+    return d
+
+
+def _evidencia_to_dict(e):
+    return {
+        'id': e.id,
+        'url': e.archivo.url if e.archivo else None,
+        'nombre_original': e.nombre_original,
+        'comentario': e.comentario,
+        'producto_idx': e.producto_idx,
+        'subido_por_id': e.subido_por_id,
+        'subido_por_nombre': (
+            (e.subido_por.get_full_name() or e.subido_por.username)
+            if e.subido_por else None
+        ),
+        'fecha_subida': _fmt(e.fecha_subida),
+    }
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_levantamientos_lista(request, proyecto_id):
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    qs = proyecto.levantamientos.select_related('creado_por').all()
+    return JsonResponse({
+        'ok': True,
+        'data': [_lev_to_dict(l) for l in qs],
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_crear(request, proyecto_id):
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        data = {}
+
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        # Autonombrar secuencialmente si no viene nombre
+        existentes = proyecto.levantamientos.count()
+        nombre = f'Levantamiento {existentes + 1}'
+
+    # Pre-poblar Fase 1 con los datos del proyecto/oportunidad si aplica
+    fase1_default = {
+        'cliente':     (proyecto.oportunidad.cliente.nombre_empresa if (proyecto.oportunidad and proyecto.oportunidad.cliente) else proyecto.cliente_nombre or ''),
+        'contacto':    '',
+        'area':        '',
+        'fecha':       timezone.localdate().isoformat(),
+        'email':       '',
+        'telefono':    '',
+        'descripcion': proyecto.descripcion or '',
+        'servicios':   [],
+        'componentes': [],
+        'productos':   [],
+    }
+    fase1_override = data.get('fase1_data') or {}
+    fase1 = {**fase1_default, **fase1_override}
+
+    lev = ProyectoLevantamiento.objects.create(
+        proyecto=proyecto,
+        nombre=nombre,
+        status=data.get('status', 'borrador'),
+        fase_actual=int(data.get('fase_actual') or 1),
+        fase1_data=fase1,
+        fase2_data=data.get('fase2_data') or {},
+        fase3_data=data.get('fase3_data') or {},
+        fase4_data=data.get('fase4_data') or {},
+        fase5_data=data.get('fase5_data') or {},
+        creado_por=request.user,
+    )
+    return JsonResponse({'success': True, 'data': _lev_to_dict(lev, include_evidencias=True)})
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_levantamiento_detalle(request, levantamiento_id):
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'creado_por', 'proyecto'
+        ).prefetch_related('evidencias').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    return JsonResponse({'ok': True, 'data': _lev_to_dict(lev, include_evidencias=True)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_actualizar(request, levantamiento_id):
+    """Actualiza metadata (nombre, status, fase_actual) y/o data completa de fases."""
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    if 'nombre' in data:
+        n = (data['nombre'] or '').strip()
+        if n:
+            lev.nombre = n
+    if 'status' in data and data['status'] in dict(ProyectoLevantamiento.STATUS_CHOICES):
+        lev.status = data['status']
+    if 'fase_actual' in data:
+        try:
+            f = int(data['fase_actual'])
+            if 1 <= f <= 5:
+                lev.fase_actual = f
+        except (ValueError, TypeError):
+            pass
+    for k in ('fase1_data', 'fase2_data', 'fase3_data', 'fase4_data', 'fase5_data'):
+        if k in data and isinstance(data[k], dict):
+            setattr(lev, k, data[k])
+
+    lev.save()
+    return JsonResponse({'success': True, 'data': _lev_to_dict(lev, include_evidencias=True)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_fase(request, levantamiento_id):
+    """Parche sólo de una fase. Body: {fase: 1..5, data: {...}, fase_actual?: int}"""
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    try:
+        fase = int(data.get('fase') or 0)
+    except (ValueError, TypeError):
+        fase = 0
+    if fase < 1 or fase > 5:
+        return JsonResponse({'success': False, 'error': 'Fase inválida (1-5)'}, status=400)
+    fase_data = data.get('data')
+    if not isinstance(fase_data, dict):
+        return JsonResponse({'success': False, 'error': 'data debe ser objeto'}, status=400)
+
+    setattr(lev, f'fase{fase}_data', fase_data)
+    # Avanzar fase_actual si el cliente envía una señal
+    if 'fase_actual' in data:
+        try:
+            f = int(data['fase_actual'])
+            if 1 <= f <= 5:
+                lev.fase_actual = f
+        except (ValueError, TypeError):
+            pass
+    lev.save(update_fields=[f'fase{fase}_data', 'fase_actual', 'fecha_actualizacion'])
+    return JsonResponse({'success': True, 'data': _lev_to_dict(lev)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_eliminar(request, levantamiento_id):
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    lev.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_evidencia_subir(request, levantamiento_id):
+    """Sube una foto de evidencia. Multipart: archivo + opcionales producto_idx, comentario."""
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'success': False, 'error': 'Archivo requerido (campo "archivo")'}, status=400)
+
+    producto_idx = request.POST.get('producto_idx')
+    try:
+        producto_idx = int(producto_idx) if producto_idx not in (None, '', 'null') else None
+    except (ValueError, TypeError):
+        producto_idx = None
+
+    ev = LevantamientoEvidencia.objects.create(
+        levantamiento=lev,
+        archivo=archivo,
+        nombre_original=archivo.name[:255],
+        comentario=(request.POST.get('comentario') or '')[:255],
+        producto_idx=producto_idx,
+        subido_por=request.user,
+    )
+    return JsonResponse({'success': True, 'data': _evidencia_to_dict(ev)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_evidencia_eliminar(request, evidencia_id):
+    try:
+        ev = LevantamientoEvidencia.objects.select_related('levantamiento__proyecto').get(id=evidencia_id)
+    except LevantamientoEvidencia.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Evidencia no encontrada'}, status=404)
+    if not _check_access(request.user, ev.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    ev.archivo.delete(save=False)
+    ev.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_levantamiento_sitio_pdf(request, levantamiento_id):
+    """Genera el PDF del Levantamiento en Sitio (Fase 1).
+
+    Replica el formato del docx "FORMATO DE LEVANTAMIENTO EN SITIO
+    INSTALACIONES" pero con styling moderno (IAMET branding).
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    import os
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'proyecto', 'creado_por'
+        ).get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    f1 = lev.fase1_data or {}
+
+    def _static_file_url(rel_path):
+        candidates = []
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidates.append(os.path.join(settings.STATIC_ROOT, rel_path))
+        candidates.append(os.path.join(settings.BASE_DIR, 'app', 'static', rel_path))
+        for p in candidates:
+            if os.path.exists(p):
+                return 'file://' + p
+        return ''
+
+    # Formato de fecha: "04 / Nov / 2025"
+    import datetime as _dt
+    def _fmt_fecha(iso):
+        if not iso:
+            return ''
+        try:
+            dt = _dt.datetime.strptime(str(iso)[:10], '%Y-%m-%d')
+        except Exception:
+            return iso
+        meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
+
+    # Listas canónicas de Tipo de Servicio y Componentes (igual al docx)
+    TIPOS_SERVICIO = ['CCTV', 'Alarma Intrusión', 'Control de Acceso', 'Cableado Estructurado', 'Voceo', 'Telefonía', 'Otros']
+    COMPONENTES = [
+        'Cámara IP', 'Cámara Analógica', 'NVR', 'DVR', 'Video Balum',
+        'Tubería', 'Canalización', 'Escalerilla',
+        'Cable Cat5e', 'Cable Cat6', 'Cable Cat6A', 'Fibra Óptica',
+        'Gabinete/Rack', 'Serpentines', 'Controladora',
+        'PBX', 'Teléfonos', 'Work Station', 'Servidor', 'Switches',
+        'Antenas', 'Enlaces', 'Bocinas', 'Cableado',
+        'Fuentes de Poder', 'Amplificadores', 'Access Point', 'UPS',
+    ]
+    selected_svc = set(f1.get('servicios') or [])
+    selected_comp = set(f1.get('componentes') or [])
+
+    productos = [{
+        'qty':       p.get('qty') or 1,
+        'unidad':    p.get('unidad') or 'PZA',
+        'desc':      p.get('desc') or '',
+        'marca':     p.get('marca') or '',
+        'modelo':    p.get('modelo') or '',
+        'ubicacion': p.get('ubicacion') or '',
+    } for p in (f1.get('productos') or [])]
+
+    ctx = {
+        'lev':          lev,
+        'cliente':      f1.get('cliente')  or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
+        'contacto':     f1.get('contacto') or '',
+        'area':         f1.get('area')     or '',
+        'email':        f1.get('email')    or '',
+        'telefono':     f1.get('telefono') or '',
+        'fecha_fmt':    _fmt_fecha(f1.get('fecha') or timezone.localdate().isoformat()),
+        'descripcion':  f1.get('descripcion') or '',
+
+        'tipos_servicio':   [{'name': s, 'on': s in selected_svc} for s in TIPOS_SERVICIO],
+        'componentes':      [{'name': c, 'on': c in selected_comp} for c in COMPONENTES],
+
+        # Programa
+        'fecha_inicio_fmt': _fmt_fecha(f1.get('fecha_inicio')),
+        'fecha_fin_fmt':    _fmt_fecha(f1.get('fecha_fin')),
+        'duracion':         f1.get('duracion') or '',
+        'turno':            f1.get('turno') or '',
+        'apoyo_cliente':    f1.get('apoyo_cliente') or '',
+        'personal_req':     f1.get('personal_req') or '',
+        'realizo':          lev.creado_por.get_full_name() if lev.creado_por else '',
+
+        # Equipo de elevación
+        'elev_alto':   f1.get('elev_alto')   or '',
+        'elev_ancho':  f1.get('elev_ancho')  or '',
+        'elev_modelo': f1.get('elev_modelo') or '',
+
+        'productos': productos,
+
+        # Assets
+        'logo_url':         _static_file_url('images/iamet-logo.png'),
+        'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
+
+        # Empresa (hardcoded por ahora)
+        'empresa_tel':       '664 000 0000',
+        'empresa_web':       'www.iamet.mx',
+        'empresa_direccion': 'Tijuana, B.C.',
+    }
+
+    html = render_to_string('crm/levantamiento_sitio_pdf.html', ctx, request=request)
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'levantamiento')).strip()[:80] or 'levantamiento'
+    filename = f'Levantamiento_{safe_name}.pdf'
+    disp = 'attachment' if request.GET.get('download') else 'inline'
+    response['Content-Disposition'] = f'{disp}; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_levantamiento_propuesta_pdf(request, levantamiento_id):
+    """Genera el PDF de la Propuesta Técnica de un levantamiento.
+
+    Respeta el formato del docx original (tablas azules con secciones).
+    Params:
+      ?download=1  → fuerza Content-Disposition: attachment
+      por defecto  → inline (se abre en la pestaña para preview)
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    import os
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'proyecto', 'creado_por'
+        ).prefetch_related('evidencias').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    f1 = lev.fase1_data or {}
+    f2 = lev.fase2_data or {}
+
+    # Para WeasyPrint: usar rutas filesystem (file://) en lugar de HTTP URLs.
+    # Así evitamos que WeasyPrint haga peticiones HTTP (que pueden fallar por
+    # SSL/auth/red interna del contenedor) y las imágenes cargan directo del disco.
+    def _file_url_for_field(field):
+        if not field:
+            return ''
+        try:
+            return 'file://' + field.path
+        except Exception:
+            try:
+                return request.build_absolute_uri(field.url)
+            except Exception:
+                return ''
+
+    def _static_file_url(rel_path):
+        """Busca un archivo estático en STATIC_ROOT (prod tras collectstatic)
+        o en los directorios STATICFILES_DIRS/BASE_DIR (dev)."""
+        candidates = []
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidates.append(os.path.join(settings.STATIC_ROOT, rel_path))
+        # Dev: el directorio app/static/
+        candidates.append(os.path.join(settings.BASE_DIR, 'app', 'static', rel_path))
+        for p in candidates:
+            if os.path.exists(p):
+                return 'file://' + p
+        return ''
+
+    evidencias = [{
+        'abs_url': _file_url_for_field(e.archivo),
+        'comentario': e.comentario or '',
+    } for e in lev.evidencias.all()]
+
+    # Formato de fecha: "04 / Nov / 2025"
+    import datetime as _dt
+    def _fmt_fecha(iso):
+        if not iso:
+            return ''
+        try:
+            dt = _dt.datetime.strptime(str(iso)[:10], '%Y-%m-%d')
+        except Exception:
+            return iso
+        meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
+
+    ctx = {
+        'lev': lev,
+        'cliente_nombre': f1.get('cliente') or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
+        'elaboro':       f2.get('elaboro')       or (lev.creado_por.get_full_name() if lev.creado_por else ''),
+        'doc_fecha_fmt': _fmt_fecha(f2.get('doc_fecha') or timezone.localdate().isoformat()),
+        'solicitante':   f2.get('solicitante')   or f1.get('contacto') or '',
+        'departamento':  f2.get('departamento')  or '',
+        'planta':        f2.get('planta')        or f1.get('cliente') or '',
+        'areas':         f2.get('areas')         or f1.get('area')    or '',
+        'tipo_solucion': f2.get('tipo_solucion') or ', '.join(f1.get('servicios') or []),
+        'fecha_inst':    f2.get('fecha_inst')    or 'Acordar con usuario',
+        'desc_proyecto': f2.get('desc_proyecto') or f1.get('descripcion') or '',
+        'especificaciones': [x for x in (f2.get('especificaciones') or []) if x and x.strip()],
+        'comentarios_spec': [x for x in (f2.get('comentarios_spec') or []) if x and x.strip()],
+        'evidencias': evidencias,
+        # Recursos visuales — rutas filesystem para WeasyPrint
+        'logo_url':          _static_file_url('images/iamet-logo.png'),
+        'footer_logos_url':  _static_file_url('images/propuesta/footer_logos.png'),
+        'watermark_url':     _static_file_url('images/propuesta/watermark.jpg'),
+        # Datos de empresa (hardcoded por ahora; en el futuro pueden venir de
+        # una configuración del sistema)
+        'empresa_tel':       '664 000 0000',
+        'empresa_web':       'www.iamet.mx',
+        'empresa_direccion': 'Tijuana, B.C.',
+    }
+
+    html = render_to_string('crm/levantamiento_propuesta_pdf.html', ctx, request=request)
+
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'propuesta')).strip()[:80] or 'propuesta'
+    filename = f'PropuestaTecnica_{safe_name}.pdf'
+    disp = 'attachment' if request.GET.get('download') else 'inline'
+    response['Content-Disposition'] = f'{disp}; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_catalogo_productos(request):
+    """Buscador universal de productos para Fase 1 / Fase 3 del wizard.
+
+    Fuentes consultadas (en orden): CatalogoCableado.
+    Query: ?q=<texto>  (mínimo 1 char)  ?limit=<n>
+    """
+    from .models import CatalogoCableado
+    q = (request.GET.get('q') or '').strip()
+    try:
+        limit = min(int(request.GET.get('limit') or 20), 50)
+    except (ValueError, TypeError):
+        limit = 20
+    results = []
+    if q:
+        qs = CatalogoCableado.objects.filter(
+            Q(descripcion__icontains=q) |
+            Q(numero_parte__icontains=q) |
+            Q(marca__icontains=q)
+        )[:limit]
+        for p in qs:
+            results.append({
+                'id': f'cab-{p.id}',
+                'desc': p.descripcion,
+                'marca': p.marca,
+                'modelo': p.numero_parte,
+                'unidad': 'PZA',
+                'precio': float(p.precio_unitario or 0),
+                'precio_proveedor': float(p.precio_proveedor or 0),
+                'fuente': 'CatalogoCableado',
+            })
+    return JsonResponse({'ok': True, 'data': results, 'q': q})
