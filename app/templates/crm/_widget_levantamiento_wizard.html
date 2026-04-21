@@ -145,19 +145,19 @@
 
                     <!-- ─── ALCANCE (chips) ───────────────────────── -->
                     <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Tipo de servicio</div>
+                        <div class="lw-canvas-section-label">Tipo de servicio <span class="lw-help-tip" data-tip="Marca uno o varios sistemas que se instalarán. Esto filtra la lista de componentes de abajo a los relevantes.">?</span></div>
                         <div class="lw-chips" id="lw_f1_servicios"></div>
                     </div>
 
                     <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Componentes de la solución</div>
+                        <div class="lw-canvas-section-label">Componentes de la solución <span class="lw-help-tip" data-tip="Marca los elementos físicos que requiere la solución (cámaras, cables, gabinetes, etc). La lista se filtra automáticamente según los servicios seleccionados.">?</span></div>
                         <div class="lw-chips" id="lw_f1_componentes"></div>
                     </div>
 
                     <!-- ─── PRODUCTOS ─────────────────────────────── -->
                     <div class="lw-canvas-section">
                         <div class="lw-canvas-section-row">
-                            <div class="lw-canvas-section-label">Productos &amp; partidas</div>
+                            <div class="lw-canvas-section-label">Productos &amp; partidas <span class="lw-help-tip" data-tip="Agrega los productos que se van a cotizar. Puedes usar los botones de quick-add de abajo, buscar en el catálogo con ⌘K, o arrastrar filas para reordenar.">?</span></div>
                             <button type="button" class="lw-ghost-btn" onclick="lwP1OpenCatalog()">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                                 Agregar producto
@@ -181,7 +181,7 @@
 
                     <!-- ─── Programa e implementación (para PDF de levantamiento) ─── -->
                     <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Programa e implementación</div>
+                        <div class="lw-canvas-section-label">Programa e implementación <span class="lw-help-tip" data-tip="Información de campo para la instalación: fechas, turno, personal requerido y equipo de elevación. Se usa en el PDF de Levantamiento en Sitio.">?</span></div>
                         <div class="lw-impl-grid">
                             <!-- Fechas + Turno -->
                             <div class="lw-impl-row">
@@ -325,7 +325,7 @@
 
                     <!-- Especificaciones + Comentarios (2 columnas como el formato) -->
                     <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Especificaciones técnicas &amp; comentarios</div>
+                        <div class="lw-canvas-section-label">Especificaciones técnicas &amp; comentarios <span class="lw-help-tip" data-tip="Lista de requerimientos técnicos (izquierda) y observaciones adicionales (derecha). Enter agrega una viñeta nueva, Backspace en vacío elimina.">?</span></div>
                         <div class="lw-p2-specs">
                             <div class="lw-p2-specs-col">
                                 <div class="lw-p2-specs-head">Especificaciones Técnicas</div>
@@ -348,7 +348,7 @@
 
                     <!-- Evidencia Fotográfica -->
                     <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Evidencia fotográfica</div>
+                        <div class="lw-canvas-section-label">Evidencia fotográfica <span class="lw-help-tip" data-tip="Arrastra fotos del sitio aquí, pégalas desde el portapapeles, o selecciona archivos. Solo JPG/PNG/WebP. Se suben al servidor al momento.">?</span></div>
                         <div class="lw-drop" id="lwDropZone">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                             <div class="lw-drop-text">Arrastra fotos aquí o pega desde portapapeles</div>

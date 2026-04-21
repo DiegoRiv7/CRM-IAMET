@@ -2167,3 +2167,78 @@
     background: #2563EB;
     color: #fff;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TOOLTIP DE AYUDA "?" (en section labels)
+   Círculo pequeño "?" al lado del label que al hover muestra un
+   tooltip con la explicación. Sin JS, puro CSS.
+   ══════════════════════════════════════════════════════════════ */
+
+.lw-help-tip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #E2E8F0;
+    color: #64748B;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 6px;
+    cursor: help;
+    position: relative;
+    transition: all 0.12s ease;
+    vertical-align: middle;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.lw-help-tip:hover {
+    background: #BFDBFE;
+    color: #1D4ED8;
+}
+.lw-help-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    padding: 9px 12px;
+    background: #0F172A;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    text-transform: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.30);
+    z-index: 10500;
+    text-align: left;
+    white-space: normal;
+}
+.lw-help-tip::before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #0F172A;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 10500;
+}
+.lw-help-tip:hover::after,
+.lw-help-tip:hover::before {
+    opacity: 1;
+}
+.lw-help-tip:hover::after {
+    transform: translateX(-50%) translateY(-2px);
+}
