@@ -2410,16 +2410,37 @@ def api_levantamiento_crear(request, proyecto_id):
         existentes = proyecto.levantamientos.count()
         nombre = f'Levantamiento {existentes + 1}'
 
-    # Pre-poblar Fase 1 con los datos del proyecto/oportunidad si aplica
+    # Pre-poblar Fase 1 AGRESIVAMENTE desde proyecto + oportunidad +
+    # cliente ligado. El ingeniero abre el wizard y encuentra hasta
+    # 40-60% de los campos listos — solo ajusta.
+    opp = proyecto.oportunidad if proyecto.oportunidad_id else None
+    cliente_obj = opp.cliente if (opp and opp.cliente_id) else None
+
+    # Inferir servicios desde producto de la oportunidad
+    PRODUCTO_SERVICIO_MAP = {
+        'AVIGILION':  ['CCTV'],
+        'AXIS':       ['CCTV'],
+        'GENETEC':    ['CCTV'],
+        'ZEBRA':      ['CCTV'],
+        'PANDUIT':    ['Cableado Estructurado'],
+        'CISCO':      ['Cableado Estructurado', 'Telefonía'],
+        'APC':        [],
+    }
+    servicios_sugeridos = []
+    if opp and opp.producto:
+        servicios_sugeridos = PRODUCTO_SERVICIO_MAP.get(opp.producto.upper(), [])
+
     fase1_default = {
-        'cliente':     (proyecto.oportunidad.cliente.nombre_empresa if (proyecto.oportunidad and proyecto.oportunidad.cliente) else proyecto.cliente_nombre or ''),
-        'contacto':    '',
-        'area':        '',
+        'cliente':     (cliente_obj.nombre_empresa if cliente_obj else proyecto.cliente_nombre or ''),
+        'cliente_id':  (cliente_obj.id if cliente_obj else None),
+        'contacto':    (cliente_obj.contacto_principal if cliente_obj and cliente_obj.contacto_principal else
+                        (opp.contacto.nombre + ' ' + (opp.contacto.apellido or '')).strip() if (opp and opp.contacto_id) else ''),
+        'area':        (opp.get_area_display() if opp else ''),
         'fecha':       timezone.localdate().isoformat(),
-        'email':       '',
-        'telefono':    '',
-        'descripcion': proyecto.descripcion or '',
-        'servicios':   [],
+        'email':       (cliente_obj.email or '') if cliente_obj else '',
+        'telefono':    (cliente_obj.telefono or '') if cliente_obj else '',
+        'descripcion': (opp.comentarios if (opp and opp.comentarios) else (proyecto.descripcion or '')),
+        'servicios':   servicios_sugeridos,
         'componentes': [],
         'productos':   [],
     }
