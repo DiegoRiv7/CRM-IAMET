@@ -399,10 +399,10 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    /* Llena la pantalla: 2 columnas (main + meta sidebar). Padding responsive
-       crece en pantallas anchas. Bottom padding generoso (120px) para que el
-       footer fixed no tape el contenido al hacer scroll al final. */
-    padding: 40px clamp(32px, 5vw, 80px) 120px;
+    overflow-x: hidden;
+    /* Padding-bottom MUY generoso para que ninguna sección quede tapada
+       por el footer del wizard al hacer scroll al final. */
+    padding: 40px clamp(32px, 5vw, 80px) 200px;
     width: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -410,7 +410,18 @@
     column-gap: 56px;
     row-gap: 28px;
     align-items: start;
+    /* scroll-behavior suave para mejor UX al click Siguiente/Anterior */
+    scroll-behavior: smooth;
 }
+/* Scrollbar visible del canvas — informa al usuario que hay scroll */
+.lw-canvas::-webkit-scrollbar { width: 10px; }
+.lw-canvas::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.45);
+    border-radius: 5px;
+    border: 2px solid #fff;
+}
+.lw-canvas::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.65); }
+.lw-canvas::-webkit-scrollbar-track { background: transparent; }
 
 /* Hero ocupa toda la columna izquierda en la primera fila */
 .lw-canvas > .lw-canvas-hero { grid-column: 1; grid-row: 1; }
@@ -517,14 +528,12 @@
     padding: 10px 0 0 28px;
     border-left: 1px solid #E2E8F0;
     min-height: 240px;
-    /* Evita que la sidebar crezca más alta que el viewport (scroll interno si
-       el resumen + metadatos superan la altura disponible) */
-    max-height: calc(100vh - 160px);
-    overflow-y: auto;
+    /* max-height + overflow retirados intencionalmente: afectaban el cálculo
+       de altura del grid y el scroll del canvas externo no alcanzaba al
+       final del contenido. Ahora el sidebar crece libremente y el scroll
+       del canvas está a cargo. Si el resumen es muy largo, el canvas
+       scrollea y la sidebar sticky se acomoda. */
 }
-/* Scrollbar sutil del sidebar */
-.lw-canvas-meta::-webkit-scrollbar { width: 4px; }
-.lw-canvas-meta::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 2px; }
 .lw-canvas-meta::before {
     content: "Datos de contacto";
     font-size: 11px;
@@ -1882,11 +1891,10 @@
 }
 
 /* ── Phase 1: Programa e implementación ──
-   Bloque con su propio scroll interno — siempre muestra una altura
-   acotada (~300px o menos si el viewport es corto) para que las filas
-   de Fechas, Turno, Apoyo, Personal y Equipo de Elevación quepan
-   juntas dentro del wizard sin que el footer las corte. Scroll interno
-   visible para que el usuario sepa que hay más abajo. */
+   El bloque expande libremente. El scroll es del CANVAS exterior, no
+   del bloque. Se quita max-height / overflow interno porque, dependiendo
+   del viewport y del sidebar sticky, el scroll interno a veces no se
+   accionaba y la sección quedaba cortada.  */
 .lw-impl-grid {
     display: flex;
     flex-direction: column;
@@ -1895,22 +1903,7 @@
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
     border-radius: 12px;
-    max-height: min(320px, calc(100vh - 480px));
-    overflow-y: auto;
-    /* Indicadores visuales de scroll cuando hay más contenido abajo:
-       un fade sutil en el borde inferior */
-    mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
 }
-/* Scrollbar visible (no demasiado) para comunicar scrolleabilidad */
-.lw-impl-grid::-webkit-scrollbar { width: 8px; }
-.lw-impl-grid::-webkit-scrollbar-thumb {
-    background: rgba(100, 116, 139, 0.35);
-    border-radius: 4px;
-    border: 2px solid #F8FAFC;
-}
-.lw-impl-grid::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 0.55); }
-.lw-impl-grid::-webkit-scrollbar-track { background: transparent; }
 .lw-impl-row {
     display: flex;
     flex-wrap: wrap;
