@@ -1881,7 +1881,11 @@
     font-weight: 500;
 }
 
-/* ── Phase 1: Programa e implementación ── */
+/* ── Phase 1: Programa e implementación ──
+   Se le da un max-height + overflow-y: auto para que nunca
+   quede cortado por el footer del wizard: cuando el contenido no cabe
+   en el viewport, la sección hace su propio scroll interno sin forzar
+   al usuario a pelear con el scroll externo.  */
 .lw-impl-grid {
     display: flex;
     flex-direction: column;
@@ -1890,7 +1894,13 @@
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
     border-radius: 12px;
+    max-height: 420px;
+    overflow-y: auto;
 }
+/* Scrollbar sutil para no romper el look minimal */
+.lw-impl-grid::-webkit-scrollbar { width: 6px; }
+.lw-impl-grid::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 3px; }
+.lw-impl-grid::-webkit-scrollbar-track { background: transparent; }
 .lw-impl-row {
     display: flex;
     flex-wrap: wrap;
