@@ -1500,6 +1500,11 @@
         _proyConfirmCallback = null;
     };
 
+    // Exponer el confirm bonito para que otros widgets (wizard del
+    // levantamiento, etc.) puedan reutilizar el mismo modal en lugar de
+    // usar window.confirm() feo del navegador.
+    window.proyConfirm = proyConfirm;
+
 
     // =========================================
     //  DETALLE / COMPLETAR ACTIVIDAD (PROGRAMA DE OBRA)
@@ -3477,17 +3482,22 @@
 
     // Elimina un levantamiento (con confirmación custom)
     window.levantamientoEliminar = function (levId) {
-        if (!confirm('¿Eliminar este levantamiento? Esta acción es permanente.')) return;
-        _fetch('/app/api/iamet/levantamientos/' + levId + '/eliminar/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: '{}',
-        }).then(function (resp) {
-            if (resp.success) {
-                renderLevantamientos(currentProjectId);
-            } else if (typeof showToast === 'function') {
-                showToast(resp.error || 'Error', 'error');
-            }
+        proyConfirm('Eliminar levantamiento', 'Esta acción es permanente. Se perderán los datos capturados en las 5 fases (propuesta técnica, volumetría, fotos, etc.). ¿Seguro que quieres eliminarlo?', {
+            textoConfirmar: 'Eliminar levantamiento',
+            onConfirm: function () {
+                _fetch('/app/api/iamet/levantamientos/' + levId + '/eliminar/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: '{}',
+                }).then(function (resp) {
+                    if (resp.success) {
+                        renderLevantamientos(currentProjectId);
+                        if (typeof showToast === 'function') showToast('Levantamiento eliminado', 'success');
+                    } else if (typeof showToast === 'function') {
+                        showToast(resp.error || 'Error al eliminar', 'error');
+                    }
+                });
+            },
         });
     };
 

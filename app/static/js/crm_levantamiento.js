@@ -96,13 +96,21 @@
         renderPhase(state.phase);
     };
 
-    window.levantamientoWizardClose = function () {
-        if (state.dirty) {
-            if (!confirm('Hay cambios sin guardar. ¿Cerrar sin guardar?')) return;
+    // Helper: confirm custom con widget de proyectos, fallback a window.confirm
+    function lwConfirm(titulo, mensaje, opts) {
+        opts = opts || {};
+        if (typeof window.proyConfirm === 'function') {
+            window.proyConfirm(titulo, mensaje, {
+                textoConfirmar: opts.textoConfirmar || 'Eliminar',
+                color: opts.color || '#EF4444',
+                onConfirm: opts.onConfirm,
+            });
+            return;
         }
-        // Pequeña celebración al cerrar si hay progreso — refuerza que
-        // el trabajo quedó guardado, evita la ansiedad de "se perdió lo
-        // que hice?".
+        if (window.confirm(mensaje)) { if (opts.onConfirm) opts.onConfirm(); }
+    }
+
+    function _doCloseWizard() {
         var d = (state.lev && state.lev.fase1_data) || {};
         var haveName = !!(state.lev && (state.lev.nombre || '').trim());
         var haveProducts = ((d.productos || []).length > 0);
@@ -110,7 +118,6 @@
         if (ov) ov.style.display = 'none';
         document.body.style.overflow = '';
         if (haveName && haveProducts) {
-            // Toast al nivel del documento (no del overlay, que ya se cerró)
             _globalCheer('✓ Levantamiento guardado', 'Queda en borrador hasta que lo aprueben.');
         }
         state.lev = null;
@@ -119,6 +126,18 @@
         if (typeof window.levantamientoRefrescarLista === 'function') {
             window.levantamientoRefrescarLista();
         }
+    }
+
+    window.levantamientoWizardClose = function () {
+        if (state.dirty) {
+            lwConfirm('Cambios sin guardar', 'Si cierras ahora perderás los últimos cambios que no alcanzaron a guardarse. ¿Seguro que quieres cerrar?', {
+                textoConfirmar: 'Cerrar sin guardar',
+                color: '#F59E0B',
+                onConfirm: _doCloseWizard,
+            });
+            return;
+        }
+        _doCloseWizard();
     };
 
     // Toast global (fuera del overlay) para notificaciones post-cierre
@@ -317,6 +336,11 @@
     // ── Auto-save (debounce 600ms) ───────────────────────────
     window.lwFieldChange = function () {
         state.dirty = true;
+        // Refrescar el checklist y resumen en vivo (Fase 1) — si borras
+        // un campo, la marca desaparece inmediatamente.
+        if (state.phase === 1 && typeof lwRecomputeSummary === 'function') {
+            try { lwRecomputeSummary(); } catch (e) { /* silencioso */ }
+        }
         if (state.saveTimer) clearTimeout(state.saveTimer);
         state.saveTimer = setTimeout(function () { lwSave(false); }, 600);
     };
@@ -396,6 +420,10 @@
         var t = $('lwTitle');
         if (t) t.textContent = state.lev.nombre || 'Levantamiento';
         state.dirty = true;
+        // Refrescar checklist en vivo (título es uno de los 6 items)
+        if (state.phase === 1 && typeof lwRecomputeSummary === 'function') {
+            try { lwRecomputeSummary(); } catch (e) { /* silencioso */ }
+        }
         if (_nombreTimer) clearTimeout(_nombreTimer);
         _nombreTimer = setTimeout(function () {
             apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/actualizar/', {
@@ -785,16 +813,24 @@
 
     // Checklist de Fase 1 — 6 items requeridos. Cada ✓ da feedback
     // inmediato al ingeniero ("llevo 4 de 6").
+    // Lee directo del DOM (con fallback al state) para que el usuario
+    // vea el cambio en tiempo real al escribir / borrar un campo —
+    // antes sólo se actualizaba al auto-save (stale state).
+    function _ckVal(id, stateFallback) {
+        var el = document.getElementById(id);
+        if (el) return (el.value || '').trim();
+        return (stateFallback || '').toString().trim();
+    }
     function lwRenderChecklist() {
         if (!state.lev) return;
         var d = state.lev.fase1_data || {};
         var items = [
-            { key: 'titulo',      label: 'Título del levantamiento',  done: !!(state.lev.nombre || '').trim() },
-            { key: 'cliente',     label: 'Cliente',                   done: !!((d.cliente || '').trim()) },
-            { key: 'contacto',    label: 'Contacto',                  done: !!((d.contacto || '').trim()) },
-            { key: 'descripcion', label: 'Descripción de la necesidad',done: !!((d.descripcion || '').trim()) },
-            { key: 'servicios',   label: 'Al menos 1 servicio',       done: (d.servicios || []).length > 0 },
-            { key: 'productos',   label: 'Al menos 1 producto',       done: (d.productos || []).length > 0 },
+            { key: 'titulo',      label: 'Título del levantamiento',   done: !!_ckVal('lw_f1_titulo', state.lev.nombre) },
+            { key: 'cliente',     label: 'Cliente',                    done: !!_ckVal('lw_f1_cliente', d.cliente) },
+            { key: 'contacto',    label: 'Contacto',                   done: !!_ckVal('lw_f1_contacto', d.contacto) },
+            { key: 'descripcion', label: 'Descripción de la necesidad',done: !!_ckVal('lw_f1_descripcion', d.descripcion) },
+            { key: 'servicios',   label: 'Al menos 1 servicio',        done: (d.servicios || []).length > 0 },
+            { key: 'productos',   label: 'Al menos 1 producto',        done: (d.productos || []).length > 0 },
         ];
         var done = items.filter(function (i) { return i.done; }).length;
         var total = items.length;
@@ -1311,16 +1347,23 @@
         Array.from(files).forEach(function (f) { uploadEvidencia(f); });
     };
     window.lwP2DeleteEvidencia = function (id) {
-        if (!confirm('¿Eliminar esta foto?')) return;
-        apiFetch('/app/api/iamet/evidencias/' + id + '/eliminar/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: '{}',
-        }).then(function (r) {
-            if (r.success) {
-                state.lev.evidencias = (state.lev.evidencias || []).filter(function (e) { return e.id !== id; });
-                renderPhase2Photos();
-            }
+        lwConfirm('Eliminar foto', '¿Seguro que quieres eliminar esta foto de la evidencia? Esta acción es permanente.', {
+            textoConfirmar: 'Eliminar foto',
+            onConfirm: function () {
+                apiFetch('/app/api/iamet/evidencias/' + id + '/eliminar/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}',
+                }).then(function (r) {
+                    if (r.success) {
+                        state.lev.evidencias = (state.lev.evidencias || []).filter(function (e) { return e.id !== id; });
+                        renderPhase2Photos();
+                        lwCheer('Foto eliminada');
+                    } else {
+                        alert(r.error || 'No se pudo eliminar');
+                    }
+                });
+            },
         });
     };
     function uploadEvidencia(file) {
