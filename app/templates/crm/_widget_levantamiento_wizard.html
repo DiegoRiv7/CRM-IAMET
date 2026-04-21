@@ -593,8 +593,10 @@
         <img id="lwLightboxImg" src="">
     </div>
 
-    <!-- Botón flotante de ayuda + mini FAQ panel -->
-    <button type="button" class="lw-help-fab" id="lwHelpFab" onclick="lwHelpToggle()" title="Ayuda" aria-label="Abrir ayuda">
+    <!-- Botón flotante de ayuda + mini FAQ panel — OCULTO temporalmente
+         hasta perfeccionar el contenido. No lo borramos para mantener
+         el panel asociado operativo (por si se reactiva). -->
+    <button type="button" class="lw-help-fab" id="lwHelpFab" onclick="lwHelpToggle()" title="Ayuda" aria-label="Abrir ayuda" style="display:none;">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </button>
 
