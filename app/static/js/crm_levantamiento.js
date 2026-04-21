@@ -873,6 +873,39 @@
         _lwApplyMode(saved === 'full' ? 'full' : 'simple');
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    //  HELP PANEL FAB (mini FAQ)
+    // ═══════════════════════════════════════════════════════════════
+    window.lwHelpToggle = function () {
+        var panel = $('lwHelpPanel');
+        var fab = $('lwHelpFab');
+        if (!panel) return;
+        var open = panel.style.display !== 'none';
+        if (open) {
+            panel.classList.add('lw-help-panel-out');
+            setTimeout(function () {
+                panel.style.display = 'none';
+                panel.classList.remove('lw-help-panel-out');
+            }, 180);
+            if (fab) fab.classList.remove('lw-help-fab-active');
+        } else {
+            panel.style.display = 'flex';
+            if (fab) fab.classList.add('lw-help-fab-active');
+        }
+    };
+    window.lwHelpExpand = function (qEl) {
+        var item = qEl.closest('.lw-help-item');
+        if (!item) return;
+        // Toggle solo éste (UX tipo FAQ)
+        var wasOpen = item.classList.contains('open');
+        // Cierra todos
+        var panel = $('lwHelpPanel');
+        if (panel) {
+            panel.querySelectorAll('.lw-help-item.open').forEach(function (x) { x.classList.remove('open'); });
+        }
+        if (!wasOpen) item.classList.add('open');
+    };
+
     function lwRecomputeSummary() {
         if (!state.lev) return;
         lwRenderChecklist();

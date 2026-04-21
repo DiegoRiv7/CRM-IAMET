@@ -562,4 +562,80 @@
     <div class="lw-lightbox" id="lwLightbox" style="display:none;" onclick="this.style.display='none'">
         <img id="lwLightboxImg" src="">
     </div>
+
+    <!-- Botón flotante de ayuda + mini FAQ panel -->
+    <button type="button" class="lw-help-fab" id="lwHelpFab" onclick="lwHelpToggle()" title="Ayuda" aria-label="Abrir ayuda">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+
+    <div class="lw-help-panel" id="lwHelpPanel" style="display:none;">
+        <div class="lw-help-head">
+            <div>
+                <div class="lw-help-title">¿Cómo te ayudo?</div>
+                <div class="lw-help-sub">Preguntas frecuentes y atajos del wizard</div>
+            </div>
+            <button type="button" class="lw-help-close" onclick="lwHelpToggle()" aria-label="Cerrar ayuda">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="lw-help-items">
+            <div class="lw-help-item">
+                <div class="lw-help-q" onclick="lwHelpExpand(this)">
+                    <span>🧩</span> ¿Cómo agrego productos rápido?
+                    <svg class="lw-help-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="lw-help-a">
+                    Tres formas: <b>(1)</b> click en las pills de colores del empty state para los más comunes (Cámara IP, NVR, Cable Cat6, etc), <b>(2)</b> botón "Agregar producto" o <kbd>⌘K</kbd> para buscar en el catálogo completo, <b>(3)</b> arrastra una fila existente para cambiar el orden.
+                </div>
+            </div>
+            <div class="lw-help-item">
+                <div class="lw-help-q" onclick="lwHelpExpand(this)">
+                    <span>📸</span> ¿Cómo agrego fotos de evidencia?
+                    <svg class="lw-help-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="lw-help-a">
+                    Ve a la Fase 2 (Propuesta Técnica). En la zona "Evidencia fotográfica" puedes: arrastrar fotos desde el escritorio, pegar desde el portapapeles con <kbd>⌘V</kbd>, o clickear "Seleccionar archivos". Solo JPG, PNG y WebP (HEIC del iPhone no funciona).
+                </div>
+            </div>
+            <div class="lw-help-item">
+                <div class="lw-help-q" onclick="lwHelpExpand(this)">
+                    <span>📄</span> ¿Cómo exporto el PDF?
+                    <svg class="lw-help-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="lw-help-a">
+                    En Fase 1 o Fase 2, arriba a la derecha, click en el botón <b>PDF</b>. Elige: "Ver en pestaña" para previsualizar o "Descargar" para guardar. En Fase 1 genera el <b>Levantamiento en Sitio</b>; en Fase 2 genera la <b>Propuesta Técnica</b>.
+                </div>
+            </div>
+            <div class="lw-help-item">
+                <div class="lw-help-q" onclick="lwHelpExpand(this)">
+                    <span>✅</span> ¿Qué tengo que llenar para completar la Fase 1?
+                    <svg class="lw-help-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="lw-help-a">
+                    Mira la sidebar derecha — tienes una checklist con los 6 items mínimos (Título, Cliente, Contacto, Descripción, Servicios, Productos). Cada uno cambia a ✓ verde al cumplirse. Cuando llegues a 6/6 te aviso con una notificación.
+                </div>
+            </div>
+            <div class="lw-help-item">
+                <div class="lw-help-q" onclick="lwHelpExpand(this)">
+                    <span>🎨</span> ¿Qué hace el toggle "Modo simple"?
+                    <svg class="lw-help-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="lw-help-a">
+                    En modo simple se ocultan campos avanzados (Programa e implementación, notas por partida) para que veas solo lo esencial. Cuando domines el flujo básico, activa Modo Completo para ver todo. Tu preferencia se recuerda.
+                </div>
+            </div>
+            <div class="lw-help-item">
+                <div class="lw-help-q" onclick="lwHelpExpand(this)">
+                    <span>💾</span> ¿Y si se cierra sin querer? ¿Se pierde mi trabajo?
+                    <svg class="lw-help-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="lw-help-a">
+                    <b>No se pierde.</b> El wizard auto-guarda mientras escribes (cada 600ms). En el header siempre ves "Guardado hace X" confirmando. Además solo cierras con la X — ni Esc ni click fuera. Si tienes cambios sin guardar, te pregunta antes de cerrar.
+                </div>
+            </div>
+        </div>
+        <div class="lw-help-foot">
+            ¿Aún tienes dudas? Contacta al equipo o usa <kbd>?</kbd> en cualquier etiqueta para más detalles.
+        </div>
+    </div>
 </div>
