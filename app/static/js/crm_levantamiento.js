@@ -282,17 +282,28 @@
             // no se dispara — resultado: contenido cortado por el footer.
             if (el) el.style.display = (i === n) ? 'flex' : 'none';
         }
-        // Botón PDF visible en Fase 1 (Levantamiento en Sitio) y Fase 2 (Propuesta)
+        // Botón PDF visible en Fase 1 (Levantamiento), Fase 2 (Propuesta) y Fase 3 (Volumetría)
         var pdfWrap = $('lwPdfWrap');
-        if (pdfWrap) pdfWrap.style.display = (n === 1 || n === 2) ? '' : 'none';
+        if (pdfWrap) pdfWrap.style.display = (n === 1 || n === 2 || n === 3) ? '' : 'none';
         var pdfMenu = $('lwPdfMenu');
         if (pdfMenu) pdfMenu.style.display = 'none';
-        // Actualizar labels del menú según la fase
-        var menuItems = document.querySelectorAll('.lw-pdf-menu-item-title');
-        if (menuItems.length >= 2) {
-            var docLabel = n === 1 ? 'Levantamiento' : 'Propuesta';
-            menuItems[0].textContent = 'Ver ' + docLabel + ' en pestaña';
-            menuItems[1].textContent = 'Descargar ' + docLabel + ' PDF';
+        // Label del botón
+        var btnLbl = $('lwPdfBtnLbl');
+        if (btnLbl) btnLbl.textContent = (n === 3) ? 'Exportar' : 'PDF';
+        // Alternar grupos del menú: 'std' (Fases 1/2) vs 'vol' (Fase 3)
+        var stdItems = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="std"]');
+        var volItems = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="vol"]');
+        var isVol = (n === 3);
+        stdItems.forEach(function (el) { el.style.display = isVol ? 'none' : ''; });
+        volItems.forEach(function (el) { el.style.display = isVol ? '' : 'none'; });
+        // Actualizar labels del menú std según la fase
+        if (!isVol) {
+            var stdTitles = document.querySelectorAll('.lw-pdf-menu-item[data-menu-group="std"] .lw-pdf-menu-item-title');
+            if (stdTitles.length >= 2) {
+                var docLabel = n === 1 ? 'Levantamiento' : 'Propuesta';
+                stdTitles[0].textContent = 'Ver ' + docLabel + ' en pestaña';
+                stdTitles[1].textContent = 'Descargar ' + docLabel + ' PDF';
+            }
         }
 
         if (n === 1) renderPhase1();
@@ -1451,19 +1462,33 @@
         if (!wrap.contains(e.target)) menu.style.display = 'none';
     });
 
-    // Genera el PDF usando el endpoint server-side (WeasyPrint).
-    // El endpoint depende de la fase actual:
-    //   Fase 1 → /levantamiento-pdf/ (formato "Levantamiento en Sitio")
-    //   Fase 2 → /propuesta-pdf/     (formato "Propuesta Técnica")
-    // mode: 'view' → abre en pestaña nueva para previsualizar
-    //       'download' → fuerza descarga
+    // Genera el PDF/Excel vía endpoint server-side.
+    //   Fase 1 → /levantamiento-pdf/     modes: 'view' | 'download'
+    //   Fase 2 → /propuesta-pdf/         modes: 'view' | 'download'
+    //   Fase 3 → /volumetria-pdf/ + /volumetria-xlsx/
+    //            modes: 'view-vol-full' | 'dl-vol-full' | 'dl-vol-nocost' | 'dl-vol-xlsx'
     window.lwPdfExport = function (mode) {
         if (!state.lev) return;
         $('lwPdfMenu').style.display = 'none';
-        var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
-        var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/' + endpoint + '/';
-        var url = base + (mode === 'download' ? '?download=1' : '');
-        // Guardar primero para que el PDF tenga la data fresca
+        var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/';
+        var url;
+        if (state.phase === 3) {
+            if (mode === 'dl-vol-xlsx') {
+                url = base + 'volumetria-xlsx/';
+            } else if (mode === 'view-vol-full') {
+                url = base + 'volumetria-pdf/';
+            } else if (mode === 'dl-vol-full') {
+                url = base + 'volumetria-pdf/?download=1';
+            } else if (mode === 'dl-vol-nocost') {
+                url = base + 'volumetria-pdf/?download=1&sin_costos=1';
+            } else {
+                return;
+            }
+        } else {
+            var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
+            url = base + endpoint + '/' + (mode === 'download' ? '?download=1' : '');
+        }
+        // Guardar primero para que el export tenga la data fresca
         lwSave(false).then(function () { window.open(url, '_blank'); })
             .catch(function () { window.open(url, '_blank'); });
     };

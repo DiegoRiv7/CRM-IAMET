@@ -2848,6 +2848,414 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
     return response
 
 
+# ─── VOLUMETRÍA: helpers compartidos (PDF + XLSX) ─────────────────
+def _fmt_money(val, symbol=True):
+    """Formato de moneda: $1,234.56 o 1,234.56."""
+    try:
+        n = float(val or 0)
+    except (TypeError, ValueError):
+        n = 0.0
+    if abs(n) < 0.005 and n != 0:
+        n = 0.0
+    s = '{:,.2f}'.format(n)
+    return ('$' + s) if symbol else s
+
+
+def _fmt_qty(val):
+    try:
+        n = float(val or 0)
+    except (TypeError, ValueError):
+        return '0'
+    if n == int(n):
+        return str(int(n))
+    return '{:,.2f}'.format(n)
+
+
+def _build_volumetria_ctx(lev, sin_costos=False):
+    """Construye el contexto de volumetría (usado por PDF y XLSX).
+
+    Retorna un dict con materiales/mano_obra/gastos (filas formateadas) y totales.
+    """
+    f1 = lev.fase1_data or {}
+    f2 = lev.fase2_data or {}
+    f3 = lev.fase3_data or {}
+
+    def _num(x):
+        try:
+            return float(x or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    # ── Materiales ──
+    materiales = []
+    tot_mat_venta = 0.0
+    tot_mat_costo = 0.0
+    for r in (f3.get('materiales') or []):
+        qty = _num(r.get('qty'))
+        costo_u = _num(r.get('costoUnit'))
+        precio_l = _num(r.get('precioLista'))
+        desc_c = _num(r.get('descCompra'))
+        desc_v = _num(r.get('descVenta'))
+        costo_real = costo_u * (1 - desc_c / 100)
+        precio_real = precio_l * (1 - desc_v / 100)
+        costo_total = costo_real * qty
+        precio_venta = precio_real * qty
+        tot_mat_venta += precio_venta
+        tot_mat_costo += costo_total
+        materiales.append({
+            'qty': qty, 'qty_fmt': _fmt_qty(qty),
+            'unid': r.get('unid') or 'PZA',
+            'desc': r.get('desc') or '',
+            'marca': r.get('marca') or '',
+            'modelo': r.get('modelo') or '',
+            'proveedor': r.get('proveedor') or '',
+            'entrega': r.get('entrega') or '',
+            'precio_lista': precio_l, 'precio_lista_fmt': _fmt_money(precio_l),
+            'desc_venta': desc_v, 'desc_venta_fmt': ('{:.1f}%'.format(desc_v) if desc_v else '—'),
+            'precio_unit': precio_real, 'precio_unit_fmt': _fmt_money(precio_real),
+            'precio_venta': precio_venta, 'precio_venta_fmt': _fmt_money(precio_venta),
+            'costo_unit': costo_real, 'costo_unit_fmt': _fmt_money(costo_real),
+            'costo_total': costo_total, 'costo_total_fmt': _fmt_money(costo_total),
+        })
+
+    # ── Mano de obra ──
+    mano_obra = []
+    tot_mo = 0.0
+    for r in (f3.get('manoObra') or []):
+        qty = _num(r.get('qty'))
+        p_unit = _num(r.get('precioUnit'))
+        total = qty * p_unit
+        tot_mo += total
+        mano_obra.append({
+            'qty': qty, 'qty_fmt': _fmt_qty(qty),
+            'unid': r.get('unid') or 'SERV',
+            'desc': r.get('desc') or '',
+            'precio_unit': p_unit, 'precio_unit_fmt': _fmt_money(p_unit),
+            'total': total, 'total_fmt': _fmt_money(total),
+        })
+
+    # ── Gastos ──
+    gastos = []
+    tot_gas = 0.0
+    for r in (f3.get('gastos') or []):
+        qty = _num(r.get('qty'))
+        c_unit = _num(r.get('costoUnit'))
+        total = qty * c_unit
+        tot_gas += total
+        gastos.append({
+            'qty': qty, 'qty_fmt': _fmt_qty(qty),
+            'unid': r.get('unid') or 'GLOB',
+            'desc': r.get('desc') or '',
+            'costo_unit': c_unit, 'costo_unit_fmt': _fmt_money(c_unit),
+            'total': total, 'total_fmt': _fmt_money(total),
+        })
+
+    total_venta = tot_mat_venta + tot_mo + tot_gas
+    total_costo = tot_mat_costo + tot_gas
+    utilidad = total_venta - total_costo
+    margen = (utilidad / total_venta * 100) if total_venta > 0 else 0.0
+
+    import datetime as _dt
+    def _fmt_fecha(iso):
+        if not iso:
+            return ''
+        try:
+            dt = _dt.datetime.strptime(str(iso)[:10], '%Y-%m-%d')
+        except Exception:
+            return iso
+        meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
+
+    return {
+        'lev': lev,
+        'sin_costos': sin_costos,
+        'cliente_nombre': f1.get('cliente') or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
+        'elaboro': f2.get('elaboro') or (lev.creado_por.get_full_name() if lev.creado_por else ''),
+        'doc_fecha_fmt': _fmt_fecha(f2.get('doc_fecha') or timezone.localdate().isoformat()),
+        'solicitante': f2.get('solicitante') or f1.get('contacto') or '',
+        'planta': f2.get('planta') or f1.get('cliente') or '',
+        'areas': f2.get('areas') or f1.get('area') or '',
+        'materiales': materiales,
+        'mano_obra': mano_obra,
+        'gastos': gastos,
+        'tot_mat_venta': tot_mat_venta, 'tot_mat_venta_fmt': _fmt_money(tot_mat_venta),
+        'tot_mat_costo': tot_mat_costo, 'tot_mat_costo_fmt': _fmt_money(tot_mat_costo),
+        'tot_mo': tot_mo, 'tot_mo_fmt': _fmt_money(tot_mo),
+        'tot_gas': tot_gas, 'tot_gas_fmt': _fmt_money(tot_gas),
+        'total_venta': total_venta, 'total_venta_fmt': _fmt_money(total_venta),
+        'total_costo': total_costo, 'total_costo_fmt': _fmt_money(total_costo),
+        'utilidad': utilidad, 'utilidad_fmt': _fmt_money(utilidad),
+        'margen_pct': '{:.1f}'.format(margen),
+    }
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_levantamiento_volumetria_pdf(request, levantamiento_id):
+    """PDF de volumetría. Params:
+      ?download=1      → fuerza descarga (attachment)
+      ?sin_costos=1    → genera sin columnas de costo ni resumen financiero
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    import os
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto', 'creado_por').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    def _static_file_url(rel_path):
+        candidates = []
+        if getattr(settings, 'STATIC_ROOT', None):
+            candidates.append(os.path.join(settings.STATIC_ROOT, rel_path))
+        candidates.append(os.path.join(settings.BASE_DIR, 'app', 'static', rel_path))
+        for p in candidates:
+            if os.path.exists(p):
+                return 'file://' + p
+        return ''
+
+    sin_costos = bool(request.GET.get('sin_costos'))
+    ctx = _build_volumetria_ctx(lev, sin_costos=sin_costos)
+    ctx.update({
+        'bajanet_hero_url': _static_file_url('images/propuesta/bajanet_hero.jpeg'),
+        'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
+        'empresa_tel': '664 000 0000',
+        'empresa_web': 'www.iamet.mx',
+        'empresa_direccion': 'Tijuana, B.C.',
+    })
+
+    html = render_to_string('crm/levantamiento_volumetria_pdf.html', ctx, request=request)
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'volumetria')).strip()[:80] or 'volumetria'
+    suffix = '_SinCostos' if sin_costos else ''
+    filename = f'Volumetria_{safe_name}{suffix}.pdf'
+    disp = 'attachment' if request.GET.get('download') else 'inline'
+    response['Content-Disposition'] = f'{disp}; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_levantamiento_volumetria_xlsx(request, levantamiento_id):
+    """Exporta la volumetría en formato Excel replicando el layout tradicional
+    (header con cliente/proyecto/contacto/elaboró, tabla de equipamiento agrupada,
+    mano de obra y resumen)."""
+    from django.http import HttpResponse
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto', 'creado_por').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        return JsonResponse({'success': False, 'error': 'openpyxl no está instalado'}, status=500)
+
+    ctx = _build_volumetria_ctx(lev, sin_costos=False)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Volumetria'
+
+    # Estilos
+    blue_fill = PatternFill('solid', fgColor='2563EB')
+    band_fill = PatternFill('solid', fgColor='E8F1FB')
+    section_fill = PatternFill('solid', fgColor='FFF7ED')
+    header_fill = PatternFill('solid', fgColor='F1F5F9')
+    total_fill = PatternFill('solid', fgColor='EFF6FF')
+    white = Font(color='FFFFFF', bold=True, name='Calibri', size=11)
+    band_font = Font(color='1D4ED8', bold=True, name='Calibri', size=10)
+    header_font = Font(color='475569', bold=True, name='Calibri', size=10)
+    bold = Font(bold=True)
+    thin = Side(style='thin', color='DBE6F3')
+    border = Border(top=thin, bottom=thin, left=thin, right=thin)
+    money_fmt = '"$"#,##0.00'
+
+    # ── Header: Cliente / Proyecto / Fecha / Contacto / Elaboró ──
+    ws['A1'] = 'Cliente'; ws['A1'].font = band_font; ws['A1'].fill = band_fill
+    ws['B1'] = ctx['cliente_nombre']; ws['B1'].font = bold
+    ws['D1'] = 'Contacto:'; ws['D1'].font = band_font; ws['D1'].fill = band_fill
+    ws['E1'] = ctx['solicitante']
+    ws['K1'] = 'Fecha:'; ws['K1'].font = band_font; ws['K1'].fill = band_fill
+    ws['L1'] = ctx['doc_fecha_fmt']
+
+    ws['A2'] = 'Proyecto'; ws['A2'].font = band_font; ws['A2'].fill = band_fill
+    ws['B2'] = lev.nombre or ''; ws['B2'].font = bold
+    ws['D2'] = 'Elaboró:'; ws['D2'].font = band_font; ws['D2'].fill = band_fill
+    ws['E2'] = ctx['elaboro']
+    ws['K2'] = 'Planta:'; ws['K2'].font = band_font; ws['K2'].fill = band_fill
+    ws['L2'] = ctx['planta']
+
+    # ── Equipamiento / Materiales ──
+    # Fila 4: grupo título
+    ws.cell(row=4, column=1, value='EQUIPAMIENTO / MATERIALES').font = Font(bold=True, color='9A3412', size=11)
+    ws.cell(row=4, column=1).fill = section_fill
+    ws.merge_cells(start_row=4, start_column=1, end_row=4, end_column=12)
+
+    # Fila 5: encabezados
+    headers = ['Marca', 'No. Parte', 'Cantidad', 'Unid', 'Descripción',
+               'Precio Lista', 'Desc V%', 'Precio Venta', 'Costo Unit', 'Costo Total',
+               'Proveedor', 'Entrega']
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=5, column=i, value=h)
+        c.font = header_font; c.fill = header_fill; c.border = border
+        c.alignment = Alignment(horizontal='center', vertical='center')
+
+    r = 6
+    for m in ctx['materiales']:
+        ws.cell(row=r, column=1, value=m['marca'])
+        ws.cell(row=r, column=2, value=m['modelo'])
+        ws.cell(row=r, column=3, value=m['qty'])
+        ws.cell(row=r, column=4, value=m['unid'])
+        ws.cell(row=r, column=5, value=m['desc'])
+        c_pl = ws.cell(row=r, column=6, value=m['precio_lista']); c_pl.number_format = money_fmt
+        ws.cell(row=r, column=7, value=m['desc_venta']).number_format = '0.0"%"'
+        c_pv = ws.cell(row=r, column=8, value=m['precio_venta']); c_pv.number_format = money_fmt; c_pv.font = bold
+        c_cu = ws.cell(row=r, column=9, value=m['costo_unit']); c_cu.number_format = money_fmt
+        c_ct = ws.cell(row=r, column=10, value=m['costo_total']); c_ct.number_format = money_fmt
+        ws.cell(row=r, column=11, value=m['proveedor'])
+        ws.cell(row=r, column=12, value=m.get('entrega') or '')
+        for col in range(1, 13):
+            ws.cell(row=r, column=col).border = border
+        r += 1
+
+    # Total materiales
+    if ctx['materiales']:
+        ws.cell(row=r, column=1, value='Subtotal Materiales').font = bold
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+        c_tv = ws.cell(row=r, column=8, value=ctx['tot_mat_venta'])
+        c_tv.number_format = money_fmt; c_tv.font = bold; c_tv.fill = total_fill
+        c_tc = ws.cell(row=r, column=10, value=ctx['tot_mat_costo'])
+        c_tc.number_format = money_fmt; c_tc.font = bold; c_tc.fill = total_fill
+        r += 2
+    else:
+        r += 1
+
+    # ── Mano de obra ──
+    ws.cell(row=r, column=1, value='MANO DE OBRA').font = Font(bold=True, color='9A3412', size=11)
+    ws.cell(row=r, column=1).fill = section_fill
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=12)
+    r += 1
+    mo_headers = ['', '', 'Cantidad', 'Unid', 'Descripción', 'Precio Unit', '', 'Total']
+    for i, h in enumerate(mo_headers, start=1):
+        c = ws.cell(row=r, column=i, value=h)
+        if h:
+            c.font = header_font; c.fill = header_fill; c.border = border
+            c.alignment = Alignment(horizontal='center', vertical='center')
+    r += 1
+    for mo in ctx['mano_obra']:
+        ws.cell(row=r, column=3, value=mo['qty'])
+        ws.cell(row=r, column=4, value=mo['unid'])
+        ws.cell(row=r, column=5, value=mo['desc'])
+        ws.cell(row=r, column=6, value=mo['precio_unit']).number_format = money_fmt
+        c_t = ws.cell(row=r, column=8, value=mo['total'])
+        c_t.number_format = money_fmt; c_t.font = bold
+        for col in range(3, 9):
+            ws.cell(row=r, column=col).border = border
+        r += 1
+    if ctx['mano_obra']:
+        ws.cell(row=r, column=1, value='Subtotal Mano de Obra').font = bold
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+        c_tmo = ws.cell(row=r, column=8, value=ctx['tot_mo'])
+        c_tmo.number_format = money_fmt; c_tmo.font = bold; c_tmo.fill = total_fill
+        r += 2
+    else:
+        r += 1
+
+    # ── Gastos ──
+    if ctx['gastos']:
+        ws.cell(row=r, column=1, value='GASTOS / VIÁTICOS').font = Font(bold=True, color='9A3412', size=11)
+        ws.cell(row=r, column=1).fill = section_fill
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=12)
+        r += 1
+        for i, h in enumerate(mo_headers, start=1):
+            c = ws.cell(row=r, column=i, value=h)
+            if h:
+                c.font = header_font; c.fill = header_fill; c.border = border
+                c.alignment = Alignment(horizontal='center', vertical='center')
+        r += 1
+        for g in ctx['gastos']:
+            ws.cell(row=r, column=3, value=g['qty'])
+            ws.cell(row=r, column=4, value=g['unid'])
+            ws.cell(row=r, column=5, value=g['desc'])
+            ws.cell(row=r, column=6, value=g['costo_unit']).number_format = money_fmt
+            c_t = ws.cell(row=r, column=8, value=g['total'])
+            c_t.number_format = money_fmt; c_t.font = bold
+            for col in range(3, 9):
+                ws.cell(row=r, column=col).border = border
+            r += 1
+        ws.cell(row=r, column=1, value='Subtotal Gastos').font = bold
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+        c_tg = ws.cell(row=r, column=8, value=ctx['tot_gas'])
+        c_tg.number_format = money_fmt; c_tg.font = bold; c_tg.fill = total_fill
+        r += 2
+
+    # ── Análisis de costos ──
+    ws.cell(row=r, column=1, value='ANÁLISIS DE COSTOS').font = Font(bold=True, color='FFFFFF', size=11)
+    ws.cell(row=r, column=1).fill = blue_fill
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=12)
+    r += 1
+    summary_rows = [
+        ('Subtotal Materiales (Venta)', ctx['tot_mat_venta']),
+        ('Subtotal Mano de Obra', ctx['tot_mo']),
+        ('Subtotal Gastos', ctx['tot_gas']),
+        ('TOTAL VENTA', ctx['total_venta']),
+        ('Total Costos', ctx['total_costo']),
+        ('Utilidad Bruta', ctx['utilidad']),
+    ]
+    for lbl, val in summary_rows:
+        ws.cell(row=r, column=1, value=lbl).font = bold
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+        c_v = ws.cell(row=r, column=8, value=val)
+        c_v.number_format = money_fmt; c_v.font = bold
+        if lbl == 'TOTAL VENTA':
+            c_v.fill = blue_fill; c_v.font = white
+            ws.cell(row=r, column=1).fill = blue_fill; ws.cell(row=r, column=1).font = white
+        elif lbl == 'Utilidad Bruta':
+            c_v.fill = PatternFill('solid', fgColor='ECFDF5')
+        r += 1
+    ws.cell(row=r, column=1, value=f"Margen Bruto: {ctx['margen_pct']}%").font = Font(bold=True, color='047857', size=11)
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+
+    # Anchos de columna
+    widths = {1: 14, 2: 16, 3: 10, 4: 8, 5: 46, 6: 14, 7: 9, 8: 14, 9: 13, 10: 14, 11: 14, 12: 12}
+    for col, w in widths.items():
+        ws.column_dimensions[get_column_letter(col)].width = w
+    # Wrap en descripciones
+    for row in ws.iter_rows(min_row=6, max_col=5):
+        for cell in row:
+            if cell.column == 5:
+                cell.alignment = Alignment(wrap_text=True, vertical='top')
+
+    # Response
+    from io import BytesIO
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'volumetria')).strip()[:80] or 'volumetria'
+    filename = f'Volumetria_{safe_name}.xlsx'
+    response = HttpResponse(
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
 @login_required
 @require_http_methods(["GET"])
 def api_catalogo_productos(request):
