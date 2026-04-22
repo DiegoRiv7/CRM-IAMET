@@ -3148,17 +3148,22 @@
 }
 
 .lw-island {
-    flex: 0 0 auto;
-    width: 480px;
+    /* Se expanden para llenar el ancho disponible — desde 440px
+       (pantallas estandar) hasta 720px (monitores grandes). Las 4
+       islas con flex-grow se reparten todo el viewport sin dejar
+       espacio vacio a la derecha. */
+    flex: 1 1 440px;
+    min-width: 440px;
+    max-width: 720px;
     background: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 0 3px rgba(15, 23, 42, 0.02);
-    border: 1px solid rgba(15, 23, 42, 0.03);
+    border-radius: 18px;
+    /* Shadow mas sutil, sin bordes — look flotante minimalista */
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.04);
+    border: none;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     align-self: stretch;
-    /* Snap para que cada isla se posicione completa al scrollear */
     scroll-snap-align: start;
     scroll-snap-stop: always;
 }
@@ -3178,8 +3183,7 @@
 .lw-island-body-alcance { gap: 24px; }
 
 .lw-island-header {
-    padding: 20px 22px;
-    border-bottom: 1px solid #E2E8F0;
+    padding: 22px 24px 8px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -3346,20 +3350,17 @@ label.lw-soft-input {
 .lw-soft-textarea::placeholder { color: #94A3B8; font-weight: 400; }
 
 /* ── Footer flotante con progreso ─────────────────────────────── */
-/* Barra de progreso — ARRIBA del board (no flotante al pie como antes).
-   Se muestra en un card compacto full-width que es lo primero que
-   ve el ingeniero al entrar a Fase 1. */
+/* Barra de progreso — ARRIBA del board, minimalista sin borde. */
 .lw-islands-footer {
     flex-shrink: 0;
     margin: 16px 24px 0;
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: transparent;
+    border: none;
     border-radius: 14px;
-    padding: 12px 18px;
+    padding: 4px 4px;
     display: flex;
     align-items: center;
     gap: 20px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     z-index: 5;
 }
 .lw-islands-progress-info {
