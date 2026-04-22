@@ -2971,6 +2971,16 @@ def _build_volumetria_ctx(lev, sin_costos=False):
         meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
         return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
 
+    # Tipo de cambio — USD → MXN (se captura en Fase 3)
+    tc_raw = f3.get('tipo_cambio')
+    try:
+        tc = float(tc_raw) if tc_raw else 0.0
+    except (TypeError, ValueError):
+        tc = 0.0
+    if not tc or tc <= 0:
+        tc = 19.5  # fallback razonable
+    tc_fecha = f3.get('tipo_cambio_fecha') or ''
+
     return {
         'lev': lev,
         'sin_costos': sin_costos,
@@ -2991,6 +3001,16 @@ def _build_volumetria_ctx(lev, sin_costos=False):
         'total_costo': total_costo, 'total_costo_fmt': _fmt_money(total_costo),
         'utilidad': utilidad, 'utilidad_fmt': _fmt_money(utilidad),
         'margen_pct': '{:.1f}'.format(margen),
+        # Conversión MXN con TC
+        'tipo_cambio': tc,
+        'tipo_cambio_fmt': '{:,.2f}'.format(tc),
+        'tipo_cambio_fecha': tc_fecha,
+        'tot_mat_venta_mxn_fmt': _fmt_money(tot_mat_venta * tc),
+        'tot_mo_mxn_fmt': _fmt_money(tot_mo * tc),
+        'tot_gas_mxn_fmt': _fmt_money(tot_gas * tc),
+        'total_venta_mxn_fmt': _fmt_money(total_venta * tc),
+        'total_costo_mxn_fmt': _fmt_money(total_costo * tc),
+        'utilidad_mxn_fmt': _fmt_money(utilidad * tc),
     }
 
 

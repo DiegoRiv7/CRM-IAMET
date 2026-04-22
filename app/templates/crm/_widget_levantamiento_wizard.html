@@ -40,6 +40,12 @@
                     <span class="lw-mode-slider"></span>
                     <span class="lw-mode-label" id="lwModeLabel">Modo simple</span>
                 </label>
+                <!-- Toggle sidebar (datos contacto + progreso + resumen) -->
+                <button type="button" class="lw-sidebar-toggle" id="lwSidebarToggle"
+                        onclick="lwSidebarToggle()" title="Mostrar / ocultar panel lateral"
+                        aria-label="Panel lateral">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>
+                </button>
                 <span class="lw-save-stamp" id="lwSaveStamp"></span>
                 <span class="lw-save-indicator" id="lwSaveIndicator"></span>
 
@@ -477,18 +483,49 @@
             <div class="lw-phase" data-phase="3" id="lwPhase3" style="display:none;">
                 <div class="lw-p3-wrap">
                     <div class="lw-p3-tables">
+                        <!-- Banner: precios en USD -->
+                        <div class="lw-p3-usd-note">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            Todos los precios y costos en <b>USD</b>. El resumen financiero se convierte a MXN usando el tipo de cambio del panel lateral.
+                        </div>
+
                         <!-- Materiales -->
                         <div class="lw-section">
                             <div class="lw-section-row">
                                 <div class="lw-section-label">Tabla 1 — Equipamiento / Materiales</div>
-                                <button type="button" class="lw-add-btn" onclick="lwP3AddRow('materiales')">+ Fila</button>
+                                <div style="display:flex;gap:8px;">
+                                    <button type="button" class="lw-ghost-btn" onclick="lwP3OpenCatalog()">
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                        Buscar en catálogo
+                                    </button>
+                                    <button type="button" class="lw-add-btn" onclick="lwP3AddRow('materiales')">+ Fila vacía</button>
+                                </div>
                             </div>
+
+                            <!-- Catalog box para Fase 3 (modal-style) -->
+                            <div class="lw-catalog-box" id="lwP3CatalogBox" style="display:none;margin-bottom:10px;">
+                                <div class="lw-catalog-search">
+                                    <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                    <input type="text" id="lwP3CatalogSearch" placeholder="Buscar por descripción, marca, No. de parte…" oninput="lwP3CatalogSearch()">
+                                    <button type="button" class="lw-catalog-close" onclick="lwP3CloseCatalog()" title="Cerrar">
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+                                <div class="lw-catalog-list" id="lwP3CatalogList">
+                                    <div class="lw-catalog-empty">Escribe para buscar en el catálogo…</div>
+                                </div>
+                            </div>
+
                             <div class="lw-p3-tbl-wrap">
                                 <table class="lw-p3-tbl lw-p3-tbl-mat">
                                     <thead><tr>
                                         <th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th><th>Marca</th><th>Modelo</th>
-                                        <th>Costo U.</th><th>P. Lista</th><th>Desc.C%</th><th>Desc.V%</th>
-                                        <th class="num">Costo Total</th><th class="num">P. Venta</th>
+                                        <th title="Costo unitario en USD">Costo U.<small>USD</small></th>
+                                        <th title="Precio de lista en USD">P. Lista<small>USD</small></th>
+                                        <th title="Descuento en compra (%)">Desc.C%</th>
+                                        <th title="Descuento en venta (%)">Desc.V%</th>
+                                        <th class="num">Costo Total<small>USD</small></th>
+                                        <th class="num">P. Venta<small>USD</small></th>
                                         <th>Proveedor</th><th>Entrega</th><th></th>
                                     </tr></thead>
                                     <tbody id="lw_f3_mat_body"></tbody>
@@ -507,7 +544,9 @@
                                 <table class="lw-p3-tbl">
                                     <thead><tr>
                                         <th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th>
-                                        <th>Precio Unit</th><th class="num">Total</th><th></th>
+                                        <th>Precio Unit<small>USD</small></th>
+                                        <th class="num">Total<small>USD</small></th>
+                                        <th></th>
                                     </tr></thead>
                                     <tbody id="lw_f3_mo_body"></tbody>
                                     <tfoot id="lw_f3_mo_foot"></tfoot>
@@ -525,7 +564,9 @@
                                 <table class="lw-p3-tbl">
                                     <thead><tr>
                                         <th>#</th><th>Cant</th><th>Unid</th><th>Descripción</th>
-                                        <th>Costo Unit</th><th class="num">Total</th><th></th>
+                                        <th>Costo Unit<small>USD</small></th>
+                                        <th class="num">Total<small>USD</small></th>
+                                        <th></th>
                                     </tr></thead>
                                     <tbody id="lw_f3_gas_body"></tbody>
                                     <tfoot id="lw_f3_gas_foot"></tfoot>
@@ -537,14 +578,39 @@
                     <!-- Resumen sticky -->
                     <div class="lw-p3-summary" id="lwP3Summary">
                         <div class="lw-section-label" style="margin-bottom:6px;">Resumen Financiero</div>
-                        <div class="lw-p3-sum-row"><span>Subtotal Materiales</span><span id="lwSumMat">$0</span></div>
-                        <div class="lw-p3-sum-row"><span>Subtotal Mano de Obra</span><span id="lwSumMO">$0</span></div>
-                        <div class="lw-p3-sum-row"><span>Subtotal Gastos</span><span id="lwSumGas">$0</span></div>
+
+                        <!-- Tipo de cambio -->
+                        <div class="lw-p3-tc-row">
+                            <label>
+                                <span>Tipo de cambio</span>
+                                <small>USD → MXN</small>
+                            </label>
+                            <input type="number" step="0.01" id="lwP3TC" value="19.50"
+                                   oninput="lwP3SetTC(this.value)"
+                                   placeholder="19.50">
+                        </div>
+                        <div class="lw-p3-tc-fecha" id="lwP3TCFecha">&nbsp;</div>
+
+                        <!-- Totales en USD -->
+                        <div class="lw-p3-sum-section-label">Totales USD</div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Materiales</span><span id="lwSumMat">$0.00</span></div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Mano de Obra</span><span id="lwSumMO">$0.00</span></div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Gastos</span><span id="lwSumGas">$0.00</span></div>
                         <div class="lw-p3-sum-divider"></div>
-                        <div class="lw-p3-sum-row lw-p3-sum-strong"><span>TOTAL VENTA</span><span id="lwSumVenta">$0</span></div>
-                        <div class="lw-p3-sum-row"><span>Total Costos</span><span id="lwSumCosto">$0</span></div>
+                        <div class="lw-p3-sum-row lw-p3-sum-strong"><span>TOTAL VENTA USD</span><span id="lwSumVenta">$0.00</span></div>
+                        <div class="lw-p3-sum-row"><span>Total Costos USD</span><span id="lwSumCosto">$0.00</span></div>
+                        <div class="lw-p3-sum-row"><span id="lwSumUtilLbl" style="font-weight:700;">Utilidad Bruta</span><span id="lwSumUtil" style="font-weight:700;">$0.00</span></div>
+
                         <div class="lw-p3-sum-divider"></div>
-                        <div class="lw-p3-sum-row"><span id="lwSumUtilLbl" style="font-weight:700;">Utilidad Bruta</span><span id="lwSumUtil" style="font-weight:700;">$0</span></div>
+
+                        <!-- Totales convertidos a MXN -->
+                        <div class="lw-p3-sum-section-label">Totales MXN (con TC)</div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Materiales</span><span id="lwSumMatMXN">$0.00</span></div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Mano de Obra</span><span id="lwSumMOMXN">$0.00</span></div>
+                        <div class="lw-p3-sum-row"><span>Subtotal Gastos</span><span id="lwSumGasMXN">$0.00</span></div>
+                        <div class="lw-p3-sum-divider"></div>
+                        <div class="lw-p3-sum-row lw-p3-sum-mxn-total"><span>TOTAL VENTA MXN</span><span id="lwSumVentaMXN">$0.00</span></div>
+
                         <div class="lw-p3-margin-badge" id="lwP3Badge">
                             <span class="lw-p3-margin-pct" id="lwP3MarginPct">0%</span>
                             <span class="lw-p3-margin-lbl">Margen Bruto</span>

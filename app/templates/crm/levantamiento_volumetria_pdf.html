@@ -337,14 +337,31 @@
 
 <!-- ═══ RESUMEN FINANCIERO (solo modo completo) ═══ -->
 {% if not sin_costos %}
-<table class="vol-summary">
-    <tr><td class="lbl">Subtotal Materiales (Venta)</td><td class="val">{{ tot_mat_venta_fmt }}</td></tr>
-    <tr><td class="lbl">Subtotal Mano de Obra</td><td class="val">{{ tot_mo_fmt }}</td></tr>
-    <tr><td class="lbl">Subtotal Gastos</td><td class="val">{{ tot_gas_fmt }}</td></tr>
-    <tr class="total"><td class="lbl" style="color:#fff;background:transparent;">TOTAL VENTA</td><td class="val">{{ total_venta_fmt }}</td></tr>
-    <tr><td class="lbl">Total Costos</td><td class="val">{{ total_costo_fmt }}</td></tr>
-    <tr class="margen"><td class="lbl" style="color:#047857;background:transparent;">Utilidad Bruta ({{ margen_pct }}%)</td><td class="val">{{ utilidad_fmt }}</td></tr>
-</table>
+<div style="display:flex;gap:10px;margin-top:14px;">
+    <!-- USD -->
+    <table class="vol-summary" style="width:50%;margin:0;">
+        <tr><td colspan="2" style="background:#F1F5F9;color:#475569;font-size:9pt;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;text-align:center;padding:5px;">USD</td></tr>
+        <tr><td class="lbl">Subtotal Materiales (Venta)</td><td class="val">{{ tot_mat_venta_fmt }}</td></tr>
+        <tr><td class="lbl">Subtotal Mano de Obra</td><td class="val">{{ tot_mo_fmt }}</td></tr>
+        <tr><td class="lbl">Subtotal Gastos</td><td class="val">{{ tot_gas_fmt }}</td></tr>
+        <tr class="total"><td class="lbl" style="color:#fff;background:transparent;">TOTAL VENTA</td><td class="val">{{ total_venta_fmt }}</td></tr>
+        <tr><td class="lbl">Total Costos</td><td class="val">{{ total_costo_fmt }}</td></tr>
+        <tr class="margen"><td class="lbl" style="color:#047857;background:transparent;">Utilidad Bruta ({{ margen_pct }}%)</td><td class="val">{{ utilidad_fmt }}</td></tr>
+    </table>
+
+    <!-- MXN -->
+    <table class="vol-summary" style="width:50%;margin:0;">
+        <tr><td colspan="2" style="background:#ECFDF5;color:#047857;font-size:9pt;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;text-align:center;padding:5px;">
+            MXN · TC {{ tipo_cambio_fmt }}{% if tipo_cambio_fecha %} ({{ tipo_cambio_fecha }}){% endif %}
+        </td></tr>
+        <tr><td class="lbl">Subtotal Materiales</td><td class="val">{{ tot_mat_venta_mxn_fmt }}</td></tr>
+        <tr><td class="lbl">Subtotal Mano de Obra</td><td class="val">{{ tot_mo_mxn_fmt }}</td></tr>
+        <tr><td class="lbl">Subtotal Gastos</td><td class="val">{{ tot_gas_mxn_fmt }}</td></tr>
+        <tr class="total" style="background:#047857;"><td class="lbl" style="color:#fff;background:transparent;">TOTAL VENTA MXN</td><td class="val">{{ total_venta_mxn_fmt }}</td></tr>
+        <tr><td class="lbl">Total Costos</td><td class="val">{{ total_costo_mxn_fmt }}</td></tr>
+        <tr class="margen"><td class="lbl" style="color:#047857;background:transparent;">Utilidad Bruta</td><td class="val">{{ utilidad_mxn_fmt }}</td></tr>
+    </table>
+</div>
 {% endif %}
 
 <!-- ═══ Footer ═══ -->

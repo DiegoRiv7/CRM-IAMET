@@ -91,6 +91,7 @@
         ov.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         _lwRestoreMode(); // aplica clase lw-mode-simple/full desde localStorage
+        _lwRestoreSidebar(); // aplica estado lw-sidebar-hidden desde localStorage
         renderHeader();
         renderPhaseTabs();
         renderPhase(state.phase);
@@ -1078,6 +1079,31 @@
         _lwApplyMode(saved === 'full' ? 'full' : 'simple');
     }
 
+    // ── Sidebar lateral (colapsable) ──────────────────────────────
+    var LW_SIDEBAR_KEY = 'lw_sidebar_hidden_v1';
+
+    function _lwApplySidebar(hidden) {
+        var wizard = $('levantamientoWizard');
+        var btn = $('lwSidebarToggle');
+        if (wizard) wizard.classList.toggle('lw-sidebar-hidden', !!hidden);
+        if (btn) btn.classList.toggle('active', !hidden);
+    }
+
+    function _lwRestoreSidebar() {
+        var saved;
+        try { saved = localStorage.getItem(LW_SIDEBAR_KEY); } catch (e) { saved = null; }
+        // Default: oculto (así ganamos espacio; el usuario lo abre cuando lo necesita)
+        _lwApplySidebar(saved !== 'visible');
+    }
+
+    window.lwSidebarToggle = function () {
+        var wizard = $('levantamientoWizard');
+        if (!wizard) return;
+        var hidden = !wizard.classList.contains('lw-sidebar-hidden');
+        try { localStorage.setItem(LW_SIDEBAR_KEY, hidden ? 'hidden' : 'visible'); } catch (e) {}
+        _lwApplySidebar(hidden);
+    };
+
     // ═══════════════════════════════════════════════════════════════
     //  HELP PANEL FAB (mini FAQ)
     // ═══════════════════════════════════════════════════════════════
@@ -1740,7 +1766,13 @@
         }
         if (!d.manoObra) d.manoObra = [];
         if (!d.gastos) d.gastos = [];
+        // TC default 19.50 si no hay valor guardado
+        if (!d.tipo_cambio) d.tipo_cambio = 19.50;
         state.lev.fase3_data = d;
+        // Sincronizar el input de TC con el valor guardado
+        var tcInput = $('lwP3TC');
+        if (tcInput) tcInput.value = (d.tipo_cambio || 19.50);
+        _p3RenderTCFecha();
         renderP3Materiales();
         renderP3ManoObra();
         renderP3Gastos();
@@ -1852,6 +1884,8 @@
     }
     function recalcP3Summary() {
         var d = state.lev.fase3_data || {};
+        var tc = parseFloat(d.tipo_cambio || 0);
+        if (!tc || tc <= 0) tc = 19.5; // fallback
         var totMat = (d.materiales || []).reduce(function (a, r) { var c = calcMatRow(r); return { c: a.c + c.costoTotal, v: a.v + c.precioVenta }; }, { c: 0, v: 0 });
         var totMO = (d.manoObra || []).reduce(function (a, r) { return a + (r.precioUnit || 0) * (r.qty || 0); }, 0);
         var totGas = (d.gastos || []).reduce(function (a, r) { return a + (r.costoUnit || 0) * (r.qty || 0); }, 0);
@@ -1859,12 +1893,20 @@
         var totalCosto = totMat.c + totGas;
         var utilidad = totalVenta - totalCosto;
         var margen = totalVenta > 0 ? (utilidad / totalVenta * 100) : 0;
+        // USD
         $('lwSumMat').textContent = fmtMoney(totMat.v);
         $('lwSumMO').textContent = fmtMoney(totMO);
         $('lwSumGas').textContent = fmtMoney(totGas);
         $('lwSumVenta').textContent = fmtMoney(totalVenta);
         $('lwSumCosto').textContent = fmtMoney(totalCosto);
         $('lwSumUtil').textContent = fmtMoney(utilidad);
+        // MXN (conversión con TC)
+        var mxn = function (usd) { return fmtMoney(usd * tc); };
+        var elMat = $('lwSumMatMXN');    if (elMat) elMat.textContent = mxn(totMat.v);
+        var elMO  = $('lwSumMOMXN');     if (elMO)  elMO.textContent  = mxn(totMO);
+        var elGas = $('lwSumGasMXN');    if (elGas) elGas.textContent = mxn(totGas);
+        var elVt  = $('lwSumVentaMXN');  if (elVt)  elVt.textContent  = mxn(totalVenta);
+
         $('lwP3MarginPct').textContent = margen.toFixed(1) + '%';
         var badge = $('lwP3Badge');
         var bar = $('lwP3MarginBar');
@@ -1878,6 +1920,33 @@
         bar.style.background = color;
         $('lwSumUtilLbl').style.color = color;
         $('lwSumUtil').style.color = color;
+    }
+
+    // Tipo de cambio — guarda en fase3_data y dispara recalc.
+    window.lwP3SetTC = function (val) {
+        var d = state.lev.fase3_data || {};
+        var n = parseFloat(val);
+        if (!n || n <= 0) return;
+        d.tipo_cambio = n;
+        // Guardar la fecha del primer cambio (se usa como "fecha de elaboración")
+        if (!d.tipo_cambio_fecha) {
+            d.tipo_cambio_fecha = new Date().toISOString().slice(0, 10);
+            _p3RenderTCFecha();
+        }
+        state.lev.fase3_data = d;
+        recalcP3Summary();
+        lwFieldChange();
+    };
+
+    function _p3RenderTCFecha() {
+        var d = state.lev.fase3_data || {};
+        var el = $('lwP3TCFecha');
+        if (!el) return;
+        if (d.tipo_cambio_fecha) {
+            el.textContent = 'Fijado el ' + d.tipo_cambio_fecha;
+        } else {
+            el.innerHTML = '&nbsp;';
+        }
     }
 
     // ── Campos numéricos por tabla ────────────────────────────────
@@ -1977,6 +2046,82 @@
     window.lwP3Mat = function (i, field, val) { p3OnInput('materiales', i, field, val); };
     window.lwP3MO  = function (i, field, val) { p3OnInput('manoObra', i, field, val); };
     window.lwP3Gas = function (i, field, val) { p3OnInput('gastos', i, field, val); };
+    // ── Catálogo (Fase 3) ────────────────────────────────────────
+    // Reutiliza el endpoint /catalogo-productos/ del wizard pero con su
+    // propio box. Al seleccionar un producto se agrega una fila a
+    // "materiales" con precioLista y costoUnit preloados.
+    window.lwP3OpenCatalog = function () {
+        var box = $('lwP3CatalogBox');
+        if (!box) return;
+        box.style.display = 'block';
+        var inp = $('lwP3CatalogSearch');
+        if (inp) { inp.value = ''; inp.focus(); }
+        $('lwP3CatalogList').innerHTML = '<div class="lw-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
+    };
+    window.lwP3CloseCatalog = function () {
+        var box = $('lwP3CatalogBox');
+        if (box) box.style.display = 'none';
+    };
+    var _p3CatTimer = null;
+    window.lwP3CatalogSearch = function () {
+        var q = ($('lwP3CatalogSearch').value || '').trim();
+        if (_p3CatTimer) clearTimeout(_p3CatTimer);
+        if (q.length < 2) {
+            $('lwP3CatalogList').innerHTML = '<div class="lw-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
+            return;
+        }
+        _p3CatTimer = setTimeout(function () {
+            apiFetch('/app/api/iamet/catalogo-productos/?q=' + encodeURIComponent(q) + '&limit=40').then(function (r) {
+                var list = (r && r.ok && r.data) ? r.data : [];
+                _p3RenderCatalogList(list);
+            });
+        }, 220);
+    };
+    function _p3RenderCatalogList(list) {
+        var wrap = $('lwP3CatalogList');
+        if (!wrap) return;
+        if (!list.length) {
+            wrap.innerHTML = '<div class="lw-catalog-empty">Sin resultados</div>';
+            return;
+        }
+        wrap.innerHTML = list.map(function (p, i) {
+            return '<div class="lw-catalog-row" onclick="lwP3CatalogAdd(' + i + ')">' +
+                '<div>' +
+                    '<div class="lw-catalog-desc">' + esc(p.desc) + '</div>' +
+                    '<div class="lw-catalog-sub">' + esc(p.marca || '—') + ' · ' + esc(p.modelo || '—') + '</div>' +
+                '</div>' +
+                '<div class="lw-catalog-price">' + fmtMoney(p.precio || 0) + '</div>' +
+            '</div>';
+        }).join('');
+        window._lwP3CatalogCurrent = list;
+    }
+    window.lwP3CatalogAdd = function (i) {
+        var list = window._lwP3CatalogCurrent || [];
+        var p = list[i];
+        if (!p) return;
+        var d = state.lev.fase3_data;
+        d.materiales = d.materiales || [];
+        d.materiales.push({
+            partida: d.materiales.length + 1,
+            qty: 1,
+            unid: p.unidad || 'PZA',
+            desc: p.desc || '',
+            marca: p.marca || '',
+            modelo: p.modelo || '',
+            costoUnit: Number(p.precio_proveedor || 0) || Number(p.precio || 0) * 0.7,
+            precioLista: Number(p.precio || 0),
+            descCompra: 0,
+            descVenta: 0,
+            proveedor: '',
+            entrega: '',
+        });
+        renderP3Materiales();
+        recalcP3Summary();
+        lwFieldChange();
+        // No cerramos el box — permite seguir agregando
+        lwCheer('✓ Agregado', esc(p.desc).slice(0, 80));
+    };
+
     window.lwP3AddRow = function (tabla, focusDesc) {
         var d = state.lev.fase3_data;
         var newIdx;
