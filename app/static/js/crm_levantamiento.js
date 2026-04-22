@@ -687,7 +687,79 @@
 
         renderPhase1Productos();
         lwRecomputeSummary();
+        // Inicializar modo movil (una isla a la vez)
+        lwMobileInit();
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  MODO MÓVIL (Fase 1) — una isla a la vez + botón Continuar
+    // ═══════════════════════════════════════════════════════════════
+    var _lwMobileIdx = 0; // 0-based, 0-3 (4 islas)
+    function _lwIsMobile() { return window.matchMedia && window.matchMedia('(max-width: 767px)').matches; }
+
+    function lwMobileInit() {
+        if (!_lwIsMobile()) {
+            // En desktop aseguramos que todas las islas son visibles
+            document.querySelectorAll('#lwPhase1 .lw-island').forEach(function (el) {
+                el.classList.remove('lw-mobile-active');
+            });
+            return;
+        }
+        _lwMobileIdx = 0;
+        _lwMobileShow(0);
+    }
+
+    function _lwMobileShow(idx) {
+        var islands = document.querySelectorAll('#lwPhase1 .lw-island');
+        islands.forEach(function (el, i) {
+            el.classList.toggle('lw-mobile-active', i === idx);
+        });
+        // Scroll al top del board
+        var board = document.querySelector('#lwPhase1 .lw-islands-board');
+        if (board) board.scrollTop = 0;
+
+        // Actualizar botones
+        var backBtn = document.getElementById('lwMobileBack');
+        var nextBtn = document.getElementById('lwMobileNext');
+        var indicator = document.getElementById('lwMobileStepIndicator');
+        var total = islands.length;
+        if (indicator) indicator.textContent = (idx + 1) + ' de ' + total;
+        if (backBtn) backBtn.disabled = (idx === 0);
+        if (nextBtn) {
+            var isLast = (idx === total - 1);
+            nextBtn.classList.toggle('lw-mobile-finalize', isLast);
+            nextBtn.innerHTML = isLast
+                ? 'Finalizar <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+                : 'Continuar <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+        }
+    }
+
+    window.lwMobileNext = function () {
+        if (!_lwIsMobile()) return;
+        var islands = document.querySelectorAll('#lwPhase1 .lw-island');
+        var total = islands.length;
+        if (_lwMobileIdx < total - 1) {
+            _lwMobileIdx++;
+            _lwMobileShow(_lwMobileIdx);
+        } else {
+            // Ultima isla → ir a Fase 2 (mismo gate 70% que en desktop)
+            lwGoPhase(2);
+        }
+    };
+
+    window.lwMobilePrev = function () {
+        if (!_lwIsMobile()) return;
+        if (_lwMobileIdx > 0) {
+            _lwMobileIdx--;
+            _lwMobileShow(_lwMobileIdx);
+        }
+    };
+
+    // Re-inicializar si cambia el tamaño de ventana (rotar movil, etc)
+    window.addEventListener('resize', function () {
+        if (!state.lev || state.phase !== 1) return;
+        lwMobileInit();
+    });
 
     // ── Isla 4: Evidencia (fotos) & Notas de campo ─────────────────
     window.lwF1NotasInput = function (el) {
@@ -711,13 +783,22 @@
             '</div>';
         }).join('');
 
+        // En movil usamos capture="environment" → abre la camara
+        // trasera directamente al tocar el input. En desktop se omite
+        // para que el picker de archivos funcione normal.
+        var isMobile = (window.matchMedia && window.matchMedia('(max-width: 767px)').matches);
+        var captureAttr = isMobile ? ' capture="environment"' : '';
+        var hintMobile = '<div class="lw-evid-add-title">Tomar foto o subir</div>' +
+                         '<div class="lw-evid-add-hint">Se abre la cámara del dispositivo</div>';
+        var hintDesktop = '<div class="lw-evid-add-title">Subir fotos del sitio</div>' +
+                          '<div class="lw-evid-add-hint">Arrastra, pega <kbd>⌘V</kbd> o click</div>';
+
         var addCard = '<label class="lw-evid-add-card" for="lw_f1_photo_input" title="Subir fotos">' +
             (hasPhotos
-                ? '<div class="lw-evid-add-plus">+</div><div class="lw-evid-add-label">Subir</div>'
-                : '<div class="lw-evid-add-plus lw-evid-add-plus-lg">+</div>' +
-                  '<div class="lw-evid-add-title">Subir fotos del sitio</div>' +
-                  '<div class="lw-evid-add-hint">Arrastra, pega <kbd>⌘V</kbd> o click</div>') +
-            '<input type="file" id="lw_f1_photo_input" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="lwP2UploadFiles(this.files); this.value=\'\';">' +
+                ? '<div class="lw-evid-add-plus">+</div><div class="lw-evid-add-label">' + (isMobile ? 'Cámara' : 'Subir') + '</div>'
+                : '<div class="lw-evid-add-plus lw-evid-add-plus-lg">+</div>' + (isMobile ? hintMobile : hintDesktop)) +
+            '<input type="file" id="lw_f1_photo_input" accept="image/*" multiple' + captureAttr +
+            ' hidden onchange="lwP2UploadFiles(this.files); this.value=\'\';">' +
         '</label>';
 
         zone.innerHTML = thumbs + addCard;

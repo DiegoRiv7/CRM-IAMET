@@ -359,6 +359,19 @@
 
                     </div><!-- /.lw-islands-board -->
 
+                    <!-- ─── Barra de navegación MÓVIL (solo <768px) ─── -->
+                    <div class="lw-mobile-nav" id="lwMobileNav">
+                        <button type="button" class="lw-mobile-back" id="lwMobileBack" onclick="lwMobilePrev()">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                            Atrás
+                        </button>
+                        <div class="lw-mobile-step-indicator" id="lwMobileStepIndicator">1 de 4</div>
+                        <button type="button" class="lw-mobile-next" id="lwMobileNext" onclick="lwMobileNext()">
+                            Continuar
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+
                     <!-- IDs del checklist legacy (mantenidos ocultos) — el JS
                          lwRenderChecklist los sigue escribiendo, se usan como
                          fuente de verdad para alimentar el footer flotante. -->
