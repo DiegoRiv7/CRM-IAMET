@@ -3149,7 +3149,7 @@
 
 .lw-island {
     flex: 0 0 auto;
-    width: 420px;
+    width: 480px;
     background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 0 3px rgba(15, 23, 42, 0.02);
@@ -3162,9 +3162,20 @@
     scroll-snap-align: start;
     scroll-snap-stop: always;
 }
-/* Productos: tabla con scroll horizontal dentro del island si hace falta */
-#lw_f1_productos_wrap { overflow-x: auto; max-width: 100%; }
-#lw_f1_productos_wrap table { min-width: 0; }
+
+/* Chips "roomy" — mas espacio entre chips para que Alcance no se vea amontonado */
+.lw-chips.lw-chips-roomy {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.lw-chips.lw-chips-roomy .lw-chip {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    font-size: 12.5px;
+}
+/* En Alcance, el body usa mas espacio vertical entre grupos */
+.lw-island-body-alcance { gap: 24px; }
 
 .lw-island-header {
     padding: 20px 22px;

@@ -2667,6 +2667,16 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
         'ubicacion': p.get('ubicacion') or '',
     } for p in (f1.get('productos') or [])]
 
+    # Programa de implementación — ahora se captura en Fase 2
+    # (fase2_data.programa). Para datos viejos, caemos a fase1_data.
+    f2 = lev.fase2_data or {}
+    prog = f2.get('programa') or {}
+    def _prog(key):
+        v = prog.get(key)
+        if v is not None and v != '':
+            return v
+        return f1.get(key) or ''
+
     ctx = {
         'lev':          lev,
         'cliente':      f1.get('cliente')  or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
@@ -2680,19 +2690,19 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
         'tipos_servicio':   [{'name': s, 'on': s in selected_svc} for s in TIPOS_SERVICIO],
         'componentes':      [{'name': c, 'on': c in selected_comp} for c in COMPONENTES],
 
-        # Programa
-        'fecha_inicio_fmt': _fmt_fecha(f1.get('fecha_inicio')),
-        'fecha_fin_fmt':    _fmt_fecha(f1.get('fecha_fin')),
-        'duracion':         f1.get('duracion') or '',
-        'turno':            f1.get('turno') or '',
-        'apoyo_cliente':    f1.get('apoyo_cliente') or '',
-        'personal_req':     f1.get('personal_req') or '',
+        # Programa (leer de fase2.programa, fallback a fase1)
+        'fecha_inicio_fmt': _fmt_fecha(_prog('fecha_inicio')),
+        'fecha_fin_fmt':    _fmt_fecha(_prog('fecha_fin')),
+        'duracion':         _prog('duracion'),
+        'turno':            _prog('turno'),
+        'apoyo_cliente':    _prog('apoyo_cliente'),
+        'personal_req':     _prog('personal_req'),
         'realizo':          lev.creado_por.get_full_name() if lev.creado_por else '',
 
         # Equipo de elevación
-        'elev_alto':   f1.get('elev_alto')   or '',
-        'elev_ancho':  f1.get('elev_ancho')  or '',
-        'elev_modelo': f1.get('elev_modelo') or '',
+        'elev_alto':   _prog('elev_alto'),
+        'elev_ancho':  _prog('elev_ancho'),
+        'elev_modelo': _prog('elev_modelo'),
 
         'productos': productos,
 
@@ -3334,15 +3344,16 @@ def api_levantamiento_fragmento(request, levantamiento_id):
             'descripcion': f1.get('descripcion') or '',
             'tipos_servicio': [{'name': s, 'on': s in selected_svc} for s in TIPOS_SERVICIO],
             'componentes':    [{'name': c, 'on': c in selected_comp} for c in COMPONENTES],
-            'fecha_inicio_fmt': _fmt_fecha(f1.get('fecha_inicio')),
-            'fecha_fin_fmt':    _fmt_fecha(f1.get('fecha_fin')),
-            'duracion':      f1.get('duracion') or '',
-            'turno':         f1.get('turno') or '',
-            'apoyo_cliente': f1.get('apoyo_cliente') or '',
-            'personal_req':  f1.get('personal_req') or '',
-            'elev_alto':     f1.get('elev_alto') or '',
-            'elev_ancho':    f1.get('elev_ancho') or '',
-            'elev_modelo':   f1.get('elev_modelo') or '',
+            # Programa — leer de fase2.programa con fallback a fase1
+            'fecha_inicio_fmt': _fmt_fecha((f2.get('programa') or {}).get('fecha_inicio') or f1.get('fecha_inicio')),
+            'fecha_fin_fmt':    _fmt_fecha((f2.get('programa') or {}).get('fecha_fin')    or f1.get('fecha_fin')),
+            'duracion':      (f2.get('programa') or {}).get('duracion')      or f1.get('duracion') or '',
+            'turno':         (f2.get('programa') or {}).get('turno')         or f1.get('turno') or '',
+            'apoyo_cliente': (f2.get('programa') or {}).get('apoyo_cliente') or f1.get('apoyo_cliente') or '',
+            'personal_req':  (f2.get('programa') or {}).get('personal_req')  or f1.get('personal_req') or '',
+            'elev_alto':     (f2.get('programa') or {}).get('elev_alto')     or f1.get('elev_alto') or '',
+            'elev_ancho':    (f2.get('programa') or {}).get('elev_ancho')    or f1.get('elev_ancho') or '',
+            'elev_modelo':   (f2.get('programa') or {}).get('elev_modelo')   or f1.get('elev_modelo') or '',
             'productos': productos,
         }
         template = 'crm/fragments/_frag_levantamiento.html'

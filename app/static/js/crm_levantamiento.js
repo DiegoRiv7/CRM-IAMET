@@ -289,13 +289,15 @@
     function lwFase1Progress() {
         if (!state.lev) return { canAdvance: false, pct: 0 };
         var d = state.lev.fase1_data || {};
+        var evidenciaCount = (state.lev.evidencias || []).length;
+        var notasTxt = _ckVal('lw_f1_notas_materiales', d.notas_materiales);
         var items = [
             !!_ckVal('lw_f1_titulo', state.lev.nombre),
             !!_ckVal('lw_f1_cliente', d.cliente),
             !!_ckVal('lw_f1_contacto', d.contacto),
             !!_ckVal('lw_f1_descripcion', d.descripcion),
             (d.servicios || []).length > 0,
-            (d.productos || []).length > 0,
+            (evidenciaCount > 0) || !!notasTxt,
         ];
         var done = items.filter(Boolean).length;
         var pct = Math.round((done / items.length) * 100);
@@ -656,35 +658,7 @@
         // Si hay cliente_id guardado, pre-fetch contactos para el dropdown
         if (d.cliente_id) _prefetchContactos(d.cliente_id);
 
-        // Campos de "Programa e implementación" (sección nueva)
-        var implMap = {
-            fecha_inicio: 'lw_f1_fecha_inicio',
-            fecha_fin:    'lw_f1_fecha_fin',
-            duracion:     'lw_f1_duracion',
-            apoyo_cliente: 'lw_f1_apoyo_cliente',
-            personal_req: 'lw_f1_personal_req',
-            elev_alto:    'lw_f1_elev_alto',
-            elev_ancho:   'lw_f1_elev_ancho',
-            elev_modelo:  'lw_f1_elev_modelo',
-        };
-        Object.keys(implMap).forEach(function (k) {
-            var el = $(implMap[k]);
-            if (el) {
-                el.value = d[k] || '';
-                lwRefreshMetaPill(el);
-            }
-        });
-
-        // Chips de turno
-        var turnoEl = $('lw_f1_turno_chips');
-        if (turnoEl) {
-            var current = d.turno || '';
-            turnoEl.innerHTML = ['Diurno', 'Nocturno', 'Mixto'].map(function (t) {
-                var on = current === t;
-                return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwP1SetTurno(\'' + t + '\')">' +
-                    (on ? '<i></i>' : '') + t + '</button>';
-            }).join('');
-        }
+        // El Programa de Implementacion ahora vive en Fase 2 (ver renderPhase2).
 
         // Descripción + auto-grow
         var desc = $('lw_f1_descripcion');
@@ -706,9 +680,50 @@
         // Estado "locked" del cliente si tiene cliente_id
         lwRefreshClienteLock();
 
+        // Isla 4 nueva — Evidencia & Notas
+        var notasEl = $('lw_f1_notas_materiales');
+        if (notasEl) notasEl.value = d.notas_materiales || '';
+        lwF1RenderEvid();
+
         renderPhase1Productos();
         lwRecomputeSummary();
     }
+
+    // ── Isla 4: Evidencia (fotos) & Notas de campo ─────────────────
+    window.lwF1NotasInput = function (el) {
+        var d = state.lev.fase1_data || {};
+        d.notas_materiales = el.value || '';
+        state.lev.fase1_data = d;
+        lwFieldChange();
+    };
+
+    function lwF1RenderEvid() {
+        var zone = $('lwF1EvidZone');
+        if (!zone) return;
+        var evs = state.lev.evidencias || [];
+        var hasPhotos = evs.length > 0;
+        zone.classList.toggle('lw-evid-empty', !hasPhotos);
+
+        var thumbs = evs.map(function (ev) {
+            return '<div class="lw-evid-thumb" onclick="lwP2Lightbox(' + ev.id + ')">' +
+                '<img src="' + esc(ev.url) + '" alt="">' +
+                '<button type="button" class="lw-evid-del" title="Eliminar" onclick="event.stopPropagation(); lwP2DeleteEvidencia(' + ev.id + ')">×</button>' +
+            '</div>';
+        }).join('');
+
+        var addCard = '<label class="lw-evid-add-card" for="lw_f1_photo_input" title="Subir fotos">' +
+            (hasPhotos
+                ? '<div class="lw-evid-add-plus">+</div><div class="lw-evid-add-label">Subir</div>'
+                : '<div class="lw-evid-add-plus lw-evid-add-plus-lg">+</div>' +
+                  '<div class="lw-evid-add-title">Subir fotos del sitio</div>' +
+                  '<div class="lw-evid-add-hint">Arrastra, pega <kbd>⌘V</kbd> o click</div>') +
+            '<input type="file" id="lw_f1_photo_input" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="lwP2UploadFiles(this.files); this.value=\'\';">' +
+        '</label>';
+
+        zone.innerHTML = thumbs + addCard;
+    }
+    // Exponer para que renderPhase2Photos tambien refresque la Isla 4
+    window.lwF1RenderEvid = lwF1RenderEvid;
 
     // Renderea chips de componentes filtrando por servicios activos.
     // Si hay servicios seleccionados, solo muestra los componentes relevantes.
@@ -1011,13 +1026,15 @@
     function lwRenderChecklist() {
         if (!state.lev) return;
         var d = state.lev.fase1_data || {};
+        var evidenciaCount = (state.lev.evidencias || []).length;
+        var notasTxt = _ckVal('lw_f1_notas_materiales', d.notas_materiales);
         var items = [
             { key: 'titulo',      label: 'Título del levantamiento',   done: !!_ckVal('lw_f1_titulo', state.lev.nombre) },
             { key: 'cliente',     label: 'Cliente',                    done: !!_ckVal('lw_f1_cliente', d.cliente) },
             { key: 'contacto',    label: 'Contacto',                   done: !!_ckVal('lw_f1_contacto', d.contacto) },
             { key: 'descripcion', label: 'Descripción de la necesidad',done: !!_ckVal('lw_f1_descripcion', d.descripcion) },
             { key: 'servicios',   label: 'Al menos 1 servicio',        done: (d.servicios || []).length > 0 },
-            { key: 'productos',   label: 'Al menos 1 producto',        done: (d.productos || []).length > 0 },
+            { key: 'productos',   label: 'Evidencia o notas de campo', done: (evidenciaCount > 0) || !!notasTxt },
         ];
         var done = items.filter(function (i) { return i.done; }).length;
         var total = items.length;
@@ -1258,6 +1275,7 @@
         var d = state.lev.fase1_data || {};
         var prods = d.productos || [];
         var wrap = $('lw_f1_productos_wrap');
+        if (!wrap) return; // la isla de productos ya no existe en Fase 1
         if (!prods.length) {
             // Empty state con buscador grande + sugerencias rápidas clickeables
             var suggestionsHtml = QUICK_ADD_PRODUCTS.map(function (p, i) {
@@ -1386,6 +1404,7 @@
     // Catalog dropdown
     window.lwP1OpenCatalog = function () {
         var box = $('lwCatalogBox');
+        if (!box) return; // isla catalogo ya no existe en Fase 1
         box.style.display = 'block';
         $('lwCatalogSearch').value = '';
         $('lwCatalogSearch').focus();
@@ -1453,20 +1472,16 @@
     };
 
     function collectPhase1() {
-        // Los valores ya están en state.lev.fase1_data excepto inputs simples
         var d = state.lev.fase1_data || {};
-        d.cliente     = $('lw_f1_cliente').value;
-        d.contacto    = $('lw_f1_contacto').value;
-        d.area        = $('lw_f1_area').value;
-        d.fecha       = $('lw_f1_fecha').value;
-        d.email       = $('lw_f1_email').value;
-        d.telefono    = $('lw_f1_telefono').value;
-        d.descripcion = $('lw_f1_descripcion').value;
-        // Programa e implementación (para PDF de levantamiento)
-        ['fecha_inicio','fecha_fin','duracion','apoyo_cliente','personal_req','elev_alto','elev_ancho','elev_modelo'].forEach(function (k) {
-            var el = $('lw_f1_' + k);
-            if (el) d[k] = el.value || '';
-        });
+        var read = function (id) { var el = $(id); return el ? el.value : ''; };
+        d.cliente     = read('lw_f1_cliente');
+        d.contacto    = read('lw_f1_contacto');
+        d.area        = read('lw_f1_area');
+        d.fecha       = read('lw_f1_fecha');
+        d.email       = read('lw_f1_email');
+        d.telefono    = read('lw_f1_telefono');
+        d.descripcion = read('lw_f1_descripcion');
+        d.notas_materiales = read('lw_f1_notas_materiales');
         state.lev.fase1_data = d;
         return d;
     }
@@ -1549,6 +1564,8 @@
         }
         // Evidencias
         renderPhase2Photos();
+        // Programa de implementacion (movido desde Fase 1)
+        _lwF2FillPrograma();
     }
     window.lwP2ToggleExpand = function (idx) {
         var card = document.querySelector('.lw-prod-card[data-idx="' + idx + '"]');
@@ -1568,6 +1585,8 @@
     };
 
     function renderPhase2Photos() {
+        // Siempre refrescar tambien la isla 4 de Fase 1 (misma data).
+        if (typeof lwF1RenderEvid === 'function') { try { lwF1RenderEvid(); } catch (e) {} }
         var zone = $('lwDropZone');
         if (!zone) return;
         var evs = state.lev.evidencias || [];
@@ -1644,21 +1663,25 @@
             }
         });
     }
-    // Drag & drop + paste
+    // Drag & drop + paste — funciona tanto en Isla 4 de Fase 1 como en Fase 2
+    function _bindEvidenciaDrop(id) {
+        var dz = document.getElementById(id);
+        if (!dz) return;
+        dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('lw-drop-active'); });
+        dz.addEventListener('dragleave', function () { dz.classList.remove('lw-drop-active'); });
+        dz.addEventListener('drop', function (e) {
+            e.preventDefault(); dz.classList.remove('lw-drop-active');
+            var files = Array.from(e.dataTransfer.files || []).filter(function (f) { return f.type.indexOf('image/') === 0; });
+            if (files.length) lwP2UploadFiles(files);
+        });
+    }
     document.addEventListener('DOMContentLoaded', function () {
-        var dz = $('lwDropZone');
-        if (dz) {
-            dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('lw-drop-active'); });
-            dz.addEventListener('dragleave', function () { dz.classList.remove('lw-drop-active'); });
-            dz.addEventListener('drop', function (e) {
-                e.preventDefault(); dz.classList.remove('lw-drop-active');
-                var files = Array.from(e.dataTransfer.files || []).filter(function (f) { return f.type.indexOf('image/') === 0; });
-                if (files.length) lwP2UploadFiles(files);
-            });
-        }
+        _bindEvidenciaDrop('lwDropZone');      // Fase 2
+        _bindEvidenciaDrop('lwF1EvidZone');    // Fase 1 (Isla 4)
         window.addEventListener('paste', function (e) {
             if (!state.lev || $('levantamientoWizard').style.display === 'none') return;
-            if (state.phase !== 2) return;
+            // Pegar fotos funciona en Fase 1 (isla 4) o Fase 2
+            if (state.phase !== 1 && state.phase !== 2) return;
             var items = Array.from(e.clipboardData.items || []);
             var files = items.filter(function (it) { return it.type.indexOf('image/') === 0; }).map(function (it) { return it.getAsFile(); }).filter(Boolean);
             if (files.length) lwP2UploadFiles(files);
@@ -1678,10 +1701,85 @@
             var el = $(pair[1]);
             if (el) f2[pair[0]] = el.value || '';
         });
-        // Los arrays de especificaciones + comentarios_spec y comentarios (por partida)
-        // ya están sincronizados en state.lev.fase2_data por los handlers.
+        // Programa de implementación (movido desde Fase 1). Se guarda
+        // como sub-objeto fase2_data.programa para no mezclar con el
+        // resto de los campos del documento. Los PDFs leen de aqui
+        // primero y de fase1_data como fallback para data vieja.
+        var progMap = {
+            fecha_inicio:  'lw_f2_prog_fecha_inicio',
+            fecha_fin:     'lw_f2_prog_fecha_fin',
+            duracion:      'lw_f2_prog_duracion',
+            apoyo_cliente: 'lw_f2_prog_apoyo_cliente',
+            personal_req:  'lw_f2_prog_personal_req',
+            elev_alto:     'lw_f2_prog_elev_alto',
+            elev_ancho:    'lw_f2_prog_elev_ancho',
+            elev_modelo:   'lw_f2_prog_elev_modelo',
+        };
+        var prog = f2.programa || {};
+        Object.keys(progMap).forEach(function (k) {
+            var el = $(progMap[k]);
+            if (el) prog[k] = el.value || '';
+        });
+        f2.programa = prog;
         state.lev.fase2_data = f2;
         return f2;
+    }
+
+    // Handler de los inputs del Programa de Implementación (movido a Fase 2).
+    // Guarda directo en state.lev.fase2_data.programa para que el save
+    // recoja el valor al autosave.
+    window.lwF2ProgInput = function (el, key) {
+        var f2 = state.lev.fase2_data || {};
+        f2.programa = f2.programa || {};
+        f2.programa[key] = el.value || '';
+        state.lev.fase2_data = f2;
+        lwRefreshMetaPill(el);
+        lwFieldChange();
+    };
+
+    // Turno del Programa (chip single-select, ahora en Fase 2).
+    window.lwF2ProgSetTurno = function (t) {
+        var f2 = state.lev.fase2_data || {};
+        f2.programa = f2.programa || {};
+        f2.programa.turno = (f2.programa.turno === t) ? '' : t;
+        state.lev.fase2_data = f2;
+        _lwF2RenderTurnoChips();
+        lwFieldChange();
+    };
+
+    function _lwF2RenderTurnoChips() {
+        var turnoEl = $('lw_f2_prog_turno_chips');
+        if (!turnoEl) return;
+        var f2 = state.lev.fase2_data || {};
+        var current = (f2.programa && f2.programa.turno) || '';
+        turnoEl.innerHTML = ['Diurno', 'Nocturno', 'Mixto'].map(function (t) {
+            var on = current === t;
+            return '<button type="button" class="lw-chip' + (on ? ' sel' : '') + '" onclick="lwF2ProgSetTurno(\'' + t + '\')">' +
+                (on ? '<i></i>' : '') + t + '</button>';
+        }).join('');
+    }
+
+    // Rellenar los inputs de programa cuando se abre Fase 2.
+    function _lwF2FillPrograma() {
+        var f2 = state.lev.fase2_data || {};
+        var f1 = state.lev.fase1_data || {};
+        // Fuente: primero fase2.programa (nuevo), luego fase1 (legacy)
+        var prog = f2.programa || {};
+        var keys = ['fecha_inicio','fecha_fin','duracion','apoyo_cliente','personal_req','elev_alto','elev_ancho','elev_modelo'];
+        keys.forEach(function (k) {
+            var el = $('lw_f2_prog_' + k);
+            if (!el) return;
+            var v = (prog[k] != null && prog[k] !== '') ? prog[k] : (f1[k] || '');
+            el.value = v;
+            lwRefreshMetaPill(el);
+        });
+        // Migrar turno legacy si no existe en fase2
+        if (!prog.turno && f1.turno) {
+            prog.turno = f1.turno;
+            f2.programa = prog;
+            state.lev.fase2_data = f2;
+        }
+        _lwF2RenderTurnoChips();
     }
 
     // ── Especificaciones + Comentarios (listas editables tipo bullet) ──
