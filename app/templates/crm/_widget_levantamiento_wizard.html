@@ -395,117 +395,40 @@
                 </div>
             </div>
 
-            <!-- ═══ PHASE 2 — PROPUESTA TÉCNICA (Islas, sin wizard móvil) ═══ -->
+            <!-- ═══ PHASE 2 — PROPUESTA TÉCNICA (3 Islas) ═══
+                 Los datos del documento (elaboró/fecha/solicitante/dept) y
+                 los del requerimiento (planta/áreas/tipo solución/descripción)
+                 ya viven en Fase 1: el PDF los lee automáticamente vía
+                 fallback. Aquí solo quedan las tres islas de trabajo "de
+                 oficina". -->
             <div class="lw-phase" data-phase="2" id="lwPhase2" style="display:none;">
                 <div class="lw-islands-wrap lw-islands-wrap-f2">
+                    <!-- Barra de progreso arriba (como Fase 1) -->
+                    <div class="lw-islands-footer" id="lwF2IslandsFooter">
+                        <div class="lw-islands-progress-info">
+                            <div class="lw-islands-progress-text">
+                                <span>Completado</span>
+                                <span id="lwF2ProgressPct">0%</span>
+                            </div>
+                            <div class="lw-islands-progress-track">
+                                <div class="lw-islands-progress-fill" id="lwF2ProgressFill"></div>
+                            </div>
+                        </div>
+                        <div class="lw-islands-status" id="lwF2Status">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>Faltan datos</span>
+                        </div>
+                    </div>
+
                     <div class="lw-islands-board">
 
-                        <!-- ─── ISLA 1 · DATOS DEL DOCUMENTO ─── -->
+                        <!-- ─── ISLA 1 · ESPECIFICACIONES, COMENTARIOS & MATERIALES ─── -->
                         <section class="lw-island">
                             <div class="lw-island-header">
-                                <div class="lw-island-step" style="background:#2563EB;">1</div>
-                                <div>
-                                    <h2 class="lw-island-title">Datos del Documento</h2>
-                                    <p class="lw-island-subtitle">Quién lo elabora y para quién</p>
-                                </div>
-                            </div>
-                            <div class="lw-island-body">
-                                <div class="lw-ifield-row">
-                                    <div class="lw-ifield">
-                                        <label class="lw-ifield-label">Elaboró</label>
-                                        <label class="lw-soft-input lw-soft-input-icon">
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                                            <input type="text" id="lw_f2_elaboro" placeholder="Nombre completo" oninput="lwMetaInput(this)">
-                                        </label>
-                                    </div>
-                                    <div class="lw-ifield">
-                                        <label class="lw-ifield-label">Fecha del documento</label>
-                                        <label class="lw-soft-input lw-soft-input-icon">
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                            <input type="date" id="lw_f2_doc_fecha" oninput="lwMetaInput(this)">
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="lw-ifield">
-                                    <label class="lw-ifield-label">Solicitante</label>
-                                    <label class="lw-soft-input lw-soft-input-icon">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                        <input type="text" id="lw_f2_solicitante" placeholder="Persona que solicita" oninput="lwMetaInput(this)">
-                                    </label>
-                                </div>
-
-                                <div class="lw-ifield">
-                                    <label class="lw-ifield-label">Departamento</label>
-                                    <label class="lw-soft-input lw-soft-input-icon">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
-                                        <input type="text" id="lw_f2_departamento" placeholder="Ej: IT, Mantenimiento" oninput="lwMetaInput(this)">
-                                    </label>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- ─── ISLA 2 · REQUERIMIENTO Y DESCRIPCIÓN ─── -->
-                        <section class="lw-island">
-                            <div class="lw-island-header">
-                                <div class="lw-island-step" style="background:#0F172A;">2</div>
-                                <div>
-                                    <h2 class="lw-island-title">Requerimiento</h2>
-                                    <p class="lw-island-subtitle">Planta, áreas y alcance</p>
-                                </div>
-                            </div>
-                            <div class="lw-island-body">
-                                <div class="lw-ifield-row">
-                                    <div class="lw-ifield">
-                                        <label class="lw-ifield-label">Planta</label>
-                                        <label class="lw-soft-input lw-soft-input-icon">
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
-                                            <input type="text" id="lw_f2_planta" placeholder="Nombre de planta" oninput="lwMetaInput(this)">
-                                        </label>
-                                    </div>
-                                    <div class="lw-ifield">
-                                        <label class="lw-ifield-label">Áreas consideradas</label>
-                                        <label class="lw-soft-input lw-soft-input-icon">
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                            <input type="text" id="lw_f2_areas" placeholder="Naves, áreas, pisos…" oninput="lwMetaInput(this)">
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="lw-ifield-row">
-                                    <div class="lw-ifield">
-                                        <label class="lw-ifield-label">Tipo de solución</label>
-                                        <label class="lw-soft-input lw-soft-input-icon">
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                                            <input type="text" id="lw_f2_tipo_solucion" placeholder="Ej: CCTV + Cableado" oninput="lwMetaInput(this)">
-                                        </label>
-                                    </div>
-                                    <div class="lw-ifield">
-                                        <label class="lw-ifield-label">Fecha de instalación</label>
-                                        <label class="lw-soft-input lw-soft-input-icon">
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M21 6v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                                            <input type="text" id="lw_f2_fecha_inst" placeholder="Acordar con usuario" oninput="lwMetaInput(this)">
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="lw-ifield lw-ifield-grow">
-                                    <label class="lw-ifield-label">Descripción explícita del proyecto</label>
-                                    <textarea id="lw_f2_desc_proyecto" class="lw-soft-textarea" rows="8"
-                                              placeholder="Describe a detalle el alcance del proyecto, antecedentes, necesidad del cliente y objetivo esperado…"
-                                              oninput="lwFieldChange()"></textarea>
-                                    <span class="lw-ifield-hint">Este texto sale tal cual en el PDF de la propuesta.</span>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- ─── ISLA 3 · ESPECIFICACIONES & COMENTARIOS ─── -->
-                        <section class="lw-island">
-                            <div class="lw-island-header">
-                                <div class="lw-island-step" style="background:#059669;">3</div>
+                                <div class="lw-island-step" style="background:#059669;">1</div>
                                 <div>
                                     <h2 class="lw-island-title">Especificaciones &amp; Comentarios</h2>
-                                    <p class="lw-island-subtitle">Requerimientos técnicos + observaciones</p>
+                                    <p class="lw-island-subtitle">Requerimientos técnicos, observaciones y materiales</p>
                                 </div>
                             </div>
                             <div class="lw-island-body">
@@ -527,17 +450,45 @@
                                         </button>
                                     </div>
                                 </div>
-                                <div class="lw-ifield lw-advanced" style="margin-top:20px;">
+
+                                <!-- Productos / Materiales con catálogo integrado -->
+                                <div class="lw-ifield" style="margin-top:18px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                                        <label class="lw-ifield-label" style="margin:0;">Productos &amp; Materiales</label>
+                                        <button type="button" class="lw-ghost-btn" onclick="lwP2OpenCatalog()">
+                                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                            Buscar en catálogo
+                                        </button>
+                                    </div>
+                                    <span class="lw-ifield-hint" style="margin:2px 0 6px;">Selecciona los materiales considerados en esta propuesta.</span>
+
+                                    <div class="lw-catalog-box" id="lwP2CatalogBox" style="display:none;margin-bottom:10px;">
+                                        <div class="lw-catalog-search">
+                                            <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                            <input type="text" id="lwP2CatalogSearch" placeholder="Escribe al menos 2 caracteres para buscar…" oninput="lwP2CatalogSearch()">
+                                            <button type="button" class="lw-catalog-close" onclick="lwP2CloseCatalog()" title="Cerrar">
+                                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                            </button>
+                                        </div>
+                                        <div class="lw-catalog-list" id="lwP2CatalogList">
+                                            <div class="lw-catalog-empty">Escribe para buscar en el catálogo…</div>
+                                        </div>
+                                    </div>
+
+                                    <div id="lw_f2_productos_wrap"></div>
+                                </div>
+
+                                <div class="lw-ifield lw-advanced" style="margin-top:18px;">
                                     <label class="lw-ifield-label">Notas de instalación por partida (opcional)</label>
                                     <div id="lw_f2_partidas"></div>
                                 </div>
                             </div>
                         </section>
 
-                        <!-- ─── ISLA 4 · EVIDENCIA FOTOGRÁFICA ─── -->
+                        <!-- ─── ISLA 2 · EVIDENCIA FOTOGRÁFICA ─── -->
                         <section class="lw-island">
                             <div class="lw-island-header">
-                                <div class="lw-island-step" style="background:#B45309;">4</div>
+                                <div class="lw-island-step" style="background:#B45309;">2</div>
                                 <div>
                                     <h2 class="lw-island-title">Evidencia Fotográfica</h2>
                                     <p class="lw-island-subtitle">Las fotos se comparten con Fase 1</p>
@@ -551,10 +502,10 @@
                             </div>
                         </section>
 
-                        <!-- ─── ISLA 5 · PROGRAMA DE IMPLEMENTACIÓN ─── -->
+                        <!-- ─── ISLA 3 · PROGRAMA DE IMPLEMENTACIÓN ─── -->
                         <section class="lw-island">
                             <div class="lw-island-header">
-                                <div class="lw-island-step" style="background:#7C3AED;">5</div>
+                                <div class="lw-island-step" style="background:#7C3AED;">3</div>
                                 <div>
                                     <h2 class="lw-island-title">Programa de Implementación</h2>
                                     <p class="lw-island-subtitle">Fechas, turno, personal, equipo</p>

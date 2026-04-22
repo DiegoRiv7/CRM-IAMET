@@ -3706,3 +3706,102 @@ label.lw-soft-input {
     color: #78350F;
 }
 .lw-cheer-toast.lw-cheer-warn .lw-cheer-title { color: #78350F; }
+
+/* ── Productos/Materiales en Fase 2 (listado compacto) ── */
+.lw-f2-prods-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+.lw-f2-prod-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #F1F5F9;
+    transition: background 0.15s;
+}
+.lw-f2-prod-row:last-child { border-bottom: none; }
+.lw-f2-prod-row:hover { background: #FAFBFC; }
+.lw-f2-prod-num {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.lw-f2-prod-info { flex: 1; min-width: 0; }
+.lw-f2-prod-desc {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lw-f2-prod-sub {
+    font-size: 11.5px;
+    color: #64748B;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lw-f2-prod-qty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.lw-f2-prod-qty span {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.lw-f2-prod-qty input {
+    width: 60px;
+    padding: 5px 8px;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    font-family: inherit;
+    outline: none;
+}
+.lw-f2-prod-qty input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.lw-f2-prod-del {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: #F1F5F9;
+    color: #94A3B8;
+    font-size: 18px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: all 0.15s;
+}
+.lw-f2-prod-del:hover {
+    background: #FEE2E2;
+    color: #DC2626;
+}

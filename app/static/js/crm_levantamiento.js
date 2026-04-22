@@ -428,6 +428,10 @@
         if (state.phase === 1 && typeof lwRecomputeSummary === 'function') {
             try { lwRecomputeSummary(); } catch (e) { /* silencioso */ }
         }
+        // Igual para Fase 2 — progress bar reactivo
+        if (state.phase === 2 && typeof _lwF2RecomputeProgress === 'function') {
+            try { _lwF2RecomputeProgress(); } catch (e) { /* silencioso */ }
+        }
         if (state.saveTimer) clearTimeout(state.saveTimer);
         state.saveTimer = setTimeout(function () { lwSave(false); }, 600);
     };
@@ -1624,11 +1628,14 @@
         renderP2SpecList('especificaciones', f2.especificaciones);
         renderP2SpecList('comentarios', f2.comentarios_spec);
 
-        // Partidas con comentarios (opcional)
-        var productos = f1.productos || [];
+        // Productos / Materiales (seleccionados via catalogo)
+        renderPhase2Productos();
+
+        // Partidas con comentarios — ahora iteran fase2.productos
+        var productos = f2.productos || [];
         var wrap = $('lw_f2_partidas');
         if (!productos.length) {
-            wrap.innerHTML = '<div class="lw-empty-card">Agrega productos en la Fase 1 primero</div>';
+            wrap.innerHTML = '<div class="lw-empty-card">Agrega productos arriba primero para poder escribir notas por partida</div>';
         } else {
             var comentarios = f2.comentarios || {}; // idx -> texto
             wrap.innerHTML = productos.map(function (p, idx) {
@@ -1659,6 +1666,162 @@
         renderPhase2Photos();
         // Programa de implementacion (movido desde Fase 1)
         _lwF2FillPrograma();
+        // Barra de progreso de Fase 2
+        _lwF2RecomputeProgress();
+    }
+
+    // ── Productos/Materiales en Fase 2 (con catalog search) ─────────
+    function renderPhase2Productos() {
+        var wrap = $('lw_f2_productos_wrap');
+        if (!wrap) return;
+        var f2 = state.lev.fase2_data || {};
+        var prods = f2.productos || [];
+        if (!prods.length) {
+            wrap.innerHTML = '<div class="lw-empty-card" style="padding:16px;text-align:center;color:#94A3B8;font-style:italic;border:1px dashed #CBD5E1;border-radius:10px;">Ningún material seleccionado. Usa el buscador de arriba.</div>';
+            return;
+        }
+        wrap.innerHTML =
+            '<div class="lw-f2-prods-list">' +
+            prods.map(function (p, i) {
+                return '<div class="lw-f2-prod-row">' +
+                    '<span class="lw-f2-prod-num">' + (i + 1) + '</span>' +
+                    '<div class="lw-f2-prod-info">' +
+                        '<div class="lw-f2-prod-desc">' + esc(p.desc || '') + '</div>' +
+                        '<div class="lw-f2-prod-sub">' + esc(p.marca || '—') + ' · ' + esc(p.modelo || '—') + '</div>' +
+                    '</div>' +
+                    '<label class="lw-f2-prod-qty"><span>Cant</span>' +
+                        '<input type="number" min="0" step="1" value="' + (p.qty || 1) + '" oninput="lwP2ProdQty(' + i + ', this.value)">' +
+                    '</label>' +
+                    '<button type="button" class="lw-f2-prod-del" onclick="lwP2DelProd(' + i + ')" title="Eliminar">×</button>' +
+                '</div>';
+            }).join('') +
+            '</div>';
+    }
+
+    window.lwP2ProdQty = function (i, val) {
+        var f2 = state.lev.fase2_data || {};
+        var prods = f2.productos || [];
+        if (!prods[i]) return;
+        prods[i].qty = parseInt(val, 10) || 0;
+        state.lev.fase2_data = f2;
+        lwFieldChange();
+    };
+
+    window.lwP2DelProd = function (i) {
+        var f2 = state.lev.fase2_data || {};
+        if (!f2.productos) return;
+        f2.productos.splice(i, 1);
+        state.lev.fase2_data = f2;
+        renderPhase2Productos();
+        // re-render partidas (ahora con índices correctos)
+        renderPhase2();
+        _lwF2RecomputeProgress();
+        lwFieldChange();
+    };
+
+    // ── Catálogo en Fase 2 ─────────────────────────────────
+    window.lwP2OpenCatalog = function () {
+        var box = $('lwP2CatalogBox');
+        if (!box) return;
+        box.style.display = 'block';
+        var inp = $('lwP2CatalogSearch');
+        if (inp) { inp.value = ''; inp.focus(); }
+        $('lwP2CatalogList').innerHTML = '<div class="lw-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
+    };
+    window.lwP2CloseCatalog = function () {
+        var box = $('lwP2CatalogBox');
+        if (box) box.style.display = 'none';
+    };
+    var _p2CatTimer = null;
+    window.lwP2CatalogSearch = function () {
+        var q = ($('lwP2CatalogSearch').value || '').trim();
+        if (_p2CatTimer) clearTimeout(_p2CatTimer);
+        if (q.length < 2) {
+            $('lwP2CatalogList').innerHTML = '<div class="lw-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
+            return;
+        }
+        _p2CatTimer = setTimeout(function () {
+            apiFetch('/app/api/iamet/catalogo-productos/?q=' + encodeURIComponent(q) + '&limit=40').then(function (r) {
+                var list = (r && r.ok && r.data) ? r.data : [];
+                _p2RenderCatalogList(list);
+            });
+        }, 220);
+    };
+    function _p2RenderCatalogList(list) {
+        var wrap = $('lwP2CatalogList');
+        if (!wrap) return;
+        if (!list.length) {
+            wrap.innerHTML = '<div class="lw-catalog-empty">Sin resultados</div>';
+            return;
+        }
+        wrap.innerHTML = list.map(function (p, i) {
+            return '<div class="lw-catalog-row" onclick="lwP2CatalogAdd(' + i + ')">' +
+                '<div>' +
+                    '<div class="lw-catalog-desc">' + esc(p.desc) + '</div>' +
+                    '<div class="lw-catalog-sub">' + esc(p.marca || '—') + ' · ' + esc(p.modelo || '—') + '</div>' +
+                '</div>' +
+                '<div class="lw-catalog-price">' + fmtMoney(p.precio || 0) + '</div>' +
+            '</div>';
+        }).join('');
+        window._lwP2CatalogCurrent = list;
+    }
+    window.lwP2CatalogAdd = function (i) {
+        var list = window._lwP2CatalogCurrent || [];
+        var p = list[i];
+        if (!p) return;
+        var f2 = state.lev.fase2_data || {};
+        f2.productos = f2.productos || [];
+        f2.productos.push({
+            id: p.id, desc: p.desc, marca: p.marca, modelo: p.modelo,
+            unidad: p.unidad || 'PZA', precio: p.precio || 0,
+            qty: 1, partida: f2.productos.length + 1,
+        });
+        state.lev.fase2_data = f2;
+        renderPhase2Productos();
+        renderPhase2();
+        _lwF2RecomputeProgress();
+        lwFieldChange();
+        lwCheer('✓ Material agregado', esc(p.desc).slice(0, 80));
+    };
+
+    // ── Progress bar Fase 2 ─────────────────────────────────
+    function _lwF2RecomputeProgress() {
+        if (!state.lev) return;
+        var f2 = state.lev.fase2_data || {};
+        var prog = f2.programa || {};
+        var specs = (f2.especificaciones || []).filter(function (s) { return s && s.trim(); });
+        var prods = (f2.productos || []).length;
+        var fotos = (state.lev.evidencias || []).length;
+        var hasProg = !!(prog.fecha_inicio || prog.fecha_fin);
+        var items = [
+            { done: specs.length > 0, label: 'Especificación técnica' },
+            { done: prods > 0,        label: 'Producto o material' },
+            { done: fotos > 0,        label: 'Foto de evidencia' },
+            { done: hasProg,          label: 'Programa con fechas' },
+        ];
+        var done = items.filter(function (i) { return i.done; }).length;
+        var pct = Math.round(done / items.length * 100);
+        var pctEl = document.getElementById('lwF2ProgressPct');
+        var fillEl = document.getElementById('lwF2ProgressFill');
+        var statusEl = document.getElementById('lwF2Status');
+        if (pctEl) pctEl.textContent = pct + '%';
+        if (fillEl) {
+            fillEl.style.width = pct + '%';
+            fillEl.classList.toggle('done', pct === 100);
+        }
+        if (statusEl) {
+            var remaining = items.length - done;
+            if (pct === 100) {
+                statusEl.classList.add('ready');
+                statusEl.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Listo para Fase 3</span>';
+            } else if (pct >= 50) {
+                statusEl.classList.add('ready');
+                statusEl.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Puedes avanzar · ' + pct + '%</span>';
+            } else {
+                statusEl.classList.remove('ready');
+                statusEl.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>' + (remaining === 1 ? 'Falta 1 dato' : 'Faltan ' + remaining + ' datos') + '</span>';
+            }
+        }
     }
     window.lwP2ToggleExpand = function (idx) {
         var card = document.querySelector('.lw-prod-card[data-idx="' + idx + '"]');

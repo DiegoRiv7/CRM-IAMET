@@ -2841,6 +2841,15 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
         'desc_proyecto': f2.get('desc_proyecto') or f1.get('descripcion') or '',
         'especificaciones': [x for x in (f2.get('especificaciones') or []) if x and x.strip()],
         'comentarios_spec': [x for x in (f2.get('comentarios_spec') or []) if x and x.strip()],
+        # Productos/Materiales — ahora se capturan en Fase 2 (con catálogo)
+        # con fallback a fase1.productos para compat con levantamientos viejos.
+        'productos': [{
+            'qty':    p.get('qty') or 1,
+            'unidad': p.get('unidad') or 'PZA',
+            'desc':   p.get('desc') or '',
+            'marca':  p.get('marca') or '',
+            'modelo': p.get('modelo') or '',
+        } for p in (f2.get('productos') or f1.get('productos') or [])],
         'evidencias': evidencias,
         # Recursos visuales — rutas filesystem para WeasyPrint
         'logo_url':          _static_file_url('images/iamet-logo.png'),

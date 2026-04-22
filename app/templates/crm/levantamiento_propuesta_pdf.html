@@ -354,6 +354,31 @@
     </tr>
 </table>
 
+<!-- ═══ Productos & Materiales considerados ═══ -->
+{% if productos %}
+<table class="pt-table" style="margin-bottom:4px;">
+    <tr class="pt-section-row"><td>Productos &amp; Materiales considerados</td></tr>
+</table>
+<table class="pt-table" style="table-layout:auto;">
+    <tr class="pt-specs-head">
+        <td style="width:8%;">Cant</td>
+        <td style="width:8%;">Unid</td>
+        <td>Descripción</td>
+        <td style="width:18%;">Marca</td>
+        <td style="width:20%;">Modelo / No. Parte</td>
+    </tr>
+    {% for p in productos %}
+    <tr>
+        <td class="pt-value-cell"><b>{{ p.qty }}</b></td>
+        <td class="pt-value-cell">{{ p.unidad }}</td>
+        <td style="padding:7px 11px;color:#0F172A;font-weight:500;font-size:10pt;">{{ p.desc|default:"—" }}</td>
+        <td style="padding:7px 11px;color:#334155;font-size:9.5pt;">{{ p.marca|default:"—" }}</td>
+        <td style="padding:7px 11px;color:#334155;font-size:9.5pt;font-family:'SF Mono',monospace;">{{ p.modelo|default:"—" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
 <!-- ═══ Evidencia Fotográfica — en hoja aparte ═══ -->
 <div class="pt-evid-wrap">
     <table class="pt-table" style="margin-bottom:4px;">
