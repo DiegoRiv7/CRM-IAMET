@@ -554,6 +554,20 @@
     border-color: #BFDBFE;
     color: #1D4ED8;
 }
+
+/* ─── Overrides de z-index para modales compartidos ───
+   Los diálogos del widget de Proyectos usan z-index 10200-10400 por
+   defecto; el wizard del levantamiento corre a 10600. Cuando se
+   invocan desde dentro del wizard (ej: "+ Añadir actividad" en la
+   Fase 4 del Programa de Obra), deben quedar POR ENCIMA del wizard. */
+#proyDialogoActividad,
+#proyDialogoActDetalle,
+#proyConfirmDialog,
+#proyDialogoCrear,
+#proyDialogoPartida,
+#proyDialogoOC,
+#proyDialogoTarea,
+#proyDialogoExcel { z-index: 11000 !important; }
 .lw-canvas-meta::before {
     content: "Datos de contacto";
     font-size: 11px;
