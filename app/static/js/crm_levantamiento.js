@@ -1671,13 +1671,14 @@
     }
 
     // ── Productos/Materiales en Fase 2 (con catalog search) ─────────
+    // Cada fila es editable inline — desc, marca, modelo, qty.
     function renderPhase2Productos() {
         var wrap = $('lw_f2_productos_wrap');
         if (!wrap) return;
         var f2 = state.lev.fase2_data || {};
         var prods = f2.productos || [];
         if (!prods.length) {
-            wrap.innerHTML = '<div class="lw-empty-card" style="padding:16px;text-align:center;color:#94A3B8;font-style:italic;border:1px dashed #CBD5E1;border-radius:10px;">Ningún material seleccionado. Usa el buscador de arriba.</div>';
+            wrap.innerHTML = '<div class="lw-empty-card" style="padding:16px;text-align:center;color:#94A3B8;font-style:italic;border:1px dashed #CBD5E1;border-radius:10px;">Ningún material seleccionado. Usa el buscador de arriba o agrégalos a mano.</div>';
             return;
         }
         wrap.innerHTML =
@@ -1686,25 +1687,58 @@
                 return '<div class="lw-f2-prod-row">' +
                     '<span class="lw-f2-prod-num">' + (i + 1) + '</span>' +
                     '<div class="lw-f2-prod-info">' +
-                        '<div class="lw-f2-prod-desc">' + esc(p.desc || '') + '</div>' +
-                        '<div class="lw-f2-prod-sub">' + esc(p.marca || '—') + ' · ' + esc(p.modelo || '—') + '</div>' +
+                        '<input class="lw-f2-prod-desc-input" type="text" value="' + esc(p.desc || '') + '" placeholder="Descripción" oninput="lwP2ProdField(' + i + ', \'desc\', this.value)">' +
+                        '<div class="lw-f2-prod-sub-inputs">' +
+                            '<input type="text" value="' + esc(p.marca || '') + '" placeholder="Marca" oninput="lwP2ProdField(' + i + ', \'marca\', this.value)">' +
+                            '<input type="text" value="' + esc(p.modelo || '') + '" placeholder="Modelo / No. Parte" oninput="lwP2ProdField(' + i + ', \'modelo\', this.value)">' +
+                        '</div>' +
                     '</div>' +
                     '<label class="lw-f2-prod-qty"><span>Cant</span>' +
-                        '<input type="number" min="0" step="1" value="' + (p.qty || 1) + '" oninput="lwP2ProdQty(' + i + ', this.value)">' +
+                        '<input type="number" min="0" step="1" value="' + (p.qty || 1) + '" oninput="lwP2ProdField(' + i + ', \'qty\', this.value)">' +
                     '</label>' +
                     '<button type="button" class="lw-f2-prod-del" onclick="lwP2DelProd(' + i + ')" title="Eliminar">×</button>' +
                 '</div>';
             }).join('') +
-            '</div>';
+            '</div>' +
+            '<button type="button" class="lw-ghost-btn" style="margin-top:8px;" onclick="lwP2AddBlankProd()">' +
+                '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
+                'Agregar fila en blanco' +
+            '</button>';
     }
 
-    window.lwP2ProdQty = function (i, val) {
+    // Update generico de cualquier campo del producto, sin re-render
+    // para no perder el foco mientras el usuario escribe.
+    window.lwP2ProdField = function (i, field, val) {
         var f2 = state.lev.fase2_data || {};
         var prods = f2.productos || [];
         if (!prods[i]) return;
-        prods[i].qty = parseInt(val, 10) || 0;
+        if (field === 'qty') prods[i].qty = parseInt(val, 10) || 0;
+        else prods[i][field] = val;
         state.lev.fase2_data = f2;
         lwFieldChange();
+    };
+    // Compat con el handler viejo
+    window.lwP2ProdQty = function (i, val) { lwP2ProdField(i, 'qty', val); };
+
+    // Agrega una fila vacia para llenar a mano
+    window.lwP2AddBlankProd = function () {
+        var f2 = state.lev.fase2_data || {};
+        f2.productos = f2.productos || [];
+        f2.productos.push({
+            id: null, desc: '', marca: '', modelo: '',
+            unidad: 'PZA', precio: 0,
+            qty: 1, partida: f2.productos.length + 1,
+        });
+        state.lev.fase2_data = f2;
+        renderPhase2Productos();
+        renderPhase2();
+        _lwF2RecomputeProgress();
+        lwFieldChange();
+        // Auto-focus la descripcion de la nueva fila
+        setTimeout(function () {
+            var rows = document.querySelectorAll('.lw-f2-prod-desc-input');
+            if (rows.length) rows[rows.length - 1].focus();
+        }, 50);
     };
 
     window.lwP2DelProd = function (i) {
@@ -1750,8 +1784,19 @@
     function _p2RenderCatalogList(list) {
         var wrap = $('lwP2CatalogList');
         if (!wrap) return;
+        var q = ($('lwP2CatalogSearch').value || '').trim();
         if (!list.length) {
-            wrap.innerHTML = '<div class="lw-catalog-empty">Sin resultados</div>';
+            // Empty state con opcion de agregar manual — util porque el
+            // catalogo CatalogoCableado solo tiene productos de cableado.
+            // Para camaras/NVRs/etc el usuario agrega a mano.
+            wrap.innerHTML =
+                '<div class="lw-catalog-empty" style="padding:16px 14px;">' +
+                    '<div style="color:#64748B;margin-bottom:10px;">No encontré "<b>' + esc(q) + '</b>" en el catálogo.</div>' +
+                    '<button type="button" class="lw-ghost-btn" onclick="lwP2AddManualFromSearch()" style="border-color:#2563EB;color:#2563EB;">' +
+                        '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
+                        'Agregar "' + esc(q) + '" manualmente' +
+                    '</button>' +
+                '</div>';
             return;
         }
         wrap.innerHTML = list.map(function (p, i) {
@@ -1765,6 +1810,29 @@
         }).join('');
         window._lwP2CatalogCurrent = list;
     }
+
+    // Agrega un producto manual (lo que el usuario escribio en el search
+    // como descripcion). Marca/modelo quedan vacios para que el edite despues.
+    window.lwP2AddManualFromSearch = function () {
+        var q = ($('lwP2CatalogSearch').value || '').trim();
+        if (!q) return;
+        var f2 = state.lev.fase2_data || {};
+        f2.productos = f2.productos || [];
+        f2.productos.push({
+            id: null, desc: q, marca: '', modelo: '',
+            unidad: 'PZA', precio: 0,
+            qty: 1, partida: f2.productos.length + 1,
+        });
+        state.lev.fase2_data = f2;
+        // Limpiar search y cerrar catalogo
+        $('lwP2CatalogSearch').value = '';
+        lwP2CloseCatalog();
+        renderPhase2Productos();
+        renderPhase2();
+        _lwF2RecomputeProgress();
+        lwFieldChange();
+        lwCheer('✓ Material agregado', esc(q).slice(0, 80));
+    };
     window.lwP2CatalogAdd = function (i) {
         var list = window._lwP2CatalogCurrent || [];
         var p = list[i];
