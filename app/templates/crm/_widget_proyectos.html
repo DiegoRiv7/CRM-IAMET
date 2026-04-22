@@ -3,20 +3,14 @@
      ═══════════════════════════════════════════════════════════════ -->
 <div class="proyectos-section" id="proyectosSection">
 
-  <!-- Tab bar -->
-  <div style="display:flex;border:1px solid #e5e7eb;border-radius:10px;margin:0 24px 20px;overflow:hidden;">
-    <button class="proy-main-tab active" data-tab="programa" onclick="proySetMainTab('programa')" style="flex:1;padding:10px;border:none;background:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#007AFF;border-bottom:2px solid #007AFF;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Proyectos
-    </button>
-    <button class="proy-main-tab" data-tab="dashboard" onclick="proySetMainTab('dashboard')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Dashboard
-    </button>
-    <button class="proy-main-tab" data-tab="financiero" onclick="proySetMainTab('financiero')" style="flex:1;padding:10px;border:none;background:#f9fafb;font-size:0.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#6B7280;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Financiero
-    </button>
+  <!-- Tab bar — compacto y centrado estilo CRM -->
+  <div class="proy-tabs-wrap">
+    <div class="proy-tabs">
+      <button class="proy-tab active" data-tab="programa" onclick="proySetMainTab('programa')">Proyectos</button>
+      <button class="proy-tab" data-tab="dashboard" onclick="proySetMainTab('dashboard')">Dashboard</button>
+      <button class="proy-tab" data-tab="financiero" onclick="proySetMainTab('financiero')">Financiero</button>
+    </div>
   </div>
-
-  <hr style="border:none;border-top:1px solid #f0f0f0;margin:0 24px 20px;">
 
   <!-- TAB 1: Dashboard -->
   <div id="proyTabDashboard" style="display:none;padding:0 24px 20px;">
@@ -34,13 +28,53 @@
 
   <!-- TAB 2: Programa de Obra (existing content) -->
   <div id="proyTabPrograma" style="padding:0 24px 20px;">
-    <div class="proy-section-header" style="margin-bottom:16px;">
-      <div class="proy-header-actions">
-        <button class="proy-filter-pill active" data-filter="todos" onclick="proyectosFilterStatus('todos')">Todos</button>
-        <button class="proy-filter-pill" data-filter="active" onclick="proyectosFilterStatus('active')">Activos</button>
-        <button class="proy-filter-pill" data-filter="completed" onclick="proyectosFilterStatus('completed')">Completados</button>
-        <button class="proy-filter-pill" data-filter="planning" onclick="proyectosFilterStatus('planning')">Planificacion</button>
-        <!-- Search -->
+    <!-- Filter bar estilo CRM: [Filtro ▾] [Ordenar ▾] [🔍 Buscar] [+ Nuevo] -->
+    <div class="proy-facet-bar">
+      <div class="proy-facet-left">
+        <!-- Filtro dropdown -->
+        <div class="proy-facet-wrap" style="position:relative;">
+          <button type="button" class="proy-facet-btn" id="proyFilterBtn" onclick="proyFilterMenuToggle(event)">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
+            <span id="proyFilterLabel">Filtro</span>
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="proy-facet-menu" id="proyFilterMenu" style="display:none;">
+            <div class="proy-facet-item" data-filter="todos" onclick="proyFilterPick('todos','Todos')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+              Todos
+            </div>
+            <div class="proy-facet-item" data-filter="active" onclick="proyFilterPick('active','Activos')">
+              <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="10 8 16 12 10 16"/></svg>
+              Activos
+            </div>
+            <div class="proy-facet-item" data-filter="completed" onclick="proyFilterPick('completed','Completados')">
+              <svg width="14" height="14" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Completados
+            </div>
+            <div class="proy-facet-item" data-filter="planning" onclick="proyFilterPick('planning','Planificación')">
+              <svg width="14" height="14" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              Planificación
+            </div>
+          </div>
+        </div>
+
+        <!-- Ordenar dropdown -->
+        <div class="proy-facet-wrap" style="position:relative;">
+          <button type="button" class="proy-facet-btn" id="proySortBtn" onclick="proySortMenuToggle(event)">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+            <span id="proySortLabel">Ordenar</span>
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="proy-facet-menu" id="proySortMenu" style="display:none;">
+            <div class="proy-facet-item" onclick="proySortPick('recientes','Más recientes')">Más recientes</div>
+            <div class="proy-facet-item" onclick="proySortPick('antiguos','Más antiguos')">Más antiguos</div>
+            <div class="proy-facet-item" onclick="proySortPick('monto_desc','Mayor monto')">Mayor monto</div>
+            <div class="proy-facet-item" onclick="proySortPick('monto_asc','Menor monto')">Menor monto</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="proy-facet-right">
         <div class="proy-search-wrap">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-search-icon">
             <circle cx="11" cy="11" r="7"/>
@@ -48,7 +82,6 @@
           </svg>
           <input type="text" id="proySearch" class="proy-search" placeholder="Buscar proyecto..." oninput="proyectosBuscar()">
         </div>
-        <!-- New project button -->
         <button class="proy-btn-new" onclick="proyectosCrearDialogo()">+ Nuevo Proyecto</button>
       </div>
     </div>

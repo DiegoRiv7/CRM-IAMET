@@ -172,6 +172,11 @@
             });
         }
 
+        // Sort
+        if (typeof window._proyApplySort === 'function') {
+            filtered = window._proyApplySort(filtered);
+        }
+
         return filtered;
     }
 
@@ -186,6 +191,75 @@
         var filtered = getFilteredProjects();
         renderProjectCards(filtered);
     };
+
+    // ── Nueva UI: Filtro dropdown + Ordenar dropdown ──────────────
+    var _currentSort = 'recientes';
+
+    window.proyFilterMenuToggle = function (e) {
+        if (e) e.stopPropagation();
+        var m = el('proyFilterMenu');
+        if (!m) return;
+        var open = m.style.display === 'block';
+        // Cerrar cualquier otro menu abierto
+        var sm = el('proySortMenu'); if (sm) sm.style.display = 'none';
+        m.style.display = open ? 'none' : 'block';
+    };
+    window.proySortMenuToggle = function (e) {
+        if (e) e.stopPropagation();
+        var m = el('proySortMenu');
+        if (!m) return;
+        var open = m.style.display === 'block';
+        var fm = el('proyFilterMenu'); if (fm) fm.style.display = 'none';
+        m.style.display = open ? 'none' : 'block';
+    };
+    // Cerrar menus al click fuera
+    document.addEventListener('click', function (e) {
+        var fm = el('proyFilterMenu');
+        var sm = el('proySortMenu');
+        if (fm && fm.style.display === 'block') {
+            var wrap = fm.closest('.proy-facet-wrap');
+            if (wrap && !wrap.contains(e.target)) fm.style.display = 'none';
+        }
+        if (sm && sm.style.display === 'block') {
+            var wrap2 = sm.closest('.proy-facet-wrap');
+            if (wrap2 && !wrap2.contains(e.target)) sm.style.display = 'none';
+        }
+    });
+
+    window.proyFilterPick = function (value, label) {
+        var btn = el('proyFilterBtn');
+        var lbl = el('proyFilterLabel');
+        if (lbl) lbl.textContent = label || 'Filtro';
+        if (btn) btn.classList.toggle('active', value !== 'todos');
+        el('proyFilterMenu').style.display = 'none';
+        proyectosFilterStatus(value);
+    };
+
+    window.proySortPick = function (value, label) {
+        var btn = el('proySortBtn');
+        var lbl = el('proySortLabel');
+        if (lbl) lbl.textContent = label || 'Ordenar';
+        if (btn) btn.classList.toggle('active', value !== 'recientes');
+        el('proySortMenu').style.display = 'none';
+        _currentSort = value;
+        proyectosCargarLista();
+    };
+
+    // Aplica el sort actual sobre la lista filtrada
+    function _applySort(list) {
+        if (!_currentSort || _currentSort === 'recientes') return list;
+        var arr = list.slice();
+        if (_currentSort === 'antiguos') {
+            arr.sort(function (a, b) { return new Date(a.created_at || 0) - new Date(b.created_at || 0); });
+        } else if (_currentSort === 'monto_desc') {
+            arr.sort(function (a, b) { return (parseFloat(b.monto || 0) - parseFloat(a.monto || 0)); });
+        } else if (_currentSort === 'monto_asc') {
+            arr.sort(function (a, b) { return (parseFloat(a.monto || 0) - parseFloat(b.monto || 0)); });
+        }
+        return arr;
+    }
+    // Expose so getFilteredProjects can chain it
+    window._proyApplySort = _applySort;
 
 
     // =========================================
