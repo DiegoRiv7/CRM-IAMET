@@ -3134,7 +3134,7 @@
 
 .lw-island {
     flex: 0 0 auto;
-    width: 380px;
+    width: 420px;
     background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 0 3px rgba(15, 23, 42, 0.02);
@@ -3142,11 +3142,12 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    align-self: flex-start;
-    max-height: 100%;
+    align-self: stretch;
+    min-height: 520px;
 }
-.lw-island-wide { width: 560px; }
-/* Las islas wide (productos + programa) crecen si hay espacio */
+/* Productos: tabla con scroll horizontal dentro del island */
+#lw_f1_productos_wrap { overflow-x: auto; max-width: 100%; }
+#lw_f1_productos_wrap table { min-width: 620px; }
 
 .lw-island-header {
     padding: 20px 22px;
@@ -3390,10 +3391,10 @@ label.lw-soft-input {
         flex-direction: column;
         align-items: stretch;
     }
-    .lw-island,
-    .lw-island-wide {
+    .lw-island {
         width: 100%;
         max-width: 100%;
+        min-height: auto;
     }
     .lw-islands-footer {
         width: calc(100% - 32px);
@@ -3437,3 +3438,31 @@ label.lw-soft-input {
     right: 0;
     width: 100%;
 }
+
+/* Shake del footer cuando intentan avanzar con <70% */
+@keyframes lw-shake-kf {
+    0%, 100% { transform: translateX(-50%); }
+    20%, 60% { transform: translateX(calc(-50% - 6px)); }
+    40%, 80% { transform: translateX(calc(-50% + 6px)); }
+}
+.lw-islands-footer.lw-shake {
+    animation: lw-shake-kf 0.4s ease-in-out;
+    border-color: #F59E0B;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2), 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+/* Boton "Siguiente fase" deshabilitado visualmente si <70% */
+.lw-btn-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(0.3);
+}
+.lw-btn-disabled:hover { transform: none; }
+
+/* Variante warn para lwCheer */
+.lw-cheer-toast.lw-cheer-warn {
+    background: linear-gradient(180deg, #FEF3C7, #FDE68A);
+    border: 1px solid #F59E0B;
+    color: #78350F;
+}
+.lw-cheer-toast.lw-cheer-warn .lw-cheer-title { color: #78350F; }

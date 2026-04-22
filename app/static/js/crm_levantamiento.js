@@ -284,11 +284,42 @@
         if (footer) footer.style.display = state.phase === 5 ? 'none' : 'flex';
     }
 
+    // Gate: no dejar avanzar a fase > 1 hasta que Fase 1 este >= 70% completa.
+    // Retorna { canAdvance: bool, pct: number } basado en la checklist.
+    function lwFase1Progress() {
+        if (!state.lev) return { canAdvance: false, pct: 0 };
+        var d = state.lev.fase1_data || {};
+        var items = [
+            !!_ckVal('lw_f1_titulo', state.lev.nombre),
+            !!_ckVal('lw_f1_cliente', d.cliente),
+            !!_ckVal('lw_f1_contacto', d.contacto),
+            !!_ckVal('lw_f1_descripcion', d.descripcion),
+            (d.servicios || []).length > 0,
+            (d.productos || []).length > 0,
+        ];
+        var done = items.filter(Boolean).length;
+        var pct = Math.round((done / items.length) * 100);
+        return { canAdvance: pct >= 70, pct: pct, done: done, total: items.length };
+    }
+
     window.lwGoPhase = function (n) {
         if (n < 1 || n > 5) return;
+        // Gate 70% Fase 1 → Fase >=2
+        if (state.phase === 1 && n > 1) {
+            var prog = lwFase1Progress();
+            if (!prog.canAdvance) {
+                lwCheer('⚠ Completa al menos el 70% de la Fase 1', 'Llevas ' + prog.pct + '%. Faltan datos obligatorios para continuar.', 'warn');
+                // Shake del footer para atraer la atencion
+                var footer = document.getElementById('lwIslandsFooter');
+                if (footer) {
+                    footer.classList.remove('lw-shake');
+                    void footer.offsetWidth; // reflow
+                    footer.classList.add('lw-shake');
+                }
+                return;
+            }
+        }
         // Flushear lo pendiente de la fase actual ANTES de cambiar.
-        // Si el timer debounce de 600ms no se disparó todavía, forzamos
-        // el save inmediato.
         lwFlushSave();
         state.phase = n;
         state.lev.fase_actual = Math.max(state.lev.fase_actual || 1, n);
@@ -833,25 +864,19 @@
         var c = list[idx];
         if (!c) return;
         var d = state.lev.fase1_data || {};
+        // Solo seteamos la identidad del cliente (id + nombre). El resto
+        // de los campos — contacto, email, telefono — los captura el
+        // ingeniero manualmente para evitar datos copiados sin verificar.
         d.cliente_id = c.id;
         d.cliente = c.nombre;
-        // Auto-fill si los campos están vacíos
-        if (!d.email && c.email) d.email = c.email;
-        if (!d.telefono && c.telefono) d.telefono = c.telefono;
-        // Contacto: si no hay contacto escrito, usa contacto_principal como sugerencia
-        if (!d.contacto && c.contacto_principal) d.contacto = c.contacto_principal;
         state.lev.fase1_data = d;
-        // Reflejar en inputs
         $('lw_f1_cliente').value = d.cliente;
-        $('lw_f1_contacto').value = d.contacto || '';
-        $('lw_f1_email').value = d.email || '';
-        $('lw_f1_telefono').value = d.telefono || '';
-        [ 'lw_f1_cliente','lw_f1_contacto','lw_f1_email','lw_f1_telefono' ].forEach(function(id){
-            var el = $(id); if (el) lwRefreshMetaPill(el);
-        });
+        lwRefreshMetaPill($('lw_f1_cliente'));
         lwHideClienteDropdown();
         lwRefreshClienteLock();
-        // Prefetch contactos del cliente para el dropdown de contactos
+        // Prefetch contactos del cliente — solo alimenta el dropdown
+        // de sugerencias cuando el usuario clickea en Contacto; no
+        // rellena el campo automaticamente.
         _prefetchContactos(c.id);
         lwRecomputeSummary();
         lwFieldChange();
@@ -1018,25 +1043,29 @@
         _updateIslandsFooter(items, done, total);
     }
 
-    // Footer flotante con progreso + palomitas inline en cada campo
+    // Footer flotante con progreso + palomitas inline en cada campo.
+    // El umbral para avanzar a Fase 2 es 70% → a partir de ahi el
+    // footer se pone verde y el boton "Siguiente fase" se habilita.
     function _updateIslandsFooter(items, done, total) {
         var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        var canAdvance = pct >= 70;
         var pctEl = document.getElementById('lwIslandsProgressPct');
         var fillEl = document.getElementById('lwIslandsProgressFill');
         var statusEl = document.getElementById('lwIslandsStatus');
         if (pctEl) pctEl.textContent = pct + '%';
         if (fillEl) {
             fillEl.style.width = pct + '%';
-            fillEl.classList.toggle('done', pct === 100);
+            fillEl.classList.toggle('done', canAdvance);
         }
         // Estado textual
         if (statusEl) {
             var remaining = total - done;
-            if (pct === 100) {
+            if (canAdvance) {
                 statusEl.classList.add('ready');
+                var lbl = pct === 100 ? 'Listo para Fase 2' : 'Puedes avanzar · ' + pct + '%';
                 statusEl.innerHTML =
                     '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
-                    '<span>Listo para Fase 2</span>';
+                    '<span>' + lbl + '</span>';
             } else {
                 statusEl.classList.remove('ready');
                 statusEl.innerHTML =
@@ -1049,6 +1078,12 @@
             var ic = document.getElementById('lwCheck_' + it.key);
             if (ic) ic.classList.toggle('visible', !!it.done);
         });
+        // Habilitar/deshabilitar el boton "Siguiente fase" del footer general
+        var btnNext = document.getElementById('lwFooterNext');
+        if (btnNext && state.phase === 1) {
+            btnNext.classList.toggle('lw-btn-disabled', !canAdvance);
+            btnNext.title = canAdvance ? '' : 'Completa al menos 70% de Fase 1';
+        }
     }
 
     // Celebración efímera cuando completas la checklist de Fase 1
