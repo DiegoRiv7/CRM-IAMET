@@ -2614,7 +2614,7 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
     try:
         lev = ProyectoLevantamiento.objects.select_related(
             'proyecto', 'creado_por'
-        ).get(id=levantamiento_id)
+        ).prefetch_related('evidencias').get(id=levantamiento_id)
     except ProyectoLevantamiento.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
     if not _check_access(request.user, lev.proyecto):
@@ -2677,6 +2677,25 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
             return v
         return f1.get(key) or ''
 
+    # Notas libres de campo (nueva Isla 4)
+    notas_materiales = f1.get('notas_materiales') or ''
+
+    # Evidencias fotográficas — convertir a rutas file:// para WeasyPrint
+    def _file_url_for_field(field):
+        if not field:
+            return ''
+        try:
+            return 'file://' + field.path
+        except Exception:
+            try:
+                return request.build_absolute_uri(field.url)
+            except Exception:
+                return ''
+    evidencias = [{
+        'abs_url': _file_url_for_field(e.archivo),
+        'comentario': e.comentario or '',
+    } for e in lev.evidencias.all()]
+
     ctx = {
         'lev':          lev,
         'cliente':      f1.get('cliente')  or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
@@ -2704,7 +2723,12 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
         'elev_ancho':  _prog('elev_ancho'),
         'elev_modelo': _prog('elev_modelo'),
 
-        'productos': productos,
+        'productos':        productos,
+        'notas_materiales': notas_materiales,
+        'evidencias':       evidencias,
+
+        # Flag: ¿hay datos de programa para renderizar esa sección?
+        'has_programa':     any([_prog(k) for k in ('fecha_inicio', 'fecha_fin', 'duracion', 'turno', 'apoyo_cliente', 'personal_req', 'elev_alto', 'elev_ancho', 'elev_modelo')]),
 
         # Assets
         'logo_url':         _static_file_url('images/iamet-logo.png'),

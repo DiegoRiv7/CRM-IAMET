@@ -170,6 +170,37 @@
         letter-spacing: 0.04em;
     }
 
+    /* Evidencia fotográfica — arranca en hoja nueva */
+    .ls-evid-wrap {
+        page-break-before: always;
+        break-before: page;
+    }
+    .ls-evid-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 8px 0 4px;
+    }
+    .ls-evid-grid.ls-evid-single {
+        grid-template-columns: 1fr;
+    }
+    .ls-evid-item {
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+        text-align: center;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    .ls-evid-item img {
+        width: 100%;
+        height: auto;
+        max-height: 420px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+    }
+
     /* Footer */
     .pt-footer {
         margin-top: 14px; padding-top: 10px; border-top: 2px solid #E2E8F0;
@@ -247,7 +278,8 @@
     {% endfor %}
 </div>
 
-<!-- ═══ Programa de implementación ═══ -->
+<!-- ═══ Programa de implementación (solo si hay datos) ═══ -->
+{% if has_programa %}
 <table class="pt-table">
     <tr class="pt-section-row"><td colspan="4">Programa de implementación</td></tr>
     <tr>
@@ -270,13 +302,15 @@
         <td class="pt-label-cell">Personal requerido:</td>
         <td class="pt-value-cell">{{ personal_req|default:"—" }}</td>
     </tr>
+    {% if realizo %}
     <tr>
         <td class="pt-label-cell">Realizó levantamiento:</td>
-        <td class="pt-value-cell" colspan="3">{{ realizo|default:"—" }}</td>
+        <td class="pt-value-cell" colspan="3">{{ realizo }}</td>
     </tr>
+    {% endif %}
 </table>
 
-<!-- ═══ Equipo de elevación ═══ -->
+{% if elev_alto or elev_ancho or elev_modelo %}
 <table class="pt-table">
     <tr class="pt-section-row"><td colspan="6">Equipo de elevación</td></tr>
     <tr>
@@ -288,8 +322,19 @@
         <td class="pt-value-cell" style="width:20%;">{{ elev_modelo|default:"—" }}</td>
     </tr>
 </table>
+{% endif %}
+{% endif %}
 
-<!-- ═══ Cuantificación primaria ═══ -->
+<!-- ═══ Notas de campo (Isla 4: componentes y materiales que se necesitan) ═══ -->
+{% if notas_materiales %}
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Componentes y materiales que se necesitan</td></tr>
+    <tr><td class="pt-desc-cell">{{ notas_materiales|linebreaksbr }}</td></tr>
+</table>
+{% endif %}
+
+<!-- ═══ Cuantificación primaria — solo si hay productos capturados ═══ -->
+{% if productos %}
 <table class="pt-table" style="margin-bottom:4px;">
     <tr class="pt-section-row"><td>Cuantificación primaria</td></tr>
 </table>
@@ -304,21 +349,34 @@
         </tr>
     </thead>
     <tbody>
-        {% if productos %}
-            {% for p in productos %}
-            <tr>
-                <td class="pt-qty-cantidad">{{ p.qty|default:1 }} {{ p.unidad|default:"PZA" }}</td>
-                <td>{{ p.desc|default:"—" }}</td>
-                <td>{{ p.marca|default:"—" }}</td>
-                <td>{{ p.modelo|default:"—" }}</td>
-                <td>{{ p.ubicacion|default:"" }}</td>
-            </tr>
-            {% endfor %}
-        {% else %}
-            <tr class="pt-qty-empty-row"><td colspan="5">Sin productos agregados en el levantamiento.</td></tr>
-        {% endif %}
+        {% for p in productos %}
+        <tr>
+            <td class="pt-qty-cantidad">{{ p.qty|default:1 }} {{ p.unidad|default:"PZA" }}</td>
+            <td>{{ p.desc|default:"—" }}</td>
+            <td>{{ p.marca|default:"—" }}</td>
+            <td>{{ p.modelo|default:"—" }}</td>
+            <td>{{ p.ubicacion|default:"" }}</td>
+        </tr>
+        {% endfor %}
     </tbody>
 </table>
+{% endif %}
+
+<!-- ═══ Evidencia fotográfica (Isla 4: fotos del sitio) ═══ -->
+{% if evidencias %}
+<div class="ls-evid-wrap">
+    <table class="pt-table" style="margin-bottom:4px;">
+        <tr class="pt-section-row"><td>Evidencia Fotográfica</td></tr>
+    </table>
+    <div class="ls-evid-grid {% if evidencias|length == 1 %}ls-evid-single{% endif %}">
+        {% for ev in evidencias %}
+        <div class="ls-evid-item">
+            <img src="{{ ev.abs_url }}" alt="Evidencia {{ forloop.counter }}">
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <!-- ═══ Footer ═══ -->
 <div class="pt-footer">
