@@ -529,7 +529,10 @@
 }
 
 /* Sidebar colapsado → ocultamos el panel lateral y el canvas ocupa todo */
-.lw-sidebar-hidden .lw-canvas-meta { display: none !important; }
+/* El toggle del header oculta TODOS los paneles laterales de resumen
+   (Fase 1: datos de contacto/progreso; Fase 3: resumen financiero). */
+.lw-sidebar-hidden .lw-canvas-meta,
+.lw-sidebar-hidden .lw-p3-summary { display: none !important; }
 .lw-sidebar-hidden .lw-canvas { gap: 0; }
 
 /* Botón del header para togglear sidebar */
