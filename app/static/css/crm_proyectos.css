@@ -1186,41 +1186,50 @@ select.proy-info-input {
    REDISEÑO: Tabs compactas + Filter bar estilo CRM
    ═══════════════════════════════════════════════════════════════ */
 
-/* Tabs compactas y centradas */
+/* Tabs estilo "dynamic island" — pill container con backdrop-blur,
+   tab activa azul sólido. Idéntico al CRM Oportunidades/Prospeccion. */
 .proy-tabs-wrap {
     display: flex;
     justify-content: center;
-    padding: 14px 24px 10px;
-    border-bottom: 1px solid #E5E7EB;
-    margin-bottom: 20px;
+    padding: 16px 24px;
+    margin-bottom: 8px;
 }
 .proy-tabs {
     display: inline-flex;
-    gap: 28px;
+    gap: 2px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 22px;
+    box-shadow:
+        0 1px 3px rgba(15, 23, 42, 0.06),
+        0 4px 12px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 .proy-tab {
-    background: none;
+    padding: 6px 18px;
+    border-radius: 18px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #64748B;
     border: none;
-    padding: 8px 2px 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #6B7280;
+    background: transparent;
     cursor: pointer;
-    position: relative;
     font-family: inherit;
-    transition: color 0.15s;
+    transition: all 0.18s ease;
+    white-space: nowrap;
 }
-.proy-tab:hover { color: #1D1D1F; }
-.proy-tab.active { color: #0052D4; }
-.proy-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -11px;
-    left: 0;
-    right: 0;
-    height: 2px;
+.proy-tab:hover {
+    background: rgba(15, 23, 42, 0.04);
+    color: #1E293B;
+}
+.proy-tab.active {
     background: #0052D4;
-    border-radius: 2px;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0, 82, 212, 0.25);
 }
 
 /* Filter bar estilo CRM */
