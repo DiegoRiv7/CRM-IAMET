@@ -31,11 +31,13 @@
             var ln = _ING_CONFIG.lastName;
             if (fn || ln) avatarEl.textContent = (fn.charAt(0) + ln.charAt(0)).toUpperCase();
         }
-        ingenieroMostrarActividades();
+        // Vista por defecto: Dashboard bento iCloud
+        ingenieroMostrarDashboard();
         var btnTareas = document.getElementById('btnTareas');
         if (btnTareas) btnTareas.addEventListener('click', function () {
             localStorage.setItem('crmView', 'tareas');
             setIngenieroNav('tareas');
+            _dashIngHide();
             var b = document.getElementById('actividadesBoard'); if (b) b.style.display = 'none';
             var c = document.getElementById('crmContentSection'); if (c) c.style.display = 'none';
             var t = document.getElementById('tareasSection'); if (t) t.classList.add('active');
@@ -45,15 +47,417 @@
         });
 
         // Restore view
-        if (localStorage.getItem('crmView') === 'tareas') {
+        var savedView = localStorage.getItem('crmView');
+        if (savedView === 'tareas') {
             if (btnTareas) btnTareas.click();
+        } else if (savedView === 'tablero') {
+            ingenieroMostrarActividades();
         }
+        // savedView === 'dashboard' u otro: dejar Dashboard (ya cargado)
     });
 
     // ═══ NAVEGACIÓN ═══
-    function setIngenieroNav(a) { document.querySelectorAll('.island-nav .island-nav-btn').forEach(function (b) { b.classList.remove('active'); }); var m = { 'tablero': 'btnTablero', 'tareas': 'btnTareas' }; var e = document.getElementById(m[a]); if (e) e.classList.add('active'); }
-    function ingenieroMostrarActividades() { localStorage.setItem('crmView', 'tablero'); setIngenieroNav('tablero'); var b = document.getElementById('actividadesBoard'); var c = document.getElementById('crmContentSection'); var t = document.getElementById('tareasSection'); if (b) { b.style.display = 'flex'; b.style.flexDirection = 'column'; } if (c) c.style.display = 'none'; if (t) t.classList.remove('active'); dashRefreshData(); }
+    function setIngenieroNav(a) { document.querySelectorAll('.island-nav .island-nav-btn').forEach(function (b) { b.classList.remove('active'); }); var m = { 'tablero': 'btnTablero', 'tareas': 'btnTareas', 'dashboard': 'btnDashboard' }; var e = document.getElementById(m[a]); if (e) e.classList.add('active'); }
+    function ingenieroMostrarActividades() { localStorage.setItem('crmView', 'tablero'); setIngenieroNav('tablero'); _dashIngHide(); var b = document.getElementById('actividadesBoard'); var c = document.getElementById('crmContentSection'); var t = document.getElementById('tareasSection'); if (b) { b.style.display = 'flex'; b.style.flexDirection = 'column'; } if (c) c.style.display = 'none'; if (t) t.classList.remove('active'); dashRefreshData(); }
     window.ingenieroMostrarActividades = ingenieroMostrarActividades;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // DASHBOARD INGENIERO — Bento Grid estilo iCloud (vista DEFAULT)
+    // ═══════════════════════════════════════════════════════════════════
+
+    // IDs de otros overlays/widgets a ocultar al mostrar el dashboard
+    var _DASHI_WIDGETS_TO_HIDE = [
+        'widgetMail', 'widgetMuro', 'widgetCalendarioMaster',
+        'widgetProyectos', 'widgetNotificaciones', 'widgetCampana',
+        'widgetOportunidad', 'widgetExtras', 'widgetAdmin',
+        'widgetEmpleados', 'widgetCotizarRapido', 'widgetPerfil',
+        'widgetNegociacion', 'widgetNuevoProspecto', 'widgetProspecto',
+        'widgetGrupo', 'widgetRecordatorioEntrada', 'widgetNovedades',
+        'widgetEmpleadoMes'
+    ];
+
+    function _dashIngHide() {
+        var r = document.getElementById('dashIngRoot');
+        if (r) r.style.display = 'none';
+    }
+
+    function _dashIngShow() {
+        var r = document.getElementById('dashIngRoot');
+        if (r) r.style.display = 'block';
+    }
+
+    function _dashIngHideOtros() {
+        // Otras secciones de ingeniero
+        var b = document.getElementById('actividadesBoard'); if (b) b.style.display = 'none';
+        var c = document.getElementById('crmContentSection'); if (c) c.style.display = 'none';
+        var t = document.getElementById('tareasSection'); if (t) t.classList.remove('active');
+        // Widgets overlays
+        _DASHI_WIDGETS_TO_HIDE.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+    }
+
+    function ingenieroMostrarDashboard() {
+        localStorage.setItem('crmView', 'dashboard');
+        setIngenieroNav('dashboard');
+        _dashIngHideOtros();
+        _dashIngShow();
+        dashIngLoadAll();
+    }
+    window.ingenieroMostrarDashboard = ingenieroMostrarDashboard;
+
+    function ingenieroRefrescarDashboard() { dashIngLoadAll(); }
+    window.ingenieroRefrescarDashboard = ingenieroRefrescarDashboard;
+
+    // ═══ Helpers de fecha / formato ═══
+    function _dashIngToday() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function _dashIngIsVencida(fechaISO, estado) {
+        if (!fechaISO) return false;
+        if (estado === 'completada') return false;
+        var f = String(fechaISO).slice(0, 10);
+        return f < _dashIngToday();
+    }
+    function _dashIngIsHoy(fechaISO) {
+        if (!fechaISO) return false;
+        return String(fechaISO).slice(0, 10) === _dashIngToday();
+    }
+    function _dashIngFmtDate(fechaISO) {
+        if (!fechaISO) return '';
+        var s = String(fechaISO).slice(0, 10);
+        var parts = s.split('-');
+        if (parts.length !== 3) return s;
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
+    function _dashIngFmtRelativo(fechaISO) {
+        if (!fechaISO) return '';
+        try {
+            var d = new Date(fechaISO);
+            var now = new Date();
+            var diff = Math.floor((now - d) / 1000); // segundos
+            if (diff < 60) return 'hace unos segundos';
+            if (diff < 3600) return 'hace ' + Math.floor(diff / 60) + ' min';
+            if (diff < 86400) return 'hace ' + Math.floor(diff / 3600) + ' h';
+            if (diff < 86400 * 7) return 'hace ' + Math.floor(diff / 86400) + ' d';
+            return _dashIngFmtDate(fechaISO);
+        } catch (e) { return ''; }
+    }
+    function _dashIngEsc(s) {
+        return (s == null ? '' : String(s))
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function _dashIngTrun(s, n) {
+        if (!s) return '';
+        return s.length > n ? s.substring(0, n) + '…' : s;
+    }
+
+    // ═══ Estado UI: empty / error ═══
+    function _dashIngSetEmpty(containerId, icon, title, sub) {
+        var c = document.getElementById(containerId); if (!c) return;
+        c.innerHTML =
+            '<div class="dashi-empty">' +
+                '<div class="dashi-empty-icon">' + icon + '</div>' +
+                '<div class="dashi-empty-title">' + _dashIngEsc(title) + '</div>' +
+                (sub ? '<div class="dashi-empty-sub">' + _dashIngEsc(sub) + '</div>' : '') +
+            '</div>';
+    }
+    function _dashIngSetError(containerId, msg) {
+        var c = document.getElementById(containerId); if (!c) return;
+        c.innerHTML = '<div class="dashi-error">' + _dashIngEsc(msg || 'Error al cargar') + '</div>';
+    }
+    function _dashIngSetLoading(containerId) {
+        var c = document.getElementById(containerId); if (!c) return;
+        c.innerHTML = '<div class="dashi-loading">Cargando…</div>';
+    }
+
+    // ═══ Carga de los 4 tiles en paralelo ═══
+    function dashIngLoadAll() {
+        ['dashIngListTareas', 'dashIngListProyectos', 'dashIngListCalendario', 'dashIngListNotifs']
+            .forEach(_dashIngSetLoading);
+
+        var pActividades = fetch('/app/api/ingeniero/actividades/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { return d.items || []; })
+            .catch(function () { return null; });
+
+        var pProyectos = fetch('/app/api/iamet/proyectos/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { return (d && d.data) ? d.data : []; })
+            .catch(function () { return null; });
+
+        var pNotifs = fetch('/app/api/notificaciones/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { return (d && d.notificaciones) ? d.notificaciones : []; })
+            .catch(function () { return null; });
+
+        // Tareas recientes y Próximas actividades se derivan de pActividades
+        pActividades.then(function (items) {
+            if (items === null) {
+                _dashIngSetError('dashIngListTareas');
+                _dashIngSetError('dashIngListCalendario');
+                return;
+            }
+            dashIngRenderTareas(items);
+            dashIngRenderCalendario(items);
+        });
+
+        pProyectos.then(function (items) {
+            if (items === null) return _dashIngSetError('dashIngListProyectos');
+            dashIngRenderProyectos(items);
+        });
+
+        pNotifs.then(function (items) {
+            if (items === null) return _dashIngSetError('dashIngListNotifs');
+            dashIngRenderNotifs(items);
+        });
+
+        // Subtítulo del header con conteo total de pendientes
+        Promise.all([pActividades, pNotifs]).then(function (res) {
+            var acts = res[0] || [];
+            var nots = res[1] || [];
+            var pendientes = acts.filter(function (t) { return (t.estado || '') !== 'completada'; }).length;
+            var vencidas = acts.filter(function (t) { return _dashIngIsVencida(t.fecha_limite, t.estado); }).length;
+            var sub = document.getElementById('dashIngSubtitle');
+            if (sub) {
+                var partes = [];
+                partes.push(pendientes + ' tarea' + (pendientes === 1 ? '' : 's') + ' pendiente' + (pendientes === 1 ? '' : 's'));
+                if (vencidas) partes.push(vencidas + ' vencida' + (vencidas === 1 ? '' : 's'));
+                if (nots && nots.length) partes.push(nots.length + ' notificación' + (nots.length === 1 ? '' : 'es') + ' sin leer');
+                sub.textContent = partes.join(' · ');
+            }
+        });
+    }
+    window.dashIngLoadAll = dashIngLoadAll;
+
+    // ═══ Render TAREAS ═══
+    function dashIngRenderTareas(items) {
+        var cId = 'dashIngListTareas';
+        // Quitamos completadas; ordenamos: en_progreso primero, luego por fecha_limite (nulls al final)
+        var sorted = items.filter(function (t) { return (t.estado || '') !== 'completada'; });
+        sorted.sort(function (a, b) {
+            var oa = (a.estado === 'en_progreso' || a.estado === 'iniciada') ? 0 : 1;
+            var ob = (b.estado === 'en_progreso' || b.estado === 'iniciada') ? 0 : 1;
+            if (oa !== ob) return oa - ob;
+            var va = _dashIngIsVencida(a.fecha_limite, a.estado) ? 0 : 1;
+            var vb = _dashIngIsVencida(b.fecha_limite, b.estado) ? 0 : 1;
+            if (va !== vb) return va - vb;
+            var fa = a.fecha_limite || '9999-12-31';
+            var fb = b.fecha_limite || '9999-12-31';
+            if (fa !== fb) return fa < fb ? -1 : 1;
+            return 0;
+        });
+        var top = sorted.slice(0, 6);
+        if (!top.length) {
+            return _dashIngSetEmpty(cId,
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+                '¡Al día!', 'No tienes tareas pendientes.');
+        }
+        var h = '';
+        top.forEach(function (t) {
+            var vencida = _dashIngIsVencida(t.fecha_limite, t.estado);
+            var enProg  = (t.estado === 'en_progreso' || t.estado === 'iniciada');
+            var dotCls = vencida ? 'is-vencida' : (enProg ? 'is-progreso' : 'is-pendiente');
+            var pill = '';
+            if (vencida) {
+                pill = '<span class="dashi-pill dashi-pill-vencida">Vencida</span>';
+            } else if (_dashIngIsHoy(t.fecha_limite)) {
+                pill = '<span class="dashi-pill dashi-pill-hoy">Hoy</span>';
+            } else if (enProg) {
+                pill = '<span class="dashi-pill dashi-pill-progreso">En curso</span>';
+            }
+            var sub = [];
+            if (t.oportunidad) sub.push(t.oportunidad);
+            else if (t.cliente) sub.push(t.cliente);
+            if (t.fecha_limite_display) sub.push(t.fecha_limite_display);
+            var subStr = sub.join(' · ');
+            h += '<div class="dashi-item" onclick="dashIngAbrirTarea(\'' + _dashIngEsc(t.key || '') + '\',' +
+                (t.id || 'null') + ',\'' + _dashIngEsc(t.tipo || '') + '\')">' +
+                '<span class="dashi-item-dot ' + dotCls + '"></span>' +
+                '<div class="dashi-item-body">' +
+                    '<div class="dashi-item-title">' + _dashIngEsc(_dashIngTrun(t.titulo || 'Sin título', 60)) + '</div>' +
+                    (subStr ? '<div class="dashi-item-sub">' + _dashIngEsc(subStr) + '</div>' : '') +
+                '</div>' +
+                '<div class="dashi-item-right">' + pill + '</div>' +
+                '</div>';
+        });
+        document.getElementById(cId).innerHTML = h;
+    }
+
+    // ═══ Render PROYECTOS ═══
+    function dashIngRenderProyectos(items) {
+        var cId = 'dashIngListProyectos';
+        // Ya vienen ordenados por _get_proyectos_qs; tomamos los 5 más recientes
+        var top = items.slice(0, 5);
+        if (!top.length) {
+            return _dashIngSetEmpty(cId,
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+                'Sin proyectos', 'Aún no estás asignado a ninguno.');
+        }
+        var statusLabel = {
+            'planning': 'Planeación', 'active': 'Activo', 'paused': 'En pausa',
+            'completed': 'Completado', 'cancelled': 'Cancelado'
+        };
+        var h = '';
+        top.forEach(function (p) {
+            var est = p.status || 'active';
+            var dotCls = (est === 'completed') ? 'is-completada' :
+                         (est === 'paused' || est === 'cancelled') ? 'is-pendiente' : 'is-progreso';
+            var pill = '';
+            if (p.alertas_pendientes && p.alertas_pendientes > 0) {
+                pill = '<span class="dashi-pill dashi-pill-vencida">' + p.alertas_pendientes + ' alerta' + (p.alertas_pendientes === 1 ? '' : 's') + '</span>';
+            } else {
+                pill = '<span class="dashi-pill dashi-pill-pendiente">' + _dashIngEsc(statusLabel[est] || est) + '</span>';
+            }
+            var sub = [];
+            if (p.cliente_nombre) sub.push(p.cliente_nombre);
+            if (p.fecha_fin) sub.push('Fin ' + _dashIngFmtDate(p.fecha_fin));
+            var subStr = sub.join(' · ');
+            h += '<div class="dashi-item" onclick="dashIngAbrirProyecto(' + (p.id || 0) + ')">' +
+                '<span class="dashi-item-dot ' + dotCls + '"></span>' +
+                '<div class="dashi-item-body">' +
+                    '<div class="dashi-item-title">' + _dashIngEsc(_dashIngTrun(p.nombre || 'Sin nombre', 50)) + '</div>' +
+                    (subStr ? '<div class="dashi-item-sub">' + _dashIngEsc(subStr) + '</div>' : '') +
+                '</div>' +
+                '<div class="dashi-item-right">' + pill + '</div>' +
+                '</div>';
+        });
+        document.getElementById(cId).innerHTML = h;
+    }
+
+    // ═══ Render CALENDARIO (próximas actividades) ═══
+    function dashIngRenderCalendario(items) {
+        var cId = 'dashIngListCalendario';
+        var hoy = _dashIngToday();
+        // Filtrar pendientes con fecha_limite >= hoy (próximas)
+        var proximas = items.filter(function (t) {
+            if ((t.estado || '') === 'completada') return false;
+            if (!t.fecha_limite) return false;
+            return String(t.fecha_limite).slice(0, 10) >= hoy;
+        });
+        proximas.sort(function (a, b) {
+            return String(a.fecha_limite).localeCompare(String(b.fecha_limite));
+        });
+        var top = proximas.slice(0, 5);
+        if (!top.length) {
+            return _dashIngSetEmpty(cId,
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+                'Sin próximas', 'No tienes actividades agendadas.');
+        }
+        var h = '';
+        top.forEach(function (t) {
+            var esHoy = _dashIngIsHoy(t.fecha_limite);
+            var dotCls = esHoy ? 'is-vencida' : 'is-progreso';
+            var pill = esHoy
+                ? '<span class="dashi-pill dashi-pill-hoy">Hoy</span>'
+                : '<span class="dashi-pill dashi-pill-pendiente">' + _dashIngEsc(_dashIngFmtDate(t.fecha_limite)) + '</span>';
+            var sub = [];
+            if (t.oportunidad) sub.push(t.oportunidad);
+            else if (t.cliente) sub.push(t.cliente);
+            var subStr = sub.join(' · ');
+            h += '<div class="dashi-item" onclick="dashIngAbrirTarea(\'' + _dashIngEsc(t.key || '') + '\',' +
+                (t.id || 'null') + ',\'' + _dashIngEsc(t.tipo || '') + '\')">' +
+                '<span class="dashi-item-dot ' + dotCls + '"></span>' +
+                '<div class="dashi-item-body">' +
+                    '<div class="dashi-item-title">' + _dashIngEsc(_dashIngTrun(t.titulo || 'Sin título', 55)) + '</div>' +
+                    (subStr ? '<div class="dashi-item-sub">' + _dashIngEsc(subStr) + '</div>' : '') +
+                '</div>' +
+                '<div class="dashi-item-right">' + pill + '</div>' +
+                '</div>';
+        });
+        document.getElementById(cId).innerHTML = h;
+    }
+
+    // ═══ Render NOTIFICACIONES ═══
+    function dashIngRenderNotifs(items) {
+        var cId = 'dashIngListNotifs';
+        var top = (items || []).slice(0, 5);
+        if (!top.length) {
+            return _dashIngSetEmpty(cId,
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+                'Sin notificaciones', 'Estás al día.');
+        }
+        var h = '';
+        top.forEach(function (n) {
+            var sub = [];
+            if (n.creado_por) sub.push(n.creado_por);
+            if (n.fecha_creacion) sub.push(_dashIngFmtRelativo(n.fecha_creacion));
+            var subStr = sub.join(' · ');
+            var pill = '<span class="dashi-pill dashi-pill-nuevo">Nuevo</span>';
+            var onclick = n.url
+                ? 'window.location.href=\'' + _dashIngEsc(n.url).replace(/'/g, "\\'") + '\''
+                : 'ingenieroIrANotificaciones(event)';
+            h += '<div class="dashi-item" onclick="' + onclick + '">' +
+                '<span class="dashi-item-dot is-progreso"></span>' +
+                '<div class="dashi-item-body">' +
+                    '<div class="dashi-item-title">' + _dashIngEsc(_dashIngTrun(n.titulo || n.mensaje || 'Notificación', 60)) + '</div>' +
+                    (subStr ? '<div class="dashi-item-sub">' + _dashIngEsc(subStr) + '</div>' : '') +
+                '</div>' +
+                '<div class="dashi-item-right">' + pill + '</div>' +
+                '</div>';
+        });
+        document.getElementById(cId).innerHTML = h;
+    }
+
+    // ═══ Navegación desde los "Ver todo →" ═══
+    function dashIngAbrirTarea(key, id, tipo) {
+        if (typeof window.ingenieroAbrirTarea === 'function') {
+            window.ingenieroAbrirTarea(key, id, tipo);
+        }
+    }
+    window.dashIngAbrirTarea = dashIngAbrirTarea;
+
+    function dashIngAbrirProyecto(id) {
+        if (!id) return;
+        if (typeof window.ingenieroAbrirProyecto === 'function') {
+            window.ingenieroAbrirProyecto(id);
+        }
+    }
+    window.dashIngAbrirProyecto = dashIngAbrirProyecto;
+
+    function ingenieroIrATareas(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        var btn = document.getElementById('btnTareas');
+        if (btn) { btn.click(); return; }
+        // Fallback
+        ingenieroMostrarActividades();
+    }
+    window.ingenieroIrATareas = ingenieroIrATareas;
+
+    function ingenieroIrAProyectos(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        // En ingeniero mode, la vista "tablero" muestra proyectos
+        ingenieroMostrarActividades();
+        // Cambia el segmento al de proyectos si existe
+        setTimeout(function () {
+            if (typeof window.dashSwitchView === 'function') window.dashSwitchView('proyectos');
+        }, 50);
+    }
+    window.ingenieroIrAProyectos = ingenieroIrAProyectos;
+
+    function ingenieroIrACalendario(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        // El "calendario" en ingeniero mode equivale a las actividades/tablero
+        ingenieroMostrarActividades();
+        setTimeout(function () {
+            if (typeof window.dashSwitchView === 'function') window.dashSwitchView('actividades');
+        }, 50);
+    }
+    window.ingenieroIrACalendario = ingenieroIrACalendario;
+
+    function ingenieroIrANotificaciones(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        // Intenta abrir el widget de notificaciones si existe; de lo contrario el overlay.
+        var w = document.getElementById('widgetNotificaciones');
+        if (w) {
+            w.style.display = 'flex';
+            return;
+        }
+        // Fallback: no rompas
+    }
+    window.ingenieroIrANotificaciones = ingenieroIrANotificaciones;
 
     // ═══ CONTROL SEGMENTADO ═══
     function dashSwitchView(v) {
