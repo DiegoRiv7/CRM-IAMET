@@ -42,6 +42,18 @@ window.addEventListener('resize', () => {
     var parsedUserFilter = null;   // resultado del parse @user (se aplica al query activo)
     var RECENTS_KEY = 'crm_spotlight_recents_v2';
 
+    // ── Rol del usuario (Fase 2 — search limitado para ingenieros) ───────
+    //   Cuando user_profile.rol == 'ingeniero', el Spotlight solo debe buscar
+    //   en Tareas y Proyectos (no oportunidades, cotizaciones, clientes).
+    function isIngeniero() {
+        try { return document.body && document.body.dataset && document.body.dataset.userRole === 'ingeniero'; }
+        catch (e) { return false; }
+    }
+    var ING_ALLOWED_SCOPES = { tarea: 1, proyecto: 1 };
+    var ING_ALLOWED_TYPES = { tarea: 1, proyecto: 1 };
+    // Acciones rápidas prohibidas para ingenieros (nueva opp, nueva cotización, ir a CRM, etc).
+    var ING_BLOCKED_ACTIONS = { 'crear-opp': 1, 'crear-cot': 1, 'ir-crm': 1 };
+
     var ICONS = {
         oportunidad: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
         cotizacion:  '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
@@ -227,6 +239,10 @@ window.addEventListener('resize', () => {
         if (!c) return;
         currentResults = [];
         var recents = getRecents();
+        // Ingenieros: ocultar recents que no sean tareas/proyectos.
+        if (isIngeniero()) {
+            recents = recents.filter(function (r) { return ING_ALLOWED_TYPES[r.type]; });
+        }
         if (recents.length) {
             var html = renderSectionHeader('reciente');
             recents.forEach(function (r) {
@@ -269,6 +285,13 @@ window.addEventListener('resize', () => {
         // scope override por prefijo
         var effectiveScope = parsed.scope || currentScope;
 
+        // Ingenieros: si el scope solicitado no es tarea/proyecto/all, forzarlo a 'all'
+        // (luego el filtrado client-side lo limita a tarea+proyecto). El backend también
+        // aplica este filtro como defensa en profundidad.
+        if (isIngeniero() && effectiveScope !== 'all' && !ING_ALLOWED_SCOPES[effectiveScope]) {
+            effectiveScope = 'all';
+        }
+
         // user filter render
         parsedUserFilter = parsed.userFilter;
         renderUserChip(parsed.userFilter);
@@ -293,7 +316,13 @@ window.addEventListener('resize', () => {
         })
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                displayResults(data.results || [], parsed.q);
+                var rs = data.results || [];
+                // Ingenieros: filtrar cualquier resultado fuera de tarea/proyecto
+                // (defensa extra por si el backend devolviera otros tipos).
+                if (isIngeniero()) {
+                    rs = rs.filter(function (r) { return ING_ALLOWED_TYPES[r.type]; });
+                }
+                displayResults(rs, parsed.q);
                 selectedIndex = -1;
             })
             .catch(function () { displayResults([], parsed.q); });
@@ -302,7 +331,10 @@ window.addEventListener('resize', () => {
     function showActionResults(actionQuery) {
         var c = $sp('spotlight-results');
         if (!c) return;
+        var ingeniero = isIngeniero();
         var filtered = QUICK_ACTIONS.filter(function (a) {
+            // Ingenieros: ocultar acciones ligadas a oportunidades/cotizaciones/CRM de ventas.
+            if (ingeniero && ING_BLOCKED_ACTIONS[a.id]) return false;
             if (!actionQuery) return true;
             var hay = (a.title + ' ' + a.subtitle + ' ' + a.keywords.join(' ')).toLowerCase();
             return hay.indexOf(actionQuery) !== -1;

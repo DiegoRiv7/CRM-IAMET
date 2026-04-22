@@ -105,7 +105,9 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="min-h-screen flex flex-col" {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}>
+<body class="min-h-screen flex flex-col"
+    {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}
+    data-user-role="{% if user_profile and user_profile.rol %}{{ user_profile.rol }}{% else %}vendedor{% endif %}">
     <!-- Contenido Principal -->
     <div class="flex-grow container mx-auto px-4 py-8 main-content">
         {% block content %}
@@ -129,10 +131,14 @@
             </div>
             <div class="sp-scopes" id="sp-scopes">
                 <button type="button" class="sp-chip active" data-scope="all">Todo</button>
+                {% if not user_profile or user_profile.rol != 'ingeniero' %}
                 <button type="button" class="sp-chip" data-scope="oportunidad">Oportunidades</button>
                 <button type="button" class="sp-chip" data-scope="cotizacion">Cotizaciones</button>
+                {% endif %}
                 <button type="button" class="sp-chip" data-scope="tarea">Tareas</button>
+                {% if not user_profile or user_profile.rol != 'ingeniero' %}
                 <button type="button" class="sp-chip" data-scope="cliente">Clientes</button>
+                {% endif %}
                 <button type="button" class="sp-chip" data-scope="proyecto">Proyectos</button>
             </div>
             <div class="spotlight-results" id="spotlight-results"></div>
