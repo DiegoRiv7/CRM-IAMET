@@ -6,14 +6,10 @@
 {% endblock %}
 {% block content %}
 
-<div class="crm-page {% if not es_ingeniero %}crm-page-sidebar{% endif %}">
+<div class="crm-page crm-page-sidebar">
     <form style="display:none;">{% csrf_token %}</form>
 
-    {% if es_ingeniero %}
-    {% include "crm/_topbar_ingeniero.html" %}
-    {% else %}
     {% include "crm/_sidebar.html" %}
-    {% endif %}
 
     <div class="crm-main">
 
