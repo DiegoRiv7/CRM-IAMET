@@ -68,6 +68,18 @@ def spotlight_search_api(request):
     if scope not in VALID_SCOPES:
         scope = 'all'
 
+    # ── Fase 2: search limitado para ingenieros ──────────
+    # Cuando UserProfile.rol == 'ingeniero', el Spotlight solo busca en
+    # Tareas y Proyectos. Los scopes no permitidos se degradan a 'all'
+    # y más abajo solo se ejecutan los bloques de tarea/proyecto.
+    try:
+        _profile = getattr(request.user, 'userprofile', None)
+        es_ingeniero_rol = bool(_profile and getattr(_profile, 'rol', 'vendedor') == 'ingeniero')
+    except Exception:
+        es_ingeniero_rol = False
+    if es_ingeniero_rol and scope not in ('all', 'tarea', 'proyecto'):
+        scope = 'all'
+
     # Si no hay query ni filtro de usuario, nada
     if len(query) < 2 and not user_filter:
         return JsonResponse({'results': [], 'query': query, 'scope': scope})
@@ -178,7 +190,7 @@ def spotlight_search_api(request):
     results = []
 
     # ── Oportunidades ────────────────────────────────────
-    if scope in ('all', 'oportunidad') and (query or filter_user_obj):
+    if scope in ('all', 'oportunidad') and (query or filter_user_obj) and not es_ingeniero_rol:
         opp_qs = TodoItem.objects.all().select_related('cliente', 'usuario')
         if query:
             opp_filter = (
@@ -223,7 +235,7 @@ def spotlight_search_api(request):
             })
 
     # ── Cotizaciones ─────────────────────────────────────
-    if scope in ('all', 'cotizacion') and (query or filter_user_obj):
+    if scope in ('all', 'cotizacion') and (query or filter_user_obj) and not es_ingeniero_rol:
         base_q = Q()
         if query:
             base_q |= Q(nombre_cotizacion__icontains=query) | Q(cliente__nombre_empresa__icontains=query) | Q(descripcion__icontains=query)
@@ -296,7 +308,7 @@ def spotlight_search_api(request):
             })
 
     # ── Clientes ─────────────────────────────────────────
-    if scope in ('all', 'cliente') and query:
+    if scope in ('all', 'cliente') and query and not es_ingeniero_rol:
         cli_qs = Cliente.objects.filter(
             Q(nombre_empresa__icontains=query) |
             Q(rfc__icontains=query) |
