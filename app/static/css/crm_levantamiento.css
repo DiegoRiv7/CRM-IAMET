@@ -3446,9 +3446,37 @@ label.lw-soft-input {
 .lw-mobile-nav { display: none; }
 
 @media (max-width: 767px) {
+    /* ── HEADER: oculto todo excepto PDF + X ──
+       El "1 Levantamiento" vive en la barra de tabs de abajo. */
+    .lw-header { padding: 8px 12px; }
+    .lw-header-left { display: none; }
+    .lw-header-right .lw-mode-toggle,
+    .lw-header-right .lw-sidebar-toggle,
+    .lw-header-right .lw-save-stamp,
+    .lw-header-right .lw-save-indicator { display: none; }
+    .lw-header-right { gap: 8px; margin-left: auto; }
+
+    /* ── TABS: solo la activa ── */
+    .lw-tabs { padding: 8px 14px; gap: 0; overflow: hidden; background: #fff; }
+    .lw-tab { display: none; }
+    .lw-tab.active {
+        display: inline-flex;
+        background: transparent !important;
+        border: none !important;
+        pointer-events: none;
+        padding: 4px 0;
+        font-weight: 700;
+        color: #0F172A;
+    }
+    .lw-tabs-progress { display: none; }
+
+    /* ── FOOTER desktop oculto SOLO en Fase 1 (donde tenemos la barra movil).
+         En fases 2-5 seguimos usando el footer desktop para navegar. ── */
+    .lw-phase-is-1 #lwFooter { display: none !important; }
+
     /* La barra de progreso de arriba se pone mas compacta */
     .lw-islands-footer {
-        margin: 12px 16px 4px;
+        margin: 10px 14px 4px;
         gap: 12px;
     }
     .lw-islands-status {

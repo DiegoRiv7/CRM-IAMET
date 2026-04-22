@@ -246,6 +246,12 @@
 
     // ── Phase tabs ───────────────────────────────────────────
     function renderPhaseTabs() {
+        // Marcar el wizard con la fase activa (para CSS movil)
+        var wiz = document.getElementById('levantamientoWizard');
+        if (wiz) {
+            for (var pi = 1; pi <= 5; pi++) wiz.classList.remove('lw-phase-is-' + pi);
+            wiz.classList.add('lw-phase-is-' + state.phase);
+        }
         document.querySelectorAll('#lwTabs .lw-tab').forEach(function (tab) {
             var n = parseInt(tab.getAttribute('data-phase'));
             tab.classList.remove('active', 'done');
