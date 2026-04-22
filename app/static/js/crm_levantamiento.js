@@ -252,6 +252,12 @@
             for (var pi = 1; pi <= 5; pi++) wiz.classList.remove('lw-phase-is-' + pi);
             wiz.classList.add('lw-phase-is-' + state.phase);
         }
+        // Poblar el pill de fase que sale en el header movil
+        var phaseLabels = ['', 'Levantamiento', 'Propuesta Técnica', 'Volumetría', 'Programa de Obra', 'Reportes'];
+        var pNum = document.getElementById('lwMobilePhaseNum');
+        var pLbl = document.getElementById('lwMobilePhaseLabel');
+        if (pNum) pNum.textContent = state.phase;
+        if (pLbl) pLbl.textContent = phaseLabels[state.phase] || '';
         document.querySelectorAll('#lwTabs .lw-tab').forEach(function (tab) {
             var n = parseInt(tab.getAttribute('data-phase'));
             tab.classList.remove('active', 'done');

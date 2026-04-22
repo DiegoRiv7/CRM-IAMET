@@ -19,7 +19,10 @@
 
 .lw-container {
     width: 100vw;
+    /* dvh = dynamic viewport height → respeta la barra de URL dinamica
+       del browser movil. Fallback a 100vh para navegadores viejos. */
     height: 100vh;
+    height: 100dvh;
     max-width: none;
     background: #fff;
     border-radius: 0;
@@ -3444,11 +3447,15 @@ label.lw-soft-input {
    MODO MÓVIL — una isla a la vez + botón Continuar / Finalizar
    ═══════════════════════════════════════════════════════════════ */
 .lw-mobile-nav { display: none; }
+.lw-mobile-phase-pill { display: none; }
 
 @media (max-width: 767px) {
-    /* ── HEADER: oculto todo excepto PDF + X ──
-       El "1 Levantamiento" vive en la barra de tabs de abajo. */
-    .lw-header { padding: 8px 12px; }
+    /* ── HEADER: pill de fase + PDF + X en una sola fila ──
+       Estructura: [1 Levantamiento] ........ [PDF ▾] [X] */
+    .lw-header {
+        padding: 8px 12px;
+        border-bottom: 1px solid #E2E8F0;
+    }
     .lw-header-left { display: none; }
     .lw-header-right .lw-mode-toggle,
     .lw-header-right .lw-sidebar-toggle,
@@ -3456,23 +3463,56 @@ label.lw-soft-input {
     .lw-header-right .lw-save-indicator { display: none; }
     .lw-header-right { gap: 8px; margin-left: auto; }
 
-    /* ── TABS: solo la activa ── */
-    .lw-tabs { padding: 8px 14px; gap: 0; overflow: hidden; background: #fff; }
-    .lw-tab { display: none; }
-    .lw-tab.active {
+    /* Pill de fase (sustituye la barra de tabs) */
+    .lw-mobile-phase-pill {
         display: inline-flex;
-        background: transparent !important;
-        border: none !important;
-        pointer-events: none;
-        padding: 4px 0;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 4px 4px 4px;
         font-weight: 700;
         color: #0F172A;
+        font-size: 15px;
+        min-width: 0;
+        overflow: hidden;
     }
-    .lw-tabs-progress { display: none; }
+    .lw-mobile-phase-num {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        background: #2563EB;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .lw-mobile-phase-label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-    /* ── FOOTER desktop oculto SOLO en Fase 1 (donde tenemos la barra movil).
-         En fases 2-5 seguimos usando el footer desktop para navegar. ── */
+    /* ── TABS: oculto entero (el pill de fase lo reemplaza) ── */
+    .lw-tabs { display: none !important; }
+
+    /* ── FOOTER desktop oculto SOLO en Fase 1 ── */
     .lw-phase-is-1 #lwFooter { display: none !important; }
+
+    /* ── Isla prominente: solida, bordes redondeados, sombra clara ── */
+    .lw-island {
+        border-radius: 18px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05);
+    }
+    .lw-island-header { padding: 20px 22px 6px; }
+    .lw-island-step {
+        width: 30px; height: 30px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+    .lw-island-title { font-size: 17px; }
+    .lw-island-subtitle { font-size: 13px; }
 
     /* La barra de progreso de arriba se pone mas compacta */
     .lw-islands-footer {
