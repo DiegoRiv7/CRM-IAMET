@@ -46,14 +46,16 @@
             var el = document.getElementById(id); if (el) el.style.display = 'none';
         });
 
-        // Restore view
+        // Restore view — el 'tablero' legacy ya NO se restaura (oculto).
+        // Solo respetamos 'tareas' y 'proyectos'; cualquier otro → dashboard.
         var savedView = localStorage.getItem('crmView');
         if (savedView === 'tareas') {
             if (btnTareas) btnTareas.click();
-        } else if (savedView === 'tablero') {
-            ingenieroMostrarActividades();
+        } else if (savedView === 'proyectos') {
+            var btnProy = document.getElementById('btnProyectos');
+            if (btnProy) btnProy.click();
         }
-        // savedView === 'dashboard' u otro: dejar Dashboard (ya cargado)
+        // savedView === 'dashboard' | 'tablero' (legacy) | null → Dashboard (ya cargado)
     });
 
     // ═══ NAVEGACIÓN ═══
@@ -87,15 +89,23 @@
     }
 
     function _dashIngHideOtros() {
-        // Otras secciones de ingeniero
+        // Otras secciones del ingeniero — las que usan display:none
         var b = document.getElementById('actividadesBoard'); if (b) b.style.display = 'none';
         var c = document.getElementById('crmContentSection'); if (c) c.style.display = 'none';
-        var t = document.getElementById('tareasSection'); if (t) t.classList.remove('active');
+        // Secciones que usan class .active (tareas + proyectos del CRM)
+        ['tareasSection', 'proyectosSection'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
         // Widgets overlays
         _DASHI_WIDGETS_TO_HIDE.forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
+        // Sidebar: active state EXCLUSIVO en btnDashboard
+        document.querySelectorAll('.crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
+        var dashBtn = document.getElementById('btnDashboard');
+        if (dashBtn) dashBtn.classList.add('active');
     }
 
     function ingenieroMostrarDashboard() {
@@ -178,7 +188,9 @@
         ['dashIngListTareas', 'dashIngListProyectos', 'dashIngListCalendario', 'dashIngListNotifs']
             .forEach(_dashIngSetLoading);
 
-        var pActividades = fetch('/app/api/ingeniero/actividades/', { credentials: 'same-origin' })
+        // Nuevo endpoint: actividades del CALENDARIO (ProgramacionActividad)
+        // donde el usuario es responsable. Reemplaza al feed de "tareas" viejo.
+        var pActividades = fetch('/app/api/ingeniero/mis-actividades-calendario/', { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (d) { return d.items || []; })
             .catch(function () { return null; });
@@ -193,15 +205,38 @@
             .then(function (d) { return (d && d.notificaciones) ? d.notificaciones : []; })
             .catch(function () { return null; });
 
-        // Tareas recientes y Próximas actividades se derivan de pActividades
+        // Tareas recientes → actividades de HOY o vencidas (acción inmediata)
+        // Próximas actividades → futuras
         pActividades.then(function (items) {
             if (items === null) {
                 _dashIngSetError('dashIngListTareas');
                 _dashIngSetError('dashIngListCalendario');
                 return;
             }
-            dashIngRenderTareas(items);
-            dashIngRenderCalendario(items);
+            // Adaptar schema ProgramacionActividad → shape que esperan los renders.
+            var adapted = items.map(function (a) {
+                return {
+                    id: a.id,
+                    key: 'cal_' + a.id,
+                    tipo: 'calendario',
+                    titulo: a.titulo,
+                    estado: 'pendiente', // no hay "en_progreso" en calendario
+                    fecha_limite: a.fecha,
+                    fecha_limite_display: a.fecha ? _dashIngFmtDate(a.fecha) + (a.hora_inicio ? ' · ' + a.hora_inicio : '') : '',
+                    oportunidad: a.proyecto_nombre || '',
+                    cliente: a.cliente_nombre || '',
+                    proyecto_id: a.proyecto_id,
+                };
+            });
+            var today = _dashIngToday();
+            var hoyYVencidas = adapted.filter(function (a) {
+                return a.fecha_limite && a.fecha_limite <= today;
+            });
+            var futuras = adapted.filter(function (a) {
+                return a.fecha_limite && a.fecha_limite > today;
+            });
+            dashIngRenderTareas(hoyYVencidas);
+            dashIngRenderCalendario(futuras);
         });
 
         pProyectos.then(function (items) {
@@ -214,16 +249,17 @@
             dashIngRenderNotifs(items);
         });
 
-        // Subtítulo del header con conteo total de pendientes
+        // Subtítulo del header con conteo total
         Promise.all([pActividades, pNotifs]).then(function (res) {
             var acts = res[0] || [];
             var nots = res[1] || [];
-            var pendientes = acts.filter(function (t) { return (t.estado || '') !== 'completada'; }).length;
-            var vencidas = acts.filter(function (t) { return _dashIngIsVencida(t.fecha_limite, t.estado); }).length;
+            var today = _dashIngToday();
+            var totalPend = acts.length; // ya vienen filtradas por no-completadas
+            var vencidas = acts.filter(function (a) { return a.fecha && a.fecha < today; }).length;
             var sub = document.getElementById('dashIngSubtitle');
             if (sub) {
                 var partes = [];
-                partes.push(pendientes + ' tarea' + (pendientes === 1 ? '' : 's') + ' pendiente' + (pendientes === 1 ? '' : 's'));
+                partes.push(totalPend + ' actividad' + (totalPend === 1 ? '' : 'es') + ' pendiente' + (totalPend === 1 ? '' : 's'));
                 if (vencidas) partes.push(vencidas + ' vencida' + (vencidas === 1 ? '' : 's'));
                 if (nots && nots.length) partes.push(nots.length + ' notificación' + (nots.length === 1 ? '' : 'es') + ' sin leer');
                 sub.textContent = partes.join(' · ');
@@ -403,6 +439,12 @@
 
     // ═══ Navegación desde los "Ver todo →" ═══
     function dashIngAbrirTarea(key, id, tipo) {
+        // Si es actividad del calendario (tipo 'calendario'), abrir su
+        // detalle modal que ya existe en el widget de Proyectos.
+        if (tipo === 'calendario' && id && typeof window.proyectosVerActividadDetalle === 'function') {
+            window.proyectosVerActividadDetalle(id);
+            return;
+        }
         if (typeof window.ingenieroAbrirTarea === 'function') {
             window.ingenieroAbrirTarea(key, id, tipo);
         }
@@ -411,39 +453,39 @@
 
     function dashIngAbrirProyecto(id) {
         if (!id) return;
-        if (typeof window.ingenieroAbrirProyecto === 'function') {
-            window.ingenieroAbrirProyecto(id);
-        }
+        // Ir a la sección Proyectos (sidebar) y abrir el widget del proyecto
+        var btn = document.getElementById('btnProyectos');
+        if (btn) btn.click();
+        setTimeout(function () {
+            if (typeof window.proyectosVerDetalle === 'function') {
+                window.proyectosVerDetalle(id);
+            }
+        }, 120);
     }
     window.dashIngAbrirProyecto = dashIngAbrirProyecto;
 
     function ingenieroIrATareas(ev) {
         if (ev && ev.preventDefault) ev.preventDefault();
         var btn = document.getElementById('btnTareas');
-        if (btn) { btn.click(); return; }
-        // Fallback
-        ingenieroMostrarActividades();
+        if (btn) btn.click();
     }
     window.ingenieroIrATareas = ingenieroIrATareas;
 
     function ingenieroIrAProyectos(ev) {
         if (ev && ev.preventDefault) ev.preventDefault();
-        // En ingeniero mode, la vista "tablero" muestra proyectos
-        ingenieroMostrarActividades();
-        // Cambia el segmento al de proyectos si existe
-        setTimeout(function () {
-            if (typeof window.dashSwitchView === 'function') window.dashSwitchView('proyectos');
-        }, 50);
+        // Click del sidebar — sistema switchCrmView('proyectos') ya
+        // oculta dashboard y muestra proyectosSection con .active.
+        var btn = document.getElementById('btnProyectos');
+        if (btn) btn.click();
     }
     window.ingenieroIrAProyectos = ingenieroIrAProyectos;
 
     function ingenieroIrACalendario(ev) {
         if (ev && ev.preventDefault) ev.preventDefault();
-        // El "calendario" en ingeniero mode equivale a las actividades/tablero
-        ingenieroMostrarActividades();
-        setTimeout(function () {
-            if (typeof window.dashSwitchView === 'function') window.dashSwitchView('actividades');
-        }, 50);
+        // Intenta abrir el widget de calendario maestro (vendedor style)
+        var w = document.getElementById('widgetCalendarioMaster');
+        if (w) { w.style.display = 'flex'; return; }
+        // Fallback: nada (calendario no disponible en este rol)
     }
     window.ingenieroIrACalendario = ingenieroIrACalendario;
 

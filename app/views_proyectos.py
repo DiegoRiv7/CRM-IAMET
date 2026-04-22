@@ -417,6 +417,61 @@ def api_ingeniero_dashboard_stats(request):
 
 
 @login_required
+def api_ingeniero_mis_actividades(request):
+    """Actividades del calendario (ProgramacionActividad) en las que el
+    usuario actual figura como responsable. Pensado para alimentar los
+    tiles del Dashboard del ingeniero.
+
+    Retorna: items ordenados por fecha ascendente (primero las más próximas),
+    sin completadas. Cada item con id, titulo, fecha ISO, hora_inicio/fin,
+    completada, proyecto_key, y link a proyecto/nombre si se puede derivar.
+    """
+    user = request.user
+    acts = ProgramacionActividad.objects.filter(
+        responsables=user,
+        completada=False,
+    ).prefetch_related('responsables').order_by('fecha', 'hora_inicio')[:50]
+
+    # Derivar nombre del proyecto desde proyecto_key (formato 'proy_<id>')
+    proyecto_keys = set(a.proyecto_key for a in acts if a.proyecto_key)
+    proy_names = {}
+    try:
+        from app.models import ProyectoIAMET
+        proy_ids = []
+        for k in proyecto_keys:
+            if k and k.startswith('proy_'):
+                try: proy_ids.append(int(k.split('_', 1)[1]))
+                except Exception: pass
+        if proy_ids:
+            for p in ProyectoIAMET.objects.filter(id__in=proy_ids).only('id', 'nombre', 'cliente_nombre'):
+                proy_names['proy_{}'.format(p.id)] = {
+                    'id': p.id,
+                    'nombre': p.nombre,
+                    'cliente': p.cliente_nombre or '',
+                }
+    except Exception:
+        pass
+
+    items = []
+    for a in acts:
+        prog = proy_names.get(a.proyecto_key) or {}
+        items.append({
+            'id': a.id,
+            'titulo': a.titulo,
+            'fecha': str(a.fecha) if a.fecha else None,
+            'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '',
+            'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '',
+            'completada': a.completada,
+            'proyecto_key': a.proyecto_key or '',
+            'proyecto_id': prog.get('id'),
+            'proyecto_nombre': prog.get('nombre', ''),
+            'cliente_nombre': prog.get('cliente', ''),
+        })
+
+    return JsonResponse({'success': True, 'items': items})
+
+
+@login_required
 def api_programacion_actividades(request):
     """GET: lista actividades de un proyecto_key. POST: crear una nueva."""
     if request.method == 'GET':

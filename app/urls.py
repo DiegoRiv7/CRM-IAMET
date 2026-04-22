@@ -162,6 +162,7 @@ urlpatterns = [
 
     # ── APIs Ingeniero / Programación ─────────────────────────────────────────
     path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),
+    path('api/ingeniero/mis-actividades-calendario/', views.api_ingeniero_mis_actividades, name='api_ingeniero_mis_actividades'),
     path('api/ingeniero/proyectos/', views.api_ingeniero_proyectos, name='api_ingeniero_proyectos'),
     path('api/ingeniero/proyecto/<int:proyecto_id>/', views.api_ingeniero_proyecto_detalle, name='api_ingeniero_proyecto_detalle'),
     path('api/ingeniero/board/reorder/', views.api_ingeniero_board_reorder, name='api_ingeniero_board_reorder'),
