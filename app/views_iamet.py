@@ -2841,6 +2841,7 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
         'desc_proyecto': f2.get('desc_proyecto') or f1.get('descripcion') or '',
         'especificaciones': [x for x in (f2.get('especificaciones') or []) if x and x.strip()],
         'comentarios_spec': [x for x in (f2.get('comentarios_spec') or []) if x and x.strip()],
+        'notas_evidencia':  f2.get('notas_evidencia') or '',
         # Productos/Materiales — ahora se capturan en Fase 2 (con catálogo)
         # con fallback a fase1.productos para compat con levantamientos viejos.
         'productos': [{

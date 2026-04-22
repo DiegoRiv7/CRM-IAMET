@@ -1260,12 +1260,11 @@
         }
     };
 
-    // Restore mode al abrir el wizard
+    // Restore mode al abrir el wizard — el toggle se removio, ahora
+    // siempre forzamos "full" para que los campos avanzados (como
+    // "Notas por partida") sean siempre visibles.
     function _lwRestoreMode() {
-        var saved;
-        try { saved = localStorage.getItem(LW_MODE_KEY); } catch (e) { saved = null; }
-        // Default: modo simple (para ingenieros nuevos)
-        _lwApplyMode(saved === 'full' ? 'full' : 'simple');
+        _lwApplyMode('full');
     }
 
     // ── Sidebar lateral (colapsable) ──────────────────────────────
@@ -1664,6 +1663,9 @@
         }
         // Evidencias
         renderPhase2Photos();
+        // Notas sobre las evidencias
+        var notasEv = $('lw_f2_notas_evidencia');
+        if (notasEv) notasEv.value = f2.notas_evidencia || '';
         // Programa de implementacion (movido desde Fase 1)
         _lwF2FillPrograma();
         // Barra de progreso de Fase 2
@@ -2021,6 +2023,7 @@
             ['planta','lw_f2_planta'], ['areas','lw_f2_areas'],
             ['tipo_solucion','lw_f2_tipo_solucion'], ['fecha_inst','lw_f2_fecha_inst'],
             ['desc_proyecto','lw_f2_desc_proyecto'],
+            ['notas_evidencia','lw_f2_notas_evidencia'],
         ].forEach(function (pair) {
             var el = $(pair[1]);
             if (el) f2[pair[0]] = el.value || '';
@@ -2048,6 +2051,14 @@
         state.lev.fase2_data = f2;
         return f2;
     }
+
+    // Notas sobre las evidencias — textarea libre en Isla 2 de Fase 2
+    window.lwF2NotasEvidenciaInput = function (el) {
+        var f2 = state.lev.fase2_data || {};
+        f2.notas_evidencia = el.value || '';
+        state.lev.fase2_data = f2;
+        lwFieldChange();
+    };
 
     // Handler de los inputs del Programa de Implementación (movido a Fase 2).
     // Guarda directo en state.lev.fase2_data.programa para que el save

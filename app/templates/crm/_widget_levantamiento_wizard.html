@@ -21,30 +21,8 @@
                 </div>
                 <span class="lw-sep">·</span>
                 <span class="lw-title" id="lwTitle">Levantamiento</span>
-                <!-- Status pill / dropdown -->
-                <div class="lw-status-wrap">
-                    <button type="button" class="lw-status-btn" id="lwStatusBtn" onclick="lwToggleStatusMenu(event)">
-                        <i id="lwStatusDot"></i>
-                        <span id="lwStatusLabel">Borrador</span>
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div class="lw-status-menu" id="lwStatusMenu" style="display:none;">
-                        <div class="lw-status-item" data-status="borrador"   onclick="lwSetStatus('borrador')"><i style="background:#F59E0B"></i>Borrador</div>
-                        <div class="lw-status-item" data-status="revision"   onclick="lwSetStatus('revision')"><i style="background:#3B82F6"></i>En Revisión</div>
-                        <div class="lw-status-item" data-status="aprobado"   onclick="lwSetStatus('aprobado')"><i style="background:#10B981"></i>Aprobado</div>
-                        <div class="lw-status-item" data-status="rechazado"  onclick="lwSetStatus('rechazado')"><i style="background:#EF4444"></i>Rechazado</div>
-                        <div class="lw-status-item" data-status="ejecutando" onclick="lwSetStatus('ejecutando')"><i style="background:#2563EB"></i>Ejecutando</div>
-                        <div class="lw-status-item" data-status="completado" onclick="lwSetStatus('completado')"><i style="background:#059669"></i>Completado</div>
-                    </div>
-                </div>
             </div>
             <div class="lw-header-right">
-                <!-- Toggle Modo Simple / Completo -->
-                <label class="lw-mode-toggle" title="Muestra u oculta campos avanzados">
-                    <input type="checkbox" id="lwModeToggle" onchange="lwToggleMode(this.checked)">
-                    <span class="lw-mode-slider"></span>
-                    <span class="lw-mode-label" id="lwModeLabel">Modo simple</span>
-                </label>
                 <!-- Toggle sidebar (datos contacto + progreso + resumen) -->
                 <button type="button" class="lw-sidebar-toggle" id="lwSidebarToggle"
                         onclick="lwSidebarToggle()" title="Mostrar / ocultar panel lateral"
@@ -485,20 +463,32 @@
                             </div>
                         </section>
 
-                        <!-- ─── ISLA 2 · EVIDENCIA FOTOGRÁFICA ─── -->
+                        <!-- ─── ISLA 2 · EVIDENCIA FOTOGRÁFICA + NOTAS DEL SITIO ─── -->
                         <section class="lw-island">
                             <div class="lw-island-header">
                                 <div class="lw-island-step" style="background:#B45309;">2</div>
                                 <div>
-                                    <h2 class="lw-island-title">Evidencia Fotográfica</h2>
-                                    <p class="lw-island-subtitle">Las fotos se comparten con Fase 1</p>
+                                    <h2 class="lw-island-title">Evidencia &amp; Notas del Sitio</h2>
+                                    <p class="lw-island-subtitle">Fotos + observaciones del lugar</p>
                                 </div>
                             </div>
                             <div class="lw-island-body">
-                                <div class="lw-evid-zone" id="lwDropZone" data-dropzone="1">
-                                    <!-- Render dinámico por renderPhase2Photos() -->
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Fotografías de evidencia</label>
+                                    <span class="lw-ifield-hint" style="margin:2px 0 6px;">Arrastra, pega con ⌘V, o click para seleccionar. Las fotos se comparten con Fase 1.</span>
+                                    <div class="lw-evid-zone" id="lwDropZone" data-dropzone="1">
+                                        <!-- Render dinámico por renderPhase2Photos() -->
+                                    </div>
                                 </div>
-                                <span class="lw-ifield-hint" style="margin-top:4px;">Arrastra, pega con ⌘V, o click para seleccionar. Solo JPG / PNG / WebP.</span>
+
+                                <!-- Notas libres sobre las evidencias -->
+                                <div class="lw-ifield lw-ifield-grow">
+                                    <label class="lw-ifield-label">Notas sobre las evidencias y el sitio</label>
+                                    <span class="lw-ifield-hint" style="margin:2px 0 6px;">Observaciones que no entran en la descripción general — altura de techo, voltaje, accesos, ruido, condiciones, lo que hayas notado.</span>
+                                    <textarea id="lw_f2_notas_evidencia" class="lw-soft-textarea" rows="8"
+                                              placeholder="Ej:&#10;- Techo de nave 3 a 6m, rentar escalera tijera.&#10;- Voltaje 220V trifásico en tablero principal.&#10;- Tablaroca en oficinas, concreto en zona industrial.&#10;- Acceso solo lunes a jueves de 8 a 16h.&#10;- Se requiere permiso especial para trabajo en altura."
+                                              oninput="lwF2NotasEvidenciaInput(this)"></textarea>
+                                </div>
                             </div>
                         </section>
 

@@ -379,6 +379,14 @@
 </table>
 {% endif %}
 
+<!-- ═══ Notas del sitio / condiciones (opcional) ═══ -->
+{% if notas_evidencia %}
+<table class="pt-table">
+    <tr class="pt-section-row"><td>Notas del sitio y condiciones observadas</td></tr>
+    <tr><td class="pt-desc-cell">{{ notas_evidencia|linebreaksbr }}</td></tr>
+</table>
+{% endif %}
+
 <!-- ═══ Evidencia Fotográfica — en hoja aparte ═══ -->
 <div class="pt-evid-wrap">
     <table class="pt-table" style="margin-bottom:4px;">
