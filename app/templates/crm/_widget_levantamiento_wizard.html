@@ -175,6 +175,23 @@
                  Todos los IDs originales preservados para compat con JS. -->
             <div class="lw-phase lw-phase-active" data-phase="1" id="lwPhase1">
                 <div class="lw-islands-wrap">
+                    <!-- Barra de progreso — ARRIBA (no flotante al pie) -->
+                    <div class="lw-islands-footer" id="lwIslandsFooter">
+                        <div class="lw-islands-progress-info">
+                            <div class="lw-islands-progress-text">
+                                <span>Completado</span>
+                                <span id="lwIslandsProgressPct">0%</span>
+                            </div>
+                            <div class="lw-islands-progress-track">
+                                <div class="lw-islands-progress-fill" id="lwIslandsProgressFill"></div>
+                            </div>
+                        </div>
+                        <div class="lw-islands-status" id="lwIslandsStatus">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>Faltan datos</span>
+                        </div>
+                    </div>
+
                     <div class="lw-islands-board">
 
                         <!-- ─── ISLA 1 · IDENTIFICACIÓN ─── -->
@@ -400,23 +417,6 @@
                         </section>
 
                     </div><!-- /.lw-islands-board -->
-
-                    <!-- ─── Footer flotante con progreso ─── -->
-                    <div class="lw-islands-footer" id="lwIslandsFooter">
-                        <div class="lw-islands-progress-info">
-                            <div class="lw-islands-progress-text">
-                                <span>Completado</span>
-                                <span id="lwIslandsProgressPct">0%</span>
-                            </div>
-                            <div class="lw-islands-progress-track">
-                                <div class="lw-islands-progress-fill" id="lwIslandsProgressFill"></div>
-                            </div>
-                        </div>
-                        <div class="lw-islands-status" id="lwIslandsStatus">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            <span>Faltan datos</span>
-                        </div>
-                    </div>
 
                     <!-- IDs del checklist legacy (mantenidos ocultos) — el JS
                          lwRenderChecklist los sigue escribiendo, se usan como
