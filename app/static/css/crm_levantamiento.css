@@ -2226,7 +2226,12 @@
 .lw-p2-specs {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 14px;
+}
+/* En islas angostas (Fase 2 en pantalla media), las dos columnas se
+   apilan para no verse apretadas. */
+@media (max-width: 900px) {
+    .lw-p2-specs { grid-template-columns: 1fr; }
 }
 .lw-p2-specs-col {
     background: #F8FAFC;
@@ -3114,8 +3119,8 @@
    FASE 1 — TABLERO DE ISLAS (rediseño UX-first)
    ═══════════════════════════════════════════════════════════════ */
 
-/* Contenedor principal de Fase 1 — barra de progreso arriba + board abajo */
-#lwPhase1 .lw-islands-wrap {
+/* Contenedor de islas (Fase 1 y Fase 2) */
+.lw-islands-wrap {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -3421,7 +3426,7 @@ label.lw-soft-input {
 
 /* ── Responsive: en pantallas angostas las islas stackeán ─────── */
 @media (max-width: 1100px) {
-    #lwPhase1 .lw-islands-wrap {
+    .lw-islands-wrap {
         overflow-x: hidden;
     }
     .lw-islands-board {
@@ -3569,12 +3574,12 @@ label.lw-soft-input {
         min-height: 0;
         margin: 0;
         border-radius: 16px;
-        /* Por defecto en movil: OCULTAS — solo se muestra la activa */
-        display: none;
     }
-    .lw-island.lw-mobile-active {
-        display: flex;
-    }
+    /* WIZARD MÓVIL — solo aplica a Fase 1 (levantamiento en campo).
+       En Fase 2 (propuesta técnica, oficina) todas las islas quedan
+       stackeadas visibles con scroll normal. */
+    #lwPhase1 .lw-island { display: none; }
+    #lwPhase1 .lw-island.lw-mobile-active { display: flex; }
     .lw-island-header { padding: 18px 20px 4px; }
     .lw-island-body { padding: 16px 20px 20px; gap: 16px; }
 
