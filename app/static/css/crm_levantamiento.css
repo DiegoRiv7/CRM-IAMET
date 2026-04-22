@@ -3514,6 +3514,33 @@ label.lw-soft-input {
     .lw-island-title { font-size: 17px; }
     .lw-island-subtitle { font-size: 13px; }
 
+    /* ── FIX iOS Safari auto-zoom al enfocar inputs ──
+       iOS Safari hace zoom-in cuando el font-size de un input es
+       menor a 16px. Forzamos 16px en todos los campos focusables
+       en movil para que NO haya zoom y el layout no se desordene. */
+    .lw-soft-input,
+    .lw-soft-input input,
+    .lw-soft-input textarea,
+    .lw-soft-textarea,
+    .lw-meta-pill input,
+    .lw-rt-editor,
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    input[type="date"],
+    input[type="number"],
+    input[type="search"],
+    input[type="url"],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+
+    /* Los chips y pills se pueden ver mas chicos (no son campos de texto focusables) */
+    .lw-chip { font-size: 13px; }
+    .lw-ifield-label { font-size: 13px; }
+    .lw-ifield-hint { font-size: 12px; }
+
     /* La barra de progreso de arriba se pone mas compacta */
     .lw-islands-footer {
         margin: 10px 14px 4px;
