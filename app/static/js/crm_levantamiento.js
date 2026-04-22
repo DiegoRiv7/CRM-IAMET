@@ -874,7 +874,11 @@
 
     function lwRefreshClienteLock() {
         var d = state.lev.fase1_data || {};
-        var pill = document.querySelector('.lw-meta-pill-cliente');
+        // Busca el contenedor del input cliente tanto en el layout viejo
+        // (.lw-meta-pill-cliente) como en el nuevo (label padre del input).
+        var inp = $('lw_f1_cliente');
+        var pill = (inp && inp.closest('.lw-meta-pill-cliente, .lw-soft-input, label'))
+                   || document.querySelector('.lw-meta-pill-cliente');
         var clearBtn = $('lwClienteClearBtn');
         if (!pill) return;
         if (d.cliente_id) {
@@ -1009,6 +1013,42 @@
             _celebrateFase1Done();
         }
         state.lev._ck_last_done = done;
+
+        // Actualizar footer flotante nuevo (tablero de islas)
+        _updateIslandsFooter(items, done, total);
+    }
+
+    // Footer flotante con progreso + palomitas inline en cada campo
+    function _updateIslandsFooter(items, done, total) {
+        var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        var pctEl = document.getElementById('lwIslandsProgressPct');
+        var fillEl = document.getElementById('lwIslandsProgressFill');
+        var statusEl = document.getElementById('lwIslandsStatus');
+        if (pctEl) pctEl.textContent = pct + '%';
+        if (fillEl) {
+            fillEl.style.width = pct + '%';
+            fillEl.classList.toggle('done', pct === 100);
+        }
+        // Estado textual
+        if (statusEl) {
+            var remaining = total - done;
+            if (pct === 100) {
+                statusEl.classList.add('ready');
+                statusEl.innerHTML =
+                    '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+                    '<span>Listo para Fase 2</span>';
+            } else {
+                statusEl.classList.remove('ready');
+                statusEl.innerHTML =
+                    '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+                    '<span>' + (remaining === 1 ? 'Falta 1 dato' : 'Faltan ' + remaining + ' datos') + '</span>';
+            }
+        }
+        // Palomitas inline en cada isla
+        items.forEach(function (it) {
+            var ic = document.getElementById('lwCheck_' + it.key);
+            if (ic) ic.classList.toggle('visible', !!it.done);
+        });
     }
 
     // Celebración efímera cuando completas la checklist de Fase 1

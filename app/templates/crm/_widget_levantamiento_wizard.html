@@ -168,222 +168,271 @@
         <!-- ── Phase content ── -->
         <div class="lw-content" id="lwContent">
 
-            <!-- ═══ PHASE 1 — LEVANTAMIENTO (Canvas Experience) ═══ -->
+            <!-- ═══ PHASE 1 — LEVANTAMIENTO (Tablero de Islas) ═══
+                 Layout tipo board con 5 columnas/islas, cada una un paso
+                 numerado. Scroll horizontal en desktop, stack vertical
+                 en pantallas angostas. Footer flotante con progreso.
+                 Todos los IDs originales preservados para compat con JS. -->
             <div class="lw-phase lw-phase-active" data-phase="1" id="lwPhase1">
-                <div class="lw-canvas">
-                 <div class="lw-canvas-main">
+                <div class="lw-islands-wrap">
+                    <div class="lw-islands-board">
 
-                    <!-- ─── HERO ZONE ─────────────────────────────── -->
-                    <div class="lw-canvas-hero">
-                        <!-- Título gigante sin borde — autofocus -->
-                        <input type="text"
-                               class="lw-canvas-title"
-                               id="lw_f1_titulo"
-                               placeholder="Ej: Instalación CCTV Nave 3 — Luxshare Precision"
-                               spellcheck="false"
-                               oninput="lwUpdateNombre(this.value)">
-
-                        <!-- "Para [cliente]" en lenguaje natural con autocomplete -->
-                        <div class="lw-canvas-forline">
-                            <span class="lw-canvas-forword">Para</span>
-                            <div class="lw-ac-wrap">
-                                <label class="lw-meta-pill lw-meta-pill-cliente" data-field="cliente">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                    <input type="text"
-                                           id="lw_f1_cliente"
-                                           placeholder="nombre del cliente"
-                                           autocomplete="off"
-                                           oninput="lwClienteInput(this)"
-                                           onfocus="lwClienteInput(this)"
-                                           onblur="lwClienteBlur()">
-                                    <button type="button" class="lw-ac-clear" id="lwClienteClearBtn" style="display:none;" onclick="lwClienteClear(event)" title="Quitar cliente">
-                                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                    </button>
-                                </label>
-                                <div class="lw-ac-dropdown" id="lw_f1_cliente_ac" style="display:none;"></div>
+                        <!-- ─── ISLA 1 · IDENTIFICACIÓN ─── -->
+                        <section class="lw-island">
+                            <div class="lw-island-header">
+                                <div class="lw-island-step" style="background:#0F172A;">1</div>
+                                <div>
+                                    <h2 class="lw-island-title">Identificación</h2>
+                                    <p class="lw-island-subtitle">Título, cliente y lo que necesita</p>
+                                </div>
                             </div>
-                        </div>
+                            <div class="lw-island-body">
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Título del levantamiento <span class="lw-ifield-check" id="lwCheck_titulo">✓</span></label>
+                                    <input type="text" id="lw_f1_titulo" class="lw-soft-input"
+                                           placeholder="Ej: Instalación CCTV Nave 3 — Luxshare Precision"
+                                           spellcheck="false"
+                                           oninput="lwUpdateNombre(this.value)">
+                                    <span class="lw-ifield-hint">Un nombre que distinga este proyecto del resto.</span>
+                                </div>
 
-                        <!-- Descripción doc-style -->
-                        <textarea class="lw-canvas-desc"
-                                  id="lw_f1_descripcion"
-                                  rows="3"
-                                  placeholder="Ej: El cliente requiere 16 cámaras IP de 4MP en el perímetro de la Nave 3, con grabación 24/7, acceso remoto desde sala de control y respaldo en disco de 8TB. Integración con la red existente."
-                                  oninput="lwFieldChange(); lwAutoGrow(this)"></textarea>
-                    </div>
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Cliente <span class="lw-ifield-check" id="lwCheck_cliente">✓</span></label>
+                                    <div class="lw-ac-wrap" style="position:relative;">
+                                        <label class="lw-soft-input lw-soft-input-icon">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                            <input type="text" id="lw_f1_cliente"
+                                                   placeholder="Empresa que paga el proyecto"
+                                                   autocomplete="off"
+                                                   oninput="lwClienteInput(this)"
+                                                   onfocus="lwClienteInput(this)"
+                                                   onblur="lwClienteBlur()">
+                                            <button type="button" class="lw-ac-clear" id="lwClienteClearBtn" style="display:none;" onclick="lwClienteClear(event)" title="Quitar cliente">
+                                                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                            </button>
+                                        </label>
+                                        <div class="lw-ac-dropdown" id="lw_f1_cliente_ac" style="display:none;"></div>
+                                    </div>
+                                    <span class="lw-ifield-hint">Al seleccionar se autollena contacto, email y teléfono.</span>
+                                </div>
 
-                    <!-- ─── ALCANCE (chips) ───────────────────────── -->
-                    <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Tipo de servicio <span class="lw-help-tip" data-tip="Marca uno o varios sistemas que se instalarán. Esto filtra la lista de componentes de abajo a los relevantes.">?</span></div>
-                        <div class="lw-chips" id="lw_f1_servicios"></div>
-                    </div>
-
-                    <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-label">Componentes de la solución <span class="lw-help-tip" data-tip="Marca los elementos físicos que requiere la solución (cámaras, cables, gabinetes, etc). La lista se filtra automáticamente según los servicios seleccionados.">?</span></div>
-                        <div class="lw-chips" id="lw_f1_componentes"></div>
-                    </div>
-
-                    <!-- ─── PRODUCTOS ─────────────────────────────── -->
-                    <div class="lw-canvas-section">
-                        <div class="lw-canvas-section-row">
-                            <div class="lw-canvas-section-label">Productos &amp; partidas <span class="lw-help-tip" data-tip="Agrega los productos que se van a cotizar. Puedes usar los botones de quick-add de abajo, buscar en el catálogo con ⌘K, o arrastrar filas para reordenar.">?</span></div>
-                            <button type="button" class="lw-ghost-btn" onclick="lwP1OpenCatalog()">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                                Agregar producto
-                                <kbd class="lw-kbd">⌘K</kbd>
-                            </button>
-                        </div>
-
-                        <div class="lw-catalog-box" id="lwCatalogBox" style="display:none;">
-                            <div class="lw-catalog-search">
-                                <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                <input type="text" id="lwCatalogSearch" placeholder="Buscar por descripción, marca, No. de parte…" oninput="lwP1CatalogSearch()">
-                                <button type="button" class="lw-catalog-close" onclick="lwP1CloseCatalog()" title="Cerrar">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                </button>
+                                <div class="lw-ifield lw-ifield-grow">
+                                    <label class="lw-ifield-label">¿Qué necesita el cliente? <span class="lw-ifield-check" id="lwCheck_descripcion">✓</span></label>
+                                    <textarea id="lw_f1_descripcion" class="lw-soft-textarea" rows="5"
+                                              placeholder="Ej: El cliente requiere 16 cámaras IP de 4MP en el perímetro de la Nave 3, con grabación 24/7 y respaldo en disco de 8TB."
+                                              oninput="lwFieldChange()"></textarea>
+                                    <span class="lw-ifield-hint">Describe la necesidad en palabras simples.</span>
+                                </div>
                             </div>
-                            <div class="lw-catalog-list" id="lwCatalogList"></div>
-                        </div>
+                        </section>
 
-                        <div id="lw_f1_productos_wrap"></div>
-                    </div>
-
-                    <!-- ─── Programa e implementación (para PDF de levantamiento) ─── -->
-                    <div class="lw-canvas-section lw-advanced">
-                        <div class="lw-canvas-section-label">Programa e implementación <span class="lw-help-tip" data-tip="Información de campo para la instalación: fechas, turno, personal requerido y equipo de elevación. Se usa en el PDF de Levantamiento en Sitio.">?</span></div>
-                        <div class="lw-impl-grid">
-                            <!-- Fechas + Turno -->
-                            <div class="lw-impl-row">
-                                <label class="lw-meta-pill" data-field="fecha_inicio">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                    <input type="date" id="lw_f1_fecha_inicio" placeholder="Fecha inicio" oninput="lwMetaInput(this)">
-                                </label>
-                                <label class="lw-meta-pill" data-field="fecha_fin">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                    <input type="date" id="lw_f1_fecha_fin" placeholder="Fecha fin" oninput="lwMetaInput(this)">
-                                </label>
-                                <label class="lw-meta-pill" data-field="duracion">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                    <input type="text" id="lw_f1_duracion" placeholder="Duración (ej. 10 días)" oninput="lwMetaInput(this)">
-                                </label>
+                        <!-- ─── ISLA 2 · CONTACTO Y UBICACIÓN ─── -->
+                        <section class="lw-island">
+                            <div class="lw-island-header">
+                                <div class="lw-island-step" style="background:#2563EB;">2</div>
+                                <div>
+                                    <h2 class="lw-island-title">Contacto &amp; Ubicación</h2>
+                                    <p class="lw-island-subtitle">¿Con quién se levanta? ¿Dónde?</p>
+                                </div>
                             </div>
+                            <div class="lw-island-body">
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Contacto <span class="lw-ifield-check" id="lwCheck_contacto">✓</span></label>
+                                    <div class="lw-ac-wrap" style="position:relative;">
+                                        <label class="lw-soft-input lw-soft-input-icon">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                            <input type="text" id="lw_f1_contacto"
+                                                   placeholder="Persona del cliente"
+                                                   autocomplete="off"
+                                                   oninput="lwContactoInput(this)"
+                                                   onfocus="lwContactoInput(this)"
+                                                   onblur="lwContactoBlur()">
+                                        </label>
+                                        <div class="lw-ac-dropdown" id="lw_f1_contacto_ac" style="display:none;"></div>
+                                    </div>
+                                    <span class="lw-ifield-hint">Quien coordina del lado del cliente.</span>
+                                </div>
 
-                            <!-- Turno (chips) -->
-                            <div class="lw-impl-sub">
-                                <span class="lw-impl-sublabel">Turno</span>
-                                <div class="lw-chips" id="lw_f1_turno_chips"></div>
-                            </div>
-
-                            <!-- Apoyo + Personal -->
-                            <div class="lw-impl-row">
-                                <label class="lw-meta-pill lw-meta-pill-wide" data-field="apoyo_cliente">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                    <input type="text" id="lw_f1_apoyo_cliente" placeholder="Apoyo del cliente (especifica)" oninput="lwMetaInput(this)">
-                                </label>
-                                <label class="lw-meta-pill" data-field="personal_requerido">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                                    <input type="text" id="lw_f1_personal_req" placeholder="Personal requerido" oninput="lwMetaInput(this)">
-                                </label>
-                            </div>
-
-                            <!-- Equipo de elevación -->
-                            <div class="lw-impl-sub">
-                                <span class="lw-impl-sublabel">Equipo de elevación</span>
-                                <div class="lw-impl-row">
-                                    <label class="lw-meta-pill" data-field="elev_alto">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-                                        <input type="text" id="lw_f1_elev_alto" placeholder="Alto" oninput="lwMetaInput(this)">
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Área / ubicación</label>
+                                    <label class="lw-soft-input lw-soft-input-icon">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                        <input type="text" id="lw_f1_area" placeholder="Planta, nave, piso…" oninput="lwMetaInput(this)">
                                     </label>
-                                    <label class="lw-meta-pill" data-field="elev_ancho">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
-                                        <input type="text" id="lw_f1_elev_ancho" placeholder="Ancho" oninput="lwMetaInput(this)">
-                                    </label>
-                                    <label class="lw-meta-pill" data-field="elev_modelo">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
-                                        <input type="text" id="lw_f1_elev_modelo" placeholder="Modelo (ej. Tijera 12m)" oninput="lwMetaInput(this)">
+                                </div>
+
+                                <div class="lw-ifield-row">
+                                    <div class="lw-ifield">
+                                        <label class="lw-ifield-label">Fecha</label>
+                                        <label class="lw-soft-input lw-soft-input-icon">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                            <input type="date" id="lw_f1_fecha" oninput="lwMetaInput(this)">
+                                        </label>
+                                    </div>
+                                    <div class="lw-ifield">
+                                        <label class="lw-ifield-label">Teléfono</label>
+                                        <label class="lw-soft-input lw-soft-input-icon">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                            <input type="tel" id="lw_f1_telefono" placeholder="664 000 0000" oninput="lwMetaInput(this)">
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Email</label>
+                                    <label class="lw-soft-input lw-soft-input-icon">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+                                        <input type="email" id="lw_f1_email" placeholder="contacto@cliente.com" oninput="lwMetaInput(this)">
                                     </label>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                 </div><!-- /.lw-canvas-main -->
+                        </section>
 
-                 <!-- ─── META SIDEBAR (ghost pills + resumen) ─── -->
-                 <div class="lw-canvas-meta">
-                    <div class="lw-ac-wrap" style="width:100%;">
-                        <label class="lw-meta-pill" data-field="contacto">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            <input type="text" id="lw_f1_contacto"
-                                   placeholder="Contacto"
-                                   autocomplete="off"
-                                   oninput="lwContactoInput(this)"
-                                   onfocus="lwContactoInput(this)"
-                                   onblur="lwContactoBlur()">
-                        </label>
-                        <div class="lw-ac-dropdown" id="lw_f1_contacto_ac" style="display:none;"></div>
-                    </div>
-                    <label class="lw-meta-pill" data-field="area">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <input type="text" id="lw_f1_area" placeholder="Área / ubicación" oninput="lwMetaInput(this)">
-                    </label>
-                    <label class="lw-meta-pill" data-field="fecha">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <input type="date" id="lw_f1_fecha" oninput="lwMetaInput(this)">
-                    </label>
-                    <label class="lw-meta-pill" data-field="email">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
-                        <input type="email" id="lw_f1_email" placeholder="Correo" oninput="lwMetaInput(this)">
-                    </label>
-                    <label class="lw-meta-pill" data-field="telefono">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        <input type="tel" id="lw_f1_telefono" placeholder="Teléfono" oninput="lwMetaInput(this)">
-                    </label>
-
-                    <!-- Checklist dinámico (gamificación: cada ✓ da dopamina) -->
-                    <div class="lw-checklist" id="lwChecklist">
-                        <div class="lw-checklist-head">
-                            <span class="lw-checklist-label">Progreso de Fase 1</span>
-                            <span class="lw-checklist-count" id="lwChecklistCount">0 / 6</span>
-                        </div>
-                        <div class="lw-checklist-list" id="lwChecklistList">
-                            <!-- renderizado por lwRenderChecklist() -->
-                        </div>
-                    </div>
-
-                    <!-- Panel de resumen vivo (stats) -->
-                    <div class="lw-canvas-summary" id="lwCanvasSummary">
-                        <div class="lw-summary-label">Resumen del levantamiento</div>
-                        <div class="lw-summary-row">
-                            <span class="lw-summary-icon" style="background:#EFF6FF;color:#2563EB;">
-                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                            </span>
-                            <span class="lw-summary-text"><b id="lwSumServicios">0</b> servicios</span>
-                        </div>
-                        <div class="lw-summary-row">
-                            <span class="lw-summary-icon" style="background:#F5F3FF;color:#7C3AED;">
-                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                            </span>
-                            <span class="lw-summary-text"><b id="lwSumComponentes">0</b> componentes</span>
-                        </div>
-                        <div class="lw-summary-row">
-                            <span class="lw-summary-icon" style="background:#FFF7ED;color:#B45309;">
-                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                            </span>
-                            <span class="lw-summary-text"><b id="lwSumProductos">0</b> productos</span>
-                        </div>
-                        <div class="lw-summary-divider"></div>
-                        <div class="lw-summary-row lw-summary-monto">
-                            <span class="lw-summary-monto-lbl">Monto estimado</span>
-                            <span class="lw-summary-monto-val" id="lwSumMonto">$0</span>
-                        </div>
-                        <div class="lw-summary-progress">
-                            <div class="lw-summary-progress-track">
-                                <div class="lw-summary-progress-fill" id="lwSumProgressFill"></div>
+                        <!-- ─── ISLA 3 · ALCANCE TÉCNICO ─── -->
+                        <section class="lw-island">
+                            <div class="lw-island-header">
+                                <div class="lw-island-step" style="background:#059669;">3</div>
+                                <div>
+                                    <h2 class="lw-island-title">Alcance Técnico</h2>
+                                    <p class="lw-island-subtitle">Sistemas y componentes</p>
+                                </div>
                             </div>
-                            <span class="lw-summary-progress-lbl" id="lwSumProgressLbl">Fase 1 · 20%</span>
+                            <div class="lw-island-body">
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Tipo de servicio <span class="lw-ifield-check" id="lwCheck_servicios">✓</span></label>
+                                    <div class="lw-chips" id="lw_f1_servicios"></div>
+                                    <span class="lw-ifield-hint">Marca uno o varios sistemas.</span>
+                                </div>
+
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Componentes</label>
+                                    <div class="lw-chips" id="lw_f1_componentes"></div>
+                                    <span class="lw-ifield-hint">Se filtran según los servicios seleccionados.</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- ─── ISLA 4 · PRODUCTOS &amp; PARTIDAS ─── -->
+                        <section class="lw-island lw-island-wide">
+                            <div class="lw-island-header">
+                                <div class="lw-island-step" style="background:#B45309;">4</div>
+                                <div>
+                                    <h2 class="lw-island-title">Productos &amp; Partidas <span class="lw-ifield-check" id="lwCheck_productos">✓</span></h2>
+                                    <p class="lw-island-subtitle">Lo que se va a cotizar</p>
+                                </div>
+                                <button type="button" class="lw-island-cta" onclick="lwP1OpenCatalog()">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                                    Agregar producto
+                                    <kbd class="lw-kbd">⌘K</kbd>
+                                </button>
+                            </div>
+                            <div class="lw-island-body">
+                                <div class="lw-catalog-box" id="lwCatalogBox" style="display:none;">
+                                    <div class="lw-catalog-search">
+                                        <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                        <input type="text" id="lwCatalogSearch" placeholder="Buscar por descripción, marca, No. de parte…" oninput="lwP1CatalogSearch()">
+                                        <button type="button" class="lw-catalog-close" onclick="lwP1CloseCatalog()" title="Cerrar">
+                                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="lw-catalog-list" id="lwCatalogList"></div>
+                                </div>
+                                <div id="lw_f1_productos_wrap"></div>
+                            </div>
+                        </section>
+
+                        <!-- ─── ISLA 5 · PROGRAMA DE IMPLEMENTACIÓN (modo completo) ─── -->
+                        <section class="lw-island lw-island-wide lw-advanced">
+                            <div class="lw-island-header">
+                                <div class="lw-island-step" style="background:#7C3AED;">5</div>
+                                <div>
+                                    <h2 class="lw-island-title">Programa de Implementación</h2>
+                                    <p class="lw-island-subtitle">Fechas, turno, personal y equipo de elevación</p>
+                                </div>
+                            </div>
+                            <div class="lw-island-body">
+                                <div class="lw-ifield-row">
+                                    <div class="lw-ifield">
+                                        <label class="lw-ifield-label">Fecha inicio</label>
+                                        <label class="lw-soft-input lw-soft-input-icon">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                            <input type="date" id="lw_f1_fecha_inicio" oninput="lwMetaInput(this)">
+                                        </label>
+                                    </div>
+                                    <div class="lw-ifield">
+                                        <label class="lw-ifield-label">Fecha fin</label>
+                                        <label class="lw-soft-input lw-soft-input-icon">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                            <input type="date" id="lw_f1_fecha_fin" oninput="lwMetaInput(this)">
+                                        </label>
+                                    </div>
+                                    <div class="lw-ifield">
+                                        <label class="lw-ifield-label">Duración</label>
+                                        <input type="text" id="lw_f1_duracion" class="lw-soft-input" placeholder="10 días" oninput="lwMetaInput(this)">
+                                    </div>
+                                </div>
+
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Turno</label>
+                                    <div class="lw-chips" id="lw_f1_turno_chips"></div>
+                                </div>
+
+                                <div class="lw-ifield-row">
+                                    <div class="lw-ifield">
+                                        <label class="lw-ifield-label">Apoyo del cliente</label>
+                                        <input type="text" id="lw_f1_apoyo_cliente" class="lw-soft-input" placeholder="Qué aporta el cliente" oninput="lwMetaInput(this)">
+                                    </div>
+                                    <div class="lw-ifield">
+                                        <label class="lw-ifield-label">Personal requerido</label>
+                                        <input type="text" id="lw_f1_personal_req" class="lw-soft-input" placeholder="3 técnicos + 1 supervisor" oninput="lwMetaInput(this)">
+                                    </div>
+                                </div>
+
+                                <div class="lw-ifield">
+                                    <label class="lw-ifield-label">Equipo de elevación</label>
+                                    <div class="lw-ifield-row">
+                                        <input type="text" id="lw_f1_elev_alto" class="lw-soft-input" placeholder="Alto" oninput="lwMetaInput(this)">
+                                        <input type="text" id="lw_f1_elev_ancho" class="lw-soft-input" placeholder="Ancho" oninput="lwMetaInput(this)">
+                                        <input type="text" id="lw_f1_elev_modelo" class="lw-soft-input" placeholder="Modelo (Tijera 12m)" oninput="lwMetaInput(this)">
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                    </div><!-- /.lw-islands-board -->
+
+                    <!-- ─── Footer flotante con progreso ─── -->
+                    <div class="lw-islands-footer" id="lwIslandsFooter">
+                        <div class="lw-islands-progress-info">
+                            <div class="lw-islands-progress-text">
+                                <span>Completado</span>
+                                <span id="lwIslandsProgressPct">0%</span>
+                            </div>
+                            <div class="lw-islands-progress-track">
+                                <div class="lw-islands-progress-fill" id="lwIslandsProgressFill"></div>
+                            </div>
+                        </div>
+                        <div class="lw-islands-status" id="lwIslandsStatus">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span>Faltan datos</span>
                         </div>
                     </div>
-                 </div>
+
+                    <!-- IDs del checklist legacy (mantenidos ocultos) — el JS
+                         lwRenderChecklist los sigue escribiendo, se usan como
+                         fuente de verdad para alimentar el footer flotante. -->
+                    <div id="lwChecklist" style="display:none;">
+                        <span id="lwChecklistCount">0 / 6</span>
+                        <div id="lwChecklistList"></div>
+                    </div>
+                    <div id="lwCanvasSummary" style="display:none;">
+                        <b id="lwSumServicios">0</b>
+                        <b id="lwSumComponentes">0</b>
+                        <b id="lwSumProductos">0</b>
+                        <span id="lwSumMonto">$0</span>
+                        <div id="lwSumProgressFill"></div>
+                        <span id="lwSumProgressLbl">Fase 1 · 20%</span>
+                    </div>
                 </div>
             </div>
 
