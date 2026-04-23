@@ -10452,17 +10452,43 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
         stroke-width: 2.4 !important;
     }
 
-    /* Avatar: círculo compacto sin etiqueta */
-    .crm-sb-avatar {
+    /* Avatar: círculo compacto sin etiqueta (mayor especificidad
+       para ganar sobre la regla combinada de .crm-sb-btn más arriba) */
+    .crm-sidebar .crm-sb-avatar {
         width: 40px !important;
         min-width: 40px !important;
         max-width: 40px !important;
         height: 40px !important;
         min-height: 40px !important;
+        flex: 0 0 40px !important;
         border-radius: 50% !important;
         background: #E5E7EB !important;
         overflow: hidden !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 1.5px solid rgba(0,0,0,0.06) !important;
     }
+    .crm-sidebar .crm-sb-avatar img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        display: block !important;
+    }
+    .crm-sidebar .crm-sb-avatar span {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.78rem !important;
+        font-weight: 700 !important;
+        color: #4A6FA5 !important;
+    }
+    /* Si el avatar está "activo" (perfil abierto), ringlet azul */
+    .crm-sidebar .crm-sb-avatar.active {
+        box-shadow: 0 0 0 2px #0052D4 !important;
+    }
+    .crm-sidebar .crm-sb-avatar.active::before { display: none !important; }
 
     /* Main: padding inferior para no quedar tapado */
     .crm-main {
