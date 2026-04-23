@@ -3,6 +3,31 @@
 {% block extra_head %}{% include "crm/_styles.html" %}
 <link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
 <link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}">
+{% if es_ingeniero %}
+<style>
+    /* Anti-FOUC: mientras body tiene .eng-initial-hide, oculta todas las
+       secciones principales para que solo el dashboard aparezca al cargar.
+       El JS quita esta clase después de mostrar el dashboard; a partir de
+       ahí la navegación normal (clases .active, style.display) funciona
+       sin interferencia. */
+    body.eng-initial-hide #crmContentSection,
+    body.eng-initial-hide #actividadesBoard,
+    body.eng-initial-hide #tareasSection,
+    body.eng-initial-hide #proyectosSection { display: none !important; }
+</style>
+<script>
+    (function () {
+        // Se aplica tan pronto el parser llega aquí (antes del <body>).
+        // Usamos documentElement por si body aún no existe; y en
+        // DOMContentLoaded lo movemos al body.
+        var addCls = function () {
+            if (document.body) document.body.classList.add('eng-initial-hide');
+        };
+        if (document.body) addCls();
+        else document.addEventListener('DOMContentLoaded', addCls);
+    })();
+</script>
+{% endif %}
 {% endblock %}
 {% block content %}
 

@@ -133,6 +133,9 @@
     function _dashIngShow() {
         var r = document.getElementById('dashIngRoot');
         if (r) r.style.display = 'block';
+        // Quitar guardia anti-FOUC: a partir de aquí la navegación normal
+        // (clases .active, style.display) puede mostrar otras secciones.
+        if (document.body) document.body.classList.remove('eng-initial-hide');
         _dashIngVisible = true;
         _dashIngStartAutoRefresh();
     }
