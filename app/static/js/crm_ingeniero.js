@@ -43,12 +43,13 @@
             var t = document.getElementById('tareasSection'); if (t) t.classList.add('active');
         });
 
-        // Cualquier click en botones del sidebar (excepto Dashboard) → ocultar dashboard.
-        // IDs reales del sidebar: btnSpotlight, btnNotificaciones, btnTareas,
-        // btnProyectos, btnMuro, btnCalendario, btnMail, btnGrupo, btnAdminPanel.
-        ['btnProyectos', 'btnCRM', 'btnMail', 'btnMuro', 'btnCalendario',
-         'btnNotificaciones', 'btnSpotlight', 'btnGrupo', 'btnAdminPanel'
-        ].forEach(function (id) {
+        // Solo los botones que REEMPLAZAN contenido (secciones) ocultan el
+        // dashboard: Proyectos, CRM, Tareas. Los demás (Muro, Correo,
+        // Calendario, Notificaciones, Buscar, Grupo, Admin) son OVERLAYS
+        // que flotan encima — el contenido de fondo (dashboard u otra
+        // sección) debe quedar visible abajo, así al cerrar el overlay
+        // el usuario regresa a lo que estaba viendo.
+        ['btnProyectos', 'btnCRM', 'btnTareas'].forEach(function (id) {
             var b = document.getElementById(id);
             if (b) b.addEventListener('click', function () { _dashIngHide(); });
         });
