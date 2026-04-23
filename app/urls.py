@@ -10,6 +10,7 @@ from . import views_automatizacion
 from . import views_grupos
 from . import views_proyectos
 from . import views_iamet
+from . import views_levantamientos_app
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -21,6 +22,11 @@ urlpatterns = [
     path('', views.crm_home, name='root_home'),
     path('home/', views.crm_home, name='home'),
     path('todos/', views.crm_home, name='todos'),  # alias histórico
+
+    # ── PWA Levantamientos (offline-capable, dedicada para planta) ───────────
+    path('levantamientos/', views_levantamientos_app.levantamientos_app, name='levantamientos_app'),
+    path('levantamientos/manifest.webmanifest', views_levantamientos_app.levantamientos_manifest, name='levantamientos_manifest'),
+    path('levantamientos/sw.js', views_levantamientos_app.levantamientos_service_worker, name='levantamientos_sw'),
 
     # ── Oportunidades ────────────────────────────────────────────────────────
     path('nueva-oportunidad/', views.nueva_oportunidad, name='nueva_oportunidad'),

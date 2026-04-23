@@ -74,10 +74,18 @@ def user_login(request):
                 request.session.set_expiry(1209600)  # 2 semanas
             else:
                 request.session.set_expiry(0)  # Expira al cerrar el navegador
+            # Respetar ?next=/…/ si viene y apunta a una ruta segura del sitio
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
             return redirect(settings.LOGIN_REDIRECT_URL)
     else:
         form = AuthenticationForm()
-    return render(request, 'login.html', {'form': form, 'hide_dock': True})
+    return render(request, 'login.html', {
+        'form': form,
+        'hide_dock': True,
+        'next': request.GET.get('next', ''),
+    })
 
 
 @require_POST
