@@ -31,8 +31,18 @@
             var ln = _ING_CONFIG.lastName;
             if (fn || ln) avatarEl.textContent = (fn.charAt(0) + ln.charAt(0)).toUpperCase();
         }
-        // Vista por defecto: Dashboard bento iCloud
-        ingenieroMostrarDashboard();
+        // Vista por defecto:
+        //   - Desktop (>768px): Dashboard bento iCloud
+        //   - Móvil (<=768px): Proyectos directo (el dashboard estorba
+        //     en pantalla pequeña; el ingeniero entra a trabajar,
+        //     no a ver KPIs).
+        var _isMobileViewport = function () {
+            return (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
+                   (window.innerWidth && window.innerWidth <= 768);
+        };
+        if (!_isMobileViewport()) {
+            ingenieroMostrarDashboard();
+        }
         var btnTareas = document.getElementById('btnTareas');
         if (btnTareas) btnTareas.addEventListener('click', function () {
             localStorage.setItem('crmView', 'tareas');
@@ -63,15 +73,28 @@
         });
 
         // Restore view — el 'tablero' legacy ya NO se restaura (oculto).
-        // Solo respetamos 'tareas' y 'proyectos'; cualquier otro → dashboard.
+        // Desktop: respetamos 'tareas' y 'proyectos'; cualquier otro → dashboard.
+        // Móvil:   siempre abrimos Proyectos salvo que tengan guardado 'tareas'.
         var savedView = localStorage.getItem('crmView');
-        if (savedView === 'tareas') {
-            if (btnTareas) btnTareas.click();
-        } else if (savedView === 'proyectos') {
-            var btnProy = document.getElementById('btnProyectos');
-            if (btnProy) btnProy.click();
+        var _btnProy = document.getElementById('btnProyectos');
+        if (_isMobileViewport()) {
+            // Limpiar guardia anti-FOUC ANTES de activar la sección
+            // (el CSS body.eng-initial-hide tiene !important y ganaría
+            // sobre la clase .active si no la removemos primero).
+            if (document.body) document.body.classList.remove('eng-initial-hide');
+            if (savedView === 'tareas' && btnTareas) {
+                btnTareas.click();
+            } else {
+                if (_btnProy) _btnProy.click();
+            }
+        } else {
+            if (savedView === 'tareas') {
+                if (btnTareas) btnTareas.click();
+            } else if (savedView === 'proyectos') {
+                if (_btnProy) _btnProy.click();
+            }
+            // savedView === 'dashboard' | 'tablero' (legacy) | null → Dashboard (ya cargado)
         }
-        // savedView === 'dashboard' | 'tablero' (legacy) | null → Dashboard (ya cargado)
     });
 
     // ═══ NAVEGACIÓN ═══
