@@ -44,9 +44,11 @@
         });
 
         // Cualquier click en botones del sidebar (excepto Dashboard) → ocultar dashboard.
-        // switchCrmView (crm_main.js) y proyectosAbrir no saben del dashboard, asi que
-        // nos aseguramos de ocultarlo aquí.
-        ['btnProyectos', 'btnCRM', 'btnMail', 'btnMuro', 'btnCalendario', 'btnNotif', 'btnBuscar'].forEach(function (id) {
+        // IDs reales del sidebar: btnSpotlight, btnNotificaciones, btnTareas,
+        // btnProyectos, btnMuro, btnCalendario, btnMail, btnGrupo, btnAdminPanel.
+        ['btnProyectos', 'btnCRM', 'btnMail', 'btnMuro', 'btnCalendario',
+         'btnNotificaciones', 'btnSpotlight', 'btnGrupo', 'btnAdminPanel'
+        ].forEach(function (id) {
             var b = document.getElementById(id);
             if (b) b.addEventListener('click', function () { _dashIngHide(); });
         });

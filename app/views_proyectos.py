@@ -2936,28 +2936,37 @@ def api_notificaciones(request):
     """
     if request.method == 'GET':
         try:
-            # Obtener notificaciones no leídas del usuario
-            notificaciones = request.user.notificaciones.filter(leida=False).order_by('-fecha_creacion')[:10]
-            
+            # Obtener notificaciones no leídas del usuario.
+            # related_name correcto es 'notificaciones_recibidas' (ver modelo).
+            qs = request.user.notificaciones_recibidas.filter(
+                leida=False
+            ).select_related('usuario_remitente').order_by('-fecha_creacion')[:10]
+
             notificaciones_data = []
-            for notif in notificaciones:
+            for notif in qs:
+                remitente = notif.usuario_remitente
+                remitente_nombre = None
+                if remitente:
+                    remitente_nombre = remitente.get_full_name() or remitente.username
                 notificaciones_data.append({
                     'id': notif.id,
                     'tipo': notif.tipo,
                     'titulo': notif.titulo,
                     'mensaje': notif.mensaje,
-                    'url': notif.url,
+                    # No existe campo url en el modelo — se deriva si hace falta
+                    'url': '',
                     'fecha_creacion': notif.fecha_creacion.isoformat(),
-                    'creado_por': notif.creado_por.get_full_name() or notif.creado_por.username if notif.creado_por else None
+                    'creado_por': remitente_nombre,
                 })
-            
+
             return JsonResponse({
                 'success': True,
                 'notificaciones': notificaciones_data,
-                'total_no_leidas': request.user.notificaciones.filter(leida=False).count()
+                'total_no_leidas': request.user.notificaciones_recibidas.filter(leida=False).count()
             })
-            
+
         except Exception as e:
+            import traceback; traceback.print_exc()
             return JsonResponse({'error': str(e)}, status=500)
     
     elif request.method == 'PUT':
@@ -2969,7 +2978,7 @@ def api_notificaciones(request):
             notif_id = data.get('id')
             if notif_id:
                 from .models import Notificacion
-                notificacion = Notificacion.objects.get(id=notif_id, usuario=request.user)
+                notificacion = Notificacion.objects.get(id=notif_id, usuario_destinatario=request.user)
                 notificacion.leida = True
                 notificacion.save()
                 
