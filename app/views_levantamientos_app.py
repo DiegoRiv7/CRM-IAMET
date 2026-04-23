@@ -69,7 +69,7 @@ def levantamientos_manifest(request):
 #: Version del app-shell cacheado. BUMPEA esta constante al cambiar
 #  el template, CSS o JS del PWA para forzar re-descarga. El SW
 #  borrará caches viejos y se actualizará en segundo plano.
-SW_VERSION = 'lev-v3-fase-c'
+SW_VERSION = 'lev-v4-fixes'
 
 
 @require_GET
@@ -218,7 +218,9 @@ function networkFirst(req, cacheName, fallbackPath) {{
         return caches.match(req).then(function (cached) {{
             if (cached) return cached;
             // fallback: la ruta raíz del PWA
-            return caches.match(fallbackPath);
+            return caches.match(fallbackPath).then(function (fb) {{
+                return fb || offlineFallbackResponse(req);
+            }});
         }});
     }});
 }}
@@ -231,10 +233,31 @@ function staleWhileRevalidate(req, cacheName) {{
                     cache.put(req, resp.clone());
                 }}
                 return resp;
-            }}).catch(function () {{ return cached; }});
+            }}).catch(function () {{
+                // Si hay cache, devuélvela; si no, JSON vacío offline.
+                return cached || offlineFallbackResponse(req);
+            }});
+            // Si no hay cache, espera al fetch (que ya sabe manejar offline)
             return cached || fetchPromise;
         }});
     }});
+}}
+
+// Respuesta de último recurso cuando ni cache ni red funcionan.
+// Devuelve JSON vacío para rutas de API — así el JS del cliente
+// no recibe undefined y puede mostrar un estado vacío limpio.
+function offlineFallbackResponse(req) {{
+    const url = new URL(req.url);
+    if (url.pathname.indexOf('/api/') !== -1) {{
+        return new Response(JSON.stringify({{
+            success: false, ok: false, offline: true,
+            data: [], error: 'Sin conexión y sin caché'
+        }}), {{
+            status: 503,
+            headers: {{ 'Content-Type': 'application/json' }}
+        }});
+    }}
+    return new Response('', {{ status: 503 }});
 }}
 
 // ── Mensajes del cliente (Fase C los usará para triggerar sync) ──
