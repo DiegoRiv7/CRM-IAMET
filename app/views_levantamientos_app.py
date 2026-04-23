@@ -66,25 +66,186 @@ def levantamientos_manifest(request):
     return resp
 
 
+#: Version del app-shell cacheado. BUMPEA esta constante al cambiar
+#  el template, CSS o JS del PWA para forzar re-descarga. El SW
+#  borrará caches viejos y se actualizará en segundo plano.
+SW_VERSION = 'lev-v2-2026-04-23'
+
+
 @require_GET
 def levantamientos_service_worker(request):
-    """Service Worker stub — habilita la instalación del PWA
-    (Chrome/Edge requieren un SW registrado para el prompt de
-    instalación). Fase B agregará la lógica real de cache offline.
+    """Service Worker real del PWA Levantamientos (Fase B).
 
-    Se sirve con scope '/app/levantamientos/' (propio, no interfiere
-    con el resto del CRM) y SIN cache (no-store) para que al
-    actualizar el archivo el navegador lo recoja de inmediato."""
+    Estrategias:
+      • App-shell (HTML, CSS, JS, íconos): cache-first.
+      • API /app/api/iamet/proyectos/ (lista de proyectos):
+        stale-while-revalidate — serve del cache de inmediato y
+        actualiza en background.
+      • Otras API (offline-sync, etc.): network-only (sin cache).
+      • Navegación a /app/levantamientos/: network-first con
+        fallback al HTML cacheado (para que abra offline).
+
+    Scope: '/app/levantamientos/' — completamente aislado del resto
+    del CRM. No interfiere con la sesión web normal.
+    """
     from django.http import HttpResponse
-    js = (
-        "// CRM IAMET — Levantamientos PWA Service Worker (Fase A stub)\n"
-        "// Fase B añadirá cache de app-shell y estrategia offline.\n"
-        "self.addEventListener('install', function (e) { self.skipWaiting(); });\n"
-        "self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()); });\n"
-        "// Fetch passthrough por ahora\n"
-        "self.addEventListener('fetch', function (e) { /* Fase B */ });\n"
-    )
+    from django.templatetags.static import static
+
+    # Assets a precachear. El orden no importa, pero listar explícito
+    # evita sorpresas. Si agregas/remueves assets → bump SW_VERSION.
+    precache_urls = [
+        '/app/levantamientos/',
+        '/app/levantamientos/manifest.webmanifest',
+        static('css/crm.css'),
+        static('css/crm_proyectos.css'),
+        static('css/crm_levantamiento.css'),
+        static('js/crm_proyectos.js'),
+        static('js/crm_levantamiento.js'),
+        static('images/iamet-logo.png'),
+        static('images/android-chrome-192x192.png'),
+        static('images/android-chrome-512x512.png'),
+        static('images/apple-touch-icon.png'),
+        static('images/favicon-32x32.png'),
+        static('images/favicon-16x16.png'),
+    ]
+
+    # Importar json acá para serializar la lista al JS
+    import json as _json
+    precache_json = _json.dumps(precache_urls)
+
+    js = f"""// ══════════════════════════════════════════════════════════════
+// CRM IAMET — Levantamientos PWA Service Worker
+// Version: {SW_VERSION}
+// ══════════════════════════════════════════════════════════════
+
+const SW_VERSION = '{SW_VERSION}';
+const SHELL_CACHE = 'lev-shell-' + SW_VERSION;
+const API_CACHE = 'lev-api-' + SW_VERSION;
+const SCOPE_PATH = '/app/levantamientos/';
+
+const PRECACHE_URLS = {precache_json};
+
+// ── INSTALL: precachear app-shell ─────────────────────────────
+self.addEventListener('install', function (event) {{
+    event.waitUntil(
+        caches.open(SHELL_CACHE)
+            .then(function (cache) {{
+                // addAll es atómico: si falla alguno, no se precachea nada.
+                // Por eso usamos Promise.all con catch individual.
+                return Promise.all(
+                    PRECACHE_URLS.map(function (url) {{
+                        return cache.add(url).catch(function (err) {{
+                            console.warn('[SW] Precache falló para', url, err);
+                        }});
+                    }})
+                );
+            }})
+            .then(function () {{ return self.skipWaiting(); }})
+    );
+}});
+
+// ── ACTIVATE: limpiar caches viejos ────────────────────────────
+self.addEventListener('activate', function (event) {{
+    event.waitUntil(
+        caches.keys().then(function (names) {{
+            return Promise.all(names.map(function (name) {{
+                // Borrar cualquier cache lev-* que no sea la versión actual
+                if (name.startsWith('lev-') && !name.endsWith(SW_VERSION)) {{
+                    return caches.delete(name);
+                }}
+            }}));
+        }}).then(function () {{ return self.clients.claim(); }})
+    );
+}});
+
+// ── FETCH: router de estrategias ───────────────────────────────
+self.addEventListener('fetch', function (event) {{
+    const req = event.request;
+    const url = new URL(req.url);
+
+    // Solo interesa mismo origen y dentro del scope del PWA o assets estáticos
+    if (url.origin !== self.location.origin) return;
+    if (req.method !== 'GET') return;
+
+    // Sync offline: network-only (hay que llegar al servidor)
+    if (url.pathname.includes('/api/iamet/levantamientos/offline-sync')) {{
+        return; // passthrough al navegador
+    }}
+
+    // Lista de proyectos: stale-while-revalidate
+    if (url.pathname.startsWith('/app/api/iamet/proyectos/')) {{
+        event.respondWith(staleWhileRevalidate(req, API_CACHE));
+        return;
+    }}
+
+    // Navegación a la app: network-first con fallback a cache
+    if (req.mode === 'navigate' && url.pathname.startsWith(SCOPE_PATH)) {{
+        event.respondWith(networkFirst(req, SHELL_CACHE, SCOPE_PATH));
+        return;
+    }}
+
+    // Assets estáticos (CSS/JS/imágenes): cache-first
+    if (url.pathname.startsWith('/static/') || PRECACHE_URLS.indexOf(url.pathname) !== -1) {{
+        event.respondWith(cacheFirst(req, SHELL_CACHE));
+        return;
+    }}
+    // El resto: passthrough
+}});
+
+// ── Estrategias ────────────────────────────────────────────────
+function cacheFirst(req, cacheName) {{
+    return caches.match(req).then(function (cached) {{
+        if (cached) return cached;
+        return fetch(req).then(function (resp) {{
+            if (resp && resp.status === 200) {{
+                const copy = resp.clone();
+                caches.open(cacheName).then(function (c) {{ c.put(req, copy); }});
+            }}
+            return resp;
+        }});
+    }});
+}}
+
+function networkFirst(req, cacheName, fallbackPath) {{
+    return fetch(req).then(function (resp) {{
+        if (resp && resp.status === 200) {{
+            const copy = resp.clone();
+            caches.open(cacheName).then(function (c) {{ c.put(req, copy); }});
+        }}
+        return resp;
+    }}).catch(function () {{
+        return caches.match(req).then(function (cached) {{
+            if (cached) return cached;
+            // fallback: la ruta raíz del PWA
+            return caches.match(fallbackPath);
+        }});
+    }});
+}}
+
+function staleWhileRevalidate(req, cacheName) {{
+    return caches.open(cacheName).then(function (cache) {{
+        return cache.match(req).then(function (cached) {{
+            const fetchPromise = fetch(req).then(function (resp) {{
+                if (resp && resp.status === 200) {{
+                    cache.put(req, resp.clone());
+                }}
+                return resp;
+            }}).catch(function () {{ return cached; }});
+            return cached || fetchPromise;
+        }});
+    }});
+}}
+
+// ── Mensajes del cliente (Fase C los usará para triggerar sync) ──
+self.addEventListener('message', function (event) {{
+    if (!event.data) return;
+    if (event.data.type === 'SKIP_WAITING') {{
+        self.skipWaiting();
+    }}
+}});
+"""
     resp = HttpResponse(js, content_type='application/javascript')
     resp['Service-Worker-Allowed'] = '/app/levantamientos/'
+    # El SW en sí NO se cachea (el navegador necesita detectar cambios)
     resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return resp

@@ -334,6 +334,8 @@ urlpatterns = [
     # Levantamientos (wizard de 5 fases) ───────────────────────
     path('api/iamet/proyectos/<int:proyecto_id>/levantamientos/', views_iamet.api_levantamientos_lista, name='api_iamet_levantamientos_lista'),
     path('api/iamet/proyectos/<int:proyecto_id>/levantamientos/crear/', views_iamet.api_levantamiento_crear, name='api_iamet_levantamiento_crear'),
+    # PWA offline sync: sube levantamiento + evidencias con idempotency_key
+    path('api/iamet/levantamientos/offline-sync/', views_iamet.api_levantamiento_offline_sync, name='api_iamet_levantamiento_offline_sync'),
     path('api/iamet/levantamientos/<int:levantamiento_id>/', views_iamet.api_levantamiento_detalle, name='api_iamet_levantamiento_detalle'),
     path('api/iamet/levantamientos/<int:levantamiento_id>/actualizar/', views_iamet.api_levantamiento_actualizar, name='api_iamet_levantamiento_actualizar'),
     path('api/iamet/levantamientos/<int:levantamiento_id>/fase/', views_iamet.api_levantamiento_fase, name='api_iamet_levantamiento_fase'),

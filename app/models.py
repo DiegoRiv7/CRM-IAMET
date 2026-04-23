@@ -4446,6 +4446,17 @@ class ProyectoLevantamiento(models.Model):
     fecha_creacion     = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
+    # Clave de idempotencia: el PWA genera un UUID al crear el
+    # levantamiento offline. Si el sync se reintenta o corre dos
+    # veces (red intermitente), el servidor detecta el duplicado
+    # vía esta clave y devuelve el existente en lugar de crear
+    # uno nuevo.
+    idempotency_key = models.CharField(
+        max_length=64, null=True, blank=True, unique=True,
+        db_index=True,
+        help_text='UUID generado por el cliente para dedupe de sync offline.',
+    )
+
     class Meta:
         ordering = ['-fecha_creacion']
         verbose_name = 'Levantamiento de Proyecto'
@@ -4475,6 +4486,14 @@ class LevantamientoEvidencia(models.Model):
         related_name='evidencias_levantamiento',
     )
     fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    # UUID cliente para dedupe de uploads offline (ver nota en
+    # ProyectoLevantamiento.idempotency_key).
+    idempotency_key = models.CharField(
+        max_length=64, null=True, blank=True, unique=True,
+        db_index=True,
+        help_text='UUID generado por el cliente para dedupe de sync offline.',
+    )
 
     class Meta:
         ordering = ['fecha_subida']

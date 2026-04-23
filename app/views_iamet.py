@@ -3781,3 +3781,193 @@ def api_catalogo_productos(request):
                 'fuente': 'CatalogoCableado',
             })
     return JsonResponse({'ok': True, 'data': results, 'q': q})
+
+
+# ═══════════════════════════════════════════════════════════════
+#  PWA LEVANTAMIENTOS — Endpoint de sync offline
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_offline_sync(request):
+    """Sube un levantamiento completo (metadata + 5 fases + fotos)
+    en una sola llamada multipart. Idempotente: si se reintenta con
+    el mismo idempotency_key devuelve el existente en vez de duplicar.
+
+    Para el PWA offline: cuando el ingeniero recupera red, el cliente
+    envía todo lo que capturó. Este endpoint es el único que el SW
+    tiene que reintentar al dispararse 'online'.
+
+    Campos esperados (multipart/form-data):
+    - idempotency_key (str, requerido): UUID generado por el cliente.
+    - proyecto_id     (int, requerido): proyecto al que pertenece.
+    - nombre          (str, opcional): si no viene se autogenera.
+    - status          (str, opcional): default 'borrador'.
+    - fase_actual     (int, opcional): default 1.
+    - fase1_data ... fase5_data (JSON strings, opcionales).
+    - evidencias_meta (JSON array string, opcional):
+        [{idempotency_key, comentario, producto_idx}, ...]
+    - evidencia_<N>   (archivo): foto asociada al índice N de la meta.
+
+    Respuesta:
+    {
+        success: true,
+        created: bool,           // true si se creó; false si ya existía
+        levantamiento_id: int,
+        evidencias: [{client_key, server_id, created}, ...]
+    }
+    """
+    idem = (request.POST.get('idempotency_key') or '').strip()
+    if not idem or len(idem) < 8 or len(idem) > 64:
+        return JsonResponse({'success': False, 'error': 'idempotency_key requerido (8-64 chars).'}, status=400)
+
+    proyecto_id = request.POST.get('proyecto_id')
+    try:
+        proyecto_id = int(proyecto_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'proyecto_id inválido.'}, status=400)
+
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado.'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso al proyecto.'}, status=403)
+
+    def _parse_fase(name):
+        raw = request.POST.get(name)
+        if not raw:
+            return None
+        try:
+            v = json.loads(raw)
+            return v if isinstance(v, dict) else None
+        except (json.JSONDecodeError, ValueError):
+            return None
+
+    # ── 1. Idempotency: si ya existe, NO crear de nuevo. Solo
+    #      actualizar con los datos más recientes que haya mandado
+    #      el cliente (acepta reenvíos con más info).
+    lev_created = False
+    try:
+        lev = ProyectoLevantamiento.objects.get(idempotency_key=idem)
+        # Verificar que el proyecto coincida (por seguridad)
+        if lev.proyecto_id != proyecto_id:
+            return JsonResponse({'success': False, 'error': 'Conflicto: la clave ya pertenece a otro proyecto.'}, status=409)
+    except ProyectoLevantamiento.DoesNotExist:
+        nombre = (request.POST.get('nombre') or '').strip()
+        if not nombre:
+            nombre = f'Levantamiento {proyecto.levantamientos.count() + 1}'
+        status = request.POST.get('status') or 'borrador'
+        if status not in dict(ProyectoLevantamiento.STATUS_CHOICES):
+            status = 'borrador'
+        try:
+            fase_actual = int(request.POST.get('fase_actual') or 1)
+            if fase_actual < 1 or fase_actual > 5:
+                fase_actual = 1
+        except (TypeError, ValueError):
+            fase_actual = 1
+        lev = ProyectoLevantamiento.objects.create(
+            proyecto=proyecto,
+            nombre=nombre,
+            status=status,
+            fase_actual=fase_actual,
+            fase1_data=_parse_fase('fase1_data') or {},
+            fase2_data=_parse_fase('fase2_data') or {},
+            fase3_data=_parse_fase('fase3_data') or {},
+            fase4_data=_parse_fase('fase4_data') or {},
+            fase5_data=_parse_fase('fase5_data') or {},
+            creado_por=request.user,
+            idempotency_key=idem,
+        )
+        lev_created = True
+
+    if not lev_created:
+        # Upsert de datos: mergear fases por si el cliente mandó info
+        # nueva en un reintento. No borramos lo que ya está.
+        dirty = False
+        for k in ('fase1_data', 'fase2_data', 'fase3_data', 'fase4_data', 'fase5_data'):
+            nueva = _parse_fase(k)
+            if isinstance(nueva, dict) and nueva:
+                setattr(lev, k, nueva)
+                dirty = True
+        if request.POST.get('fase_actual'):
+            try:
+                f = int(request.POST.get('fase_actual'))
+                if 1 <= f <= 5 and f != lev.fase_actual:
+                    lev.fase_actual = f
+                    dirty = True
+            except (TypeError, ValueError):
+                pass
+        if dirty:
+            lev.save()
+
+    # ── 2. Evidencias: dedupe por idempotency_key por foto ──
+    try:
+        evidencias_meta = json.loads(request.POST.get('evidencias_meta') or '[]')
+        if not isinstance(evidencias_meta, list):
+            evidencias_meta = []
+    except (json.JSONDecodeError, ValueError):
+        evidencias_meta = []
+
+    resultado_evidencias = []
+    for i, meta in enumerate(evidencias_meta):
+        if not isinstance(meta, dict):
+            continue
+        ev_idem = (meta.get('idempotency_key') or '').strip()
+        if not ev_idem:
+            continue
+        file_field = f'evidencia_{i}'
+
+        # ¿Ya existe esta evidencia?
+        existing = LevantamientoEvidencia.objects.filter(idempotency_key=ev_idem).first()
+        if existing:
+            resultado_evidencias.append({
+                'client_key': ev_idem,
+                'server_id': existing.id,
+                'created': False,
+            })
+            continue
+
+        archivo = request.FILES.get(file_field)
+        if not archivo:
+            # Meta sin archivo en este reintento (ya lo había subido antes
+            # pero sin registrar el idempotency_key, o cliente mandó solo
+            # la meta). No podemos crear la evidencia sin archivo.
+            resultado_evidencias.append({
+                'client_key': ev_idem,
+                'server_id': None,
+                'created': False,
+                'error': 'archivo no presente',
+            })
+            continue
+
+        try:
+            producto_idx = meta.get('producto_idx')
+            if producto_idx in (None, '', 'null'):
+                producto_idx = None
+            else:
+                producto_idx = int(producto_idx)
+        except (TypeError, ValueError):
+            producto_idx = None
+
+        ev = LevantamientoEvidencia.objects.create(
+            levantamiento=lev,
+            archivo=archivo,
+            nombre_original=(archivo.name or '')[:255],
+            comentario=(meta.get('comentario') or '')[:255],
+            producto_idx=producto_idx,
+            subido_por=request.user,
+            idempotency_key=ev_idem,
+        )
+        resultado_evidencias.append({
+            'client_key': ev_idem,
+            'server_id': ev.id,
+            'created': True,
+        })
+
+    return JsonResponse({
+        'success': True,
+        'created': lev_created,
+        'levantamiento_id': lev.id,
+        'evidencias': resultado_evidencias,
+    })
