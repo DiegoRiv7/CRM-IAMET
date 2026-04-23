@@ -94,14 +94,47 @@
         'widgetEmpleadoMes'
     ];
 
+    // Auto-refresh: interval id y visibilidad.
+    var _DASHI_REFRESH_MS = 30000; // 30s
+    var _dashIngRefreshTimer = null;
+    var _dashIngVisible = false;
+
+    function _dashIngStartAutoRefresh() {
+        if (_dashIngRefreshTimer) return;
+        _dashIngRefreshTimer = setInterval(function () {
+            // Si la pestaña está en background no golpeamos la red
+            if (document.hidden) return;
+            if (!_dashIngVisible) return;
+            dashIngLoadAll(true); // silent = no loading spinners
+        }, _DASHI_REFRESH_MS);
+    }
+
+    function _dashIngStopAutoRefresh() {
+        if (_dashIngRefreshTimer) {
+            clearInterval(_dashIngRefreshTimer);
+            _dashIngRefreshTimer = null;
+        }
+    }
+
+    // Al regresar a la pestaña, refrescar inmediatamente
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && _dashIngVisible) {
+            dashIngLoadAll(true);
+        }
+    });
+
     function _dashIngHide() {
         var r = document.getElementById('dashIngRoot');
         if (r) r.style.display = 'none';
+        _dashIngVisible = false;
+        _dashIngStopAutoRefresh();
     }
 
     function _dashIngShow() {
         var r = document.getElementById('dashIngRoot');
         if (r) r.style.display = 'block';
+        _dashIngVisible = true;
+        _dashIngStartAutoRefresh();
     }
 
     function _dashIngHideOtros() {
@@ -191,29 +224,44 @@
         return s.length > n ? s.substring(0, n) + '…' : s;
     }
 
-    // ═══ Estado UI: empty / error ═══
-    function _dashIngSetEmpty(containerId, icon, title, sub) {
+    // Swap de innerHTML solo si el contenido cambió (evita flicker de animaciones
+    // y reseteo de scroll en el auto-refresh cada 30s).
+    var _dashIngLastHTML = {};
+    function _dashIngSetHTML(containerId, html) {
         var c = document.getElementById(containerId); if (!c) return;
-        c.innerHTML =
+        if (_dashIngLastHTML[containerId] === html) return;
+        _dashIngLastHTML[containerId] = html;
+        c.innerHTML = html;
+    }
+
+    // ═══ Estado UI: empty / error (vía cache para evitar flicker) ═══
+    function _dashIngSetEmpty(containerId, icon, title, sub) {
+        var html =
             '<div class="dashi-empty">' +
                 '<div class="dashi-empty-icon">' + icon + '</div>' +
                 '<div class="dashi-empty-title">' + _dashIngEsc(title) + '</div>' +
                 (sub ? '<div class="dashi-empty-sub">' + _dashIngEsc(sub) + '</div>' : '') +
             '</div>';
+        _dashIngSetHTML(containerId, html);
     }
     function _dashIngSetError(containerId, msg) {
-        var c = document.getElementById(containerId); if (!c) return;
-        c.innerHTML = '<div class="dashi-error">' + _dashIngEsc(msg || 'Error al cargar') + '</div>';
+        var html = '<div class="dashi-error">' + _dashIngEsc(msg || 'Error al cargar') + '</div>';
+        _dashIngSetHTML(containerId, html);
     }
     function _dashIngSetLoading(containerId) {
         var c = document.getElementById(containerId); if (!c) return;
+        // Loading es transitorio: lo ponemos directo e invalidamos cache
         c.innerHTML = '<div class="dashi-loading">Cargando…</div>';
+        _dashIngLastHTML[containerId] = c.innerHTML;
     }
 
     // ═══ Carga de los 4 tiles en paralelo ═══
-    function dashIngLoadAll() {
-        ['dashIngListTareas', 'dashIngListProyectos', 'dashIngListCalendario', 'dashIngListNotifs']
-            .forEach(_dashIngSetLoading);
+    // silent=true: refresh automático, no muestra spinners "Cargando…"
+    function dashIngLoadAll(silent) {
+        if (!silent) {
+            ['dashIngListTareas', 'dashIngListProyectos', 'dashIngListCalendario', 'dashIngListNotifs']
+                .forEach(_dashIngSetLoading);
+        }
 
         // Nuevo endpoint: actividades del CALENDARIO (ProgramacionActividad)
         // donde el usuario es responsable. Reemplaza al feed de "tareas" viejo.
@@ -236,8 +284,11 @@
         // Próximas actividades → futuras
         pActividades.then(function (items) {
             if (items === null) {
-                _dashIngSetError('dashIngListTareas');
-                _dashIngSetError('dashIngListCalendario');
+                // En silent no sobreescribimos con error — conservamos estado previo
+                if (!silent) {
+                    _dashIngSetError('dashIngListTareas');
+                    _dashIngSetError('dashIngListCalendario');
+                }
                 return;
             }
             // Adaptar schema ProgramacionActividad → shape que esperan los renders.
@@ -267,12 +318,18 @@
         });
 
         pProyectos.then(function (items) {
-            if (items === null) return _dashIngSetError('dashIngListProyectos');
+            if (items === null) {
+                if (!silent) _dashIngSetError('dashIngListProyectos');
+                return;
+            }
             dashIngRenderProyectos(items);
         });
 
         pNotifs.then(function (items) {
-            if (items === null) return _dashIngSetError('dashIngListNotifs');
+            if (items === null) {
+                if (!silent) _dashIngSetError('dashIngListNotifs');
+                return;
+            }
             dashIngRenderNotifs(items);
         });
 
@@ -296,23 +353,28 @@
     window.dashIngLoadAll = dashIngLoadAll;
 
     // ═══ Render TAREAS ═══
+    // Criterio: vencidas primero (más antiguas arriba), luego no-vencidas
+    // ordenadas por ID descendente (las recién creadas aparecen hasta arriba
+    // del grupo de no-vencidas). Si no hay vencidas se muestran las de hoy
+    // y las próximas filtradas por el caller.
     function dashIngRenderTareas(items) {
         var cId = 'dashIngListTareas';
-        // Quitamos completadas; ordenamos: en_progreso primero, luego por fecha_limite (nulls al final)
         var sorted = items.filter(function (t) { return (t.estado || '') !== 'completada'; });
         sorted.sort(function (a, b) {
-            var oa = (a.estado === 'en_progreso' || a.estado === 'iniciada') ? 0 : 1;
-            var ob = (b.estado === 'en_progreso' || b.estado === 'iniciada') ? 0 : 1;
-            if (oa !== ob) return oa - ob;
             var va = _dashIngIsVencida(a.fecha_limite, a.estado) ? 0 : 1;
             var vb = _dashIngIsVencida(b.fecha_limite, b.estado) ? 0 : 1;
             if (va !== vb) return va - vb;
-            var fa = a.fecha_limite || '9999-12-31';
-            var fb = b.fecha_limite || '9999-12-31';
-            if (fa !== fb) return fa < fb ? -1 : 1;
-            return 0;
+            // Dentro de vencidas: fecha ascendente (la más vieja arriba)
+            if (va === 0) {
+                var fa = a.fecha_limite || '9999-12-31';
+                var fb = b.fecha_limite || '9999-12-31';
+                if (fa !== fb) return fa < fb ? -1 : 1;
+                return (b.id || 0) - (a.id || 0);
+            }
+            // Dentro de no-vencidas: ID descendente (más recientes arriba)
+            return (b.id || 0) - (a.id || 0);
         });
-        var top = sorted.slice(0, 6);
+        var top = sorted.slice(0, 10);
         if (!top.length) {
             return _dashIngSetEmpty(cId,
                 '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
@@ -346,7 +408,7 @@
                 '<div class="dashi-item-right">' + pill + '</div>' +
                 '</div>';
         });
-        document.getElementById(cId).innerHTML = h;
+        _dashIngSetHTML(cId, h);
     }
 
     // ═══ Render PROYECTOS ═══
@@ -387,7 +449,7 @@
                 '<div class="dashi-item-right">' + pill + '</div>' +
                 '</div>';
         });
-        document.getElementById(cId).innerHTML = h;
+        _dashIngSetHTML(cId, h);
     }
 
     // ═══ Render CALENDARIO (próximas actividades) ═══
@@ -430,7 +492,7 @@
                 '<div class="dashi-item-right">' + pill + '</div>' +
                 '</div>';
         });
-        document.getElementById(cId).innerHTML = h;
+        _dashIngSetHTML(cId, h);
     }
 
     // ═══ Render NOTIFICACIONES ═══
@@ -461,7 +523,7 @@
                 '<div class="dashi-item-right">' + pill + '</div>' +
                 '</div>';
         });
-        document.getElementById(cId).innerHTML = h;
+        _dashIngSetHTML(cId, h);
     }
 
     // ═══ Navegación desde los "Ver todo →" ═══

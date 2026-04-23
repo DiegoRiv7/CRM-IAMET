@@ -9894,6 +9894,35 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     box-shadow: 0 3px 10px rgba(0,0,0,0.06);
 }
 
+/* Indicador "En vivo" — reemplaza al botón Actualizar manual */
+.dashi-live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: #15803D;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-family: inherit;
+    letter-spacing: 0.2px;
+}
+.dashi-live-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22C55E;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+    animation: dashiLivePulse 1.8s ease-in-out infinite;
+}
+@keyframes dashiLivePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
 /* Bento grid — 2x2 con tamaños desiguales */
 .dashi-bento {
     display: grid;
