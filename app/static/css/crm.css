@@ -10319,11 +10319,14 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MÓVIL — Barra lateral → bottom nav bar (estilo iOS / Gmail).
-   Patrón de sistemas grandes: en pantalla chica la nav vertical
-   lateral se convierte en una barra horizontal fija abajo.
-   Ahorra todo el ancho lateral y deja accesibles todas las
-   secciones con scroll horizontal si es necesario.
+   MÓVIL — Barra lateral → bottom nav bar iOS-style con FAB central.
+   Patrón de apps grandes (Instagram, iOS Mail): 5 accesos anclados
+   abajo, con el botón principal (búsqueda) como FAB elevado al
+   centro. Distribución fija sin scroll.
+     [ Dashboard ] [ Proyectos ] ⦿Buscar⦿ [ Avatar ] [ Tareas ]
+   El resto de secciones siguen accesibles vía el widget que
+   corresponda (notificaciones, correo, muro, calendario) desde
+   sus entry points dentro de cada vista.
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
     /* Layout principal: ya no es flex horizontal */
@@ -10344,7 +10347,8 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
         height: 64px !important;
         flex-direction: row !important;
         align-items: center !important;
-        padding: 0 !important;
+        justify-content: space-around !important;
+        padding: 0 6px !important;
         background: rgba(246, 248, 251, 0.96) !important;
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -10352,72 +10356,123 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
         border-top: 1px solid #E5E7EB !important;
         z-index: 9000 !important;
         padding-bottom: env(safe-area-inset-bottom, 0) !important;
+        overflow: visible !important;
     }
 
-    /* Logo: oculto en bottom bar (ahorra espacio) */
+    /* Logo: oculto en bottom bar */
     .crm-sb-logo { display: none !important; }
 
-    /* Nav + bottom se unen en una sola fila scrollable */
+    /* .crm-sb-nav y .crm-sb-bottom: display:contents deja a sus
+       hijos participar directamente en el flex de .crm-sidebar.
+       Así podemos mezclar botones de ambos contenedores y usar
+       flex-order para colocarlos en la posición deseada. */
     .crm-sb-nav,
     .crm-sb-bottom {
-        flex-direction: row !important;
-        flex: 1 !important;
-        padding: 0 8px !important;
-        gap: 2px !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        margin: 0 !important;
-        scrollbar-width: none;
+        display: contents !important;
     }
-    .crm-sb-nav::-webkit-scrollbar,
-    .crm-sb-bottom::-webkit-scrollbar { display: none; }
 
-    /* Botones: horizontal, más angostos */
-    .crm-sb-btn,
-    .crm-sb-avatar {
+    /* Por defecto ocultar TODOS los botones; los 5 elegidos se
+       vuelven a mostrar abajo con display:flex */
+    .crm-sidebar .crm-sb-btn { display: none !important; }
+
+    /* Botones visibles (5 ítems fijos) */
+    #btnDashboard,
+    #btnCRM,
+    #btnProyectos,
+    #btnSpotlight,
+    #btnTareas {
+        display: flex !important;
+    }
+
+    /* Orden — izquierda a derecha:
+       1. Dashboard (o CRM para vendedor)  2. Proyectos
+       3. Buscar (FAB central)             4. Avatar  5. Tareas */
+    #btnDashboard,
+    #btnCRM        { order: 1 !important; }
+    #btnProyectos  { order: 2 !important; }
+    #btnSpotlight  { order: 3 !important; }
+    .crm-sb-avatar { order: 4 !important; }
+    #btnTareas     { order: 5 !important; }
+
+    /* Botones normales: íconos con label pequeño */
+    .crm-sidebar .crm-sb-btn,
+    .crm-sidebar .crm-sb-avatar {
         width: auto !important;
-        min-width: 58px !important;
-        height: 56px !important;
-        min-height: 56px !important;
-        flex-shrink: 0 !important;
-        padding: 4px 8px !important;
-        border-radius: 10px !important;
-        margin: 4px 0 !important;
+        min-width: 56px !important;
+        height: 54px !important;
+        min-height: 54px !important;
+        flex: 1 1 0 !important;
+        max-width: 80px !important;
+        padding: 4px 6px !important;
+        border-radius: 12px !important;
+        margin: 0 !important;
     }
-
-    /* Etiquetas más chicas para que quepan varios items */
     .crm-sb-label {
-        font-size: 0.58rem !important;
-        max-width: 64px;
+        font-size: 0.6rem !important;
+        max-width: 72px;
     }
 
-    /* Indicador activo: barra arriba del botón (no a la izquierda) */
+    /* Indicador activo: pildorita arriba (en vez de barra lateral) */
     .crm-sb-btn.active::before {
         left: 50% !important;
-        top: 0 !important;
+        top: 2px !important;
         transform: translateX(-50%) !important;
-        width: 28px !important;
+        width: 22px !important;
         height: 3px !important;
         border-radius: 0 0 3px 3px !important;
     }
 
-    /* Avatar: compacto en bottom bar */
-    .crm-sb-avatar {
-        width: 38px !important;
-        height: 38px !important;
-        min-height: 38px !important;
-        min-width: 38px !important;
+    /* ── FAB central: botón Buscar protagonista ── */
+    #btnSpotlight {
+        width: 56px !important;
+        min-width: 56px !important;
+        max-width: 56px !important;
+        height: 56px !important;
+        min-height: 56px !important;
+        flex: 0 0 56px !important;
+        padding: 0 !important;
         border-radius: 50% !important;
-        margin: 4px !important;
+        background: linear-gradient(135deg, #007AFF 0%, #0052D4 100%) !important;
+        color: #fff !important;
+        box-shadow: 0 8px 20px rgba(0,82,212,0.35), 0 2px 6px rgba(0,0,0,0.12) !important;
+        /* Eleva el FAB por encima de la barra (iOS style) */
+        transform: translateY(-14px) !important;
+        margin: 0 6px !important;
+    }
+    #btnSpotlight:hover,
+    #btnSpotlight.active {
+        background: linear-gradient(135deg, #0066E5 0%, #0046B3 100%) !important;
+        color: #fff !important;
+    }
+    #btnSpotlight.active::before { display: none !important; }
+    #btnSpotlight .crm-sb-label { display: none !important; }
+    #btnSpotlight svg {
+        width: 22px !important;
+        height: 22px !important;
+        stroke-width: 2.4 !important;
     }
 
-    /* Main: padding inferior para que contenido no quede tapado */
+    /* Avatar: círculo compacto sin etiqueta */
+    .crm-sb-avatar {
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        border-radius: 50% !important;
+        background: #E5E7EB !important;
+        overflow: hidden !important;
+    }
+
+    /* Main: padding inferior para no quedar tapado */
     .crm-main {
         padding-bottom: calc(80px + env(safe-area-inset-bottom, 0)) !important;
         min-height: 100dvh !important;
     }
 
-    /* Badge de notificaciones: reposicionado */
+    /* Badge de notificaciones: reposicionado (por si algún botón
+       visible trae .crm-sb-dot — ahora mismo solo btnNotificaciones
+       lo trae, pero lo ocultamos; dejamos la regla por consistencia) */
     .crm-sb-dot { top: 4px !important; right: 4px !important; }
 }
 
