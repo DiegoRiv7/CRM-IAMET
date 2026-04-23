@@ -10317,3 +10317,196 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     .crm-tw-desc,
     #crm-task-descripcion { font-size: 0.92rem !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓVIL — Barra lateral → bottom nav bar (estilo iOS / Gmail).
+   Patrón de sistemas grandes: en pantalla chica la nav vertical
+   lateral se convierte en una barra horizontal fija abajo.
+   Ahorra todo el ancho lateral y deja accesibles todas las
+   secciones con scroll horizontal si es necesario.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Layout principal: ya no es flex horizontal */
+    .crm-page-sidebar {
+        display: block !important;
+        height: auto !important;
+        min-height: 100vh !important;
+    }
+
+    /* Sidebar se vuelve bottom bar fija */
+    .crm-sidebar {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        height: 64px !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        padding: 0 !important;
+        background: rgba(246, 248, 251, 0.96) !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-right: none !important;
+        border-top: 1px solid #E5E7EB !important;
+        z-index: 9000 !important;
+        padding-bottom: env(safe-area-inset-bottom, 0) !important;
+    }
+
+    /* Logo: oculto en bottom bar (ahorra espacio) */
+    .crm-sb-logo { display: none !important; }
+
+    /* Nav + bottom se unen en una sola fila scrollable */
+    .crm-sb-nav,
+    .crm-sb-bottom {
+        flex-direction: row !important;
+        flex: 1 !important;
+        padding: 0 8px !important;
+        gap: 2px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        margin: 0 !important;
+        scrollbar-width: none;
+    }
+    .crm-sb-nav::-webkit-scrollbar,
+    .crm-sb-bottom::-webkit-scrollbar { display: none; }
+
+    /* Botones: horizontal, más angostos */
+    .crm-sb-btn,
+    .crm-sb-avatar {
+        width: auto !important;
+        min-width: 58px !important;
+        height: 56px !important;
+        min-height: 56px !important;
+        flex-shrink: 0 !important;
+        padding: 4px 8px !important;
+        border-radius: 10px !important;
+        margin: 4px 0 !important;
+    }
+
+    /* Etiquetas más chicas para que quepan varios items */
+    .crm-sb-label {
+        font-size: 0.58rem !important;
+        max-width: 64px;
+    }
+
+    /* Indicador activo: barra arriba del botón (no a la izquierda) */
+    .crm-sb-btn.active::before {
+        left: 50% !important;
+        top: 0 !important;
+        transform: translateX(-50%) !important;
+        width: 28px !important;
+        height: 3px !important;
+        border-radius: 0 0 3px 3px !important;
+    }
+
+    /* Avatar: compacto en bottom bar */
+    .crm-sb-avatar {
+        width: 38px !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        min-width: 38px !important;
+        border-radius: 50% !important;
+        margin: 4px !important;
+    }
+
+    /* Main: padding inferior para que contenido no quede tapado */
+    .crm-main {
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0)) !important;
+        min-height: 100dvh !important;
+    }
+
+    /* Badge de notificaciones: reposicionado */
+    .crm-sb-dot { top: 4px !important; right: 4px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓVIL — Calendario: solo vista Mes, estilo iOS Calendar/Mail.
+   Panel derecho oculto, overlay a pantalla completa, header
+   compacto, tap-friendly.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Widget master: full screen sin bordes */
+    #widgetCalendarioMaster > div {
+        width: 100vw !important;
+        height: 100dvh !important;
+        border-radius: 0 !important;
+        background: #fff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: none !important;
+    }
+
+    /* Outer header: compactar */
+    #widgetCalendarioMaster > div > div:first-of-type {
+        padding: 10px 14px !important;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    /* Ocultar title long, date pill y user filter label */
+    #widgetCalendarioMaster > div > div:first-of-type > div:first-child > div:nth-child(2),
+    #calUserFilter { display: none !important; }
+    /* Título simplificado */
+    #widgetCalendarioMaster > div > div:first-of-type > div:first-child > div:first-child {
+        font-size: 1.1rem !important;
+    }
+    /* Botón Nueva Actividad: icono solo (ahorra espacio) */
+    #widgetCalendarioMaster > div > div:first-of-type > div:last-child > button:first-child {
+        padding: 8px !important;
+        font-size: 0 !important;
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 10px !important;
+        justify-content: center !important;
+    }
+    #widgetCalendarioMaster > div > div:first-of-type > div:last-child > button:first-child svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    /* Sub-nav con flechas + título + toggle Mes/Semana/Día */
+    #widgetCalendarioMaster > div > div:nth-of-type(2) {
+        padding: 10px 12px !important;
+        gap: 8px !important;
+    }
+    /* Ocultar toggle de vistas — en móvil SOLO mes */
+    #calBtnSemana,
+    #calBtnDia { display: none !important; }
+    #calBtnMes {
+        padding: 0.4rem 0.8rem !important;
+        pointer-events: none; /* solo indicador visual */
+    }
+    /* Título "Abril 2026" más chico */
+    #calNavTitle { font-size: 1rem !important; margin-left: 4px !important; }
+
+    /* Forzar solo vista Mes (oculta Semana y Día) */
+    #calWeekViewRoot,
+    #calDayViewRoot { display: none !important; }
+
+    /* Panel derecho: oculto. El calendario ocupa todo. */
+    #calRightPanel { display: none !important; }
+
+    /* FullCalendar: celdas más chicas para que quepa el mes */
+    #fullCalendarRoot .fc-daygrid-day-frame { padding: 1px !important; }
+    #fullCalendarRoot .fc-daygrid-day-number {
+        font-size: 0.78rem !important;
+        padding: 3px 6px !important;
+    }
+    #fullCalendarRoot .fc-col-header-cell-cushion {
+        font-size: 0.62rem !important;
+        padding: 4px 0 !important;
+    }
+    /* Eventos: más chicos, solo puntito + texto truncado */
+    #fullCalendarRoot .fc-event,
+    #fullCalendarRoot .fc-daygrid-event {
+        font-size: 0.62rem !important;
+        padding: 1px 3px !important;
+        margin: 1px 2px 0 !important;
+    }
+
+    /* Padding interno de la zona del calendario */
+    #widgetCalendarioMaster > div > div:nth-of-type(3) > div:first-child {
+        padding: 4px 6px !important;
+    }
+}
