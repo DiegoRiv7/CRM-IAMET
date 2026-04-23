@@ -112,10 +112,17 @@
             var el = document.getElementById(id);
             if (el) el.classList.remove('active');
         });
-        // Widgets overlays
+        // Widgets overlays — estos usan la CLASE .active para mostrarse
+        // (CSS: .widget-overlay {display:none} → .widget-overlay.active {display:flex}).
+        // NO usar style.display='none' inline, porque eso ganaría sobre
+        // un click futuro que agregue .active. Solo limpiamos:
+        // - la clase .active (por si estaba abierto)
+        // - el inline style.display (por si lo seteamos en un refresh anterior)
         _DASHI_WIDGETS_TO_HIDE.forEach(function (id) {
             var el = document.getElementById(id);
-            if (el) el.style.display = 'none';
+            if (!el) return;
+            el.classList.remove('active', 'closing');
+            if (el.style.display) el.style.display = '';
         });
         // Sidebar: active state EXCLUSIVO en btnDashboard
         document.querySelectorAll('.crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
@@ -497,22 +504,24 @@
 
     function ingenieroIrACalendario(ev) {
         if (ev && ev.preventDefault) ev.preventDefault();
-        // Intenta abrir el widget de calendario maestro (vendedor style)
-        var w = document.getElementById('widgetCalendarioMaster');
-        if (w) { w.style.display = 'flex'; return; }
-        // Fallback: nada (calendario no disponible en este rol)
+        // Delega al botón del sidebar que ya tiene el handler correcto
+        var b = document.getElementById('btnCalendario');
+        if (b) { b.click(); return; }
+        // Fallback directo
+        if (typeof window.calendarioAbrir === 'function') window.calendarioAbrir();
     }
     window.ingenieroIrACalendario = ingenieroIrACalendario;
 
     function ingenieroIrANotificaciones(ev) {
         if (ev && ev.preventDefault) ev.preventDefault();
-        // Intenta abrir el widget de notificaciones si existe; de lo contrario el overlay.
+        // Delega al botón del sidebar para que use el mismo sistema .active
+        // (si usamos style.display='flex', el X del widget no lo limpia y el
+        // overlay queda pegado).
+        var b = document.getElementById('btnNotificaciones');
+        if (b) { b.click(); return; }
+        // Fallback: agregar .active manualmente
         var w = document.getElementById('widgetNotificaciones');
-        if (w) {
-            w.style.display = 'flex';
-            return;
-        }
-        // Fallback: no rompas
+        if (w) { w.classList.add('active'); document.body.style.overflow = 'hidden'; }
     }
     window.ingenieroIrANotificaciones = ingenieroIrANotificaciones;
 
