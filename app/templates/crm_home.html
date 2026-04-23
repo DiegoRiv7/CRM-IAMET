@@ -35,12 +35,15 @@
 
     {% if es_ingeniero %}
     {% include "crm/_widget_dashboard_ingeniero.html" %}
-    {# _actividades_board.html — TABLERO LEGACY:
-       oculto hasta nuevo aviso. Duplicaba el ID widgetProyectoDetalle
-       con _widget_proyectos.html y abría un modal viejo (TAREAS/DRIVE/
-       INFORMACIÓN) al clickear proyectos desde el dashboard. El template
-       se queda en el repo; solo se des-incluye aquí. #}
-    {# {% include "crm/_actividades_board.html" %} #}
+    {% comment %}
+    _actividades_board.html — TABLERO LEGACY: oculto hasta nuevo aviso.
+    Duplicaba el ID widgetProyectoDetalle con _widget_proyectos.html y
+    abría un modal viejo (TAREAS/DRIVE/INFORMACIÓN) al clickear proyectos
+    desde el dashboard. El template queda en el repo intacto; solo se
+    des-incluye aquí.
+
+    {% include "crm/_actividades_board.html" %}
+    {% endcomment %}
     {% endif %}
     {% include "crm/_content.html" %}
 
