@@ -42,6 +42,19 @@
             var c = document.getElementById('crmContentSection'); if (c) c.style.display = 'none';
             var t = document.getElementById('tareasSection'); if (t) t.classList.add('active');
         });
+
+        // Cualquier click en botones del sidebar (excepto Dashboard) → ocultar dashboard.
+        // switchCrmView (crm_main.js) y proyectosAbrir no saben del dashboard, asi que
+        // nos aseguramos de ocultarlo aquí.
+        ['btnProyectos', 'btnCRM', 'btnMail', 'btnMuro', 'btnCalendario', 'btnNotif', 'btnBuscar'].forEach(function (id) {
+            var b = document.getElementById(id);
+            if (b) b.addEventListener('click', function () { _dashIngHide(); });
+        });
+        // Click en Dashboard → ocultar proyectosSection y tareasSection explícitamente
+        var btnDashboard = document.getElementById('btnDashboard');
+        if (btnDashboard) btnDashboard.addEventListener('click', function () {
+            ingenieroMostrarDashboard();
+        });
         ['tabCotizado', 'tabCobrado', 'tabFacturado', 'facturadoAmount', 'progressPct', 'islandFiltersSection', 'islandSepFilters'].forEach(function (id) {
             var el = document.getElementById(id); if (el) el.style.display = 'none';
         });
