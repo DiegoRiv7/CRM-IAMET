@@ -13,7 +13,7 @@
                     <div class="wn-subtitle">Ingresa los datos para registrar la prospeccion</div>
                 </div>
                 <button type="button" class="wn-close" id="wpNuevoClose"
-                    onclick="var w=document.getElementById('widgetNuevoProspecto');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">&times;</button>
+                    onclick="var w=document.getElementById('widgetNuevoProspecto');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Nombre del prospecto';if(l2)l2.textContent='Cliente';},220);">&times;</button>
             </div>
 
             <!-- Body -->
@@ -23,7 +23,7 @@
 
                     <!-- Nombre -->
                     <div class="wn-field">
-                        <label class="wn-label">Nombre del prospecto</label>
+                        <label class="wn-label" id="wpfLblNombre">Nombre del prospecto</label>
                         <input type="text" class="wn-input" id="wpfNombre"
                             placeholder="Ej: Implementacion RFID para almacen..." required>
                     </div>
@@ -31,7 +31,7 @@
                     <!-- Cliente -->
                     <div class="wn-field">
                         <div class="wn-label-row">
-                            <label class="wn-label">Cliente</label>
+                            <label class="wn-label" id="wpfLblCliente">Cliente</label>
                             <button type="button" class="wn-add-btn" id="wpnAddClienteBtn" title="Crear nuevo cliente">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                             </button>

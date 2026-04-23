@@ -684,7 +684,8 @@
         {% elif tab_activo == 'prospeccion' %}
         <!-- Period bar + botón nuevo prospecto -->
         <div class="crm-facet-bar crm-facet-bar--minimal">
-            <button type="button" class="crm-facet-btn crm-facet-new" id="btnNuevoProspecto">
+            <button type="button" class="crm-facet-btn crm-facet-new" id="btnNuevoProspecto"
+                onclick="var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Titulo de la prospeccion';if(l2)l2.textContent='Prospecto';">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>Nuevo Prospecto</span>
             </button>
