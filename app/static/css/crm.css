@@ -10199,3 +10199,121 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     .dashi-title { font-size: 1.3rem; }
     .dashi-tile { padding: 14px 14px 12px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓVIL — Sección Tareas para ingeniero.
+   Solo lo esencial: barra de búsqueda + lista de tareas.
+   Nada de filtros, ordenar, cambiar vista, ni crear.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+    #tareasSection { padding: 4px 12px 24px !important; }
+
+    /* Facet-bar: ocultar casi todo, solo búsqueda */
+    #tareasFacetBar {
+        padding: 8px 0 10px !important;
+        gap: 6px !important;
+        border: none !important;
+        background: transparent !important;
+    }
+    #tareasFacetBar #tareasFacetChips,
+    #tareasFacetBar #btnTareasAddFacet,
+    #tareasFacetBar #btnTareasSortMenu,
+    #tareasFacetBar #btnTareasViewToggle,
+    #tareasFacetBar #btnTareasFacetClear,
+    #tareasFacetBar .crm-facet-new { display: none !important; }
+
+    /* Search: ancho completo, sin zoom iOS */
+    #tareasFacetBar .crm-facet-search {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+    #tareasFacetBar #tareasSearchInput {
+        width: 100% !important;
+        font-size: 16px !important;
+        padding: 12px 14px 12px 36px !important;
+        border-radius: 14px !important;
+        border: 1px solid #E5E7EB !important;
+        background: #fff !important;
+    }
+
+    /* Forzar solo vista lista (ocultar calendar/cockpit/cards) */
+    #tareasViewCalendar,
+    #tareasViewCockpit,
+    #tareasCardsGrid { display: none !important; }
+    #tareasViewList { display: block !important; }
+
+    /* Header de la lista (columnas): oculto, las filas van en tarjeta */
+    #tareasViewList .crm-list-head { display: none !important; }
+    #tareasViewList .crm-list-row {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px !important;
+        padding: 14px !important;
+        border-radius: 14px !important;
+        border: 1px solid #E5E7EB !important;
+        margin-bottom: 8px !important;
+        background: #fff !important;
+    }
+    #tareasViewList .crm-list-cell { width: 100% !important; flex: none !important; }
+
+    /* Focus sidebar (pinned tareas) y footer: ocultar en móvil para no estorbar */
+    .tareasFocus-sidebar,
+    .tareasFocus-toggle,
+    .tareas-footer { display: none !important; }
+    #tareasViewCards.tareasFocus-open #tareasCardsGrid { padding-left: 0 !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓVIL — Modal detalle de tarea (crmTaskDetailModal).
+   Pantalla completa + solo info valiosa: título, completar,
+   descripción, relaciones, sidebar meta.
+   Oculto: actividad/timeline (muy verbose para telefono).
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .crm-task-modal-overlay.active { padding: 0 !important; }
+    .crm-task-modal {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+    }
+
+    /* Header compacto: ocultar breadcrumbs secundarios */
+    .crm-tw-header { padding: 10px 12px !important; gap: 6px !important; }
+    .crm-tw-crumb-pill,
+    .crm-tw-chev,
+    .crm-tw-cliente-crumb,
+    .crm-task-breadcrumb-sep { display: none !important; }
+
+    /* Main: padding menor */
+    .crm-tw-main-scroll { padding: 18px 16px 24px !important; }
+
+    /* Título protagonista */
+    .crm-tw-title { font-size: 1.3rem !important; line-height: 1.25 !important; }
+
+    /* Botón completar grande y ancho completo */
+    #crmTaskBtnCompletarPrimary {
+        width: 100% !important;
+        padding: 14px 18px !important;
+        font-size: 1rem !important;
+        font-weight: 800 !important;
+        border-radius: 14px !important;
+        justify-content: center !important;
+    }
+
+    /* Ocultar actividad (timeline) — ruido en móvil */
+    .crm-tw-activity { display: none !important; }
+
+    /* Sidebar: conservar (trae info valiosa: responsable, fecha,
+       prioridad, proyecto) pero más compacto */
+    .crm-tw-sidebar { max-height: none !important; }
+    .crm-tw-sidebar-inner { padding: 18px 16px 24px !important; gap: 18px !important; }
+
+    /* Tipografía más pequeña en secciones */
+    .crm-tw-section-title { font-size: 0.8rem !important; }
+    .crm-tw-desc,
+    #crm-task-descripcion { font-size: 0.92rem !important; }
+}
