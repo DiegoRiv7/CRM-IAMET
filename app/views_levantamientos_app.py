@@ -69,7 +69,7 @@ def levantamientos_manifest(request):
 #: Version del app-shell cacheado. BUMPEA esta constante al cambiar
 #  el template, CSS o JS del PWA para forzar re-descarga. El SW
 #  borrará caches viejos y se actualizará en segundo plano.
-SW_VERSION = 'lev-v4-fixes'
+SW_VERSION = 'lev-v5-cache-api-unversioned'
 
 
 @require_GET
@@ -120,8 +120,14 @@ def levantamientos_service_worker(request):
 // ══════════════════════════════════════════════════════════════
 
 const SW_VERSION = '{SW_VERSION}';
+// SHELL_CACHE sí se versiona: cuando cambias HTML/CSS/JS queremos
+// que caches viejos se borren (si no, el usuario seguiría viendo
+// código viejo para siempre).
 const SHELL_CACHE = 'lev-shell-' + SW_VERSION;
-const API_CACHE = 'lev-api-' + SW_VERSION;
+// API_CACHE NO se versiona: son datos (proyectos, etc.) que deben
+// sobrevivir upgrades del SW. Si cada upgrade lo borrara, el usuario
+// se quedaría sin lista de proyectos offline hasta volver a tener red.
+const API_CACHE = 'lev-api';
 const SCOPE_PATH = '/app/levantamientos/';
 
 const PRECACHE_URLS = {precache_json};
@@ -145,13 +151,22 @@ self.addEventListener('install', function (event) {{
     );
 }});
 
-// ── ACTIVATE: limpiar caches viejos ────────────────────────────
+// ── ACTIVATE: limpiar shell caches viejos (conservar API cache) ──
 self.addEventListener('activate', function (event) {{
     event.waitUntil(
         caches.keys().then(function (names) {{
             return Promise.all(names.map(function (name) {{
-                // Borrar cualquier cache lev-* que no sea la versión actual
-                if (name.startsWith('lev-') && !name.endsWith(SW_VERSION)) {{
+                // Solo borrar SHELL caches de versiones previas.
+                // El API_CACHE ('lev-api') SE CONSERVA — contiene datos
+                // del usuario (lista de proyectos, etc.) que deben
+                // sobrevivir upgrades del SW para que offline siga
+                // siendo útil después de actualizar la app.
+                if (name.startsWith('lev-shell-') && name !== SHELL_CACHE) {{
+                    return caches.delete(name);
+                }}
+                // Borrar cualquier lev-api-* versionado de versiones
+                // viejas donde cometimos el error de versionarlo.
+                if (/^lev-api-.+/.test(name)) {{
                     return caches.delete(name);
                 }}
             }}));
