@@ -336,21 +336,22 @@
             dashIngRenderNotifs(items);
         });
 
-        // Subtítulo del header con conteo total
-        Promise.all([pActividades, pNotifs]).then(function (res) {
-            var acts = res[0] || [];
-            var nots = res[1] || [];
+        // Subtítulo del header: solo vencidas + pendientes (no-vencidas)
+        pActividades.then(function (acts) {
+            acts = acts || [];
             var today = _dashIngToday();
-            var totalPend = acts.length; // ya vienen filtradas por no-completadas
-            var vencidas = acts.filter(function (a) { return a.fecha && a.fecha < today; }).length;
+            var vencidas = 0, pendientes = 0;
+            acts.forEach(function (a) {
+                if (!a.fecha) { pendientes++; return; }
+                if (a.fecha < today) vencidas++;
+                else pendientes++;
+            });
             var sub = document.getElementById('dashIngSubtitle');
-            if (sub) {
-                var partes = [];
-                partes.push(totalPend + ' actividad' + (totalPend === 1 ? '' : 'es') + ' pendiente' + (totalPend === 1 ? '' : 's'));
-                if (vencidas) partes.push(vencidas + ' vencida' + (vencidas === 1 ? '' : 's'));
-                if (nots && nots.length) partes.push(nots.length + ' notificación' + (nots.length === 1 ? '' : 'es') + ' sin leer');
-                sub.textContent = partes.join(' · ');
-            }
+            if (!sub) return;
+            var partes = [];
+            if (vencidas) partes.push(vencidas + ' vencida' + (vencidas === 1 ? '' : 's'));
+            if (pendientes) partes.push(pendientes + ' pendiente' + (pendientes === 1 ? '' : 's'));
+            sub.textContent = partes.length ? partes.join(' · ') : 'Estás al día';
         });
     }
     window.dashIngLoadAll = dashIngLoadAll;
