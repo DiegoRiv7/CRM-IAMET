@@ -113,17 +113,21 @@
             var el = document.getElementById(id);
             if (el) el.classList.remove('active');
         });
-        // Widgets overlays — estos usan la CLASE .active para mostrarse
+        // Widgets overlays — la mayoría usan CLASE .widget-overlay + .active
         // (CSS: .widget-overlay {display:none} → .widget-overlay.active {display:flex}).
-        // NO usar style.display='none' inline, porque eso ganaría sobre
-        // un click futuro que agregue .active. Solo limpiamos:
-        // - la clase .active (por si estaba abierto)
-        // - el inline style.display (por si lo seteamos en un refresh anterior)
+        // Para esos: solo removemos .active (no tocamos inline style).
+        // Algunos widgets NO usan esa clase y dependen de un inline display:none
+        // como estado por defecto (ej. widgetRecordatorioEntrada). Para esos,
+        // limpiar el inline los haría visibles — así que NO lo tocamos.
         _DASHI_WIDGETS_TO_HIDE.forEach(function (id) {
             var el = document.getElementById(id);
             if (!el) return;
             el.classList.remove('active', 'closing');
-            if (el.style.display) el.style.display = '';
+            // Solo limpiar inline display si el widget usa la clase .widget-overlay
+            // (su default viene de CSS, no de inline).
+            if (el.classList.contains('widget-overlay') && el.style.display) {
+                el.style.display = '';
+            }
         });
         // Sidebar: active state EXCLUSIVO en btnDashboard
         document.querySelectorAll('.crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
