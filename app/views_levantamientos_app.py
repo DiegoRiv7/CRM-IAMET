@@ -69,7 +69,7 @@ def levantamientos_manifest(request):
 #: Version del app-shell cacheado. BUMPEA esta constante al cambiar
 #  el template, CSS o JS del PWA para forzar re-descarga. El SW
 #  borrará caches viejos y se actualizará en segundo plano.
-SW_VERSION = 'lev-v2-2026-04-23'
+SW_VERSION = 'lev-v3-fase-c'
 
 
 @require_GET
@@ -99,6 +99,7 @@ def levantamientos_service_worker(request):
         static('css/crm.css'),
         static('css/crm_proyectos.css'),
         static('css/crm_levantamiento.css'),
+        static('js/lev_offline.js'),
         static('js/crm_proyectos.js'),
         static('js/crm_levantamiento.js'),
         static('images/iamet-logo.png'),

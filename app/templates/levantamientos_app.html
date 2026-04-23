@@ -274,6 +274,10 @@
         window.ES_INGENIERO = true;
         window.ES_PWA_LEVANTAMIENTOS = true;
     </script>
+    {# IMPORTANTE: lev_offline.js DEBE cargarse ANTES del wizard para
+       poder envolver window.fetch y atrapar las llamadas del wizard
+       cuando no hay red. #}
+    <script src="{% static 'js/lev_offline.js' %}"></script>
     <script src="{% static 'js/crm_proyectos.js' %}"></script>
     <script src="{% static 'js/crm_levantamiento.js' %}"></script>
 

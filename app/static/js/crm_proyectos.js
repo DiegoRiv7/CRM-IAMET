@@ -3335,13 +3335,18 @@
                 var fecha = _fmtShortDate(l.fecha_actualizacion || l.fecha_creacion);
                 var creador = l.creado_por_nombre || '—';
                 var faseLbl = 'Fase ' + (l.fase_actual || 1) + '/5';
-                return '<tr class="lev-row" onclick="levantamientoAbrir(' + l.id + ')">' +
-                    '<td><div class="lev-row-name">' + _esc(l.nombre || 'Sin nombre') + '</div></td>' +
+                // Usamos JSON.stringify para quotear el id — sirve para ints
+                // del servidor Y para strings 'offline:<uuid>' del PWA offline.
+                var idArg = JSON.stringify(l.id);
+                return '<tr class="lev-row" onclick="levantamientoAbrir(' + idArg + ')">' +
+                    '<td><div class="lev-row-name">' + _esc(l.nombre || 'Sin nombre') +
+                        (l._offline ? ' <span style="background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 6px;border-radius:100px;margin-left:6px;">Sin subir</span>' : '') +
+                        '</div></td>' +
                     '<td>' + _statusPillHtml(l.status, l.status_label) + '</td>' +
                     '<td><span class="lev-row-fase">' + faseLbl + '</span></td>' +
                     '<td><span class="lev-row-creador">' + _esc(creador) + '</span></td>' +
                     '<td class="date"><span class="proy-tv2-fecha">' + fecha + '</span></td>' +
-                    '<td><button class="lev-row-del" title="Eliminar" onclick="event.stopPropagation(); levantamientoEliminar(' + l.id + ')">' +
+                    '<td><button class="lev-row-del" title="Eliminar" onclick="event.stopPropagation(); levantamientoEliminar(' + idArg + ')">' +
                     '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
                     '</button></td>' +
                     '</tr>';
