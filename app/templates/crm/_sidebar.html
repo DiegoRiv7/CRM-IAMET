@@ -127,8 +127,8 @@
             <span class="crm-sb-label">Novedades</span>
         </a>
 
-        {% if es_supervisor and not es_ingeniero %}
-        <!-- Admin -->
+        {% if es_supervisor %}
+        <!-- Admin (visible para supervisores incluso en modo ingeniero) -->
         <button type="button" class="crm-sb-btn" id="btnAdminPanel"
             onclick="var ao=document.getElementById('widgetAdmin');if(ao){ao.classList.add('active');ao.classList.remove('closing');}"
             data-tooltip="Administración">
