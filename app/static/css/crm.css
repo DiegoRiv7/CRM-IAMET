@@ -10743,6 +10743,14 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 .crm-kanban-col--prospecto .crm-kanban-total-value {
     color: #78350F;
 }
+.crm-kanban-col--prospecto.collapsed:hover .crm-kanban-vertical-name { color: #78350F; }
+.crm-kanban-col--prospecto.collapsed:hover .crm-kanban-count { background: #FAF0E0; color: #78350F; }
+
+/* Alternar entre head-expanded y collapsed-body según .collapsed */
+.crm-kanban-col--prospecto .crm-kanban-collapsed-body { display: none; }
+.crm-kanban-col--prospecto.collapsed .crm-kanban-head-expanded { display: none; }
+.crm-kanban-col--prospecto.collapsed .crm-kanban-collapsed-body { display: flex; }
+.crm-kanban-col--prospecto.collapsed .crm-kanban-col-body { display: none; }
 
 /* Dashboard: barra superior con toggle centrado + period pills a la derecha */
 .crm-page-sidebar .crm-bar.crm-bar--dashboard {

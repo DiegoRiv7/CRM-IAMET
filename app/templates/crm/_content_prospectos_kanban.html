@@ -1,23 +1,35 @@
 {% load app_filters %}{% load l10n %}
-{# Kanban de Prospectos — markup idéntico al kanban de Oportunidades con variant café.
-   Renderizado 100% server-side; el JS (crm_prospectos_kanban.js) solo aplica filtros/orden. #}
-
 <div class="crm-kanban-wrap pk-kanban-wrap-v2">
     <div class="crm-kanban-board pk-board" id="pkKanbanBoard">
         {% for col in prospectos_por_etapa %}
         <div class="crm-kanban-col crm-kanban-col--prospecto" data-stage="{{ col.key }}">
             <div class="crm-kanban-head">
-                <div class="crm-kanban-head-top">
-                    <div class="crm-kanban-head-title">
-                        <span class="crm-kanban-dot{% if col.count %} active{% endif %}" data-etapa-key="{{ col.key }}"></span>
-                        <span class="crm-kanban-stage-name">{{ col.label }}</span>
-                        <span class="crm-kanban-count">{{ col.count }}</span>
+                <!-- Versión expandida -->
+                <div class="crm-kanban-head-expanded">
+                    <div class="crm-kanban-head-top">
+                        <div class="crm-kanban-head-title">
+                            <span class="crm-kanban-dot{% if col.count %} active{% endif %}" data-etapa-key="{{ col.key }}"></span>
+                            <span class="crm-kanban-stage-name">{{ col.label }}</span>
+                            <span class="crm-kanban-count">{{ col.count }}</span>
+                        </div>
+                        <div class="crm-kanban-head-actions">
+                            <button type="button" class="crm-kanban-col-btn" data-act="pk-collapse" data-stage="{{ col.key }}" title="Minimizar etapa">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/></svg>
+                            </button>
+                            <button type="button" class="crm-kanban-col-btn" data-act="pk-add" data-stage="{{ col.key }}" title="Nuevo prospecto en esta etapa">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="crm-kanban-head-actions">
-                        <button type="button" class="crm-kanban-col-btn" data-act="pk-add" data-stage="{{ col.key }}" title="Nuevo prospecto">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        </button>
+                    <div class="crm-kanban-head-bottom">
+                        <span class="crm-kanban-total-label">Total:</span>
+                        <span class="crm-kanban-total-value" data-col-total>{{ col.count }} prospecto{{ col.count|pluralize }}</span>
                     </div>
+                </div>
+                <!-- Versión colapsada (solo visible cuando .collapsed) -->
+                <div class="crm-kanban-collapsed-body">
+                    <span class="crm-kanban-count" data-col-count-collapsed>{{ col.count }}</span>
+                    <span class="crm-kanban-vertical-name">{{ col.label }}</span>
                 </div>
             </div>
             <div class="crm-kanban-col-body">

@@ -7,14 +7,17 @@
     var board = document.getElementById('pkKanbanBoard');
     if (!board) return;
 
-    var LS_KEY_FLOW   = 'prospectosKanbanFlow_v1';
-    var LS_KEY_SORT   = 'prospectosKanbanSort_v1';
-    var LS_KEY_FILTER = 'prospectosKanbanFilters_v1';
+    var LS_KEY_FLOW      = 'prospectosKanbanFlow_v1';
+    var LS_KEY_SORT      = 'prospectosKanbanSort_v1';
+    var LS_KEY_FILTER    = 'prospectosKanbanFilters_v1';
+    var LS_KEY_COLLAPSED = 'prospectosKanbanCollapsed_v1';
 
     var _flow    = localStorage.getItem(LS_KEY_FLOW)   || 'both';
     var _sort    = localStorage.getItem(LS_KEY_SORT)   || 'default';
     var _filters = {};
+    var _collapsed = {};
     try { _filters = JSON.parse(localStorage.getItem(LS_KEY_FILTER) || '{}') || {}; } catch(e) {}
+    try { _collapsed = JSON.parse(localStorage.getItem(LS_KEY_COLLAPSED) || '{}') || {}; } catch(e) {}
 
     function escapeHtml(text) {
         if (text === null || text === undefined) return '';
@@ -49,10 +52,14 @@
         var cols = board.querySelectorAll('.crm-kanban-col');
         cols.forEach(function(col){
             var visible = col.querySelectorAll('.crm-postit--prospecto:not([style*="display: none"])').length;
-            var countEl = col.querySelector('.crm-kanban-count');
+            var countEl = col.querySelector('.crm-kanban-head-expanded .crm-kanban-count');
+            var countCollapsedEl = col.querySelector('[data-col-count-collapsed]');
             var dotEl   = col.querySelector('.crm-kanban-dot');
+            var totalEl = col.querySelector('[data-col-total]');
             if (countEl) countEl.textContent = visible;
+            if (countCollapsedEl) countCollapsedEl.textContent = visible;
             if (dotEl) dotEl.classList.toggle('active', visible > 0);
+            if (totalEl) totalEl.textContent = visible + ' prospecto' + (visible === 1 ? '' : 's');
             // Toggle empty-state si no hay cards visibles
             var body = col.querySelector('.crm-kanban-col-body');
             if (!body) return;
@@ -68,6 +75,18 @@
                 emptyState.remove();
             }
         });
+    }
+
+    function applyCollapsed() {
+        var cols = board.querySelectorAll('.crm-kanban-col');
+        cols.forEach(function(col){
+            var stage = col.dataset.stage;
+            col.classList.toggle('collapsed', !!_collapsed[stage]);
+        });
+    }
+
+    function persistCollapsed() {
+        try { localStorage.setItem(LS_KEY_COLLAPSED, JSON.stringify(_collapsed)); } catch(e) {}
     }
 
     function applySort() {
@@ -255,13 +274,34 @@
         }
     }
 
-    // Botón "add" en el header de cada columna (abre widget nuevo prospecto)
+    // Botones del header de cada columna: collapse + add. Además, click en
+    // columna colapsada la re-expande.
     board.addEventListener('click', function(ev) {
+        var btnCollapse = ev.target.closest('[data-act="pk-collapse"]');
+        if (btnCollapse) {
+            ev.stopPropagation();
+            var col = btnCollapse.closest('.crm-kanban-col');
+            if (!col) return;
+            var stage = col.dataset.stage;
+            _collapsed[stage] = true;
+            persistCollapsed();
+            applyCollapsed();
+            return;
+        }
         var btnAdd = ev.target.closest('[data-act="pk-add"]');
         if (btnAdd) {
             ev.stopPropagation();
-            var btn = document.getElementById('btnNuevoProspectoKanban');
-            if (btn) btn.click();
+            var openBtn = document.getElementById('btnNuevoProspectoKanban');
+            if (openBtn) openBtn.click();
+            return;
+        }
+        // Click en columna colapsada → expandir
+        var colClick = ev.target.closest('.crm-kanban-col.collapsed');
+        if (colClick) {
+            var st = colClick.dataset.stage;
+            _collapsed[st] = false;
+            persistCollapsed();
+            applyCollapsed();
         }
     });
 
@@ -272,6 +312,7 @@
     };
 
     setupToolbar();
-    applyFilters(); // aplicar filtros guardados al cargar
+    applyFilters();   // aplicar filtros guardados al cargar
+    applyCollapsed(); // restaurar columnas colapsadas
     updateClearVisibility();
 })();
