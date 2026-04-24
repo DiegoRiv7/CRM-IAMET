@@ -423,6 +423,8 @@
     // Abre la oportunidad desde el link en la fila del proyecto
     window.proyectosAbrirOportunidad = function (oppId) {
         if (!oppId) return;
+        // En la PWA de levantamientos no abrir widget de oportunidad
+        if (document.body.classList.contains('lev-app')) return;
         if (typeof window.openDetalle === 'function') {
             window.openDetalle(oppId);
             return;
@@ -648,7 +650,7 @@
             case 'financiero': renderFinanciero(currentProjectId); break;
             case 'programa':   renderProgramaObra(currentProjectId); break;
             case 'tareas':     renderTareas(currentProjectId); break;
-            case 'alertas':    renderAlertas(currentProjectId); break;
+            case 'drive':      _renderDrive(currentProjectId); break;
         }
 
         // Update KPIs based on active tab
@@ -2265,8 +2267,13 @@
         }
 
         var oppLink = '';
+        var _isLevApp = document.body.classList.contains('lev-app');
         if (p.oportunidad_id && p.oportunidad_nombre) {
-            oppLink = '<a href="javascript:void(0)" onclick="var d=document.getElementById(\'widgetDetalle\');if(d){d.classList.add(\'z-elevated\');d.style.zIndex=\'10800\';}if(typeof openDetalle===\'function\')openDetalle(' + p.oportunidad_id + ')" style="color:#007aff;text-decoration:none;font-weight:500">' + (p.oportunidad_nombre || '') + '</a>';
+            if (_isLevApp) {
+                oppLink = '<span style="color:#1E293B;font-weight:500">' + _esc(p.oportunidad_nombre || '') + '</span>';
+            } else {
+                oppLink = '<a href="javascript:void(0)" onclick="var d=document.getElementById(\'widgetDetalle\');if(d){d.classList.add(\'z-elevated\');d.style.zIndex=\'10800\';}if(typeof openDetalle===\'function\')openDetalle(' + p.oportunidad_id + ')" style="color:#007aff;text-decoration:none;font-weight:500">' + (p.oportunidad_nombre || '') + '</a>';
+            }
         } else {
             oppLink = '<span style="color:#8e8e93">Sin oportunidad vinculada</span>';
         }
@@ -3587,5 +3594,114 @@
 
     // Exponer ID del proyecto actual para módulos externos (Gantt, etc.)
     window.proyGetCurrentProjectId = function() { return currentProjectId; };
+
+    // ── Drive: archivos de la oportunidad vinculada ──────────────
+    var _driveOppId = null;
+    var _driveParentStack = []; // stack de IDs de carpetas para "atrás"
+
+    function _renderDrive(projectId) {
+        var container = document.getElementById('proyDriveContainer');
+        if (!container) return;
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;font-size:0.85rem;">Cargando...</div>';
+        _driveParentStack = [];
+        _updateDriveBackBtn();
+
+        // Obtener detalle del proyecto para saber la oportunidad vinculada
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/').then(function(resp) {
+            var data = resp.data || resp;
+            _driveOppId = data.oportunidad_id || null;
+            if (!_driveOppId) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;">' +
+                    '<svg width="40" height="40" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+                    '<div style="font-weight:600;margin-bottom:4px;">Sin oportunidad vinculada</div>' +
+                    '<div style="font-size:0.78rem;">Este proyecto no tiene una oportunidad asociada con archivos.</div></div>';
+                return;
+            }
+            _loadDriveFolder(null);
+        }).catch(function() {
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#EF4444;">Error cargando proyecto</div>';
+        });
+    }
+
+    function _loadDriveFolder(parentId) {
+        var container = document.getElementById('proyDriveContainer');
+        if (!container || !_driveOppId) return;
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:#94A3B8;">Cargando...</div>';
+        var url = '/app/api/oportunidad/' + _driveOppId + '/drive/';
+        if (parentId) url += '?parent=' + parentId;
+
+        _fetch(url).then(function(data) {
+            var items = (data.carpetas || []).concat(data.archivos || []);
+            if (items.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;">' +
+                    '<svg width="36" height="36" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+                    '<div style="font-size:0.82rem;">Sin archivos en esta carpeta</div></div>';
+                return;
+            }
+
+            var html = '<div style="display:flex;flex-direction:column;gap:2px;">';
+            // Carpetas primero
+            (data.carpetas || []).forEach(function(c) {
+                html += '<div class="proy-drive-item" onclick="proyDriveOpenFolder(' + c.id + ')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
+                    '<svg width="20" height="20" fill="#FBBF24" stroke="#F59E0B" stroke-width="1" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+                    '<span style="flex:1;font-size:0.85rem;font-weight:600;color:#1E293B;">' + _esc(c.nombre) + '</span>' +
+                    '<svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>' +
+                '</div>';
+            });
+            // Archivos
+            (data.archivos || []).forEach(function(a) {
+                var icon = _driveFileIcon(a.extension || a.tipo_archivo);
+                var size = a.tamaño ? _formatFileSize(a.tamaño) : '';
+                var streamUrl = '/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/';
+                html += '<div class="proy-drive-item" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
+                    icon +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-size:0.85rem;font-weight:500;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(a.nombre) + '</div>' +
+                        (size ? '<div style="font-size:0.7rem;color:#94A3B8;">' + size + '</div>' : '') +
+                    '</div>' +
+                    '<a href="' + streamUrl + '" target="_blank" style="padding:4px;color:#64748B;" title="Ver"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>' +
+                    '<a href="' + streamUrl + '?dl=1" style="padding:4px;color:#64748B;" title="Descargar"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
+                '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }).catch(function(err) {
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#EF4444;">Error: ' + (err.message || err) + '</div>';
+        });
+    }
+
+    window.proyDriveOpenFolder = function(folderId) {
+        _driveParentStack.push(folderId);
+        _updateDriveBackBtn();
+        _loadDriveFolder(folderId);
+    };
+
+    window.proyDriveNavBack = function() {
+        _driveParentStack.pop();
+        var parentId = _driveParentStack.length > 0 ? _driveParentStack[_driveParentStack.length - 1] : null;
+        _updateDriveBackBtn();
+        _loadDriveFolder(parentId);
+    };
+
+    function _updateDriveBackBtn() {
+        var btn = document.getElementById('proyDriveBackBtn');
+        if (btn) btn.style.display = _driveParentStack.length > 0 ? '' : 'none';
+    }
+
+    function _driveFileIcon(ext) {
+        var color = '#64748B';
+        if (['pdf'].indexOf(ext) !== -1) color = '#EF4444';
+        else if (['doc','docx','txt'].indexOf(ext) !== -1) color = '#3B82F6';
+        else if (['xls','xlsx','csv'].indexOf(ext) !== -1) color = '#10B981';
+        else if (['jpg','jpeg','png','gif','svg','webp'].indexOf(ext) !== -1) color = '#8B5CF6';
+        else if (['ppt','pptx'].indexOf(ext) !== -1) color = '#F59E0B';
+        return '<svg width="20" height="20" fill="none" stroke="' + color + '" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    }
+
+    function _formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
 
 })();

@@ -25,15 +25,14 @@ from .views_grupos import get_usuarios_visibles_ids
 # ─── Helpers ──────────────────────────────────────────────────
 
 def _get_proyectos_qs(user):
-    if is_supervisor(user):
-        return Proyecto.objects.all()
-    vis_ids = get_usuarios_visibles_ids(user)
-    if vis_ids is None:
-        return Proyecto.objects.all()
-    return Proyecto.objects.filter(usuario_id__in=vis_ids)
+    # Todos los usuarios ven todos los proyectos (vendedores, ingenieros, supervisores)
+    return Proyecto.objects.all()
 
 
 def _check_access(user, proyecto):
+    # Todos los usuarios tienen acceso a todos los proyectos
+    return True
+    # --- código original deshabilitado ---
     if is_supervisor(user):
         return True
     vis_ids = get_usuarios_visibles_ids(user)
