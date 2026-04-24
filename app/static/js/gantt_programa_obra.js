@@ -286,8 +286,8 @@
             '.gantt-phase-name { font-weight: 600; }',
             '.gantt-toggle { cursor: pointer; width: 16px; font-size: 10px; color: #94a3b8; user-select: none; flex-shrink: 0; }',
             '.gantt-indent { display: inline-block; width: 20px; flex-shrink: 0; }',
-            '.gantt-res-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 600; color: #fff; background: ' + COLOR_GRAY + '; cursor: pointer; }',
-            '.gantt-res-badge.has-res { background: ' + COLOR_PRIMARY + '; }',
+            '.gantt-res-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-size: 10px; font-weight: 600; color: #94a3b8; background: transparent; cursor: pointer; }',
+            '.gantt-res-badge.has-res { color: ' + COLOR_PRIMARY + '; background: #EFF6FF; }',
 
             /* Canvas panel */
             '.gantt-canvas-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }',
@@ -428,12 +428,12 @@
                 collapsed: false,
                 children: null,
                 start: startDay,
-                dur: a.duracion || a.dur || 1,
+                dur: a.duracion_dias || a.duracion || a.dur || 1,
                 progress: a.progreso || a.progress || 0,
                 deps: a.dependencias || a.deps || [],
                 res: a.recursos || a.res || [],
-                cost: a.costo_estimado || a.cost || 0,
-                income: a.ingreso_estimado || a.income || 0,
+                cost: parseFloat(a.costo_estimado || a.cost || 0),
+                income: parseFloat(a.ingreso_estimado || a.income || 0),
                 parent: a.fase_id || a.parent || null
             };
             if (task.id > maxId) maxId = task.id;
@@ -607,7 +607,7 @@
                     e.stopPropagation();
                     self._showResourceModal(t.id);
                 }
-            }, [resCount > 0 ? String(resCount) : '+']);
+            }, [resCount > 0 ? String(resCount) : '—']);
             row.appendChild(el('div', { className: 'gantt-row-res' }, [badge]));
 
             self.tableBody.appendChild(row);
@@ -841,15 +841,15 @@
         var prog = t.progress || 0;
         var bgColor, fgColor;
 
-        if (prog === 0) {
-            bgColor = COLOR_GRAY;
-            fgColor = COLOR_GRAY;
-        } else if (prog >= 100) {
-            bgColor = COLOR_GREEN;
+        if (prog >= 100) {
+            bgColor = '#dcfce7';
             fgColor = COLOR_GREEN;
-        } else {
+        } else if (prog > 0) {
             bgColor = '#e2e8f0';
             fgColor = COLOR_BLUE;
+        } else {
+            bgColor = '#e2e8f0';
+            fgColor = COLOR_GRAY;
         }
 
         // Background bar
