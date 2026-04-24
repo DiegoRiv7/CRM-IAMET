@@ -1,6 +1,7 @@
 # app/models.py
 
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -4502,3 +4503,73 @@ class LevantamientoEvidencia(models.Model):
 
     def __str__(self):
         return f'Evidencia {self.id} — {self.levantamiento.nombre}'
+
+# ── Programa de Obra (Gantt) ────────────────────────────────────────────
+
+class GanttFase(models.Model):
+    """Fase o grupo dentro del cronograma de un proyecto."""
+    proyecto = models.ForeignKey(
+        ProyectoIAMET, on_delete=models.CASCADE, related_name='gantt_fases',
+    )
+    nombre = models.CharField(max_length=200)
+    orden = models.IntegerField(default=0)
+    collapsed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['orden', 'nombre']
+        verbose_name = 'Fase Gantt'
+        verbose_name_plural = 'Fases Gantt'
+
+    def __str__(self):
+        return f'{self.nombre} — {self.proyecto.nombre}'
+
+
+class GanttActividad(models.Model):
+    """Actividad/tarea dentro del diagrama de Gantt de un proyecto."""
+    proyecto = models.ForeignKey(
+        ProyectoIAMET, on_delete=models.CASCADE, related_name='gantt_actividades',
+    )
+    fase = models.ForeignKey(
+        GanttFase, on_delete=models.CASCADE, related_name='actividades',
+        null=True, blank=True,
+    )
+    nombre = models.CharField(max_length=200)
+    fecha_inicio = models.DateField()
+    duracion_dias = models.PositiveIntegerField(default=1)
+    progreso = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    costo_estimado = models.DecimalField(
+        max_digits=14, decimal_places=2, default=Decimal('0'),
+    )
+    ingreso_estimado = models.DecimalField(
+        max_digits=14, decimal_places=2, default=Decimal('0'),
+    )
+    dependencias = models.ManyToManyField(
+        'self', symmetrical=False, blank=True, related_name='dependientes',
+    )
+    recursos = models.ManyToManyField(
+        User, blank=True, related_name='gantt_actividades_asignadas',
+    )
+    actividad_calendario = models.ForeignKey(
+        Actividad, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='gantt_actividades',
+    )
+    orden = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def fecha_fin(self):
+        return self.fecha_inicio + timedelta(days=self.duracion_dias)
+
+    class Meta:
+        ordering = ['orden', 'fecha_inicio']
+        verbose_name = 'Actividad Gantt'
+        verbose_name_plural = 'Actividades Gantt'
+
+    def __str__(self):
+        return f'{self.nombre} — {self.proyecto.nombre}'
+

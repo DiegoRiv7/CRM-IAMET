@@ -388,4 +388,10 @@ urlpatterns = [
     # CFDI XML → PDF (modulo independiente)
     path('cfdi/', views_iamet.cfdi_convertidor_page, name='cfdi_convertidor_page'),
     path('api/cfdi/convertir/', views_iamet.api_cfdi_convertir, name='api_cfdi_convertir'),
+    # ── Programa de Obra (Gantt) ────────────────────────────────────────
+    path('api/proyecto/<int:proyecto_id>/gantt/', views_proyectos.api_gantt_proyecto, name='api_gantt_proyecto'),
+    path('api/gantt/actividad/<int:actividad_id>/', views_proyectos.api_gantt_actividad, name='api_gantt_actividad'),
+    path('api/proyecto/<int:proyecto_id>/gantt/fase/', views_proyectos.api_gantt_fase_crear, name='api_gantt_fase_crear'),
+    path('api/gantt/fase/<int:fase_id>/', views_proyectos.api_gantt_fase, name='api_gantt_fase'),
+    path('api/gantt/actividad/<int:actividad_id>/cascada/', views_proyectos.api_gantt_cascada, name='api_gantt_cascada'),
 ]

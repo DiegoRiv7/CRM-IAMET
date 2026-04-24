@@ -4385,3 +4385,385 @@ def api_eliminar_tarea(request, tarea_id):
         return JsonResponse({'error': 'Solo el creador puede eliminar esta tarea'}, status=403)
     tarea.delete()
     return JsonResponse({'success': True})
+
+
+# ── Programa de Obra — Gantt API ─────────────────────────────────────────
+
+def _serializar_actividad(act):
+    """Serializa una GanttActividad a diccionario."""
+    return {
+        'id': act.id,
+        'fase_id': act.fase_id,
+        'nombre': act.nombre,
+        'fecha_inicio': act.fecha_inicio.isoformat(),
+        'duracion_dias': act.duracion_dias,
+        'progreso': act.progreso,
+        'costo_estimado': str(act.costo_estimado),
+        'ingreso_estimado': str(act.ingreso_estimado),
+        'dependencias': list(act.dependencias.values_list('id', flat=True)),
+        'recursos': [
+            {'id': u.id, 'nombre': u.get_full_name() or u.username}
+            for u in act.recursos.all()
+        ],
+        'actividad_calendario_id': act.actividad_calendario_id,
+        'orden': act.orden,
+    }
+
+
+def _serializar_fase(fase):
+    """Serializa una GanttFase a diccionario."""
+    return {
+        'id': fase.id,
+        'nombre': fase.nombre,
+        'orden': fase.orden,
+        'collapsed': fase.collapsed,
+    }
+
+
+@login_required
+def api_gantt_proyecto(request, proyecto_id):
+    """
+    GET  — Lista fases y actividades del Gantt de un proyecto.
+    POST — Crea una nueva actividad Gantt.
+    """
+    proyecto = get_object_or_404(ProyectoIAMET, id=proyecto_id)
+
+    # ── GET: listar todo ────────────────────────────────────────────────
+    if request.method == 'GET':
+        fases = [_serializar_fase(f) for f in proyecto.gantt_fases.all()]
+        actividades = [
+            _serializar_actividad(a)
+            for a in proyecto.gantt_actividades.select_related('fase')
+                                               .prefetch_related('dependencias', 'recursos')
+        ]
+        return JsonResponse({
+            'fases': fases,
+            'actividades': actividades,
+            'proyecto_inicio': proyecto.fecha_inicio.isoformat() if proyecto.fecha_inicio else None,
+        })
+
+    # ── POST: crear actividad ───────────────────────────────────────────
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+        nombre = (data.get('nombre') or '').strip()
+        if not nombre:
+            return JsonResponse({'error': 'El nombre es obligatorio'}, status=400)
+
+        fecha_inicio_str = data.get('fecha_inicio')
+        if not fecha_inicio_str:
+            return JsonResponse({'error': 'fecha_inicio es obligatorio'}, status=400)
+        try:
+            fecha_inicio = date.fromisoformat(fecha_inicio_str)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'fecha_inicio invalida (YYYY-MM-DD)'}, status=400)
+
+        duracion_dias = data.get('duracion_dias', 1)
+        try:
+            duracion_dias = int(duracion_dias)
+            if duracion_dias < 1:
+                raise ValueError
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'duracion_dias debe ser >= 1'}, status=400)
+
+        costo_estimado = data.get('costo_estimado', 0)
+        ingreso_estimado = data.get('ingreso_estimado', 0)
+        try:
+            from decimal import Decimal as D, InvalidOperation
+            costo_estimado = D(str(costo_estimado))
+            ingreso_estimado = D(str(ingreso_estimado))
+            if costo_estimado < 0 or ingreso_estimado < 0:
+                raise ValueError
+        except (ValueError, TypeError, InvalidOperation):
+            return JsonResponse({'error': 'costo/ingreso deben ser numeros >= 0'}, status=400)
+
+        fase_id = data.get('fase_id')
+        fase = None
+        if fase_id:
+            fase = GanttFase.objects.filter(id=fase_id, proyecto=proyecto).first()
+            if not fase:
+                return JsonResponse({'error': 'Fase no encontrada en este proyecto'}, status=404)
+
+        act = GanttActividad.objects.create(
+            proyecto=proyecto,
+            fase=fase,
+            nombre=nombre,
+            fecha_inicio=fecha_inicio,
+            duracion_dias=duracion_dias,
+            costo_estimado=costo_estimado,
+            ingreso_estimado=ingreso_estimado,
+            orden=data.get('orden', 0),
+        )
+        return JsonResponse({'success': True, 'actividad': _serializar_actividad(act)}, status=201)
+
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+
+@login_required
+def api_gantt_actividad(request, actividad_id):
+    """
+    PUT    — Actualiza una actividad Gantt.
+    DELETE — Elimina una actividad Gantt.
+    """
+    act = get_object_or_404(GanttActividad, id=actividad_id)
+
+    # ── PUT ─────────────────────────────────────────────────────────────
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+        # Nombre
+        if 'nombre' in data:
+            nombre = (data['nombre'] or '').strip()
+            if not nombre:
+                return JsonResponse({'error': 'El nombre no puede estar vacio'}, status=400)
+            act.nombre = nombre
+
+        # Fecha inicio
+        if 'fecha_inicio' in data:
+            try:
+                act.fecha_inicio = date.fromisoformat(data['fecha_inicio'])
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'fecha_inicio invalida'}, status=400)
+
+        # Duracion
+        if 'duracion_dias' in data:
+            try:
+                d = int(data['duracion_dias'])
+                if d < 1:
+                    raise ValueError
+                act.duracion_dias = d
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'duracion_dias debe ser >= 1'}, status=400)
+
+        # Progreso
+        if 'progreso' in data:
+            try:
+                p = int(data['progreso'])
+                if p < 0 or p > 100:
+                    raise ValueError
+                act.progreso = p
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'progreso debe ser 0-100'}, status=400)
+
+        # Fase
+        if 'fase_id' in data:
+            fid = data['fase_id']
+            if fid is None:
+                act.fase = None
+            else:
+                fase = GanttFase.objects.filter(id=fid, proyecto=act.proyecto).first()
+                if not fase:
+                    return JsonResponse({'error': 'Fase no encontrada'}, status=404)
+                act.fase = fase
+
+        # Costo / Ingreso
+        from decimal import Decimal as D, InvalidOperation
+        if 'costo_estimado' in data:
+            try:
+                val = D(str(data['costo_estimado']))
+                if val < 0:
+                    raise ValueError
+                act.costo_estimado = val
+            except (ValueError, TypeError, InvalidOperation):
+                return JsonResponse({'error': 'costo_estimado invalido'}, status=400)
+
+        if 'ingreso_estimado' in data:
+            try:
+                val = D(str(data['ingreso_estimado']))
+                if val < 0:
+                    raise ValueError
+                act.ingreso_estimado = val
+            except (ValueError, TypeError, InvalidOperation):
+                return JsonResponse({'error': 'ingreso_estimado invalido'}, status=400)
+
+        # Orden
+        if 'orden' in data:
+            try:
+                act.orden = int(data['orden'])
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'orden invalido'}, status=400)
+
+        # Actividad calendario
+        if 'actividad_calendario_id' in data:
+            ac_id = data['actividad_calendario_id']
+            if ac_id is None:
+                act.actividad_calendario = None
+            else:
+                act.actividad_calendario = get_object_or_404(Actividad, id=ac_id)
+
+        act.save()
+
+        # M2M: dependencias
+        if 'dependencias' in data:
+            dep_ids = data['dependencias']
+            if not isinstance(dep_ids, list):
+                return JsonResponse({'error': 'dependencias debe ser una lista de ids'}, status=400)
+            deps = GanttActividad.objects.filter(id__in=dep_ids, proyecto=act.proyecto)
+            act.dependencias.set(deps)
+
+        # M2M: recursos
+        if 'recursos' in data:
+            rec_ids = data['recursos']
+            if not isinstance(rec_ids, list):
+                return JsonResponse({'error': 'recursos debe ser una lista de ids'}, status=400)
+            act.recursos.set(User.objects.filter(id__in=rec_ids))
+
+        return JsonResponse({'success': True, 'actividad': _serializar_actividad(act)})
+
+    # ── DELETE ──────────────────────────────────────────────────────────
+    if request.method == 'DELETE':
+        act.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+
+@login_required
+def api_gantt_fase_crear(request, proyecto_id):
+    """POST — Crea una nueva fase Gantt."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+    proyecto = get_object_or_404(ProyectoIAMET, id=proyecto_id)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        return JsonResponse({'error': 'El nombre es obligatorio'}, status=400)
+
+    # Orden automatico: poner al final
+    max_orden = proyecto.gantt_fases.aggregate(m=models.Max('orden'))['m'] or 0
+    fase = GanttFase.objects.create(
+        proyecto=proyecto,
+        nombre=nombre,
+        orden=max_orden + 1,
+    )
+    return JsonResponse({'success': True, 'fase': _serializar_fase(fase)}, status=201)
+
+
+@login_required
+def api_gantt_fase(request, fase_id):
+    """
+    PUT    — Actualiza una fase Gantt (nombre, orden, collapsed).
+    DELETE — Elimina una fase Y todas sus actividades.
+    """
+    fase = get_object_or_404(GanttFase, id=fase_id)
+
+    # ── PUT ─────────────────────────────────────────────────────────────
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+        if 'nombre' in data:
+            nombre = (data['nombre'] or '').strip()
+            if not nombre:
+                return JsonResponse({'error': 'El nombre no puede estar vacio'}, status=400)
+            fase.nombre = nombre
+
+        if 'orden' in data:
+            try:
+                fase.orden = int(data['orden'])
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'orden invalido'}, status=400)
+
+        if 'collapsed' in data:
+            fase.collapsed = bool(data['collapsed'])
+
+        fase.save()
+        return JsonResponse({'success': True, 'fase': _serializar_fase(fase)})
+
+    # ── DELETE ──────────────────────────────────────────────────────────
+    if request.method == 'DELETE':
+        # Cascade eliminara las actividades vinculadas a esta fase
+        fase.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+
+@login_required
+def api_gantt_cascada(request, actividad_id):
+    """
+    POST — Ejecuta cascada Finish-to-Start desde una actividad.
+    Empuja dependientes cuya fecha_inicio < fecha_fin de esta actividad.
+    Recursivo con proteccion contra ciclos (max 100 iteraciones).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+    act = get_object_or_404(GanttActividad, id=actividad_id)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+    # Actualizar la actividad origen si se proporcionan nuevos valores
+    if 'nueva_fecha_inicio' in data:
+        try:
+            act.fecha_inicio = date.fromisoformat(data['nueva_fecha_inicio'])
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'nueva_fecha_inicio invalida'}, status=400)
+
+    if 'nueva_duracion' in data:
+        try:
+            d = int(data['nueva_duracion'])
+            if d < 1:
+                raise ValueError
+            act.duracion_dias = d
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'nueva_duracion debe ser >= 1'}, status=400)
+
+    act.save()
+
+    # ── Cascada Finish-to-Start ─────────────────────────────────────────
+    actualizadas = []
+    cola = [act]
+    visitados = set()
+    iteraciones = 0
+
+    while cola and iteraciones < 100:
+        iteraciones += 1
+        actual = cola.pop(0)
+
+        if actual.id in visitados:
+            continue
+        visitados.add(actual.id)
+
+        fecha_fin_actual = actual.fecha_fin  # fecha_inicio + duracion_dias
+
+        # Buscar dependientes (actividades que dependen de 'actual')
+        dependientes = actual.dependientes.filter(
+            proyecto=act.proyecto
+        ).select_related('fase')
+
+        for dep in dependientes:
+            if dep.id in visitados:
+                continue
+            if dep.fecha_inicio < fecha_fin_actual:
+                dep.fecha_inicio = fecha_fin_actual
+                dep.save(update_fields=['fecha_inicio', 'updated_at'])
+                actualizadas.append({
+                    'id': dep.id,
+                    'fecha_inicio': dep.fecha_inicio.isoformat(),
+                    'duracion_dias': dep.duracion_dias,
+                })
+                cola.append(dep)
+
+    return JsonResponse({
+        'success': True,
+        'actualizadas': actualizadas,
+    })
+

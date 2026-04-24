@@ -387,8 +387,18 @@
 
       <!-- Programa de Obra -->
       <div id="proyPane_programa" class="proy-tab-pane" style="display:none;">
-        <div id="proyProgramaContainer">
-          <!-- Rendered by JS -->
+        <!-- Toggle Simple / Avanzado (Gantt) -->
+        <div class="gantt-view-toggle" id="ganttViewToggle">
+          <button type="button" class="gantt-toggle-btn active" data-mode="simple">Simple</button>
+          <button type="button" class="gantt-toggle-btn" data-mode="avanzado">Avanzado</button>
+        </div>
+        <div id="programaObraSimple">
+          <div id="proyProgramaContainer">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+        <div id="programaObraAvanzado" style="display:none;">
+          <!-- El Gantt avanzado se monta aqui via initGanttProgramaObra -->
         </div>
       </div>
 
