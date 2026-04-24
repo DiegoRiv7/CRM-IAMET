@@ -9,22 +9,30 @@
        CONSTANTES
        =========================================== */
     var COL_W  = 36;
-    var ROW_H  = 36;
-    var BAR_H  = 20;
+    var ROW_H  = 38;
+    var BAR_H  = 22;
     var BAR_Y  = 8;
     var EDGE   = 8;      // zona de resize en bordes de barra
-    var HEADER_H = 48;   // alto del header de fechas
+    var HEADER_H = 52;   // alto del header de fechas
 
-    var COLOR_PRIMARY  = '#0052D4';
-    var COLOR_DARK     = '#1D1D1F';
-    var COLOR_LIGHT    = '#F9FAFB';
-    var COLOR_BORDER   = '#E5E7EB';
-    var COLOR_HEADER   = '#F8FAFC';
-    var COLOR_GRAY     = '#94a3b8';
-    var COLOR_BLUE     = '#3b82f6';
-    var COLOR_GREEN    = '#16a34a';
-    var COLOR_BLACK    = '#1D1D1F';
-    var COLOR_SEL      = '#dbeafe';
+    var COLOR_PRIMARY      = '#3B82F6';
+    var COLOR_PRIMARY_DARK = '#1E40AF';
+    var COLOR_PRIMARY_FILL = '#1D4ED8';
+    var COLOR_DARK         = '#1E293B';
+    var COLOR_LIGHT        = '#F9FAFB';
+    var COLOR_BORDER       = '#E5E7EB';
+    var COLOR_HEADER       = '#FFFFFF';
+    var COLOR_GRAY         = '#94A3B8';
+    var COLOR_TEXT_SEC      = '#64748B';
+    var COLOR_TEXT_MUTED    = '#94A3B8';
+    var COLOR_BLUE         = '#3B82F6';
+    var COLOR_GREEN        = '#10B981';
+    var COLOR_WARNING      = '#F59E0B';
+    var COLOR_DANGER       = '#EF4444';
+    var COLOR_BLACK        = '#1E293B';
+    var COLOR_SEL          = COLOR_PRIMARY;
+    var COLOR_HOVER_BG     = '#F8FAFC';
+    var COLOR_PHASE_BAR    = '#475569';
 
     var ZOOM_PRESETS = { day: 50, week: 36, month: 12 };
 
@@ -162,13 +170,8 @@
         var tablePanel = el('div', { className: 'gantt-table-panel' });
         main.appendChild(tablePanel);
 
-        // table header
-        var thead = el('div', { className: 'gantt-table-header' }, [
-            el('div', { className: 'gantt-th gantt-th-name' }, ['Nombre']),
-            el('div', { className: 'gantt-th gantt-th-dur' }, ['Dur.']),
-            el('div', { className: 'gantt-th gantt-th-prog' }, ['%']),
-            el('div', { className: 'gantt-th gantt-th-res' }, ['Rec.'])
-        ]);
+        // table header — minimal, implicit (no column labels)
+        var thead = el('div', { className: 'gantt-table-header' });
         tablePanel.appendChild(thead);
 
         this.tableWrap = el('div', { className: 'gantt-table-body-wrap' });
@@ -227,9 +230,24 @@
         this.canvas.addEventListener('mousedown', function (e) { self._onMouseDown(e); });
         this.canvas.addEventListener('mousemove', function (e) { self._onMouseMove(e); });
         this.canvas.addEventListener('dblclick', function (e) { self._onDblClick(e); });
-        this.canvas.addEventListener('mouseleave', function () { self._hideTooltip(); });
+        this.canvas.addEventListener('mouseleave', function () { self._hideTooltip(); self._renderCanvas(); });
+        this.canvas.addEventListener('contextmenu', function (e) { self._onContextMenu(e); });
         document.addEventListener('mousemove', function (e) { self._onDocMouseMove(e); });
         document.addEventListener('mouseup', function (e) { self._onMouseUp(e); });
+
+        // Close context menu on click outside or ESC
+        document.addEventListener('mousedown', function (e) {
+            var menu = self.root.querySelector('.gantt-ctx-menu');
+            if (menu && !menu.contains(e.target)) {
+                menu.remove();
+            }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var menu = self.root.querySelector('.gantt-ctx-menu');
+                if (menu) menu.remove();
+            }
+        });
     };
 
     /* -------------------------------------------
@@ -238,81 +256,106 @@
     Gantt.prototype._injectStyles = function () {
         if (document.getElementById('gantt-obra-styles')) return;
         var css = [
-            '.gantt-root { font-family: inherit; color: ' + COLOR_DARK + '; font-size: 13px; display: flex; flex-direction: column; height: calc(100vh - 320px); min-height: 350px; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 10px; overflow: hidden; }',
+            '.gantt-root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: ' + COLOR_DARK + '; font-size: 13px; display: flex; flex-direction: column; height: calc(100vh - 320px); min-height: 350px; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 10px; overflow: hidden; }',
 
-            /* Toolbar — compacta y limpia */
-            '.gantt-toolbar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #fff; border-bottom: 1px solid ' + COLOR_BORDER + '; }',
-            '.gantt-btn { padding: 5px 12px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.75rem; font-weight: 600; color: ' + COLOR_DARK + '; transition: all .15s; white-space: nowrap; font-family: inherit; }',
+            /* Toolbar — sin borde inferior, solo espacio */
+            '.gantt-toolbar { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #fff; }',
+            '.gantt-btn { padding: 5px 14px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: ' + COLOR_DARK + '; transition: all .15s; white-space: nowrap; font-family: inherit; }',
             '.gantt-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }',
-            '.gantt-btn-primary { background: ' + COLOR_PRIMARY + '; color: #fff; border-color: ' + COLOR_PRIMARY + '; font-size: 0.75rem; }',
-            '.gantt-btn-primary:hover { background: #003fa3; }',
-            '.gantt-btn-danger { color: #dc2626; border-color: #fecaca; font-size: 0.75rem; }',
+            '.gantt-btn-primary { background: ' + COLOR_PRIMARY + '; color: #fff; border-color: ' + COLOR_PRIMARY + '; font-size: 0.78rem; }',
+            '.gantt-btn-primary:hover { background: ' + COLOR_PRIMARY_DARK + '; }',
+            '.gantt-btn-danger { color: #dc2626; border-color: #fecaca; font-size: 0.78rem; }',
             '.gantt-btn-danger:hover { background: #fef2f2; }',
-            /* Zoom segmented control */
-            '.gantt-zoom-group { display: flex; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; overflow: hidden; }',
-            '.gantt-zoom-btn { padding: 4px 10px; border: none; background: #fff; cursor: pointer; font-size: 0.7rem; font-weight: 700; color: #64748b; transition: all .12s; font-family: inherit; border-right: 1px solid ' + COLOR_BORDER + '; }',
+            /* Zoom segmented control — sin borde exterior */
+            '.gantt-zoom-group { display: flex; border-radius: 8px; overflow: hidden; }',
+            '.gantt-zoom-btn { padding: 5px 12px; border: none; background: #F1F5F9; cursor: pointer; font-size: 0.7rem; font-weight: 700; color: ' + COLOR_TEXT_SEC + '; transition: all .12s; font-family: inherit; border-right: 1px solid ' + COLOR_BORDER + '; }',
             '.gantt-zoom-btn:last-child { border-right: none; }',
-            '.gantt-zoom-btn:hover { background: #f1f5f9; }',
+            '.gantt-zoom-btn:hover { background: #E2E8F0; }',
             '.gantt-zoom-btn.active { background: ' + COLOR_PRIMARY + '; color: #fff; }',
-            /* Empty state */
-            '.gantt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #94a3b8; gap: 12px; padding: 40px; }',
-            '.gantt-empty-icon { width: 48px; height: 48px; border-radius: 12px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; }',
-            '.gantt-empty-text { font-size: 0.85rem; font-weight: 500; }',
-            '.gantt-empty-sub { font-size: 0.75rem; color: #cbd5e1; }',
+            /* Empty state — mejorado */
+            '.gantt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: ' + COLOR_TEXT_MUTED + '; gap: 14px; padding: 48px; }',
+            '.gantt-empty-icon { width: 64px; height: 64px; border-radius: 16px; background: #F1F5F9; display: flex; align-items: center; justify-content: center; }',
+            '.gantt-empty-text { font-size: 0.95rem; font-weight: 600; color: ' + COLOR_DARK + '; }',
+            '.gantt-empty-sub { font-size: 0.8rem; color: ' + COLOR_TEXT_MUTED + '; text-align: center; line-height: 1.5; }',
 
             /* Main */
             '.gantt-main { display: flex; flex: 1; overflow: hidden; min-height: 0; }',
 
-            /* Table panel */
-            '.gantt-table-panel { width: 30%; min-width: 220px; max-width: 400px; display: flex; flex-direction: column; border-right: 2px solid ' + COLOR_BORDER + '; }',
-            '.gantt-table-header { display: flex; height: ' + HEADER_H + 'px; background: ' + COLOR_HEADER + '; border-bottom: 1px solid ' + COLOR_BORDER + '; align-items: flex-end; padding-bottom: 4px; }',
-            '.gantt-th { font-weight: 600; font-size: 11px; text-transform: uppercase; color: #64748b; padding: 0 6px; }',
-            '.gantt-th-name { flex: 1; }',
-            '.gantt-th-dur { width: 40px; text-align: center; }',
-            '.gantt-th-prog { width: 40px; text-align: center; }',
-            '.gantt-th-res { width: 36px; text-align: center; }',
+            /* Table panel — separador sutil */
+            '.gantt-table-panel { width: 26%; min-width: 200px; max-width: 340px; display: flex; flex-direction: column; border-right: 1px solid ' + COLOR_BORDER + '; }',
+            '.gantt-table-header { display: flex; height: ' + HEADER_H + 'px; background: #fff; border-bottom: 1px solid ' + COLOR_BORDER + '; align-items: flex-end; padding-bottom: 4px; }',
             '.gantt-table-body-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; }',
             '.gantt-table-body-wrap::-webkit-scrollbar { display: none; }',
             '.gantt-table-body { }',
 
-            /* Table row */
-            '.gantt-row { display: flex; align-items: center; height: ' + ROW_H + 'px; border-bottom: 1px solid #f1f5f9; cursor: pointer; padding: 0 4px; transition: background .1s; }',
-            '.gantt-row:hover { background: #f8fafc; }',
-            '.gantt-row.selected { background: ' + COLOR_SEL + '; }',
-            '.gantt-row-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px; }',
-            '.gantt-row-dur { width: 40px; text-align: center; font-size: 12px; color: #64748b; }',
-            '.gantt-row-prog { width: 40px; text-align: center; font-size: 12px; color: #64748b; }',
-            '.gantt-row-res { width: 36px; text-align: center; font-size: 12px; }',
-            '.gantt-phase-name { font-weight: 600; }',
-            '.gantt-toggle { cursor: pointer; width: 16px; font-size: 10px; color: #94a3b8; user-select: none; flex-shrink: 0; }',
+            /* Table row — solo columna nombre */
+            '.gantt-row { display: flex; align-items: center; height: ' + ROW_H + 'px; border-bottom: 1px solid #F8FAFC; cursor: pointer; padding: 0 10px; transition: background .1s; position: relative; border-left: 3px solid transparent; }',
+            '.gantt-row:hover { background: ' + COLOR_HOVER_BG + '; }',
+            '.gantt-row.selected { border-left-color: ' + COLOR_PRIMARY + '; background: #fff; }',
+            '.gantt-row-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; font-size: 13px; color: ' + COLOR_DARK + '; }',
+            /* Badges inline que aparecen en hover */
+            '.gantt-row-badges { display: none; align-items: center; gap: 4px; margin-left: auto; flex-shrink: 0; }',
+            '.gantt-row:hover .gantt-row-badges { display: flex; }',
+            '.gantt-badge { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: #F1F5F9; color: ' + COLOR_TEXT_SEC + '; white-space: nowrap; }',
+            '.gantt-badge-prog { background: #EFF6FF; color: ' + COLOR_PRIMARY + '; }',
+            '.gantt-phase-name { font-weight: 700; font-size: 13px; color: ' + COLOR_DARK + '; }',
+            '.gantt-toggle { cursor: pointer; width: 16px; font-size: 9px; color: ' + COLOR_TEXT_MUTED + '; user-select: none; flex-shrink: 0; transition: color .1s; }',
+            '.gantt-toggle:hover { color: ' + COLOR_TEXT_SEC + '; }',
             '.gantt-indent { display: inline-block; width: 20px; flex-shrink: 0; }',
-            '.gantt-res-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-size: 10px; font-weight: 600; color: #94a3b8; background: transparent; cursor: pointer; }',
-            '.gantt-res-badge.has-res { color: ' + COLOR_PRIMARY + '; background: #EFF6FF; }',
 
             /* Canvas panel */
             '.gantt-canvas-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }',
-            '.gantt-canvas-header-wrap { height: ' + HEADER_H + 'px; overflow: hidden; background: ' + COLOR_HEADER + '; border-bottom: 1px solid ' + COLOR_BORDER + '; }',
+            '.gantt-canvas-header-wrap { height: ' + HEADER_H + 'px; overflow: hidden; background: #fff; border-bottom: 1px solid ' + COLOR_BORDER + '; }',
             '.gantt-header-canvas { display: block; }',
             '.gantt-canvas-wrap { flex: 1; overflow: auto; position: relative; }',
-            '.gantt-canvas-wrap::-webkit-scrollbar { height: 8px; width: 8px; }',
-            '.gantt-canvas-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }',
+            '.gantt-canvas-wrap::-webkit-scrollbar { height: 6px; width: 6px; }',
+            '.gantt-canvas-wrap::-webkit-scrollbar-track { background: transparent; }',
+            '.gantt-canvas-wrap::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }',
+            '.gantt-canvas-wrap::-webkit-scrollbar-thumb:hover { background: #94A3B8; }',
             '.gantt-canvas { display: block; }',
 
-            /* Tooltip */
-            '.gantt-tooltip { position: absolute; z-index: 100; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 8px; padding: 10px 14px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12); pointer-events: none; max-width: 280px; line-height: 1.5; }',
-            '.gantt-tooltip-title { font-weight: 600; margin-bottom: 4px; }',
-            '.gantt-tooltip-row { color: #64748b; }',
-            '.gantt-tooltip-row span { color: ' + COLOR_DARK + '; font-weight: 500; }',
+            /* Tooltip — mini-card design */
+            '.gantt-tooltip { position: absolute; z-index: 100; background: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); pointer-events: none; max-width: 280px; line-height: 1.6; opacity: 0; transition: opacity 0.15s ease; }',
+            '.gantt-tooltip.visible { opacity: 1; }',
+            '.gantt-tooltip-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; color: ' + COLOR_DARK + '; }',
+            '.gantt-tooltip-dates { color: ' + COLOR_TEXT_SEC + '; font-size: 12px; margin-bottom: 8px; }',
+            '.gantt-tooltip-progress-wrap { margin-bottom: 8px; }',
+            '.gantt-tooltip-progress-label { font-size: 11px; color: ' + COLOR_TEXT_SEC + '; margin-bottom: 3px; }',
+            '.gantt-tooltip-progress-bar { height: 4px; background: #F1F5F9; border-radius: 2px; overflow: hidden; }',
+            '.gantt-tooltip-progress-fill { height: 100%; border-radius: 2px; transition: width .2s; }',
+            '.gantt-tooltip-row { color: ' + COLOR_TEXT_SEC + '; font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }',
+            '.gantt-tooltip-row span { color: ' + COLOR_DARK + '; font-weight: 600; }',
+            '.gantt-tooltip-avatars { display: flex; gap: 4px; margin-top: 6px; }',
+            '.gantt-tooltip-avatar { width: 22px; height: 22px; border-radius: 50%; background: ' + COLOR_PRIMARY + '; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }',
 
             /* Modal */
             '.gantt-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 200; display: flex; align-items: center; justify-content: center; }',
             '.gantt-modal { background: #fff; border-radius: 12px; padding: 24px 28px; width: 420px; max-width: 95%; box-shadow: 0 8px 32px rgba(0,0,0,.18); }',
             '.gantt-modal h3 { margin: 0 0 16px; font-size: 16px; font-weight: 600; }',
             '.gantt-modal-field { margin-bottom: 12px; }',
-            '.gantt-modal-field label { display: block; font-size: 12px; font-weight: 500; color: #64748b; margin-bottom: 4px; }',
-            '.gantt-modal-field input, .gantt-modal-field select { width: 100%; padding: 7px 10px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; font-size: 13px; box-sizing: border-box; }',
-            '.gantt-modal-field input:focus, .gantt-modal-field select:focus { outline: none; border-color: ' + COLOR_PRIMARY + '; box-shadow: 0 0 0 2px rgba(0,82,212,.15); }',
+            '.gantt-modal-field label { display: block; font-size: 12px; font-weight: 500; color: ' + COLOR_TEXT_SEC + '; margin-bottom: 4px; }',
+            '.gantt-modal-field input, .gantt-modal-field select { width: 100%; padding: 7px 10px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 8px; font-size: 13px; box-sizing: border-box; }',
+            '.gantt-modal-field input:focus, .gantt-modal-field select:focus { outline: none; border-color: ' + COLOR_PRIMARY + '; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }',
             '.gantt-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }',
+            /* Context menu */
+            '.gantt-ctx-menu { position: absolute; z-index: 300; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.16); padding: 4px 0; min-width: 200px; font-size: 13px; }',
+            '.gantt-ctx-item { padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background .1s; position: relative; color: ' + COLOR_DARK + '; }',
+            '.gantt-ctx-item:hover { background: #f1f5f9; }',
+            '.gantt-ctx-item.danger { color: #dc2626; }',
+            '.gantt-ctx-sep { height: 1px; background: ' + COLOR_BORDER + '; margin: 4px 0; }',
+            '.gantt-ctx-sub { position: absolute; left: 100%; top: -4px; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.16); padding: 4px 0; min-width: 200px; max-height: 240px; overflow-y: auto; z-index: 301; display: none; }',
+            '.gantt-ctx-item:hover > .gantt-ctx-sub { display: block; }',
+            '.gantt-ctx-sub-item { padding: 6px 14px; cursor: pointer; transition: background .1s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+            '.gantt-ctx-sub-item:hover { background: #f1f5f9; }',
+            '.gantt-ctx-arrow { margin-left: auto; color: ' + COLOR_TEXT_MUTED + '; font-size: 10px; }',
+            '.gantt-ctx-progress-wrap { padding: 8px 14px; display: flex; align-items: center; gap: 8px; }',
+            '.gantt-ctx-progress-input { width: 60px; padding: 4px 8px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; font-size: 13px; text-align: center; }',
+            '.gantt-ctx-progress-input:focus { outline: none; border-color: ' + COLOR_PRIMARY + '; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }',
+            '.gantt-ctx-progress-btn { padding: 4px 10px; background: ' + COLOR_PRIMARY + '; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }',
+            '.gantt-ctx-progress-btn:hover { background: ' + COLOR_PRIMARY_DARK + '; }',
+
+            /* Inline edit */
+            '.gantt-inline-input { width: 100%; padding: 2px 6px; border: 1px solid ' + COLOR_PRIMARY + '; border-radius: 6px; font-size: 13px; font-family: inherit; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,.12); box-sizing: border-box; }',
         ].join('\n');
 
         var style = document.createElement('style');
@@ -521,21 +564,28 @@
         if (this._btnDel) this._btnDel.style.display = this.selectedTaskId != null ? '' : 'none';
 
         // Empty state
+        var self = this;
         var realTasks = this.tasks.filter(function(t) { return !t.isPhase; });
         var emptyEl = this.root.querySelector('.gantt-empty');
         var mainEl = this.root.querySelector('.gantt-main');
         if (realTasks.length === 0 && this.tasks.length === 0) {
             if (mainEl) mainEl.style.display = 'none';
             if (!emptyEl) {
+                var ctaBtn = el('button', {
+                    className: 'gantt-btn gantt-btn-primary',
+                    style: { marginTop: '8px', padding: '8px 20px', fontSize: '0.85rem' },
+                    onClick: function () { self._showAddModal(); }
+                }, ['+ Agregar primera actividad']);
                 emptyEl = el('div', { className: 'gantt-empty' }, [
                     el('div', { className: 'gantt-empty-icon' }, [
-                        el('svg', { width: '24', height: '24', fill: 'none', stroke: '#94a3b8', 'stroke-width': '1.5', viewBox: '0 0 24 24' })
+                        el('svg', { width: '32', height: '32', fill: 'none', stroke: COLOR_TEXT_MUTED, 'stroke-width': '1.5', viewBox: '0 0 24 24' })
                     ]),
-                    el('div', { className: 'gantt-empty-text' }, ['Sin actividades en el cronograma']),
-                    el('div', { className: 'gantt-empty-sub' }, ['Usa el boton + Actividad para comenzar'])
+                    el('div', { className: 'gantt-empty-text' }, ['Comienza tu programa de obra']),
+                    el('div', { className: 'gantt-empty-sub' }, ['Agrega actividades para visualizar el cronograma del proyecto']),
+                    ctaBtn
                 ]);
-                // Inject a simple icon into the SVG
-                emptyEl.querySelector('svg').innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>';
+                // Inject a refined calendar icon into the SVG
+                emptyEl.querySelector('svg').innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/><path d="M8 14h2v2H8zM14 14h2v2h-2z" fill="' + COLOR_TEXT_MUTED + '" stroke="none"/>';
                 this.root.appendChild(emptyEl);
             } else {
                 emptyEl.style.display = 'flex';
@@ -572,7 +622,7 @@
                 }
             });
 
-            // Name cell
+            // Name cell — full width
             var nameCell = el('div', { className: 'gantt-row-name' });
 
             if (t.isPhase) {
@@ -588,27 +638,28 @@
                 var span = el('span', { className: 'gantt-phase-name' }, [t.name]);
                 nameCell.appendChild(span);
             } else {
-                nameCell.appendChild(el('span', { className: 'gantt-indent' }));
-                nameCell.appendChild(document.createTextNode(t.name));
+                if (t.parent) {
+                    nameCell.appendChild(el('span', { className: 'gantt-indent' }));
+                }
+                var nameSpan = el('span', {}, [t.name]);
+                nameCell.appendChild(nameSpan);
+
+                // Inline edit on double-click
+                (function (task, spanEl, cell) {
+                    spanEl.addEventListener('dblclick', function (e) {
+                        e.stopPropagation();
+                        self._startInlineEdit(task, spanEl, cell);
+                    });
+                })(t, nameSpan, nameCell);
+
+                // Hover badges: duration + progress
+                var badges = el('div', { className: 'gantt-row-badges' });
+                badges.appendChild(el('span', { className: 'gantt-badge' }, [t.dur + 'd']));
+                var progClass = 'gantt-badge gantt-badge-prog';
+                badges.appendChild(el('span', { className: progClass }, [t.progress + '%']));
+                nameCell.appendChild(badges);
             }
             row.appendChild(nameCell);
-
-            // Duration
-            row.appendChild(el('div', { className: 'gantt-row-dur' }, [t.isPhase ? '' : String(t.dur)]));
-
-            // Progress
-            row.appendChild(el('div', { className: 'gantt-row-prog' }, [t.progress + '%']));
-
-            // Resources
-            var resCount = t.res ? t.res.length : 0;
-            var badge = el('span', {
-                className: 'gantt-res-badge' + (resCount > 0 ? ' has-res' : ''),
-                onClick: function (e) {
-                    e.stopPropagation();
-                    self._showResourceModal(t.id);
-                }
-            }, [resCount > 0 ? String(resCount) : '—']);
-            row.appendChild(el('div', { className: 'gantt-row-res' }, [badge]));
 
             self.tableBody.appendChild(row);
         });
@@ -652,30 +703,34 @@
         var w = this.totalDays * this.colW;
         ctx.clearRect(0, 0, w, HEADER_H);
 
-        ctx.fillStyle = COLOR_HEADER;
+        // White background
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, w, HEADER_H);
 
         var colW = this.colW;
         var start = this.projectStart;
 
-        // Row 1: week/month labels
-        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillStyle = '#64748b';
+        // Detect today for highlighting
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var todayDay = daysBetween(start, today);
+
+        // Row 1: week/month labels (subtle, small)
+        ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = COLOR_TEXT_MUTED;
         ctx.textAlign = 'left';
 
         if (this.zoom === 'month') {
-            // month-level: show month labels
             var prevMonth = -1;
             for (var d = 0; d < this.totalDays; d++) {
                 var dt = addDays(start, d);
                 var m = dt.getMonth();
                 if (m !== prevMonth) {
                     prevMonth = m;
-                    ctx.fillText(MONTH_NAMES[m] + ' ' + dt.getFullYear(), d * colW + 4, 16);
+                    ctx.fillText(MONTH_NAMES[m] + ' ' + dt.getFullYear(), d * colW + 4, 18);
                 }
             }
         } else {
-            // week-level
             var prevWeek = -1;
             for (var d = 0; d < this.totalDays; d++) {
                 var dt = addDays(start, d);
@@ -684,43 +739,57 @@
                     prevWeek = weekNum;
                     var wEnd = addDays(dt, 6);
                     var label = dt.getDate() + ' ' + MONTH_NAMES[dt.getMonth()] + ' - ' + wEnd.getDate() + ' ' + MONTH_NAMES[wEnd.getMonth()];
-                    ctx.fillText(label, d * colW + 4, 16);
+                    ctx.fillText(label, d * colW + 4, 18);
+
+                    // Vertical separator between weeks (not between each day)
+                    if (d > 0) {
+                        ctx.strokeStyle = COLOR_BORDER;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(d * colW + 0.5, 0);
+                        ctx.lineTo(d * colW + 0.5, HEADER_H);
+                        ctx.stroke();
+                    }
                 }
             }
         }
 
-        // Row 2: day numbers (only if zoom is day or week)
+        // Row 2: day numbers with today highlight (only if zoom is day or week)
         if (this.zoom !== 'month') {
-            ctx.font = '400 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
             ctx.textAlign = 'center';
             for (var d = 0; d < this.totalDays; d++) {
                 var dt = addDays(start, d);
                 var isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
-                ctx.fillStyle = isWeekend ? '#cbd5e1' : '#64748b';
+                var isToday = d === todayDay;
                 var x = d * colW + colW / 2;
-                ctx.fillText(String(dt.getDate()), x, 36);
+
+                // Today: blue circle behind the number (Google Calendar style)
+                if (isToday) {
+                    ctx.beginPath();
+                    ctx.arc(x, 38, 10, 0, Math.PI * 2);
+                    ctx.fillStyle = COLOR_PRIMARY;
+                    ctx.fill();
+                    ctx.font = '700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillText(String(dt.getDate()), x, 42);
+                } else {
+                    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                    ctx.fillStyle = isWeekend ? '#CBD5E1' : COLOR_TEXT_SEC;
+                    ctx.fillText(String(dt.getDate()), x, 42);
+                }
 
                 // Show day name letter for day zoom
                 if (this.zoom === 'day') {
-                    ctx.fillStyle = isWeekend ? '#cbd5e1' : '#94a3b8';
-                    ctx.fillText(DAY_NAMES_SHORT[dt.getDay()], x, 46);
+                    ctx.font = '400 9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                    ctx.fillStyle = isToday ? COLOR_PRIMARY : (isWeekend ? '#CBD5E1' : COLOR_TEXT_MUTED);
+                    ctx.fillText(DAY_NAMES_SHORT[dt.getDay()], x, HEADER_H - 2);
                 }
             }
         }
 
-        // Vertical gridlines
-        ctx.strokeStyle = '#f1f5f9';
-        ctx.lineWidth = 1;
-        for (var d = 0; d <= this.totalDays; d++) {
-            var x = d * colW;
-            ctx.beginPath();
-            ctx.moveTo(x + 0.5, 0);
-            ctx.lineTo(x + 0.5, HEADER_H);
-            ctx.stroke();
-        }
-
         // Bottom border
         ctx.strokeStyle = COLOR_BORDER;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, HEADER_H - 0.5);
         ctx.lineTo(w, HEADER_H - 0.5);
@@ -739,63 +808,83 @@
 
         ctx.clearRect(0, 0, cw, ch);
 
-        // Background
-        ctx.fillStyle = '#fff';
+        // White background
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, cw, ch);
 
-        // Weekend columns
+        // Weekend columns — barely perceptible tint
         for (var d = 0; d < this.totalDays; d++) {
             var dt = addDays(this.projectStart, d);
             if (dt.getDay() === 0 || dt.getDay() === 6) {
-                ctx.fillStyle = '#fafbfc';
+                ctx.fillStyle = '#FAFBFE';
                 ctx.fillRect(d * colW, 0, colW, ch);
             }
         }
 
-        // Vertical gridlines
-        ctx.strokeStyle = '#f1f5f9';
-        ctx.lineWidth = 1;
-        for (var d = 0; d <= this.totalDays; d++) {
-            ctx.beginPath();
-            ctx.moveTo(d * colW + 0.5, 0);
-            ctx.lineTo(d * colW + 0.5, ch);
-            ctx.stroke();
+        // Vertical gridlines — ONLY on Mondays (week start) in week/day mode, subtle
+        if (this.zoom !== 'month') {
+            ctx.strokeStyle = '#F1F5F9';
+            ctx.lineWidth = 1;
+            for (var d = 0; d < this.totalDays; d++) {
+                var dt2 = addDays(this.projectStart, d);
+                if (dt2.getDay() === 1) { // Monday
+                    ctx.beginPath();
+                    ctx.moveTo(d * colW + 0.5, 0);
+                    ctx.lineTo(d * colW + 0.5, ch);
+                    ctx.stroke();
+                }
+            }
+        } else {
+            // month mode: gridline on 1st of each month
+            ctx.strokeStyle = '#F1F5F9';
+            ctx.lineWidth = 1;
+            for (var d = 0; d < this.totalDays; d++) {
+                var dt3 = addDays(this.projectStart, d);
+                if (dt3.getDate() === 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(d * colW + 0.5, 0);
+                    ctx.lineTo(d * colW + 0.5, ch);
+                    ctx.stroke();
+                }
+            }
         }
 
-        // Horizontal gridlines
-        for (var i = 0; i <= visible.length; i++) {
+        // Horizontal gridlines — almost invisible
+        ctx.strokeStyle = '#F8FAFC';
+        ctx.lineWidth = 1;
+        for (var i = 1; i < visible.length; i++) {
             ctx.beginPath();
             ctx.moveTo(0, i * ROW_H + 0.5);
             ctx.lineTo(cw, i * ROW_H + 0.5);
             ctx.stroke();
         }
 
-        // Today line
+        // Today line — solid red with subtle glow, no dash
         var today = new Date();
         today.setHours(0, 0, 0, 0);
         var todayDay = daysBetween(this.projectStart, today);
         if (todayDay >= 0 && todayDay < this.totalDays) {
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([4, 3]);
-            ctx.beginPath();
             var tx = todayDay * colW + colW / 2;
+            // Glow
+            ctx.save();
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.15)';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
             ctx.moveTo(tx, 0);
             ctx.lineTo(tx, ch);
             ctx.stroke();
-            ctx.setLineDash([]);
+            ctx.restore();
+            // Main line
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(tx, 0);
+            ctx.lineTo(tx, ch);
+            ctx.stroke();
         }
 
-        // Selected row highlight
+        // Bars (no selected row fill — selection is shown only via left border in the table)
         var self = this;
-        visible.forEach(function (t, idx) {
-            if (self.selectedTaskId === t.id) {
-                ctx.fillStyle = COLOR_SEL;
-                ctx.fillRect(0, idx * ROW_H, cw, ROW_H);
-            }
-        });
-
-        // Bars
         visible.forEach(function (t, idx) {
             var y = idx * ROW_H + BAR_Y;
             var x = t.start * colW;
@@ -804,100 +893,126 @@
             if (t.isPhase) {
                 self._drawPhaseSummaryBar(ctx, x, y, w, idx);
             } else {
-                self._drawActivityBar(ctx, t, x, y, w);
+                var isHovered = self._hoveredTaskId === t.id;
+                var isSelected = self.selectedTaskId === t.id;
+                self._drawActivityBar(ctx, t, x, y, w, isHovered, isSelected);
             }
         });
     };
 
     Gantt.prototype._drawPhaseSummaryBar = function (ctx, x, y, w, rowIdx) {
-        var h = 8;
-        var yy = y + (BAR_H - h) / 2;
+        var barH = 4;
+        var yy = y + BAR_H / 2 - barH / 2;
 
-        // Main bar
-        ctx.fillStyle = COLOR_BLACK;
-        ctx.fillRect(x, yy, w, h);
-
-        // Left bracket
-        ctx.fillRect(x, yy, 3, BAR_H);
-        // Right bracket
-        ctx.fillRect(x + w - 3, yy, 3, BAR_H);
-
-        // Small diamond at each end
-        var dSize = 5;
+        // Thin horizontal bar with rounded caps
+        ctx.fillStyle = COLOR_PHASE_BAR;
         ctx.beginPath();
-        ctx.moveTo(x, yy + h);
-        ctx.lineTo(x + dSize, yy + h + dSize);
-        ctx.lineTo(x, yy + h + dSize * 2);
+        var r = barH / 2;
+        ctx.moveTo(x + r, yy);
+        ctx.arcTo(x + w, yy, x + w, yy + barH, r);
+        ctx.arcTo(x + w, yy + barH, x, yy + barH, r);
+        ctx.arcTo(x, yy + barH, x, yy, r);
+        ctx.arcTo(x, yy, x + w, yy, r);
+        ctx.closePath();
         ctx.fill();
 
+        // Small inverted triangles at each end
+        var triSize = 5;
+        ctx.fillStyle = COLOR_PHASE_BAR;
+
+        // Left triangle
         ctx.beginPath();
-        ctx.moveTo(x + w, yy + h);
-        ctx.lineTo(x + w - dSize, yy + h + dSize);
-        ctx.lineTo(x + w, yy + h + dSize * 2);
+        ctx.moveTo(x - 1, yy + barH);
+        ctx.lineTo(x + triSize, yy + barH);
+        ctx.lineTo(x + triSize / 2 - 0.5, yy + barH + triSize);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right triangle
+        ctx.beginPath();
+        ctx.moveTo(x + w + 1, yy + barH);
+        ctx.lineTo(x + w - triSize, yy + barH);
+        ctx.lineTo(x + w - triSize / 2 + 0.5, yy + barH + triSize);
+        ctx.closePath();
         ctx.fill();
     };
 
-    Gantt.prototype._drawActivityBar = function (ctx, t, x, y, w) {
+    Gantt.prototype._drawActivityBar = function (ctx, t, x, y, w, isHovered, isSelected) {
         var prog = t.progress || 0;
-        var bgColor, fgColor;
+        var radius = BAR_H / 2; // full pill shape
 
+        // Determine colors based on state
+        var bgColor, progFillColor;
         if (prog >= 100) {
-            bgColor = '#dcfce7';
-            fgColor = COLOR_GREEN;
+            bgColor = COLOR_GREEN;
+            progFillColor = COLOR_GREEN;
         } else if (prog > 0) {
-            bgColor = '#e2e8f0';
-            fgColor = COLOR_BLUE;
+            bgColor = COLOR_BLUE;
+            progFillColor = COLOR_PRIMARY_FILL;
         } else {
-            bgColor = '#e2e8f0';
-            fgColor = COLOR_GRAY;
+            bgColor = COLOR_BLUE;
+            progFillColor = null;
         }
 
-        // Background bar
+        // Shadow (subtle normally, stronger on hover)
+        ctx.save();
+        if (isHovered) {
+            ctx.shadowColor = 'rgba(0,0,0,0.18)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 3;
+        } else {
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetY = 1;
+        }
+
+        // Background pill — solid color with opacity
+        ctx.globalAlpha = prog >= 100 ? 0.9 : 0.85;
         ctx.fillStyle = bgColor;
         ctx.beginPath();
-        this._roundRect(ctx, x + 1, y, w - 2, BAR_H, 4);
+        this._roundRect(ctx, x + 1, y, w - 2, BAR_H, radius);
         ctx.fill();
 
-        // Shadow
-        ctx.shadowColor = 'rgba(0,0,0,0.06)';
-        ctx.shadowBlur = 3;
-        ctx.shadowOffsetY = 1;
-        ctx.fill();
+        // Reset shadow for subsequent draws
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
         ctx.shadowOffsetY = 0;
 
-        // Progress fill
-        if (prog > 0 && prog < 100) {
-            var pw = Math.max(4, (w - 2) * prog / 100);
-            ctx.fillStyle = fgColor;
-            ctx.beginPath();
-            // Clip left side with radius, right side squared if partial
+        // Progress fill overlay (darker shade from left)
+        if (prog > 0 && prog < 100 && progFillColor) {
+            var pw = Math.max(radius, (w - 2) * prog / 100);
             ctx.save();
             ctx.beginPath();
-            this._roundRect(ctx, x + 1, y, w - 2, BAR_H, 4);
+            this._roundRect(ctx, x + 1, y, w - 2, BAR_H, radius);
             ctx.clip();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = progFillColor;
             ctx.fillRect(x + 1, y, pw, BAR_H);
             ctx.restore();
         }
 
-        // Border
-        ctx.strokeStyle = prog === 0 ? '#8596a8' : (prog >= 100 ? '#15803d' : '#3577d4');
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        this._roundRect(ctx, x + 1, y, w - 2, BAR_H, 4);
-        ctx.stroke();
+        ctx.globalAlpha = 1;
 
-        // Text: percentage
-        var text = prog + '%';
-        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        var tm = ctx.measureText(text);
-        if (tm.width + 8 < w) {
-            ctx.fillStyle = (prog === 0 || prog >= 100) ? '#fff' : COLOR_DARK;
+        // Selected state: 2px dark blue border
+        if (isSelected) {
+            ctx.strokeStyle = COLOR_PRIMARY_DARK;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            this._roundRect(ctx, x + 1, y, w - 2, BAR_H, radius);
+            ctx.stroke();
+        }
+
+        // Text: percentage (only if bar is wide enough, >60px)
+        if (w > 60) {
+            var text = prog + '%';
+            ctx.font = '700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = '#FFFFFF';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(text, x + w / 2, y + BAR_H / 2 + 1);
+            ctx.fillText(text, x + w / 2, y + BAR_H / 2 + 0.5);
         }
+
+        ctx.restore();
     };
 
     Gantt.prototype._roundRect = function (ctx, x, y, w, h, r) {
@@ -919,18 +1034,18 @@
         // Clear SVG
         while (this.svgOverlay.firstChild) this.svgOverlay.removeChild(this.svgOverlay.firstChild);
 
-        // Add arrowhead marker
+        // Add arrowhead marker — refined, smaller
         var defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
         var marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
         marker.setAttribute('id', 'gantt-arrowhead');
-        marker.setAttribute('markerWidth', '8');
-        marker.setAttribute('markerHeight', '6');
-        marker.setAttribute('refX', '8');
-        marker.setAttribute('refY', '3');
+        marker.setAttribute('markerWidth', '6');
+        marker.setAttribute('markerHeight', '5');
+        marker.setAttribute('refX', '6');
+        marker.setAttribute('refY', '2.5');
         marker.setAttribute('orient', 'auto');
         var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        poly.setAttribute('points', '0 0, 8 3, 0 6');
-        poly.setAttribute('fill', '#94a3b8');
+        poly.setAttribute('points', '0 0, 6 2.5, 0 5');
+        poly.setAttribute('fill', '#CBD5E1');
         marker.appendChild(poly);
         defs.appendChild(marker);
         this.svgOverlay.appendChild(defs);
@@ -958,17 +1073,32 @@
                 var x2 = t.start * self.colW;
                 var y2 = toIdx * ROW_H + BAR_Y + BAR_H / 2;
 
-                // Path: right, down/up, then right to target
-                var midX = x1 + 12;
+                // Path with rounded corners: right, down/up, then right
+                var midX = x1 + 14;
+                var cornerR = 4;
+                var pathD;
+
+                if (Math.abs(y2 - y1) < 2) {
+                    // Same row — straight line
+                    pathD = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
+                } else {
+                    // Rounded corner path
+                    var dir = y2 > y1 ? 1 : -1;
+                    pathD = 'M' + x1 + ',' + y1 +
+                        ' L' + (midX - cornerR) + ',' + y1 +
+                        ' Q' + midX + ',' + y1 + ' ' + midX + ',' + (y1 + dir * cornerR) +
+                        ' L' + midX + ',' + (y2 - dir * cornerR) +
+                        ' Q' + midX + ',' + y2 + ' ' + (midX + cornerR) + ',' + y2 +
+                        ' L' + x2 + ',' + y2;
+                }
+
                 var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                var d = 'M' + x1 + ',' + y1 +
-                    ' L' + midX + ',' + y1 +
-                    ' L' + midX + ',' + y2 +
-                    ' L' + x2 + ',' + y2;
-                path.setAttribute('d', d);
+                path.setAttribute('d', pathD);
                 path.setAttribute('fill', 'none');
-                path.setAttribute('stroke', '#94a3b8');
+                path.setAttribute('stroke', '#CBD5E1');
                 path.setAttribute('stroke-width', '1.5');
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('stroke-linejoin', 'round');
                 path.setAttribute('marker-end', 'url(#gantt-arrowhead)');
                 self.svgOverlay.appendChild(path);
             });
@@ -1005,6 +1135,7 @@
     };
 
     Gantt.prototype._onMouseDown = function (e) {
+        if (e.button !== 0) return; // only left button
         var pos = this._getCanvasPos(e);
         var hit = this._hitTest(pos);
         if (!hit || hit.task.isPhase) return;
@@ -1076,8 +1207,11 @@
 
         if (!hit) {
             this.canvas.style.cursor = 'default';
+            if (this._hoveredTaskId !== null) {
+                this._hoveredTaskId = null;
+                this._renderCanvas(); // re-render to remove hover effect
+            }
             this._hideTooltip();
-            this._hoveredTaskId = null;
             return;
         }
 
@@ -1090,10 +1224,11 @@
             this.canvas.style.cursor = 'grab';
         }
 
-        // Tooltip
+        // Tooltip + hover effect on bar
         if (this._hoveredTaskId !== hit.task.id) {
             this._hoveredTaskId = hit.task.id;
             this._showTooltip(hit.task, e);
+            this._renderCanvas(); // re-render to apply hover shadow
         }
     };
 
@@ -1115,33 +1250,75 @@
             var startDate = addDays(self.projectStart, t.start);
             var endDate = addDays(self.projectStart, t.start + t.dur);
 
-            var resNames = '';
-            if (t.res && t.res.length > 0) {
-                var names = [];
-                t.res.forEach(function (rid) {
-                    var r = self.resources.find(function (x) { return x.id === rid; });
-                    names.push(r ? r.name || r.nombre : rid);
-                });
-                resNames = names.join(', ');
-            }
+            // Format dates in friendly style: "23 Abr -> 27 Abr (5 dias)"
+            var fmtD = function (d) {
+                return d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
+            };
+            var dateLabel = fmtD(startDate) + ' \u2192 ' + fmtD(endDate) + ' (' + t.dur + ' d\u00edas)';
 
             self.tooltip.innerHTML = '';
+
+            // Title
             self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-title' }, [t.name]));
-            self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Inicio: ', el('span', {}, [dateStr(startDate)])]));
-            self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Fin: ', el('span', {}, [dateStr(endDate)])]));
-            self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Duracion: ', el('span', {}, [t.dur + ' dias'])]));
-            self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Progreso: ', el('span', {}, [t.progress + '%'])]));
-            if (t.cost) self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Costo: ', el('span', {}, [fmtMoney(t.cost)])]));
-            if (t.income) self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Ingreso: ', el('span', {}, [fmtMoney(t.income)])]));
-            if (resNames) self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Recursos: ', el('span', {}, [resNames])]));
+
+            // Dates line
+            self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-dates' }, [dateLabel]));
+
+            // Progress mini-bar
+            var progWrap = el('div', { className: 'gantt-tooltip-progress-wrap' });
+            progWrap.appendChild(el('div', { className: 'gantt-tooltip-progress-label' }, ['Progreso: ' + t.progress + '%']));
+            var progBar = el('div', { className: 'gantt-tooltip-progress-bar' });
+            var progColor = t.progress >= 100 ? COLOR_GREEN : COLOR_PRIMARY;
+            var progFill = el('div', {
+                className: 'gantt-tooltip-progress-fill',
+                style: { width: Math.min(100, t.progress) + '%', background: progColor }
+            });
+            progBar.appendChild(progFill);
+            progWrap.appendChild(progBar);
+            self.tooltip.appendChild(progWrap);
+
+            // Cost / Income — only if > 0
+            if (t.cost > 0) {
+                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Costo: ', el('span', {}, [fmtMoney(t.cost)])]));
+            }
+            if (t.income > 0) {
+                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Ingreso: ', el('span', {}, [fmtMoney(t.income)])]));
+            }
+
+            // Resource avatars (circular initials)
+            if (t.res && t.res.length > 0) {
+                var avatarWrap = el('div', { className: 'gantt-tooltip-avatars' });
+                t.res.forEach(function (rid) {
+                    var r = self.resources.find(function (x) { return x.id === rid; });
+                    var rName = r ? (r.name || r.nombre || String(rid)) : String(rid);
+                    // Get initials (first letter of first two words)
+                    var parts = rName.split(' ');
+                    var initials = parts[0].charAt(0).toUpperCase();
+                    if (parts.length > 1) initials += parts[1].charAt(0).toUpperCase();
+                    // Random pastel color based on name
+                    var hue = rName.charCodeAt(0) * 37 % 360;
+                    var avatarColor = 'hsl(' + hue + ', 55%, 55%)';
+                    var avatar = el('div', {
+                        className: 'gantt-tooltip-avatar',
+                        style: { background: avatarColor },
+                        title: rName
+                    }, [initials]);
+                    avatarWrap.appendChild(avatar);
+                });
+                self.tooltip.appendChild(avatarWrap);
+            }
 
             // Position tooltip near mouse but within root bounds
             var rootRect = self.root.getBoundingClientRect();
             var tx = e.clientX - rootRect.left + 16;
             var ty = e.clientY - rootRect.top + 16;
 
-            // Clamp to root bounds
+            // Show with fade-in animation
             self.tooltip.style.display = 'block';
+            // Force reflow to trigger transition
+            self.tooltip.offsetHeight; // eslint-disable-line no-unused-expressions
+            self.tooltip.classList.add('visible');
+
             var ttW = self.tooltip.offsetWidth;
             var ttH = self.tooltip.offsetHeight;
             if (tx + ttW > rootRect.width) tx = tx - ttW - 32;
@@ -1156,6 +1333,7 @@
 
     Gantt.prototype._hideTooltip = function () {
         clearTimeout(this._tooltipTimer);
+        this.tooltip.classList.remove('visible');
         this.tooltip.style.display = 'none';
         this._hoveredTaskId = null;
     };
@@ -1209,7 +1387,7 @@
         // Update button states
         var self = this;
         Object.keys(this._zoomBtns).forEach(function (k) {
-            self._zoomBtns[k].className = 'gantt-btn' + (k === z ? ' active' : '');
+            self._zoomBtns[k].className = 'gantt-zoom-btn' + (k === z ? ' active' : '');
         });
 
         this._render();
@@ -1547,6 +1725,222 @@
         this.modal.onclick = function (e) {
             if (e.target === self.modal) self._closeModal();
         };
+    };
+
+    /* -------------------------------------------
+       CONTEXT MENU (Right-click on bar)
+       ------------------------------------------- */
+    Gantt.prototype._onContextMenu = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Remove any existing menu
+        var existing = this.root.querySelector('.gantt-ctx-menu');
+        if (existing) existing.remove();
+
+        var pos = this._getCanvasPos(e);
+        var hit = this._hitTest(pos);
+        if (!hit || hit.task.isPhase) return;
+
+        var self = this;
+        var t = hit.task;
+        this.selectedTaskId = t.id;
+        this._render();
+
+        var menu = el('div', { className: 'gantt-ctx-menu' });
+
+        // --- Option: Add dependency (submenu)
+        var otherTasks = this.tasks.filter(function (x) {
+            return !x.isPhase && x.id !== t.id && (!t.deps || t.deps.indexOf(x.id) === -1);
+        });
+
+        if (otherTasks.length > 0) {
+            var depItem = el('div', { className: 'gantt-ctx-item' }, [
+                '\u2192 Agregar dependencia',
+                el('span', { className: 'gantt-ctx-arrow' }, ['\u25B6'])
+            ]);
+
+            var subMenu = el('div', { className: 'gantt-ctx-sub' });
+            otherTasks.forEach(function (ot) {
+                var subItem = el('div', { className: 'gantt-ctx-sub-item' }, [ot.name]);
+                subItem.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    self._addDependency(t, ot.id);
+                    menu.remove();
+                });
+                subMenu.appendChild(subItem);
+            });
+
+            depItem.appendChild(subMenu);
+            menu.appendChild(depItem);
+        }
+
+        // --- Option: Remove dependencies
+        if (t.deps && t.deps.length > 0) {
+            var removeDepsItem = el('div', { className: 'gantt-ctx-item danger' }, ['\u2716 Quitar dependencias']);
+            removeDepsItem.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                self._removeDependencies(t);
+                menu.remove();
+            });
+            menu.appendChild(removeDepsItem);
+        }
+
+        // Separator
+        menu.appendChild(el('div', { className: 'gantt-ctx-sep' }));
+
+        // --- Option: Edit progress
+        var progItem = el('div', { className: 'gantt-ctx-item' }, ['\u270E Editar progreso']);
+        progItem.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            // Replace menu content with progress editor
+            menu.innerHTML = '';
+            var progWrap = el('div', { className: 'gantt-ctx-progress-wrap' });
+            var progInput = el('input', {
+                type: 'number',
+                className: 'gantt-ctx-progress-input',
+                value: String(t.progress),
+                min: '0',
+                max: '100'
+            });
+            var progBtn = el('button', { className: 'gantt-ctx-progress-btn' }, ['OK']);
+
+            var doSave = function () {
+                var val = Math.max(0, Math.min(100, parseInt(progInput.value) || 0));
+                t.progress = val;
+                self._persistTask(t);
+                self._render();
+                menu.remove();
+            };
+
+            progBtn.addEventListener('click', function (ev2) {
+                ev2.stopPropagation();
+                doSave();
+            });
+
+            progInput.addEventListener('keydown', function (ev2) {
+                if (ev2.key === 'Enter') {
+                    ev2.preventDefault();
+                    doSave();
+                } else if (ev2.key === 'Escape') {
+                    menu.remove();
+                }
+            });
+
+            progWrap.appendChild(el('span', { style: { fontSize: '12px', color: '#64748b' } }, ['Progreso:']));
+            progWrap.appendChild(progInput);
+            progWrap.appendChild(el('span', { style: { fontSize: '12px', color: '#64748b' } }, ['%']));
+            progWrap.appendChild(progBtn);
+            menu.appendChild(progWrap);
+
+            setTimeout(function () { progInput.focus(); progInput.select(); }, 50);
+        });
+        menu.appendChild(progItem);
+
+        // Separator
+        menu.appendChild(el('div', { className: 'gantt-ctx-sep' }));
+
+        // --- Option: View details
+        var detailItem = el('div', { className: 'gantt-ctx-item' }, ['\uD83D\uDCCB Ver detalles']);
+        detailItem.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            self._showResourceModal(t.id);
+            menu.remove();
+        });
+        menu.appendChild(detailItem);
+
+        // Position menu relative to root
+        var rootRect = this.root.getBoundingClientRect();
+        var mx = e.clientX - rootRect.left;
+        var my = e.clientY - rootRect.top;
+
+        menu.style.left = mx + 'px';
+        menu.style.top = my + 'px';
+        this.root.appendChild(menu);
+
+        // Adjust if overflows right/bottom
+        var menuRect = menu.getBoundingClientRect();
+        if (mx + menuRect.width > rootRect.width) {
+            menu.style.left = (mx - menuRect.width) + 'px';
+        }
+        if (my + menuRect.height > rootRect.height) {
+            menu.style.top = (my - menuRect.height) + 'px';
+        }
+    };
+
+    Gantt.prototype._addDependency = function (task, depId) {
+        if (!task.deps) task.deps = [];
+        if (task.deps.indexOf(depId) !== -1) return;
+
+        task.deps.push(depId);
+
+        // Cascade to enforce FS constraint
+        var dep = this._taskById(depId);
+        if (dep) {
+            var minStart = dep.start + dep.dur;
+            if (task.start < minStart) {
+                task.start = minStart;
+            }
+        }
+
+        this._persistTask(task);
+        this._render();
+    };
+
+    Gantt.prototype._removeDependencies = function (task) {
+        task.deps = [];
+        this._persistTask(task);
+        this._render();
+    };
+
+    /* -------------------------------------------
+       INLINE EDIT (double-click on name in table)
+       ------------------------------------------- */
+    Gantt.prototype._startInlineEdit = function (task, spanEl, cell) {
+        var self = this;
+        var oldName = task.name;
+
+        // Hide the span
+        spanEl.style.display = 'none';
+
+        var input = el('input', {
+            type: 'text',
+            className: 'gantt-inline-input',
+            value: oldName
+        });
+
+        // Find the indent span and insert after it
+        cell.appendChild(input);
+
+        var done = false;
+        var finish = function (save) {
+            if (done) return;
+            done = true;
+            var newName = input.value.trim();
+            if (save && newName && newName !== oldName) {
+                task.name = newName;
+                spanEl.textContent = newName;
+                self._persistTask(task);
+            }
+            input.remove();
+            spanEl.style.display = '';
+        };
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                finish(true);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                finish(false);
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            finish(true);
+        });
+
+        setTimeout(function () { input.focus(); input.select(); }, 30);
     };
 
     /* ===========================================

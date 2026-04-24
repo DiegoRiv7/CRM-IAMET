@@ -59,15 +59,13 @@
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}</span>
         </button>
 
-        {% if es_supervisor or es_ingeniero %}
-        <!-- Proyectos -->
+        <!-- Proyectos (visible para todos) -->
         <button type="button" class="crm-sb-btn" id="btnProyectos" onclick="proyectosAbrir()" data-tooltip="Proyectos">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
             <span class="crm-sb-label">Proyectos</span>
         </button>
-        {% endif %}
 
         {% if es_ingeniero %}
         <!-- Muro (ingeniero: antes de Calendario/Correo) -->
