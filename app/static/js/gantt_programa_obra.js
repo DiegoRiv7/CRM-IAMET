@@ -37,6 +37,111 @@
     var ZOOM_PRESETS = { day: 50, week: 36, month: 12 };
 
     /* ===========================================
+       TEMPLATES DE PROYECTO
+       =========================================== */
+    var GANTT_TEMPLATES = [
+        {
+            id: 'cctv',
+            name: 'Instalaci\u00f3n CCTV / Control de Acceso',
+            desc: 'Proyecto completo de videovigilancia o control de acceso',
+            icon: 'camera',
+            phases: [
+                { name: 'Levantamiento', activities: [
+                    { name: 'Toma de medidas y fotos', dur: 2 },
+                    { name: 'Revisi\u00f3n de planos', dur: 1 }
+                ]},
+                { name: 'Cotizaci\u00f3n', activities: [
+                    { name: 'Elaborar cotizaci\u00f3n', dur: 3 },
+                    { name: 'Enviar al cliente', dur: 1 },
+                    { name: 'Seguimiento', dur: 3 }
+                ]},
+                { name: 'Compra de Material', activities: [
+                    { name: 'Generar orden de compra', dur: 2 },
+                    { name: 'Esperar entrega', dur: 8 }
+                ]},
+                { name: 'Instalaci\u00f3n', activities: [
+                    { name: 'Canalizaci\u00f3n', dur: 5 },
+                    { name: 'Cableado', dur: 5 },
+                    { name: 'Montaje de equipos', dur: 3 },
+                    { name: 'Conexiones', dur: 2 }
+                ]},
+                { name: 'Puesta en Marcha', activities: [
+                    { name: 'Configuraci\u00f3n', dur: 3 },
+                    { name: 'Pruebas', dur: 2 },
+                    { name: 'Capacitaci\u00f3n', dur: 1 },
+                    { name: 'Entrega formal', dur: 1 }
+                ]}
+            ]
+        },
+        {
+            id: 'cableado',
+            name: 'Cableado Estructurado',
+            desc: 'Red de datos, voz o fibra \u00f3ptica',
+            icon: 'network',
+            phases: [
+                { name: 'Levantamiento', activities: [
+                    { name: 'Inspecci\u00f3n de sitio', dur: 2 },
+                    { name: 'Dise\u00f1o de red', dur: 3 }
+                ]},
+                { name: 'Cotizaci\u00f3n y Compra', activities: [
+                    { name: 'Cotizaci\u00f3n', dur: 3 },
+                    { name: 'Aprobaci\u00f3n cliente', dur: 5 },
+                    { name: 'Compra de material', dur: 8 }
+                ]},
+                { name: 'Ejecuci\u00f3n', activities: [
+                    { name: 'Canalizaci\u00f3n', dur: 8 },
+                    { name: 'Tendido de cable', dur: 6 },
+                    { name: 'Terminaciones', dur: 4 }
+                ]},
+                { name: 'Cierre', activities: [
+                    { name: 'Certificaci\u00f3n', dur: 3 },
+                    { name: 'Documentaci\u00f3n', dur: 2 },
+                    { name: 'Entrega', dur: 1 }
+                ]}
+            ]
+        },
+        {
+            id: 'mantenimiento',
+            name: 'Mantenimiento / P\u00f3liza',
+            desc: 'Servicio correctivo o preventivo',
+            icon: 'wrench',
+            phases: [
+                { name: 'Diagn\u00f3stico', activities: [
+                    { name: 'Evaluaci\u00f3n inicial', dur: 1 },
+                    { name: 'Reporte de diagn\u00f3stico', dur: 1 }
+                ]},
+                { name: 'Ejecuci\u00f3n', activities: [
+                    { name: 'Cotizaci\u00f3n de refacciones', dur: 2 },
+                    { name: 'Aprobaci\u00f3n', dur: 3 },
+                    { name: 'Reparaci\u00f3n/Mantenimiento', dur: 5 },
+                    { name: 'Pruebas', dur: 2 }
+                ]},
+                { name: 'Cierre', activities: [
+                    { name: 'Reporte de servicio', dur: 1 }
+                ]}
+            ]
+        },
+        {
+            id: 'custom',
+            name: 'Proyecto Personalizado',
+            desc: 'Comienza desde cero con una fase vac\u00eda',
+            icon: 'plus',
+            phases: [
+                { name: 'Fase 1', activities: [
+                    { name: 'Actividad 1', dur: 5 }
+                ]}
+            ]
+        }
+    ];
+
+    var GANTT_TPL_ICONS = {
+        camera: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+        network: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4m0 0l-7 4m7-4l7 4"/></svg>',
+        wrench: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
+        plus: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+    };
+
+    /* ===========================================
        HELPERS
        =========================================== */
     function _csrf() {
@@ -136,6 +241,8 @@
         this.headerCtx = null;
 
         this._hoveredTaskId = null;
+        this._hoveredConnector = false; // true when mouse is over the connector dot
+        this._connectingFrom = null;    // taskId when dragging a connector line
         this._tooltipTimer = null;
         this._dpr = window.devicePixelRatio || 1;
         this.viewMode = 'schedule'; // 'schedule' or 'financial'
@@ -283,6 +390,17 @@
             '.gantt-empty-text { font-size: 0.95rem; font-weight: 600; color: ' + COLOR_DARK + '; }',
             '.gantt-empty-sub { font-size: 0.8rem; color: ' + COLOR_TEXT_MUTED + '; text-align: center; line-height: 1.5; }',
 
+            /* Template cards */
+            '.gantt-templates { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 560px; margin: 0 auto; }',
+            '.gantt-tpl-card { background: #fff; border: 1.5px solid #E5E7EB; border-radius: 12px; padding: 18px; cursor: pointer; transition: all 0.15s; text-align: left; }',
+            '.gantt-tpl-card:hover { border-color: #3B82F6; box-shadow: 0 4px 12px rgba(59,130,246,0.12); transform: translateY(-1px); }',
+            '.gantt-tpl-icon { width: 36px; height: 36px; border-radius: 8px; background: #EFF6FF; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }',
+            '.gantt-tpl-name { font-size: 0.88rem; font-weight: 700; color: #1E293B; margin-bottom: 4px; }',
+            '.gantt-tpl-desc { font-size: 0.75rem; color: #64748B; }',
+            '.gantt-tpl-loading { text-align: center; padding: 40px; color: #64748B; }',
+            '.gantt-tpl-manual { font-size: 0.78rem; color: ' + COLOR_TEXT_MUTED + '; cursor: pointer; text-decoration: none; margin-top: 4px; }',
+            '.gantt-tpl-manual:hover { color: ' + COLOR_PRIMARY + '; text-decoration: underline; }',
+
             /* Main */
             '.gantt-main { display: flex; flex: 1; overflow: hidden; min-height: 0; }',
 
@@ -376,6 +494,11 @@
 
             /* Inline edit */
             '.gantt-inline-input { width: 100%; padding: 2px 6px; border: 1px solid ' + COLOR_PRIMARY + '; border-radius: 6px; font-size: 13px; font-family: inherit; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,.12); box-sizing: border-box; }',
+            '.gantt-inline-input.small { width: 40px; text-align: center; padding: 2px 4px; }',
+
+            /* Editable cell columns */
+            '.gantt-row-dur, .gantt-row-prog { width: 44px; flex-shrink: 0; text-align: center; font-size: 11px; color: ' + COLOR_TEXT_SEC + '; font-weight: 600; display: flex; align-items: center; justify-content: center; }',
+            '.gantt-row:not(.gantt-row--phase) .gantt-row-dur:hover, .gantt-row:not(.gantt-row--phase) .gantt-row-prog:hover { background: #F8FAFC; cursor: text; border-radius: 4px; }',
 
             /* EVM Dashboard Panel */
             '.gantt-evm-panel { display: flex; gap: 10px; padding: 6px 14px 8px; background: #fff; border-bottom: 1px solid ' + COLOR_BORDER + '; }',
@@ -725,18 +848,33 @@
         if (realTasks.length === 0 && this.tasks.length === 0) {
             if (mainEl) mainEl.style.display = 'none';
             if (!emptyEl) {
-                var ctaBtn = el('button', {
-                    className: 'gantt-btn gantt-btn-primary',
-                    style: { marginTop: '8px', padding: '8px 20px', fontSize: '0.85rem' },
-                    onClick: function () { self._showAddModal(); }
-                }, ['+ Agregar primera actividad']);
+                // Build template cards grid
+                var cardsGrid = el('div', { className: 'gantt-templates' });
+                GANTT_TEMPLATES.forEach(function (tpl) {
+                    var iconDiv = el('div', { className: 'gantt-tpl-icon' });
+                    iconDiv.innerHTML = GANTT_TPL_ICONS[tpl.icon] || GANTT_TPL_ICONS.plus;
+                    var card = el('div', { className: 'gantt-tpl-card', onClick: function () { self._applyTemplate(tpl); } }, [
+                        iconDiv,
+                        el('div', { className: 'gantt-tpl-name' }, [tpl.name]),
+                        el('div', { className: 'gantt-tpl-desc' }, [tpl.desc])
+                    ]);
+                    cardsGrid.appendChild(card);
+                });
+
+                var manualLink = el('a', {
+                    className: 'gantt-tpl-manual',
+                    href: '#',
+                    onClick: function (e) { e.preventDefault(); self._showAddModal(); }
+                }, ['o crear actividad manualmente']);
+
                 emptyEl = el('div', { className: 'gantt-empty' }, [
                     el('div', { className: 'gantt-empty-icon' }, [
                         el('svg', { width: '32', height: '32', fill: 'none', stroke: COLOR_TEXT_MUTED, 'stroke-width': '1.5', viewBox: '0 0 24 24' })
                     ]),
                     el('div', { className: 'gantt-empty-text' }, ['Comienza tu programa de obra']),
-                    el('div', { className: 'gantt-empty-sub' }, ['Agrega actividades para visualizar el cronograma del proyecto']),
-                    ctaBtn
+                    el('div', { className: 'gantt-empty-sub' }, ['Elige una plantilla o crea desde cero']),
+                    cardsGrid,
+                    manualLink
                 ]);
                 // Inject a refined calendar icon into the SVG
                 emptyEl.querySelector('svg').innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/><path d="M8 14h2v2H8zM14 14h2v2h-2z" fill="' + COLOR_TEXT_MUTED + '" stroke="none"/>';
@@ -768,8 +906,10 @@
         var visible = this._visibleTasks();
 
         visible.forEach(function (t) {
+            var rowClass = 'gantt-row' + (self.selectedTaskId === t.id ? ' selected' : '');
+            if (t.isPhase) rowClass += ' gantt-row--phase';
             var row = el('div', {
-                className: 'gantt-row' + (self.selectedTaskId === t.id ? ' selected' : ''),
+                className: rowClass,
                 onClick: function (e) {
                     // don't select if clicking toggle
                     if (e.target.classList.contains('gantt-toggle')) return;
@@ -778,7 +918,7 @@
                 }
             });
 
-            // Name cell — full width
+            // Name cell
             var nameCell = el('div', { className: 'gantt-row-name' });
 
             if (t.isPhase) {
@@ -800,22 +940,43 @@
                 var nameSpan = el('span', {}, [t.name]);
                 nameCell.appendChild(nameSpan);
 
-                // Inline edit on double-click
+                // Inline edit on double-click (name)
                 (function (task, spanEl, cell) {
                     spanEl.addEventListener('dblclick', function (e) {
                         e.stopPropagation();
-                        self._startInlineEdit(task, spanEl, cell);
+                        self._startCellEdit(task, 'name', spanEl, cell, { type: 'text' });
                     });
                 })(t, nameSpan, nameCell);
-
-                // Hover badges: duration + progress
-                var badges = el('div', { className: 'gantt-row-badges' });
-                badges.appendChild(el('span', { className: 'gantt-badge' }, [t.dur + 'd']));
-                var progClass = 'gantt-badge gantt-badge-prog';
-                badges.appendChild(el('span', { className: progClass }, [t.progress + '%']));
-                nameCell.appendChild(badges);
             }
             row.appendChild(nameCell);
+
+            // Duration cell
+            var durCell = el('div', { className: 'gantt-row-dur' });
+            var durSpan = el('span', {}, [String(t.dur) + 'd']);
+            durCell.appendChild(durSpan);
+            if (!t.isPhase) {
+                (function (task, sEl, cEl) {
+                    cEl.addEventListener('dblclick', function (e) {
+                        e.stopPropagation();
+                        self._startCellEdit(task, 'dur', sEl, cEl, { type: 'number', min: 1, suffix: 'd', cssClass: 'small' });
+                    });
+                })(t, durSpan, durCell);
+            }
+            row.appendChild(durCell);
+
+            // Progress cell
+            var progCell = el('div', { className: 'gantt-row-prog' });
+            var progSpan = el('span', {}, [String(t.progress) + '%']);
+            progCell.appendChild(progSpan);
+            if (!t.isPhase) {
+                (function (task, sEl, cEl) {
+                    cEl.addEventListener('dblclick', function (e) {
+                        e.stopPropagation();
+                        self._startCellEdit(task, 'progress', sEl, cEl, { type: 'number', min: 0, max: 100, suffix: '%', cssClass: 'small' });
+                    });
+                })(t, progSpan, progCell);
+            }
+            row.appendChild(progCell);
 
             self.tableBody.appendChild(row);
         });
@@ -1054,6 +1215,32 @@
                 self._drawActivityBar(ctx, t, x, y, w, isHovered, isSelected);
             }
         });
+
+        // Connector dot — drawn AFTER all bars so it sits on top
+        if (this._hoveredTaskId !== null && this.viewMode === 'schedule') {
+            for (var ci = 0; ci < visible.length; ci++) {
+                var ct = visible[ci];
+                if (ct.id !== this._hoveredTaskId || ct.isPhase) continue;
+
+                var dotX = (ct.start + ct.dur) * colW;
+                var dotY = ci * ROW_H + BAR_Y + BAR_H / 2;
+                var dotR = 4;
+
+                ctx.save();
+                // White border ring
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, dotR + 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fill();
+                // Fill — blue if hovered, gray otherwise
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+                ctx.fillStyle = this._hoveredConnector ? COLOR_PRIMARY : COLOR_GRAY;
+                ctx.fill();
+                ctx.restore();
+                break;
+            }
+        }
     };
 
     Gantt.prototype._drawPhaseSummaryBar = function (ctx, t, x, y, w, rowIdx) {
@@ -1213,6 +1400,37 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, x + w / 2, y + BAR_H / 2 + 0.5);
+        }
+
+        // Progress zone indicator — subtle line at bottom of bar on hover
+        if (isHovered) {
+            ctx.save();
+            ctx.beginPath();
+            this._roundRect(ctx, x + 1, y, w - 2, BAR_H, radius);
+            ctx.clip();
+            ctx.globalAlpha = 0.5;
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 4, y + BAR_H - 3);
+            ctx.lineTo(x + w - 4, y + BAR_H - 3);
+            ctx.stroke();
+            // Small triangles at the ends to hint "draggable"
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(x + 4, y + BAR_H - 5);
+            ctx.lineTo(x + 8, y + BAR_H - 1);
+            ctx.lineTo(x + 4, y + BAR_H - 1);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + w - 4, y + BAR_H - 5);
+            ctx.lineTo(x + w - 8, y + BAR_H - 1);
+            ctx.lineTo(x + w - 4, y + BAR_H - 1);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
         }
 
         ctx.restore();
@@ -1455,7 +1673,23 @@
         var barW = t.dur * this.colW;
         var barY = rowIdx * ROW_H + BAR_Y;
 
+        // Check connector dot first (only on hovered non-phase task)
+        if (!t.isPhase && this._hoveredTaskId === t.id) {
+            var dotCx = barX + barW;
+            var dotCy = barY + BAR_H / 2;
+            var dotR = 5; // hit radius slightly larger than visual radius (4)
+            var dx = pos.x - dotCx;
+            var dy = pos.y - dotCy;
+            if (dx * dx + dy * dy <= dotR * dotR) {
+                return { task: t, rowIdx: rowIdx, zone: 'connector' };
+            }
+        }
+
         if (pos.x >= barX && pos.x <= barX + barW && pos.y >= barY && pos.y <= barY + BAR_H) {
+            // Progress zone: bottom 6px of bar, only for non-phase tasks in schedule view
+            if (!t.isPhase && this.viewMode === 'schedule' && (pos.y >= barY + BAR_H - 6)) {
+                return { task: t, rowIdx: rowIdx, zone: 'progress' };
+            }
             var leftEdge = pos.x - barX < EDGE;
             var rightEdge = barX + barW - pos.x < EDGE;
             return { task: t, rowIdx: rowIdx, zone: leftEdge ? 'left' : (rightEdge ? 'right' : 'center') };
@@ -1472,7 +1706,32 @@
         var t = hit.task;
         this.selectedTaskId = t.id;
 
-        if (hit.zone === 'left') {
+        if (hit.zone === 'connector') {
+            // Start connecting mode — drag line from this task
+            var barX = t.start * this.colW;
+            var barW = t.dur * this.colW;
+            var barY = hit.rowIdx * ROW_H + BAR_Y;
+            this._connectingFrom = t.id;
+            this.dragState = {
+                taskId: t.id,
+                type: 'connect',
+                fromX: barX + barW,
+                fromY: barY + BAR_H / 2,
+                mouseX: pos.x,
+                mouseY: pos.y
+            };
+        } else if (hit.zone === 'progress') {
+            // Start progress drag
+            var barX2 = t.start * this.colW;
+            var barW2 = t.dur * this.colW;
+            this.dragState = {
+                taskId: t.id,
+                type: 'progress',
+                barStart: barX2,
+                barWidth: barW2,
+                origProgress: t.progress
+            };
+        } else if (hit.zone === 'left') {
             this.dragState = { taskId: t.id, type: 'resizeL', startX: pos.x, origStart: t.start, origDur: t.dur };
         } else if (hit.zone === 'right') {
             this.dragState = { taskId: t.id, type: 'resizeR', startX: pos.x, origStart: t.start, origDur: t.dur };
@@ -1489,9 +1748,30 @@
 
         var rect = this.canvas.getBoundingClientRect();
         var mx = e.clientX - rect.left + this.canvasWrap.scrollLeft;
-        var delta = Math.round((mx - this.dragState.startX) / this.colW);
+        var my = e.clientY - rect.top + this.canvasWrap.scrollTop;
         var t = this._taskById(this.dragState.taskId);
         if (!t) return;
+
+        if (this.dragState.type === 'progress') {
+            // Calculate progress based on X position relative to bar
+            var relX = mx - this.dragState.barStart;
+            var pct = Math.round(relX / this.dragState.barWidth * 100);
+            pct = Math.max(0, Math.min(100, pct));
+            t.progress = pct;
+            this._render();
+            return;
+        }
+
+        if (this.dragState.type === 'connect') {
+            // Update mouse position for the connecting line and re-render
+            this.dragState.mouseX = mx;
+            this.dragState.mouseY = my;
+            this._renderCanvas();
+            this._renderConnectLine();
+            return;
+        }
+
+        var delta = Math.round((mx - this.dragState.startX) / this.colW);
 
         if (this.dragState.type === 'move') {
             t.start = Math.max(0, this.dragState.origStart + delta);
@@ -1511,12 +1791,80 @@
         this._render();
     };
 
+    /* Draw temporary connecting line in SVG overlay */
+    Gantt.prototype._renderConnectLine = function () {
+        // Remove any previous temp line
+        var old = this.svgOverlay.querySelector('.gantt-connect-temp');
+        if (old) old.remove();
+
+        if (!this.dragState || this.dragState.type !== 'connect') return;
+
+        var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('class', 'gantt-connect-temp');
+        line.setAttribute('x1', this.dragState.fromX);
+        line.setAttribute('y1', this.dragState.fromY);
+        line.setAttribute('x2', this.dragState.mouseX);
+        line.setAttribute('y2', this.dragState.mouseY);
+        line.setAttribute('stroke', '#3B82F6');
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke-dasharray', '4,3');
+        line.setAttribute('stroke-linecap', 'round');
+        this.svgOverlay.appendChild(line);
+    };
+
     Gantt.prototype._onMouseUp = function (e) {
         if (!this.dragState) return;
 
         var taskId = this.dragState.taskId;
+        var dragType = this.dragState.type;
         var t = this._taskById(taskId);
+
+        if (dragType === 'progress') {
+            this.dragState = null;
+            this._connectingFrom = null;
+            if (t) {
+                this._persistTask(t);
+            }
+            this._render();
+            return;
+        }
+
+        if (dragType === 'connect') {
+            // Remove temp line
+            var tempLine = this.svgOverlay.querySelector('.gantt-connect-temp');
+            if (tempLine) tempLine.remove();
+
+            // Hit test at drop position to see if we landed on another bar
+            var pos = this._getCanvasPos(e);
+            // Temporarily clear connecting state for clean hitTest
+            var fromId = this.dragState.taskId;
+            this.dragState = null;
+            this._connectingFrom = null;
+
+            var hit = this._hitTest(pos);
+            if (hit && !hit.task.isPhase && hit.task.id !== fromId) {
+                // Create dependency: target depends on source (Finish-to-Start)
+                var target = hit.task;
+                if (!target.deps) target.deps = [];
+                if (target.deps.indexOf(fromId) === -1) {
+                    target.deps.push(fromId);
+                    // Enforce FS constraint
+                    var source = this._taskById(fromId);
+                    if (source) {
+                        var minStart = source.start + source.dur;
+                        if (target.start < minStart) {
+                            target.start = minStart;
+                        }
+                    }
+                    this._persistTask(target);
+                }
+            }
+            this._render();
+            return;
+        }
+
         this.dragState = null;
+        this._connectingFrom = null;
 
         if (t) {
             // Persist to server
@@ -1536,7 +1884,9 @@
 
         if (!hit) {
             this.canvas.style.cursor = 'default';
-            if (this._hoveredTaskId !== null) {
+            var needRedraw = this._hoveredTaskId !== null || this._hoveredConnector;
+            this._hoveredConnector = false;
+            if (needRedraw) {
                 this._hoveredTaskId = null;
                 this._renderCanvas(); // re-render to remove hover effect
             }
@@ -1547,17 +1897,25 @@
         // Cursor
         if (hit.task.isPhase) {
             this.canvas.style.cursor = 'default';
+        } else if (hit.zone === 'connector') {
+            this.canvas.style.cursor = 'crosshair';
+        } else if (hit.zone === 'progress') {
+            this.canvas.style.cursor = 'col-resize';
         } else if (hit.zone === 'left' || hit.zone === 'right') {
             this.canvas.style.cursor = 'ew-resize';
         } else {
             this.canvas.style.cursor = 'grab';
         }
 
+        // Track connector hover state for visual feedback
+        var wasConnector = this._hoveredConnector;
+        this._hoveredConnector = (hit.zone === 'connector');
+
         // Tooltip + hover effect on bar
-        if (this._hoveredTaskId !== hit.task.id) {
+        if (this._hoveredTaskId !== hit.task.id || wasConnector !== this._hoveredConnector) {
             this._hoveredTaskId = hit.task.id;
             this._showTooltip(hit.task, e);
-            this._renderCanvas(); // re-render to apply hover shadow
+            this._renderCanvas(); // re-render to apply hover shadow / connector dot
         }
     };
 
@@ -2293,34 +2651,67 @@
     };
 
     /* -------------------------------------------
-       INLINE EDIT (double-click on name in table)
+       GENERIC INLINE CELL EDIT
+       field: 'name' | 'dur' | 'progress'
+       opts: { type, min, max, suffix, cssClass }
        ------------------------------------------- */
-    Gantt.prototype._startInlineEdit = function (task, spanEl, cell) {
+    Gantt.prototype._startCellEdit = function (task, field, spanEl, cell, opts) {
         var self = this;
-        var oldName = task.name;
+        opts = opts || {};
+        var oldValue = task[field];
+        var inputType = opts.type || 'text';
+
+        // Value shown in the input (strip suffix for display)
+        var displayValue = (field === 'name') ? oldValue : String(oldValue);
 
         // Hide the span
         spanEl.style.display = 'none';
 
-        var input = el('input', {
-            type: 'text',
-            className: 'gantt-inline-input',
-            value: oldName
-        });
+        var inputClass = 'gantt-inline-input';
+        if (opts.cssClass) inputClass += ' ' + opts.cssClass;
 
-        // Find the indent span and insert after it
+        var attrs = {
+            type: inputType,
+            className: inputClass,
+            value: displayValue
+        };
+        if (opts.min !== undefined) attrs.min = String(opts.min);
+        if (opts.max !== undefined) attrs.max = String(opts.max);
+
+        var input = el('input', attrs);
         cell.appendChild(input);
 
         var done = false;
         var finish = function (save) {
             if (done) return;
             done = true;
-            var newName = input.value.trim();
-            if (save && newName && newName !== oldName) {
-                task.name = newName;
-                spanEl.textContent = newName;
-                self._persistTask(task);
+
+            if (save) {
+                var rawVal = input.value.trim();
+                var newValue;
+                if (field === 'name') {
+                    newValue = rawVal;
+                    if (!newValue) { /* empty name — cancel */ input.remove(); spanEl.style.display = ''; return; }
+                } else if (field === 'dur') {
+                    newValue = Math.max(1, parseInt(rawVal) || 1);
+                } else if (field === 'progress') {
+                    var parsed = parseInt(rawVal);
+                    if (isNaN(parsed)) parsed = 0;
+                    newValue = Math.max(0, Math.min(100, parsed));
+                } else {
+                    newValue = rawVal;
+                }
+
+                if (newValue !== oldValue) {
+                    task[field] = newValue;
+                    self._persistTask(task);
+                    self._render();
+                    input.remove();
+                    return;
+                }
             }
+
+            // No change or cancel — restore display
             input.remove();
             spanEl.style.display = '';
         };
@@ -2340,6 +2731,93 @@
         });
 
         setTimeout(function () { input.focus(); input.select(); }, 30);
+    };
+
+    /* Backward-compatible wrapper */
+    Gantt.prototype._startInlineEdit = function (task, spanEl, cell) {
+        this._startCellEdit(task, 'name', spanEl, cell, { type: 'text' });
+    };
+
+    /* -------------------------------------------
+       APPLY TEMPLATE
+       ------------------------------------------- */
+    Gantt.prototype._applyTemplate = function (template) {
+        var self = this;
+        var proyectoId = this.proyectoId;
+        var startDate = new Date(this.projectStart);
+
+        // Show loading state
+        var emptyEl = this.root.querySelector('.gantt-empty');
+        if (emptyEl) {
+            emptyEl.innerHTML = '';
+            var loadingDiv = el('div', { className: 'gantt-tpl-loading' }, [
+                el('div', { style: { marginBottom: '12px', fontSize: '1.1rem', fontWeight: '600', color: '#1E293B' } }, ['Creando programa de obra...']),
+                el('div', {}, ['Aplicando plantilla: ' + template.name])
+            ]);
+            emptyEl.appendChild(loadingDiv);
+        }
+
+        var cursor = new Date(startDate);
+        var phaseIndex = 0;
+
+        function createNextPhase() {
+            if (phaseIndex >= template.phases.length) {
+                // All done — reload data
+                self._loadData();
+                return;
+            }
+
+            var phase = template.phases[phaseIndex];
+            phaseIndex++;
+
+            _fetch('/app/api/proyecto/' + proyectoId + '/gantt/fase/', {
+                method: 'POST',
+                body: { nombre: phase.name }
+            }).then(function (resp) {
+                if (!resp || !resp.fase) {
+                    console.error('Gantt: error creating phase', phase.name, resp);
+                    createNextPhase();
+                    return;
+                }
+
+                var faseId = resp.fase.id;
+                var actIndex = 0;
+
+                function createNextActivity() {
+                    if (actIndex >= phase.activities.length) {
+                        createNextPhase();
+                        return;
+                    }
+
+                    var act = phase.activities[actIndex];
+                    actIndex++;
+
+                    _fetch('/app/api/proyecto/' + proyectoId + '/gantt/', {
+                        method: 'POST',
+                        body: {
+                            nombre: act.name,
+                            fase_id: faseId,
+                            fecha_inicio: dateStr(cursor),
+                            duracion_dias: act.dur
+                        }
+                    }).then(function () {
+                        cursor = addDays(cursor, act.dur);
+                        createNextActivity();
+                    }).catch(function (err) {
+                        console.error('Gantt: error creating activity', act.name, err);
+                        cursor = addDays(cursor, act.dur);
+                        createNextActivity();
+                    });
+                }
+
+                createNextActivity();
+            }).catch(function (err) {
+                console.error('Gantt: error creating phase', phase.name, err);
+                createNextPhase();
+            });
+        }
+
+        createNextPhase();
     };
 
     /* ===========================================
