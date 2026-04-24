@@ -252,15 +252,18 @@
             {% else %}
             <div class="crm-tabs">
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
                     {% if tab_activo == 'crm' %}<span class="crm-tab-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>{% endif %}
                 </a>
                 <a href="?tab=prospectos&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
                     Prospectos
                 </a>
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
                     Campañas
                 </a>
