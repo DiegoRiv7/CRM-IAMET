@@ -10787,30 +10787,35 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .crm-kanban-col--prospecto.collapsed .crm-kanban-collapsed-body { display: flex; }
 .crm-kanban-col--prospecto.collapsed .crm-kanban-col-body { display: none; }
 
-/* Dashboard: barra superior con toggle centrado + period pills a la derecha */
+/* Dashboard: barra superior con toggle centrado + period pills a la derecha.
+   Override de la regla general .crm-page-sidebar .crm-bar que posiciona
+   .crm-bar-right como absolute (eso causaba que se superpusiera al toggle). */
 .crm-page-sidebar .crm-bar.crm-bar--dashboard {
     display: flex !important;
-    align-items: center;
-    justify-content: space-between;
+    align-items: center !important;
+    justify-content: space-between !important;
     gap: 10px;
     padding: 10px 14px !important;
 }
-.crm-bar--dashboard > .crm-tabs--dashboard {
-    margin: 0 auto !important;
+.crm-page-sidebar .crm-bar.crm-bar--dashboard::before {
+    content: '';
+    flex: 1 1 0;
+}
+.crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard {
+    margin: 0 !important;
     flex: 0 0 auto;
 }
 .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-bar-right {
-    display: flex;
+    position: static !important;
+    transform: none !important;
+    top: auto !important;
+    right: auto !important;
+    display: flex !important;
     align-items: center;
     gap: 8px;
     flex: 1 1 0;
     justify-content: flex-end;
     min-width: 0;
-}
-/* Placeholder para balancear la tabs en el centro — creamos un pseudo-left equivalent */
-.crm-bar--dashboard::before {
-    content: '';
-    flex: 1 1 0;
 }
 
 /* Strip café default para prospectos, sobrescribe los defaults por data-tipo
