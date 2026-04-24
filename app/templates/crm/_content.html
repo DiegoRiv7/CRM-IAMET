@@ -420,43 +420,8 @@
             <div class="crm-facet-chips" id="crmFacetChips"></div>
         </div>
 
-        <!-- VISTA CARDS (unica y predeterminada) -->
+        <!-- VISTA CARDS (unica y predeterminada). Estilos base .crm-postit movidos a crm.css para reusarse en kanban de Prospectos. -->
         <div id="crmViewCards" style="display:none;">
-            <style>
-                #crmViewCards {
-                    background: transparent;
-                    padding: 8px 0 24px;
-                    margin: 0;
-                }
-                .crm-postit {
-                    background: #fff;
-                    border: 1px solid #E5E7EB;
-                    border-radius: 14px;
-                    padding: 22px 20px 16px;
-                    padding-top: 24px;
-                    cursor: pointer;
-                    position: relative;
-                    overflow: hidden;
-                    box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.03);
-                    display: flex;
-                    flex-direction: column;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-                }
-                .crm-postit:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 12px 24px -8px rgba(15,23,42,0.12), 0 4px 8px -2px rgba(15,23,42,0.06);
-                    border-color: #CBD5E1;
-                }
-                .crm-postit > .crm-pin {
-                    position: absolute; top: 8px; right: 8px; z-index: 6;
-                    cursor: pointer; transition: transform 0.15s, opacity 0.15s;
-                    opacity: 0;
-                }
-                .crm-postit > .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
-                .crm-postit:hover > .crm-pin { opacity: 0.3; }
-                .crm-postit:hover > .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
-                .crm-postit:hover > .crm-pin.pinned { opacity: 1; }
-            </style>
 
             <div id="crmCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
                 {% for item in tabla_data %}
@@ -692,40 +657,24 @@
         </table>
         </div>
         {% elif tab_activo == 'prospectos' %}
-        <!-- Toolbar: Filtro + Ordenar (izq) + Nuevo Prospecto + Period (der) -->
-        <div class="crm-facet-bar crm-facet-bar--minimal pk-toolbar">
-            <div class="pk-toolbar-left">
-                <div class="pk-pop-wrap">
-                    <button type="button" class="crm-facet-btn" id="pkBtnFiltro" title="Filtrar">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                        <span>Filtro</span>
-                    </button>
-                    <div class="pk-pop" id="pkPopFilter" style="display:none;"></div>
-                </div>
-                <div class="pk-pop-wrap">
-                    <button type="button" class="crm-facet-btn" id="pkBtnOrdenar" title="Ordenar">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-                        <span>Ordenar</span>
-                    </button>
-                    <div class="pk-pop" id="pkPopSort" style="display:none;"></div>
-                </div>
-                <button type="button" class="crm-facet-btn crm-facet-clear" id="pkBtnClear" style="display:none;">Limpiar</button>
+        <!-- Toolbar: Filtro + Ordenar (izq) + Nuevo Prospecto (der) -->
+        <div class="crm-bar-left pk-toolbar-left" style="padding: 8px 14px 0;">
+            <div class="pk-pop-wrap">
+                <button type="button" class="crm-facet-btn crm-facet-add" id="pkBtnFiltro" title="Filtrar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>Filtro</span>
+                </button>
+                <div class="pk-pop" id="pkPopFilter" style="display:none;"></div>
             </div>
+            <div class="pk-pop-wrap">
+                <button type="button" class="crm-facet-btn crm-facet-sort" id="pkBtnOrdenar" title="Ordenar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                    <span id="pkSortLabel">Ordenar</span>
+                </button>
+                <div class="pk-pop" id="pkPopSort" style="display:none;"></div>
+            </div>
+            <button type="button" class="crm-facet-btn crm-facet-clear" id="pkBtnClear" style="display:none;">Limpiar</button>
             <div style="flex:1;"></div>
-            <div class="crm-period-pills" id="crmPeriodPills">
-                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    <span id="pillPeriodoLabel">Periodo</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                {% if es_supervisor %}
-                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                    <span id="pillVendedorLabel">Vendedores</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                {% endif %}
-            </div>
             <button type="button" class="crm-facet-btn crm-facet-new" id="btnNuevoProspectoKanban"
                 onclick="var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Titulo de la prospeccion';if(l2)l2.textContent='Prospecto';document.getElementById('widgetNuevoProspecto').classList.add('active');">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -733,10 +682,7 @@
             </button>
         </div>
 
-        <!-- Kanban container (reusa .crm-kanban-board + .crm-kanban-col para mantener look & feel) -->
-        <div class="crm-kanban-wrap pk-kanban-wrap-v2">
-            <div class="crm-kanban-board pk-board" id="pkKanbanBoard"></div>
-        </div>
+        {% include "crm/_content_prospectos_kanban.html" %}
 
         {% elif tab_activo == 'prospeccion' %}
         <!-- Period bar + botón nuevo prospecto -->

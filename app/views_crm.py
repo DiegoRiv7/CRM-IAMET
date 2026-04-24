@@ -584,6 +584,121 @@ def crm_home(request):
     # Recalculate progress based on the correct metric vs correct meta (sin cap para mostrar > 100%)
     progreso = int((widget_metric / meta * 100)) if meta > 0 else 0
 
+    # ── Prospectos kanban: cargar cuando el tab activo es 'prospectos' ──
+    prospectos_por_etapa = None
+    if tab_activo == 'prospectos':
+        from .models import Prospecto
+        ahora_local = timezone.now()
+        ETAPA_PROB = {
+            'identificado': 10, 'calificado': 25, 'reunion': 45,
+            'en_progreso': 65, 'procesado': 85, 'cerrado_ganado': 100, 'cerrado_perdido': 0,
+        }
+        ETAPA_LBL = {
+            'identificado': 'Identificado', 'calificado': 'Calificado',
+            'reunion': 'Reunión', 'en_progreso': 'En Progreso', 'procesado': 'Procesado',
+            'cerrado_ganado': 'Cerrado', 'cerrado_perdido': 'Perdido',
+        }
+        # Orden visible en el kanban (cerrado_perdido no se muestra en columnas; se filtra)
+        ETAPAS_ORDER = ['identificado', 'calificado', 'reunion', 'en_progreso', 'procesado', 'cerrado_ganado']
+
+        # QuerySet base
+        p_qs = Prospecto.objects.select_related('cliente', 'contacto', 'usuario').prefetch_related('actividades')
+
+        # Filtro de periodo (por fecha_creacion)
+        if desde_date or hasta_date:
+            if desde_date:
+                p_qs = p_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date:
+                p_qs = p_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                p_qs = p_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                meses_int = []
+                for m in meses_list:
+                    try: meses_int.append(int(m))
+                    except (ValueError, TypeError): pass
+                if meses_int:
+                    p_qs = p_qs.filter(fecha_creacion__month__in=meses_int)
+
+        # Visibilidad
+        if not es_supervisor:
+            usuarios_visibles = get_usuarios_visibles_ids(user)
+            if usuarios_visibles is None:
+                pass
+            elif len(usuarios_visibles) == 1:
+                p_qs = p_qs.filter(usuario=user)
+            else:
+                p_qs = p_qs.filter(usuario_id__in=usuarios_visibles)
+        elif vendedores_ids:
+            p_qs = p_qs.filter(usuario_id__in=vendedores_ids)
+
+        # Excluir perdidos (no se muestran en el kanban)
+        p_qs = p_qs.exclude(etapa='cerrado_perdido')
+
+        # Construir estructura por etapa con metadata de actividad
+        prospectos_items = []
+        for p in p_qs:
+            acts_pend = [a for a in p.actividades.all() if (not a.completada) and a.fecha_programada]
+            acts_pend.sort(key=lambda a: a.fecha_programada)
+
+            tiene_venc = False
+            dias_venc = 0
+            minutos_prox = None
+            dias_prox = None
+            act_txt = ''
+
+            if acts_pend:
+                prox = acts_pend[0]
+                delta = prox.fecha_programada - ahora_local
+                total_sec = delta.total_seconds()
+                act_txt = (prox.descripcion[:80] if prox.descripcion else prox.get_tipo_display())
+                if total_sec < 0:
+                    tiene_venc = True
+                    dias_venc = max(0, int(abs(total_sec) / 86400))
+                else:
+                    minutos_prox = int(total_sec / 60)
+                    dias_prox = int(total_sec / 86400)
+
+            prospectos_items.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'cliente': p.cliente,
+                'contacto': p.contacto,
+                'usuario': p.usuario,
+                'usuario_nombre': (p.usuario.get_full_name() or p.usuario.username) if p.usuario else '',
+                'producto': p.producto or '',
+                'area': p.area or '',
+                'tipo_pipeline': p.tipo_pipeline,
+                'etapa': p.etapa,
+                'etapa_label': ETAPA_LBL.get(p.etapa, p.etapa),
+                'probabilidad': ETAPA_PROB.get(p.etapa, 0),
+                'tiene_actividad_vencida': tiene_venc,
+                'dias_vencida': dias_venc,
+                'minutos_hasta_proxima': minutos_prox,
+                'dias_hasta_proxima': dias_prox,
+                'actividad_proxima': act_txt,
+                'fecha_actualizacion': p.fecha_actualizacion,
+                'fecha_creacion': p.fecha_creacion,
+            })
+
+        # Agrupar por etapa preservando orden
+        prospectos_por_etapa = []
+        for etapa_key in ETAPAS_ORDER:
+            items = [x for x in prospectos_items if x['etapa'] == etapa_key]
+            # Ordenar: vencidas primero (más días), luego por fecha desc
+            items.sort(key=lambda x: (
+                0 if x['tiene_actividad_vencida'] else 1,
+                -(x['dias_vencida'] or 0),
+                -int(x['fecha_actualizacion'].timestamp()) if x['fecha_actualizacion'] else 0,
+            ))
+            prospectos_por_etapa.append({
+                'key': etapa_key,
+                'label': ETAPA_LBL.get(etapa_key, etapa_key),
+                'items': items,
+                'count': len(items),
+            })
+
     context = {
         'widget_label': widget_label,
         'widget_metric': widget_metric,
@@ -625,6 +740,7 @@ def crm_home(request):
         'es_supervisor_de_grupo': _es_supervisor_de_grupo(user),
         'etapas_pipeline_json': _get_etapas_pipeline_json(),
         'pipelines_list': list(EtapaPipeline.objects.values_list('pipeline', flat=True).distinct().order_by('pipeline')) if EtapaPipeline.objects.exists() else ['runrate', 'proyecto'],
+        'prospectos_por_etapa': prospectos_por_etapa,
     }
     return render(request, 'crm_home.html', context)
 

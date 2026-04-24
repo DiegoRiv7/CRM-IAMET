@@ -10593,6 +10593,44 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   POSTIT CARD — estilos base (movidos desde <style> inline en tab=crm
+   para que apliquen también en tab=prospectos).
+   ═══════════════════════════════════════════════════════════════════ */
+#crmViewCards {
+    background: transparent;
+    padding: 8px 0 24px;
+    margin: 0;
+}
+.crm-postit {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 22px 20px 16px;
+    padding-top: 24px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.03);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.crm-postit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -8px rgba(15,23,42,0.12), 0 4px 8px -2px rgba(15,23,42,0.06);
+    border-color: #CBD5E1;
+}
+.crm-postit > .crm-pin {
+    position: absolute; top: 8px; right: 8px; z-index: 6;
+    cursor: pointer; transition: transform 0.15s, opacity 0.15s;
+    opacity: 0;
+}
+.crm-postit > .crm-pin.pinned { opacity: 1; transform: rotate(-30deg); }
+.crm-postit:hover > .crm-pin { opacity: 0.3; }
+.crm-postit:hover > .crm-pin:hover { opacity: 1; transform: rotate(-30deg) scale(1.15); }
+.crm-postit:hover > .crm-pin.pinned { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════
    PROSPECTOS KANBAN (tab=prospectos) — reusa .crm-kanban-* y .crm-postit,
    con variant café vía .crm-postit--prospecto.
    ═══════════════════════════════════════════════════════════════════ */
@@ -10611,9 +10649,10 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     gap: 10px;
 }
 .pk-toolbar-left {
-    display: flex;
+    display: flex !important;
     align-items: center;
     gap: 6px;
+    width: 100%;
 }
 .pk-pop-wrap {
     position: relative;
@@ -10671,22 +10710,14 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     color: #78350F;
 }
 
-/* Variant café — override del .crm-postit para prospectos */
-.crm-postit--prospecto {
-    background: #FFFBF5;
-    border-color: #E8DDD0;
-}
-.crm-postit--prospecto .crm-postit-strip {
-    background: linear-gradient(90deg, #92400E 0%, #B45309 100%);
-}
-.crm-postit--prospecto .pk-card-title {
-    color: #78350F;
-}
+/* Variant café — override del .crm-postit para prospectos.
+   Mantiene el mismo fondo blanco y estructura; solo cambia color del título,
+   del strip y del hover para diferenciar visualmente del azul/morado de Oportunidades. */
+.crm-postit--prospecto .opp-name-link { color: #78350F; }
 .crm-postit--prospecto:hover {
     border-color: #C2956C;
-    box-shadow: 0 8px 22px rgba(146, 64, 14, 0.12);
+    box-shadow: 0 12px 24px -8px rgba(146, 64, 14, 0.18), 0 4px 8px -2px rgba(146, 64, 14, 0.08);
 }
-.crm-postit--prospecto .opp-name-link { color: #78350F; }
 
 /* Chips tipo (proyecto/runrate) en versión café */
 .crm-postit--prospecto .pk-chip-proyecto {
@@ -10770,14 +10801,7 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
     box-shadow: 0 2px 13px rgba(220, 38, 38, 0.5);
 }
 
-/* Vencida (card-vencida + heat-X) — full rojo heredado con tinte café en el fondo */
-.crm-postit--prospecto.card-vencida {
-    background: #FEF4EC;
-    border-color: #FECACA;
-}
-.crm-postit--prospecto.card-vencida .crm-postit-strip {
-    /* El .card-vencida.heat-X CSS existente ya pinta rojos; solo overrideamos
-       el default base con café+rojo para que el strip siempre marque origen café */
-    background: linear-gradient(90deg, #92400E 0%, #EF4444 100%);
-}
+/* Vencidas: el .crm-postit.card-vencida.heat-X general ya pinta fondo rojo +
+   su strip rojo. No sobrescribir — queremos que se vea idéntico al heat-map
+   de Oportunidades para alertar igual de fuerte. */
 
