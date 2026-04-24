@@ -159,7 +159,7 @@ def api_prospectos_lista(request):
     except ValueError:
         anio_int = now.year
 
-    qs = Prospecto.objects.select_related('cliente', 'contacto', 'usuario')
+    qs = Prospecto.objects.select_related('cliente', 'contacto', 'usuario').prefetch_related('actividades')
 
     # Filtro por fecha de creacion (ano, mes)
     qs = qs.filter(fecha_creacion__year=anio_int)
@@ -181,8 +181,54 @@ def api_prospectos_lista(request):
     elif vendedores_ids:
         qs = qs.filter(usuario_id__in=vendedores_ids)
 
+    # Probabilidad estimada por etapa (para pintar el círculo de progreso en kanban)
+    ETAPA_PROBABILIDAD = {
+        'identificado': 10,
+        'calificado': 25,
+        'reunion': 45,
+        'en_progreso': 65,
+        'procesado': 85,
+        'cerrado_ganado': 100,
+        'cerrado_perdido': 0,
+    }
+    ETAPA_LABEL_CORTO = {
+        'identificado': 'Identificado',
+        'calificado': 'Calificado',
+        'reunion': 'Reunión',
+        'en_progreso': 'En Progreso',
+        'procesado': 'Procesado',
+        'cerrado_ganado': 'Cerrado',
+        'cerrado_perdido': 'Perdido',
+    }
+
+    ahora_ts = timezone.now()
     rows = []
     for p in qs:
+        # Calcular actividad próxima y vencida a partir de ProspectoActividad
+        acts_pend = [a for a in p.actividades.all() if not a.completada and a.fecha_programada]
+        acts_pend.sort(key=lambda a: a.fecha_programada)
+
+        tiene_venc = False
+        dias_venc = 0
+        minutos_hasta_prox = None
+        dias_hasta_prox = None
+        actividad_proxima_txt = ''
+
+        if acts_pend:
+            prox = acts_pend[0]
+            delta = prox.fecha_programada - ahora_ts
+            minutos = int(delta.total_seconds() / 60)
+            actividad_proxima_txt = prox.descripcion[:80] if prox.descripcion else prox.get_tipo_display()
+
+            if minutos < 0:
+                tiene_venc = True
+                dias_venc = max(0, int(abs(delta.total_seconds()) / 86400))
+            else:
+                minutos_hasta_prox = minutos
+                dias_hasta_prox = int(delta.total_seconds() / 86400)
+
+        probabilidad = ETAPA_PROBABILIDAD.get(p.etapa, 0)
+
         rows.append({
             'id': p.id,
             'nombre': p.nombre,
@@ -193,8 +239,15 @@ def api_prospectos_lista(request):
             'producto': p.producto or '-',
             'tipo_pipeline': p.tipo_pipeline,
             'etapa': p.etapa,
+            'etapa_label': ETAPA_LABEL_CORTO.get(p.etapa, p.etapa),
+            'probabilidad': probabilidad,
             'usuario_id': p.usuario_id,
             'usuario_nombre': (p.usuario.get_full_name() or p.usuario.username) if p.usuario else '',
+            'tiene_actividad_vencida': tiene_venc,
+            'dias_vencida': dias_venc,
+            'minutos_hasta_proxima': minutos_hasta_prox,
+            'dias_hasta_proxima': dias_hasta_prox if dias_hasta_prox is not None else -1,
+            'actividad_proxima': actividad_proxima_txt,
             'fecha_actualizacion': int(p.fecha_actualizacion.timestamp()) if p.fecha_actualizacion else 0,
             'fecha_iso': p.fecha_actualizacion.strftime('%d/%m/%Y') if p.fecha_actualizacion else '',
         })

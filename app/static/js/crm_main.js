@@ -1605,11 +1605,11 @@
                 var _earlyCharts = document.getElementById('ckChartsSection');
                 if (_earlyKpi) _earlyKpi.style.display = 'none';
                 if (_earlyCharts) _earlyCharts.style.display = 'none';
-                // Update selector buttons immediately
+                // Update selector buttons immediately (toggle .active — los tabs dashboard usan .crm-tab)
                 var _eOpp = document.getElementById('crmModeOpp');
                 var _eProsp = document.getElementById('crmModeProsp');
-                if (_eOpp) { _eOpp.style.background = 'transparent'; _eOpp.style.color = '#86868B'; }
-                if (_eProsp) { _eProsp.style.background = '#5856D6'; _eProsp.style.color = '#fff'; }
+                if (_eOpp) _eOpp.classList.remove('active');
+                if (_eProsp) _eProsp.classList.add('active');
             }
 
             window._crmSetMode = function(mode) {

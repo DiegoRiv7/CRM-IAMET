@@ -6905,7 +6905,7 @@
 /* Chart cards — Apple Liquid Glass */
 .ck-chart-card {
     position: relative;
-    height: 300px;
+    height: clamp(280px, 36vh, 420px);
     overflow: hidden;
     padding: 16px 18px 12px;
     background: linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.45));
@@ -10593,204 +10593,191 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   PROSPECTOS KANBAN (tab=prospectos)
+   PROSPECTOS KANBAN (tab=prospectos) — reusa .crm-kanban-* y .crm-postit,
+   con variant café vía .crm-postit--prospecto.
    ═══════════════════════════════════════════════════════════════════ */
-.pk-kanban-wrap {
-    padding: 8px 12px 40px;
+.pk-kanban-wrap-v2 {
+    padding: 0 12px 40px;
 }
-.pk-kanban {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(220px, 1fr));
-    gap: 12px;
-    align-items: start;
+.pk-board {
+    /* Asegurar que herede altura del kanban de Oportunidades */
+    min-height: 60vh;
 }
-.pk-col {
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
-    border-radius: 14px;
-    padding: 10px 8px;
-    min-height: 320px;
-    display: flex;
-    flex-direction: column;
-}
-.pk-col-head {
+
+/* Toolbar (Filtro + Ordenar + Nuevo + Período) */
+.pk-toolbar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 8px 10px;
-    border-bottom: 1px solid #F0F0F3;
-    margin-bottom: 8px;
+    gap: 10px;
 }
-.pk-col-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-.pk-col-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #374151;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.pk-col-count {
-    font-size: 0.7rem;
-    font-weight: 800;
-    padding: 2px 8px;
-    border-radius: 8px;
-    background: #fff;
-    color: #4B5563;
-    border: 1px solid #E5E7EB;
-    flex-shrink: 0;
-}
-.pk-col-body {
+.pk-toolbar-left {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
-    overflow-y: auto;
-    max-height: calc(100vh - 260px);
-    padding: 2px;
+    align-items: center;
+    gap: 6px;
 }
-.pk-col-body::-webkit-scrollbar { width: 6px; }
-.pk-col-body::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 3px; }
-
-/* Cards de prospecto */
-.pk-card {
+.pk-pop-wrap {
+    position: relative;
+}
+.pk-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 200;
+    min-width: 220px;
+    max-height: 420px;
+    overflow-y: auto;
     background: #fff;
     border: 1px solid #E5E7EB;
     border-radius: 12px;
-    padding: 10px 12px;
-    cursor: pointer;
-    transition: transform 0.12s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    padding: 8px;
 }
-.pk-card:hover {
-    transform: translateY(-1px);
-    border-color: #BFDBFE;
-    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.08);
-}
-.pk-card-title {
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: #1D1D1F;
-    line-height: 1.25;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-.pk-card-cliente {
+.pk-pop-title {
     font-size: 0.7rem;
-    font-weight: 600;
-    color: #6B7280;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.pk-card-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 2px;
-}
-.pk-card-chip {
-    font-size: 0.6rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: #F3F4F6;
-    color: #4B5563;
-    border: 1px solid #E5E7EB;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-}
-.pk-card-chip--proyecto {
-    background: #F5F3FF;
-    color: #7C3AED;
-    border-color: #DDD6FE;
-}
-.pk-card-chip--runrate {
-    background: #EFF6FF;
-    color: #2563EB;
-    border-color: #BFDBFE;
-}
-.pk-card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    margin-top: 4px;
-    padding-top: 6px;
-    border-top: 1px solid #F3F4F6;
-}
-.pk-card-owner {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: #6B7280;
-    min-width: 0;
-}
-.pk-card-avatar {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #0052D4;
-    color: #fff;
-    font-size: 0.58rem;
     font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    color: #1D1D1F;
+    padding: 6px 8px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
-.pk-card-owner-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.pk-card-fecha {
+.pk-pop-section {
     font-size: 0.6rem;
+    font-weight: 700;
+    color: #9CA3AF;
+    padding: 10px 8px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-top: 1px solid #F1F5F9;
+    margin-top: 4px;
+}
+.pk-pop-section:first-of-type { border-top: none; margin-top: 0; }
+.pk-pop-item {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    background: transparent;
+    color: #374151;
+    font-size: 0.78rem;
     font-weight: 600;
-    color: #9CA3AF;
-    flex-shrink: 0;
+    text-align: left;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
 }
-.pk-col-empty {
-    font-size: 0.7rem;
-    color: #9CA3AF;
-    font-style: italic;
-    padding: 18px 10px;
-    text-align: center;
-    border: 1px dashed #E5E7EB;
-    border-radius: 10px;
-    background: #fff;
-}
-.pk-empty {
-    padding: 60px 12px;
-    text-align: center;
+.pk-pop-item:hover { background: #F3F4F6; }
+.pk-pop-item.active {
+    background: #FAF6F0;
+    color: #78350F;
 }
 
-/* Responsive: scroll horizontal en pantallas chicas */
-@media (max-width: 1200px) {
-    .pk-kanban {
-        display: flex;
-        overflow-x: auto;
-        padding-bottom: 6px;
-    }
-    .pk-col { min-width: 240px; flex: 0 0 240px; }
+/* Variant café — override del .crm-postit para prospectos */
+.crm-postit--prospecto {
+    background: #FFFBF5;
+    border-color: #E8DDD0;
+}
+.crm-postit--prospecto .crm-postit-strip {
+    background: linear-gradient(90deg, #92400E 0%, #B45309 100%);
+}
+.crm-postit--prospecto .pk-card-title {
+    color: #78350F;
+}
+.crm-postit--prospecto:hover {
+    border-color: #C2956C;
+    box-shadow: 0 8px 22px rgba(146, 64, 14, 0.12);
+}
+.crm-postit--prospecto .opp-name-link { color: #78350F; }
+
+/* Chips tipo (proyecto/runrate) en versión café */
+.crm-postit--prospecto .pk-chip-proyecto {
+    background: #F0E8DE;
+    color: #5B3A1A;
+    border-color: #D6C3A8;
+}
+.crm-postit--prospecto .pk-chip-runrate {
+    background: #FAF0E0;
+    color: #78350F;
+    border-color: #E8D2AE;
+}
+
+/* Columna kanban variante prospectos — header con tono café */
+.crm-kanban-col--prospecto .crm-kanban-stage-name {
+    color: #78350F;
+}
+.crm-kanban-col--prospecto .crm-kanban-count {
+    background: #FAF0E0;
+    color: #78350F;
+    border-color: #E8D2AE;
+}
+.crm-kanban-col--prospecto .crm-kanban-total-value {
+    color: #78350F;
+}
+
+/* Dashboard: barra superior con toggle centrado + period pills a la derecha */
+.crm-page-sidebar .crm-bar.crm-bar--dashboard {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px !important;
+}
+.crm-bar--dashboard > .crm-tabs--dashboard {
+    margin: 0 auto !important;
+    flex: 0 0 auto;
+}
+.crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 0;
+    justify-content: flex-end;
+    min-width: 0;
+}
+/* Placeholder para balancear la tabs en el centro — creamos un pseudo-left equivalent */
+.crm-bar--dashboard::before {
+    content: '';
+    flex: 1 1 0;
+}
+
+/* Strip café default para prospectos, sobrescribe los defaults por data-tipo
+   (alta especificidad para ganar sobre .crm-postit[data-tipo=...]) */
+.crm-postit--prospecto[data-tipo="proyecto"] .crm-postit-strip,
+.crm-postit--prospecto[data-tipo="runrate"] .crm-postit-strip,
+.crm-postit--prospecto[data-tipo] .crm-postit-strip {
+    background: linear-gradient(180deg, #B45309 0%, #92400E 100%);
+    box-shadow: 0 2px 4px rgba(146, 64, 14, 0.3);
+}
+
+/* Warm states (actividad próxima a vencer) — café + rojo gradiente */
+.crm-postit--prospecto.warm-1[data-tipo] .crm-postit-strip {
+    background: linear-gradient(90deg, #92400E 0%, #92400E 55%, #B8604A 85%, #E8687F 100%);
+    box-shadow: 0 2px 5px rgba(146, 64, 14, 0.3);
+}
+.crm-postit--prospecto.warm-2[data-tipo] .crm-postit-strip {
+    background: linear-gradient(90deg, #92400E 0%, #A65A3E 45%, #C97395 75%, #EF4444 100%);
+    box-shadow: 0 2px 7px rgba(180, 90, 60, 0.35);
+}
+.crm-postit--prospecto.warm-3[data-tipo] .crm-postit-strip {
+    background: linear-gradient(90deg, #92400E 0%, #B06242 35%, #D45F70 65%, #EF4444 100%);
+    box-shadow: 0 2px 9px rgba(220, 80, 100, 0.4);
+}
+.crm-postit--prospecto.warm-4[data-tipo] .crm-postit-strip {
+    background: linear-gradient(90deg, #92400E 0%, #C85C6A 25%, #EF4444 60%, #DC2626 100%);
+    box-shadow: 0 2px 11px rgba(239, 68, 68, 0.45);
+}
+.crm-postit--prospecto.warm-5[data-tipo] .crm-postit-strip {
+    background: linear-gradient(90deg, #A05020 0%, #EF4444 30%, #DC2626 100%);
+    box-shadow: 0 2px 13px rgba(220, 38, 38, 0.5);
+}
+
+/* Vencida (card-vencida + heat-X) — full rojo heredado con tinte café en el fondo */
+.crm-postit--prospecto.card-vencida {
+    background: #FEF4EC;
+    border-color: #FECACA;
+}
+.crm-postit--prospecto.card-vencida .crm-postit-strip {
+    /* El .card-vencida.heat-X CSS existente ya pinta rojos; solo overrideamos
+       el default base con café+rojo para que el strip siempre marque origen café */
+    background: linear-gradient(90deg, #92400E 0%, #EF4444 100%);
 }
 
