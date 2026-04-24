@@ -2695,11 +2695,19 @@
             return;
         }
 
-        // Dar al contenedor el ID esperado por el renderer interno (no lo
-        // usamos, pero mantenemos un div hijo dedicado para aislar del
-        // widget de proyectos que pueda estar en el DOM).
-        wrap.innerHTML = '<div id="lwP4ProgramaContainer"></div>';
+        // Toggle Simple ↔ Avanzado + contenedores
+        var savedMode = localStorage.getItem('ganttViewMode') || 'simple';
+        wrap.innerHTML =
+            '<div class="gantt-view-toggle" id="lwGanttToggle">' +
+                '<button type="button" class="gantt-toggle-btn' + (savedMode === 'simple' ? ' active' : '') + '" data-mode="simple">Simple</button>' +
+                '<button type="button" class="gantt-toggle-btn' + (savedMode === 'avanzado' ? ' active' : '') + '" data-mode="avanzado">Avanzado</button>' +
+            '</div>' +
+            '<div id="lwP4Simple" style="' + (savedMode === 'avanzado' ? 'display:none;' : '') + '">' +
+                '<div id="lwP4ProgramaContainer"></div>' +
+            '</div>' +
+            '<div id="lwP4Avanzado" style="' + (savedMode === 'simple' ? 'display:none;' : '') + '"></div>';
 
+        // Render vista simple (calendario semanal)
         window.proyectosRenderProgramaObra(lev.proyecto_id, {
             containerId: 'lwP4ProgramaContainer',
             projectDetail: {
@@ -2708,6 +2716,28 @@
                 fecha_inicio: lev.proyecto_fecha_inicio,
                 fecha_fin: lev.proyecto_fecha_fin,
             },
+        });
+
+        // Render vista avanzada (Gantt) si es el modo guardado
+        if (savedMode === 'avanzado' && typeof window.initGanttProgramaObra === 'function') {
+            window.initGanttProgramaObra('lwP4Avanzado', lev.proyecto_id);
+        }
+
+        // Toggle click handler
+        wrap.querySelector('#lwGanttToggle').addEventListener('click', function(e) {
+            var btn = e.target.closest('.gantt-toggle-btn');
+            if (!btn) return;
+            var mode = btn.dataset.mode;
+            wrap.querySelectorAll('.gantt-toggle-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            var simpleEl = $('lwP4Simple');
+            var avanzadoEl = $('lwP4Avanzado');
+            if (simpleEl) simpleEl.style.display = mode === 'simple' ? '' : 'none';
+            if (avanzadoEl) avanzadoEl.style.display = mode === 'avanzado' ? '' : 'none';
+            localStorage.setItem('ganttViewMode', mode);
+            if (mode === 'avanzado' && typeof window.initGanttProgramaObra === 'function') {
+                window.initGanttProgramaObra('lwP4Avanzado', lev.proyecto_id);
+            }
         });
     }
 

@@ -3585,37 +3585,7 @@
         if (currentProjectId) renderLevantamientos(currentProjectId);
     };
 
-    // ── Toggle Simple ↔ Avanzado (Programa de Obra / Gantt) ──
+    // Exponer ID del proyecto actual para módulos externos (Gantt, etc.)
     window.proyGetCurrentProjectId = function() { return currentProjectId; };
-    document.addEventListener('click', function(e) {
-        var btn = e.target.closest('.gantt-toggle-btn');
-        if (!btn) return;
-        var mode = btn.dataset.mode;
-        document.querySelectorAll('.gantt-toggle-btn').forEach(function(b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        var simpleEl = document.getElementById('programaObraSimple');
-        var avanzadoEl = document.getElementById('programaObraAvanzado');
-        if (simpleEl) simpleEl.style.display = mode === 'simple' ? '' : 'none';
-        if (avanzadoEl) avanzadoEl.style.display = mode === 'avanzado' ? '' : 'none';
-        localStorage.setItem('ganttViewMode', mode);
-        if (mode === 'avanzado' && typeof window.initGanttProgramaObra === 'function') {
-            if (currentProjectId) {
-                window.initGanttProgramaObra('programaObraAvanzado', currentProjectId);
-            }
-        }
-    });
-    var _origSetTab = window.proyectosSetTab;
-    if (_origSetTab) {
-        window.proyectosSetTab = function(tabName) {
-            _origSetTab(tabName);
-            if (tabName === 'programa') {
-                var savedMode = localStorage.getItem('ganttViewMode');
-                if (savedMode === 'avanzado') {
-                    var btn = document.querySelector('.gantt-toggle-btn[data-mode="avanzado"]');
-                    if (btn) btn.click();
-                }
-            }
-        };
-    }
 
 })();
