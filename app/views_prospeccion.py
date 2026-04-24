@@ -280,6 +280,7 @@ def api_crear_prospecto(request):
     area = data.get('area', 'SISTEMAS')
     tipo_pipeline = data.get('tipo_pipeline', 'runrate')
     comentarios = data.get('comentarios', '')
+    etapa = data.get('etapa', '')
 
     if not nombre:
         return JsonResponse({'success': False, 'error': 'Nombre requerido'}, status=400)
@@ -298,7 +299,10 @@ def api_crear_prospecto(request):
         except Contacto.DoesNotExist:
             pass
 
-    prospecto = Prospecto.objects.create(
+    # Etapa inicial: si viene del kanban (ej. click en "+" de "Reunión"),
+    # respetar esa etapa; si no, el modelo usa 'identificado' por default.
+    etapas_validas = {e[0] for e in Prospecto.ETAPA_CHOICES}
+    create_kwargs = dict(
         usuario=request.user,
         nombre=nombre,
         cliente=cliente,
@@ -308,6 +312,9 @@ def api_crear_prospecto(request):
         tipo_pipeline=tipo_pipeline,
         comentarios=comentarios,
     )
+    if etapa and etapa in etapas_validas:
+        create_kwargs['etapa'] = etapa
+    prospecto = Prospecto.objects.create(**create_kwargs)
 
     return JsonResponse({
         'success': True,

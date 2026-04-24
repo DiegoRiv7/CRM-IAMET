@@ -263,10 +263,16 @@
         var clienteIdField = document.getElementById('wpfClienteId');
         var _wpClienteTimer = null;
 
+        var _wpCurrentMode = 'cliente';
+        function _wpEmptyClienteLabel() {
+            return _wpCurrentMode === 'prospecto'
+                ? 'Selecciona un prospecto (requerido)'
+                : 'Selecciona un cliente (requerido)';
+        }
         function _updateClienteLabel() {
             var txt = (clienteInput && clienteInput.value.trim()) || '';
             var empty = !clienteIdField.value;
-            _setLabel('wpClienteBtn', 'wpClienteLabel', txt && !empty ? txt : 'Selecciona un cliente (requerido)', empty);
+            _setLabel('wpClienteBtn', 'wpClienteLabel', txt && !empty ? txt : _wpEmptyClienteLabel(), empty);
         }
 
         if (clienteInput) {
@@ -295,6 +301,7 @@
                                     clienteAC.innerHTML = '';
                                     clienteAC.style.display = 'none';
                                     _updateClienteLabel();
+                                    _wpRefreshReadyState();
                                     _wpCloseAllPops();
                                 });
                                 clienteAC.appendChild(div);
@@ -381,6 +388,7 @@
                     document.getElementById('wpnMiniCliente').style.display = 'none';
                     document.getElementById('wpfNuevoClienteNombre').value = '';
                     _updateClienteLabel();
+                    _wpRefreshReadyState();
                     _wpCloseAllPops();
                 } else {
                     alert(res.error || 'Error al crear cliente');
@@ -431,35 +439,139 @@
             }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar contacto'; });
         });
 
+        // ── Refresco de estado "listo" del submit según obligatorios ──
+        function _wpRefreshReadyState() {
+            var titulo    = (document.getElementById('wpfNombre') || {}).value || '';
+            var clienteId = (document.getElementById('wpfClienteId') || {}).value || '';
+            var pipeline  = (document.getElementById('wpfTipoPipeline') || {}).value || '';
+            var allReady  = titulo.trim().length > 0 && !!clienteId && !!pipeline;
+            var submitBtn = document.getElementById('wpfSubmit');
+            if (submitBtn) submitBtn.classList.toggle('is-ready', allReady);
+        }
+
+        // ── Validación reactiva al intentar crear (shake + highlight rojo) ──
+        function _wpValidateRequired() {
+            var titulo    = (document.getElementById('wpfNombre') || {}).value || '';
+            var clienteId = (document.getElementById('wpfClienteId') || {}).value || '';
+            var pipeline  = (document.getElementById('wpfTipoPipeline') || {}).value || '';
+            var missing = [];
+
+            var tituloEl = document.getElementById('wpfNombre');
+            if (!titulo.trim()) {
+                missing.push('titulo');
+                if (tituloEl) {
+                    tituloEl.classList.add('title-error', 'wn-ctw-shake');
+                    setTimeout(function() { if (tituloEl) tituloEl.classList.remove('wn-ctw-shake'); }, 320);
+                }
+            } else if (tituloEl) {
+                tituloEl.classList.remove('title-error');
+            }
+
+            [{ key:'cli', ok:!!clienteId, btnId:'wpClienteBtn' },
+             { key:'pipeline', ok:!!pipeline, btnId:'wpPipelineBtn' }].forEach(function(f) {
+                var btn = document.getElementById(f.btnId);
+                if (!btn) return;
+                if (!f.ok) {
+                    missing.push(f.key);
+                    btn.classList.remove('empty', 'filled');
+                    btn.classList.add('soft-error', 'wn-ctw-shake');
+                    setTimeout(function() { if (btn) btn.classList.remove('wn-ctw-shake'); }, 320);
+                } else {
+                    btn.classList.remove('soft-error');
+                }
+            });
+            return missing.length === 0;
+        }
+
+        // Hook en cada input obligatorio para refrescar estado en vivo
+        ['wpfNombre', 'wpfCliente', 'wpfClienteId', 'wpfTipoPipeline'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('input', _wpRefreshReadyState);
+            el.addEventListener('change', _wpRefreshReadyState);
+        });
+
+        // Reset completo a estado "vacío" en cada apertura
+        function _wpResetFormEmpty() {
+            var setEmpty = function(id) { var el = document.getElementById(id); if (el) el.value = ''; };
+            setEmpty('wpfNombre');
+            setEmpty('wpfCliente');
+            setEmpty('wpfClienteId');
+            setEmpty('wpfContacto');
+            setEmpty('wpfContactoId');
+            setEmpty('wpfTipoPipeline');
+            setEmpty('wpfComentarios');
+            // Producto y Área: reset a defaults del HTML (SOFTWARE / SISTEMAS)
+            var prodSel = document.getElementById('wpfProducto');
+            if (prodSel) { prodSel.value = 'SOFTWARE'; prodSel.dispatchEvent(new Event('change')); }
+            var areaSel = document.getElementById('wpfArea');
+            if (areaSel) { areaSel.value = 'SISTEMAS'; areaSel.dispatchEvent(new Event('change')); }
+            _wpSelectedClienteId = null;
+            // Limpiar estados visuales de error
+            var tituloEl = document.getElementById('wpfNombre');
+            if (tituloEl) tituloEl.classList.remove('title-error', 'wn-ctw-shake');
+            ['wpClienteBtn', 'wpPipelineBtn', 'wpContactoBtn', 'wpProdBtn', 'wpAreaBtn'].forEach(function(bid) {
+                var b = document.getElementById(bid);
+                if (b) { b.classList.remove('soft-error', 'wn-ctw-shake', 'filled'); b.classList.add('empty'); }
+            });
+            // Ocultar mini-forms abiertos
+            var mc = document.getElementById('wpnMiniCliente'); if (mc) mc.style.display = 'none';
+            var mk = document.getElementById('wpnMiniContacto'); if (mk) mk.style.display = 'none';
+            // Refrescar labels y estado ready
+            _updateClienteLabel();
+            _updateContactoLabel();
+            var pipLbl = document.getElementById('wpPipelineLabel');
+            if (pipLbl) pipLbl.textContent = 'Pipeline (requerido)';
+            var pipBtn = document.getElementById('wpPipelineBtn');
+            if (pipBtn) { pipBtn.classList.remove('filled'); pipBtn.classList.add('empty'); }
+        }
+
+        var _wpOpenObserver = new MutationObserver(function() {
+            var modal = document.getElementById('widgetNuevoProspecto');
+            if (modal && modal.classList.contains('active')) {
+                _wpResetFormEmpty();
+                setTimeout(function() {
+                    _wpRefreshReadyState();
+                    var tituloEl = document.getElementById('wpfNombre');
+                    if (tituloEl) tituloEl.focus();
+                }, 50);
+            }
+        });
+        var _wpModalEl = document.getElementById('widgetNuevoProspecto');
+        if (_wpModalEl) _wpOpenObserver.observe(_wpModalEl, { attributes: true, attributeFilter: ['class'] });
+        setTimeout(_wpRefreshReadyState, 100);
+
         // ── Submit ──
         document.getElementById('formNuevoProspecto').addEventListener('submit', function(e) {
             e.preventDefault();
+            if (!_wpValidateRequired()) return;
+
             var nombre     = document.getElementById('wpfNombre').value.trim();
             var clienteId  = document.getElementById('wpfClienteId').value;
             var contactoId = document.getElementById('wpfContactoId').value;
             var pipeline   = document.getElementById('wpfTipoPipeline').value;
-
-            if (!nombre)   { document.getElementById('wpfNombre').focus(); return; }
-            if (!clienteId){ alert('Selecciona un cliente'); wpOpenPop('cli'); return; }
-            if (!pipeline) { alert('Selecciona un pipeline'); wpOpenPop('pipeline'); return; }
 
             var submitBtn = document.getElementById('wpfSubmit');
             submitBtn.disabled = true;
             var _origSubmit = submitBtn.innerHTML;
             submitBtn.innerHTML = 'Creando…';
 
+            var payload = {
+                nombre: nombre,
+                cliente_id: parseInt(clienteId),
+                contacto_id: contactoId ? parseInt(contactoId) : null,
+                producto: document.getElementById('wpfProducto').value,
+                area: document.getElementById('wpfArea').value,
+                tipo_pipeline: pipeline,
+                comentarios: document.getElementById('wpfComentarios').value.trim()
+            };
+            // Etapa pre-seleccionada desde el kanban (click en "+" de una columna)
+            if (window._pkStageForNew) payload.etapa = window._pkStageForNew;
+
             fetch('/app/api/crear-prospecto/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                body: JSON.stringify({
-                    nombre: nombre,
-                    cliente_id: parseInt(clienteId),
-                    contacto_id: contactoId ? parseInt(contactoId) : null,
-                    producto: document.getElementById('wpfProducto').value,
-                    area: document.getElementById('wpfArea').value,
-                    tipo_pipeline: pipeline,
-                    comentarios: document.getElementById('wpfComentarios').value.trim()
-                })
+                body: JSON.stringify(payload)
             }).then(function(r){ return r.json(); }).then(function(data) {
                 if (data.success) {
                     var w = document.getElementById('widgetNuevoProspecto');
@@ -473,6 +585,7 @@
                     _wpSelectedClienteId = null;
                     _updateClienteLabel();
                     _updateContactoLabel();
+                    window._pkStageForNew = null;  // consumida
 
                     // Recargas
                     if (typeof window.cargarProspectos === 'function') window.cargarProspectos();
@@ -527,7 +640,8 @@
         //    Desde el kanban de prospectos se abre en modo 'prospecto';
         //    desde campañas u otros contextos queda en modo 'cliente' (default). ──
         window._setNuevoProspectoMode = function(mode) {
-            var isProsp = mode === 'prospecto';
+            _wpCurrentMode = mode === 'prospecto' ? 'prospecto' : 'cliente';
+            var isProsp = _wpCurrentMode === 'prospecto';
             var txt = {
                 btn:         isProsp ? 'Selecciona un prospecto (requerido)' : 'Selecciona un cliente (requerido)',
                 popTitle:    isProsp ? 'Prospecto' : 'Cliente',

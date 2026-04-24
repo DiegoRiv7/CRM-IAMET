@@ -294,8 +294,14 @@
         var btnAdd = ev.target.closest('[data-act="pk-add"]');
         if (btnAdd) {
             ev.stopPropagation();
-            var openBtn = document.getElementById('btnNuevoProspectoKanban');
-            if (openBtn) openBtn.click();
+            // Pasar la etapa al widget: se creará con esa etapa inicial
+            var stageKey = btnAdd.getAttribute('data-stage') || '';
+            window._pkStageForNew = stageKey || null;
+            if (typeof window._setNuevoProspectoMode === 'function') {
+                window._setNuevoProspectoMode('prospecto');
+            }
+            var w = document.getElementById('widgetNuevoProspecto');
+            if (w) w.classList.add('active');
             return;
         }
         // Click en columna colapsada → expandir
@@ -307,6 +313,15 @@
             applyCollapsed();
         }
     });
+
+    // Cuando el usuario usa el botón "+Nuevo" global del toolbar (no desde
+    // una columna específica) resetear la etapa pre-asignada
+    var globalAddBtn = document.getElementById('btnNuevoProspectoKanban');
+    if (globalAddBtn) {
+        globalAddBtn.addEventListener('click', function() {
+            window._pkStageForNew = null;
+        });
+    }
 
     // Recarga externa (ej. después de crear un prospecto): reload server-side
     window.recargarProspectosKanban = function() {
