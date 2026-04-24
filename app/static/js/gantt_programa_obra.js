@@ -238,18 +238,27 @@
     Gantt.prototype._injectStyles = function () {
         if (document.getElementById('gantt-obra-styles')) return;
         var css = [
-            '.gantt-root { font-family: inherit; color: ' + COLOR_DARK + '; font-size: 13px; display: flex; flex-direction: column; height: 100%; min-height: 400px; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 8px; overflow: hidden; }',
+            '.gantt-root { font-family: inherit; color: ' + COLOR_DARK + '; font-size: 13px; display: flex; flex-direction: column; height: calc(100vh - 320px); min-height: 350px; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 10px; overflow: hidden; }',
 
-            /* Toolbar */
-            '.gantt-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: ' + COLOR_HEADER + '; border-bottom: 1px solid ' + COLOR_BORDER + '; flex-wrap: wrap; }',
-            '.gantt-toolbar-sep { width: 1px; height: 24px; background: ' + COLOR_BORDER + '; margin: 0 4px; }',
-            '.gantt-btn { padding: 5px 12px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; color: ' + COLOR_DARK + '; transition: all .15s; white-space: nowrap; }',
+            /* Toolbar — compacta y limpia */
+            '.gantt-toolbar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #fff; border-bottom: 1px solid ' + COLOR_BORDER + '; }',
+            '.gantt-btn { padding: 5px 12px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.75rem; font-weight: 600; color: ' + COLOR_DARK + '; transition: all .15s; white-space: nowrap; font-family: inherit; }',
             '.gantt-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }',
-            '.gantt-btn-primary { background: ' + COLOR_PRIMARY + '; color: #fff; border-color: ' + COLOR_PRIMARY + '; }',
+            '.gantt-btn-primary { background: ' + COLOR_PRIMARY + '; color: #fff; border-color: ' + COLOR_PRIMARY + '; font-size: 0.75rem; }',
             '.gantt-btn-primary:hover { background: #003fa3; }',
-            '.gantt-btn-danger { color: #dc2626; border-color: #fecaca; }',
+            '.gantt-btn-danger { color: #dc2626; border-color: #fecaca; font-size: 0.75rem; }',
             '.gantt-btn-danger:hover { background: #fef2f2; }',
-            '.gantt-btn.active { background: ' + COLOR_PRIMARY + '; color: #fff; border-color: ' + COLOR_PRIMARY + '; }',
+            /* Zoom segmented control */
+            '.gantt-zoom-group { display: flex; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; overflow: hidden; }',
+            '.gantt-zoom-btn { padding: 4px 10px; border: none; background: #fff; cursor: pointer; font-size: 0.7rem; font-weight: 700; color: #64748b; transition: all .12s; font-family: inherit; border-right: 1px solid ' + COLOR_BORDER + '; }',
+            '.gantt-zoom-btn:last-child { border-right: none; }',
+            '.gantt-zoom-btn:hover { background: #f1f5f9; }',
+            '.gantt-zoom-btn.active { background: ' + COLOR_PRIMARY + '; color: #fff; }',
+            /* Empty state */
+            '.gantt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #94a3b8; gap: 12px; padding: 40px; }',
+            '.gantt-empty-icon { width: 48px; height: 48px; border-radius: 12px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; }',
+            '.gantt-empty-text { font-size: 0.85rem; font-weight: 500; }',
+            '.gantt-empty-sub { font-size: 0.75rem; color: #cbd5e1; }',
 
             /* Main */
             '.gantt-main { display: flex; flex: 1; overflow: hidden; min-height: 0; }',
@@ -318,29 +327,42 @@
     Gantt.prototype._buildToolbar = function () {
         var self = this;
 
-        var btnAdd = el('button', { className: 'gantt-btn gantt-btn-primary', onClick: function () { self._showAddModal(); } }, ['+ Agregar Actividad']);
-        var btnDel = el('button', { className: 'gantt-btn gantt-btn-danger', onClick: function () { self._deleteSelected(); } }, ['Eliminar']);
+        // CTA principal
+        var btnAdd = el('button', { className: 'gantt-btn gantt-btn-primary', onClick: function () { self._showAddModal(); } }, ['+ Actividad']);
 
-        var sep1 = el('span', { className: 'gantt-toolbar-sep' });
+        // Eliminar: solo aparece visible cuando hay selección (se togglea en _renderTable)
+        this._btnDel = el('button', {
+            className: 'gantt-btn gantt-btn-danger',
+            style: { display: 'none' },
+            onClick: function () { self._deleteSelected(); }
+        }, ['Eliminar']);
 
-        var btnExpand = el('button', { className: 'gantt-btn', onClick: function () { self._setAllCollapsed(false); } }, ['Expandir todo']);
-        var btnCollapse = el('button', { className: 'gantt-btn', onClick: function () { self._setAllCollapsed(true); } }, ['Colapsar todo']);
+        // Expandir/Colapsar en un solo botón toggle
+        this._btnToggleFases = el('button', { className: 'gantt-btn', onClick: function () {
+            var anyExpanded = self.tasks.some(function(t) { return t.isPhase && !t.collapsed; });
+            self._setAllCollapsed(anyExpanded);
+        }}, ['Fases']);
+        this._btnToggleFases.style.display = 'none'; // se muestra si hay fases
 
-        var sep2 = el('span', { className: 'gantt-toolbar-sep' });
+        // Spacer
+        var spacer = el('div', { style: { flex: '1' } });
 
+        // Zoom como segmented control compacto
         this._zoomBtns = {};
-        var zoomLabels = { day: 'Dia', week: 'Semana', month: 'Mes' };
-        var zoomGroup = el('div', { style: { display: 'flex', gap: '4px' } });
+        var zoomLabels = { day: 'D', week: 'S', month: 'M' };
+        var zoomTitles = { day: 'Vista por Dia', week: 'Vista por Semana', month: 'Vista por Mes' };
+        var zoomGroup = el('div', { className: 'gantt-zoom-group' });
         ['day', 'week', 'month'].forEach(function (z) {
             var btn = el('button', {
-                className: 'gantt-btn' + (z === self.zoom ? ' active' : ''),
+                className: 'gantt-zoom-btn' + (z === self.zoom ? ' active' : ''),
+                title: zoomTitles[z],
                 onClick: function () { self._setZoom(z); }
             }, [zoomLabels[z]]);
             self._zoomBtns[z] = btn;
             zoomGroup.appendChild(btn);
         });
 
-        return el('div', { className: 'gantt-toolbar' }, [btnAdd, btnDel, sep1, btnExpand, btnCollapse, sep2, zoomGroup]);
+        return el('div', { className: 'gantt-toolbar' }, [btnAdd, this._btnDel, this._btnToggleFases, spacer, zoomGroup]);
     };
 
     /* -------------------------------------------
@@ -492,6 +514,38 @@
     Gantt.prototype._render = function () {
         this._recalcPhases();
         this._computeTotalDays();
+
+        // Toggle visibilidad de botones contextuales
+        var hasFases = this.tasks.some(function(t) { return t.isPhase; });
+        if (this._btnToggleFases) this._btnToggleFases.style.display = hasFases ? '' : 'none';
+        if (this._btnDel) this._btnDel.style.display = this.selectedTaskId != null ? '' : 'none';
+
+        // Empty state
+        var realTasks = this.tasks.filter(function(t) { return !t.isPhase; });
+        var emptyEl = this.root.querySelector('.gantt-empty');
+        var mainEl = this.root.querySelector('.gantt-main');
+        if (realTasks.length === 0 && this.tasks.length === 0) {
+            if (mainEl) mainEl.style.display = 'none';
+            if (!emptyEl) {
+                emptyEl = el('div', { className: 'gantt-empty' }, [
+                    el('div', { className: 'gantt-empty-icon' }, [
+                        el('svg', { width: '24', height: '24', fill: 'none', stroke: '#94a3b8', 'stroke-width': '1.5', viewBox: '0 0 24 24' })
+                    ]),
+                    el('div', { className: 'gantt-empty-text' }, ['Sin actividades en el cronograma']),
+                    el('div', { className: 'gantt-empty-sub' }, ['Usa el boton + Actividad para comenzar'])
+                ]);
+                // Inject a simple icon into the SVG
+                emptyEl.querySelector('svg').innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>';
+                this.root.appendChild(emptyEl);
+            } else {
+                emptyEl.style.display = 'flex';
+            }
+            return;
+        } else {
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (mainEl) mainEl.style.display = '';
+        }
+
         this._renderTable();
         this._resizeCanvases();
         this._renderHeader();

@@ -1518,11 +1518,8 @@ select.proy-info-input {
 }
 
 /* Contenedor del Gantt avanzado */
-#programaObraAvanzado {
-    min-height: 500px;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
+#lwP4Avanzado {
+    border-radius: 10px;
     overflow: hidden;
-    background: #FFFFFF;
 }
 
