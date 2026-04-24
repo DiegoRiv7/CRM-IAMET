@@ -3263,8 +3263,8 @@ def editar_oportunidad_api(request, oportunidad_id):
             except Exception as e_auto:
                 print(f'[Automatización] Error ejecutando reglas: {e_auto}')
 
-        # Auto-crear ProyectoIAMET si la etapa es "Vendido s/PO" o "Vendido c/PO" y es tipo proyecto
-        if etapa_cambio and etapa_cambio in ('Vendido s/PO', 'Vendido c/PO') and oportunidad.tipo_negociacion in ('proyecto', 'bitrix_proyecto'):
+        # Auto-crear ProyectoIAMET cuando un proyecto pasa a Levantamiento (o Vendido s/PO / c/PO como fallback)
+        if etapa_cambio and etapa_cambio in ('Levantamiento', 'Vendido s/PO', 'Vendido c/PO') and oportunidad.tipo_negociacion in ('proyecto', 'bitrix_proyecto'):
             try:
                 from .models import ProyectoIAMET, ProyectoConfiguracion
                 from datetime import timedelta
