@@ -3653,14 +3653,13 @@
                 var icon = _driveFileIcon(a.extension || a.tipo_archivo);
                 var size = a.tamaño ? _formatFileSize(a.tamaño) : '';
                 var streamUrl = '/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/';
-                html += '<div class="proy-drive-item" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
+                html += '<div class="proy-drive-item" onclick="window.open(\'' + streamUrl + '\',\'_blank\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
                     icon +
                     '<div style="flex:1;min-width:0;">' +
                         '<div style="font-size:0.85rem;font-weight:500;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(a.nombre) + '</div>' +
                         (size ? '<div style="font-size:0.7rem;color:#94A3B8;">' + size + '</div>' : '') +
                     '</div>' +
-                    '<a href="' + streamUrl + '" target="_blank" style="padding:4px;color:#64748B;" title="Ver"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>' +
-                    '<a href="' + streamUrl + '?dl=1" style="padding:4px;color:#64748B;" title="Descargar"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
+                    '<a href="' + streamUrl + '?dl=1" onclick="event.stopPropagation()" style="padding:4px;color:#64748B;" title="Descargar"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
                 '</div>';
             });
             html += '</div>';

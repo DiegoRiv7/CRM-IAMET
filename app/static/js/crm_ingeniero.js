@@ -289,11 +289,10 @@
                 .forEach(_dashIngSetLoading);
         }
 
-        // Nuevo endpoint: actividades del CALENDARIO (ProgramacionActividad)
-        // donde el usuario es responsable. Reemplaza al feed de "tareas" viejo.
-        var pActividades = fetch('/app/api/ingeniero/mis-actividades-calendario/', { credentials: 'same-origin' })
+        // Tareas reales del usuario (mismas que la sección Tareas del CRM)
+        var pActividades = fetch('/app/api/tareas/?estado=pendientes', { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
-            .then(function (d) { return d.items || []; })
+            .then(function (d) { return (d && d.tareas) ? d.tareas : []; })
             .catch(function () { return null; });
 
         var pProyectos = fetch('/app/api/iamet/proyectos/', { credentials: 'same-origin' })
@@ -306,40 +305,40 @@
             .then(function (d) { return (d && d.notificaciones) ? d.notificaciones : []; })
             .catch(function () { return null; });
 
-        // Tareas recientes → actividades de HOY o vencidas (acción inmediata)
-        // Próximas actividades → futuras
+        // Tareas reales: vencidas primero, luego recientes
         pActividades.then(function (items) {
             if (items === null) {
-                // En silent no sobreescribimos con error — conservamos estado previo
                 if (!silent) {
                     _dashIngSetError('dashIngListTareas');
                     _dashIngSetError('dashIngListCalendario');
                 }
                 return;
             }
-            // Adaptar schema ProgramacionActividad → shape que esperan los renders.
-            var adapted = items.map(function (a) {
+            // Adaptar schema Tarea → shape que esperan los renders
+            var today = _dashIngToday();
+            var adapted = items.map(function (t) {
+                var fl = t.fecha_limite ? t.fecha_limite.substring(0, 10) : '';
+                var vencida = fl && fl < today && t.estado !== 'completada';
                 return {
-                    id: a.id,
-                    key: 'cal_' + a.id,
-                    tipo: 'calendario',
-                    titulo: a.titulo,
-                    estado: 'pendiente', // no hay "en_progreso" en calendario
-                    fecha_limite: a.fecha,
-                    fecha_limite_display: a.fecha ? _dashIngFmtDate(a.fecha) + (a.hora_inicio ? ' · ' + a.hora_inicio : '') : '',
-                    oportunidad: a.proyecto_nombre || '',
-                    cliente: a.cliente_nombre || '',
-                    proyecto_id: a.proyecto_id,
+                    id: t.id,
+                    key: 'tarea_' + t.id,
+                    tipo: 'tarea',
+                    titulo: t.titulo,
+                    estado: t.estado || 'pendiente',
+                    fecha_limite: fl,
+                    fecha_limite_display: t.fecha_limite ? _dashIngFmtDate(t.fecha_limite) : '',
+                    oportunidad: t.oportunidad_nombre || '',
+                    cliente: '',
+                    vencida: vencida,
                 };
             });
-            var today = _dashIngToday();
-            var hoyYVencidas = adapted.filter(function (a) {
-                return a.fecha_limite && a.fecha_limite <= today;
-            });
-            var futuras = adapted.filter(function (a) {
-                return a.fecha_limite && a.fecha_limite > today;
-            });
-            dashIngRenderTareas(hoyYVencidas);
+            // Vencidas primero (más antiguas arriba), luego recientes
+            var vencidas = adapted.filter(function (a) { return a.vencida; })
+                .sort(function (a, b) { return (a.fecha_limite || '').localeCompare(b.fecha_limite || ''); });
+            var noVencidas = adapted.filter(function (a) { return !a.vencida; });
+            dashIngRenderTareas(vencidas.concat(noVencidas.slice(0, 15)));
+            // Próximas: las que aún no vencen
+            var futuras = noVencidas.filter(function (a) { return a.fecha_limite; }).slice(0, 5);
             dashIngRenderCalendario(futuras);
         });
 
@@ -359,14 +358,15 @@
             dashIngRenderNotifs(items);
         });
 
-        // Subtítulo del header: solo vencidas + pendientes (no-vencidas)
-        pActividades.then(function (acts) {
-            acts = acts || [];
+        // Subtítulo del header: vencidas + pendientes
+        pActividades.then(function (tareas) {
+            tareas = tareas || [];
             var today = _dashIngToday();
             var vencidas = 0, pendientes = 0;
-            acts.forEach(function (a) {
-                if (!a.fecha) { pendientes++; return; }
-                if (a.fecha < today) vencidas++;
+            tareas.forEach(function (t) {
+                if (t.estado === 'completada') return;
+                var fl = t.fecha_limite ? t.fecha_limite.substring(0, 10) : '';
+                if (fl && fl < today) vencidas++;
                 else pendientes++;
             });
             var sub = document.getElementById('dashIngSubtitle');
@@ -374,7 +374,7 @@
             var partes = [];
             if (vencidas) partes.push(vencidas + ' vencida' + (vencidas === 1 ? '' : 's'));
             if (pendientes) partes.push(pendientes + ' pendiente' + (pendientes === 1 ? '' : 's'));
-            sub.textContent = partes.length ? partes.join(' · ') : 'Estás al día';
+            sub.textContent = partes.length ? partes.join(' · ') : 'No tienes tareas pendientes asignadas.';
         });
     }
     window.dashIngLoadAll = dashIngLoadAll;
@@ -555,8 +555,12 @@
 
     // ═══ Navegación desde los "Ver todo →" ═══
     function dashIngAbrirTarea(key, id, tipo) {
-        // Si es actividad del calendario (tipo 'calendario'), abrir su
-        // detalle modal que ya existe en el widget de Proyectos.
+        // Tareas reales: abrir widget de detalle de tarea del CRM
+        if (tipo === 'tarea' && id && typeof window.crmTaskVerDetalle === 'function') {
+            window.crmTaskVerDetalle(id);
+            return;
+        }
+        // Fallback: actividad de calendario
         if (tipo === 'calendario' && id && typeof window.proyectosVerActividadDetalle === 'function') {
             window.proyectosVerActividadDetalle(id);
             return;
