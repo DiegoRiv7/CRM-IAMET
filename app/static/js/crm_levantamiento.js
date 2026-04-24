@@ -771,9 +771,18 @@
         }
     };
 
-    // Re-inicializar si cambia el tamaño de ventana (rotar movil, etc)
+    // Re-inicializar si cambia el tamaño de ventana (rotar movil, etc).
+    // IMPORTANTE: en Android, al abrir el teclado se dispara 'resize'
+    // porque el viewport se encoge. Si lo ignoramos mal, al tocar un
+    // input el wizard reseteaba a la isla 0 (parecía que "regresaba").
+    // Solución: solo re-inicializar cuando cambia el ANCHO (rotación
+    // real). Si solo cambia la altura, es el teclado y NO debemos tocar.
+    var _lwLastWidth = window.innerWidth;
     window.addEventListener('resize', function () {
         if (!state.lev || state.phase !== 1) return;
+        var w = window.innerWidth;
+        if (w === _lwLastWidth) return;  // teclado android/ios, ignorar
+        _lwLastWidth = w;
         lwMobileInit();
     });
 

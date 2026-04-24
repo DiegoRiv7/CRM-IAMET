@@ -82,7 +82,7 @@ def levantamientos_manifest(request):
 #: Version del app-shell cacheado. BUMPEA esta constante al cambiar
 #  el template, CSS o JS del PWA para forzar re-descarga. El SW
 #  borrará caches viejos y se actualizará en segundo plano.
-SW_VERSION = 'lev-v8-proyectos-todos'
+SW_VERSION = 'lev-v9-fix-android-keyboard'
 
 
 @require_GET
