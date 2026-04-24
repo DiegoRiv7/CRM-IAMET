@@ -67,8 +67,8 @@
                             <div class="wn-ctw-pop" id="wpPopPipeline" style="display:none;">
                                 <div class="wn-ctw-pop-title">Tipo de pipeline</div>
                                 <select class="wn-ctw-pop-input" id="wpfTipoPipeline">
-                                    <option value="">Selecciona un tipo</option>
-                                    <option value="runrate" selected>Runrate</option>
+                                    <option value="" selected>Selecciona un tipo</option>
+                                    <option value="runrate">Runrate</option>
                                     <option value="proyecto">Proyecto</option>
                                 </select>
                             </div>
@@ -522,6 +522,43 @@
                 submitBtn.innerHTML = _origSubmit;
             });
         });
+
+        // ── Modo: alterna los textos "cliente" vs "prospecto" según contexto.
+        //    Desde el kanban de prospectos se abre en modo 'prospecto';
+        //    desde campañas u otros contextos queda en modo 'cliente' (default). ──
+        window._setNuevoProspectoMode = function(mode) {
+            var isProsp = mode === 'prospecto';
+            var txt = {
+                btn:         isProsp ? 'Selecciona un prospecto (requerido)' : 'Selecciona un cliente (requerido)',
+                popTitle:    isProsp ? 'Prospecto' : 'Cliente',
+                placeholder: isProsp ? 'Buscar o escribir prospecto…' : 'Buscar o escribir cliente…',
+                addNew:      isProsp ? 'Crear prospecto nuevo' : 'Crear cliente nuevo',
+                titlePh:     isProsp ? 'Nombre del prospecto…' : 'Nombre del prospecto…'
+            };
+            var cliBtn = document.getElementById('wpClienteBtn');
+            var cliLbl = document.getElementById('wpClienteLabel');
+            if (cliBtn && cliBtn.classList.contains('empty') && cliLbl) cliLbl.textContent = txt.btn;
+            var popCli = document.getElementById('wpPopCli');
+            if (popCli) {
+                var title = popCli.querySelector('.wn-ctw-pop-title');
+                if (title) title.textContent = txt.popTitle;
+            }
+            var cliInput = document.getElementById('wpfCliente');
+            if (cliInput) cliInput.placeholder = txt.placeholder;
+            var btnAdd = document.getElementById('wpnAddClienteBtn');
+            if (btnAdd) {
+                // Reemplazar solo el nodo texto (conserva el SVG)
+                for (var i = 0; i < btnAdd.childNodes.length; i++) {
+                    var node = btnAdd.childNodes[i];
+                    if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                        node.textContent = ' ' + txt.addNew;
+                        return;
+                    }
+                }
+                // Fallback: si no hay nodo de texto, agregar uno
+                btnAdd.appendChild(document.createTextNode(' ' + txt.addNew));
+            }
+        };
 
         // Atajo ⌘+↵ / Ctrl+↵ para enviar
         document.addEventListener('keydown', function(e) {

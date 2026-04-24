@@ -32,10 +32,13 @@ document.addEventListener('click', function(ev) {
     var _currentWidgetClienteNombre = '';
     var _currentWidgetClienteRfc = '';
 
-    // ── Abrir widget nuevo prospecto (top bar button) ──
+    // ── Abrir widget nuevo prospecto (tab=prospeccion/campañas: "cliente" mode) ──
     var btnNuevo = document.getElementById('btnNuevoProspecto');
     if (btnNuevo) {
         btnNuevo.addEventListener('click', function() {
+            if (typeof window._setNuevoProspectoMode === 'function') {
+                window._setNuevoProspectoMode('cliente');
+            }
             document.getElementById('widgetNuevoProspecto').classList.add('active');
         });
     }
