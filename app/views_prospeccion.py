@@ -193,6 +193,8 @@ def api_prospectos_lista(request):
             'producto': p.producto or '-',
             'tipo_pipeline': p.tipo_pipeline,
             'etapa': p.etapa,
+            'usuario_id': p.usuario_id,
+            'usuario_nombre': (p.usuario.get_full_name() or p.usuario.username) if p.usuario else '',
             'fecha_actualizacion': int(p.fecha_actualizacion.timestamp()) if p.fecha_actualizacion else 0,
             'fecha_iso': p.fecha_actualizacion.strftime('%d/%m/%Y') if p.fecha_actualizacion else '',
         })

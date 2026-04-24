@@ -333,6 +333,10 @@
                     if (typeof window.cargarProspectos === 'function') {
                         window.cargarProspectos();
                     }
+                    // Recargar kanban de prospectos si estamos en tab=prospectos
+                    if (typeof window.recargarProspectosKanban === 'function') {
+                        window.recargarProspectosKanban();
+                    }
                     // Recargar prospectos del cliente en el widget si esta abierto
                     if (typeof window._recargarProspectosCliente === 'function') {
                         window._recargarProspectosCliente();

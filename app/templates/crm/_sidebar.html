@@ -43,12 +43,20 @@
         </button>
         {% else %}
         <!-- CRM -->
-        <button type="button" class="crm-sb-btn active" id="btnCRM" data-tooltip="CRM">
+        <button type="button" class="crm-sb-btn {% if tab_activo != 'clientes' %}active{% endif %}" id="btnCRM" data-tooltip="CRM"
+            {% if tab_activo == 'clientes' %}onclick="window.location.href='?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}'"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/>
             </svg>
             <span class="crm-sb-label">CRM</span>
         </button>
+        <!-- Dashboard (vendedor/supervisor) -->
+        <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Dashboard">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1.3"/><rect x="14" y="3" width="7" height="5" rx="1.3"/><rect x="14" y="12" width="7" height="9" rx="1.3"/><rect x="3" y="16" width="7" height="5" rx="1.3"/>
+            </svg>
+            <span class="crm-sb-label">Dashboard</span>
+        </a>
         {% endif %}
 
         <!-- Tareas -->

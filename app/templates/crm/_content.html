@@ -202,7 +202,7 @@
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
-        <div class="crm-bar {% if tab_activo == 'crm' %}crm-bar--unified{% endif %}">
+        <div class="crm-bar {% if tab_activo == 'crm' %}crm-bar--unified{% endif %}"{% if tab_activo == 'clientes' %} style="display:none;"{% endif %}>
             {% if tab_activo == 'crm' %}
             <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
             <div class="crm-bar-left" id="crmBarLeft">
@@ -224,21 +224,23 @@
                 <button type="button" class="crm-facet-btn crm-facet-clear" id="btnFacetClear" style="display:none;">Limpiar todo</button>
             </div>
             {% endif %}
+            {% if tab_activo != 'clientes' %}
             <div class="crm-tabs">
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
                     {% if tab_activo == 'crm' %}<span class="crm-tab-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>{% endif %}
                 </a>
+                <a href="?tab=prospectos&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
+                    Prospectos
+                </a>
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
-                    Prospeccion
-                </a>
-                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    class="crm-tab {% if tab_activo == 'clientes' %}active{% endif %}">
-                    Clientes
+                    Campañas
                 </a>
             </div>
+            {% endif %}
             <div class="crm-bar-right">
                 {% if tab_activo == 'crm' %}
                 <!-- Periodo + vendedor + nueva oportunidad (antes en .crm-facet-bar) -->
@@ -681,6 +683,89 @@
             </tbody>
         </table>
         </div>
+        {% elif tab_activo == 'prospectos' %}
+        <!-- Period bar + botón nuevo prospecto -->
+        <div class="crm-facet-bar crm-facet-bar--minimal">
+            <button type="button" class="crm-facet-btn crm-facet-new" id="btnNuevoProspectoKanban"
+                onclick="var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Titulo de la prospeccion';if(l2)l2.textContent='Prospecto';document.getElementById('widgetNuevoProspecto').classList.add('active');">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Nuevo Prospecto</span>
+            </button>
+            <div style="flex:1;"></div>
+            <div class="crm-period-pills" id="crmPeriodPills">
+                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span id="pillPeriodoLabel">Periodo</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% if es_supervisor %}
+                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span id="pillVendedorLabel">Vendedores</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Kanban container -->
+        <div class="pk-kanban-wrap" id="pkKanbanWrap">
+            <div class="pk-kanban" id="pkKanban">
+                <div class="pk-col" data-etapa="identificado">
+                    <div class="pk-col-head">
+                        <span class="pk-col-dot" style="background:#9CA3AF;"></span>
+                        <span class="pk-col-title">Identificado</span>
+                        <span class="pk-col-count" id="pkCountIdentificado">0</span>
+                    </div>
+                    <div class="pk-col-body" id="pkColIdentificado"></div>
+                </div>
+                <div class="pk-col" data-etapa="calificado">
+                    <div class="pk-col-head">
+                        <span class="pk-col-dot" style="background:#60A5FA;"></span>
+                        <span class="pk-col-title">Calificado</span>
+                        <span class="pk-col-count" id="pkCountCalificado">0</span>
+                    </div>
+                    <div class="pk-col-body" id="pkColCalificado"></div>
+                </div>
+                <div class="pk-col" data-etapa="reunion">
+                    <div class="pk-col-head">
+                        <span class="pk-col-dot" style="background:#A78BFA;"></span>
+                        <span class="pk-col-title">Reunión</span>
+                        <span class="pk-col-count" id="pkCountReunion">0</span>
+                    </div>
+                    <div class="pk-col-body" id="pkColReunion"></div>
+                </div>
+                <div class="pk-col" data-etapa="en_progreso">
+                    <div class="pk-col-head">
+                        <span class="pk-col-dot" style="background:#F59E0B;"></span>
+                        <span class="pk-col-title">En Progreso</span>
+                        <span class="pk-col-count" id="pkCountEnProgreso">0</span>
+                    </div>
+                    <div class="pk-col-body" id="pkColEnProgreso"></div>
+                </div>
+                <div class="pk-col" data-etapa="procesado">
+                    <div class="pk-col-head">
+                        <span class="pk-col-dot" style="background:#3B82F6;"></span>
+                        <span class="pk-col-title">Procesado</span>
+                        <span class="pk-col-count" id="pkCountProcesado">0</span>
+                    </div>
+                    <div class="pk-col-body" id="pkColProcesado"></div>
+                </div>
+                <div class="pk-col" data-etapa="cerrado_ganado">
+                    <div class="pk-col-head">
+                        <span class="pk-col-dot" style="background:#10B981;"></span>
+                        <span class="pk-col-title">Cerrar</span>
+                        <span class="pk-col-count" id="pkCountCerrado">0</span>
+                    </div>
+                    <div class="pk-col-body" id="pkColCerrado"></div>
+                </div>
+            </div>
+            <div class="pk-empty" id="pkEmpty" style="display:none;">
+                <div style="font-size:0.95rem;font-weight:700;color:#6B7280;">Sin prospectos en el periodo seleccionado</div>
+                <div style="font-size:0.78rem;color:#9CA3AF;margin-top:6px;">Usa el botón "Nuevo Prospecto" para crear uno.</div>
+            </div>
+        </div>
+
         {% elif tab_activo == 'prospeccion' %}
         <!-- Period bar + botón nuevo prospecto -->
         <div class="crm-facet-bar crm-facet-bar--minimal">
