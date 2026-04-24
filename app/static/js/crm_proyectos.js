@@ -423,6 +423,8 @@
     // Abre la oportunidad desde el link en la fila del proyecto
     window.proyectosAbrirOportunidad = function (oppId) {
         if (!oppId) return;
+        // En la PWA de levantamientos no abrir widget de oportunidad
+        if (document.body.classList.contains('lev-app')) return;
         if (typeof window.openDetalle === 'function') {
             window.openDetalle(oppId);
             return;
@@ -2265,8 +2267,13 @@
         }
 
         var oppLink = '';
+        var _isLevApp = document.body.classList.contains('lev-app');
         if (p.oportunidad_id && p.oportunidad_nombre) {
-            oppLink = '<a href="javascript:void(0)" onclick="var d=document.getElementById(\'widgetDetalle\');if(d){d.classList.add(\'z-elevated\');d.style.zIndex=\'10800\';}if(typeof openDetalle===\'function\')openDetalle(' + p.oportunidad_id + ')" style="color:#007aff;text-decoration:none;font-weight:500">' + (p.oportunidad_nombre || '') + '</a>';
+            if (_isLevApp) {
+                oppLink = '<span style="color:#1E293B;font-weight:500">' + _esc(p.oportunidad_nombre || '') + '</span>';
+            } else {
+                oppLink = '<a href="javascript:void(0)" onclick="var d=document.getElementById(\'widgetDetalle\');if(d){d.classList.add(\'z-elevated\');d.style.zIndex=\'10800\';}if(typeof openDetalle===\'function\')openDetalle(' + p.oportunidad_id + ')" style="color:#007aff;text-decoration:none;font-weight:500">' + (p.oportunidad_nombre || '') + '</a>';
+            }
         } else {
             oppLink = '<span style="color:#8e8e93">Sin oportunidad vinculada</span>';
         }
