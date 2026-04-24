@@ -12,6 +12,7 @@ from app.models import TodoItem, ProyectoIAMET, ProyectoConfiguracion, TareaOpor
 
 
 # Etapas que están en Levantamiento o posterior en el pipeline de proyecto
+# Etapas elegibles (>= Levantamiento, excluyendo Pagado y Perdido)
 ETAPAS_POST_LEVANTAMIENTO = [
     'Levantamiento',
     'Base Cotización',
@@ -27,8 +28,12 @@ ETAPAS_POST_LEVANTAMIENTO = [
     'Entregado',
     'Facturado',
     'Reportes',
-    'Pagado',
+    # 'Pagado' — excluido: proyecto ya terminó
+    # 'Perdido' — excluido: no se necesita proyecto
 ]
+
+# Orden de prioridad: Levantamiento primero (más reciente en el pipeline)
+ETAPA_ORDEN = {etapa: i for i, etapa in enumerate(ETAPAS_POST_LEVANTAMIENTO)}
 
 
 class Command(BaseCommand):
@@ -45,11 +50,14 @@ class Command(BaseCommand):
         apply = options['apply']
         hoy = date.today()
 
-        # Buscar oportunidades tipo proyecto en etapas post-levantamiento
-        opps = TodoItem.objects.filter(
+        # Buscar oportunidades tipo proyecto en etapas elegibles (excluye Pagado/Perdido)
+        opps = list(TodoItem.objects.filter(
             tipo_negociacion__in=['proyecto', 'bitrix_proyecto'],
             etapa_corta__in=ETAPAS_POST_LEVANTAMIENTO,
-        ).select_related('cliente', 'usuario')
+        ).select_related('cliente', 'usuario'))
+
+        # Ordenar: Levantamiento primero (etapas tempranas), luego avanzadas
+        opps.sort(key=lambda o: ETAPA_ORDEN.get(o.etapa_corta, 999))
 
         created = 0
         skipped = 0
