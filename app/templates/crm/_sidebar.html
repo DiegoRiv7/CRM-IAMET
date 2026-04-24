@@ -160,6 +160,17 @@
         var d = document.getElementById('btnDashboard'); if (d) d.classList.remove('active');
         var b = document.getElementById(v === 'tareas' ? 'btnTareas' : 'btnProyectos');
         if (b) b.classList.add('active');
+        // Early hide: ocultar dashboard y mostrar la sección guardada ANTES del paint
+        // para evitar el flash de "dashboard → sección" al recargar.
+        var dash = document.getElementById('dashIngRoot');
+        if (dash) dash.style.display = 'none';
+        if (v === 'tareas') {
+            var ts = document.getElementById('tareasSection');
+            if (ts) { ts.classList.add('active'); ts.style.display = 'block'; }
+        } else if (v === 'proyectos') {
+            var ps = document.getElementById('proyectosSection');
+            if (ps) { ps.classList.add('active'); ps.style.display = 'block'; }
+        }
     }
 })();
 </script>

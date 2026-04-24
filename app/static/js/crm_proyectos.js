@@ -441,9 +441,10 @@
         currentProjectId = projectId;
         currentTab = 'info';
 
-        // Open the detail overlay
+        // Open the detail overlay + lock body scroll
         var overlay = el('widgetProyectoDetalle');
         if (overlay) overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
 
         // Fetch project detail + financials
         _fetch('/app/api/iamet/proyectos/' + projectId + '/').then(function(resp) {
@@ -490,9 +491,10 @@
 
     window.proyectosVolverLista = function() {
         currentProjectId = null;
-        // Close the detail overlay
+        // Close the detail overlay + unlock body scroll
         var overlay = el('widgetProyectoDetalle');
         if (overlay) overlay.style.display = 'none';
+        document.body.style.overflow = '';
     };
 
 
