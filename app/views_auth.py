@@ -134,6 +134,12 @@ def solicitar_reset_password(request):
 @login_required
 def user_logout(request):
     logout(request)
+    # Si viene ?next=/…/, redirigir al login con ese next preservado
+    # (para que la PWA de levantamientos regrese a sí misma tras re-login)
+    next_url = request.GET.get('next', '')
+    if next_url and next_url.startswith('/'):
+        from urllib.parse import urlencode
+        return redirect('/app/login/?' + urlencode({'next': next_url}))
     return redirect('user_login')
 
 

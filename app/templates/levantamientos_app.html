@@ -582,7 +582,7 @@
             // ── Menú usuario (minimal) ──────────────────────────────
             window.levAppShowUserMenu = function () {
                 var yes = confirm('¿Cerrar sesión?');
-                if (yes) window.location.href = '/app/logout/';
+                if (yes) window.location.href = '/app/logout/?next=/app/levantamientos/';
             };
 
             // ── Install prompt iOS (Safari no soporta beforeinstallprompt) ──
