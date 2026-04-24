@@ -1,157 +1,279 @@
-    <!-- ═══ WIDGET: NUEVO PROSPECTO ═══ -->
+    <!-- ═══ WIDGET: NUEVO PROSPECTO (composer style igual a Oportunidad) ═══ -->
     <div class="widget-overlay wn-overlay" id="widgetNuevoProspecto" style="z-index:10300;"
         onclick="if(event.target===this){this.classList.add('closing');var self=this;setTimeout(function(){self.classList.remove('active','closing');},220);}">
-        <div class="wn-card">
+        <div class="wn-card wn-composer">
 
-            <!-- Header -->
-            <div class="wn-header">
-                <div class="wn-header-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                </div>
-                <div>
-                    <div class="wn-title">Nuevo Prospecto</div>
-                    <div class="wn-subtitle">Ingresa los datos para registrar la prospeccion</div>
-                </div>
-                <button type="button" class="wn-close" id="wpNuevoClose"
-                    onclick="var w=document.getElementById('widgetNuevoProspecto');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Nombre del prospecto';if(l2)l2.textContent='Cliente';},220);">&times;</button>
-            </div>
+            <form id="formNuevoProspecto" autocomplete="off" novalidate style="display:contents;">
+                {% csrf_token %}
 
-            <!-- Body -->
-            <div class="wn-body">
-                <form id="formNuevoProspecto" autocomplete="off">
-                    {% csrf_token %}
-
-                    <!-- Nombre -->
-                    <div class="wn-field">
-                        <label class="wn-label" id="wpfLblNombre">Nombre del prospecto</label>
-                        <input type="text" class="wn-input" id="wpfNombre"
-                            placeholder="Ej: Implementacion RFID para almacen..." required>
+                <!-- ─── Header: breadcrumb + cerrar ─── -->
+                <header class="wn-ctw-header">
+                    <div class="wn-ctw-breadcrumb">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span class="wn-ctw-crumb-muted">Prospectos</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                        <span class="wn-ctw-crumb-current">Nuevo prospecto</span>
                     </div>
+                    <button type="button" class="wn-ctw-close" id="wpWidgetClose" title="Cerrar (Esc)"
+                        onclick="var w=document.getElementById('widgetNuevoProspecto');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Nombre del prospecto';if(l2)l2.textContent='Cliente';},220);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </header>
 
-                    <!-- Cliente -->
-                    <div class="wn-field">
-                        <div class="wn-label-row">
-                            <label class="wn-label" id="wpfLblCliente">Cliente</label>
-                            <button type="button" class="wn-add-btn" id="wpnAddClienteBtn" title="Crear nuevo cliente">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                <!-- ─── Canvas: Título + "Para [Cliente]" + pill Pipeline + Notas ─── -->
+                <main class="wn-ctw-canvas">
+
+                    <!-- Título grande -->
+                    <!-- span oculto con label dinámico (usado por código externo para cambiar "Nombre del prospecto" ↔ "Titulo de la prospeccion") -->
+                    <span id="wpfLblNombre" style="display:none;">Nombre del prospecto</span>
+                    <span id="wpfLblCliente" style="display:none;">Cliente</span>
+                    <input type="text" class="wn-ctw-title" id="wpfNombre" placeholder="Nombre del prospecto…" autocomplete="off">
+
+                    <!-- Para [Cliente] -->
+                    <div class="wn-ctw-nl-row">
+                        <span class="wn-ctw-nl-label">Para</span>
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-pill-large empty" id="wpClienteBtn" onclick="wpOpenPop('cli', event)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <span id="wpClienteLabel">Selecciona un cliente (requerido)</span>
                             </button>
-                        </div>
-                        <input type="text" class="wn-input wf-input" id="wpfCliente" placeholder="Buscar o escribir cliente..." required>
-                        <input type="hidden" id="wpfClienteId" value="">
-                        <div class="wf-autocomplete" id="wpfClienteAC"></div>
-                        <!-- Mini-form crear cliente -->
-                        <div class="wn-mini-form" id="wpnMiniCliente" style="display:none;">
-                            <div class="wn-mini-title">Nuevo cliente</div>
-                            <input type="text" class="wn-input wn-mini-input" id="wpfNuevoClienteNombre" placeholder="Nombre de la empresa">
-                            <div class="wn-mini-actions">
-                                <button type="button" class="wn-mini-cancel" id="wpfNuevoClienteCancel">Cancelar</button>
-                                <button type="button" class="wn-mini-save" id="wpfNuevoClienteGuardar">Guardar cliente</button>
+                            <div class="wn-ctw-pop wn-ctw-pop-wide" id="wpPopCli" style="display:none;">
+                                <div class="wn-ctw-pop-title">Cliente</div>
+                                <input type="text" class="wn-ctw-pop-input wf-input" id="wpfCliente" placeholder="Buscar o escribir cliente…">
+                                <input type="hidden" id="wpfClienteId" value="">
+                                <div class="wf-autocomplete" id="wpfClienteAC"></div>
+                                <button type="button" class="wn-ctw-pop-add" id="wpnAddClienteBtn">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Crear cliente nuevo
+                                </button>
+                                <div class="wn-ctw-mini" id="wpnMiniCliente" style="display:none;">
+                                    <input type="text" class="wn-ctw-pop-input" id="wpfNuevoClienteNombre" placeholder="Nombre de la empresa">
+                                    <div class="wn-ctw-mini-actions">
+                                        <button type="button" class="wn-mini-cancel" id="wpfNuevoClienteCancel">Cancelar</button>
+                                        <button type="button" class="wn-mini-save" id="wpfNuevoClienteGuardar">Guardar cliente</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Contacto -->
-                    <div class="wn-field">
-                        <div class="wn-label-row">
-                            <label class="wn-label">Contacto</label>
-                            <button type="button" class="wn-add-btn" id="wpnAddContactoBtn" title="Crear nuevo contacto">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    <!-- Pill obligatorio: Pipeline (runrate/proyecto) -->
+                    <div class="wn-ctw-meta-row">
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-pill-meta empty" id="wpPipelineBtn" onclick="wpOpenPop('pipeline', event)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                                <span id="wpPipelineLabel">Pipeline (requerido)</span>
                             </button>
-                        </div>
-                        <input type="text" class="wn-input wf-input" id="wpfContacto" placeholder="Nombre del contacto...">
-                        <input type="hidden" id="wpfContactoId" value="">
-                        <div class="wf-autocomplete" id="wpfContactoAC"></div>
-                        <!-- Mini-form crear contacto -->
-                        <div class="wn-mini-form" id="wpnMiniContacto" style="display:none;">
-                            <div class="wn-mini-title">Nuevo contacto</div>
-                            <div class="wn-mini-row">
-                                <input type="text" class="wn-input wn-mini-input" id="wpfNuevoContactoNombre" placeholder="Nombre">
-                                <input type="text" class="wn-input wn-mini-input" id="wpfNuevoContactoApellido" placeholder="Apellido">
-                            </div>
-                            <div class="wn-mini-actions">
-                                <button type="button" class="wn-mini-cancel" id="wpfNuevoContactoCancel">Cancelar</button>
-                                <button type="button" class="wn-mini-save" id="wpfNuevoContactoGuardar">Guardar contacto</button>
+                            <div class="wn-ctw-pop" id="wpPopPipeline" style="display:none;">
+                                <div class="wn-ctw-pop-title">Tipo de pipeline</div>
+                                <select class="wn-ctw-pop-input" id="wpfTipoPipeline">
+                                    <option value="">Selecciona un tipo</option>
+                                    <option value="runrate" selected>Runrate</option>
+                                    <option value="proyecto">Proyecto</option>
+                                </select>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Divider -->
-                    <div class="wn-divider"></div>
+                    <!-- Notas (opcional) -->
+                    <textarea class="wn-ctw-desc" id="wpfComentarios" placeholder="Añade contexto de la prospección, siguientes pasos o notas…" rows="4"></textarea>
+                </main>
 
-                    <!-- Area + Producto -->
-                    <div class="wn-row">
-                        <div class="wn-field">
-                            <label class="wn-label">Area</label>
-                            <select class="wn-input wn-select" id="wpfArea">
-                                <option value="SISTEMAS">Sistemas</option>
-                                <option value="Recursos Humanos">Recursos Humanos</option>
-                                <option value="Compras">Compras</option>
-                                <option value="Seguridad">Seguridad</option>
-                                <option value="Mantenimiento">Mantenimiento</option>
-                                <option value="Almacen">Almacen</option>
-                            </select>
+                <!-- ─── Toolbar: Contacto + Producto + Área ─── -->
+                <footer class="wn-ctw-toolbar">
+                    <div class="wn-ctw-tools">
+
+                        <!-- Contacto -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-tool-ghost" id="wpContactoBtn" onclick="wpOpenPop('contacto', event)" title="Añadir contacto">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                                <span id="wpContactoLabel">Contacto</span>
+                            </button>
+                            <div class="wn-ctw-pop wn-ctw-pop-wide" id="wpPopContacto" style="display:none;">
+                                <div class="wn-ctw-pop-title">Contacto</div>
+                                <input type="text" class="wn-ctw-pop-input wf-input" id="wpfContacto" placeholder="Nombre del contacto…">
+                                <input type="hidden" id="wpfContactoId" value="">
+                                <div class="wf-autocomplete" id="wpfContactoAC"></div>
+                                <button type="button" class="wn-ctw-pop-add" id="wpnAddContactoBtn">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Crear contacto nuevo
+                                </button>
+                                <div class="wn-ctw-mini" id="wpnMiniContacto" style="display:none;">
+                                    <div class="wn-ctw-mini-row">
+                                        <input type="text" class="wn-ctw-pop-input" id="wpfNuevoContactoNombre" placeholder="Nombre">
+                                        <input type="text" class="wn-ctw-pop-input" id="wpfNuevoContactoApellido" placeholder="Apellido">
+                                    </div>
+                                    <div class="wn-ctw-mini-actions">
+                                        <button type="button" class="wn-mini-cancel" id="wpfNuevoContactoCancel">Cancelar</button>
+                                        <button type="button" class="wn-mini-save" id="wpfNuevoContactoGuardar">Guardar contacto</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="wn-field">
-                            <label class="wn-label">Producto</label>
-                            <select class="wn-input wn-select" id="wpfProducto">
-                                <option value="ZEBRA">Zebra</option>
-                                <option value="PANDUIT">Panduit</option>
-                                <option value="APC">APC</option>
-                                <option value="AVIGILION">Avigilon</option>
-                                <option value="GENETEC">Genetec</option>
-                                <option value="AXIS">Axis</option>
-                                <option value="SOFTWARE" selected>Software</option>
-                                <option value="RUNRATE">Runrate</option>
-                                <option value="POLIZA">Poliza</option>
-                                <option value="CISCO">Cisco</option>
-                                <option value="SERVICIO">Servicio</option>
-                            </select>
+
+                        <div class="wn-ctw-tool-sep"></div>
+
+                        <!-- Producto -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-tool-ghost" id="wpProdBtn" onclick="wpOpenPop('prod', event)" title="Producto">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                <span id="wpProdLabel">Producto</span>
+                            </button>
+                            <div class="wn-ctw-pop" id="wpPopProd" style="display:none;">
+                                <div class="wn-ctw-pop-title">Producto</div>
+                                <select class="wn-ctw-pop-input" id="wpfProducto">
+                                    <option value="">Selecciona un producto</option>
+                                    <option value="ZEBRA">Zebra</option>
+                                    <option value="PANDUIT">Panduit</option>
+                                    <option value="APC">APC</option>
+                                    <option value="AVIGILION">Avigilon</option>
+                                    <option value="GENETEC">Genetec</option>
+                                    <option value="AXIS">Axis</option>
+                                    <option value="SOFTWARE" selected>Software</option>
+                                    <option value="RUNRATE">Runrate</option>
+                                    <option value="POLIZA">Póliza</option>
+                                    <option value="CISCO">Cisco</option>
+                                    <option value="SERVICIO">Servicio</option>
+                                </select>
+                            </div>
                         </div>
+
+                        <!-- Área -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-tool-ghost" id="wpAreaBtn" onclick="wpOpenPop('area', event)" title="Área">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                                <span id="wpAreaLabel">Área</span>
+                            </button>
+                            <div class="wn-ctw-pop" id="wpPopArea" style="display:none;">
+                                <div class="wn-ctw-pop-title">Área</div>
+                                <select class="wn-ctw-pop-input" id="wpfArea">
+                                    <option value="SISTEMAS" selected>Sistemas</option>
+                                    <option value="Recursos Humanos">Recursos Humanos</option>
+                                    <option value="Compras">Compras</option>
+                                    <option value="Seguridad">Seguridad</option>
+                                    <option value="Mantenimiento">Mantenimiento</option>
+                                    <option value="Almacén">Almacén</option>
+                                </select>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <!-- Tipo Pipeline -->
-                    <div class="wn-field">
-                        <label class="wn-label">Tipo de Pipeline</label>
-                        <select class="wn-input wn-select" id="wpfTipoPipeline">
-                            <option value="runrate">Runrate</option>
-                            <option value="proyecto">Proyecto</option>
-                        </select>
-                    </div>
-
-                    <!-- Comentarios -->
-                    <div class="wn-field">
-                        <label class="wn-label">Comentarios <span class="wn-optional">opcional</span></label>
-                        <textarea class="wn-input wn-textarea" id="wpfComentarios"
-                            placeholder="Contexto adicional, notas, proximos pasos..." rows="2"></textarea>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="wn-actions">
-                        <button type="button" class="wn-btn wn-btn--cancel" id="wpfCancel"
+                    <div class="wn-ctw-actions">
+                        <button type="button" class="wn-ctw-cancel" id="wpfCancel"
                             onclick="var w=document.getElementById('widgetNuevoProspecto');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">Cancelar</button>
-                        <button type="submit" class="wn-btn wn-btn--submit" id="wpfSubmit">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M12 5v14M5 12h14"/></svg>
+                        <button type="submit" class="wn-ctw-submit" id="wpfSubmit">
                             Crear prospecto
+                            <span class="wn-ctw-kbd">⌘ ↵</span>
                         </button>
                     </div>
-                </form>
-            </div>
+                </footer>
+            </form>
         </div>
     </div>
 
     <script>
     (function() {
-        var csrf = function() { return document.querySelector('[name=csrfmiddlewaretoken]').value; };
-        var _wpSelectedClienteId = null;
+        var csrf = function() {
+            var el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : '';
+        };
+
+        // ── Popovers ──
+        var POP_IDS = { cli:'wpPopCli', pipeline:'wpPopPipeline', contacto:'wpPopContacto', prod:'wpPopProd', area:'wpPopArea' };
+        var BTN_IDS = { cli:'wpClienteBtn', pipeline:'wpPipelineBtn', contacto:'wpContactoBtn', prod:'wpProdBtn', area:'wpAreaBtn' };
+
+        function _wpCloseAllPops() {
+            Object.keys(POP_IDS).forEach(function(k) {
+                var p = document.getElementById(POP_IDS[k]); if (p) p.style.display = 'none';
+                var b = document.getElementById(BTN_IDS[k]); if (b) b.classList.remove('active');
+            });
+        }
+        window.wpOpenPop = function(which, e) {
+            if (e) e.stopPropagation();
+            var pop = document.getElementById(POP_IDS[which]);
+            var btn = document.getElementById(BTN_IDS[which]);
+            if (!pop || !btn) return;
+            var isOpen = pop.style.display !== 'none';
+            _wpCloseAllPops();
+            if (!isOpen) {
+                pop.style.display = 'block';
+                btn.classList.add('active');
+                setTimeout(function() {
+                    var first = pop.querySelector('input, select, textarea');
+                    if (first && first.focus) first.focus();
+                }, 30);
+            }
+        };
+        document.addEventListener('click', function(e) {
+            var modal = document.getElementById('widgetNuevoProspecto');
+            if (!modal || !modal.classList.contains('active')) return;
+            var wraps = modal.querySelectorAll('.wn-ctw-popwrap');
+            for (var i = 0; i < wraps.length; i++) {
+                if (wraps[i].contains(e.target)) return;
+            }
+            _wpCloseAllPops();
+        });
+
+        // ── Labels dinámicas ──
+        function _labelOf(selectId, emptyText) {
+            var s = document.getElementById(selectId);
+            if (!s) return emptyText;
+            return s.value ? (s.options[s.selectedIndex].text || emptyText) : emptyText;
+        }
+        function _setLabel(btnId, labelId, text, isEmpty) {
+            var btn = document.getElementById(btnId);
+            var lbl = document.getElementById(labelId);
+            if (lbl) lbl.textContent = text;
+            if (btn) btn.classList.toggle('empty', !!isEmpty);
+        }
+
+        // Pipeline
+        var pipSel = document.getElementById('wpfTipoPipeline');
+        if (pipSel) pipSel.addEventListener('change', function() {
+            var v = pipSel.value;
+            _setLabel('wpPipelineBtn', 'wpPipelineLabel', v ? _labelOf('wpfTipoPipeline','Pipeline') : 'Pipeline (requerido)', !v);
+            _wpCloseAllPops();
+        });
+        // Inicializar label (default: runrate)
+        _setLabel('wpPipelineBtn', 'wpPipelineLabel', _labelOf('wpfTipoPipeline','Pipeline'), !pipSel || !pipSel.value);
+
+        // Producto
+        var prodSel = document.getElementById('wpfProducto');
+        if (prodSel) prodSel.addEventListener('change', function() {
+            var v = prodSel.value;
+            _setLabel('wpProdBtn', 'wpProdLabel', v ? _labelOf('wpfProducto','Producto') : 'Producto', !v);
+            _wpCloseAllPops();
+        });
+        _setLabel('wpProdBtn', 'wpProdLabel', _labelOf('wpfProducto','Producto'), !prodSel || !prodSel.value);
+
+        // Área
+        var areaSel = document.getElementById('wpfArea');
+        if (areaSel) areaSel.addEventListener('change', function() {
+            var v = areaSel.value;
+            _setLabel('wpAreaBtn', 'wpAreaLabel', v ? _labelOf('wpfArea','Área') : 'Área', !v);
+            _wpCloseAllPops();
+        });
+        _setLabel('wpAreaBtn', 'wpAreaLabel', _labelOf('wpfArea','Área'), !areaSel || !areaSel.value);
 
         // ── Autocomplete Cliente ──
+        var _wpSelectedClienteId = null;
         var clienteInput = document.getElementById('wpfCliente');
         var clienteAC = document.getElementById('wpfClienteAC');
         var clienteIdField = document.getElementById('wpfClienteId');
         var _wpClienteTimer = null;
 
+        function _updateClienteLabel() {
+            var txt = (clienteInput && clienteInput.value.trim()) || '';
+            var empty = !clienteIdField.value;
+            _setLabel('wpClienteBtn', 'wpClienteLabel', txt && !empty ? txt : 'Selecciona un cliente (requerido)', empty);
+        }
+
         if (clienteInput) {
             clienteInput.addEventListener('input', function() {
+                clienteIdField.value = ''; // invalidar selección al tipear
+                _wpSelectedClienteId = null;
+                _updateClienteLabel();
                 clearTimeout(_wpClienteTimer);
                 var q = this.value.trim();
                 if (q.length < 2) { clienteAC.innerHTML = ''; clienteAC.style.display = 'none'; return; }
@@ -172,6 +294,8 @@
                                     _wpSelectedClienteId = c.id;
                                     clienteAC.innerHTML = '';
                                     clienteAC.style.display = 'none';
+                                    _updateClienteLabel();
+                                    _wpCloseAllPops();
                                 });
                                 clienteAC.appendChild(div);
                             });
@@ -187,8 +311,15 @@
         var contactoIdField = document.getElementById('wpfContactoId');
         var _wpContactoTimer = null;
 
+        function _updateContactoLabel() {
+            var txt = (contactoInput && contactoInput.value.trim()) || '';
+            _setLabel('wpContactoBtn', 'wpContactoLabel', txt ? txt : 'Contacto', !txt);
+        }
+
         if (contactoInput) {
             contactoInput.addEventListener('input', function() {
+                contactoIdField.value = '';
+                _updateContactoLabel();
                 clearTimeout(_wpContactoTimer);
                 var q = this.value.trim();
                 if (q.length < 2) { contactoAC.innerHTML = ''; contactoAC.style.display = 'none'; return; }
@@ -210,6 +341,8 @@
                                     contactoIdField.value = c.id;
                                     contactoAC.innerHTML = '';
                                     contactoAC.style.display = 'none';
+                                    _updateContactoLabel();
+                                    _wpCloseAllPops();
                                 });
                                 contactoAC.appendChild(div);
                             });
@@ -219,55 +352,61 @@
             });
         }
 
-        // ── Boton + Cliente ──
-        document.getElementById('wpnAddClienteBtn').addEventListener('click', function() {
+        // ── Mini-form Crear Cliente ──
+        var btnAddCli = document.getElementById('wpnAddClienteBtn');
+        if (btnAddCli) btnAddCli.addEventListener('click', function() {
             var mini = document.getElementById('wpnMiniCliente');
             mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
             if (mini.style.display === 'block') document.getElementById('wpfNuevoClienteNombre').focus();
         });
-        document.getElementById('wpfNuevoClienteCancel').addEventListener('click', function() {
+        var btnCancelCli = document.getElementById('wpfNuevoClienteCancel');
+        if (btnCancelCli) btnCancelCli.addEventListener('click', function() {
             document.getElementById('wpnMiniCliente').style.display = 'none';
             document.getElementById('wpfNuevoClienteNombre').value = '';
         });
-        document.getElementById('wpfNuevoClienteGuardar').addEventListener('click', function() {
+        var btnSaveCli = document.getElementById('wpfNuevoClienteGuardar');
+        if (btnSaveCli) btnSaveCli.addEventListener('click', function() {
             var nombre = document.getElementById('wpfNuevoClienteNombre').value.trim();
             if (!nombre) { document.getElementById('wpfNuevoClienteNombre').focus(); return; }
-            var btn = this;
-            btn.disabled = true; btn.textContent = 'Guardando...';
+            var btn = this; btn.disabled = true; btn.textContent = 'Guardando…';
             fetch('/app/api/quick-crear-cliente/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
                 body: JSON.stringify({ nombre_empresa: nombre })
-            }).then(function(r) { return r.json(); }).then(function(res) {
+            }).then(function(r){ return r.json(); }).then(function(res) {
                 if (res.success) {
                     clienteInput.value = res.nombre;
                     clienteIdField.value = res.id;
                     _wpSelectedClienteId = res.id;
                     document.getElementById('wpnMiniCliente').style.display = 'none';
                     document.getElementById('wpfNuevoClienteNombre').value = '';
+                    _updateClienteLabel();
+                    _wpCloseAllPops();
                 } else {
                     alert(res.error || 'Error al crear cliente');
                 }
                 btn.disabled = false; btn.textContent = 'Guardar cliente';
-            }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar cliente'; });
+            }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar cliente'; });
         });
 
-        // ── Boton + Contacto ──
-        document.getElementById('wpnAddContactoBtn').addEventListener('click', function() {
+        // ── Mini-form Crear Contacto ──
+        var btnAddCon = document.getElementById('wpnAddContactoBtn');
+        if (btnAddCon) btnAddCon.addEventListener('click', function() {
             var mini = document.getElementById('wpnMiniContacto');
             mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
             if (mini.style.display === 'block') document.getElementById('wpfNuevoContactoNombre').focus();
         });
-        document.getElementById('wpfNuevoContactoCancel').addEventListener('click', function() {
+        var btnCancelCon = document.getElementById('wpfNuevoContactoCancel');
+        if (btnCancelCon) btnCancelCon.addEventListener('click', function() {
             document.getElementById('wpnMiniContacto').style.display = 'none';
             document.getElementById('wpfNuevoContactoNombre').value = '';
             document.getElementById('wpfNuevoContactoApellido').value = '';
         });
-        document.getElementById('wpfNuevoContactoGuardar').addEventListener('click', function() {
+        var btnSaveCon = document.getElementById('wpfNuevoContactoGuardar');
+        if (btnSaveCon) btnSaveCon.addEventListener('click', function() {
             var nombre = document.getElementById('wpfNuevoContactoNombre').value.trim();
             if (!nombre) { document.getElementById('wpfNuevoContactoNombre').focus(); return; }
-            var btn = this;
-            btn.disabled = true; btn.textContent = 'Guardando...';
+            var btn = this; btn.disabled = true; btn.textContent = 'Guardando…';
             fetch('/app/api/quick-crear-contacto/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
@@ -276,33 +415,38 @@
                     apellido: document.getElementById('wpfNuevoContactoApellido').value.trim(),
                     empresa_id: _wpSelectedClienteId
                 })
-            }).then(function(r) { return r.json(); }).then(function(res) {
+            }).then(function(r){ return r.json(); }).then(function(res) {
                 if (res.success) {
                     contactoInput.value = res.nombre_completo;
                     contactoIdField.value = res.id;
                     document.getElementById('wpnMiniContacto').style.display = 'none';
                     document.getElementById('wpfNuevoContactoNombre').value = '';
                     document.getElementById('wpfNuevoContactoApellido').value = '';
+                    _updateContactoLabel();
+                    _wpCloseAllPops();
                 } else {
                     alert(res.error || 'Error al crear contacto');
                 }
                 btn.disabled = false; btn.textContent = 'Guardar contacto';
-            }).catch(function() { btn.disabled = false; btn.textContent = 'Guardar contacto'; });
+            }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar contacto'; });
         });
 
-        // ── Submit form ──
+        // ── Submit ──
         document.getElementById('formNuevoProspecto').addEventListener('submit', function(e) {
             e.preventDefault();
-            var nombre = document.getElementById('wpfNombre').value.trim();
-            var clienteId = document.getElementById('wpfClienteId').value;
+            var nombre     = document.getElementById('wpfNombre').value.trim();
+            var clienteId  = document.getElementById('wpfClienteId').value;
             var contactoId = document.getElementById('wpfContactoId').value;
+            var pipeline   = document.getElementById('wpfTipoPipeline').value;
 
-            if (!nombre) { document.getElementById('wpfNombre').focus(); return; }
-            if (!clienteId) { alert('Selecciona un cliente'); document.getElementById('wpfCliente').focus(); return; }
+            if (!nombre)   { document.getElementById('wpfNombre').focus(); return; }
+            if (!clienteId){ alert('Selecciona un cliente'); wpOpenPop('cli'); return; }
+            if (!pipeline) { alert('Selecciona un pipeline'); wpOpenPop('pipeline'); return; }
 
             var submitBtn = document.getElementById('wpfSubmit');
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Creando...';
+            var _origSubmit = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Creando…';
 
             fetch('/app/api/crear-prospecto/', {
                 method: 'POST',
@@ -313,12 +457,11 @@
                     contacto_id: contactoId ? parseInt(contactoId) : null,
                     producto: document.getElementById('wpfProducto').value,
                     area: document.getElementById('wpfArea').value,
-                    tipo_pipeline: document.getElementById('wpfTipoPipeline').value,
+                    tipo_pipeline: pipeline,
                     comentarios: document.getElementById('wpfComentarios').value.trim()
                 })
-            }).then(function(r) { return r.json(); }).then(function(data) {
+            }).then(function(r){ return r.json(); }).then(function(data) {
                 if (data.success) {
-                    // Cerrar widget
                     var w = document.getElementById('widgetNuevoProspecto');
                     w.classList.add('closing');
                     setTimeout(function() { w.classList.remove('active', 'closing'); }, 220);
@@ -328,19 +471,13 @@
                     document.getElementById('wpfClienteId').value = '';
                     document.getElementById('wpfContactoId').value = '';
                     _wpSelectedClienteId = null;
+                    _updateClienteLabel();
+                    _updateContactoLabel();
 
-                    // Recargar tabla de clientes si estamos en tab prospeccion
-                    if (typeof window.cargarProspectos === 'function') {
-                        window.cargarProspectos();
-                    }
-                    // Recargar kanban de prospectos si estamos en tab=prospectos
-                    if (typeof window.recargarProspectosKanban === 'function') {
-                        window.recargarProspectosKanban();
-                    }
-                    // Recargar prospectos del cliente en el widget si esta abierto
-                    if (typeof window._recargarProspectosCliente === 'function') {
-                        window._recargarProspectosCliente();
-                    }
+                    // Recargas
+                    if (typeof window.cargarProspectos === 'function') window.cargarProspectos();
+                    if (typeof window.recargarProspectosKanban === 'function') window.recargarProspectosKanban();
+                    if (typeof window._recargarProspectosCliente === 'function') window._recargarProspectosCliente();
 
                     // Toast
                     var toast = document.getElementById('widgetToast');
@@ -350,25 +487,20 @@
                         setTimeout(function() { toast.classList.remove('show'); }, 3000);
                     }
 
-                    // Abrir widget del prospecto recién creado (forzar actividad)
+                    // Abrir widget del prospecto para registrar primera actividad
                     if (data.id && typeof abrirWidgetProspecto === 'function') {
                         setTimeout(function() {
                             abrirWidgetProspecto(data.id);
-                            // Guardar en localStorage para persistir si recarga
                             localStorage.setItem('_pendienteProspectoSinActividad', data.id);
                         }, 500);
                     }
 
-                    // Flujo automático desde click en marca:
-                    // 1. Abrir widget de cliente con tabla de prospectos
-                    // 2. Abrir editor de campaña encima
+                    // Flujo automático desde click en marca (campañas)
                     var ctx = window._prospeccionProductoContext;
                     if (ctx && ctx.clienteId) {
-                        // Abrir widget de prospectos del cliente
                         if (typeof window._prospeccionClickCliente === 'function') {
                             window._prospeccionClickCliente(ctx.clienteId, ctx.clienteNombre, '');
                         }
-                        // Después de un breve delay, abrir editor de campaña encima
                         setTimeout(function() {
                             if (typeof abrirEditorCampana === 'function') {
                                 abrirEditorCampana({
@@ -378,18 +510,31 @@
                                 });
                             }
                         }, 400);
-                        // Limpiar contexto
                         window._prospeccionProductoContext = null;
                     }
                 } else {
                     alert(data.error || 'Error al crear prospecto');
                 }
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M12 5v14M5 12h14"/></svg> Crear prospecto';
+                submitBtn.innerHTML = _origSubmit;
             }).catch(function() {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M12 5v14M5 12h14"/></svg> Crear prospecto';
+                submitBtn.innerHTML = _origSubmit;
             });
+        });
+
+        // Atajo ⌘+↵ / Ctrl+↵ para enviar
+        document.addEventListener('keydown', function(e) {
+            var modal = document.getElementById('widgetNuevoProspecto');
+            if (!modal || !modal.classList.contains('active')) return;
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('formNuevoProspecto').dispatchEvent(new Event('submit', { cancelable: true }));
+            } else if (e.key === 'Escape') {
+                var w = document.getElementById('widgetNuevoProspecto');
+                w.classList.add('closing');
+                setTimeout(function() { w.classList.remove('active', 'closing'); }, 220);
+            }
         });
     })();
     </script>
