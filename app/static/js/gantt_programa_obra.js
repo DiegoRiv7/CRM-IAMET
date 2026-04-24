@@ -228,8 +228,23 @@
         this.canvas.addEventListener('mousemove', function (e) { self._onMouseMove(e); });
         this.canvas.addEventListener('dblclick', function (e) { self._onDblClick(e); });
         this.canvas.addEventListener('mouseleave', function () { self._hideTooltip(); });
+        this.canvas.addEventListener('contextmenu', function (e) { self._onContextMenu(e); });
         document.addEventListener('mousemove', function (e) { self._onDocMouseMove(e); });
         document.addEventListener('mouseup', function (e) { self._onMouseUp(e); });
+
+        // Close context menu on click outside or ESC
+        document.addEventListener('mousedown', function (e) {
+            var menu = self.root.querySelector('.gantt-ctx-menu');
+            if (menu && !menu.contains(e.target)) {
+                menu.remove();
+            }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var menu = self.root.querySelector('.gantt-ctx-menu');
+                if (menu) menu.remove();
+            }
+        });
     };
 
     /* -------------------------------------------
@@ -313,6 +328,25 @@
             '.gantt-modal-field input, .gantt-modal-field select { width: 100%; padding: 7px 10px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; font-size: 13px; box-sizing: border-box; }',
             '.gantt-modal-field input:focus, .gantt-modal-field select:focus { outline: none; border-color: ' + COLOR_PRIMARY + '; box-shadow: 0 0 0 2px rgba(0,82,212,.15); }',
             '.gantt-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }',
+            /* Context menu */
+            '.gantt-ctx-menu { position: absolute; z-index: 300; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.16); padding: 4px 0; min-width: 200px; font-size: 13px; }',
+            '.gantt-ctx-item { padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background .1s; position: relative; color: ' + COLOR_DARK + '; }',
+            '.gantt-ctx-item:hover { background: #f1f5f9; }',
+            '.gantt-ctx-item.danger { color: #dc2626; }',
+            '.gantt-ctx-sep { height: 1px; background: ' + COLOR_BORDER + '; margin: 4px 0; }',
+            '.gantt-ctx-sub { position: absolute; left: 100%; top: -4px; background: #fff; border: 1px solid ' + COLOR_BORDER + '; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.16); padding: 4px 0; min-width: 200px; max-height: 240px; overflow-y: auto; z-index: 301; display: none; }',
+            '.gantt-ctx-item:hover > .gantt-ctx-sub { display: block; }',
+            '.gantt-ctx-sub-item { padding: 6px 14px; cursor: pointer; transition: background .1s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+            '.gantt-ctx-sub-item:hover { background: #f1f5f9; }',
+            '.gantt-ctx-arrow { margin-left: auto; color: #94a3b8; font-size: 10px; }',
+            '.gantt-ctx-progress-wrap { padding: 8px 14px; display: flex; align-items: center; gap: 8px; }',
+            '.gantt-ctx-progress-input { width: 60px; padding: 4px 8px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 6px; font-size: 13px; text-align: center; }',
+            '.gantt-ctx-progress-input:focus { outline: none; border-color: ' + COLOR_PRIMARY + '; box-shadow: 0 0 0 2px rgba(0,82,212,.15); }',
+            '.gantt-ctx-progress-btn { padding: 4px 10px; background: ' + COLOR_PRIMARY + '; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }',
+            '.gantt-ctx-progress-btn:hover { background: #003fa3; }',
+
+            /* Inline edit */
+            '.gantt-inline-input { width: 100%; padding: 2px 6px; border: 1px solid ' + COLOR_PRIMARY + '; border-radius: 4px; font-size: 13px; font-family: inherit; outline: none; box-shadow: 0 0 0 2px rgba(0,82,212,.15); box-sizing: border-box; }',
         ].join('\n');
 
         var style = document.createElement('style');
@@ -589,7 +623,16 @@
                 nameCell.appendChild(span);
             } else {
                 nameCell.appendChild(el('span', { className: 'gantt-indent' }));
-                nameCell.appendChild(document.createTextNode(t.name));
+                var nameSpan = el('span', {}, [t.name]);
+                nameCell.appendChild(nameSpan);
+
+                // Inline edit on double-click
+                (function (task, spanEl, cell) {
+                    spanEl.addEventListener('dblclick', function (e) {
+                        e.stopPropagation();
+                        self._startInlineEdit(task, spanEl, cell);
+                    });
+                })(t, nameSpan, nameCell);
             }
             row.appendChild(nameCell);
 
@@ -1005,6 +1048,7 @@
     };
 
     Gantt.prototype._onMouseDown = function (e) {
+        if (e.button !== 0) return; // only left button
         var pos = this._getCanvasPos(e);
         var hit = this._hitTest(pos);
         if (!hit || hit.task.isPhase) return;
@@ -1547,6 +1591,222 @@
         this.modal.onclick = function (e) {
             if (e.target === self.modal) self._closeModal();
         };
+    };
+
+    /* -------------------------------------------
+       CONTEXT MENU (Right-click on bar)
+       ------------------------------------------- */
+    Gantt.prototype._onContextMenu = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Remove any existing menu
+        var existing = this.root.querySelector('.gantt-ctx-menu');
+        if (existing) existing.remove();
+
+        var pos = this._getCanvasPos(e);
+        var hit = this._hitTest(pos);
+        if (!hit || hit.task.isPhase) return;
+
+        var self = this;
+        var t = hit.task;
+        this.selectedTaskId = t.id;
+        this._render();
+
+        var menu = el('div', { className: 'gantt-ctx-menu' });
+
+        // --- Option: Add dependency (submenu)
+        var otherTasks = this.tasks.filter(function (x) {
+            return !x.isPhase && x.id !== t.id && (!t.deps || t.deps.indexOf(x.id) === -1);
+        });
+
+        if (otherTasks.length > 0) {
+            var depItem = el('div', { className: 'gantt-ctx-item' }, [
+                '\u2192 Agregar dependencia',
+                el('span', { className: 'gantt-ctx-arrow' }, ['\u25B6'])
+            ]);
+
+            var subMenu = el('div', { className: 'gantt-ctx-sub' });
+            otherTasks.forEach(function (ot) {
+                var subItem = el('div', { className: 'gantt-ctx-sub-item' }, [ot.name]);
+                subItem.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    self._addDependency(t, ot.id);
+                    menu.remove();
+                });
+                subMenu.appendChild(subItem);
+            });
+
+            depItem.appendChild(subMenu);
+            menu.appendChild(depItem);
+        }
+
+        // --- Option: Remove dependencies
+        if (t.deps && t.deps.length > 0) {
+            var removeDepsItem = el('div', { className: 'gantt-ctx-item danger' }, ['\u2716 Quitar dependencias']);
+            removeDepsItem.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                self._removeDependencies(t);
+                menu.remove();
+            });
+            menu.appendChild(removeDepsItem);
+        }
+
+        // Separator
+        menu.appendChild(el('div', { className: 'gantt-ctx-sep' }));
+
+        // --- Option: Edit progress
+        var progItem = el('div', { className: 'gantt-ctx-item' }, ['\u270E Editar progreso']);
+        progItem.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            // Replace menu content with progress editor
+            menu.innerHTML = '';
+            var progWrap = el('div', { className: 'gantt-ctx-progress-wrap' });
+            var progInput = el('input', {
+                type: 'number',
+                className: 'gantt-ctx-progress-input',
+                value: String(t.progress),
+                min: '0',
+                max: '100'
+            });
+            var progBtn = el('button', { className: 'gantt-ctx-progress-btn' }, ['OK']);
+
+            var doSave = function () {
+                var val = Math.max(0, Math.min(100, parseInt(progInput.value) || 0));
+                t.progress = val;
+                self._persistTask(t);
+                self._render();
+                menu.remove();
+            };
+
+            progBtn.addEventListener('click', function (ev2) {
+                ev2.stopPropagation();
+                doSave();
+            });
+
+            progInput.addEventListener('keydown', function (ev2) {
+                if (ev2.key === 'Enter') {
+                    ev2.preventDefault();
+                    doSave();
+                } else if (ev2.key === 'Escape') {
+                    menu.remove();
+                }
+            });
+
+            progWrap.appendChild(el('span', { style: { fontSize: '12px', color: '#64748b' } }, ['Progreso:']));
+            progWrap.appendChild(progInput);
+            progWrap.appendChild(el('span', { style: { fontSize: '12px', color: '#64748b' } }, ['%']));
+            progWrap.appendChild(progBtn);
+            menu.appendChild(progWrap);
+
+            setTimeout(function () { progInput.focus(); progInput.select(); }, 50);
+        });
+        menu.appendChild(progItem);
+
+        // Separator
+        menu.appendChild(el('div', { className: 'gantt-ctx-sep' }));
+
+        // --- Option: View details
+        var detailItem = el('div', { className: 'gantt-ctx-item' }, ['\uD83D\uDCCB Ver detalles']);
+        detailItem.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            self._showResourceModal(t.id);
+            menu.remove();
+        });
+        menu.appendChild(detailItem);
+
+        // Position menu relative to root
+        var rootRect = this.root.getBoundingClientRect();
+        var mx = e.clientX - rootRect.left;
+        var my = e.clientY - rootRect.top;
+
+        menu.style.left = mx + 'px';
+        menu.style.top = my + 'px';
+        this.root.appendChild(menu);
+
+        // Adjust if overflows right/bottom
+        var menuRect = menu.getBoundingClientRect();
+        if (mx + menuRect.width > rootRect.width) {
+            menu.style.left = (mx - menuRect.width) + 'px';
+        }
+        if (my + menuRect.height > rootRect.height) {
+            menu.style.top = (my - menuRect.height) + 'px';
+        }
+    };
+
+    Gantt.prototype._addDependency = function (task, depId) {
+        if (!task.deps) task.deps = [];
+        if (task.deps.indexOf(depId) !== -1) return;
+
+        task.deps.push(depId);
+
+        // Cascade to enforce FS constraint
+        var dep = this._taskById(depId);
+        if (dep) {
+            var minStart = dep.start + dep.dur;
+            if (task.start < minStart) {
+                task.start = minStart;
+            }
+        }
+
+        this._persistTask(task);
+        this._render();
+    };
+
+    Gantt.prototype._removeDependencies = function (task) {
+        task.deps = [];
+        this._persistTask(task);
+        this._render();
+    };
+
+    /* -------------------------------------------
+       INLINE EDIT (double-click on name in table)
+       ------------------------------------------- */
+    Gantt.prototype._startInlineEdit = function (task, spanEl, cell) {
+        var self = this;
+        var oldName = task.name;
+
+        // Hide the span
+        spanEl.style.display = 'none';
+
+        var input = el('input', {
+            type: 'text',
+            className: 'gantt-inline-input',
+            value: oldName
+        });
+
+        // Find the indent span and insert after it
+        cell.appendChild(input);
+
+        var done = false;
+        var finish = function (save) {
+            if (done) return;
+            done = true;
+            var newName = input.value.trim();
+            if (save && newName && newName !== oldName) {
+                task.name = newName;
+                spanEl.textContent = newName;
+                self._persistTask(task);
+            }
+            input.remove();
+            spanEl.style.display = '';
+        };
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                finish(true);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                finish(false);
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            finish(true);
+        });
+
+        setTimeout(function () { input.focus(); input.select(); }, 30);
     };
 
     /* ===========================================
