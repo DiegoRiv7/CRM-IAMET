@@ -8970,7 +8970,7 @@
         }
     });
 
-    // ═══ COTIZAR RÁPIDO ═══
+    // ═══ COTIZAR RÁPIDO (legacy — el widget composer lo define ahora en _widget_cotizar_rapido.html) ═══
     var _crClientes = [];
 
     function cotizarRapidoAbrir() {
@@ -8980,7 +8980,8 @@
         document.body.style.overflow = 'hidden';
         crCargarClientes();
     }
-    window.cotizarRapidoAbrir = cotizarRapidoAbrir;
+    // No sobrescribir si el widget composer ya definió su propia versión
+    if (!window.cotizarRapidoAbrir) window.cotizarRapidoAbrir = cotizarRapidoAbrir;
 
     function cotizarRapidoCerrar() {
         var overlay = document.getElementById('widgetCotizarRapido');
@@ -9004,7 +9005,7 @@
         var goBtn = document.getElementById('crGoBtn');
         if (goBtn) { goBtn.disabled = true; goBtn.style.opacity = '0.5'; goBtn.style.cursor = 'not-allowed'; }
     }
-    window.cotizarRapidoCerrar = cotizarRapidoCerrar;
+    if (!window.cotizarRapidoCerrar) window.cotizarRapidoCerrar = cotizarRapidoCerrar;
 
     function crCargarClientes() {
         fetch('/app/api/cotizar-rapido/clientes/')

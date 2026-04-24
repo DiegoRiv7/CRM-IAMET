@@ -1,82 +1,391 @@
-<!-- ═══ WIDGET COTIZAR RÁPIDO ═══ -->
-<div class="widget-overlay wn-overlay" id="widgetCotizarRapido"
+<!-- ═══ WIDGET COTIZAR RÁPIDO (composer style) ═══
+     Crea una oportunidad con lo mínimo y arranca el cotizador. -->
+<div class="widget-overlay wn-overlay" id="widgetCotizarRapido" style="z-index:10100;"
     onclick="if(event.target===this){cotizarRapidoCerrar();}">
-    <div class="wn-card">
+    <div class="wn-card wn-composer">
 
-        <!-- Header -->
-        <div class="wn-header">
-            <div class="wn-header-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            </div>
-            <div>
-                <div class="wn-title">Cotizar Rápido</div>
-                <div class="wn-subtitle">Selecciona cliente y oportunidad para cotizar</div>
-            </div>
-            <button type="button" class="wn-close" onclick="cotizarRapidoCerrar()">&times;</button>
-        </div>
+        <form id="formCotizarRapido" autocomplete="off" novalidate style="display:contents;">
+            {% csrf_token %}
 
-        <!-- Body -->
-        <div class="wn-body">
-
-            <!-- Cliente -->
-            <div class="wn-field">
-                <div class="wn-label-row">
-                    <label class="wn-label">Cliente</label>
-                    <button type="button" class="wn-add-btn" onclick="crToggleNuevoCliente()" title="Crear nuevo cliente">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                    </button>
+            <!-- Header -->
+            <header class="wn-ctw-header">
+                <div class="wn-ctw-breadcrumb">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span class="wn-ctw-crumb-muted">Oportunidades</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    <span class="wn-ctw-crumb-current">Cotizar rápido</span>
                 </div>
-                <div style="position:relative;">
-                    <input type="text" class="wn-input wf-input" id="crClienteInput"
-                        placeholder="Buscar cliente..." autocomplete="off" oninput="crFiltrarClientes()">
-                    <input type="hidden" id="crClienteId" value="">
-                    <div class="wf-autocomplete" id="crClienteDropdown"></div>
-                </div>
-                <!-- Mini-form nuevo cliente -->
-                <div class="wn-mini-form" id="crNuevoClienteSection" style="display:none;">
-                    <div class="wn-mini-title">Nuevo cliente</div>
-                    <input type="text" class="wn-input wn-mini-input" id="crNuevoClienteNombre" placeholder="Nombre de la empresa">
-                    <div class="wn-mini-actions">
-                        <button type="button" class="wn-mini-cancel" onclick="crToggleNuevoCliente()">Cancelar</button>
-                        <button type="button" class="wn-mini-save" onclick="crCrearCliente()">Guardar cliente</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Divider -->
-            <div class="wn-divider"></div>
-
-            <!-- Oportunidad -->
-            <div class="wn-field">
-                <div class="wn-label-row">
-                    <label class="wn-label">Oportunidad</label>
-                    <button type="button" class="wn-add-btn" onclick="crToggleNuevaOpp()" title="Nueva oportunidad">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                    </button>
-                </div>
-                <select class="wn-input wn-select" id="crOppSelect" onchange="crOppChanged()" disabled>
-                    <option value="">— seleccionar oportunidad —</option>
-                </select>
-                <!-- Mini-form nueva oportunidad -->
-                <div class="wn-mini-form" id="crNuevaOppSection" style="display:none;">
-                    <div class="wn-mini-title">Nueva oportunidad</div>
-                    <input type="text" class="wn-input wn-mini-input" id="crNuevaOppNombre" placeholder="Ej. Proyecto Cableado 2026">
-                    <div class="wn-mini-actions">
-                        <button type="button" class="wn-mini-cancel" onclick="crToggleNuevaOpp()">Cancelar</button>
-                        <button type="button" class="wn-mini-save" onclick="crCrearOpp()">Guardar oportunidad</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="wn-actions">
-                <button type="button" class="wn-btn wn-btn--cancel" onclick="cotizarRapidoCerrar()">Cancelar</button>
-                <button type="button" class="wn-btn wn-btn--submit" id="crGoBtn" onclick="cotizarRapidoIr()" disabled style="opacity:0.5;cursor:not-allowed;">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Ir a Cotizar
+                <button type="button" class="wn-ctw-close" onclick="cotizarRapidoCerrar()" title="Cerrar (Esc)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
-            </div>
+            </header>
 
-        </div>
+            <main class="wn-ctw-canvas">
+
+                <!-- Título de la oportunidad -->
+                <input type="text" class="wn-ctw-title" id="qcOportunidad" placeholder="Nombre de la oportunidad…" autocomplete="off">
+
+                <!-- Para [Cliente] -->
+                <div class="wn-ctw-nl-row">
+                    <span class="wn-ctw-nl-label">Para</span>
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-large empty" id="qcClienteBtn" onclick="qcOpenPop('cli', event)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span id="qcClienteLabel">Selecciona un cliente (requerido)</span>
+                        </button>
+                        <div class="wn-ctw-pop wn-ctw-pop-wide" id="qcPopCli" style="display:none;">
+                            <div class="wn-ctw-pop-title">Cliente</div>
+                            <input type="text" class="wn-ctw-pop-input wf-input" id="qcCliente" placeholder="Buscar o escribir cliente…">
+                            <input type="hidden" id="qcClienteId" value="">
+                            <div class="wf-autocomplete" id="qcClienteAC"></div>
+                            <button type="button" class="wn-ctw-pop-add" id="qcAddClienteBtn">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Crear cliente nuevo
+                            </button>
+                            <div class="wn-ctw-mini" id="qcMiniCliente" style="display:none;">
+                                <input type="text" class="wn-ctw-pop-input" id="qcNuevoClienteNombre" placeholder="Nombre de la empresa">
+                                <div class="wn-ctw-mini-actions">
+                                    <button type="button" class="wn-mini-cancel" id="qcNuevoClienteCancel">Cancelar</button>
+                                    <button type="button" class="wn-mini-save" id="qcNuevoClienteGuardar">Guardar cliente</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipeline -->
+                <div class="wn-ctw-meta-row">
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta empty" id="qcPipelineBtn" onclick="qcOpenPop('pipeline', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                            <span id="qcPipelineLabel">Pipeline (requerido)</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="qcPopPipeline" style="display:none;">
+                            <div class="wn-ctw-pop-title">Tipo de pipeline</div>
+                            <select class="wn-ctw-pop-input" id="qcTipoPipeline">
+                                <option value="" selected>Selecciona un tipo</option>
+                                <option value="runrate">Runrate</option>
+                                <option value="proyecto">Proyecto</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+            <footer class="wn-ctw-toolbar">
+                <div class="wn-ctw-tools"></div>
+                <div class="wn-ctw-actions">
+                    <button type="button" class="wn-ctw-cancel" onclick="cotizarRapidoCerrar()">Cancelar</button>
+                    <button type="submit" class="wn-ctw-submit" id="qcSubmit">
+                        Crear y cotizar
+                        <span class="wn-ctw-kbd">⌘ ↵</span>
+                    </button>
+                </div>
+            </footer>
+
+        </form>
     </div>
 </div>
+
+<script>
+(function() {
+    var csrf = function() {
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    };
+
+    // ── Popovers ──
+    var POP_IDS = { cli: 'qcPopCli', pipeline: 'qcPopPipeline' };
+    var BTN_IDS = { cli: 'qcClienteBtn', pipeline: 'qcPipelineBtn' };
+
+    function _qcCloseAllPops() {
+        Object.keys(POP_IDS).forEach(function(k) {
+            var p = document.getElementById(POP_IDS[k]); if (p) p.style.display = 'none';
+            var b = document.getElementById(BTN_IDS[k]); if (b) b.classList.remove('active');
+        });
+    }
+    window.qcOpenPop = function(which, e) {
+        if (e) e.stopPropagation();
+        var pop = document.getElementById(POP_IDS[which]);
+        var btn = document.getElementById(BTN_IDS[which]);
+        if (!pop || !btn) return;
+        var isOpen = pop.style.display !== 'none';
+        _qcCloseAllPops();
+        if (!isOpen) {
+            pop.style.display = 'block';
+            btn.classList.add('active');
+            setTimeout(function() {
+                var first = pop.querySelector('input, select, textarea');
+                if (first && first.focus) first.focus();
+            }, 30);
+        }
+    };
+    document.addEventListener('click', function(e) {
+        var modal = document.getElementById('widgetCotizarRapido');
+        if (!modal || !modal.classList.contains('active')) return;
+        var wraps = modal.querySelectorAll('.wn-ctw-popwrap');
+        for (var i = 0; i < wraps.length; i++) {
+            if (wraps[i].contains(e.target)) return;
+        }
+        _qcCloseAllPops();
+    });
+
+    // ── Labels helper ──
+    function _setLabel(btnId, labelId, text, isEmpty) {
+        var btn = document.getElementById(btnId);
+        var lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = text;
+        if (btn) btn.classList.toggle('empty', !!isEmpty);
+    }
+
+    // Pipeline label dynamic
+    var pipSel = document.getElementById('qcTipoPipeline');
+    if (pipSel) pipSel.addEventListener('change', function() {
+        var v = pipSel.value;
+        _setLabel('qcPipelineBtn', 'qcPipelineLabel',
+            v ? pipSel.options[pipSel.selectedIndex].text : 'Pipeline (requerido)', !v);
+        _qcRefreshReadyState();
+        _qcCloseAllPops();
+    });
+
+    // ── Autocomplete Cliente ──
+    var clienteInput = document.getElementById('qcCliente');
+    var clienteAC    = document.getElementById('qcClienteAC');
+    var clienteIdF   = document.getElementById('qcClienteId');
+    var _qcClienteTimer = null;
+
+    function _updateClienteLabel() {
+        var txt = (clienteInput && clienteInput.value.trim()) || '';
+        // Para cotizar rápido, el cliente puede ser nuevo (string sin ID) o existente.
+        // Consideramos "lleno" si el input tiene texto.
+        var empty = !txt;
+        _setLabel('qcClienteBtn', 'qcClienteLabel', txt ? txt : 'Selecciona un cliente (requerido)', empty);
+    }
+
+    if (clienteInput) {
+        clienteInput.addEventListener('input', function() {
+            clienteIdF.value = '';
+            _updateClienteLabel();
+            _qcRefreshReadyState();
+            clearTimeout(_qcClienteTimer);
+            var q = this.value.trim();
+            if (q.length < 2) { clienteAC.innerHTML = ''; clienteAC.style.display = 'none'; return; }
+            _qcClienteTimer = setTimeout(function() {
+                fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        var items = data.clientes || data.results || [];
+                        if (!items.length) { clienteAC.innerHTML = ''; clienteAC.style.display = 'none'; return; }
+                        clienteAC.innerHTML = '';
+                        items.forEach(function(c) {
+                            var div = document.createElement('div');
+                            div.className = 'wf-ac-item';
+                            div.textContent = c.nombre_empresa || c.nombre || c.text;
+                            div.addEventListener('click', function() {
+                                clienteInput.value = c.nombre_empresa || c.nombre || c.text;
+                                clienteIdF.value = c.id;
+                                clienteAC.innerHTML = '';
+                                clienteAC.style.display = 'none';
+                                _updateClienteLabel();
+                                _qcRefreshReadyState();
+                                _qcCloseAllPops();
+                            });
+                            clienteAC.appendChild(div);
+                        });
+                        clienteAC.style.display = 'block';
+                    });
+            }, 300);
+        });
+    }
+
+    // ── Mini-form crear cliente ──
+    var btnAddCli = document.getElementById('qcAddClienteBtn');
+    if (btnAddCli) btnAddCli.addEventListener('click', function() {
+        var mini = document.getElementById('qcMiniCliente');
+        mini.style.display = mini.style.display === 'none' ? 'block' : 'none';
+        if (mini.style.display === 'block') document.getElementById('qcNuevoClienteNombre').focus();
+    });
+    var btnCancelCli = document.getElementById('qcNuevoClienteCancel');
+    if (btnCancelCli) btnCancelCli.addEventListener('click', function() {
+        document.getElementById('qcMiniCliente').style.display = 'none';
+        document.getElementById('qcNuevoClienteNombre').value = '';
+    });
+    var btnSaveCli = document.getElementById('qcNuevoClienteGuardar');
+    if (btnSaveCli) btnSaveCli.addEventListener('click', function() {
+        var nombre = document.getElementById('qcNuevoClienteNombre').value.trim();
+        if (!nombre) { document.getElementById('qcNuevoClienteNombre').focus(); return; }
+        var btn = this; btn.disabled = true; btn.textContent = 'Guardando…';
+        fetch('/app/api/quick-crear-cliente/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify({ nombre_empresa: nombre })
+        }).then(function(r){ return r.json(); }).then(function(res) {
+            if (res.success) {
+                clienteInput.value = res.nombre;
+                clienteIdF.value = res.id;
+                document.getElementById('qcMiniCliente').style.display = 'none';
+                document.getElementById('qcNuevoClienteNombre').value = '';
+                _updateClienteLabel();
+                _qcRefreshReadyState();
+                _qcCloseAllPops();
+            } else {
+                alert(res.error || 'Error al crear cliente');
+            }
+            btn.disabled = false; btn.textContent = 'Guardar cliente';
+        }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar cliente'; });
+    });
+
+    // ── Validación reactiva ──
+    function _qcRefreshReadyState() {
+        var titulo    = (document.getElementById('qcOportunidad') || {}).value || '';
+        var cliente   = (document.getElementById('qcCliente') || {}).value || '';
+        var pipeline  = (document.getElementById('qcTipoPipeline') || {}).value || '';
+        var allReady  = titulo.trim().length > 0 && cliente.trim().length > 0 && !!pipeline;
+        var submitBtn = document.getElementById('qcSubmit');
+        if (submitBtn) submitBtn.classList.toggle('is-ready', allReady);
+    }
+    function _qcValidateRequired() {
+        var titulo   = (document.getElementById('qcOportunidad') || {}).value || '';
+        var cliente  = (document.getElementById('qcCliente') || {}).value || '';
+        var pipeline = (document.getElementById('qcTipoPipeline') || {}).value || '';
+        var missing = [];
+
+        var tituloEl = document.getElementById('qcOportunidad');
+        if (!titulo.trim()) {
+            missing.push('titulo');
+            if (tituloEl) {
+                tituloEl.classList.add('title-error', 'wn-ctw-shake');
+                setTimeout(function(){ if (tituloEl) tituloEl.classList.remove('wn-ctw-shake'); }, 320);
+            }
+        } else if (tituloEl) {
+            tituloEl.classList.remove('title-error');
+        }
+        [{ key:'cli', ok: cliente.trim().length > 0, btnId:'qcClienteBtn' },
+         { key:'pipeline', ok: !!pipeline, btnId:'qcPipelineBtn' }].forEach(function(f) {
+            var btn = document.getElementById(f.btnId);
+            if (!btn) return;
+            if (!f.ok) {
+                missing.push(f.key);
+                btn.classList.remove('empty', 'filled');
+                btn.classList.add('soft-error', 'wn-ctw-shake');
+                setTimeout(function(){ if (btn) btn.classList.remove('wn-ctw-shake'); }, 320);
+            } else {
+                btn.classList.remove('soft-error');
+            }
+        });
+        return missing.length === 0;
+    }
+
+    ['qcOportunidad', 'qcCliente', 'qcTipoPipeline'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', _qcRefreshReadyState);
+        el.addEventListener('change', _qcRefreshReadyState);
+    });
+
+    // Reset al abrir
+    function _qcResetForm() {
+        ['qcOportunidad','qcCliente','qcClienteId','qcTipoPipeline','qcNuevoClienteNombre']
+            .forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+        var pipLbl = document.getElementById('qcPipelineLabel');
+        if (pipLbl) pipLbl.textContent = 'Pipeline (requerido)';
+        var pipBtn = document.getElementById('qcPipelineBtn');
+        if (pipBtn) { pipBtn.classList.remove('filled','soft-error','wn-ctw-shake'); pipBtn.classList.add('empty'); }
+        var cliBtn = document.getElementById('qcClienteBtn');
+        if (cliBtn) { cliBtn.classList.remove('filled','soft-error','wn-ctw-shake'); cliBtn.classList.add('empty'); }
+        var tituloEl = document.getElementById('qcOportunidad');
+        if (tituloEl) tituloEl.classList.remove('title-error','wn-ctw-shake');
+        var mini = document.getElementById('qcMiniCliente');
+        if (mini) mini.style.display = 'none';
+        _updateClienteLabel();
+    }
+    var _qcOpenObserver = new MutationObserver(function() {
+        var modal = document.getElementById('widgetCotizarRapido');
+        if (modal && modal.classList.contains('active')) {
+            _qcResetForm();
+            setTimeout(function() {
+                _qcRefreshReadyState();
+                var t = document.getElementById('qcOportunidad');
+                if (t) t.focus();
+            }, 50);
+        }
+    });
+    var _qcModalEl = document.getElementById('widgetCotizarRapido');
+    if (_qcModalEl) _qcOpenObserver.observe(_qcModalEl, { attributes: true, attributeFilter: ['class'] });
+
+    // ── Abrir / Cerrar ──
+    window.cotizarRapidoAbrir = function() {
+        var w = document.getElementById('widgetCotizarRapido');
+        if (w) w.classList.add('active');
+    };
+    window.cotizarRapidoCerrar = function() {
+        var w = document.getElementById('widgetCotizarRapido');
+        if (!w) return;
+        w.classList.add('closing');
+        setTimeout(function() { w.classList.remove('active', 'closing'); }, 220);
+    };
+
+    // ── Submit ──
+    document.getElementById('formCotizarRapido').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!_qcValidateRequired()) return;
+
+        var titulo   = document.getElementById('qcOportunidad').value.trim();
+        var cliente  = document.getElementById('qcCliente').value.trim();
+        var pipeline = document.getElementById('qcTipoPipeline').value;
+
+        var submitBtn = document.getElementById('qcSubmit');
+        var origHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Creando…';
+
+        fetch('/app/api/crear-oportunidad/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify({
+                oportunidad: titulo,
+                cliente_nombre: cliente,
+                tipo_negociacion: pipeline,
+                probabilidad_cierre: 25
+            })
+        }).then(function(r){ return r.json(); }).then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origHtml;
+            if (!data.ok || !data.id) {
+                alert(data.error || 'Error al crear oportunidad');
+                return;
+            }
+            var oppId = data.id;
+            // Cerrar el widget
+            cotizarRapidoCerrar();
+            // Abrir detrás el widget de la oportunidad
+            if (typeof window.openDetalle === 'function') {
+                window.openDetalle(oppId);
+            }
+            // Abrir encima el cotizador (se ejecuta después del detalle para quedar al frente)
+            setTimeout(function() {
+                if (typeof window.openCotizador === 'function') {
+                    window.openCotizador(oppId);
+                }
+            }, 150);
+        }).catch(function() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origHtml;
+            alert('Error de conexión');
+        });
+    });
+
+    // Atajos de teclado
+    document.addEventListener('keydown', function(e) {
+        var modal = document.getElementById('widgetCotizarRapido');
+        if (!modal || !modal.classList.contains('active')) return;
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('formCotizarRapido').dispatchEvent(new Event('submit', { cancelable: true }));
+        } else if (e.key === 'Escape') {
+            cotizarRapidoCerrar();
+        }
+    });
+})();
+</script>
