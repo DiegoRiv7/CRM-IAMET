@@ -30,6 +30,9 @@ def _get_proyectos_qs(user):
 
 
 def _check_access(user, proyecto):
+    # Todos los usuarios tienen acceso a todos los proyectos
+    return True
+    # --- código original deshabilitado ---
     if is_supervisor(user):
         return True
     vis_ids = get_usuarios_visibles_ids(user)
