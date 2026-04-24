@@ -138,6 +138,7 @@
         this._hoveredTaskId = null;
         this._tooltipTimer = null;
         this._dpr = window.devicePixelRatio || 1;
+        this.viewMode = 'schedule'; // 'schedule' or 'financial'
 
         this._build();
         this._loadData();
@@ -161,6 +162,10 @@
         // -- Toolbar
         this.toolbar = this._buildToolbar();
         this.root.appendChild(this.toolbar);
+
+        // -- EVM Dashboard Panel
+        this.evmPanel = this._buildEVMPanel();
+        this.root.appendChild(this.evmPanel);
 
         // -- Main wrapper (table + canvas side by side)
         var main = el('div', { className: 'gantt-main' });
@@ -329,9 +334,24 @@
             '.gantt-tooltip-avatar { width: 22px; height: 22px; border-radius: 50%; background: ' + COLOR_PRIMARY + '; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }',
 
             /* Modal */
-            '.gantt-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 200; display: flex; align-items: center; justify-content: center; }',
-            '.gantt-modal { background: #fff; border-radius: 12px; padding: 24px 28px; width: 420px; max-width: 95%; box-shadow: 0 8px 32px rgba(0,0,0,.18); }',
+            '.gantt-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.25); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; }',
+            '.gantt-modal { background: #fff; border-radius: 16px; padding: 20px; width: 420px; max-width: 95%; box-shadow: 0 12px 40px rgba(0,0,0,.2); }',
             '.gantt-modal h3 { margin: 0 0 16px; font-size: 16px; font-weight: 600; }',
+            /* Resource modal */
+            '.gantt-res-list { max-height: 300px; overflow-y: auto; margin: 12px 0; }',
+            '.gantt-res-list::-webkit-scrollbar { width: 4px; }',
+            '.gantt-res-list::-webkit-scrollbar-track { background: transparent; }',
+            '.gantt-res-list::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }',
+            '.gantt-res-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 8px; cursor: pointer; transition: background .1s; }',
+            '.gantt-res-row:hover { background: #F8FAFC; }',
+            '.gantt-res-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0; }',
+            '.gantt-res-info { flex: 1; min-width: 0; }',
+            '.gantt-res-name { font-size: 13px; font-weight: 500; color: ' + COLOR_DARK + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+            '.gantt-res-role { font-size: 11px; color: ' + COLOR_TEXT_MUTED + '; }',
+            '.gantt-res-cb { width: 18px; height: 18px; border-radius: 4px; border: 2px solid #CBD5E1; appearance: none; -webkit-appearance: none; cursor: pointer; position: relative; flex-shrink: 0; transition: all .15s; }',
+            '.gantt-res-cb:checked { background: ' + COLOR_PRIMARY + '; border-color: ' + COLOR_PRIMARY + '; }',
+            '.gantt-res-cb:checked::after { content: ""; display: block; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); position: absolute; top: 1px; left: 5px; }',
+            '.gantt-res-loading { display: flex; align-items: center; justify-content: center; padding: 24px; color: ' + COLOR_TEXT_MUTED + '; font-size: 13px; }',
             '.gantt-modal-field { margin-bottom: 12px; }',
             '.gantt-modal-field label { display: block; font-size: 12px; font-weight: 500; color: ' + COLOR_TEXT_SEC + '; margin-bottom: 4px; }',
             '.gantt-modal-field input, .gantt-modal-field select { width: 100%; padding: 7px 10px; border: 1px solid ' + COLOR_BORDER + '; border-radius: 8px; font-size: 13px; box-sizing: border-box; }',
@@ -356,6 +376,14 @@
 
             /* Inline edit */
             '.gantt-inline-input { width: 100%; padding: 2px 6px; border: 1px solid ' + COLOR_PRIMARY + '; border-radius: 6px; font-size: 13px; font-family: inherit; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,.12); box-sizing: border-box; }',
+
+            /* EVM Dashboard Panel */
+            '.gantt-evm-panel { display: flex; gap: 10px; padding: 6px 14px 8px; background: #fff; border-bottom: 1px solid ' + COLOR_BORDER + '; }',
+            '.gantt-evm-card { flex: 1; background: #F8FAFC; border: 1px solid ' + COLOR_BORDER + '; border-radius: 8px; padding: 10px 14px; min-width: 0; }',
+            '.gantt-evm-label { font-size: 0.68rem; text-transform: uppercase; color: ' + COLOR_TEXT_SEC + '; font-weight: 600; letter-spacing: 0.03em; margin-bottom: 4px; }',
+            '.gantt-evm-value { font-size: 1.1rem; font-weight: 800; color: ' + COLOR_DARK + '; }',
+            '.gantt-evm-bar-wrap { height: 4px; background: #E2E8F0; border-radius: 2px; overflow: hidden; margin-top: 6px; }',
+            '.gantt-evm-bar-fill { height: 100%; background: ' + COLOR_BLUE + '; border-radius: 2px; transition: width .3s ease; }',
         ].join('\n');
 
         var style = document.createElement('style');
@@ -387,6 +415,12 @@
         }}, ['Fases']);
         this._btnToggleFases.style.display = 'none'; // se muestra si hay fases
 
+        // Boton vista financiera
+        this._btnFinancial = el('button', {
+            className: 'gantt-btn',
+            onClick: function () { self._toggleViewMode(); }
+        }, ['$ Financiero']);
+
         // Spacer
         var spacer = el('div', { style: { flex: '1' } });
 
@@ -405,7 +439,122 @@
             zoomGroup.appendChild(btn);
         });
 
-        return el('div', { className: 'gantt-toolbar' }, [btnAdd, this._btnDel, this._btnToggleFases, spacer, zoomGroup]);
+        return el('div', { className: 'gantt-toolbar' }, [btnAdd, this._btnDel, this._btnToggleFases, this._btnFinancial, spacer, zoomGroup]);
+    };
+
+    /* -------------------------------------------
+       TOGGLE VIEW MODE (schedule / financial)
+       ------------------------------------------- */
+    Gantt.prototype._toggleViewMode = function () {
+        this.viewMode = this.viewMode === 'schedule' ? 'financial' : 'schedule';
+        if (this._btnFinancial) {
+            if (this.viewMode === 'financial') {
+                this._btnFinancial.style.background = COLOR_PRIMARY;
+                this._btnFinancial.style.color = '#fff';
+                this._btnFinancial.style.borderColor = COLOR_PRIMARY;
+            } else {
+                this._btnFinancial.style.background = '';
+                this._btnFinancial.style.color = '';
+                this._btnFinancial.style.borderColor = '';
+            }
+        }
+        this._render();
+    };
+
+    /* -------------------------------------------
+       EVM DASHBOARD PANEL
+       ------------------------------------------- */
+    Gantt.prototype._buildEVMPanel = function () {
+        var panel = el('div', { className: 'gantt-evm-panel' });
+
+        // Card: Avance Global
+        this._evmAvance = el('div', { className: 'gantt-evm-card' });
+        this._evmAvance.innerHTML = '<div class="gantt-evm-label">AVANCE GLOBAL</div><div class="gantt-evm-value">0%</div><div class="gantt-evm-bar-wrap"><div class="gantt-evm-bar-fill" style="width:0%"></div></div>';
+
+        // Card: SPI
+        this._evmSPI = el('div', { className: 'gantt-evm-card' });
+        this._evmSPI.innerHTML = '<div class="gantt-evm-label">SPI</div><div class="gantt-evm-value">--</div>';
+
+        // Card: CPI
+        this._evmCPI = el('div', { className: 'gantt-evm-card' });
+        this._evmCPI.innerHTML = '<div class="gantt-evm-label">CPI</div><div class="gantt-evm-value">--</div>';
+
+        // Card: Presupuesto
+        this._evmBudget = el('div', { className: 'gantt-evm-card' });
+        this._evmBudget.innerHTML = '<div class="gantt-evm-label">PRESUPUESTO</div><div class="gantt-evm-value">$0</div>';
+
+        panel.appendChild(this._evmAvance);
+        panel.appendChild(this._evmSPI);
+        panel.appendChild(this._evmCPI);
+        panel.appendChild(this._evmBudget);
+
+        return panel;
+    };
+
+    Gantt.prototype._updateEVM = function () {
+        var tasks = this.tasks.filter(function (t) { return !t.isPhase; });
+        var totalTasks = tasks.length;
+
+        if (totalTasks === 0) {
+            // No tasks — show defaults
+            if (this._evmAvance) this._evmAvance.innerHTML = '<div class="gantt-evm-label">AVANCE GLOBAL</div><div class="gantt-evm-value">0%</div><div class="gantt-evm-bar-wrap"><div class="gantt-evm-bar-fill" style="width:0%"></div></div>';
+            if (this._evmSPI) this._evmSPI.innerHTML = '<div class="gantt-evm-label">SPI</div><div class="gantt-evm-value" style="color:' + COLOR_TEXT_SEC + '">--</div>';
+            if (this._evmCPI) this._evmCPI.innerHTML = '<div class="gantt-evm-label">CPI</div><div class="gantt-evm-value" style="color:' + COLOR_TEXT_SEC + '">--</div>';
+            if (this._evmBudget) this._evmBudget.innerHTML = '<div class="gantt-evm-label">PRESUPUESTO</div><div class="gantt-evm-value">$0</div>';
+            return;
+        }
+
+        // Avance Global: average progress of non-phase tasks
+        var sumProgress = 0;
+        tasks.forEach(function (t) { sumProgress += (t.progress || 0); });
+        var avgProgress = Math.round(sumProgress / totalTasks);
+
+        // EV = sum(task.cost * task.progress / 100)
+        var ev = 0;
+        tasks.forEach(function (t) { ev += (t.cost || 0) * (t.progress || 0) / 100; });
+
+        // PV = sum(task.cost) where task end date <= today
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var todayDay = daysBetween(this.projectStart, today);
+        var pv = 0;
+        tasks.forEach(function (t) {
+            var endDay = t.start + t.dur;
+            if (endDay <= todayDay) {
+                pv += (t.cost || 0);
+            }
+        });
+
+        // AC = EV (simplification)
+        var ac = ev;
+
+        // SPI = EV / PV
+        var spi = pv > 0 ? ev / pv : 0;
+        var spiStr = pv > 0 ? spi.toFixed(2) : '--';
+        var spiColor = pv > 0 ? (spi >= 1.0 ? COLOR_GREEN : COLOR_DANGER) : COLOR_TEXT_SEC;
+
+        // CPI = EV / AC
+        var cpi = ac > 0 ? ev / ac : 0;
+        var cpiStr = ac > 0 ? cpi.toFixed(2) : '--';
+        var cpiColor = ac > 0 ? (cpi >= 1.0 ? COLOR_GREEN : COLOR_DANGER) : COLOR_TEXT_SEC;
+
+        // Budget = sum of all cost
+        var budget = 0;
+        tasks.forEach(function (t) { budget += (t.cost || 0); });
+
+        // Update DOM
+        if (this._evmAvance) {
+            this._evmAvance.innerHTML = '<div class="gantt-evm-label">AVANCE GLOBAL</div><div class="gantt-evm-value">' + avgProgress + '%</div><div class="gantt-evm-bar-wrap"><div class="gantt-evm-bar-fill" style="width:' + Math.min(100, avgProgress) + '%"></div></div>';
+        }
+        if (this._evmSPI) {
+            this._evmSPI.innerHTML = '<div class="gantt-evm-label">SPI</div><div class="gantt-evm-value" style="color:' + spiColor + '">' + spiStr + '</div>';
+        }
+        if (this._evmCPI) {
+            this._evmCPI.innerHTML = '<div class="gantt-evm-label">CPI</div><div class="gantt-evm-value" style="color:' + cpiColor + '">' + cpiStr + '</div>';
+        }
+        if (this._evmBudget) {
+            this._evmBudget.innerHTML = '<div class="gantt-evm-label">PRESUPUESTO</div><div class="gantt-evm-value">' + fmtMoney(budget) + '</div>';
+        }
     };
 
     /* -------------------------------------------
@@ -507,18 +656,23 @@
         this.tasks.forEach(function (t) {
             if (!t.isPhase || !t.children || t.children.length === 0) return;
             var minStart = Infinity, maxEnd = 0, totalProg = 0, count = 0;
+            var totalCost = 0, totalIncome = 0;
             t.children.forEach(function (cid) {
                 var c = self._taskById(cid);
                 if (!c) return;
                 if (c.start < minStart) minStart = c.start;
                 if (c.start + c.dur > maxEnd) maxEnd = c.start + c.dur;
                 totalProg += c.progress;
+                totalCost += (c.cost || 0);
+                totalIncome += (c.income || 0);
                 count++;
             });
             if (count > 0) {
                 t.start = minStart;
                 t.dur = maxEnd - minStart;
                 t.progress = Math.round(totalProg / count);
+                t.cost = totalCost;
+                t.income = totalIncome;
             }
         });
     };
@@ -590,6 +744,7 @@
             } else {
                 emptyEl.style.display = 'flex';
             }
+            this._updateEVM();
             return;
         } else {
             if (emptyEl) emptyEl.style.display = 'none';
@@ -601,6 +756,7 @@
         this._renderHeader();
         this._renderCanvas();
         this._renderArrows();
+        this._updateEVM();
     };
 
     /* -------------------------------------------
@@ -891,7 +1047,7 @@
             var w = t.dur * colW;
 
             if (t.isPhase) {
-                self._drawPhaseSummaryBar(ctx, x, y, w, idx);
+                self._drawPhaseSummaryBar(ctx, t, x, y, w, idx);
             } else {
                 var isHovered = self._hoveredTaskId === t.id;
                 var isSelected = self.selectedTaskId === t.id;
@@ -900,7 +1056,49 @@
         });
     };
 
-    Gantt.prototype._drawPhaseSummaryBar = function (ctx, x, y, w, rowIdx) {
+    Gantt.prototype._drawPhaseSummaryBar = function (ctx, t, x, y, w, rowIdx) {
+        if (this.viewMode === 'financial') {
+            // Financial view for phases: show aggregated cost/income
+            var cost = t.cost || 0;
+            var income = t.income || 0;
+            var barH = 10;
+            var yy = y + BAR_H / 2 - barH / 2;
+            var isProfit = income >= cost;
+
+            ctx.save();
+
+            // Cost bar (full width, red tint)
+            if (cost > 0) {
+                ctx.fillStyle = COLOR_DANGER;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                this._roundRect(ctx, x, yy + barH / 2, w, barH / 2, 2);
+                ctx.fill();
+            }
+
+            // Income bar (full width, green tint)
+            if (income > 0) {
+                ctx.fillStyle = COLOR_GREEN;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                this._roundRect(ctx, x, yy, w, barH / 2, 2);
+                ctx.fill();
+            }
+
+            ctx.globalAlpha = 1;
+
+            // Label to the right of bar if room
+            var labelText = fmtMoney(cost) + ' / ' + fmtMoney(income);
+            ctx.font = '700 9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = isProfit ? COLOR_GREEN : COLOR_DANGER;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(labelText, x + w + 6, y + BAR_H / 2);
+
+            ctx.restore();
+            return;
+        }
+
         var barH = 4;
         var yy = y + BAR_H / 2 - barH / 2;
 
@@ -938,6 +1136,11 @@
     };
 
     Gantt.prototype._drawActivityBar = function (ctx, t, x, y, w, isHovered, isSelected) {
+        if (this.viewMode === 'financial') {
+            this._drawActivityBarFinancial(ctx, t, x, y, w, isHovered, isSelected);
+            return;
+        }
+
         var prog = t.progress || 0;
         var radius = BAR_H / 2; // full pill shape
 
@@ -1010,6 +1213,132 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, x + w / 2, y + BAR_H / 2 + 0.5);
+        }
+
+        ctx.restore();
+
+        // Micro-avatars below bar for assigned resources
+        if (t.res && t.res.length > 0) {
+            var avR = 6;   // radius (12px diameter)
+            var avY = y + BAR_H + 2 + avR;
+            var avGap = 14;
+            var maxAv = 3;
+            var resArr = t.res;
+            var shown = resArr.length > maxAv ? resArr.slice(0, maxAv) : resArr;
+
+            for (var ai = 0; ai < shown.length; ai++) {
+                var rItem = shown[ai];
+                var rName = typeof rItem === 'object' ? (rItem.nombre || String(rItem.id)) : String(rItem);
+                var rInitials = this._resInitials(rName);
+                var rHue = this._resAvatarColor(rName);
+                var avX = x + avR + ai * avGap;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(avX, avY, avR, 0, Math.PI * 2);
+                ctx.fillStyle = rHue;
+                ctx.fill();
+                ctx.font = '700 7px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(rInitials, avX, avY + 0.5);
+                ctx.restore();
+            }
+
+            // "+N" indicator if more than maxAv
+            if (resArr.length > maxAv) {
+                var extraX = x + avR + shown.length * avGap;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(extraX, avY, avR, 0, Math.PI * 2);
+                ctx.fillStyle = '#94A3B8';
+                ctx.fill();
+                ctx.font = '700 7px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('+' + (resArr.length - maxAv), extraX, avY + 0.5);
+                ctx.restore();
+            }
+        }
+    };
+
+    Gantt.prototype._drawActivityBarFinancial = function (ctx, t, x, y, w, isHovered, isSelected) {
+        var cost = t.cost || 0;
+        var income = t.income || 0;
+        var maxVal = Math.max(cost, income, 1);
+        var radius = 4;
+        var halfH = BAR_H / 2;
+
+        // Determine border color based on margin
+        var isProfit = income >= cost;
+        var borderColor = isProfit ? COLOR_GREEN : COLOR_DANGER;
+
+        ctx.save();
+
+        // Shadow
+        if (isHovered) {
+            ctx.shadowColor = 'rgba(0,0,0,0.18)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 3;
+        } else {
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetY = 1;
+        }
+
+        // Background pill (light gray base)
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#E2E8F0';
+        ctx.beginPath();
+        this._roundRect(ctx, x + 1, y, w - 2, BAR_H, radius);
+        ctx.fill();
+
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.globalAlpha = 1;
+
+        // Cost sub-bar (bottom half, red)
+        if (cost > 0) {
+            var costW = Math.max(6, (w - 2) * (cost / maxVal));
+            ctx.fillStyle = COLOR_DANGER;
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            this._roundRect(ctx, x + 1, y + halfH, Math.min(costW, w - 2), halfH, radius > halfH ? halfH / 2 : 3);
+            ctx.fill();
+        }
+
+        // Income sub-bar (top half, green)
+        if (income > 0) {
+            var incW = Math.max(6, (w - 2) * (income / maxVal));
+            ctx.fillStyle = COLOR_GREEN;
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            this._roundRect(ctx, x + 1, y, Math.min(incW, w - 2), halfH, radius > halfH ? halfH / 2 : 3);
+            ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+
+        // Border indicating profit/loss
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = isSelected ? 2.5 : 1.5;
+        ctx.beginPath();
+        this._roundRect(ctx, x + 1, y, w - 2, BAR_H, radius);
+        ctx.stroke();
+
+        // Text: formatted money (show cost if bar is wide enough)
+        if (w > 50) {
+            var label = cost > 0 ? fmtMoney(cost) : '$0';
+            ctx.font = '700 9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Draw text with slight shadow for readability
+            ctx.fillStyle = COLOR_DARK;
+            ctx.fillText(label, x + w / 2, y + BAR_H / 2 + 0.5);
         }
 
         ctx.restore();
@@ -1277,27 +1606,50 @@
             progWrap.appendChild(progBar);
             self.tooltip.appendChild(progWrap);
 
-            // Cost / Income — only if > 0
-            if (t.cost > 0) {
-                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Costo: ', el('span', {}, [fmtMoney(t.cost)])]));
-            }
-            if (t.income > 0) {
-                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Ingreso: ', el('span', {}, [fmtMoney(t.income)])]));
+            // Cost / Income
+            if (self.viewMode === 'financial') {
+                // Always show full financial breakdown in financial mode
+                var cost = t.cost || 0;
+                var income = t.income || 0;
+                var margin = income - cost;
+                var marginPct = cost > 0 ? ((margin / cost) * 100).toFixed(1) : '0.0';
+                var marginColor = margin >= 0 ? COLOR_GREEN : COLOR_DANGER;
+
+                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Costo: ', el('span', {}, [fmtMoney(cost)])]));
+                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Ingreso: ', el('span', {}, [fmtMoney(income)])]));
+                var marginStr = margin >= 0 ? '+' + fmtMoney(margin) : '-' + fmtMoney(Math.abs(margin));
+                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, [
+                    'Margen: ',
+                    el('span', { style: { color: marginColor } }, [marginStr])
+                ]));
+                self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, [
+                    'Margen %: ',
+                    el('span', { style: { color: marginColor } }, [marginPct + '%'])
+                ]));
+            } else {
+                // Schedule mode: only if > 0
+                if (t.cost > 0) {
+                    self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Costo: ', el('span', {}, [fmtMoney(t.cost)])]));
+                }
+                if (t.income > 0) {
+                    self.tooltip.appendChild(el('div', { className: 'gantt-tooltip-row' }, ['Ingreso: ', el('span', {}, [fmtMoney(t.income)])]));
+                }
             }
 
             // Resource avatars (circular initials)
             if (t.res && t.res.length > 0) {
                 var avatarWrap = el('div', { className: 'gantt-tooltip-avatars' });
-                t.res.forEach(function (rid) {
-                    var r = self.resources.find(function (x) { return x.id === rid; });
-                    var rName = r ? (r.name || r.nombre || String(rid)) : String(rid);
-                    // Get initials (first letter of first two words)
-                    var parts = rName.split(' ');
-                    var initials = parts[0].charAt(0).toUpperCase();
-                    if (parts.length > 1) initials += parts[1].charAt(0).toUpperCase();
-                    // Random pastel color based on name
-                    var hue = rName.charCodeAt(0) * 37 % 360;
-                    var avatarColor = 'hsl(' + hue + ', 55%, 55%)';
+                t.res.forEach(function (rItem) {
+                    // rItem may be an ID (number) or an object {id, nombre}
+                    var rName;
+                    if (typeof rItem === 'object' && rItem !== null) {
+                        rName = rItem.nombre || rItem.name || String(rItem.id);
+                    } else {
+                        var r = self.resources.find(function (x) { return x.id === rItem; });
+                        rName = r ? (r.name || r.nombre || String(rItem)) : String(rItem);
+                    }
+                    var initials = self._resInitials(rName);
+                    var avatarColor = self._resAvatarColor(rName);
                     var avatar = el('div', {
                         className: 'gantt-tooltip-avatar',
                         style: { background: avatarColor },
@@ -1363,16 +1715,20 @@
        ------------------------------------------- */
     Gantt.prototype._persistTask = function (t) {
         var startDate = addDays(this.projectStart, t.start);
+        // Normalize recursos to plain IDs
+        var resIds = (t.res || []).map(function (r) {
+            return typeof r === 'object' ? r.id : r;
+        });
         _fetch('/app/api/gantt/actividad/' + t.id + '/', {
             method: 'PUT',
             body: {
                 fecha_inicio: dateStr(startDate),
-                duracion: t.dur,
+                duracion_dias: t.dur,
                 progreso: t.progress,
                 costo_estimado: t.cost,
                 ingreso_estimado: t.income,
                 dependencias: t.deps,
-                recursos: t.res
+                recursos: resIds
             }
         }).catch(function (err) { console.error('Gantt: error persisting task', err); });
     };
@@ -1670,39 +2026,37 @@
     /* -------------------------------------------
        RESOURCE ASSIGNMENT MODAL (PRO-006)
        ------------------------------------------- */
+    Gantt.prototype._resAvatarColor = function (name) {
+        var h = 0;
+        for (var i = 0; i < name.length; i++) h = name.charCodeAt(i) * 37 + h;
+        return 'hsl(' + (Math.abs(h) % 360) + ', 55%, 55%)';
+    };
+
+    Gantt.prototype._resInitials = function (name) {
+        var parts = (name || '?').split(' ');
+        var ini = parts[0].charAt(0).toUpperCase();
+        if (parts.length > 1) ini += parts[1].charAt(0).toUpperCase();
+        return ini;
+    };
+
     Gantt.prototype._showResourceModal = function (taskId) {
         var self = this;
         var t = this._taskById(taskId);
         if (!t) return;
 
         this.modal.style.display = 'flex';
+        this.modal.innerHTML = '';
+
+        // Build initial card with loading state
+        var resList = el('div', { className: 'gantt-res-list' }, [
+            el('div', { className: 'gantt-res-loading' }, ['Cargando usuarios...'])
+        ]);
 
         var checkboxes = [];
-        var resList = el('div', { style: { maxHeight: '240px', overflowY: 'auto', margin: '8px 0' } });
-
-        if (this.resources.length === 0) {
-            resList.appendChild(el('div', { style: { color: '#94a3b8', padding: '12px 0', textAlign: 'center' } }, ['No hay recursos disponibles']));
-        } else {
-            this.resources.forEach(function (r) {
-                var rid = r.id || r.nombre;
-                var checked = t.res && t.res.indexOf(rid) !== -1;
-                var cb = el('input', { type: 'checkbox', id: 'gantt-res-' + rid });
-                if (checked) cb.checked = true;
-                checkboxes.push({ el: cb, id: rid });
-
-                var row = el('label', {
-                    style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 4px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }
-                }, [
-                    cb,
-                    el('span', { style: { fontWeight: '500' } }, [r.name || r.nombre || rid]),
-                    el('span', { style: { color: '#94a3b8', fontSize: '11px', marginLeft: 'auto' } }, [r.role || r.cargo || ''])
-                ]);
-                resList.appendChild(row);
-            });
-        }
 
         var card = el('div', { className: 'gantt-modal' }, [
-            el('h3', {}, ['Asignar Recursos: ' + t.name]),
+            el('h3', {}, ['Asignar Recursos']),
+            el('div', { style: { fontSize: '12px', color: COLOR_TEXT_SEC, marginBottom: '12px', marginTop: '-8px' } }, [t.name]),
             resList,
             el('div', { className: 'gantt-modal-actions' }, [
                 el('button', { className: 'gantt-btn', onClick: function () { self._closeModal(); } }, ['Cancelar']),
@@ -1715,16 +2069,61 @@
                     self._closeModal();
                     self._render();
                     self._persistTask(t);
-                } }, ['Guardar Asignacion'])
+                } }, ['Guardar'])
             ])
         ]);
 
-        this.modal.innerHTML = '';
         this.modal.appendChild(card);
 
         this.modal.onclick = function (e) {
             if (e.target === self.modal) self._closeModal();
         };
+
+        // Extract currently assigned IDs from t.res
+        // t.res may contain plain IDs (numbers) or objects {id, nombre}
+        var assignedIds = (t.res || []).map(function (r) {
+            return typeof r === 'object' ? r.id : r;
+        });
+
+        // Fetch users from API
+        _fetch('/app/api/buscar-usuarios/')
+            .then(function (data) {
+                var usuarios = (data.usuarios || []);
+                resList.innerHTML = '';
+
+                if (usuarios.length === 0) {
+                    resList.appendChild(el('div', { className: 'gantt-res-loading' }, ['No hay usuarios disponibles']));
+                    return;
+                }
+
+                usuarios.forEach(function (u) {
+                    var uid = u.id;
+                    var nombre = u.nombre || u.username || String(uid);
+                    var iniciales = u.iniciales || self._resInitials(nombre);
+                    var rol = u.rol || '';
+                    var isAssigned = assignedIds.indexOf(uid) !== -1;
+
+                    var cb = el('input', { type: 'checkbox', className: 'gantt-res-cb' });
+                    if (isAssigned) cb.checked = true;
+                    checkboxes.push({ el: cb, id: uid });
+
+                    var avatarBg = self._resAvatarColor(nombre);
+
+                    var row = el('label', { className: 'gantt-res-row' }, [
+                        cb,
+                        el('div', { className: 'gantt-res-avatar', style: { background: avatarBg } }, [iniciales]),
+                        el('div', { className: 'gantt-res-info' }, [
+                            el('div', { className: 'gantt-res-name' }, [nombre]),
+                            rol ? el('div', { className: 'gantt-res-role' }, [rol]) : null
+                        ].filter(Boolean))
+                    ]);
+                    resList.appendChild(row);
+                });
+            })
+            .catch(function () {
+                resList.innerHTML = '';
+                resList.appendChild(el('div', { className: 'gantt-res-loading' }, ['Error cargando usuarios']));
+            });
     };
 
     /* -------------------------------------------

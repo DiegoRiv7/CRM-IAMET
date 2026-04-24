@@ -20,14 +20,14 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, ProyectoIAMET, GanttFase, GanttActividad
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from decimal import Decimal
@@ -4497,6 +4497,24 @@ def api_gantt_proyecto(request, proyecto_id):
             ingreso_estimado=ingreso_estimado,
             orden=data.get('orden', 0),
         )
+
+        # ── Crear actividad de calendario vinculada ─────────────────────
+        try:
+            from zoneinfo import ZoneInfo
+            tz = ZoneInfo('America/Tijuana')
+            cal = Actividad.objects.create(
+                titulo=nombre,
+                tipo_actividad='tarea',
+                fecha_inicio=datetime.combine(fecha_inicio, time(8, 0), tzinfo=tz),
+                fecha_fin=datetime.combine(act.fecha_fin, time(17, 0), tzinfo=tz),
+                creado_por=request.user,
+                color='#3B82F6',
+            )
+            act.actividad_calendario = cal
+            act.save(update_fields=['actividad_calendario'])
+        except Exception as e:
+            logging.getLogger(__name__).warning('Gantt: error creando actividad calendario: %s', e)
+
         return JsonResponse({'success': True, 'actividad': _serializar_actividad(act)}, status=201)
 
     return JsonResponse({'error': 'Metodo no permitido'}, status=405)
@@ -4598,6 +4616,30 @@ def api_gantt_actividad(request, actividad_id):
                 act.actividad_calendario = get_object_or_404(Actividad, id=ac_id)
 
         act.save()
+
+        # ── Sincronizar con calendario ──────────────────────────────────
+        try:
+            from zoneinfo import ZoneInfo
+            tz = ZoneInfo('America/Tijuana')
+            if act.actividad_calendario:
+                cal = act.actividad_calendario
+                cal.fecha_inicio = datetime.combine(act.fecha_inicio, time(8, 0), tzinfo=tz)
+                cal.fecha_fin = datetime.combine(act.fecha_fin, time(17, 0), tzinfo=tz)
+                cal.titulo = act.nombre
+                cal.save()
+            else:
+                cal = Actividad.objects.create(
+                    titulo=act.nombre,
+                    tipo_actividad='tarea',
+                    fecha_inicio=datetime.combine(act.fecha_inicio, time(8, 0), tzinfo=tz),
+                    fecha_fin=datetime.combine(act.fecha_fin, time(17, 0), tzinfo=tz),
+                    creado_por=request.user,
+                    color='#3B82F6',
+                )
+                act.actividad_calendario = cal
+                act.save(update_fields=['actividad_calendario'])
+        except Exception as e:
+            logging.getLogger(__name__).warning('Gantt: error sincronizando calendario: %s', e)
 
         # M2M: dependencias
         if 'dependencias' in data:
