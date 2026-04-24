@@ -18,12 +18,25 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 
+#: Días de duración de la cookie de sesión para usuarios del PWA.
+#  El ingeniero puede estar semanas sin abrir la app con red (en planta,
+#  sin WiFi). Si la sesión expira mientras tiene drafts pendientes, el
+#  sync al reconectar da 401/403 y todo su trabajo queda varado. 60 días
+#  es un buen trade-off entre seguridad y usabilidad para este caso.
+PWA_SESSION_DAYS = 60
+
+
 @never_cache
 @login_required(login_url='/app/login/')
 def levantamientos_app(request):
     """Shell principal del PWA. Si el usuario no está autenticado,
     Django lo manda a /app/login/?next=/app/levantamientos/ y
-    regresa aquí tras loguearse."""
+    regresa aquí tras loguearse.
+
+    Extiende la sesión a PWA_SESSION_DAYS cada vez que el usuario
+    abre la PWA — así no pierde la sesión si pasa semanas en planta.
+    """
+    request.session.set_expiry(PWA_SESSION_DAYS * 24 * 60 * 60)
     return render(request, 'levantamientos_app.html')
 
 
@@ -69,7 +82,7 @@ def levantamientos_manifest(request):
 #: Version del app-shell cacheado. BUMPEA esta constante al cambiar
 #  el template, CSS o JS del PWA para forzar re-descarga. El SW
 #  borrará caches viejos y se actualizará en segundo plano.
-SW_VERSION = 'lev-v5-cache-api-unversioned'
+SW_VERSION = 'lev-v6-pulido'
 
 
 @require_GET
@@ -132,13 +145,12 @@ const SCOPE_PATH = '/app/levantamientos/';
 
 const PRECACHE_URLS = {precache_json};
 
-// ── INSTALL: precachear app-shell ─────────────────────────────
+// ── INSTALL: precachear app-shell + pre-fetch de datos clave ──
 self.addEventListener('install', function (event) {{
     event.waitUntil(
-        caches.open(SHELL_CACHE)
-            .then(function (cache) {{
-                // addAll es atómico: si falla alguno, no se precachea nada.
-                // Por eso usamos Promise.all con catch individual.
+        Promise.all([
+            // 1) App-shell (HTML, CSS, JS, íconos)
+            caches.open(SHELL_CACHE).then(function (cache) {{
                 return Promise.all(
                     PRECACHE_URLS.map(function (url) {{
                         return cache.add(url).catch(function (err) {{
@@ -146,8 +158,25 @@ self.addEventListener('install', function (event) {{
                         }});
                     }})
                 );
-            }})
-            .then(function () {{ return self.skipWaiting(); }})
+            }}),
+            // 2) Pre-fetch de la lista de proyectos del usuario.
+            //    Crítico: si el ingeniero instala la PWA camino a planta
+            //    y nunca alcanzó a entrar con red, no tendría proyectos
+            //    disponibles offline. Este fetch corre con las cookies
+            //    del usuario (credentials same-origin por default en SW)
+            //    así que si está autenticado, funciona.
+            caches.open(API_CACHE).then(function (cache) {{
+                return fetch('/app/api/iamet/proyectos/', {{
+                    credentials: 'include',
+                }}).then(function (resp) {{
+                    if (resp && resp.status === 200) {{
+                        return cache.put('/app/api/iamet/proyectos/', resp);
+                    }}
+                }}).catch(function (err) {{
+                    console.warn('[SW] Pre-fetch proyectos falló:', err);
+                }});
+            }}),
+        ]).then(function () {{ return self.skipWaiting(); }})
     );
 }});
 

@@ -332,9 +332,11 @@
 
     // ─── Sync: drenar cola contra /offline-sync/ ──────────────────
     var _syncInFlight = false;
+    var _authFailed = false;  // bandera global cuando 401/403 (sesión expirada)
     function syncAll() {
         if (_syncInFlight) return Promise.resolve({ skipped: true });
         if (!navigator.onLine) return Promise.resolve({ offline: true });
+        _authFailed = false;
         _syncInFlight = true;
         _emit('sync:start');
         return Drafts.pending().then(function (drafts) {
@@ -343,14 +345,30 @@
             var p = Promise.resolve();
             var results = [];
             drafts.forEach(function (d) {
-                p = p.then(function () { return syncOne(d); }).then(function (r) { results.push(r); });
+                p = p.then(function () {
+                    // Si ya detectamos auth fail, no tiene sentido seguir
+                    // intentando — todas fallarían igual
+                    if (_authFailed) return { ok: false, authFailed: true, client_key: d.client_key };
+                    return syncOne(d);
+                }).then(function (r) { results.push(r); });
             });
             return p.then(function () { return results; });
         }).then(function (results) {
             _syncInFlight = false;
             updateBadge();
-            _emit('sync:end', results);
-            return results;
+            // Resumen numérico para las toasts
+            var okCount = results.filter(function (r) { return r && r.ok; }).length;
+            var errCount = results.filter(function (r) { return r && !r.ok && !r.authFailed; }).length;
+            var summary = { ok: okCount, err: errCount, authFailed: _authFailed, results: results };
+            _emit('sync:end', summary);
+            // Programar retry si hay errores genuinos (no auth fail).
+            // Si todo salió bien, resetear el contador de backoff.
+            if (errCount > 0 && !_authFailed) {
+                scheduleRetry();
+            } else if (errCount === 0) {
+                resetRetry();
+            }
+            return summary;
         }).catch(function (err) {
             _syncInFlight = false;
             warn('syncAll falló:', err);
@@ -392,11 +410,27 @@
                 credentials: 'same-origin',
                 headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' },
                 body: fd,
-            }).then(function (r) { return r.json().then(function (j) { return { status: r.status, json: j }; }); })
+            }).then(function (r) {
+                return r.json().catch(function () { return null; })
+                    .then(function (j) { return { status: r.status, json: j }; });
+            })
               .then(function (res) {
+                  // Auth fail: no marcar como error (el draft sigue válido),
+                  // solo avisar al usuario que inicie sesión otra vez.
+                  if (res.status === 401 || res.status === 403) {
+                      _authFailed = true;
+                      // Rollback: quitar 'syncing' estado y volverlo a 'pending'
+                      draft.sync_state = 'pending';
+                      draft.last_error = 'Sesión expirada';
+                      return Drafts.put(draft).then(function () {
+                          return { ok: false, authFailed: true, client_key: draft.client_key };
+                      });
+                  }
                   if (res.status >= 200 && res.status < 300 && res.json && res.json.success) {
                       draft.sync_state = 'done';
                       draft.server_id = res.json.levantamiento_id;
+                      draft.attempts = 0;
+                      draft.last_error = null;
                       return Drafts.put(draft).then(function () {
                           // Marcar evidencias como 'done' también
                           var mapByClientKey = {};
@@ -412,16 +446,39 @@
                           return Promise.all(saves).then(function () { return { ok: true, client_key: draft.client_key }; });
                       });
                   }
-                  // Error servidor
+                  // Error servidor genuino
                   draft.sync_state = 'error';
+                  draft.attempts = (draft.attempts || 0) + 1;
                   draft.last_error = (res.json && res.json.error) || ('HTTP ' + res.status);
+                  draft.last_attempt_at = now();
                   return Drafts.put(draft).then(function () { return { ok: false, error: draft.last_error }; });
               });
         }).catch(function (err) {
             draft.sync_state = 'error';
+            draft.attempts = (draft.attempts || 0) + 1;
             draft.last_error = String(err && err.message || err);
+            draft.last_attempt_at = now();
             return Drafts.put(draft).then(function () { return { ok: false, error: draft.last_error }; });
         });
+    }
+
+    // ─── Retry con backoff exponencial ────────────────────────────
+    var _retryTimer = null;
+    var _retryStep = 0;
+    var RETRY_DELAYS = [60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000]; // 1m, 5m, 15m
+    function scheduleRetry() {
+        if (_retryTimer) clearTimeout(_retryTimer);
+        if (_retryStep >= RETRY_DELAYS.length) return;  // agotados, user debe reintentar manual
+        var delay = RETRY_DELAYS[_retryStep];
+        _retryStep++;
+        log('Retry en', delay / 1000, 's (paso', _retryStep, ')');
+        _retryTimer = setTimeout(function () {
+            if (navigator.onLine) syncAll();
+        }, delay);
+    }
+    function resetRetry() {
+        if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
+        _retryStep = 0;
     }
 
     // ─── Fetch proxy ──────────────────────────────────────────────
@@ -571,9 +628,126 @@
         (_listeners[evt] || []).forEach(function (fn) { try { fn(data); } catch (e) {} });
     }
 
+    // ─── Toast notifications ───────────────────────────────────────
+    function showToast(message, kind, durationMs) {
+        kind = kind || 'info';
+        durationMs = durationMs || 4000;
+        var cont = document.getElementById('levToastContainer');
+        if (!cont) { log(message); return; }
+        var t = document.createElement('div');
+        t.className = 'lev-toast ' + kind;
+        var icon = kind === 'success' ? '✓' : (kind === 'error' ? '!' : 'ℹ');
+        t.innerHTML = '<span style="font-size:1.1rem;">' + icon + '</span><span style="flex:1;">' +
+            String(message).replace(/</g, '&lt;') + '</span>';
+        cont.appendChild(t);
+        setTimeout(function () {
+            t.classList.add('out');
+            setTimeout(function () { t.remove(); }, 350);
+        }, durationMs);
+    }
+
+    // Cablear toasts a eventos de sync
+    on('sync:end', function (summary) {
+        if (!summary) return;
+        if (summary.authFailed) {
+            showToast('Sesión expirada. Inicia sesión de nuevo para subir tus levantamientos.', 'error', 6000);
+            return;
+        }
+        if (summary.ok > 0) {
+            var s = summary.ok === 1 ? 'Levantamiento subido' : summary.ok + ' levantamientos subidos';
+            showToast(s + ' correctamente', 'success');
+        }
+        if (summary.err > 0) {
+            showToast('Hubo ' + summary.err + ' con error — reintentando pronto.', 'error');
+        }
+    });
+
+    // ─── Panel de pendientes ──────────────────────────────────────
+    function renderPendingList() {
+        var list = document.getElementById('levPendingList');
+        if (!list) return;
+        return Drafts.getAll().then(function (all) {
+            var pending = (all || []).filter(function (d) { return d.sync_state !== 'done'; });
+            pending.sort(function (a, b) {
+                return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+            });
+            if (!pending.length) {
+                list.innerHTML = '<div class="lev-pending-empty">Sin pendientes — todo sincronizado ✓</div>';
+                return;
+            }
+            var html = pending.map(function (d) {
+                var stateCls = 'lev-pending-status-' + (d.sync_state || 'pending');
+                var stateLbl = d.sync_state === 'syncing' ? 'Subiendo…' :
+                               d.sync_state === 'error'   ? 'Error' : 'Pendiente';
+                var metaParts = [];
+                var proyName = d.proyecto_nombre;
+                if (proyName) metaParts.push(proyName);
+                if (d.fase_actual) metaParts.push('Fase ' + d.fase_actual + '/5');
+                if (d.created_at) {
+                    try {
+                        var dt = new Date(d.created_at);
+                        metaParts.push(dt.toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }));
+                    } catch (e) {}
+                }
+                if (d.attempts) metaParts.push(d.attempts + ' intento' + (d.attempts === 1 ? '' : 's'));
+                return '<div class="lev-pending-item">' +
+                    '<div class="lev-pending-item-body">' +
+                        '<div class="lev-pending-item-name">' + _escapeHtml(d.nombre || 'Sin nombre') + '</div>' +
+                        '<div class="lev-pending-item-meta">' +
+                            '<span class="lev-pending-status-pill ' + stateCls + '">' + stateLbl + '</span>' +
+                            metaParts.map(_escapeHtml).join(' · ') +
+                        '</div>' +
+                        (d.last_error ? '<div class="lev-pending-item-err">⚠ ' + _escapeHtml(d.last_error) + '</div>' : '') +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            list.innerHTML = html;
+        });
+    }
+    function _escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+    function openPendingPanel() {
+        var bd = document.getElementById('levPendingBackdrop');
+        if (!bd) return;
+        renderPendingList();
+        bd.classList.add('show');
+    }
+    function closePendingPanel() {
+        var bd = document.getElementById('levPendingBackdrop');
+        if (bd) bd.classList.remove('show');
+    }
+    function retryNow() {
+        var btn = document.getElementById('levPendingRetryBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Sincronizando…';
+        }
+        resetRetry();
+        syncAll().finally(function () {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Intentar sincronizar ahora';
+            }
+            renderPendingList();
+        });
+    }
+
+    // Refrescar la lista mientras el panel esté abierto + después de sync
+    on('sync:end', function () {
+        var bd = document.getElementById('levPendingBackdrop');
+        if (bd && bd.classList.contains('show')) renderPendingList();
+    });
+
     // ─── API pública ──────────────────────────────────────────────
     window.levOffline = {
         syncAll: syncAll,
+        retryNow: retryNow,
+        openPendingPanel: openPendingPanel,
+        closePendingPanel: closePendingPanel,
+        showToast: showToast,
         getPendingCount: getPendingCount,
         updateBadge: updateBadge,
         on: on,
