@@ -2547,8 +2547,8 @@ def actividad_detail(request, pk):
                         prog.save(update_fields=['completada', 'fecha_completada', 'completada_por'])
                 except Exception:
                     pass
-            # Si es actividad de prospecto (morada), también completar la ProspectoActividad
-            if actividad.color == '#8B5CF6' and actividad.completada:
+            # Si es actividad de prospecto (café, antes morada), también completar la ProspectoActividad
+            if actividad.color in ('#B45309', '#8B5CF6') and actividad.completada:
                 try:
                     from .models import ProspectoActividad
                     # Buscar la ProspectoActividad más cercana por fecha y título

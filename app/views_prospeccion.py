@@ -587,7 +587,7 @@ def api_prospecto_actividades(request, prospecto_id):
                 fecha_inicio=fecha_dt,
                 fecha_fin=fecha_dt + timedelta(hours=1),
                 creado_por=request.user,
-                color='#8B5CF6',
+                color='#B45309',
             )
         except Exception as e:
             print(f'[Prospecto] Error creando actividad calendario: {e}')
@@ -614,7 +614,7 @@ def api_prospecto_actividad_toggle(request, actividad_id):
     # También marcar la actividad del calendario correspondiente
     try:
         cal_acts = Actividad.objects.filter(
-            color='#8B5CF6',
+            color='#B45309',
             titulo=actividad.descripcion,
             creado_por=actividad.usuario,
         )

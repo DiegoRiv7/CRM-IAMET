@@ -912,7 +912,8 @@
 
         {% endif %}
     </div>
-    <!-- Footer -->
+    <!-- Footer (oculto en tab=prospectos para que el kanban ocupe toda la pantalla) -->
+    {% if tab_activo != 'prospectos' %}
     <div class="crm-footer">
         <div class="footer-left" id="footerLeft">
             {% if tab_activo == 'cotizado' %}
@@ -931,6 +932,7 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
 
 </div>
 

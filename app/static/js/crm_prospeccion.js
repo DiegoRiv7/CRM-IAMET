@@ -322,7 +322,7 @@ document.addEventListener('click', function(ev) {
                 var etapaColor = {
                     'identificado': '#8E8E93',
                     'calificado': '#007AFF',
-                    'reunion': '#5856D6',
+                    'reunion': '#92400E',
                     'en_progreso': '#FF9500',
                     'procesado': '#34C759',
                     'cerrado_ganado': '#30D158',
@@ -335,7 +335,7 @@ document.addEventListener('click', function(ev) {
                     tr.style.cursor = 'pointer';
 
                     var pipelineBadge = row.tipo_pipeline === 'proyecto'
-                        ? '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#5856D6;"><span>P</span><svg width="10" height="10" fill="#5856D6" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>'
+                        ? '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#92400E;"><span>P</span><svg width="10" height="10" fill="#92400E" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>'
                         : '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#34C759;"><span>R</span><svg width="10" height="10" fill="#34C759" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>';
 
                     var eColor = etapaColor[row.etapa] || '#8E8E93';
@@ -445,7 +445,7 @@ document.addEventListener('click', function(ev) {
         var tipoPipEl = document.getElementById('wpTipoPipeline');
         if (tipoPipEl) {
             if (data.tipo_pipeline === 'proyecto') {
-                tipoPipEl.innerHTML = '<span style="display:inline-block;padding:2px 10px;border-radius:9999px;background:#5856D622;color:#5856D6;font-size:0.78rem;font-weight:600;">Proyecto</span>';
+                tipoPipEl.innerHTML = '<span style="display:inline-block;padding:2px 10px;border-radius:9999px;background:#92400E22;color:#92400E;font-size:0.78rem;font-weight:600;">Proyecto</span>';
             } else {
                 tipoPipEl.innerHTML = '<span style="display:inline-block;padding:2px 10px;border-radius:9999px;background:#34C75922;color:#34C759;font-size:0.78rem;font-weight:600;">Runrate</span>';
             }
@@ -570,8 +570,8 @@ document.addEventListener('click', function(ev) {
             '<div style="background:#fff;border-radius:16px;padding:24px;max-width:300px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
             '<h3 style="margin:0 0 16px;font-size:14px;font-weight:700;color:#1C1C1E;">Tipo de Reunion</h3>' +
             '<div style="display:flex;gap:10px;">' +
-            '<button onclick="confirmarReunion(\'virtual\')" style="flex:1;padding:12px;border:2px solid #5856D6;border-radius:10px;background:#5856D622;color:#5856D6;font-weight:700;font-size:13px;cursor:pointer;">Virtual</button>' +
-            '<button onclick="confirmarReunion(\'presencial\')" style="flex:1;padding:12px;border:2px solid #5856D6;border-radius:10px;background:#5856D622;color:#5856D6;font-weight:700;font-size:13px;cursor:pointer;">Presencial</button>' +
+            '<button onclick="confirmarReunion(\'virtual\')" style="flex:1;padding:12px;border:2px solid #92400E;border-radius:10px;background:#92400E22;color:#92400E;font-weight:700;font-size:13px;cursor:pointer;">Virtual</button>' +
+            '<button onclick="confirmarReunion(\'presencial\')" style="flex:1;padding:12px;border:2px solid #92400E;border-radius:10px;background:#92400E22;color:#92400E;font-weight:700;font-size:13px;cursor:pointer;">Presencial</button>' +
             '</div>' +
             '<button onclick="document.getElementById(\'reunionSelector\').remove()" style="margin-top:12px;width:100%;padding:8px;border:none;background:#F2F2F7;border-radius:8px;color:#86868B;font-size:12px;cursor:pointer;">Cancelar</button>' +
             '</div></div>';
@@ -614,7 +614,7 @@ document.addEventListener('click', function(ev) {
             '<h3 style="margin:0 0 0.5rem;font-size:1.15rem;font-weight:700;color:#1D1D1F;">Falta agendar actividad</h3>' +
             '<p style="margin:0 0 1.5rem;font-size:0.9rem;color:#86868B;line-height:1.5;">Cada prospecto debe tener al menos una actividad programada antes de cerrarlo.</p>' +
             '<div style="display:flex;gap:0.75rem;justify-content:center;">' +
-            '<button id="warnBtnAgendarProspecto" style="background:#8B5CF6;color:#fff;border:none;padding:0.7rem 1.5rem;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s;" onmouseenter="this.style.transform=\'scale(1.03)\'" onmouseleave="this.style.transform=\'none\'">' +
+            '<button id="warnBtnAgendarProspecto" style="background:#B45309;color:#fff;border:none;padding:0.7rem 1.5rem;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform 0.15s;" onmouseenter="this.style.transform=\'scale(1.03)\'" onmouseleave="this.style.transform=\'none\'">' +
             '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
             'Agendar Actividad' +
             '</button>' +
@@ -700,7 +700,7 @@ document.addEventListener('click', function(ev) {
                     var sysMsg = document.createElement('div');
                     sysMsg.className = 'wp-chat-msg wp-chat-msg--system';
                     sysMsg.innerHTML =
-                        '<div class="wp-chat-avatar" style="background:#5856D622;color:#5856D6;">' +
+                        '<div class="wp-chat-avatar" style="background:#92400E22;color:#92400E;">' +
                             '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>' +
                         '</div>' +
                         '<div class="wp-chat-bubble wp-chat-bubble--system">' +
@@ -792,7 +792,7 @@ document.addEventListener('click', function(ev) {
         var act = pendientes[0];
         var tipoColors = {
             'llamada': '#007AFF', 'correo': '#FF9500',
-            'reunion': '#5856D6', 'tarea': '#34C759', 'otro': '#8E8E93'
+            'reunion': '#92400E', 'tarea': '#34C759', 'otro': '#8E8E93'
         };
         var color = tipoColors[act.tipo] || '#8E8E93';
 
@@ -942,7 +942,7 @@ document.addEventListener('click', function(ev) {
         overlay.innerHTML =
             '<div style="background:#fff;border-radius:16px;width:480px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">' +
                 // Header morado
-                '<div style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);padding:1.5rem;position:relative;">' +
+                '<div style="background:linear-gradient(135deg,#B45309,#78350F);padding:1.5rem;position:relative;">' +
                     '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
                     '<div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">' +
                         '<svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
@@ -973,7 +973,7 @@ document.addEventListener('click', function(ev) {
                     // Relacionado a
                     '<div style="border-top:1px dashed #E5E7EB;padding-top:14px;">' +
                         '<div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:6px;">Relacionado a</div>' +
-                        '<div onclick="document.getElementById(\'wpActInfoOverlay\').remove();" style="display:inline-flex;align-items:center;gap:6px;background:#F3E8FF;color:#7C3AED;padding:8px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;" onmouseover="this.style.background=\'#EDE9FE\'" onmouseout="this.style.background=\'#F3E8FF\'">' +
+                        '<div onclick="document.getElementById(\'wpActInfoOverlay\').remove();" style="display:inline-flex;align-items:center;gap:6px;background:#FAF0E0;color:#78350F;padding:8px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;" onmouseover="this.style.background=\'#FAF6F0\'" onmouseout="this.style.background=\'#FAF0E0\'">' +
                             '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
                             'Prospecto: ' + escapeHtml(prospectoNombre) + ' &rsaquo;' +
                         '</div>' +
@@ -984,7 +984,7 @@ document.addEventListener('click', function(ev) {
                     (act.completada
                         ? '<span style="padding:0.6rem 2rem;background:#E5E7EB;color:#9CA3AF;border-radius:8px;font-weight:600;font-size:0.9rem;">Ya completada</span>'
                         : '<button onclick="_wpCompletarActividad(' + act.id + ')" style="padding:0.6rem 2rem;background:#34C759;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Completar</button>') +
-                    '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="padding:0.6rem 2rem;background:#8B5CF6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar</button>' +
+                    '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="padding:0.6rem 2rem;background:#B45309;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar</button>' +
                 '</div>' +
             '</div>';
         document.body.appendChild(overlay);
