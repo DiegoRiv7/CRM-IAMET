@@ -82,7 +82,7 @@ def levantamientos_manifest(request):
 #: Version del app-shell cacheado. BUMPEA esta constante al cambiar
 #  el template, CSS o JS del PWA para forzar re-descarga. El SW
 #  borrará caches viejos y se actualizará en segundo plano.
-SW_VERSION = 'lev-v6-pulido'
+SW_VERSION = 'lev-v7-iconos-iamet'
 
 
 @require_GET
