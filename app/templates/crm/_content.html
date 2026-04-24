@@ -202,7 +202,7 @@
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
-        <div class="crm-bar {% if tab_activo == 'crm' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' %} crm-bar--dashboard{% endif %}">
+        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' %} crm-bar--dashboard{% endif %}">
             {% if tab_activo == 'crm' %}
             <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
             <div class="crm-bar-left" id="crmBarLeft">
@@ -222,6 +222,25 @@
                     <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
                 <button type="button" class="crm-facet-btn crm-facet-clear" id="btnFacetClear" style="display:none;">Limpiar todo</button>
+            </div>
+            {% elif tab_activo == 'prospectos' %}
+            <!-- Acciones izquierda: filtro / ordenar (prospectos) -->
+            <div class="crm-bar-left" id="pkBarLeft">
+                <div class="pk-pop-wrap">
+                    <button type="button" class="crm-facet-btn crm-facet-add" id="pkBtnFiltro" title="Filtrar">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        <span>Filtro</span>
+                    </button>
+                    <div class="pk-pop" id="pkPopFilter" style="display:none;"></div>
+                </div>
+                <div class="pk-pop-wrap">
+                    <button type="button" class="crm-facet-btn crm-facet-sort" id="pkBtnOrdenar" title="Ordenar">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                        <span id="pkSortLabel">Ordenar</span>
+                    </button>
+                    <div class="pk-pop" id="pkPopSort" style="display:none;"></div>
+                </div>
+                <button type="button" class="crm-facet-btn crm-facet-clear" id="pkBtnClear" style="display:none;">Limpiar</button>
             </div>
             {% endif %}
             {% if tab_activo == 'clientes' %}
@@ -248,8 +267,8 @@
             </div>
             {% endif %}
             <div class="crm-bar-right">
-                {% if tab_activo == 'crm' or tab_activo == 'clientes' %}
-                <!-- Periodo + vendedor (+ nueva oportunidad solo en CRM) -->
+                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'prospectos' %}
+                <!-- Periodo + vendedor -->
                 <div class="crm-period-pills" id="crmPeriodPills">
                     <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -267,6 +286,12 @@
                 {% endif %}
                 {% if tab_activo == 'crm' %}
                 <button type="button" class="crm-facet-btn crm-facet-new" id="btnNegociacion" title="Nueva oportunidad">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nuevo</span>
+                </button>
+                {% elif tab_activo == 'prospectos' %}
+                <button type="button" class="crm-facet-btn crm-facet-new" id="btnNuevoProspectoKanban" title="Nuevo prospecto"
+                    onclick="var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Titulo de la prospeccion';if(l2)l2.textContent='Prospecto';document.getElementById('widgetNuevoProspecto').classList.add('active');">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     <span>Nuevo</span>
                 </button>
@@ -657,31 +682,6 @@
         </table>
         </div>
         {% elif tab_activo == 'prospectos' %}
-        <!-- Toolbar: Filtro + Ordenar (izq) + Nuevo Prospecto (der) -->
-        <div class="crm-bar-left pk-toolbar-left" style="padding: 8px 14px 0;">
-            <div class="pk-pop-wrap">
-                <button type="button" class="crm-facet-btn crm-facet-add" id="pkBtnFiltro" title="Filtrar">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                    <span>Filtro</span>
-                </button>
-                <div class="pk-pop" id="pkPopFilter" style="display:none;"></div>
-            </div>
-            <div class="pk-pop-wrap">
-                <button type="button" class="crm-facet-btn crm-facet-sort" id="pkBtnOrdenar" title="Ordenar">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-                    <span id="pkSortLabel">Ordenar</span>
-                </button>
-                <div class="pk-pop" id="pkPopSort" style="display:none;"></div>
-            </div>
-            <button type="button" class="crm-facet-btn crm-facet-clear" id="pkBtnClear" style="display:none;">Limpiar</button>
-            <div style="flex:1;"></div>
-            <button type="button" class="crm-facet-btn crm-facet-new" id="btnNuevoProspectoKanban"
-                onclick="var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Titulo de la prospeccion';if(l2)l2.textContent='Prospecto';document.getElementById('widgetNuevoProspecto').classList.add('active');">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>Nuevo</span>
-            </button>
-        </div>
-
         {% include "crm/_content_prospectos_kanban.html" %}
 
         {% elif tab_activo == 'prospeccion' %}

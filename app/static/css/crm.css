@@ -10634,26 +10634,51 @@ body.kanban-scroll-lock .crm-page-sidebar { overflow: hidden; }
    PROSPECTOS KANBAN (tab=prospectos) — reusa .crm-kanban-* y .crm-postit,
    con variant café vía .crm-postit--prospecto.
    ═══════════════════════════════════════════════════════════════════ */
-.pk-kanban-wrap-v2 {
-    padding: 0 12px 40px;
+/* Cuando el kanban de prospectos está presente y no estamos en tareas/proyectos,
+   forzar modo kanban: altura fija en crm-main, scroll lock global,
+   scroll individual por columna. Mismo comportamiento que .kanban-active. */
+.crm-main:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSection.active)) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: hidden;
+    height: 100vh;
+    max-height: 100vh;
 }
-.pk-board {
-    /* Asegurar que herede altura del kanban de Oportunidades */
-    min-height: 60vh;
+body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSection.active)) { overflow: hidden; }
+body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSection.active)) .crm-page-sidebar { overflow: hidden; }
+.crm-main:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSection.active)) .crm-table-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+}
+.crm-main:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSection.active)) .crm-bar {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+}
+.crm-main:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSection.active)) #crmContentSection {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Toolbar (Filtro + Ordenar + Nuevo + Período) */
-.pk-toolbar {
+.pk-kanban-wrap-v2 {
+    padding: 0 12px;
+    flex: 1;
+    min-height: 0;
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
 }
-.pk-toolbar-left {
-    display: flex !important;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
+.pk-board {
+    /* Ocupar altura completa del wrap para que cada columna scroll-y trabaje */
+    flex: 1;
+    min-height: 0;
 }
+
+/* Popover wrapper (para filtro/ordenar dentro del crm-bar-left) */
 .pk-pop-wrap {
     position: relative;
 }
