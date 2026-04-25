@@ -562,7 +562,10 @@
             zoomGroup.appendChild(btn);
         });
 
-        return el('div', { className: 'gantt-toolbar' }, [btnAdd, this._btnDel, this._btnToggleFases, this._btnFinancial, spacer, zoomGroup]);
+        // Botón "+ Fase" (secundario)
+        var btnAddPhase = el('button', { className: 'gantt-btn', onClick: function () { self._showAddPhaseModal(); } }, ['+ Fase']);
+
+        return el('div', { className: 'gantt-toolbar' }, [btnAdd, btnAddPhase, this._btnDel, this._btnToggleFases, this._btnFinancial, spacer, zoomGroup]);
     };
 
     /* -------------------------------------------
@@ -927,12 +930,20 @@
                     onClick: function (e) {
                         e.stopPropagation();
                         t.collapsed = !t.collapsed;
+                        self._persistTask(t);
                         self._render();
                     }
                 }, [t.collapsed ? '\u25B6' : '\u25BC']);
                 nameCell.appendChild(toggle);
-                var span = el('span', { className: 'gantt-phase-name' }, [t.name]);
-                nameCell.appendChild(span);
+                var phaseSpan = el('span', { className: 'gantt-phase-name' }, [t.name]);
+                nameCell.appendChild(phaseSpan);
+                // Inline edit de nombre de fase
+                (function (task, spanEl, cell) {
+                    spanEl.addEventListener('dblclick', function (e) {
+                        e.stopPropagation();
+                        self._startCellEdit(task, 'name', spanEl, cell, { type: 'text' });
+                    });
+                })(t, phaseSpan, nameCell);
             } else {
                 if (t.parent) {
                     nameCell.appendChild(el('span', { className: 'gantt-indent' }));
@@ -2072,6 +2083,14 @@
        PERSIST TASK TO SERVER
        ------------------------------------------- */
     Gantt.prototype._persistTask = function (t) {
+        if (t.isPhase) {
+            // Fases usan endpoint diferente
+            _fetch('/app/api/gantt/fase/' + t.id + '/', {
+                method: 'PUT',
+                body: { nombre: t.name, orden: t.orden || 0, collapsed: !!t.collapsed }
+            }).catch(function (err) { console.error('Gantt: error persisting phase', err); });
+            return;
+        }
         var startDate = addDays(this.projectStart, t.start);
         // Normalize recursos to plain IDs
         var resIds = (t.res || []).map(function (r) {
@@ -2080,6 +2099,7 @@
         _fetch('/app/api/gantt/actividad/' + t.id + '/', {
             method: 'PUT',
             body: {
+                nombre: t.name,
                 fecha_inicio: dateStr(startDate),
                 duracion_dias: t.dur,
                 progreso: t.progress,
@@ -2171,6 +2191,54 @@
     /* -------------------------------------------
        ADD ACTIVITY MODAL (PRO-001)
        ------------------------------------------- */
+    /* -------------------------------------------
+       MODAL: NUEVA FASE (vacía)
+       ------------------------------------------- */
+    Gantt.prototype._showAddPhaseModal = function () {
+        var self = this;
+        this.modal.innerHTML = '';
+        this.modal.style.display = 'flex';
+
+        var card = el('div', { className: 'gantt-modal' });
+
+        var title = el('h3', { style: { margin: '0 0 16px', fontSize: '1rem', fontWeight: '700', color: COLOR_DARK } }, ['Nueva Fase']);
+
+        var nameLabel = el('label', { style: { display: 'block', fontSize: '0.72rem', fontWeight: '600', color: '#64748B', textTransform: 'uppercase', marginBottom: '4px' } }, ['Nombre de la fase']);
+        var nameInput = el('input', { type: 'text', className: 'gantt-inline-input', style: { width: '100%', padding: '8px 10px', marginBottom: '16px' }, placeholder: 'Ej: Levantamiento, Instalación...' });
+
+        var btnRow = el('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end' } });
+        var btnCancel = el('button', { className: 'gantt-btn', onClick: function () { self.modal.style.display = 'none'; } }, ['Cancelar']);
+        var btnSave = el('button', { className: 'gantt-btn gantt-btn-primary', onClick: function () {
+            var name = nameInput.value.trim();
+            if (!name) { nameInput.focus(); return; }
+            btnSave.disabled = true;
+            btnSave.textContent = 'Creando...';
+            _fetch('/app/api/proyecto/' + self.proyectoId + '/gantt/fase/', {
+                method: 'POST',
+                body: { nombre: name }
+            }).then(function () {
+                self.modal.style.display = 'none';
+                self._loadData();
+            }).catch(function (err) {
+                console.error('Error creando fase:', err);
+                btnSave.disabled = false;
+                btnSave.textContent = 'Crear Fase';
+            });
+        } }, ['Crear Fase']);
+
+        btnRow.appendChild(btnCancel);
+        btnRow.appendChild(btnSave);
+
+        card.appendChild(title);
+        card.appendChild(nameLabel);
+        card.appendChild(nameInput);
+        card.appendChild(btnRow);
+
+        this.modal.appendChild(card);
+        this.modal.onclick = function (e) { if (e.target === self.modal) self.modal.style.display = 'none'; };
+        setTimeout(function () { nameInput.focus(); }, 50);
+    };
+
     Gantt.prototype._showAddModal = function () {
         var self = this;
         this.modal.style.display = 'flex';
@@ -2704,6 +2772,19 @@
 
                 if (newValue !== oldValue) {
                     task[field] = newValue;
+                    // Si cambió la duración, cascadear dependencias
+                    if (field === 'dur' && typeof self._cascadeDeps === 'function') {
+                        // Guardar starts antes de cascada para detectar cambios
+                        var snapshots = {};
+                        self.tasks.forEach(function (tt) { if (!tt.isPhase) snapshots[tt.id] = tt.start; });
+                        self._cascadeDeps(task.id);
+                        // Persistir todas las que cambiaron
+                        self.tasks.forEach(function (tt) {
+                            if (!tt.isPhase && snapshots[tt.id] !== undefined && snapshots[tt.id] !== tt.start) {
+                                self._persistTask(tt);
+                            }
+                        });
+                    }
                     self._persistTask(task);
                     self._render();
                     input.remove();
