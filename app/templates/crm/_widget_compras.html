@@ -1,30 +1,24 @@
 {% load static %}
 <section id="widgetCompras" class="compras-widget" aria-hidden="true">
   <div class="compras-shell">
-    <header class="compras-header">
-      <div class="compras-header-title">
-        <h1>Compras</h1>
-        <p>Catálogos y operaciones de compras</p>
-      </div>
-      <nav class="crm-tabs compras-tabs" role="tablist">
-        <button type="button" class="crm-tab active" data-compras-section="productos"
-          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('productos')">
-          Productos
-        </button>
-        <button type="button" class="crm-tab" data-compras-section="proveedores"
-          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('proveedores')">
-          Proveedores
-        </button>
-        <button type="button" class="crm-tab" data-compras-section="oc"
-          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('oc')">
-          Órdenes de Compra
-        </button>
-        <button type="button" class="crm-tab" data-compras-section="gastos"
-          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('gastos')">
-          Gastos
-        </button>
-      </nav>
-    </header>
+    <nav class="crm-tabs compras-tabs" role="tablist">
+      <button type="button" class="crm-tab active" data-compras-section="productos"
+        onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('productos')">
+        Productos
+      </button>
+      <button type="button" class="crm-tab" data-compras-section="proveedores"
+        onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('proveedores')">
+        Proveedores
+      </button>
+      <button type="button" class="crm-tab" data-compras-section="oc"
+        onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('oc')">
+        Órdenes de Compra
+      </button>
+      <button type="button" class="crm-tab" data-compras-section="gastos"
+        onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('gastos')">
+        Gastos
+      </button>
+    </nav>
 
     <div class="compras-content">
       <div id="comprasProductosSection" class="compras-section is-active" data-section="productos">
