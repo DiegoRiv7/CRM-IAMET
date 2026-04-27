@@ -392,6 +392,30 @@
 .cp-tbl-row:hover { background: #f5f8ff; }
 .cp-tbl-row:hover::before { opacity: 1; transform: scaleY(1); }
 .cp-tbl-row:hover .cp-row-actions { opacity: 1; }
+/* Suprimir animación staggered en re-renders (al abrir Filtro/Excel/Sort).
+   Sólo el render inicial anima; los siguientes son instantáneos. */
+.cp-tbl-body.cp-no-stagger .cp-tbl-row { animation: none !important; }
+
+/* Botones del toolbar (Filtro / Ordenar / Excel) — alinear con search y Agregar. */
+.cp-toolbar .crm-facet-btn {
+    height: 32px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 12px;
+    border-radius: 8px;
+    color: #1c1c1e;
+}
+.cp-toolbar .crm-facet-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.cp-toolbar .crm-facet-add { border: 1px dashed rgba(0, 0, 0, .15); background: #fff; }
+.cp-toolbar .crm-facet-add:hover { background: #f5f5f7; border-style: solid; border-color: rgba(0, 0, 0, .2); }
+.cp-toolbar .crm-facet-add.active { background: #eff6ff; border-color: #3478f6; border-style: solid; color: #1d4ed8; }
+.cp-toolbar .crm-facet-sort { border: 1px solid rgba(0, 0, 0, .11); background: #fff; }
+.cp-toolbar .crm-facet-sort:hover { background: #f5f5f7; border-color: rgba(0, 0, 0, .18); }
+.cp-toolbar .crm-facet-sort.has-sort { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.cp-toolbar .crm-facet-export { border: 1px solid rgba(0, 0, 0, .11); background: #fff; color: #1d6f42; }
+.cp-toolbar .crm-facet-export:hover { background: #ecfdf5; border-color: #1d6f42; color: #14532d; }
+.cp-toolbar .crm-facet-clear { border: none !important; background: transparent; color: #ef4444; font-weight: 600; padding: 0 8px; }
+.cp-toolbar .crm-facet-clear:hover { background: #fef2f2; color: #b91c1c; }
 
 .cp-tbl-row:nth-child(1) { animation-delay: .04s; }
 .cp-tbl-row:nth-child(2) { animation-delay: .08s; }
@@ -483,15 +507,16 @@
     color: #aeaeb2;
 }
 
-/* Row actions */
+/* Row actions — siempre visibles (acentuadas en hover). */
 .cp-row-actions {
     display: flex;
     align-items: center;
     gap: 3px;
     justify-content: flex-end;
-    opacity: 0;
+    opacity: 0.55;
     transition: opacity .18s;
 }
+.cp-tbl-row:hover .cp-row-actions { opacity: 1; }
 .cp-icon-btn {
     width: 28px;
     height: 28px;

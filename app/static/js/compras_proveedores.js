@@ -592,13 +592,19 @@
             });
             r.addEventListener('mouseenter', function (e) {
                 if (state.previewTimer) clearTimeout(state.previewTimer);
-                var rect = r.getBoundingClientRect();
+                var startX = e.clientX, startY = e.clientY;
                 state.previewTimer = setTimeout(function () {
                     var item = state.items.find(function (x) { return x.id === id; });
                     if (item) {
-                        showPreview(item, { x: rect.right - 20, y: rect.top });
+                        showPreview(item, { x: startX, y: startY });
                     }
                 }, 420);
+            });
+            r.addEventListener('mousemove', function (e) {
+                if (state.preview) {
+                    state.preview.pos = { x: e.clientX, y: e.clientY };
+                    renderPreview();
+                }
             });
             r.addEventListener('mouseleave', function () {
                 if (state.previewTimer) clearTimeout(state.previewTimer);
@@ -681,8 +687,15 @@
         if (!state.preview) { el.innerHTML = ''; return; }
         var p = state.preview.item;
         var pos = state.preview.pos;
-        var left = Math.min(pos.x + 12, window.innerWidth - 296);
-        var top = Math.min(Math.max(pos.y - 10, 12), window.innerHeight - 240);
+        // Posicionar al lado del cursor; si no cabe a la derecha, va a la izquierda.
+        var cardW = 296;
+        var cardH = 220;
+        var left = pos.x + 18;
+        if (left + cardW > window.innerWidth - 12) left = pos.x - cardW - 18;
+        if (left < 12) left = 12;
+        var top = pos.y - 10;
+        if (top + cardH > window.innerHeight - 12) top = window.innerHeight - cardH - 12;
+        if (top < 12) top = 12;
         var rfc = p.rfc || 'Sin RFC';
         var loc = [p.ciudad, p.estado].filter(Boolean).join(', ') || '—';
         var dias = p.dias_credito || 0;

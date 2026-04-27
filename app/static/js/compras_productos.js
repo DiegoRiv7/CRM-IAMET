@@ -86,7 +86,7 @@
         items: [],
         total: 0,
         page: 1,
-        pageSize: 7,
+        pageSize: 14,
         totalPages: 1,
         q: '',
         tipo: 'todos',          // todos | PRODUCTO | SERVICIO
@@ -275,11 +275,20 @@
         $detailView.hidden = true;
         $listView.hidden = false;
 
+        // Suprimir animación staggered cuando los datos no cambiaron desde el
+        // render anterior (al abrir Filtro/Sort/Excel se re-renderiza sin
+        // querer "recargar" visualmente la tabla).
+        var sameItems = state._lastRenderItems === state.items;
+        var suppressStagger = sameItems && state._tableEverRendered;
+
         var html = '';
         html += renderToolbar();
         html += renderFilterChips();
-        html += renderTable();
+        html += renderTable(suppressStagger);
         $listView.innerHTML = html;
+
+        state._lastRenderItems = state.items;
+        state._tableEverRendered = true;
 
         // Bind toolbar events
         bindListEvents();
@@ -401,7 +410,7 @@
         return html;
     }
 
-    function renderTable() {
+    function renderTable(suppressStagger) {
         var html = '<div class="cp-table-card">';
         // Header
         html += '<div class="cp-tbl-header">';
@@ -410,11 +419,11 @@
         html += sortHeader('tipo', 'Tipo');
         html += '<div class="cp-tbl-header-cell cp-not-sortable">IVA</div>';
         html += sortHeader('estatus', 'Estatus');
-        html += '<div class="cp-tbl-header-cell cp-not-sortable" style="justify-content:flex-end;">&nbsp;</div>';
+        html += '<div class="cp-tbl-header-cell cp-not-sortable" style="justify-content:flex-end;">Acciones</div>';
         html += '</div>';
 
         // Body
-        html += '<div class="cp-tbl-body">';
+        html += '<div class="cp-tbl-body' + (suppressStagger ? ' cp-no-stagger' : '') + '">';
         if (state.loading) {
             for (var i = 0; i < state.pageSize; i++) {
                 html += '<div class="cp-skeleton-row">';
