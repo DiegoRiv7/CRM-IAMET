@@ -105,6 +105,7 @@
         unidadesCache: [],
         almacenesCache: [],
         catLoaded: false,
+        catLoading: false,
         // UI flags
         filterOpen: false,
         sortOpen: false,
@@ -213,8 +214,10 @@
             });
     }
 
-    function loadCatalogos() {
-        if (state.catLoaded) return Promise.resolve();
+    function loadCatalogos(force) {
+        if (state.catLoaded && !force) return Promise.resolve();
+        if (state.catLoading) return state._catLoadingPromise || Promise.resolve();
+        state.catLoading = true;
         var p1 = window.comprasFetch('/app/api/compras/claves-cfdi/').then(function (d) {
             state.cfdiCache = Array.isArray(d) ? d : (d.items || []);
         }).catch(function () { state.cfdiCache = []; });
@@ -224,7 +227,13 @@
         var p3 = window.comprasFetch('/app/api/compras/almacenes/').then(function (d) {
             state.almacenesCache = Array.isArray(d) ? d : (d.items || []);
         }).catch(function () { state.almacenesCache = []; });
-        return Promise.all([p1, p2, p3]).then(function () { state.catLoaded = true; });
+        state._catLoadingPromise = Promise.all([p1, p2, p3]).then(function () {
+            state.catLoaded = true;
+            state.catLoading = false;
+            // Re-render si hay un picker abierto que estaba mostrando "cargando"
+            if (state.openPicker && state.modalOpen) renderModals();
+        });
+        return state._catLoadingPromise;
     }
 
     function searchClavesCfdi(q) {
@@ -1216,13 +1225,19 @@
 
         var html = '<div class="cp-nm-picker" data-cp-picker="cfdi">';
         html += '<input type="text" class="cp-nm-picker-search" id="cpPickerSearch" placeholder="Buscar clave o descripción..." value="' + escHtml(state.pickerSearch) + '">';
-        if (filtered.length === 0) {
-            html += '<div class="cp-nm-picker-empty">No se encontraron resultados</div>';
+        if (list.length === 0) {
+            html += '<div class="cp-nm-picker-empty">' + (state.catLoading ? 'Cargando catálogo SAT…' : 'Catálogo CFDI vacío. Corre <code>seed_compras</code> en el servidor.') + '</div>';
+        } else if (filtered.length === 0) {
+            html += '<div class="cp-nm-picker-empty">Sin coincidencias para “' + escHtml(state.pickerSearch) + '”. Borra la búsqueda para ver el catálogo.</div>';
         } else {
-            ['PRODUCTO', 'SERVICIO'].forEach(function (grp) {
-                var subset = filtered.filter(function (c) { return (c.tipo || c.type) === grp; });
+            // Agrupado por tipo (case-insensitive: el modelo usa lowercase 'producto'/'servicio').
+            [['producto', 'PRODUCTOS'], ['servicio', 'SERVICIOS']].forEach(function (pair) {
+                var grpKey = pair[0], grpLabel = pair[1];
+                var subset = filtered.filter(function (c) {
+                    return ((c.tipo || c.type || '') + '').toLowerCase() === grpKey;
+                });
                 if (!subset.length) return;
-                html += '<div class="cp-dropdown-label">' + grp + '</div>';
+                html += '<div class="cp-dropdown-label">' + grpLabel + ' · ' + subset.length + '</div>';
                 subset.forEach(function (c) {
                     var sel = c.clave === state.modalDraft.clave_cfdi;
                     html += '<div class="cp-nm-picker-item ' + (sel ? 'cp-selected' : '') + '" data-cp-action="pick-cfdi" data-clave="' + escHtml(c.clave) + '">';
@@ -1250,9 +1265,12 @@
 
         var html = '<div class="cp-nm-picker" data-cp-picker="unidad">';
         html += '<input type="text" class="cp-nm-picker-search" id="cpPickerSearch" placeholder="Buscar unidad..." value="' + escHtml(state.pickerSearch) + '">';
-        if (filtered.length === 0) {
-            html += '<div class="cp-nm-picker-empty">No se encontraron unidades</div>';
+        if (list.length === 0) {
+            html += '<div class="cp-nm-picker-empty">' + (state.catLoading ? 'Cargando unidades SAT…' : 'Catálogo de unidades vacío. Corre <code>seed_compras</code> en el servidor.') + '</div>';
+        } else if (filtered.length === 0) {
+            html += '<div class="cp-nm-picker-empty">Sin coincidencias para “' + escHtml(state.pickerSearch) + '”.</div>';
         } else {
+            html += '<div class="cp-dropdown-label">UNIDADES · ' + filtered.length + '</div>';
             filtered.forEach(function (c) {
                 var sel = c.clave === state.modalDraft.unidad_cfdi;
                 html += '<div class="cp-nm-picker-item ' + (sel ? 'cp-selected' : '') + '" data-cp-action="pick-unidad" data-clave="' + escHtml(c.clave) + '">';
@@ -1410,6 +1428,16 @@
                 var pname = trig.dataset.cpPickerTrigger;
                 state.openPicker = (state.openPicker === pname) ? null : pname;
                 state.pickerSearch = '';
+                // Si el catálogo está vacío al abrir, dispara la carga (red de
+                // seguridad por si la carga inicial falló o aún no terminó).
+                if (state.openPicker) {
+                    var needsLoad = (
+                        (pname === 'cfdi' && (!state.cfdiCache || !state.cfdiCache.length)) ||
+                        (pname === 'unidad' && (!state.unidadesCache || !state.unidadesCache.length)) ||
+                        (pname === 'almacenes' && (!state.almacenesCache || !state.almacenesCache.length))
+                    );
+                    if (needsLoad) loadCatalogos(true);
+                }
                 renderModals();
                 if (state.openPicker) focusPickerSearch();
                 return;
