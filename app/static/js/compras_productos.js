@@ -1026,21 +1026,28 @@
     }
 
     function renderModals() {
+        // Detectar qué modales YA estaban en el DOM para suprimir la animación
+        // de entrada en re-renders (evita el flash al hacer clic en chips/IVA/moneda).
+        var hadProduct = !!$modalContainer.querySelector('[data-cp-overlay="product"]');
+        var hadConfirm = !!$modalContainer.querySelector('[data-cp-overlay="confirm"]');
+        var hadImport  = !!$modalContainer.querySelector('[data-cp-overlay="import"]');
+
         var html = '';
         if (state.modalOpen && state.modalDraft) {
-            html += renderProductModal();
+            html += renderProductModal(hadProduct);
         }
         if (state.confirmTarget) {
-            html += renderConfirmModal();
+            html += renderConfirmModal(hadConfirm);
         }
         if (state.importOpen) {
-            html += renderImportModal();
+            html += renderImportModal(hadImport);
         }
         $modalContainer.innerHTML = html;
         bindModalEvents();
     }
 
-    function renderProductModal() {
+    function renderProductModal(noAnim) {
+        var animCls = noAnim ? ' cp-no-anim' : '';
         var d = state.modalDraft;
         var isEdit = state.modalMode === 'edit';
         var detectedTipo = d.tipo || getTipoFromCfdi(d.clave_cfdi) || '';
@@ -1048,8 +1055,8 @@
 
         var canSave = !!(d.codigo && d.nombre && d.descripcion && d.costo !== '' && parseFloat(d.costo) >= 0 && d.clave_cfdi && d.unidad_cfdi);
 
-        var html = '<div class="cp-modal-overlay" data-cp-overlay="product">';
-        html += '<div class="cp-notion-modal" role="dialog" aria-modal="true">';
+        var html = '<div class="cp-modal-overlay' + animCls + '" data-cp-overlay="product">';
+        html += '<div class="cp-notion-modal' + animCls + '" role="dialog" aria-modal="true">';
 
         // Header
         html += '<div class="cp-nm-header">';
@@ -1295,7 +1302,8 @@
         renderModals();
     }
 
-    function renderConfirmModal() {
+    function renderConfirmModal(noAnim) {
+        var animCls = noAnim ? ' cp-no-anim' : '';
         var p = state.confirmTarget;
         var nombre = p.nombre || p.name || '';
         var codigo = p.codigo || p.code || '';
@@ -1306,8 +1314,8 @@
             ? ' será desactivado o eliminado según las reglas del sistema. Si tiene movimientos vinculados quedará inactivo; si no, será eliminado permanentemente.'
             : ' será eliminado permanentemente. Esta acción no se puede deshacer.';
 
-        var html = '<div class="cp-confirm-overlay" data-cp-overlay="confirm">';
-        html += '<div class="cp-confirm-box" role="alertdialog" aria-modal="true">';
+        var html = '<div class="cp-confirm-overlay' + animCls + '" data-cp-overlay="confirm">';
+        html += '<div class="cp-confirm-box' + animCls + '" role="alertdialog" aria-modal="true">';
         html += '<div class="cp-confirm-icon">' + ic('warning', 24) + '</div>';
         html += '<h3>' + escHtml(titulo) + '</h3>';
         html += '<p><strong>' + escHtml(nombre) + '</strong>' + (codigo ? ' (<span style="font-family:monospace;">' + escHtml(codigo) + '</span>)' : '') + escHtml(desc) + '</p>';
@@ -1320,9 +1328,10 @@
     }
 
     // Import modal
-    function renderImportModal() {
-        var html = '<div class="cp-modal-overlay" data-cp-overlay="import">';
-        html += '<div class="cp-notion-modal" style="width:560px;" role="dialog" aria-modal="true">';
+    function renderImportModal(noAnim) {
+        var animCls = noAnim ? ' cp-no-anim' : '';
+        var html = '<div class="cp-modal-overlay' + animCls + '" data-cp-overlay="import">';
+        html += '<div class="cp-notion-modal' + animCls + '" style="width:560px;" role="dialog" aria-modal="true">';
 
         html += '<div class="cp-nm-header">';
         html += '<div class="cp-nm-breadcrumb">' + ic('package', 13) + '<span>Compras</span>' + ic('chevRight', 12) + '<span class="cp-current">Importar productos</span></div>';

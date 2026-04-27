@@ -626,6 +626,10 @@
   animation: cv-modalIn .25s cubic-bezier(.32, 1.1, .32, 1);
   overflow: hidden;
 }
+/* Suprime la animación de entrada en re-renders (clicks en chips/RFC/CLABE)
+   para evitar el flash de "cierra y vuelve a abrir". */
+.cv-modal-overlay.cv-no-anim,
+.cv-notion-modal.cv-no-anim { animation: none !important; }
 
 /* header */
 .cv-nm-header {
@@ -890,25 +894,27 @@
 
 /* tipo persona toggle */
 .cv-tipo-toggle {
-  display: flex;
+  display: inline-flex;
   background: rgba(0, 0, 0, .04);
-  border-radius: 9px;
-  padding: 3px;
-  width: 100%;
+  border-radius: 7px;
+  padding: 2px;
   gap: 2px;
+  width: auto;
+  align-self: flex-start;
 }
 
 .cv-tipo-btn {
-  flex: 1;
-  height: 32px;
+  height: 24px;
+  padding: 0 12px;
   border: none;
   background: transparent;
-  border-radius: 7px;
-  font-size: 13px;
+  border-radius: 5px;
+  font-size: 12px;
   font-weight: 600;
   color: #6e6e73;
   cursor: pointer;
   font-family: inherit;
+  white-space: nowrap;
   transition: background .15s, color .15s, box-shadow .15s;
 }
 
@@ -917,9 +923,9 @@
 }
 
 .cv-tipo-btn.cv-active {
-  background: #0052D4;
-  color: #fff;
-  box-shadow: 0 1px 4px rgba(0, 82, 212, .35);
+  background: #fff;
+  color: #1c1c1e;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .05);
 }
 
 .cv-tipo-btn:disabled {

@@ -656,6 +656,12 @@
     animation: cpModalIn .25s cubic-bezier(.32, 1.1, .32, 1);
     overflow: hidden;
 }
+/* Suprime la animación de entrada en re-renders del mismo modal (al hacer
+   clic en chips/IVA/moneda) para evitar el "flash" de cierre y reapertura. */
+.cp-modal-overlay.cp-no-anim,
+.cp-confirm-overlay.cp-no-anim,
+.cp-notion-modal.cp-no-anim,
+.cp-confirm-box.cp-no-anim { animation: none !important; }
 
 /* Header */
 .cp-nm-header {

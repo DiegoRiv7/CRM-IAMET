@@ -829,7 +829,7 @@
         return {
             razon_social: '',
             rfc: '',
-            tipo_persona: 'MORAL',
+            tipo_persona: 'FISICA',
             dias_credito: 0,
             monto_credito: 0,
             banco: '',
@@ -897,6 +897,11 @@
         }
         if (!state.modalOpen) { host.innerHTML = ''; return; }
 
+        // Si el modal ya estaba renderizado, no replayamos la animación de
+        // entrada (evita el "flash" al hacer clic en chips/RFC/CLABE).
+        var alreadyOpen = !!host.querySelector('#cv-modal-overlay');
+        var animCls = alreadyOpen ? ' cv-no-anim' : '';
+
         var f = state.modalForm;
         var isEdit = !!state.modalEdit;
         var rfcVal = validateRFC(f.rfc);
@@ -904,8 +909,8 @@
         var rfcLocked = !!f._rfc_locked;
         var detectedTipo = rfcVal.valid && rfcVal.tipo ? rfcVal.tipo : f.tipo_persona;
 
-        var html = '<div class="cv-modal-overlay" id="cv-modal-overlay">' +
-            '<div class="cv-notion-modal" id="cv-notion-modal">' +
+        var html = '<div class="cv-modal-overlay' + animCls + '" id="cv-modal-overlay">' +
+            '<div class="cv-notion-modal' + animCls + '" id="cv-notion-modal">' +
                 // header
                 '<div class="cv-nm-header">' +
                     '<div class="cv-nm-breadcrumb">' +
@@ -965,16 +970,13 @@
 
                     // ── DATOS BANCARIOS
                     '<div class="cv-section-header">' + svgIcon(I.bank, 13) + 'Datos Bancarios</div>' +
-                    '<div class="cv-prop-row" style="align-items:flex-start;">' +
+                    '<div class="cv-prop-row">' +
                         '<div class="cv-prop-label">' + svgIcon(I.bank, 14) + 'Banco</div>' +
                         '<div class="cv-prop-value">' +
-                            '<div class="cv-bank-grid">' +
-                                BANCOS_COMUNES.map(function (b) {
-                                    return '<button class="cv-bank-chip ' + (f.banco === b ? 'cv-active' : '') + '" data-banco="' + escapeHtml(b) + '">' + escapeHtml(b) + '</button>';
-                                }).join('') +
-                                (f.banco && BANCOS_COMUNES.indexOf(f.banco) === -1 ? '<button class="cv-bank-chip cv-active" data-banco="' + escapeHtml(f.banco) + '">' + escapeHtml(f.banco) + '</button>' : '') +
-                                (f.banco ? '<button class="cv-bank-chip" data-banco="">Limpiar</button>' : '') +
-                            '</div>' +
+                            '<input id="cv-modal-banco" class="cv-nm-input" list="cv-bancos-list" placeholder="Banco — escribe o elige" value="' + escapeHtml(f.banco) + '" style="max-width:260px;" autocomplete="off">' +
+                            '<datalist id="cv-bancos-list">' +
+                                BANCOS_COMUNES.map(function (b) { return '<option value="' + escapeHtml(b) + '">'; }).join('') +
+                            '</datalist>' +
                         '</div>' +
                     '</div>' +
                     '<div class="cv-prop-row">' +
@@ -1142,13 +1144,8 @@
         bindNumber(host, 'cv-modal-dias', 'dias_credito', true);
         bindNumber(host, 'cv-modal-monto', 'monto_credito', false);
 
-        // banco chips
-        $$('[data-banco]', host).forEach(function (b) {
-            b.addEventListener('click', function () {
-                state.modalForm.banco = b.getAttribute('data-banco');
-                renderModalIfOpen();
-            });
-        });
+        // banco (input + datalist)
+        bindText(host, 'cv-modal-banco', 'banco');
 
         // cuenta, clabe, cuenta contable
         bindText(host, 'cv-modal-cuenta', 'cuenta_bancaria');
