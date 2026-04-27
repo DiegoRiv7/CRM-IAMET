@@ -96,7 +96,7 @@ def api_admin_usuarios(request):
         )
         profile, _ = UserProfile.objects.get_or_create(user=user)
         rol = data.get('rol', 'vendedor').strip()
-        if rol in ('vendedor', 'ingeniero'):
+        if rol in ('vendedor', 'ingeniero', 'administrador'):
             profile.rol = rol
             profile.save(update_fields=['rol'])
 

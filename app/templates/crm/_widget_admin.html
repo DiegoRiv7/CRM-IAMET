@@ -116,6 +116,7 @@
 .admin-badge-green { background: rgba(52,199,89,0.13);   color: #1C8C3C; }
 .admin-badge-red   { background: rgba(255,59,48,0.12);   color: #D70015; }
 .admin-badge-purple{ background: rgba(175,82,222,0.12);  color: #9B30C7; }
+.admin-badge-orange{ background: rgba(255,149,0,0.13);   color: #C26900; }
 .admin-badge-a     { background: rgba(52,199,89,0.13);   color: #1C8C3C; }
 .admin-badge-b     { background: rgba(0,122,255,0.12);   color: #007AFF; }
 .admin-badge-c     { background: rgba(142,142,147,0.15); color: #636366; }
@@ -403,15 +404,20 @@ window.loadUsuarios = function(){
     h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Nuevo Usuario</div>';
     h += '<div class="admin-form-row"><input class="admin-input" id="nuUsername" placeholder="Username"><input class="admin-input" id="nuPassword" placeholder="Contrase&ntilde;a" type="password"></div>';
     h += '<div class="admin-form-row"><input class="admin-input" id="nuFirstName" placeholder="Nombre"><input class="admin-input" id="nuLastName" placeholder="Apellido"></div>';
-    h += '<div class="admin-form-row"><input class="admin-input" id="nuEmail" placeholder="Email" type="email"><select class="admin-input" id="nuRol" style="max-width:160px;"><option value="vendedor">Vendedor</option><option value="ingeniero">Ingeniero</option></select></div>';
+    h += '<div class="admin-form-row"><input class="admin-input" id="nuEmail" placeholder="Email" type="email"><select class="admin-input" id="nuRol" style="max-width:160px;"><option value="vendedor">Vendedor</option><option value="ingeniero">Ingeniero</option><option value="administrador">Administrador</option></select></div>';
     h += '<div style="display:flex;gap:8px;margin-top:4px;"><button class="admin-btn admin-btn-primary" onclick="admGuardarNuevoUsuario()">Crear</button><button class="admin-btn admin-btn-secondary" onclick="admNuevoUsuarioForm()">Cancelar</button></div>';
     h += '</div>';
     /* Table */
     h += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Nombre Completo</th><th>Email</th><th>Rol</th><th>Supervisor</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>';
     (data.usuarios||[]).forEach(function(u){
       var rol = u.rol||'vendedor';
-      var rolLabel = rol==='ingeniero' ? 'Ingeniero' : (u.is_supervisor ? 'Admin' : 'Vendedor');
-      var rolClass = u.is_supervisor ? 'admin-badge-blue' : (rol==='ingeniero' ? 'admin-badge-purple' : 'admin-badge-gray');
+      var rolLabel = rol==='ingeniero' ? 'Ingeniero'
+                   : rol==='administrador' ? 'Administrador'
+                   : (u.is_supervisor ? 'Admin' : 'Vendedor');
+      var rolClass = u.is_supervisor ? 'admin-badge-blue'
+                   : rol==='ingeniero' ? 'admin-badge-purple'
+                   : rol==='administrador' ? 'admin-badge-orange'
+                   : 'admin-badge-gray';
       var rolBadge = '<span class="admin-badge '+rolClass+'" style="cursor:pointer;" onclick="admCambiarRol('+u.id+',\''+rol+'\')" title="Cambiar rol">'+rolLabel+' &#9660;</span>';
       var estadoBadge = u.is_active
         ? '<span class="admin-badge admin-badge-green">Activo</span>'
@@ -480,17 +486,20 @@ window.admCambiarRol = function(uid, currentRol){
   // Buscar usuario para saber si es supervisor
   var u = (window._admUsuarios||[]).find(function(x){ return x.id===uid; });
   var isSup = u ? u.is_supervisor : false;
-  // Ciclo: vendedor → ingeniero → admin → vendedor
+  // Ciclo: vendedor → ingeniero → administrador → admin(supervisor) → vendedor
   var newRol, newSup;
   if (isSup) {
-    // Admin → Vendedor
+    // Admin (supervisor) → Vendedor
     newRol = 'vendedor'; newSup = false;
   } else if (currentRol === 'vendedor') {
-    // Vendedor → Ingeniero
     newRol = 'ingeniero'; newSup = false;
+  } else if (currentRol === 'ingeniero') {
+    newRol = 'administrador'; newSup = false;
+  } else if (currentRol === 'administrador') {
+    // Administrador → Admin (supervisor)
+    newRol = 'vendedor'; newSup = true;
   } else {
-    // Ingeniero → Admin
-    newRol = currentRol; newSup = true;
+    newRol = 'vendedor'; newSup = true;
   }
   var body = {rol: newRol};
   // Si cambia supervisor, actualizar también
@@ -543,6 +552,7 @@ window.admEditUser = function(uid){
     +'<select class="admin-input" id="euRol-'+uid+'" style="max-width:200px;">'
     +'<option value="vendedor"'+(u.rol==='vendedor'&&!u.is_supervisor?' selected':'')+'>Vendedor</option>'
     +'<option value="ingeniero"'+(u.rol==='ingeniero'?' selected':'')+'>Ingeniero</option>'
+    +'<option value="administrador"'+(u.rol==='administrador'?' selected':'')+'>Administrador</option>'
     +'<option value="admin"'+(u.is_supervisor?' selected':'')+'>Admin (Supervisor)</option>'
     +'</select>'
     +'</div>'
