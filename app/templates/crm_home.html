@@ -28,6 +28,31 @@
     })();
 </script>
 {% endif %}
+{% if es_administrador %}
+<style>
+    /* Anti-FOUC para administrador: solo el módulo Compras es visible al
+       cargar. Oculta CRM clásico, tareas/proyectos y otros widgets que
+       pudieran parpadear antes de que el JS aplique los display:none. */
+    body.adm-initial-hide #crmContentSection,
+    body.adm-initial-hide #crmTableWrap,
+    body.adm-initial-hide #tareasSection,
+    body.adm-initial-hide #proyectosSection,
+    body.adm-initial-hide .crm-bar,
+    body.adm-initial-hide .compras-section:not(.is-active) { display: none !important; }
+    /* Forzamos compras visible inmediatamente (el JS añadirá .active después
+       pero queremos que arranque ya pintado). */
+    body.adm-initial-hide #widgetCompras { display: block !important; }
+</style>
+<script>
+    (function () {
+        var addCls = function () {
+            if (document.body) document.body.classList.add('adm-initial-hide');
+        };
+        if (document.body) addCls();
+        else document.addEventListener('DOMContentLoaded', addCls);
+    })();
+</script>
+{% endif %}
 {% endblock %}
 {% block content %}
 
@@ -72,7 +97,7 @@
     {% include "crm/_actividades_board.html" %}
     {% endcomment %}
     {% endif %}
-    {% include "crm/_content.html" %}
+    {% if not es_administrador %}{% include "crm/_content.html" %}{% endif %}
 
     {% include "crm/_widget_muro.html" %}
     {% include "crm/_widget_calendario.html" %}

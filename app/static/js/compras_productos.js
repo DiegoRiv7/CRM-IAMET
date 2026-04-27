@@ -57,6 +57,18 @@
     // Sentinel arrays for icons that need explicit multi-path arrays
     I.trashArr = ['M3 6h18', 'M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6', 'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'];
     I.slidersArr = ['M4 21v-7', 'M4 10V3', 'M12 21v-9', 'M12 8V3', 'M20 21v-5', 'M20 12V3', 'M1 14h6', 'M9 8h6', 'M17 16h6'];
+    I.sortLinesArr = ['M3 6h18', 'M6 12h12', 'M10 18h4'];
+
+    var SORT_OPTIONS = [
+        { value: '-created_at', label: 'Más reciente' },
+        { value: 'created_at',  label: 'Más antiguo' },
+        { value: 'nombre',      label: 'Nombre (A→Z)' },
+        { value: '-nombre',     label: 'Nombre (Z→A)' },
+        { value: '-costo',      label: 'Costo (mayor)' },
+        { value: 'costo',       label: 'Costo (menor)' },
+        { value: 'codigo',      label: 'Código (A→Z)' },
+        { value: '-codigo',     label: 'Código (Z→A)' }
+    ];
 
     function ic(name, size) {
         var d = I[name];
@@ -95,6 +107,7 @@
         catLoaded: false,
         // UI flags
         filterOpen: false,
+        sortOpen: false,
         accionesOpen: false,
         openPicker: null,       // 'cfdi' | 'unidad' | 'almacenes' | 'moneda' | 'iva' | null
         pickerSearch: '',
@@ -148,8 +161,8 @@
                 if (state.importOpen) { state.importOpen = false; state.importResult = null; renderModals(); return; }
                 if (state.detailItem) { closeDetail(); return; }
                 if (state.openPicker) { state.openPicker = null; renderModals(); return; }
-                if (state.filterOpen || state.accionesOpen) {
-                    state.filterOpen = false; state.accionesOpen = false; renderList();
+                if (state.filterOpen || state.accionesOpen || state.sortOpen) {
+                    state.filterOpen = false; state.accionesOpen = false; state.sortOpen = false; renderList();
                 }
             }
         });
@@ -158,6 +171,9 @@
             var t = ev.target;
             if (state.filterOpen && !t.closest('[data-cp-filter-wrap]')) {
                 state.filterOpen = false; renderList();
+            }
+            if (state.sortOpen && !t.closest('[data-cp-sort-wrap]')) {
+                state.sortOpen = false; renderList();
             }
             if (state.accionesOpen && !t.closest('[data-cp-acciones-wrap]')) {
                 state.accionesOpen = false; renderList();
@@ -262,12 +278,19 @@
 
     function renderToolbar() {
         var filterActive = (state.tipo !== 'todos') || (state.estatus !== 'todos');
+        var sortActive = state.sort && state.sort !== '-created_at';
+        var sortMatch = SORT_OPTIONS.filter(function (o) { return o.value === state.sort; })[0];
+        var sortLabel = sortMatch ? sortMatch.label : 'Ordenar';
+
         var html = '<div class="cp-toolbar">';
-        // Left
+
+        // Izquierda: Filtro / Ordenar / Excel — estilo CRM facet bar
         html += '<div class="cp-toolbar-left">';
+
+        // Filtro
         html += '<div class="cp-dropdown-wrap" data-cp-filter-wrap>';
-        html += '<button type="button" class="cp-btn-ghost' + (filterActive ? ' cp-active' : '') + (state.filterOpen ? ' is-open' : '') + '" data-cp-action="toggle-filter">';
-        html += icArr(I.slidersArr, 13) + 'Filtros' + ic('chevDown', 12);
+        html += '<button type="button" class="crm-facet-btn crm-facet-add' + (filterActive ? ' active' : '') + '" data-cp-action="toggle-filter">';
+        html += ic('plus', 14) + '<span>' + (filterActive ? 'Filtro' : 'Filtro') + '</span>';
         html += '</button>';
         if (state.filterOpen) {
             html += '<div class="cp-dropdown-menu">';
@@ -287,9 +310,47 @@
             html += '</div>';
         }
         html += '</div>';
+
+        // Ordenar
+        html += '<div class="cp-dropdown-wrap" data-cp-sort-wrap>';
+        html += '<button type="button" class="crm-facet-btn crm-facet-sort' + (sortActive ? ' has-sort' : '') + '" data-cp-action="toggle-sort">';
+        html += icArr(I.sortLinesArr, 14) + '<span>' + escHtml(sortLabel) + '</span>';
+        html += '</button>';
+        if (state.sortOpen) {
+            html += '<div class="cp-dropdown-menu">';
+            html += '<div class="cp-dropdown-label">Ordenar por</div>';
+            SORT_OPTIONS.forEach(function (opt) {
+                html += '<div class="cp-dropdown-item" data-cp-action="set-sort" data-val="' + opt.value + '">';
+                html += '<span style="width:14px;display:inline-flex;align-items:center;">' + (state.sort === opt.value ? ic('check', 13) : '') + '</span>';
+                html += escHtml(opt.label) + '</div>';
+            });
+            html += '</div>';
+        }
         html += '</div>';
 
-        // Right
+        // Excel (Importar / Exportar)
+        html += '<div class="cp-dropdown-wrap" data-cp-acciones-wrap>';
+        html += '<button type="button" class="crm-facet-btn crm-facet-export" data-cp-action="toggle-acciones">';
+        html += ic('fileText', 14) + '<span>Excel</span>';
+        html += '</button>';
+        if (state.accionesOpen) {
+            html += '<div class="cp-dropdown-menu">';
+            html += '<div class="cp-dropdown-item" data-cp-action="open-import">' + ic('upload', 13) + 'Importar</div>';
+            html += '<div class="cp-dropdown-item" data-cp-action="export">' + ic('download', 13) + 'Exportar</div>';
+            html += '<div class="cp-dropdown-sep"></div>';
+            html += '<div class="cp-dropdown-item" data-cp-action="refresh">' + ic('refresh', 13) + 'Recargar</div>';
+            html += '</div>';
+        }
+        html += '</div>';
+
+        // Limpiar (sólo cuando hay filtros activos)
+        if (filterActive || state.q || sortActive) {
+            html += '<button type="button" class="crm-facet-btn crm-facet-clear" data-cp-action="clear-all-filters">Limpiar</button>';
+        }
+
+        html += '</div>';
+
+        // Derecha: search + Agregar
         html += '<div class="cp-toolbar-right">';
         html += '<div class="cp-search-wrap">';
         html += ic('search', 13);
@@ -299,22 +360,6 @@
         }
         html += '</div>';
 
-        // Acciones (Importar/Exportar)
-        html += '<div class="cp-dropdown-wrap" data-cp-acciones-wrap>';
-        html += '<button type="button" class="cp-btn-ghost' + (state.accionesOpen ? ' is-open' : '') + '" data-cp-action="toggle-acciones">';
-        html += 'Acciones' + ic('chevDown', 12);
-        html += '</button>';
-        if (state.accionesOpen) {
-            html += '<div class="cp-dropdown-menu cp-align-right">';
-            html += '<div class="cp-dropdown-item" data-cp-action="open-import">' + ic('upload', 13) + 'Importar CSV</div>';
-            html += '<div class="cp-dropdown-item" data-cp-action="export">' + ic('download', 13) + 'Exportar CSV</div>';
-            html += '<div class="cp-dropdown-sep"></div>';
-            html += '<div class="cp-dropdown-item" data-cp-action="refresh">' + ic('refresh', 13) + 'Recargar</div>';
-            html += '</div>';
-        }
-        html += '</div>';
-
-        // Agregar
         html += '<button type="button" class="cp-btn-primary" data-cp-action="open-create">' + ic('plus', 13) + 'Agregar</button>';
         html += '</div>';
 
@@ -548,11 +593,25 @@
                 case 'toggle-filter':
                     state.filterOpen = !state.filterOpen;
                     state.accionesOpen = false;
+                    state.sortOpen = false;
                     renderList();
+                    break;
+                case 'toggle-sort':
+                    state.sortOpen = !state.sortOpen;
+                    state.filterOpen = false;
+                    state.accionesOpen = false;
+                    renderList();
+                    break;
+                case 'set-sort':
+                    state.sort = t.dataset.val || '-created_at';
+                    state.sortOpen = false;
+                    state.page = 1;
+                    fetchProductos();
                     break;
                 case 'toggle-acciones':
                     state.accionesOpen = !state.accionesOpen;
                     state.filterOpen = false;
+                    state.sortOpen = false;
                     renderList();
                     break;
                 case 'filter-tipo':
@@ -583,6 +642,7 @@
                     state.q = '';
                     state.tipo = 'todos';
                     state.estatus = 'todos';
+                    state.sort = '-created_at';
                     state.page = 1;
                     fetchProductos();
                     break;
