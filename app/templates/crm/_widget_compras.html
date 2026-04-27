@@ -1,0 +1,59 @@
+{% load static %}
+<section id="widgetCompras" class="compras-widget" aria-hidden="true">
+  <div class="compras-shell">
+    <header class="compras-header">
+      <div class="compras-header-title">
+        <h1>Compras</h1>
+        <p>Catálogos y operaciones de compras</p>
+      </div>
+      <nav class="crm-tabs compras-tabs" role="tablist">
+        <button type="button" class="crm-tab active" data-compras-section="productos"
+          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('productos')">
+          Productos
+        </button>
+        <button type="button" class="crm-tab" data-compras-section="proveedores"
+          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('proveedores')">
+          Proveedores
+        </button>
+        <button type="button" class="crm-tab" data-compras-section="oc"
+          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('oc')">
+          Órdenes de Compra
+        </button>
+        <button type="button" class="crm-tab" data-compras-section="gastos"
+          onclick="if(typeof comprasSwitchSection==='function')comprasSwitchSection('gastos')">
+          Gastos
+        </button>
+      </nav>
+    </header>
+
+    <div class="compras-content">
+      <div id="comprasProductosSection" class="compras-section is-active" data-section="productos">
+        {# Productos UI será inyectada por compras_productos.js #}
+      </div>
+
+      <div id="comprasProveedoresSection" class="compras-section" data-section="proveedores">
+        {# Proveedores UI será inyectada por compras_proveedores.js #}
+      </div>
+
+      <div id="comprasOCSection" class="compras-section" data-section="oc">
+        <div class="compras-soon">
+          <div class="compras-soon-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <h2>Órdenes de Compra</h2>
+          <p>Sección en desarrollo. Disponible próximamente.</p>
+        </div>
+      </div>
+
+      <div id="comprasGastosSection" class="compras-section" data-section="gastos">
+        <div class="compras-soon">
+          <div class="compras-soon-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h2>Gastos</h2>
+          <p>Sección en desarrollo. Disponible próximamente.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

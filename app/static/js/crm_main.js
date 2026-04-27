@@ -4459,11 +4459,19 @@
         function switchCrmView(view) {
             localStorage.setItem('crmView', view);
             window._crmTareasMode = (view === 'tareas');
+            var widgetCompras = document.getElementById('widgetCompras');
             if (crmContent) crmContent.style.display = (view === 'crm') ? '' : 'none';
             if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
             if (proyectosSection) proyectosSection.classList.toggle('active', view === 'proyectos');
+            if (widgetCompras) widgetCompras.classList.toggle('active', view === 'compras');
             document.querySelectorAll('.island-nav-btn, .crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
-            var activeBtn = document.getElementById(view === 'crm' ? 'btnCRM' : view === 'tareas' ? 'btnTareas' : 'btnProyectos');
+            var activeBtn = document.getElementById(
+                view === 'crm' ? 'btnCRM' :
+                view === 'tareas' ? 'btnTareas' :
+                view === 'proyectos' ? 'btnProyectos' :
+                view === 'compras' ? 'btnCompras' :
+                'btnCRM'
+            );
             if (activeBtn) activeBtn.classList.add('active');
             // Al salir del CRM (tareas/proyectos) quitar el scroll-lock que el
             // kanban del CRM pudo haber dejado — si no, el body/main quedan con
@@ -4504,6 +4512,28 @@
                     if (typeof proyectosInit === 'function') proyectosInit();
                 });
             }
+
+            var btnCompras = document.getElementById('btnCompras');
+            if (btnCompras) {
+                btnCompras.addEventListener('click', function () {
+                    switchCrmView('compras');
+                    if (typeof window.comprasInit === 'function') window.comprasInit();
+                });
+            }
+
+            // Default view para administradores: 'compras' (no tienen pestaña CRM).
+            try {
+                var _isAdmin = !!(window._CRM_CONFIG && window._CRM_CONFIG.esAdministrador);
+                var _savedView = null;
+                try { _savedView = localStorage.getItem('crmView'); } catch (e) {}
+                if (_isAdmin) {
+                    var _adminView = (_savedView === 'tareas' || _savedView === 'proyectos' || _savedView === 'compras')
+                        ? _savedView
+                        : 'compras';
+                    switchCrmView(_adminView);
+                    if (_adminView === 'compras' && typeof window.comprasInit === 'function') window.comprasInit();
+                }
+            } catch (e) { /* noop */ }
         } catch (e) { console.error('Section Switch Error', e); }
 
         // ── Cargar tareas desde API ──

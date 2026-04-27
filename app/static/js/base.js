@@ -49,6 +49,14 @@ window.addEventListener('resize', () => {
         try { return document.body && document.body.dataset && document.body.dataset.userRole === 'ingeniero'; }
         catch (e) { return false; }
     }
+    // Administrador: search también limitado a tareas/proyectos (mismas reglas que ingeniero).
+    function isAdministrador() {
+        try {
+            if (window._CRM_CONFIG && window._CRM_CONFIG.esAdministrador === true) return true;
+            return document.body && document.body.dataset && document.body.dataset.userRole === 'administrador';
+        } catch (e) { return false; }
+    }
+    function isRolLimitado() { return isIngeniero() || isAdministrador(); }
     var ING_ALLOWED_SCOPES = { tarea: 1, proyecto: 1 };
     var ING_ALLOWED_TYPES = { tarea: 1, proyecto: 1 };
     // Acciones rápidas prohibidas para ingenieros (nueva opp, nueva cotización, ir a CRM, etc).
@@ -239,8 +247,8 @@ window.addEventListener('resize', () => {
         if (!c) return;
         currentResults = [];
         var recents = getRecents();
-        // Ingenieros: ocultar recents que no sean tareas/proyectos.
-        if (isIngeniero()) {
+        // Ingenieros / Administradores: ocultar recents que no sean tareas/proyectos.
+        if (isRolLimitado()) {
             recents = recents.filter(function (r) { return ING_ALLOWED_TYPES[r.type]; });
         }
         if (recents.length) {
@@ -285,10 +293,10 @@ window.addEventListener('resize', () => {
         // scope override por prefijo
         var effectiveScope = parsed.scope || currentScope;
 
-        // Ingenieros: si el scope solicitado no es tarea/proyecto/all, forzarlo a 'all'
+        // Ingenieros / Administradores: si el scope solicitado no es tarea/proyecto/all, forzarlo a 'all'
         // (luego el filtrado client-side lo limita a tarea+proyecto). El backend también
         // aplica este filtro como defensa en profundidad.
-        if (isIngeniero() && effectiveScope !== 'all' && !ING_ALLOWED_SCOPES[effectiveScope]) {
+        if (isRolLimitado() && effectiveScope !== 'all' && !ING_ALLOWED_SCOPES[effectiveScope]) {
             effectiveScope = 'all';
         }
 
@@ -317,9 +325,9 @@ window.addEventListener('resize', () => {
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 var rs = data.results || [];
-                // Ingenieros: filtrar cualquier resultado fuera de tarea/proyecto
+                // Ingenieros / Administradores: filtrar cualquier resultado fuera de tarea/proyecto
                 // (defensa extra por si el backend devolviera otros tipos).
-                if (isIngeniero()) {
+                if (isRolLimitado()) {
                     rs = rs.filter(function (r) { return ING_ALLOWED_TYPES[r.type]; });
                 }
                 displayResults(rs, parsed.q);
@@ -331,9 +339,9 @@ window.addEventListener('resize', () => {
     function showActionResults(actionQuery) {
         var c = $sp('spotlight-results');
         if (!c) return;
-        var ingeniero = isIngeniero();
+        var ingeniero = isRolLimitado();
         var filtered = QUICK_ACTIONS.filter(function (a) {
-            // Ingenieros: ocultar acciones ligadas a oportunidades/cotizaciones/CRM de ventas.
+            // Ingenieros / Administradores: ocultar acciones ligadas a oportunidades/cotizaciones/CRM de ventas.
             if (ingeniero && ING_BLOCKED_ACTIONS[a.id]) return false;
             if (!actionQuery) return true;
             var hay = (a.title + ' ' + a.subtitle + ' ' + a.keywords.join(' ')).toLowerCase();

@@ -1,0 +1,14 @@
+{% load static %}
+<script>
+  window._COMPRAS_CONFIG = {
+    userId: {{ user.id|default:0 }},
+    csrfToken: "{{ csrf_token }}",
+    apiBase: "/app/api/compras/"
+  };
+</script>
+<link rel="stylesheet" href="{% static 'css/compras.css' %}">
+<link rel="stylesheet" href="{% static 'css/compras_productos.css' %}">
+<link rel="stylesheet" href="{% static 'css/compras_proveedores.css' %}">
+<script src="{% static 'js/compras.js' %}" defer></script>
+<script src="{% static 'js/compras_productos.js' %}" defer></script>
+<script src="{% static 'js/compras_proveedores.js' %}" defer></script>

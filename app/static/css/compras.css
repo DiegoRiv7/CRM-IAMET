@@ -1,0 +1,151 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   compras.css — Estilos del módulo Compras (perfil administrador)
+   - Reusa .crm-tabs / .crm-tab existentes (dynamic island)
+   - Animaciones de transición entre secciones
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Widget root ─────────────────────────────────────────────────────── */
+.compras-widget {
+    display: none;
+    width: 100%;
+    min-height: calc(100vh - 64px);
+    background: transparent;
+}
+.compras-widget.active {
+    display: block;
+    animation: comprasFadeIn .24s cubic-bezier(.32, 1, .32, 1);
+}
+
+@keyframes comprasFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ── Shell ──────────────────────────────────────────────────────────── */
+.compras-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 28px;
+    gap: 20px;
+}
+
+/* ── Header (título + tabs) ─────────────────────────────────────────── */
+.compras-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 8px 0 4px;
+}
+.compras-header-title {
+    text-align: left;
+    width: 100%;
+}
+.compras-header-title h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary, #1c1c1e);
+    letter-spacing: -0.4px;
+    line-height: 1.15;
+}
+.compras-header-title p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #6e6e73;
+    font-weight: 500;
+}
+
+/* Tabs (dynamic island) — usar estilo .crm-tabs ya existente. Solo ajustar
+   alineación para centrar en el contexto de compras. */
+.compras-tabs {
+    align-self: center;
+}
+
+/* ── Content / sections ─────────────────────────────────────────────── */
+.compras-content {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    min-height: 480px;
+}
+.compras-section {
+    display: none;
+    width: 100%;
+}
+.compras-section.is-active {
+    display: block;
+    animation: slideInRight .28s cubic-bezier(.32, 1, .32, 1);
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Placeholder "Próximamente" ─────────────────────────────────────── */
+.compras-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, .07);
+    border-radius: 16px;
+    padding: 80px 40px;
+    margin: 12px auto;
+    max-width: 560px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .05);
+}
+.compras-soon-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #f5f5f7;
+    color: #aeaeb2;
+    margin-bottom: 4px;
+}
+.compras-soon h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary, #1c1c1e);
+    letter-spacing: -0.2px;
+}
+.compras-soon p {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #6e6e73;
+    line-height: 1.5;
+    max-width: 340px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+    .compras-shell {
+        padding: 16px 14px;
+        gap: 14px;
+    }
+    .compras-header-title h1 {
+        font-size: 22px;
+    }
+    .compras-soon {
+        padding: 56px 24px;
+    }
+}
+
+/* === PRODUCTOS — added by next agent === */
+
+/* === PROVEEDORES — added by next agent === */

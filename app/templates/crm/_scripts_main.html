@@ -10,6 +10,7 @@ var _CRM_CONFIG = {
     userId:           parseInt("{{ user.id }}") || -1,
     isSuperuser:      "{{ user.is_superuser|yesno:'true,false' }}" === "true",
     esSupervisor:     "{{ es_supervisor|yesno:'true,false' }}" === "true",
+    esAdministrador:  "{{ es_administrador|yesno:'true,false' }}" === "true",
     etapasPipeline:   {{ etapas_pipeline_json|safe }}
 };
 </script>

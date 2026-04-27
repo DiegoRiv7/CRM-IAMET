@@ -99,6 +99,18 @@ def is_ingeniero(user):
         return False
 
 
+def is_administrador(user):
+    """Devuelve True si el usuario tiene rol 'administrador' en UserProfile."""
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    try:
+        from app.models import UserProfile
+        profile = UserProfile.objects.get(user=user)
+        return getattr(profile, 'rol', '') == 'administrador'
+    except Exception:
+        return False
+
+
 def is_engineer(user):
     return user.groups.filter(name='Ingenieros').exists()
 

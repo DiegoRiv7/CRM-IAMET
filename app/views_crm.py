@@ -254,6 +254,7 @@ def crm_home(request):
     # ── Supervisor / Vendedor / Ingeniero logic ──
     es_supervisor = is_supervisor(user)
     es_ingeniero = (getattr(profile, 'rol', 'vendedor') == 'ingeniero')
+    es_administrador = is_administrador(user)
     vendedores_filter = request.GET.get('vendedores', '')  # "1,2,3" or ""
     vendedores_ids = []
     if vendedores_filter:
@@ -725,6 +726,7 @@ def crm_home(request):
         'total_cobrado': total_cobrado,
         'es_supervisor': es_supervisor,
         'es_ingeniero': es_ingeniero,
+        'es_administrador': es_administrador,
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
         'vendedores_json': [

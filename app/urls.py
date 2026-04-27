@@ -11,6 +11,7 @@ from . import views_grupos
 from . import views_proyectos
 from . import views_iamet
 from . import views_levantamientos_app
+from . import views_compras
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -394,4 +395,17 @@ urlpatterns = [
     path('api/proyecto/<int:proyecto_id>/gantt/fase/', views_proyectos.api_gantt_fase_crear, name='api_gantt_fase_crear'),
     path('api/gantt/fase/<int:fase_id>/', views_proyectos.api_gantt_fase, name='api_gantt_fase'),
     path('api/gantt/actividad/<int:actividad_id>/cascada/', views_proyectos.api_gantt_cascada, name='api_gantt_cascada'),
+
+    # ── Compras (módulo administrador) ──────────────────────────────────
+    path('api/compras/productos/', views_compras.productos_list_create, name='compras_productos_list'),
+    path('api/compras/productos/import/', views_compras.productos_import, name='compras_productos_import'),
+    path('api/compras/productos/export/', views_compras.productos_export, name='compras_productos_export'),
+    path('api/compras/productos/<int:id>/', views_compras.producto_detail, name='compras_producto_detail'),
+    path('api/compras/proveedores/', views_compras.proveedores_list_create, name='compras_proveedores_list'),
+    path('api/compras/proveedores/import/', views_compras.proveedores_import, name='compras_proveedores_import'),
+    path('api/compras/proveedores/export/', views_compras.proveedores_export, name='compras_proveedores_export'),
+    path('api/compras/proveedores/<int:id>/', views_compras.proveedor_detail, name='compras_proveedor_detail'),
+    path('api/compras/claves-cfdi/', views_compras.claves_cfdi_search, name='compras_claves_cfdi'),
+    path('api/compras/unidades-cfdi/', views_compras.unidades_cfdi_list, name='compras_unidades_cfdi'),
+    path('api/compras/almacenes/', views_compras.almacenes_list, name='compras_almacenes'),
 ]

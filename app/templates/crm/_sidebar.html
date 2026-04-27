@@ -10,6 +10,98 @@
 
     <!-- Top nav -->
     <nav class="crm-sb-nav">
+    {% if es_administrador %}
+        {# === Sidebar ADMINISTRADOR === #}
+        <!-- Spotlight (lupa global) — admin: scope limitado a tareas/proyectos -->
+        <button type="button" class="crm-sb-btn" id="btnSpotlight"
+            onclick="if(typeof openSpotlight==='function')openSpotlight();"
+            data-tooltip="Buscar  ·  Space Space"
+            data-admin-scope="tareas,proyectos">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <span class="crm-sb-label">Buscar</span>
+        </button>
+
+        <!-- Notificaciones -->
+        <button type="button" class="crm-sb-btn" id="btnNotificaciones"
+            onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden';"
+            data-tooltip="Notificaciones">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="crm-sb-label">Notificaciones</span>
+            <span id="notifBadge" class="crm-sb-dot" style="display:none;"></span>
+        </button>
+
+        <!-- Compras -->
+        <button id="btnCompras" type="button" class="crm-sb-btn"
+            onclick="if(typeof switchCrmView==='function')switchCrmView('compras')"
+            data-tooltip="Compras">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            <span class="crm-sb-label">Compras</span>
+        </button>
+
+        <div class="crm-sb-divider"></div>
+
+        <!-- Tareas -->
+        <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}</span>
+        </button>
+
+        <!-- Proyectos -->
+        <button type="button" class="crm-sb-btn" id="btnProyectos" onclick="proyectosAbrir()" data-tooltip="Proyectos">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            </svg>
+            <span class="crm-sb-label">Proyectos</span>
+        </button>
+
+        <div class="crm-sb-divider"></div>
+
+        <!-- Calendario -->
+        <button type="button" class="crm-sb-btn" id="btnCalendario" onclick="calendarioAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}</span>
+        </button>
+
+        <!-- Correo -->
+        <button type="button" class="crm-sb-btn" id="btnMail" onclick="mailAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}</span>
+        </button>
+
+        <!-- Muro -->
+        <button type="button" class="crm-sb-btn" id="btnMuro" onclick="muroAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}</span>
+        </button>
+
+        {% if mis_grupos %}
+        <!-- Grupo -->
+        <button type="button" class="crm-sb-btn" id="btnGrupo" onclick="grupoAbrir()" data-tooltip="{% if es_supervisor %}Grupos{% else %}Mi grupo{% endif %}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span class="crm-sb-label">{% if es_supervisor %}Grupos{% else %}Grupo{% endif %}</span>
+            <span id="grupoBadge" class="crm-sb-dot" style="display:none;"></span>
+        </button>
+        {% endif %}
+    {% else %}
+        {# === Sidebar EXISTENTE (vendedor/ingeniero/supervisor) === #}
         <!-- Spotlight (lupa global) -->
         <button type="button" class="crm-sb-btn" id="btnSpotlight"
             onclick="if(typeof openSpotlight==='function')openSpotlight();"
@@ -125,6 +217,7 @@
             <span id="grupoBadge" class="crm-sb-dot" style="display:none;"></span>
         </button>
         {% endif %}
+    {% endif %}
     </nav>
 
     <!-- Bottom actions -->

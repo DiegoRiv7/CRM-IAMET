@@ -58,6 +58,8 @@
     {% include "crm/_widget_novedades.html" %}
     {% include "crm/_widget_empleado_mes.html" %}
 
+    {% if es_administrador %}{% include "crm/_widget_compras.html" %}{% endif %}
+
     {% if es_ingeniero %}
     {% include "crm/_widget_dashboard_ingeniero.html" %}
     {% comment %}
@@ -84,6 +86,7 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% include "crm/_scripts_main.html" %}
+{% if es_administrador %}{% include "crm/_scripts_compras.html" %}{% endif %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
 <script src="{% static 'js/crm_proyectos.js' %}"></script>

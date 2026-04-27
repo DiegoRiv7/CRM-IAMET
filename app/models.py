@@ -54,6 +54,7 @@ class UserProfile(models.Model):
     ROL_CHOICES = [
         ('vendedor', 'Vendedor'),
         ('ingeniero', 'Ingeniero'),
+        ('administrador', 'Administrador'),
     ]
     rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='vendedor', verbose_name="Rol")
     oportunidades_ancladas = models.JSONField(default=list, blank=True, verbose_name="IDs de oportunidades ancladas")
@@ -4572,4 +4573,159 @@ class GanttActividad(models.Model):
 
     def __str__(self):
         return f'{self.nombre} — {self.proyecto.nombre}'
+
+
+# ============================================================
+# Módulo Compras
+# ============================================================
+
+class Almacen(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    activo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Almacén"
+        verbose_name_plural = "Almacenes"
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class ClaveCFDI(models.Model):
+    TIPO_CHOICES = [('producto', 'Producto'), ('servicio', 'Servicio')]
+    clave = models.CharField(max_length=8, unique=True, db_index=True)
+    descripcion = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+
+    class Meta:
+        verbose_name = "Clave CFDI (SAT)"
+        verbose_name_plural = "Claves CFDI (SAT)"
+        ordering = ['clave']
+
+    def __str__(self):
+        return f"{self.clave} — {self.descripcion}"
+
+
+class UnidadCFDI(models.Model):
+    clave = models.CharField(max_length=5, unique=True, db_index=True)
+    descripcion = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Unidad CFDI (SAT)"
+        verbose_name_plural = "Unidades CFDI (SAT)"
+        ordering = ['clave']
+
+    def __str__(self):
+        return f"{self.clave} — {self.descripcion}"
+
+
+class Producto(models.Model):
+    TIPO_CHOICES = [('PRODUCTO', 'Producto'), ('SERVICIO', 'Servicio')]
+    MONEDA_CHOICES = [('MXN', 'MXN'), ('USD', 'USD')]
+    IVA_CHOICES = [(8.00, '8%'), (16.00, '16%')]
+    ESTATUS_CHOICES = [('activo', 'Activo'), ('inactivo', 'Inactivo')]
+
+    codigo = models.CharField(max_length=30, unique=True, db_index=True)
+    nombre = models.CharField(max_length=255)
+    descripcion = models.TextField()
+    costo = models.DecimalField(max_digits=14, decimal_places=4, default=0)
+    moneda = models.CharField(max_length=3, choices=MONEDA_CHOICES, default='MXN')
+    iva = models.DecimalField(max_digits=4, decimal_places=2, choices=IVA_CHOICES, default=16.00)
+    clave_cfdi = models.ForeignKey(ClaveCFDI, on_delete=models.PROTECT, related_name='productos')
+    unidad_cfdi = models.ForeignKey(UnidadCFDI, on_delete=models.PROTECT, related_name='productos')
+    almacenes = models.ManyToManyField(Almacen, blank=True, related_name='productos')
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, editable=False)
+    estatus = models.CharField(max_length=10, choices=ESTATUS_CHOICES, default='activo')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='productos_creados')
+
+    class Meta:
+        verbose_name = "Producto"
+        verbose_name_plural = "Productos"
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        # Derive tipo from clave_cfdi (only on create; immutable on update)
+        if self.clave_cfdi_id:
+            derived = 'PRODUCTO' if self.clave_cfdi.tipo == 'producto' else 'SERVICIO'
+            if self.pk and self.tipo and self.tipo != derived:
+                from django.core.exceptions import ValidationError
+                raise ValidationError("El tipo (Producto/Servicio) no puede cambiar.")
+            self.tipo = derived
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.codigo} — {self.nombre}"
+
+
+class Proveedor(models.Model):
+    TIPO_PERSONA_CHOICES = [('moral', 'Moral'), ('fisica', 'Física')]
+    ESTATUS_CHOICES = [('activo', 'Activo'), ('inactivo', 'Inactivo')]
+
+    razon_social = models.CharField(max_length=255)
+    rfc = models.CharField(max_length=13, unique=True, null=True, blank=True, db_index=True)
+    tipo_persona = models.CharField(max_length=10, choices=TIPO_PERSONA_CHOICES, blank=True)
+    dias_credito = models.PositiveIntegerField(default=0)
+    monto_credito = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    banco = models.CharField(max_length=100, blank=True)
+    cuenta_bancaria = models.CharField(max_length=50, blank=True)
+    clabe = models.CharField(max_length=18, blank=True)
+    cuenta_contable = models.CharField(max_length=50)
+    calle = models.CharField(max_length=200, blank=True)
+    numero = models.CharField(max_length=20, blank=True)
+    colonia = models.CharField(max_length=120, blank=True)
+    ciudad = models.CharField(max_length=120, blank=True)
+    estado = models.CharField(max_length=120, blank=True)
+    cp = models.CharField(max_length=10, blank=True)
+    estatus = models.CharField(max_length=10, choices=ESTATUS_CHOICES, default='activo')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='proveedores_creados')
+
+    class Meta:
+        verbose_name = "Proveedor"
+        verbose_name_plural = "Proveedores"
+        ordering = ['-created_at']
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        import re
+        if self.rfc:
+            self.rfc = self.rfc.upper().strip()
+            if not re.match(r'^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$', self.rfc):
+                raise ValidationError({'rfc': 'RFC inválido (formato SAT).'})
+            if len(self.rfc) == 12:
+                self.tipo_persona = 'moral'
+            elif len(self.rfc) == 13:
+                self.tipo_persona = 'fisica'
+        if self.clabe and not re.match(r'^\d{18}$', self.clabe):
+            raise ValidationError({'clabe': 'CLABE debe tener 18 dígitos.'})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.razon_social
+
+
+class ProductoSnapshot(models.Model):
+    producto = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, related_name='snapshots')
+    codigo = models.CharField(max_length=30)
+    nombre = models.CharField(max_length=255)
+    costo = models.DecimalField(max_digits=14, decimal_places=4)
+    iva = models.DecimalField(max_digits=4, decimal_places=2)
+    descripcion = models.TextField()
+    captured_at = models.DateTimeField(auto_now_add=True)
+
+
+class ProveedorSnapshot(models.Model):
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, related_name='snapshots')
+    razon_social = models.CharField(max_length=255)
+    rfc = models.CharField(max_length=13, blank=True)
+    cuenta_contable = models.CharField(max_length=50)
+    captured_at = models.DateTimeField(auto_now_add=True)
 
