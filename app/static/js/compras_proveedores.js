@@ -713,6 +713,9 @@
 
     /* ────────── Detail page ────────── */
     function openDetail(id) {
+        // Cerrar preview/timer antes de navegar al detalle.
+        if (state.previewTimer) clearTimeout(state.previewTimer);
+        hidePreview();
         var item = state.items.find(function (x) { return x.id === id; });
         if (item) {
             state.detailItem = item;

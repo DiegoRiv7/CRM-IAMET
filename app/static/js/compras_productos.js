@@ -804,6 +804,11 @@
     // DETAIL VIEW
     // ════════════════════════════════════════════════════════════════════
     function openDetail(item) {
+        // Cerrar preview/timer antes de navegar al detalle (si no, queda
+        // flotando sobre la vista de detalle).
+        clearTimeout(previewTimer);
+        rowHoverEl = null;
+        hidePreview();
         // Fetch full record so we have all fields
         window.comprasFetch('/app/api/compras/productos/' + item.id + '/')
             .then(function (data) {
