@@ -1208,6 +1208,77 @@
   color: #64748b;
 }
 
+/* ---------- Alert bar (header, condicional) ---------- */
+/* Aparece solo si rag = rojo o ámbar y hay condiciones críticas (vencido,
+   sobregiro, etc). Se renderiza encima de la tabs para que el usuario la
+   vea sin importar en qué tab está. */
+.proy-v3-alert-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.proy-v3-alert-bar.is-warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+.proy-v3-alert-bar svg { flex-shrink: 0; }
+
+/* ---------- Dashboard pane (override del .proy-tab-pane card) ---------- */
+/* El dashboard agrupa varias sub-cards (KPI strip + placeholder de gráficas)
+   por lo que el pane mismo es transparente para que cada sub-card se vea
+   como tarjeta independiente. */
+.proy-detail-card .proy-tab-pane.proy-v3-dashboard-pane {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.proy-v3-dashboard-placeholder {
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.proy-v3-dashboard-placeholder-content {
+  text-align: center;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 420px;
+}
+.proy-v3-dashboard-placeholder-content h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+.proy-v3-dashboard-placeholder-content p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
 /* ---------- KPI Strip v3 (4 celdas en una sola card unificada) ---------- */
 .proy-v3-kpi-strip {
   display: grid;

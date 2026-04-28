@@ -7,7 +7,7 @@
     // --- State ---
     var currentProjectId = null;
     var currentFilter = 'todos';
-    var currentTab = 'partidas';
+    var currentTab = 'dashboard';
     var _cachedProjectDetail = null;
     var searchQuery = '';
 
@@ -269,6 +269,25 @@
                 oppChip.setAttribute('data-opp-id', oppId);
             } else {
                 oppChip.style.display = 'none';
+            }
+        }
+
+        // ---- ALERT BAR (header, condicional) ----
+        // Solo aparece si el rag es rojo o ámbar — para que el usuario vea
+        // la alerta crítica sin importar en qué tab esté. Verde = oculta.
+        var alertBar = el('proyV3AlertBar');
+        var alertText = el('proyV3AlertBarText');
+        if (alertBar && alertText) {
+            var rag = ov && ov.salud ? ov.salud.rag : null;
+            var razones = (ov && ov.salud && ov.salud.razones) ? ov.salud.razones : [];
+            if ((rag === 'rojo' || rag === 'ambar') && razones.length) {
+                alertBar.style.display = '';
+                alertBar.classList.toggle('is-warn', rag === 'ambar');
+                // Mostramos hasta 2 razones unidas con · — la 3ra y siguientes
+                // quedan en la card de Estado Global del Dashboard.
+                alertText.textContent = razones.slice(0, 2).join(' · ');
+            } else {
+                alertBar.style.display = 'none';
             }
         }
 
@@ -977,7 +996,7 @@
 
     window.proyectosVerDetalle = function(projectId) {
         currentProjectId = projectId;
-        currentTab = 'info';
+        currentTab = 'dashboard';
 
         // Open the detail overlay + lock body scroll
         var overlay = el('widgetProyectoDetalle');
@@ -1007,7 +1026,7 @@
             console.error('Error de red cargando proyecto:', err);
         });
 
-        proyectosSetTab('partidas');
+        proyectosSetTab('dashboard');
     };
 
     window.proyectosVolverLista = function() {

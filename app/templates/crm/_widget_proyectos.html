@@ -201,73 +201,20 @@
       </div>
     </div>
 
-    <!-- ═══ KPI STRIP: 4 celdas en una sola card (Estado · Progreso · Presupuesto · Facturado) ═══ -->
-    <div class="proy-v3-kpi-strip" id="proyKPIs">
-      <!-- Cell 1: Estado Global (rag) -->
-      <div class="proy-v3-kpi-cell" id="proyKpiSalud" data-rag="">
-        <div class="proy-v3-kpi-eyebrow">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          ESTADO GLOBAL
-        </div>
-        <div class="proy-v3-kpi-value" id="proyKpiSaludMsg">—</div>
-        <div class="proy-v3-kpi-sub" id="proyKpiSaludRazones">—</div>
-        <!-- legacy refs ocultos -->
-        <span id="proyKpiSaludDot" style="display:none;"></span>
-        <span id="proyKpiSaludLabel" style="display:none;"></span>
-        <span id="proyKpiSaludVerReporte" style="display:none;"></span>
-      </div>
-
-      <!-- Cell 2: Progreso de Obra -->
-      <div class="proy-v3-kpi-cell">
-        <div class="proy-v3-kpi-eyebrow">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-          PROGRESO DE OBRA
-        </div>
-        <div class="proy-v3-kpi-value-row">
-          <span class="proy-v3-kpi-value" id="proyKpiAvancePct">0%</span>
-          <div class="proy-v3-kpi-mini-bar" aria-hidden="true">
-            <div class="proy-v3-kpi-mini-bar-fill" id="proyKpiAvanceBar" style="width:0%"></div>
-          </div>
-        </div>
-        <div class="proy-v3-kpi-sub" id="proyKpiAvanceSub">—</div>
-      </div>
-
-      <!-- Cell 3: Presupuesto (gastado / presupuesto) -->
-      <div class="proy-v3-kpi-cell">
-        <div class="proy-v3-kpi-eyebrow">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          PRESUPUESTO
-        </div>
-        <div class="proy-v3-kpi-value-row" id="proyKpiFinAmounts">
-          <span class="proy-v3-kpi-value">$0</span>
-          <span class="proy-v3-kpi-value-small">/ $0</span>
-        </div>
-        <div class="proy-v3-kpi-sub" id="proyKpiFinMeta">Sin presupuesto asignado</div>
-        <!-- legacy ref oculto (la barra ya no se muestra; los valores se calculan en JS) -->
-        <span id="proyKpiFinBarFill" style="display:none;"></span>
-      </div>
-
-      <!-- Cell 4: Facturado (cobrado / contratado) -->
-      <div class="proy-v3-kpi-cell">
-        <div class="proy-v3-kpi-eyebrow">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          FACTURADO
-        </div>
-        <div class="proy-v3-kpi-value-row" id="proyKpiCobAmounts">
-          <span class="proy-v3-kpi-value" id="proyKpiCronoPct">$0</span>
-          <span class="proy-v3-kpi-value-small" id="proyKpiCronoSubtitle">/ $0</span>
-        </div>
-        <div class="proy-v3-kpi-sub" id="proyKpiCronoDelta">Sin monto contratado</div>
-        <!-- legacy refs ocultos -->
-        <span id="proyKpiCronoBarFill" style="display:none;"></span>
-        <span id="proyKpiCronoDias" style="display:none;"></span>
-      </div>
+    <!-- ═══ Alert bar (condicional): solo aparece si rag = rojo/ambar y hay alertas críticas. ═══ -->
+    <div class="proy-v3-alert-bar" id="proyV3AlertBar" style="display:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+      <span id="proyV3AlertBarText"></span>
     </div>
 
     <!-- ═══ Pill tab nav (estilo segmented control) ═══ -->
-    <!-- Orden: Levantamientos (default) · Tareas · Drive · Cronograma · Finanzas · Info (último) -->
+    <!-- Orden: Dashboard (default) · Levantamientos · Tareas · Drive · Cronograma · Finanzas · Info (último) -->
     <div class="proy-v2-tabs proy-tab-bar">
-      <button class="proy-v2-tab proy-tab-btn active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
+      <button class="proy-v2-tab proy-tab-btn active" data-tab="dashboard" onclick="proyectosSetTab('dashboard')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="proy-v2-tab proy-tab-btn" data-tab="partidas" onclick="proyectosSetTab('partidas')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         Levantamientos
       </button>
@@ -296,8 +243,81 @@
     <!-- Tab Content -->
     <div class="proy-tab-content">
 
+      <!-- ═══ TAB: Dashboard (default) — KPIs + futura sección de gráficas/tendencias ═══ -->
+      <div id="proyPane_dashboard" class="proy-tab-pane proy-v3-dashboard-pane">
+        <!-- KPI Strip: 4 celdas en una sola card (Estado · Progreso · Presupuesto · Facturado) -->
+        <div class="proy-v3-kpi-strip" id="proyKPIs">
+          <!-- Cell 1: Estado Global (rag-driven) -->
+          <div class="proy-v3-kpi-cell" id="proyKpiSalud" data-rag="">
+            <div class="proy-v3-kpi-eyebrow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              ESTADO GLOBAL
+            </div>
+            <div class="proy-v3-kpi-value" id="proyKpiSaludMsg">—</div>
+            <div class="proy-v3-kpi-sub" id="proyKpiSaludRazones">—</div>
+            <!-- legacy refs ocultos -->
+            <span id="proyKpiSaludDot" style="display:none;"></span>
+            <span id="proyKpiSaludLabel" style="display:none;"></span>
+            <span id="proyKpiSaludVerReporte" style="display:none;"></span>
+          </div>
+
+          <!-- Cell 2: Progreso de Obra -->
+          <div class="proy-v3-kpi-cell">
+            <div class="proy-v3-kpi-eyebrow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              PROGRESO DE OBRA
+            </div>
+            <div class="proy-v3-kpi-value-row">
+              <span class="proy-v3-kpi-value" id="proyKpiAvancePct">0%</span>
+              <div class="proy-v3-kpi-mini-bar" aria-hidden="true">
+                <div class="proy-v3-kpi-mini-bar-fill" id="proyKpiAvanceBar" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="proy-v3-kpi-sub" id="proyKpiAvanceSub">—</div>
+          </div>
+
+          <!-- Cell 3: Presupuesto (gastado / presupuesto) -->
+          <div class="proy-v3-kpi-cell">
+            <div class="proy-v3-kpi-eyebrow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              PRESUPUESTO
+            </div>
+            <div class="proy-v3-kpi-value-row" id="proyKpiFinAmounts">
+              <span class="proy-v3-kpi-value">$0</span>
+              <span class="proy-v3-kpi-value-small">/ $0</span>
+            </div>
+            <div class="proy-v3-kpi-sub" id="proyKpiFinMeta">Sin presupuesto asignado</div>
+            <span id="proyKpiFinBarFill" style="display:none;"></span>
+          </div>
+
+          <!-- Cell 4: Facturado (cobrado / contratado) -->
+          <div class="proy-v3-kpi-cell">
+            <div class="proy-v3-kpi-eyebrow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              FACTURADO
+            </div>
+            <div class="proy-v3-kpi-value-row" id="proyKpiCobAmounts">
+              <span class="proy-v3-kpi-value" id="proyKpiCronoPct">$0</span>
+              <span class="proy-v3-kpi-value-small" id="proyKpiCronoSubtitle">/ $0</span>
+            </div>
+            <div class="proy-v3-kpi-sub" id="proyKpiCronoDelta">Sin monto contratado</div>
+            <span id="proyKpiCronoBarFill" style="display:none;"></span>
+            <span id="proyKpiCronoDias" style="display:none;"></span>
+          </div>
+        </div>
+
+        <!-- Placeholder para el contenido extra del dashboard (gráficas, breakdown, timeline). -->
+        <div class="proy-v3-dashboard-placeholder">
+          <div class="proy-v3-dashboard-placeholder-content">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            <h3>Más vistas próximamente</h3>
+            <p>Gráficas de avance, breakdown de presupuesto, timeline de eventos clave.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- TAB: Levantamientos (antes "Partidas") -->
-      <div id="proyPane_partidas" class="proy-tab-pane">
+      <div id="proyPane_partidas" class="proy-tab-pane" style="display:none;">
         <div class="proy-tab-header">
           <h3>Levantamientos</h3>
           <div class="proy-tab-actions">
