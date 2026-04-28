@@ -157,41 +157,49 @@
         return 'is-danger';                        // rojo
     }
 
+    // Escape para insertar texto en innerHTML sin abrir XSS
+    function _esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Texto descriptivo del estado de vida del proyecto (parte izquierda del meta row).
+    function _stateLabel(status) {
+        switch ((status || '').toLowerCase()) {
+            case 'planificacion': return 'Proyecto en planificación';
+            case 'ejecucion':     return 'Proyecto activo';
+            case 'riesgo':        return 'Proyecto activo';
+            case 'detenido':      return 'Proyecto detenido';
+            case 'completado':    return 'Proyecto completado';
+            default:              return 'Proyecto';
+        }
+    }
+
+    // Pinta avatar del stack del topbar usando un miembro del equipo.
+    function _avatarStackHtml(member, idx) {
+        var initials = (member && (member.iniciales || _initials(member.nombre))) || '·';
+        var content;
+        if (member && member.avatar_url) {
+            content = '<img src="' + _esc(member.avatar_url) + '" alt="">';
+        } else {
+            content = _esc(initials);
+        }
+        // título tooltip nativo
+        var title = (member && member.nombre) ? member.nombre : '';
+        return '<div class="proy-v2-avatar" style="z-index:' + (10 - idx) + ';" title="' + _esc(title) + '">' + content + '</div>';
+    }
+
     // Render del header + KPIs partiendo de data.overview (si existe).
     // Tolera ausencias y degrada con "—".
     function renderProjectOverview(project) {
         var ov = (project && project.overview) ? project.overview : null;
 
-        // ---- HEADER: identidad ----
+        // ---- TÍTULO ----
         var hName = el('proyDetailName');
         if (hName) hName.textContent = (project && project.nombre) || (ov && ov.nombre) || '';
 
-        // Cliente: nombre, ubicación, avatar
-        var clienteNombre = ov && ov.cliente ? ov.cliente.nombre : (project ? project.cliente_nombre : '');
-        var clienteUbic   = ov && ov.cliente ? ov.cliente.ubicacion : '';
-        var hClient = el('proyDetailClient');
-        var hUbic   = el('proyDetailUbicacion');
-        var sepLoc  = el('proyDetailSepLoc');
-        var sepCli  = el('proyDetailSepClient');
-        if (hClient) hClient.textContent = clienteNombre || '';
-        if (hUbic)   hUbic.textContent   = clienteUbic   || '';
-        if (sepLoc)  sepLoc.style.display = (clienteUbic ? '' : 'none');
-        if (sepCli)  sepCli.style.display = (clienteNombre ? '' : 'none');
-
-        // Avatar de cliente
-        var av = el('proyDetailClientAvatar');
-        if (av) {
-            var avInit = ov && ov.cliente ? ov.cliente.iniciales : _initials(clienteNombre);
-            var avBg   = ov && ov.cliente && ov.cliente.color ? ov.cliente.color : '#1e3a8a';
-            var avLogo = ov && ov.cliente ? ov.cliente.logo_url : null;
-            _paintAvatar(av, { bg: avBg, text: avInit, image: avLogo });
-        }
-
-        // Código de proyecto
-        var hCod = el('proyDetailCodigo');
-        if (hCod) hCod.textContent = (ov && ov.codigo) ? ov.codigo : '';
-
-        // Status pill
+        // ---- STATUS PILL (con dot animado interno) ----
         var hStatus = el('proyDetailStatus');
         if (hStatus) {
             var sLabel, sColor;
@@ -204,18 +212,34 @@
             } else {
                 sLabel = '—'; sColor = '#94a3b8';
             }
-            hStatus.textContent = sLabel;
-            hStatus.style.background = sColor + '15';
-            hStatus.style.borderColor = sColor + '40';
+            // Re-pintamos contenido manteniendo la estructura interna (dot + text).
+            hStatus.innerHTML = '<span class="proy-v2-status-dot"></span><span class="proy-v2-status-text">' + _esc(sLabel) + '</span>';
+            hStatus.style.background = sColor + '1f'; // 12% alpha
+            hStatus.style.borderColor = sColor + '4d';
             hStatus.style.color = sColor;
-            hStatus.className = 'proy-detail-status-pill';
         }
+
+        // ---- META ROW: estado · cliente · ubicación · opp · avance · alerta ----
+        var hClient = el('proyDetailClient');
+        var hUbic   = el('proyDetailUbicacion');
+        var sepCli  = el('proyV2MetaSepCli');
+        var sepLoc  = el('proyV2MetaSepLoc');
+        var stateEl = el('proyV2MetaState');
+
+        var clienteNombre = ov && ov.cliente ? ov.cliente.nombre : (project ? project.cliente_nombre : '');
+        var clienteUbic   = ov && ov.cliente ? ov.cliente.ubicacion : '';
+
+        if (stateEl) stateEl.textContent = ov ? _stateLabel(ov.status) : 'Proyecto';
+        if (hClient) hClient.textContent = clienteNombre || '';
+        if (hUbic)   hUbic.textContent   = clienteUbic   || '';
+        if (sepCli)  sepCli.style.display = (clienteNombre ? '' : 'none');
+        if (sepLoc)  sepLoc.style.display = (clienteUbic ? '' : 'none');
 
         // Chip oportunidad
         var oppChip = el('proyDetailOppChip');
         var oppText = el('proyDetailOppText');
         if (oppChip) {
-            var oppId = ov && ov.oportunidad ? ov.oportunidad.id : (project ? project.oportunidad_id : null);
+            var oppId  = ov && ov.oportunidad ? ov.oportunidad.id : (project ? project.oportunidad_id : null);
             var oppCod = ov && ov.oportunidad ? (ov.oportunidad.codigo || ('#' + ov.oportunidad.id)) : (project && project.oportunidad_id ? '#' + project.oportunidad_id : null);
             if (oppId) {
                 if (oppText) oppText.textContent = 'Oportunidad ' + (oppCod || '');
@@ -226,193 +250,207 @@
             }
         }
 
-        // Mini-barra avance vs tiempo
-        var prog = el('proyDetailProgress');
+        // Avance % en la meta row
+        var prog = el('proyV2MetaProgress');
+        var progLbl = el('proyV2MetaAvanceLabel');
+        var progFill = el('proyV2MetaAvanceFill');
+        var avancePct = ov ? Math.max(0, Math.min(100, Math.round(Number(ov.avance_pct || 0)))) : null;
         if (prog) {
-            if (ov) {
-                var avancePct = Math.max(0, Math.min(100, Number(ov.avance_pct || 0)));
-                var tiempoPct = Math.max(0, Math.min(100, Number(ov.tiempo_transcurrido_pct || 0)));
-                var delta = (typeof ov.avance_vs_tiempo_delta === 'number') ? ov.avance_vs_tiempo_delta : (avancePct - tiempoPct);
-                var bTime = el('proyDetailProgressTime');
-                var bReal = el('proyDetailProgressReal');
-                if (bTime) bTime.style.width = tiempoPct + '%';
-                if (bReal) {
-                    bReal.style.width = avancePct + '%';
-                    bReal.className = 'proy-detail-progress-real ' + _avanceClass(delta);
-                }
-                var meta = el('proyDetailProgressMeta');
-                if (meta) {
-                    var diasRest = ov.dias_restantes;
-                    var diasTxt = '';
-                    if (typeof diasRest === 'number') {
-                        if (diasRest < 0)        diasTxt = ' · <span class="danger">vencido ' + Math.abs(diasRest) + ' d</span>';
-                        else if (diasRest === 0) diasTxt = ' · <span class="warn">vence hoy</span>';
-                        else                     diasTxt = ' · faltan ' + diasRest + ' d';
-                    }
-                    meta.innerHTML = avancePct + '% / ' + tiempoPct + '%' + diasTxt;
-                }
+            if (avancePct !== null) {
                 prog.style.display = '';
+                if (progLbl) progLbl.textContent = 'Avance ' + avancePct + '%';
+                if (progFill) progFill.style.width = avancePct + '%';
             } else {
                 prog.style.display = 'none';
             }
         }
 
-        // Equipo
-        var team = el('proyDetailTeam');
-        if (team) {
-            var anySlot = false;
-            // Vendedor
-            var vSlot = el('proyDetailVendedorSlot');
-            var vBox  = el('proyDetailVendedor');
-            if (ov && ov.vendedor && vSlot && vBox) {
-                vBox.innerHTML = '<span class="proy-detail-avatar" style="background:#0ea5e9">' + (ov.vendedor.iniciales || _initials(ov.vendedor.nombre)) + '</span>' +
-                                 '<span>' + (ov.vendedor.nombre || '—') + '</span>';
-                if (ov.vendedor.avatar_url) {
-                    var ava = vBox.querySelector('.proy-detail-avatar');
-                    if (ava) { ava.style.backgroundImage = 'url(' + ov.vendedor.avatar_url + ')'; ava.textContent = ''; }
-                }
-                vSlot.style.display = ''; anySlot = true;
-            } else if (vSlot) { vSlot.style.display = 'none'; }
-
-            // Ingeniero
-            var iSlot = el('proyDetailIngenieroSlot');
-            var iBox  = el('proyDetailIngeniero');
-            if (ov && ov.ingeniero_responsable && iSlot && iBox) {
-                var ing = ov.ingeniero_responsable;
-                iBox.innerHTML = '<span class="proy-detail-avatar" style="background:#f59e0b">' + (ing.iniciales || _initials(ing.nombre)) + '</span>' +
-                                 '<span>' + (ing.nombre || '—') + '</span>';
-                if (ing.avatar_url) {
-                    var aing = iBox.querySelector('.proy-detail-avatar');
-                    if (aing) { aing.style.backgroundImage = 'url(' + ing.avatar_url + ')'; aing.textContent = ''; }
-                }
-                iSlot.style.display = ''; anySlot = true;
-            } else if (iSlot) { iSlot.style.display = 'none'; }
-
-            // Equipo
-            var eSlot  = el('proyDetailEquipoSlot');
-            var eStack = el('proyDetailEquipoStack');
-            if (ov && ov.equipo && ov.equipo.length && eSlot && eStack) {
-                var max = 4;
-                var html = '';
-                for (var i = 0; i < Math.min(ov.equipo.length, max); i++) {
-                    var m = ov.equipo[i];
-                    var initials = m.iniciales || _initials(m.nombre);
-                    var styleBg = '';
-                    if (m.avatar_url) {
-                        styleBg = 'background-image:url(' + m.avatar_url + ');';
-                        initials = '';
-                    } else {
-                        styleBg = 'background:#6366f1;';
-                    }
-                    html += '<span class="proy-detail-avatar" style="' + styleBg + '" title="' + (m.nombre || '') + '">' + initials + '</span>';
-                }
-                var totalEquipo = (typeof ov.equipo_total === 'number') ? ov.equipo_total : ov.equipo.length;
-                if (totalEquipo > max) {
-                    html += '<span class="proy-detail-avatar more" title="+' + (totalEquipo - max) + ' más">+' + (totalEquipo - max) + '</span>';
-                }
-                eStack.innerHTML = html;
-                eSlot.style.display = ''; anySlot = true;
-            } else if (eSlot) { eSlot.style.display = 'none'; }
-
-            team.style.display = anySlot ? '' : 'none';
+        // Alerta (vencido / vence hoy / faltan pocos días)
+        var alertEl = el('proyV2MetaAlert');
+        var alertTxt = el('proyV2MetaAlertText');
+        if (alertEl) {
+            alertEl.classList.remove('is-warn', 'is-info');
+            var dr = ov ? ov.dias_restantes : null;
+            var rag = ov && ov.salud ? ov.salud.rag : null;
+            if (typeof dr === 'number' && dr < 0) {
+                alertEl.style.display = '';
+                if (alertTxt) alertTxt.textContent = 'Vencido ' + Math.abs(dr) + ' día' + (Math.abs(dr) === 1 ? '' : 's');
+            } else if (typeof dr === 'number' && dr === 0) {
+                alertEl.style.display = '';
+                alertEl.classList.add('is-warn');
+                if (alertTxt) alertTxt.textContent = 'Vence hoy';
+            } else if (typeof dr === 'number' && dr > 0 && dr <= 3 && (avancePct == null || avancePct < 90)) {
+                alertEl.style.display = '';
+                alertEl.classList.add('is-warn');
+                if (alertTxt) alertTxt.textContent = 'Faltan ' + dr + ' día' + (dr === 1 ? '' : 's');
+            } else if (rag === 'rojo' && ov && ov.salud && ov.salud.label) {
+                alertEl.style.display = '';
+                if (alertTxt) alertTxt.textContent = ov.salud.label;
+            } else {
+                alertEl.style.display = 'none';
+            }
         }
 
-        // Descripción / fechas legacy: solo cargamos para retro-compat
-        var hDates = el('proyDetailDates');
-        var hDesc  = el('proyDetailDesc');
-        if (hDates) hDates.textContent = (project ? (fmtDate(project.fecha_inicio) + '  →  ' + fmtDate(project.fecha_fin)) : '');
-        if (hDesc)  hDesc.textContent  = (project && project.descripcion) || '';
+        // ---- AVATAR STACK (topbar derecho) ----
+        var stack = el('proyV2AvatarStack');
+        if (stack) {
+            var miembros = (ov && ov.equipo && ov.equipo.length) ? ov.equipo : [];
+            // Si no hay equipo en overview pero tenemos vendedor/ing, los compongo
+            if (!miembros.length && ov) {
+                if (ov.vendedor)  miembros.push(ov.vendedor);
+                if (ov.ingeniero_responsable) miembros.push(ov.ingeniero_responsable);
+            }
+            var max = 3;
+            var html = '';
+            miembros.slice(0, max).forEach(function(m, i) { html += _avatarStackHtml(m, i); });
+            var total = (ov && typeof ov.equipo_total === 'number') ? ov.equipo_total : miembros.length;
+            if (total > max) {
+                html += '<div class="proy-v2-avatar is-extra" title="+' + (total - max) + ' más">+' + (total - max) + '</div>';
+            }
+            stack.innerHTML = html;
+        }
 
         // ---- KPI cards ----
         renderOverviewKPIs(ov);
     }
 
-    // Render de las 3 KPI cards. Si no hay overview, deja "—" sin romper.
+    // Render de las 3 KPI cards (Salud dark · Presupuesto · Cronograma).
+    // Si no hay overview, deja "—" sin romper.
     function renderOverviewKPIs(ov) {
         // SALUD
-        var dot   = el('proyKpiSaludDot');
-        var lbl   = el('proyKpiSaludLabel');
-        var msg   = el('proyKpiSaludMsg');
-        var raz   = el('proyKpiSaludRazones');
-        if (dot && lbl && msg && raz) {
+        var saludCard = el('proyKpiSalud');
+        var saludMsg  = el('proyKpiSaludMsg');
+        var saludRaz  = el('proyKpiSaludRazones');
+        if (saludCard && saludMsg && saludRaz) {
             if (ov && ov.salud) {
                 var rag = ov.salud.rag || 'verde';
-                dot.className = 'proy-kpi-dot rag-' + rag;
-                lbl.textContent = 'Salud ' + rag;
-                msg.textContent = ov.salud.label || '—';
-                msg.classList.remove('muted');
-                var razones = (ov.salud.razones || []).slice(0, 2);
-                if (!razones.length) {
-                    raz.innerHTML = '<span class="proy-kpi-salud-razon" style="background:#f1f5f9;color:#64748B;border-color:#e2e8f0;">Sin alertas activas</span>';
+                saludCard.setAttribute('data-rag', rag);
+
+                // Headline: usa salud.label, resaltando en color el primer fragmento
+                // que parezca "X%". Si no hay %, colorea la palabra principal.
+                var label = ov.salud.label || '—';
+                var accentClass = rag === 'rojo' ? 'accent-rojo' : rag === 'ambar' ? 'accent-ambar' : 'accent-verde';
+                var pctMatch = label.match(/-?\d+(\.\d+)?%/);
+                var headlineHtml;
+                if (pctMatch) {
+                    var idx = label.indexOf(pctMatch[0]);
+                    headlineHtml = _esc(label.substring(0, idx)) +
+                                   '<span class="' + accentClass + '">' + _esc(pctMatch[0]) + '</span>' +
+                                   _esc(label.substring(idx + pctMatch[0].length));
                 } else {
-                    raz.innerHTML = razones.map(function(r) {
-                        var cls = (rag === 'rojo') ? ' is-danger' : '';
-                        return '<span class="proy-kpi-salud-razon' + cls + '">' + r + '</span>';
-                    }).join('');
+                    headlineHtml = _esc(label);
                 }
+                saludMsg.innerHTML = headlineHtml;
+
+                // Chips: severidad + acción "Ver reporte" si hay razones
+                var sevText = rag === 'rojo' ? 'Crítico' : rag === 'ambar' ? 'Atención' : 'En curso';
+                var sevCls  = 'proy-v2-kpi-salud-chip-' + rag;
+                var razones = (ov.salud.razones || []).slice(0, 2);
+                var chipsHtml = '<span class="proy-v2-kpi-salud-chip ' + sevCls + '">' + _esc(sevText) + '</span>';
+                razones.forEach(function(r) {
+                    chipsHtml += '<span class="proy-v2-kpi-salud-chip proy-v2-kpi-salud-chip-info">' + _esc(r) + '</span>';
+                });
+                if (rag !== 'verde') {
+                    chipsHtml += '<span class="proy-v2-kpi-salud-chip-action" onclick="proyDetailVerReporteSalud(event)">Ver reporte</span>';
+                }
+                saludRaz.innerHTML = chipsHtml;
             } else {
-                dot.className = 'proy-kpi-dot';
-                lbl.textContent = 'Salud';
-                msg.textContent = '—';
-                msg.classList.add('muted');
-                raz.innerHTML = '';
+                saludCard.removeAttribute('data-rag');
+                saludMsg.textContent = '—';
+                saludRaz.innerHTML = '';
             }
         }
 
-        // FINANCIERO
-        var amt  = el('proyKpiFinAmounts');
-        var fbar = el('proyKpiFinBarFill');
+        // PRESUPUESTO
+        var amt   = el('proyKpiFinAmounts');
+        var fbar  = el('proyKpiFinBarFill');
         var fmeta = el('proyKpiFinMeta');
         if (amt && fbar && fmeta) {
             if (ov && ov.financiero) {
                 var f = ov.financiero;
-                amt.innerHTML = _fmtMoneyShort(f.cobrado || 0) + ' <span class="of">/ ' + _fmtMoneyShort(f.contratado || 0) + '</span>';
+                amt.innerHTML =
+                    '<span class="proy-v2-kpi-fin-big">' + _esc(_fmtMoneyShort(f.cobrado || 0)) + '</span>' +
+                    '<span class="proy-v2-kpi-fin-small">/ ' + _esc(_fmtMoneyShort(f.contratado || 0)) + '</span>';
                 var pct = Math.max(0, Math.min(100, Number(f.cobrado_pct || 0)));
                 fbar.style.width = pct + '%';
-                var pillCls = '';
+                // color de la barra según margen
+                fbar.className = 'proy-v2-kpi-progress-fill';
                 var ml = (f.margen_label || '').toLowerCase();
-                if (ml.indexOf('apretad') !== -1) pillCls = 'is-warn';
-                else if (ml.indexOf('riesgo') !== -1 || ml.indexOf('pérdida') !== -1 || ml.indexOf('perdida') !== -1) pillCls = 'is-danger';
-                fmeta.innerHTML =
-                    'Gastado ' + _fmtMoneyShort(f.gastado || 0) +
-                    ' <span class="sep">·</span> Margen ' + Math.round(f.margen_pct || 0) + '%' +
-                    (f.margen_label ? ' <span class="proy-kpi-margin-pill ' + pillCls + '">' + f.margen_label + '</span>' : '');
+                var mtone = '';
+                if (ml.indexOf('apretad') !== -1) { fbar.classList.add('proy-v2-kpi-progress-fill--amber'); mtone = 'is-warn'; }
+                else if (ml.indexOf('riesgo') !== -1 || ml.indexOf('pérdida') !== -1 || ml.indexOf('perdida') !== -1) {
+                    fbar.classList.add('proy-v2-kpi-progress-fill--red'); mtone = 'is-danger';
+                } else { fbar.classList.add('proy-v2-kpi-progress-fill--green'); mtone = 'is-good'; }
+
+                fmeta.className = 'proy-v2-kpi-fin-meta ' + mtone;
+                fmeta.textContent = 'Margen actual: ' + Math.round(f.margen_pct || 0) + '%' +
+                                    (f.margen_label ? ' · ' + f.margen_label : '');
             } else {
-                amt.innerHTML = '—';
+                amt.innerHTML = '<span class="proy-v2-kpi-fin-big">—</span>';
                 fbar.style.width = '0%';
+                fbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green';
                 fmeta.textContent = '—';
+                fmeta.className = 'proy-v2-kpi-fin-meta';
             }
         }
 
         // CRONOGRAMA
-        var cpct = el('proyKpiCronoPct');
-        var cdias = el('proyKpiCronoDias');
-        var cdelta = el('proyKpiCronoDelta');
-        if (cpct && cdias && cdelta) {
+        var cpct  = el('proyKpiCronoPct');
+        var cbar  = el('proyKpiCronoBarFill');
+        var cdelt = el('proyKpiCronoDelta');
+        if (cpct && cbar && cdelt) {
             if (ov) {
-                cpct.textContent = (typeof ov.avance_pct === 'number' ? Math.round(ov.avance_pct) : 0) + '%';
-                var dr = ov.dias_restantes;
-                cdias.classList.remove('is-danger', 'is-warn');
-                if (typeof dr === 'number') {
-                    if (dr < 0)        { cdias.textContent = 'Vencido ' + Math.abs(dr) + ' d'; cdias.classList.add('is-danger'); }
-                    else if (dr === 0) { cdias.textContent = 'Vence hoy';                      cdias.classList.add('is-warn'); }
-                    else               { cdias.textContent = 'Faltan ' + dr + ' d'; }
-                } else {
-                    cdias.textContent = '—';
-                }
+                var avp = (typeof ov.avance_pct === 'number' ? Math.round(ov.avance_pct) : 0);
+                cpct.textContent = avp + '%';
+                cbar.style.width = Math.max(0, Math.min(100, avp)) + '%';
+
                 var d = (typeof ov.avance_vs_tiempo_delta === 'number') ? ov.avance_vs_tiempo_delta : 0;
-                cdelta.classList.remove('is-danger', 'is-warn', 'is-good');
-                if (d <= -15)       { cdelta.classList.add('is-danger'); cdelta.textContent = d + '% vs plan'; }
-                else if (d < 0)     { cdelta.classList.add('is-warn');   cdelta.textContent = d + '% vs plan'; }
-                else if (d > 0)     { cdelta.classList.add('is-good');   cdelta.textContent = '+' + d + '% vs plan'; }
-                else                { cdelta.textContent = 'En plan'; }
+                cdelt.classList.remove('is-danger', 'is-warn', 'is-good');
+                cbar.className = 'proy-v2-kpi-progress-fill';
+                if (d <= -15) {
+                    cdelt.classList.add('is-danger');
+                    cdelt.textContent = d + '% desviación del plan';
+                    cbar.classList.add('proy-v2-kpi-progress-fill--red');
+                } else if (d < 0) {
+                    cdelt.classList.add('is-warn');
+                    cdelt.textContent = d + '% desviación del plan';
+                    cbar.classList.add('proy-v2-kpi-progress-fill--amber');
+                } else if (d > 0) {
+                    cdelt.classList.add('is-good');
+                    cdelt.textContent = '+' + d + '% sobre el plan';
+                    cbar.classList.add('proy-v2-kpi-progress-fill--blue');
+                } else {
+                    cdelt.textContent = 'En plan';
+                    cbar.classList.add('proy-v2-kpi-progress-fill--blue');
+                }
             } else {
                 cpct.textContent = '—';
-                cdias.textContent = '—';
-                cdelta.textContent = '';
+                cbar.style.width = '0%';
+                cbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--blue';
+                cdelt.textContent = '—';
+                cdelt.classList.remove('is-danger', 'is-warn', 'is-good');
             }
         }
     }
+
+    // Stub: "Ver reporte" desde la card de Salud — abre la tab de Cronograma
+    // para que el usuario revise el detalle. Si después se hace un reporte
+    // dedicado, basta cambiar esta función.
+    window.proyDetailVerReporteSalud = function(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        if (typeof window.proyectosSetTab === 'function') window.proyectosSetTab('programa');
+    };
+
+    // Stub: "Compartir" — futuro endpoint para link compartible / clientes.
+    window.proyDetailCompartir = function(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        // TODO: implementar share. Por ahora copia al clipboard la URL del proyecto.
+        try {
+            var url = window.location.origin + window.location.pathname + '#proyecto-' + (currentProjectId || '');
+            if (navigator.clipboard) navigator.clipboard.writeText(url);
+        } catch (e) {}
+    };
 
     // Click handler del chip Oportunidad
     window.proyDetailAbrirOportunidad = function(ev) {

@@ -131,68 +131,24 @@
 <div class="widget-overlay" id="widgetProyectoDetalle" style="z-index:10100;display:none;">
   <div class="widget-card-lg proy-detail-card">
 
-    <!-- Detail header (rediseñado: identidad + equipo · status + cerrar) -->
-    <div class="proy-detail-header" id="proyDetailHeader">
-      <button class="proy-detail-back" onclick="proyectosVolverLista()" aria-label="Volver">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
+    <!-- ═══ TOP BAR: Volver al portafolio · avatares + Compartir · cerrar ═══ -->
+    <div class="proy-v2-topbar">
+      <button class="proy-v2-back" onclick="proyectosVolverLista()" aria-label="Volver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        <span>Volver al portafolio</span>
       </button>
 
-      <div class="proy-detail-identity">
-        <!-- Avatar de cliente (chip cuadrado redondeado, iniciales o logo) -->
-        <div class="proy-detail-client-avatar" id="proyDetailClientAvatar">·</div>
-
-        <div class="proy-detail-headlines">
-          <div class="proy-detail-titlerow">
-            <h2 id="proyDetailName" class="proy-detail-name">Proyecto</h2>
-          </div>
-          <div class="proy-detail-subtitle" id="proyDetailSubtitle">
-            <span id="proyDetailCodigo" class="proy-detail-codigo"></span>
-            <span class="proy-detail-sep" id="proyDetailSepClient">·</span>
-            <span id="proyDetailClient"></span>
-            <span class="proy-detail-sep" id="proyDetailSepLoc">·</span>
-            <span id="proyDetailUbicacion"></span>
-            <a href="#" class="proy-detail-opp-chip" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)">
-              <span class="proy-detail-opp-arrow">&#x21B3;</span>
-              <span id="proyDetailOppText">Oportunidad</span>
-            </a>
-          </div>
-
-          <!-- Mini-barra avance vs tiempo -->
-          <div class="proy-detail-progress" id="proyDetailProgress" style="display:none;">
-            <div class="proy-detail-progress-label">Avance vs tiempo</div>
-            <div class="proy-detail-progress-bar">
-              <div class="proy-detail-progress-time" id="proyDetailProgressTime"></div>
-              <div class="proy-detail-progress-real" id="proyDetailProgressReal"></div>
-            </div>
-            <div class="proy-detail-progress-meta" id="proyDetailProgressMeta"></div>
-          </div>
-
-          <!-- Equipo / Vendedor / Ingeniero -->
-          <div class="proy-detail-team" id="proyDetailTeam" style="display:none;">
-            <div class="proy-detail-team-slot" id="proyDetailVendedorSlot" style="display:none;">
-              <span class="proy-detail-team-role">Vendedor</span>
-              <span class="proy-detail-team-person" id="proyDetailVendedor"></span>
-            </div>
-            <div class="proy-detail-team-slot" id="proyDetailIngenieroSlot" style="display:none;">
-              <span class="proy-detail-team-role">Ing.</span>
-              <span class="proy-detail-team-person" id="proyDetailIngeniero"></span>
-            </div>
-            <div class="proy-detail-team-slot" id="proyDetailEquipoSlot" style="display:none;">
-              <span class="proy-detail-team-role">Equipo</span>
-              <span class="proy-detail-team-stack" id="proyDetailEquipoStack"></span>
-            </div>
-          </div>
+      <div class="proy-v2-topbar-right">
+        <div class="proy-v2-avatars" id="proyV2AvatarStack">
+          <!-- avatares poblados por JS desde overview.equipo -->
         </div>
-      </div>
-
-      <div class="proy-detail-actions">
-        <span id="proyDetailStatus" class="proy-detail-status-pill">--</span>
-        <span id="proyDetailDates" class="proy-detail-dates-hidden" style="display:none;"></span>
-        <span id="proyDetailDesc" style="display:none;"></span>
-        <button class="proy-btn-close" onclick="proyectosVolverLista()" aria-label="Cerrar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button class="proy-v2-add-member" type="button" aria-label="Agregar miembro" title="Agregar miembro">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+        </button>
+        <span class="proy-v2-divider" aria-hidden="true"></span>
+        <button class="proy-v2-share" type="button" onclick="proyDetailCompartir(event)">Compartir</button>
+        <button class="proy-v2-close" type="button" onclick="proyectosVolverLista()" aria-label="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -200,86 +156,121 @@
       </div>
     </div>
 
-    <!-- KPI Cards (3 cards: Salud · Financiero · Cronograma) -->
-    <div class="proy-kpi-grid" id="proyKPIs">
-      <!-- Card 1: Salud RAG -->
-      <div class="proy-kpi-card proy-kpi-salud" id="proyKpiSalud">
-        <div class="proy-kpi-head">
-          <span class="proy-kpi-dot" id="proyKpiSaludDot"></span>
-          <span class="proy-kpi-label" id="proyKpiSaludLabel">Salud</span>
-        </div>
-        <div class="proy-kpi-salud-msg" id="proyKpiSaludMsg">—</div>
-        <div class="proy-kpi-salud-razones" id="proyKpiSaludRazones"></div>
+    <!-- ═══ HEADER: título + status pill · meta row ═══ -->
+    <div class="proy-v2-header">
+      <div class="proy-v2-titlerow">
+        <h1 id="proyDetailName" class="proy-v2-name">Proyecto</h1>
+        <span id="proyDetailStatus" class="proy-v2-status-pill">
+          <span class="proy-v2-status-dot"></span>
+          <span class="proy-v2-status-text">—</span>
+        </span>
       </div>
 
-      <!-- Card 2: Financiero -->
-      <div class="proy-kpi-card proy-kpi-fin" id="proyKpiFinanciero">
-        <div class="proy-kpi-head">
-          <span class="proy-kpi-label">Financiero</span>
+      <div class="proy-v2-meta">
+        <span id="proyV2MetaState" class="proy-v2-meta-state"></span>
+        <span class="proy-v2-meta-sep" id="proyV2MetaSepCli" style="display:none;">·</span>
+        <span id="proyDetailClient" class="proy-v2-meta-client"></span>
+        <span class="proy-v2-meta-sep" id="proyV2MetaSepLoc" style="display:none;">·</span>
+        <span id="proyDetailUbicacion" class="proy-v2-meta-ubic"></span>
+        <a href="#" class="proy-v2-opp-chip" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)">
+          <span aria-hidden="true">&#x21B3;</span>
+          <span id="proyDetailOppText">Oportunidad</span>
+        </a>
+
+        <div class="proy-v2-meta-progress" id="proyV2MetaProgress" style="display:none;">
+          <span class="proy-v2-meta-progress-label" id="proyV2MetaAvanceLabel">Avance 0%</span>
+          <div class="proy-v2-meta-progress-bar">
+            <div class="proy-v2-meta-progress-fill" id="proyV2MetaAvanceFill"></div>
+          </div>
         </div>
-        <div class="proy-kpi-fin-amounts" id="proyKpiFinAmounts">—</div>
-        <div class="proy-kpi-fin-bar">
-          <div class="proy-kpi-fin-bar-fill" id="proyKpiFinBarFill"></div>
+
+        <span class="proy-v2-meta-alert" id="proyV2MetaAlert" style="display:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          <span id="proyV2MetaAlertText"></span>
+        </span>
+
+        <!-- legacy hidden — mantenidos para compat con código que aún los lea -->
+        <span id="proyDetailCodigo" style="display:none;"></span>
+        <span id="proyDetailDates" style="display:none;"></span>
+        <span id="proyDetailDesc" style="display:none;"></span>
+        <span id="proyDetailClientAvatar" style="display:none;"></span>
+      </div>
+    </div>
+
+    <!-- ═══ BENTO KPIs: dark Salud (5/12) · Presupuesto + Cronograma (7/12) ═══ -->
+    <div class="proy-v2-bento" id="proyKPIs">
+      <!-- Salud (dark card, prominente) -->
+      <div class="proy-v2-kpi proy-v2-kpi-salud" id="proyKpiSalud">
+        <div class="proy-v2-kpi-salud-bg" aria-hidden="true">
+          <svg width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
         </div>
-        <div class="proy-kpi-fin-meta" id="proyKpiFinMeta">—</div>
+        <div class="proy-v2-kpi-salud-top">
+          <h3 class="proy-v2-kpi-eyebrow">Salud del proyecto</h3>
+          <div class="proy-v2-kpi-salud-headline" id="proyKpiSaludMsg">—</div>
+        </div>
+        <div class="proy-v2-kpi-salud-chips" id="proyKpiSaludRazones">
+          <span class="proy-v2-kpi-salud-chip-action" id="proyKpiSaludVerReporte" style="display:none;" onclick="proyDetailVerReporteSalud(event)">Ver reporte</span>
+        </div>
+        <!-- legacy hidden refs para compat -->
+        <span id="proyKpiSaludDot" style="display:none;"></span>
+        <span id="proyKpiSaludLabel" style="display:none;"></span>
       </div>
 
-      <!-- Card 3: Cronograma -->
-      <div class="proy-kpi-card proy-kpi-crono" id="proyKpiCronograma">
-        <div class="proy-kpi-head">
-          <span class="proy-kpi-label">Cronograma</span>
+      <!-- Presupuesto -->
+      <div class="proy-v2-kpi proy-v2-kpi-fin" id="proyKpiFinanciero">
+        <h3 class="proy-v2-kpi-eyebrow">Presupuesto</h3>
+        <div class="proy-v2-kpi-fin-amounts" id="proyKpiFinAmounts">
+          <span class="proy-v2-kpi-fin-big">$0</span>
+          <span class="proy-v2-kpi-fin-small">/ $0</span>
         </div>
-        <div class="proy-kpi-crono-pct" id="proyKpiCronoPct">—</div>
-        <div class="proy-kpi-crono-row">
-          <span class="proy-kpi-crono-dias" id="proyKpiCronoDias">—</span>
-          <span class="proy-kpi-crono-delta" id="proyKpiCronoDelta"></span>
+        <div class="proy-v2-kpi-progress">
+          <div class="proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green" id="proyKpiFinBarFill" style="width:0%"></div>
+        </div>
+        <div class="proy-v2-kpi-fin-meta" id="proyKpiFinMeta">Margen actual: 0%</div>
+      </div>
+
+      <!-- Cronograma -->
+      <div class="proy-v2-kpi proy-v2-kpi-crono" id="proyKpiCronograma">
+        <h3 class="proy-v2-kpi-eyebrow">Cronograma</h3>
+        <div class="proy-v2-kpi-crono-amounts">
+          <span class="proy-v2-kpi-crono-big" id="proyKpiCronoPct">0%</span>
+          <span class="proy-v2-kpi-crono-small">completado</span>
+        </div>
+        <div class="proy-v2-kpi-progress">
+          <div class="proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--blue" id="proyKpiCronoBarFill" style="width:0%"></div>
+        </div>
+        <div class="proy-v2-kpi-crono-row">
+          <span class="proy-v2-kpi-crono-delta" id="proyKpiCronoDelta">—</span>
+          <span class="proy-v2-kpi-crono-dias" id="proyKpiCronoDias" style="display:none;"></span>
         </div>
       </div>
     </div>
 
-    <!-- Tab Bar -->
-    <div class="proy-tab-bar">
-      <button class="proy-tab-btn active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
-        </svg>
+    <!-- ═══ Pill tab nav (estilo segmented control) ═══ -->
+    <div class="proy-v2-tabs proy-tab-bar">
+      <button class="proy-v2-tab proy-tab-btn" data-tab="info" onclick="proyectosSetTab('info')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
+        Info
+      </button>
+      <button class="proy-v2-tab proy-tab-btn active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         Levantamientos
       </button>
-      <button class="proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <line x1="12" y1="1" x2="12" y2="23"/>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-        Financiero
-      </button>
-      <button class="proy-tab-btn" data-tab="programa" onclick="proyectosSetTab('programa')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <path d="M16 2v4M8 2v4M3 10h18"/>
-        </svg>
-        Programa de Obra
-      </button>
-      <button class="proy-tab-btn" data-tab="tareas" onclick="proyectosSetTab('tareas')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
+      <button class="proy-v2-tab proy-tab-btn" data-tab="tareas" onclick="proyectosSetTab('tareas')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Tareas
       </button>
-      <button class="proy-tab-btn" data-tab="drive" onclick="proyectosSetTab('drive')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-        </svg>
-        Drive
+      <button class="proy-v2-tab proy-tab-btn" data-tab="programa" onclick="proyectosSetTab('programa')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+        Cronograma
       </button>
-      <button class="proy-tab-btn" data-tab="info" onclick="proyectosSetTab('info')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="16" x2="12" y2="12"/>
-          <line x1="12" y1="8" x2="12.01" y2="8"/>
-        </svg>
-        Informacion
+      <button class="proy-v2-tab proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Finanzas
+      </button>
+      <button class="proy-v2-tab proy-tab-btn" data-tab="drive" onclick="proyectosSetTab('drive')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        Drive
       </button>
     </div>
 

@@ -394,515 +394,508 @@
   box-shadow: 0 32px 64px rgba(15, 23, 42, 0.18), 0 2px 0 rgba(255,255,255,0.95) inset;
 }
 
-/* ---------- Detail header (rediseñado) ---------- */
 
-.proy-detail-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 22px 24px 18px;
-  background: #fafafc;
-  border-bottom: none;
-  flex-shrink: 0;
+
+/* ==========================================================================
+   PROY-V2 — rediseño visual del modal de detalle (Linear/Tailwind-inspired).
+   Reemplaza el header + bento KPIs. La paleta es slate (zinc-ish) con
+   acentos rojo/azul/verde semánticos. Las clases proy-v2-* coexisten con
+   las clases legacy del shell (.proy-detail-card) y del sistema de tabs
+   (.proy-tab-bar / .proy-tab-btn) — los tabs se sobreescriben con
+   especificidad por .proy-v2-tabs.
+   ========================================================================== */
+
+@keyframes proyV2Pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
 }
 
-.proy-detail-back {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: rgba(15, 23, 42, 0.05);
-  border-radius: 10px;
-  cursor: pointer;
-  color: #475569;
-  transition: background 0.15s ease, color 0.15s ease;
-  flex-shrink: 0;
-  margin-top: 4px;
+@keyframes proyV2FadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.proy-detail-back:hover {
-  background: rgba(37, 99, 235, 0.1);
-  color: #1d4ed8;
+/* --- Modal shell (overrides ligeros sobre .proy-detail-card existente) --- */
+.proy-detail-card {
+  background: #f1f5f9;     /* slate-100 — fondo página */
+  padding: 28px 32px 0;    /* el contenido respira sin que el shell pegue */
 }
 
-.proy-detail-identity {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  flex: 1;
-  min-width: 0;
+@media (max-width: 900px) {
+  .proy-detail-card { padding: 18px 16px 0; }
 }
 
-.proy-detail-client-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: #1e3a8a;
-  color: #fff;
+/* ---------- Top bar (Volver al portafolio · avatares · Compartir) ---------- */
+
+.proy-v2-topbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), inset 0 0 0 1px rgba(255,255,255,0.08);
-}
-
-.proy-detail-headlines {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-}
-
-.proy-detail-titlerow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.proy-detail-name {
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin: 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.proy-detail-subtitle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  font-size: 0.78rem;
-  color: #64748B;
-  line-height: 1.4;
-}
-
-.proy-detail-codigo {
-  font-weight: 600;
-  color: #475569;
-  font-variant-numeric: tabular-nums;
-}
-
-.proy-detail-sep {
-  color: #cbd5e1;
-}
-
-.proy-detail-opp-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid rgba(29, 78, 216, 0.12);
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-decoration: none;
-  margin-left: 4px;
-  transition: background 0.15s ease;
-}
-
-.proy-detail-opp-chip:hover {
-  background: #dbeafe;
-}
-
-.proy-detail-opp-arrow {
-  font-size: 0.85rem;
-  line-height: 1;
-}
-
-/* Mini-barra avance vs tiempo */
-.proy-detail-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-  flex-wrap: wrap;
-}
-
-.proy-detail-progress-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748B;
-  letter-spacing: 0.01em;
-}
-
-.proy-detail-progress-bar {
-  position: relative;
-  width: 220px;
-  max-width: 40vw;
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.proy-detail-progress-time {
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  background: #cbd5e1;
-  width: 0;
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
-
-.proy-detail-progress-real {
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  background: #10b981;
-  width: 0;
-  border-radius: 999px;
-  transition: width 0.3s ease, background 0.2s ease;
-}
-
-.proy-detail-progress-real.is-warn { background: #f59e0b; }
-.proy-detail-progress-real.is-danger { background: #ef4444; }
-
-.proy-detail-progress-meta {
-  font-size: 0.72rem;
-  color: #475569;
-  font-variant-numeric: tabular-nums;
-}
-
-.proy-detail-progress-meta .danger { color: #b91c1c; font-weight: 600; }
-.proy-detail-progress-meta .warn { color: #b45309; font-weight: 600; }
-
-/* Equipo / Vendedor / Ingeniero */
-.proy-detail-team {
-  display: flex;
-  align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.proy-detail-team-slot {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  color: #475569;
-}
-
-.proy-detail-team-role {
-  color: #94a3b8;
-  font-weight: 600;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.proy-detail-team-person {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.proy-detail-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #6366f1;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 700;
+  margin-bottom: 28px;
   flex-shrink: 0;
-  background-size: cover;
-  background-position: center;
-  border: 1.5px solid #fff;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
 }
 
-.proy-detail-team-stack {
+.proy-v2-back {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 6px 4px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  letter-spacing: -0.005em;
 }
+.proy-v2-back:hover { color: #0f172a; }
 
-.proy-detail-team-stack .proy-detail-avatar {
-  width: 28px;
-  height: 28px;
-  font-size: 0.68rem;
-  margin-left: -8px;
-}
-
-.proy-detail-team-stack .proy-detail-avatar:first-child {
-  margin-left: 0;
-}
-
-.proy-detail-team-stack .proy-detail-avatar.more {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-/* Bloque derecho: status pill + cerrar */
-.proy-detail-actions {
+.proy-v2-topbar-right {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
-  flex-shrink: 0;
 }
 
-.proy-detail-status-pill {
+.proy-v2-avatars {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  white-space: nowrap;
-  line-height: 1.4;
+}
+.proy-v2-avatars .proy-v2-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  border: 2px solid #f1f5f9;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+  margin-left: -8px;
+  cursor: default;
+  letter-spacing: 0;
+}
+.proy-v2-avatars .proy-v2-avatar:first-child { margin-left: 0; }
+.proy-v2-avatars .proy-v2-avatar img {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+}
+.proy-v2-avatars .proy-v2-avatar.is-extra {
+  background: #fff;
+  color: #475569;
+  font-size: 10px;
 }
 
-.proy-detail-status-pill::before {
-  content: "";
-  width: 6px;
-  height: 6px;
+.proy-v2-add-member {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #f1f5f9;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: -8px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.proy-v2-add-member:hover { background: #f8fafc; color: #475569; }
+.proy-v2-add-member:active { transform: scale(0.94); }
+
+.proy-v2-divider {
+  width: 1px;
+  height: 22px;
+  background: #cbd5e1;
+  margin: 0 4px;
+}
+
+.proy-v2-share {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.proy-v2-share:hover { border-color: #cbd5e1; background: #f8fafc; }
+
+.proy-v2-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.proy-v2-close:hover { background: rgba(15,23,42,0.06); color: #1e293b; }
+
+/* ---------- Header (título grande + status pill · meta row) ---------- */
+
+.proy-v2-header { margin-bottom: 28px; flex-shrink: 0; }
+
+.proy-v2-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.proy-v2-name {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) { .proy-v2-name { font-size: 30px; } }
+
+/* Status pill — el background/border/color se inyecta inline desde JS según
+   status_color del backend. Solo definimos layout + el dot que pulsa. */
+.proy-v2-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+.proy-v2-status-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: currentColor;
-  flex-shrink: 0;
+  animation: proyV2Pulse 1.6s ease-in-out infinite;
 }
 
-.proy-btn-close {
-  width: 32px;
-  height: 32px;
+/* Meta row */
+.proy-v2-meta {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: none;
-  background: rgba(15, 23, 42, 0.06);
-  border-radius: 50%;
-  cursor: pointer;
-  color: #64748B;
-  transition: background 0.15s ease, color 0.15s ease;
-  flex-shrink: 0;
-}
-
-.proy-btn-close:hover {
-  background: rgba(15, 23, 42, 0.12);
-  color: #0f172a;
-}
-
-
-/* ---------- KPI Cards (3 cards: Salud · Financiero · Cronograma) ---------- */
-
-.proy-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  padding: 4px 24px 18px;
-  background: #fafafc;
-  flex-shrink: 0;
-}
-
-.proy-kpi-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 18px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-
-.proy-kpi-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.proy-kpi-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748B;
-  margin: 0;
-}
-
-.proy-kpi-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #cbd5e1;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 3px rgba(203, 213, 225, 0.25);
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.proy-kpi-dot.rag-verde { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18); }
-.proy-kpi-dot.rag-ambar { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18); }
-.proy-kpi-dot.rag-rojo  { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18); }
-
-/* Card Salud */
-.proy-kpi-salud-msg {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: #0f172a;
-  line-height: 1.35;
-}
-
-.proy-kpi-salud-msg.muted {
-  color: #94a3b8;
+  gap: 20px;
+  font-size: 13.5px;
   font-weight: 500;
-}
-
-.proy-kpi-salud-razones {
-  display: flex;
+  color: #64748b;
   flex-wrap: wrap;
-  gap: 6px;
 }
 
-.proy-kpi-salud-razon {
+.proy-v2-meta-state { font-weight: 600; color: #475569; white-space: nowrap; }
+.proy-v2-meta-client { white-space: nowrap; }
+.proy-v2-meta-ubic { white-space: nowrap; }
+.proy-v2-meta-sep { color: #cbd5e1; }
+
+.proy-v2-opp-chip {
   display: inline-flex;
   align-items: center;
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  gap: 5px;
+  padding: 3px 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
   border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.4;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
+.proy-v2-opp-chip:hover { background: #dbeafe; border-color: #93c5fd; }
 
-.proy-kpi-salud-razon.is-danger {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fecaca;
+.proy-v2-meta-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
 }
-
-/* Card Financiero */
-.proy-kpi-fin-amounts {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.01em;
+.proy-v2-meta-progress-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
 }
-
-.proy-kpi-fin-amounts .of {
-  color: #94a3b8;
-  font-weight: 600;
-}
-
-.proy-kpi-fin-bar {
-  position: relative;
+.proy-v2-meta-progress-bar {
+  flex: 1;
+  min-width: 140px;
   height: 6px;
   background: #e2e8f0;
   border-radius: 999px;
   overflow: hidden;
 }
-
-.proy-kpi-fin-bar-fill {
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 0;
-  background: #2563eb;
+.proy-v2-meta-progress-fill {
+  height: 100%;
+  width: 0%;
   border-radius: 999px;
-  transition: width 0.3s ease;
+  background: #2563eb;
+  transition: width 0.5s ease;
 }
 
-.proy-kpi-fin-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  font-size: 0.78rem;
-  color: #475569;
-  font-variant-numeric: tabular-nums;
-}
-
-.proy-kpi-fin-meta .sep {
-  color: #cbd5e1;
-}
-
-.proy-kpi-margin-pill {
+.proy-v2-meta-alert {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  padding: 1px 8px;
-  font-size: 0.68rem;
+  gap: 5px;
+  color: #ef4444;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+}
+.proy-v2-meta-alert.is-warn { color: #d97706; }
+.proy-v2-meta-alert.is-info { color: #2563eb; }
+
+/* ---------- Bento KPIs ---------- */
+
+.proy-v2-bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 22px;
+  margin-bottom: 28px;
+  flex-shrink: 0;
 }
 
-.proy-kpi-margin-pill.is-warn {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fde68a;
+.proy-v2-kpi {
+  position: relative;
+  border-radius: 18px;
+  padding: 22px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 170px;
+  animation: proyV2FadeIn 0.35s ease backwards;
 }
 
-.proy-kpi-margin-pill.is-danger {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fecaca;
+.proy-v2-kpi-eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #94a3b8;
 }
 
-/* Card Cronograma */
-.proy-kpi-crono-pct {
-  font-size: 1.6rem;
+/* Card oscura — Salud (el corazón del bento) */
+.proy-v2-kpi-salud {
+  grid-column: span 5;
+  background: #0f172a;
+  color: #fff;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.10);
+}
+.proy-v2-kpi-salud .proy-v2-kpi-eyebrow { color: #64748b; }
+
+.proy-v2-kpi-salud-bg {
+  position: absolute;
+  top: -28px;
+  right: -28px;
+  opacity: 0.07;
+  color: #ef4444;
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+.proy-v2-kpi-salud[data-rag="verde"] .proy-v2-kpi-salud-bg { color: #10b981; }
+.proy-v2-kpi-salud[data-rag="ambar"] .proy-v2-kpi-salud-bg { color: #f59e0b; }
+.proy-v2-kpi-salud[data-rag="rojo"]  .proy-v2-kpi-salud-bg { color: #ef4444; }
+
+.proy-v2-kpi-salud-headline {
+  font-size: 22px;
   font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+  color: #fff;
+}
+.proy-v2-kpi-salud-headline .accent-rojo  { color: #fca5a5; }
+.proy-v2-kpi-salud-headline .accent-ambar { color: #fcd34d; }
+.proy-v2-kpi-salud-headline .accent-verde { color: #6ee7b7; }
+
+.proy-v2-kpi-salud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.proy-v2-kpi-salud-chip,
+.proy-v2-kpi-salud-chip-action {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.proy-v2-kpi-salud-chip-rojo  { background: rgba(239,68,68,0.18); color: #fca5a5; border-color: rgba(239,68,68,0.32); }
+.proy-v2-kpi-salud-chip-ambar { background: rgba(245,158,11,0.18); color: #fcd34d; border-color: rgba(245,158,11,0.32); }
+.proy-v2-kpi-salud-chip-verde { background: rgba(16,185,129,0.18); color: #6ee7b7; border-color: rgba(16,185,129,0.32); }
+.proy-v2-kpi-salud-chip-info  { background: rgba(255,255,255,0.08); color: #cbd5e1; border-color: rgba(255,255,255,0.14); text-transform: none; letter-spacing: 0; font-weight: 600; }
+.proy-v2-kpi-salud-chip-action {
+  background: rgba(255,255,255,0.08);
+  color: #cbd5e1;
+  border-color: rgba(255,255,255,0.14);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+.proy-v2-kpi-salud-chip-action:hover { background: rgba(255,255,255,0.16); color: #fff; }
+
+/* Cards claras — Presupuesto + Cronograma */
+.proy-v2-kpi-fin,
+.proy-v2-kpi-crono {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+.proy-v2-kpi-fin   { grid-column: span 3; }
+.proy-v2-kpi-crono { grid-column: span 4; }
+
+@media (max-width: 1024px) {
+  .proy-v2-bento { grid-template-columns: 1fr; }
+  .proy-v2-kpi-salud, .proy-v2-kpi-fin, .proy-v2-kpi-crono { grid-column: span 1; }
+  .proy-v2-kpi { min-height: 130px; }
+}
+
+.proy-v2-kpi-fin-amounts,
+.proy-v2-kpi-crono-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-variant-numeric: tabular-nums;
 }
+.proy-v2-kpi-fin-big,
+.proy-v2-kpi-crono-big {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+.proy-v2-kpi-fin-small,
+.proy-v2-kpi-crono-small {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+}
 
-.proy-kpi-crono-row {
+.proy-v2-kpi-progress {
+  width: 100%;
+  height: 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.proy-v2-kpi-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+.proy-v2-kpi-progress-fill--green  { background: #34d399; }
+.proy-v2-kpi-progress-fill--blue   { background: #3b82f6; }
+.proy-v2-kpi-progress-fill--amber  { background: #f59e0b; }
+.proy-v2-kpi-progress-fill--red    { background: #ef4444; }
+
+.proy-v2-kpi-fin-meta {
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+.proy-v2-kpi-fin-meta.is-warn   { color: #b45309; }
+.proy-v2-kpi-fin-meta.is-danger { color: #b91c1c; }
+.proy-v2-kpi-fin-meta.is-good   { color: #047857; }
+
+.proy-v2-kpi-crono-row {
+  margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 0.78rem;
-  color: #475569;
-  font-variant-numeric: tabular-nums;
-}
-
-.proy-kpi-crono-dias.is-danger { color: #b91c1c; font-weight: 700; }
-.proy-kpi-crono-dias.is-warn   { color: #b45309; font-weight: 600; }
-
-.proy-kpi-crono-delta {
+  gap: 12px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #475569;
+}
+.proy-v2-kpi-crono-delta { color: #64748b; }
+.proy-v2-kpi-crono-delta.is-good   { color: #047857; }
+.proy-v2-kpi-crono-delta.is-warn   { color: #b45309; }
+.proy-v2-kpi-crono-delta.is-danger { color: #b91c1c; }
+
+.proy-v2-kpi-crono-dias { color: #64748b; }
+
+/* ---------- Pill tabs (segmented control) ---------- */
+
+.proy-v2-tabs {
+  background: rgba(148, 163, 184, 0.18);
+  padding: 4px;
+  border-radius: 12px;
+  display: inline-flex;
+  gap: 0;
+  margin-bottom: 22px;
+  max-width: 100%;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.proy-v2-tabs::-webkit-scrollbar { display: none; }
+
+/* Override de .proy-tab-btn cuando vive dentro de .proy-v2-tabs */
+.proy-v2-tabs .proy-v2-tab,
+.proy-v2-tabs.proy-tab-bar .proy-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  margin: 0;
+}
+.proy-v2-tabs .proy-v2-tab:hover,
+.proy-v2-tabs.proy-tab-bar .proy-tab-btn:hover {
+  background: rgba(148, 163, 184, 0.18);
+  color: #1e293b;
+}
+.proy-v2-tabs .proy-v2-tab.active,
+.proy-v2-tabs.proy-tab-bar .proy-tab-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+}
+.proy-v2-tabs .proy-v2-tab svg,
+.proy-v2-tabs.proy-tab-bar .proy-tab-btn svg {
+  flex-shrink: 0;
+  margin: 0;
+  vertical-align: 0;
+  opacity: 0.85;
 }
 
-.proy-kpi-crono-delta.is-danger { color: #b91c1c; }
-.proy-kpi-crono-delta.is-warn   { color: #b45309; }
-.proy-kpi-crono-delta.is-good   { color: #047857; }
-
+/* Resetear el border-bottom legacy del .proy-tab-bar */
+.proy-v2-tabs.proy-tab-bar { border-bottom: none; padding: 4px; }
 
 /* ---------- Tab System ---------- */
 
