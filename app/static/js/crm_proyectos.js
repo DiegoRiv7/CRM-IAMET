@@ -190,59 +190,81 @@
         return '<div class="proy-v2-avatar" style="z-index:' + (10 - idx) + ';" title="' + _esc(title) + '">' + content + '</div>';
     }
 
+    // Pinta el cuadrado oscuro del cliente (avatar v3) — iniciales en blanco
+    // o logo de fondo si existe. Background #1c1c1e por defecto (uniform).
+    function _paintClientSquare(target, cliente) {
+        if (!target) return;
+        var nombre = (cliente && cliente.nombre) || '';
+        var ini = (cliente && cliente.iniciales) || _initials(nombre) || '·';
+        if (cliente && cliente.logo_url) {
+            target.style.backgroundImage = 'url(' + _esc(cliente.logo_url) + ')';
+            target.textContent = '';
+        } else {
+            target.style.backgroundImage = '';
+            target.textContent = ini;
+        }
+        target.title = nombre;
+    }
+
     // Render del header + KPIs partiendo de data.overview (si existe).
     // Tolera ausencias y degrada con "—".
     function renderProjectOverview(project) {
         var ov = (project && project.overview) ? project.overview : null;
 
+        // ---- ID del proyecto (top bar) ----
+        var idEl = el('proyV3ProjectId');
+        if (idEl) {
+            idEl.textContent = (project && project.id) ? ('ID: PROY-' + project.id) : 'ID: —';
+        }
+
         // ---- TÍTULO ----
         var hName = el('proyDetailName');
         if (hName) hName.textContent = (project && project.nombre) || (ov && ov.nombre) || '';
 
-        // ---- STATUS PILL (con dot animado interno) ----
-        var hStatus = el('proyDetailStatus');
-        if (hStatus) {
-            var sLabel, sColor;
-            if (ov) {
-                sLabel = ov.status_label || statusLabel(ov.status) || '—';
-                sColor = ov.status_color || '#10b981';
-            } else if (project) {
-                sLabel = project.oportunidad_etapa || statusLabel(project.status) || '—';
-                sColor = project.oportunidad_etapa_color || '#6B7280';
-            } else {
-                sLabel = '—'; sColor = '#94a3b8';
-            }
-            // Re-pintamos contenido manteniendo la estructura interna (dot + text).
-            hStatus.innerHTML = '<span class="proy-v2-status-dot"></span><span class="proy-v2-status-text">' + _esc(sLabel) + '</span>';
-            hStatus.style.background = sColor + '1f'; // 12% alpha
-            hStatus.style.borderColor = sColor + '4d';
-            hStatus.style.color = sColor;
+        // ---- AVATAR CUADRADO DEL CLIENTE ----
+        var avEl = el('proyDetailClientAvatar');
+        if (avEl) {
+            var cli = (ov && ov.cliente) ? ov.cliente : { nombre: project ? project.cliente_nombre : '' };
+            _paintClientSquare(avEl, cli);
         }
 
-        // ---- META ROW: estado · cliente · ubicación · opp · avance · alerta ----
+        // ---- RAG PILL (status del header) ----
+        // Antes mostraba el lifecycle (Planificación/Ejecución). Ahora muestra
+        // la salud (EN RIESGO / ATENCIÓN / EN TIEMPO) — más útil de un vistazo.
+        var hStatus = el('proyDetailStatus');
+        if (hStatus) {
+            var rag = ov && ov.salud ? ov.salud.rag : null;
+            var ragLabel, ragColor;
+            if (rag === 'rojo')      { ragLabel = 'EN RIESGO'; ragColor = '#ef4444'; }
+            else if (rag === 'ambar'){ ragLabel = 'ATENCIÓN';  ragColor = '#f59e0b'; }
+            else if (rag === 'verde'){ ragLabel = 'EN TIEMPO'; ragColor = '#10b981'; }
+            else                     { ragLabel = '—';         ragColor = '#94a3b8'; }
+            hStatus.innerHTML = '<span class="proy-v3-rag-dot"></span><span class="proy-v3-rag-text">' + _esc(ragLabel) + '</span>';
+            hStatus.style.background = ragColor + '1f';
+            hStatus.style.borderColor = ragColor + '4d';
+            hStatus.style.color = ragColor;
+        }
+
+        // ---- LIFECYCLE STATE (texto al lado del pill) ----
+        var stateEl = el('proyV2MetaState');
+        if (stateEl) stateEl.textContent = ov ? _stateLabel(ov.status) : 'Proyecto';
+
+        // Cliente / ubicación legacy (se usa también en otros lados)
         var hClient = el('proyDetailClient');
         var hUbic   = el('proyDetailUbicacion');
-        var sepCli  = el('proyV2MetaSepCli');
-        var sepLoc  = el('proyV2MetaSepLoc');
-        var stateEl = el('proyV2MetaState');
-
         var clienteNombre = ov && ov.cliente ? ov.cliente.nombre : (project ? project.cliente_nombre : '');
         var clienteUbic   = ov && ov.cliente ? ov.cliente.ubicacion : '';
-
-        if (stateEl) stateEl.textContent = ov ? _stateLabel(ov.status) : 'Proyecto';
         if (hClient) hClient.textContent = clienteNombre || '';
         if (hUbic)   hUbic.textContent   = clienteUbic   || '';
-        if (sepCli)  sepCli.style.display = (clienteNombre ? '' : 'none');
-        if (sepLoc)  sepLoc.style.display = (clienteUbic ? '' : 'none');
 
-        // Chip oportunidad
+        // Chip oportunidad (top bar)
         var oppChip = el('proyDetailOppChip');
         var oppText = el('proyDetailOppText');
         if (oppChip) {
             var oppId  = ov && ov.oportunidad ? ov.oportunidad.id : (project ? project.oportunidad_id : null);
             var oppCod = ov && ov.oportunidad ? (ov.oportunidad.codigo || ('#' + ov.oportunidad.id)) : (project && project.oportunidad_id ? '#' + project.oportunidad_id : null);
             if (oppId) {
-                if (oppText) oppText.textContent = 'Oportunidad ' + (oppCod || '');
+                if (oppText) oppText.textContent = oppCod || ('Op. #' + oppId);
                 oppChip.style.display = '';
                 oppChip.setAttribute('data-opp-id', oppId);
             } else {
@@ -250,52 +272,10 @@
             }
         }
 
-        // Avance % en la meta row
-        var prog = el('proyV2MetaProgress');
-        var progLbl = el('proyV2MetaAvanceLabel');
-        var progFill = el('proyV2MetaAvanceFill');
-        var avancePct = ov ? Math.max(0, Math.min(100, Math.round(Number(ov.avance_pct || 0)))) : null;
-        if (prog) {
-            if (avancePct !== null) {
-                prog.style.display = '';
-                if (progLbl) progLbl.textContent = 'Avance ' + avancePct + '%';
-                if (progFill) progFill.style.width = avancePct + '%';
-            } else {
-                prog.style.display = 'none';
-            }
-        }
-
-        // Alerta (vencido / vence hoy / faltan pocos días)
-        var alertEl = el('proyV2MetaAlert');
-        var alertTxt = el('proyV2MetaAlertText');
-        if (alertEl) {
-            alertEl.classList.remove('is-warn', 'is-info');
-            var dr = ov ? ov.dias_restantes : null;
-            var rag = ov && ov.salud ? ov.salud.rag : null;
-            if (typeof dr === 'number' && dr < 0) {
-                alertEl.style.display = '';
-                if (alertTxt) alertTxt.textContent = 'Vencido ' + Math.abs(dr) + ' día' + (Math.abs(dr) === 1 ? '' : 's');
-            } else if (typeof dr === 'number' && dr === 0) {
-                alertEl.style.display = '';
-                alertEl.classList.add('is-warn');
-                if (alertTxt) alertTxt.textContent = 'Vence hoy';
-            } else if (typeof dr === 'number' && dr > 0 && dr <= 3 && (avancePct == null || avancePct < 90)) {
-                alertEl.style.display = '';
-                alertEl.classList.add('is-warn');
-                if (alertTxt) alertTxt.textContent = 'Faltan ' + dr + ' día' + (dr === 1 ? '' : 's');
-            } else if (rag === 'rojo' && ov && ov.salud && ov.salud.label) {
-                alertEl.style.display = '';
-                if (alertTxt) alertTxt.textContent = ov.salud.label;
-            } else {
-                alertEl.style.display = 'none';
-            }
-        }
-
         // ---- AVATAR STACK (topbar derecho) ----
         var stack = el('proyV2AvatarStack');
         if (stack) {
             var miembros = (ov && ov.equipo && ov.equipo.length) ? ov.equipo : [];
-            // Si no hay equipo en overview pero tenemos vendedor/ing, los compongo
             if (!miembros.length && ov) {
                 if (ov.vendedor)  miembros.push(ov.vendedor);
                 if (ov.ingeniero_responsable) miembros.push(ov.ingeniero_responsable);
@@ -310,136 +290,142 @@
             stack.innerHTML = html;
         }
 
-        // ---- KPI cards ----
+        // ---- KPI cells ----
         renderOverviewKPIs(ov);
     }
 
-    // Render de las 3 KPI cards (Salud dark · Presupuesto · Cronograma).
-    // Si no hay overview, deja "—" sin romper.
+    // Render de las 4 celdas del KPI strip v3 (Estado · Progreso · Presupuesto · Facturado).
+    // Si no hay overview, deja valores neutros sin romper.
     function renderOverviewKPIs(ov) {
-        // SALUD
-        var saludCard = el('proyKpiSalud');
-        var saludMsg  = el('proyKpiSaludMsg');
-        var saludRaz  = el('proyKpiSaludRazones');
-        if (saludCard && saludMsg && saludRaz) {
+        // ── Cell 1: ESTADO GLOBAL (rag-driven) ──
+        var estCard = el('proyKpiSalud');
+        var estVal  = el('proyKpiSaludMsg');
+        var estSub  = el('proyKpiSaludRazones');
+        if (estCard && estVal && estSub) {
+            estVal.classList.remove('is-danger', 'is-warn', 'is-good');
+            estSub.classList.remove('is-danger', 'is-warn');
             if (ov && ov.salud) {
                 var rag = ov.salud.rag || 'verde';
-                saludCard.setAttribute('data-rag', rag);
-
-                // Headline: usa salud.label, resaltando en color el primer fragmento
-                // que parezca "X%". Si no hay %, colorea la palabra principal.
-                var label = ov.salud.label || '—';
-                var accentClass = rag === 'rojo' ? 'accent-rojo' : rag === 'ambar' ? 'accent-ambar' : 'accent-verde';
-                var pctMatch = label.match(/-?\d+(\.\d+)?%/);
-                var headlineHtml;
-                if (pctMatch) {
-                    var idx = label.indexOf(pctMatch[0]);
-                    headlineHtml = _esc(label.substring(0, idx)) +
-                                   '<span class="' + accentClass + '">' + _esc(pctMatch[0]) + '</span>' +
-                                   _esc(label.substring(idx + pctMatch[0].length));
+                estCard.setAttribute('data-rag', rag);
+                // Value: usa la label del backend ("Atrasado X% vs cronograma" /
+                // "Margen apretado (X%)" / "En tiempo · sin riesgos") tal cual.
+                estVal.textContent = ov.salud.label || '—';
+                if (rag === 'rojo')      estVal.classList.add('is-danger');
+                else if (rag === 'ambar') estVal.classList.add('is-warn');
+                else if (rag === 'verde') estVal.classList.add('is-good');
+                // Sub: primera razón si hay; si no, frase neutra por rag.
+                var razones = ov.salud.razones || [];
+                if (razones.length) {
+                    estSub.textContent = razones[0];
+                    if (rag === 'rojo')       estSub.classList.add('is-danger');
+                    else if (rag === 'ambar') estSub.classList.add('is-warn');
                 } else {
-                    headlineHtml = _esc(label);
+                    estSub.textContent = (rag === 'verde') ? 'Sin alertas activas' : 'Revisar reporte de salud';
                 }
-                saludMsg.innerHTML = headlineHtml;
-
-                // Chips: severidad + acción "Ver reporte" si hay razones
-                var sevText = rag === 'rojo' ? 'Crítico' : rag === 'ambar' ? 'Atención' : 'En curso';
-                var sevCls  = 'proy-v2-kpi-salud-chip-' + rag;
-                var razones = (ov.salud.razones || []).slice(0, 2);
-                var chipsHtml = '<span class="proy-v2-kpi-salud-chip ' + sevCls + '">' + _esc(sevText) + '</span>';
-                razones.forEach(function(r) {
-                    chipsHtml += '<span class="proy-v2-kpi-salud-chip proy-v2-kpi-salud-chip-info">' + _esc(r) + '</span>';
-                });
-                if (rag !== 'verde') {
-                    chipsHtml += '<span class="proy-v2-kpi-salud-chip-action" onclick="proyDetailVerReporteSalud(event)">Ver reporte</span>';
-                }
-                saludRaz.innerHTML = chipsHtml;
             } else {
-                saludCard.removeAttribute('data-rag');
-                saludMsg.textContent = '—';
-                saludRaz.innerHTML = '';
+                estCard.removeAttribute('data-rag');
+                estVal.textContent = '—';
+                estSub.textContent = '—';
             }
         }
 
-        // PRESUPUESTO — gastado (izq) / contratado (der). La barra mide
-        // qué tanto del presupuesto se ha consumido (verde/ámbar/rojo
-        // según se aproxime al límite). Meta = disponible.
-        var amt   = el('proyKpiFinAmounts');
-        var fbar  = el('proyKpiFinBarFill');
-        var fmeta = el('proyKpiFinMeta');
-        if (amt && fbar && fmeta) {
+        // ── Cell 2: PROGRESO DE OBRA ──
+        var avPct = el('proyKpiAvancePct');
+        var avBar = el('proyKpiAvanceBar');
+        var avSub = el('proyKpiAvanceSub');
+        if (avPct && avBar && avSub) {
+            avBar.classList.remove('is-danger', 'is-warn', 'is-good');
+            avSub.classList.remove('is-danger', 'is-warn');
+            if (ov) {
+                var avp = (typeof ov.avance_pct === 'number' ? Math.round(ov.avance_pct) : 0);
+                avPct.textContent = avp + '%';
+                avBar.style.width = Math.max(0, Math.min(100, avp)) + '%';
+
+                var d = (typeof ov.avance_vs_tiempo_delta === 'number') ? ov.avance_vs_tiempo_delta : 0;
+                if (d <= -15)      avBar.classList.add('is-danger');
+                else if (d < 0)    avBar.classList.add('is-warn');
+                else if (d > 0 || avp > 0) avBar.classList.add('is-good');
+
+                if (avp >= 100) {
+                    avSub.textContent = 'Obra completada';
+                } else if (avp === 0) {
+                    avSub.textContent = 'Fase inicial no completada';
+                } else if (d <= -15) {
+                    avSub.textContent = 'Atrasado ' + Math.abs(d) + '% vs cronograma';
+                    avSub.classList.add('is-danger');
+                } else if (d < 0) {
+                    avSub.textContent = Math.abs(d) + '% por debajo del plan';
+                    avSub.classList.add('is-warn');
+                } else if (d > 0) {
+                    avSub.textContent = '+' + d + '% sobre el plan';
+                } else {
+                    avSub.textContent = 'En línea con el plan';
+                }
+            } else {
+                avPct.textContent = '0%';
+                avBar.style.width = '0%';
+                avSub.textContent = '—';
+            }
+        }
+
+        // ── Cell 3: PRESUPUESTO (gastado / presupuesto) ──
+        var fAmt  = el('proyKpiFinAmounts');
+        var fMeta = el('proyKpiFinMeta');
+        if (fAmt && fMeta) {
+            fMeta.classList.remove('is-danger', 'is-warn');
             if (ov && ov.financiero) {
                 var f = ov.financiero;
                 var gastado = Number(f.gastado || 0);
                 var presupuesto = Number(f.contratado || 0);
-                amt.innerHTML =
-                    '<span class="proy-v2-kpi-fin-big">' + _esc(_fmtMoneyShort(gastado)) + '</span>' +
-                    '<span class="proy-v2-kpi-fin-small">/ ' + _esc(_fmtMoneyShort(presupuesto)) + '</span>';
-
-                var consumPct = presupuesto > 0 ? Math.round((gastado / presupuesto) * 100) : 0;
-                var barPct = Math.max(0, Math.min(100, consumPct));
-                fbar.style.width = barPct + '%';
-
-                fbar.className = 'proy-v2-kpi-progress-fill';
-                var ftone = '';
-                if (consumPct >= 100) { fbar.classList.add('proy-v2-kpi-progress-fill--red');   ftone = 'is-danger'; }
-                else if (consumPct >= 80) { fbar.classList.add('proy-v2-kpi-progress-fill--amber'); ftone = 'is-warn'; }
-                else { fbar.classList.add('proy-v2-kpi-progress-fill--green'); ftone = ''; }
-
-                var disponible = presupuesto - gastado;
-                fmeta.className = 'proy-v2-kpi-fin-meta ' + ftone;
+                fAmt.innerHTML =
+                    '<span class="proy-v3-kpi-value">' + _esc(_fmtMoneyShort(gastado)) + '</span>' +
+                    '<span class="proy-v3-kpi-value-small">/ ' + _esc(_fmtMoneyShort(presupuesto)) + '</span>';
                 if (presupuesto <= 0) {
-                    fmeta.textContent = 'Sin presupuesto definido';
-                } else if (disponible >= 0) {
-                    fmeta.textContent = 'Disponible: ' + _fmtMoneyShort(disponible) + ' · ' + consumPct + '% usado';
+                    fMeta.textContent = 'Sin presupuesto asignado';
                 } else {
-                    fmeta.textContent = 'Sobregiro: ' + _fmtMoneyShort(Math.abs(disponible)) + ' (' + consumPct + '%)';
+                    var consumPct = Math.round((gastado / presupuesto) * 100);
+                    var disponible = presupuesto - gastado;
+                    if (consumPct >= 100) {
+                        fMeta.classList.add('is-danger');
+                        fMeta.textContent = 'Sobregiro ' + _fmtMoneyShort(Math.abs(disponible)) + ' · ' + consumPct + '% usado';
+                    } else if (consumPct >= 80) {
+                        fMeta.classList.add('is-warn');
+                        fMeta.textContent = consumPct + '% usado · disponible ' + _fmtMoneyShort(disponible);
+                    } else {
+                        fMeta.textContent = consumPct + '% usado · disponible ' + _fmtMoneyShort(disponible);
+                    }
                 }
             } else {
-                amt.innerHTML = '<span class="proy-v2-kpi-fin-big">—</span>';
-                fbar.style.width = '0%';
-                fbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green';
-                fmeta.textContent = '—';
-                fmeta.className = 'proy-v2-kpi-fin-meta';
+                fAmt.innerHTML = '<span class="proy-v3-kpi-value">$0</span><span class="proy-v3-kpi-value-small">/ $0</span>';
+                fMeta.textContent = 'Sin presupuesto asignado';
             }
         }
 
-        // COBRADO — cobrado (izq) / contratado (der). La barra mide qué
-        // tanto del contratado ya entró del cliente. Meta = por cobrar.
-        // Reusamos los IDs proyKpiCrono* (legacy) sin renombrar para no
-        // romper otros lugares que pudieran leerlos.
-        var cbig  = el('proyKpiCronoPct');
-        var cbar  = el('proyKpiCronoBarFill');
-        var csub  = el('proyKpiCronoSubtitle');
-        var cdelt = el('proyKpiCronoDelta');
-        if (cbig && cbar && cdelt) {
+        // ── Cell 4: FACTURADO (cobrado / contratado) ──
+        // Reusamos los IDs proyKpiCrono* (legacy) sin renombrar.
+        var cBig   = el('proyKpiCronoPct');
+        var cSmall = el('proyKpiCronoSubtitle');
+        var cSub   = el('proyKpiCronoDelta');
+        if (cBig && cSmall && cSub) {
+            cSub.classList.remove('is-danger', 'is-warn');
             if (ov && ov.financiero) {
                 var ff = ov.financiero;
                 var cobrado = Number(ff.cobrado || 0);
                 var contratado = Number(ff.contratado || 0);
-                cbig.textContent = _fmtMoneyShort(cobrado);
-                if (csub) csub.textContent = '/ ' + _fmtMoneyShort(contratado);
-
-                var cobradoPct = contratado > 0 ? Math.round((cobrado / contratado) * 100) : 0;
-                cbar.style.width = Math.max(0, Math.min(100, cobradoPct)) + '%';
-                cbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green';
-
-                cdelt.classList.remove('is-danger', 'is-warn', 'is-good');
+                cBig.textContent = _fmtMoneyShort(cobrado);
+                cSmall.textContent = '/ ' + _fmtMoneyShort(contratado);
                 if (contratado <= 0) {
-                    cdelt.textContent = 'Sin monto contratado';
+                    cSub.textContent = 'Sin monto contratado';
                 } else if (cobrado >= contratado) {
-                    cdelt.classList.add('is-good');
-                    cdelt.textContent = 'Cobrado al 100%';
+                    cSub.textContent = 'Facturado al 100%';
                 } else {
-                    cdelt.textContent = 'Por cobrar: ' + _fmtMoneyShort(contratado - cobrado) + ' · ' + cobradoPct + '%';
+                    var pct = Math.round((cobrado / contratado) * 100);
+                    cSub.textContent = pct + '% facturado · por cobrar ' + _fmtMoneyShort(contratado - cobrado);
                 }
             } else {
-                cbig.textContent = '—';
-                if (csub) csub.textContent = '/ —';
-                cbar.style.width = '0%';
-                cbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green';
-                cdelt.textContent = '—';
-                cdelt.classList.remove('is-danger', 'is-warn', 'is-good');
+                cBig.textContent = '$0';
+                cSmall.textContent = '/ $0';
+                cSub.textContent = 'Sin monto contratado';
             }
         }
     }

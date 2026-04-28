@@ -131,20 +131,25 @@
 <div class="widget-overlay" id="widgetProyectoDetalle" style="z-index:10100;display:none;">
   <div class="widget-card-lg proy-detail-card">
 
-    <!-- ═══ TOP BAR: Volver al portafolio · avatares + Compartir · cerrar ═══ -->
-    <div class="proy-v2-topbar">
-      <button class="proy-v2-back" onclick="proyectosVolverLista()" aria-label="Volver">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-        <span>Volver al portafolio</span>
-      </button>
+    <!-- ═══ TOP BAR: ← Portafolio · ID · oportunidad — avatares + Compartir ═══ -->
+    <div class="proy-v3-topbar">
+      <div class="proy-v3-topbar-left">
+        <button class="proy-v3-back" onclick="proyectosVolverLista()" aria-label="Volver al portafolio">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <span>Portafolio</span>
+        </button>
+        <span class="proy-v3-id" id="proyV3ProjectId">ID: —</span>
+        <a href="#" class="proy-v3-opp-chip" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)">
+          <span aria-hidden="true">&#x21B3;</span>
+          <span id="proyDetailOppText">Oportunidad</span>
+        </a>
+      </div>
 
-      <div class="proy-v2-topbar-right">
-        <div class="proy-v2-avatars" id="proyV2AvatarStack">
-          <!-- avatares poblados por JS desde overview.equipo -->
-        </div>
-        <div class="proy-v2-add-member-wrap" style="position:relative;">
-          <button class="proy-v2-add-member" type="button" aria-label="Agregar miembro" title="Agregar miembro" onclick="proyDetailAgregarMiembro(event)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+      <div class="proy-v3-topbar-right">
+        <div class="proy-v3-avatars" id="proyV2AvatarStack"></div>
+        <div class="proy-v3-add-member-wrap" style="position:relative;">
+          <button class="proy-v3-add-member" type="button" aria-label="Agregar miembro" title="Agregar miembro" onclick="proyDetailAgregarMiembro(event)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
           </button>
           <div class="proy-v2-member-popover" id="proyV2MemberPopover" style="display:none;">
             <div class="proy-v2-member-popover-header">
@@ -155,10 +160,12 @@
             </div>
           </div>
         </div>
-        <span class="proy-v2-divider" aria-hidden="true"></span>
-        <button class="proy-v2-share" type="button" onclick="proyDetailCompartir(event)">Compartir</button>
-        <button class="proy-v2-close" type="button" onclick="proyectosVolverLista()" aria-label="Cerrar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="proy-v3-share" type="button" onclick="proyDetailCompartir(event)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+          <span>COMPARTIR</span>
+        </button>
+        <button class="proy-v3-close" type="button" onclick="proyectosVolverLista()" aria-label="Cerrar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -166,94 +173,94 @@
       </div>
     </div>
 
-    <!-- ═══ HEADER: título + status pill + chip oportunidad ═══ -->
-    <div class="proy-v2-header">
-      <div class="proy-v2-titlerow">
-        <h1 id="proyDetailName" class="proy-v2-name">Proyecto</h1>
-        <span id="proyDetailStatus" class="proy-v2-status-pill">
-          <span class="proy-v2-status-dot"></span>
-          <span class="proy-v2-status-text">—</span>
-        </span>
-        <a href="#" class="proy-v2-opp-chip" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)">
-          <span aria-hidden="true">&#x21B3;</span>
-          <span id="proyDetailOppText">Oportunidad</span>
-        </a>
+    <!-- ═══ HEADER: avatar cuadrado del cliente · título · status RAG + lifecycle ═══ -->
+    <div class="proy-v3-header">
+      <div class="proy-v3-client-square" id="proyDetailClientAvatar">·</div>
+      <div class="proy-v3-titleblock">
+        <h1 id="proyDetailName" class="proy-v3-name">Proyecto</h1>
+        <div class="proy-v3-status-row">
+          <span id="proyDetailStatus" class="proy-v3-rag-pill">
+            <span class="proy-v3-rag-dot"></span>
+            <span class="proy-v3-rag-text">—</span>
+          </span>
+          <span id="proyV2MetaState" class="proy-v3-state-text">—</span>
+          <!-- legacy refs ocultos para compat con código que aún los lea -->
+          <span id="proyDetailClient" style="display:none;"></span>
+          <span id="proyDetailUbicacion" style="display:none;"></span>
+          <span id="proyV2MetaSepCli" style="display:none;"></span>
+          <span id="proyV2MetaSepLoc" style="display:none;"></span>
+          <span id="proyDetailCodigo" style="display:none;"></span>
+          <span id="proyDetailDates" style="display:none;"></span>
+          <span id="proyDetailDesc" style="display:none;"></span>
+          <span id="proyV2MetaProgress" style="display:none;"></span>
+          <span id="proyV2MetaAvanceLabel" style="display:none;"></span>
+          <span id="proyV2MetaAvanceFill" style="display:none;"></span>
+          <span id="proyV2MetaAlert" style="display:none;"></span>
+          <span id="proyV2MetaAlertText" style="display:none;"></span>
+        </div>
       </div>
-      <!-- legacy hidden refs para compat -->
-      <span id="proyDetailCodigo" style="display:none;"></span>
-      <span id="proyDetailDates" style="display:none;"></span>
-      <span id="proyDetailDesc" style="display:none;"></span>
-      <span id="proyDetailClientAvatar" style="display:none;"></span>
     </div>
 
-    <!-- ═══ BENTO KPIs: dark Salud (5/12) con meta integrada · Presupuesto + Cronograma (7/12) ═══ -->
-    <div class="proy-v2-bento" id="proyKPIs">
-      <!-- Salud (dark card, prominente, contiene la meta operativa del proyecto) -->
-      <div class="proy-v2-kpi proy-v2-kpi-salud" id="proyKpiSalud">
-        <div class="proy-v2-kpi-salud-bg" aria-hidden="true">
-          <svg width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+    <!-- ═══ KPI STRIP: 4 celdas en una sola card (Estado · Progreso · Presupuesto · Facturado) ═══ -->
+    <div class="proy-v3-kpi-strip" id="proyKPIs">
+      <!-- Cell 1: Estado Global (rag) -->
+      <div class="proy-v3-kpi-cell" id="proyKpiSalud" data-rag="">
+        <div class="proy-v3-kpi-eyebrow">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          ESTADO GLOBAL
         </div>
-        <div class="proy-v2-kpi-salud-top">
-          <h3 class="proy-v2-kpi-eyebrow">Salud del proyecto</h3>
-          <div class="proy-v2-kpi-salud-headline" id="proyKpiSaludMsg">—</div>
-        </div>
-
-        <!-- Meta operativa (estado · cliente · avance · alerta) DENTRO del card oscuro -->
-        <div class="proy-v2-meta proy-v2-meta--on-dark">
-          <span id="proyV2MetaState" class="proy-v2-meta-state"></span>
-          <span class="proy-v2-meta-sep" id="proyV2MetaSepCli" style="display:none;">·</span>
-          <span id="proyDetailClient" class="proy-v2-meta-client"></span>
-          <span class="proy-v2-meta-sep" id="proyV2MetaSepLoc" style="display:none;">·</span>
-          <span id="proyDetailUbicacion" class="proy-v2-meta-ubic"></span>
-
-          <div class="proy-v2-meta-progress" id="proyV2MetaProgress" style="display:none;">
-            <span class="proy-v2-meta-progress-label" id="proyV2MetaAvanceLabel">Avance 0%</span>
-            <div class="proy-v2-meta-progress-bar">
-              <div class="proy-v2-meta-progress-fill" id="proyV2MetaAvanceFill"></div>
-            </div>
-          </div>
-
-          <span class="proy-v2-meta-alert" id="proyV2MetaAlert" style="display:none;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-            <span id="proyV2MetaAlertText"></span>
-          </span>
-        </div>
-
-        <div class="proy-v2-kpi-salud-chips" id="proyKpiSaludRazones">
-          <span class="proy-v2-kpi-salud-chip-action" id="proyKpiSaludVerReporte" style="display:none;" onclick="proyDetailVerReporteSalud(event)">Ver reporte</span>
-        </div>
-        <!-- legacy hidden refs para compat -->
+        <div class="proy-v3-kpi-value" id="proyKpiSaludMsg">—</div>
+        <div class="proy-v3-kpi-sub" id="proyKpiSaludRazones">—</div>
+        <!-- legacy refs ocultos -->
         <span id="proyKpiSaludDot" style="display:none;"></span>
         <span id="proyKpiSaludLabel" style="display:none;"></span>
+        <span id="proyKpiSaludVerReporte" style="display:none;"></span>
       </div>
 
-      <!-- Presupuesto: gastado vs presupuesto inicial -->
-      <div class="proy-v2-kpi proy-v2-kpi-fin" id="proyKpiFinanciero">
-        <h3 class="proy-v2-kpi-eyebrow">Presupuesto</h3>
-        <div class="proy-v2-kpi-fin-amounts" id="proyKpiFinAmounts">
-          <span class="proy-v2-kpi-fin-big">$0</span>
-          <span class="proy-v2-kpi-fin-small">/ $0</span>
+      <!-- Cell 2: Progreso de Obra -->
+      <div class="proy-v3-kpi-cell">
+        <div class="proy-v3-kpi-eyebrow">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          PROGRESO DE OBRA
         </div>
-        <div class="proy-v2-kpi-progress">
-          <div class="proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green" id="proyKpiFinBarFill" style="width:0%"></div>
+        <div class="proy-v3-kpi-value-row">
+          <span class="proy-v3-kpi-value" id="proyKpiAvancePct">0%</span>
+          <div class="proy-v3-kpi-mini-bar" aria-hidden="true">
+            <div class="proy-v3-kpi-mini-bar-fill" id="proyKpiAvanceBar" style="width:0%"></div>
+          </div>
         </div>
-        <div class="proy-v2-kpi-fin-meta" id="proyKpiFinMeta">Disponible: $0</div>
+        <div class="proy-v3-kpi-sub" id="proyKpiAvanceSub">—</div>
       </div>
 
-      <!-- Cobrado: lo que ya entró del cliente vs contratado -->
-      <div class="proy-v2-kpi proy-v2-kpi-crono" id="proyKpiCronograma">
-        <h3 class="proy-v2-kpi-eyebrow">Cobrado</h3>
-        <div class="proy-v2-kpi-crono-amounts">
-          <span class="proy-v2-kpi-crono-big" id="proyKpiCronoPct">$0</span>
-          <span class="proy-v2-kpi-crono-small" id="proyKpiCronoSubtitle">/ $0</span>
+      <!-- Cell 3: Presupuesto (gastado / presupuesto) -->
+      <div class="proy-v3-kpi-cell">
+        <div class="proy-v3-kpi-eyebrow">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          PRESUPUESTO
         </div>
-        <div class="proy-v2-kpi-progress">
-          <div class="proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green" id="proyKpiCronoBarFill" style="width:0%"></div>
+        <div class="proy-v3-kpi-value-row" id="proyKpiFinAmounts">
+          <span class="proy-v3-kpi-value">$0</span>
+          <span class="proy-v3-kpi-value-small">/ $0</span>
         </div>
-        <div class="proy-v2-kpi-crono-row">
-          <span class="proy-v2-kpi-crono-delta" id="proyKpiCronoDelta">—</span>
-          <span class="proy-v2-kpi-crono-dias" id="proyKpiCronoDias" style="display:none;"></span>
+        <div class="proy-v3-kpi-sub" id="proyKpiFinMeta">Sin presupuesto asignado</div>
+        <!-- legacy ref oculto (la barra ya no se muestra; los valores se calculan en JS) -->
+        <span id="proyKpiFinBarFill" style="display:none;"></span>
+      </div>
+
+      <!-- Cell 4: Facturado (cobrado / contratado) -->
+      <div class="proy-v3-kpi-cell">
+        <div class="proy-v3-kpi-eyebrow">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          FACTURADO
         </div>
+        <div class="proy-v3-kpi-value-row" id="proyKpiCobAmounts">
+          <span class="proy-v3-kpi-value" id="proyKpiCronoPct">$0</span>
+          <span class="proy-v3-kpi-value-small" id="proyKpiCronoSubtitle">/ $0</span>
+        </div>
+        <div class="proy-v3-kpi-sub" id="proyKpiCronoDelta">Sin monto contratado</div>
+        <!-- legacy refs ocultos -->
+        <span id="proyKpiCronoBarFill" style="display:none;"></span>
+        <span id="proyKpiCronoDias" style="display:none;"></span>
       </div>
     </div>
 

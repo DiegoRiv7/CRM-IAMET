@@ -985,46 +985,369 @@
 
 .proy-v2-kpi-crono-dias { color: #64748b; }
 
-/* ---------- Pill tabs (mini dynamic island centrada) ---------- */
-/* Mismo look que la dynamic externa (.proy-tabs) — pill flotante con
-   backdrop-blur, border sutil, shadow. Centrada en su fila usando
-   width:fit-content + margin:auto. Active state oscuro (#0f172a) para
-   ligar visualmente con el card de Salud del bento. */
+/* ==========================================================================
+   PROY-V3 — diseño limpio (Linear/Notion-inspired): top bar plano, header
+   con avatar cuadrado + RAG pill, KPI strip horizontal de 4 celdas, tabs
+   flat con active dark filled. Reemplaza visualmente al bento v2.
+   ========================================================================== */
+
+/* ---------- Top bar v3 ---------- */
+.proy-v3-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+.proy-v3-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.proy-v3-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.proy-v3-back:hover { color: #0f172a; }
+
+.proy-v3-id {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.proy-v3-opp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.proy-v3-opp-chip:hover { background: #dbeafe; border-color: #93c5fd; }
+
+.proy-v3-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.proy-v3-avatars {
+  display: inline-flex;
+  align-items: center;
+}
+.proy-v3-avatars .proy-v2-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  border: 2px solid #f1f5f9;
+  margin-left: -8px;
+  cursor: default;
+}
+.proy-v3-avatars .proy-v2-avatar:first-child { margin-left: 0; }
+.proy-v3-avatars .proy-v2-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.proy-v3-avatars .proy-v2-avatar.is-extra { background: #fff; color: #475569; font-size: 9.5px; }
+
+.proy-v3-add-member-wrap { display: inline-flex; }
+.proy-v3-add-member {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px dashed #cbd5e1;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: -4px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.proy-v3-add-member:hover { background: #f8fafc; color: #1e293b; border-color: #94a3b8; }
+.proy-v3-add-member:active { transform: scale(0.94); }
+
+.proy-v3-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 7px 14px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #1e293b;
+  cursor: pointer;
+  margin-left: 8px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.proy-v3-share:hover { border-color: #cbd5e1; background: #f8fafc; }
+
+.proy-v3-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.proy-v3-close:hover { background: rgba(15,23,42,0.06); color: #1e293b; }
+
+/* ---------- Header v3 (avatar cuadrado + título + status RAG · estado) ---------- */
+.proy-v3-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+.proy-v3-client-square {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #1c1c1e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+}
+
+.proy-v3-titleblock { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.proy-v3-name {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) { .proy-v3-name { font-size: 24px; } }
+
+.proy-v3-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* RAG pill — color inyectado inline desde JS según el rag.
+   Verde = #10b981, Ámbar = #f59e0b, Rojo = #ef4444. */
+.proy-v3-rag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.proy-v3-rag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: proyV2Pulse 1.6s ease-in-out infinite;
+}
+
+.proy-v3-state-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* ---------- KPI Strip v3 (4 celdas en una sola card unificada) ---------- */
+.proy-v3-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 22px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .proy-v3-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .proy-v3-kpi-cell:nth-child(2) { border-left: 1px solid #f1f5f9; }
+  .proy-v3-kpi-cell:nth-child(3),
+  .proy-v3-kpi-cell:nth-child(4) { border-top: 1px solid #f1f5f9; }
+  .proy-v3-kpi-cell:nth-child(3) { border-left: none; }
+}
+@media (max-width: 600px) {
+  .proy-v3-kpi-strip { grid-template-columns: 1fr; }
+  .proy-v3-kpi-cell + .proy-v3-kpi-cell { border-top: 1px solid #f1f5f9; border-left: none; }
+}
+
+.proy-v3-kpi-cell {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.proy-v3-kpi-cell + .proy-v3-kpi-cell { border-left: 1px solid #f1f5f9; }
+
+.proy-v3-kpi-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin-bottom: 1px;
+}
+.proy-v3-kpi-eyebrow svg { flex-shrink: 0; opacity: 0.85; }
+
+.proy-v3-kpi-value {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.proy-v3-kpi-value.is-danger { color: #dc2626; }
+.proy-v3-kpi-value.is-warn   { color: #b45309; }
+.proy-v3-kpi-value.is-good   { color: #047857; }
+
+.proy-v3-kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.proy-v3-kpi-value-small {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0;
+}
+
+.proy-v3-kpi-mini-bar {
+  flex: 1;
+  height: 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  align-self: center;
+  min-width: 50px;
+}
+.proy-v3-kpi-mini-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #2563eb;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+.proy-v3-kpi-mini-bar-fill.is-danger { background: #ef4444; }
+.proy-v3-kpi-mini-bar-fill.is-warn   { background: #f59e0b; }
+.proy-v3-kpi-mini-bar-fill.is-good   { background: #10b981; }
+
+.proy-v3-kpi-sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.proy-v3-kpi-sub.is-danger { color: #b91c1c; font-weight: 600; }
+.proy-v3-kpi-sub.is-warn   { color: #b45309; font-weight: 600; }
+
+/* ---------- Tabs v3 (flat inline, active dark filled) ---------- */
+/* Sin contenedor pill ni backdrop-blur — solo botones planos sobre la
+   superficie. Active = dark filled (#0f172a). Estilo Linear/Notion. */
 .proy-v2-tabs {
   display: flex;
-  width: fit-content;
-  margin: 0 auto 22px;
-  gap: 2px;
-  padding: 4px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 22px;
-  box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.06),
-    0 4px 12px rgba(15, 23, 42, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  flex-wrap: wrap;
+  width: 100%;
+  margin: 0 0 16px;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   max-width: 100%;
   overflow-x: auto;
   flex-shrink: 0;
 }
 .proy-v2-tabs::-webkit-scrollbar { display: none; }
 
-/* Override de .proy-tab-btn cuando vive dentro de .proy-v2-tabs */
 .proy-v2-tabs .proy-v2-tab,
 .proy-v2-tabs.proy-tab-bar .proy-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 16px;
+  padding: 9px 16px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   color: #64748b;
   background: transparent;
   border: none;
-  border-radius: 18px;
+  border-radius: 10px;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.18s ease;
@@ -1032,14 +1355,14 @@
 }
 .proy-v2-tabs .proy-v2-tab:hover,
 .proy-v2-tabs.proy-tab-bar .proy-tab-btn:hover {
-  background: rgba(15, 23, 42, 0.04);
+  background: rgba(15, 23, 42, 0.05);
   color: #1e293b;
 }
 .proy-v2-tabs .proy-v2-tab.active,
 .proy-v2-tabs.proy-tab-bar .proy-tab-btn.active {
   background: #0f172a;
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
 }
 .proy-v2-tabs .proy-v2-tab.active:hover,
 .proy-v2-tabs.proy-tab-bar .proy-tab-btn.active:hover {
@@ -1058,7 +1381,6 @@
   opacity: 1;
 }
 
-/* Resetear el border-bottom legacy del .proy-tab-bar */
 .proy-v2-tabs.proy-tab-bar { border-bottom: none; }
 
 /* ---------- Tab System ---------- */
