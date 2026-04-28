@@ -97,7 +97,11 @@
     {% include "crm/_actividades_board.html" %}
     {% endcomment %}
     {% endif %}
-    {% if not es_administrador %}{% include "crm/_content.html" %}{% endif %}
+    {# Admin también necesita _content.html porque ahí viven tareasSection
+       y la inclusión de _widget_proyectos.html que requiere su sidebar.
+       crmContentSection se mantiene oculto vía .adm-initial-hide + el
+       inline display:none en _content.html. #}
+    {% include "crm/_content.html" %}
 
     {% include "crm/_widget_muro.html" %}
     {% include "crm/_widget_calendario.html" %}

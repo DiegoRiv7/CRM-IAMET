@@ -1,6 +1,6 @@
 {% load app_filters %}{% load l10n %}
 <div class="widget-toast" id="widgetToast"></div> <!-- ═══ CONTENT ═══ -->
-<div class="crm-content" id="crmContentSection"{% if es_ingeniero %} style="display:none;"{% endif %}>
+<div class="crm-content" id="crmContentSection"{% if es_ingeniero or es_administrador %} style="display:none;"{% endif %}>
 
     {% if tab_activo == 'crm' %}
     <!-- ═══════════════════════════════════════════════════════════
