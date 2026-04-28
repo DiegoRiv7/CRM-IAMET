@@ -985,15 +985,26 @@
 
 .proy-v2-kpi-crono-dias { color: #64748b; }
 
-/* ---------- Pill tabs (segmented control) ---------- */
-
+/* ---------- Pill tabs (mini dynamic island centrada) ---------- */
+/* Mismo look que la dynamic externa (.proy-tabs) — pill flotante con
+   backdrop-blur, border sutil, shadow. Centrada en su fila usando
+   width:fit-content + margin:auto. Active state oscuro (#0f172a) para
+   ligar visualmente con el card de Salud del bento. */
 .proy-v2-tabs {
-  background: rgba(148, 163, 184, 0.18);
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 22px;
+  gap: 2px;
   padding: 4px;
-  border-radius: 12px;
-  display: inline-flex;
-  gap: 0;
-  margin-bottom: 22px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 22px;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    0 4px 12px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   max-width: 100%;
   overflow-x: auto;
   flex-shrink: 0;
@@ -1006,29 +1017,34 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 16px;
+  padding: 7px 16px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   color: #64748b;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 18px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.18s ease;
   margin: 0;
 }
 .proy-v2-tabs .proy-v2-tab:hover,
 .proy-v2-tabs.proy-tab-bar .proy-tab-btn:hover {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.04);
   color: #1e293b;
 }
 .proy-v2-tabs .proy-v2-tab.active,
 .proy-v2-tabs.proy-tab-bar .proy-tab-btn.active {
-  background: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+}
+.proy-v2-tabs .proy-v2-tab.active:hover,
+.proy-v2-tabs.proy-tab-bar .proy-tab-btn.active:hover {
+  background: #0f172a;
+  color: #ffffff;
 }
 .proy-v2-tabs .proy-v2-tab svg,
 .proy-v2-tabs.proy-tab-bar .proy-tab-btn svg {
@@ -1037,9 +1053,13 @@
   vertical-align: 0;
   opacity: 0.85;
 }
+.proy-v2-tabs .proy-v2-tab.active svg,
+.proy-v2-tabs.proy-tab-bar .proy-tab-btn.active svg {
+  opacity: 1;
+}
 
 /* Resetear el border-bottom legacy del .proy-tab-bar */
-.proy-v2-tabs.proy-tab-bar { border-bottom: none; padding: 4px; }
+.proy-v2-tabs.proy-tab-bar { border-bottom: none; }
 
 /* ---------- Tab System ---------- */
 
