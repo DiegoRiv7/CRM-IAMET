@@ -433,24 +433,208 @@
         }
     }
 
-    // Stub: "Ver reporte" desde la card de Salud — abre la tab de Cronograma
-    // para que el usuario revise el detalle. Si después se hace un reporte
-    // dedicado, basta cambiar esta función.
+    // "Ver reporte" desde la card de Salud — abre la tab de Cronograma para
+    // que el usuario revise el detalle del atraso/desviación. Si después se
+    // hace un reporte dedicado, basta cambiar esta función.
     window.proyDetailVerReporteSalud = function(ev) {
         if (ev && ev.preventDefault) ev.preventDefault();
         if (ev && ev.stopPropagation) ev.stopPropagation();
         if (typeof window.proyectosSetTab === 'function') window.proyectosSetTab('programa');
     };
 
-    // Stub: "Compartir" — futuro endpoint para link compartible / clientes.
+    // Toast simple para feedback de acciones del topbar (Compartir, agregar
+    // miembro, etc). Reusa una sola instancia en el body.
+    function _proyToast(msg) {
+        var t = document.getElementById('proyV2Toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'proyV2Toast';
+            t.className = 'proy-v2-toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        // forzar reflow para que la transición corra siempre
+        // eslint-disable-next-line no-unused-expressions
+        t.offsetWidth;
+        t.classList.add('is-visible');
+        clearTimeout(t._hideTimer);
+        t._hideTimer = setTimeout(function () { t.classList.remove('is-visible'); }, 1800);
+    }
+
+    // "Compartir": genera link directo al proyecto, lo copia al clipboard
+    // y muestra un toast confirmando. El destinatario que abra ese link
+    // verá el detalle del proyecto abierto automáticamente (handled abajo
+    // en proyectosOpenFromUrl).
     window.proyDetailCompartir = function(ev) {
         if (ev && ev.preventDefault) ev.preventDefault();
-        // TODO: implementar share. Por ahora copia al clipboard la URL del proyecto.
+        if (!currentProjectId) return;
+        var url = window.location.origin + '/app/todos/?open_proyecto=' + currentProjectId;
+        var done = function() { _proyToast('Link copiado al portapapeles'); };
         try {
-            var url = window.location.origin + window.location.pathname + '#proyecto-' + (currentProjectId || '');
-            if (navigator.clipboard) navigator.clipboard.writeText(url);
-        } catch (e) {}
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done, function() {
+                    // fallback execCommand si clipboard API es rechazada
+                    _copyToClipboardFallback(url); done();
+                });
+            } else {
+                _copyToClipboardFallback(url); done();
+            }
+        } catch (e) {
+            _copyToClipboardFallback(url); done();
+        }
     };
+
+    function _copyToClipboardFallback(text) {
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        } catch (e) {}
+    }
+
+    // Apertura automática del detalle al cargar la página si la URL trae
+    // ?open_proyecto=N. Espera a que el listado termine de cargar para
+    // que proyectosVerDetalle pueda hidratar el estado correctamente.
+    window.proyectosOpenFromUrl = function() {
+        try {
+            var qs = window.location.search;
+            var m = qs.match(/[?&]open_proyecto=(\d+)/);
+            if (!m) return;
+            var pid = parseInt(m[1], 10);
+            if (!pid) return;
+            // Esperamos un tick para que el DOM del proyecto esté listo
+            setTimeout(function () {
+                if (typeof window.proyectosVerDetalle === 'function') {
+                    window.proyectosVerDetalle(pid);
+                }
+                // Limpiar el query param sin reload para no re-disparar
+                try {
+                    var newUrl = window.location.pathname + qs.replace(/[?&]open_proyecto=\d+/, '').replace(/^&/, '?');
+                    if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
+                    window.history.replaceState({}, '', newUrl);
+                } catch (e) {}
+            }, 200);
+        } catch (e) { /* noop */ }
+    };
+
+    // ── Agregar miembro: abre popover, busca usuarios, POST al endpoint ──
+    var _proyMemberSearchTimer = null;
+
+    window.proyDetailAgregarMiembro = function(ev) {
+        if (ev) { ev.preventDefault && ev.preventDefault(); ev.stopPropagation && ev.stopPropagation(); }
+        var pop = el('proyV2MemberPopover');
+        if (!pop) return;
+        var isOpen = pop.style.display !== 'none';
+        if (isOpen) {
+            _closeMemberPopover();
+        } else {
+            _openMemberPopover();
+        }
+    };
+
+    function _openMemberPopover() {
+        var pop = el('proyV2MemberPopover');
+        var input = el('proyV2MemberSearch');
+        var list = el('proyV2MemberList');
+        if (!pop) return;
+        pop.style.display = '';
+        if (list) list.innerHTML = '<div class="proy-v2-member-empty">Escribe para buscar usuarios</div>';
+        if (input) { input.value = ''; setTimeout(function(){ input.focus(); }, 30); }
+        setTimeout(function () {
+            document.addEventListener('mousedown', _memberPopoverOutside, true);
+            document.addEventListener('keydown', _memberPopoverEsc, true);
+        }, 10);
+    }
+
+    function _closeMemberPopover() {
+        var pop = el('proyV2MemberPopover');
+        if (pop) pop.style.display = 'none';
+        document.removeEventListener('mousedown', _memberPopoverOutside, true);
+        document.removeEventListener('keydown', _memberPopoverEsc, true);
+    }
+
+    function _memberPopoverOutside(ev) {
+        var wrap = document.querySelector('.proy-v2-add-member-wrap');
+        if (wrap && !wrap.contains(ev.target)) _closeMemberPopover();
+    }
+    function _memberPopoverEsc(ev) {
+        if (ev.key === 'Escape') _closeMemberPopover();
+    }
+
+    window.proyDetailMiembroBuscar = function(q) {
+        if (_proyMemberSearchTimer) clearTimeout(_proyMemberSearchTimer);
+        var list = el('proyV2MemberList');
+        var query = (q || '').trim();
+        if (!query) {
+            if (list) list.innerHTML = '<div class="proy-v2-member-empty">Escribe para buscar usuarios</div>';
+            return;
+        }
+        if (list) list.innerHTML = '<div class="proy-v2-member-loading">Buscando…</div>';
+        _proyMemberSearchTimer = setTimeout(function () {
+            fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(query))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var users = data.usuarios || [];
+                    if (!users.length) {
+                        if (list) list.innerHTML = '<div class="proy-v2-member-empty">Sin resultados</div>';
+                        return;
+                    }
+                    if (list) {
+                        list.innerHTML = users.slice(0, 30).map(function (u) {
+                            var ini = _initials(u.nombre || u.username || '');
+                            var label = _esc(u.nombre || u.username || '');
+                            return '<div class="proy-v2-member-item" data-uid="' + _esc(String(u.id)) + '" data-name="' + label + '">' +
+                                '<div class="proy-v2-member-item-avatar">' + _esc(ini) + '</div>' +
+                                '<div class="proy-v2-member-item-name">' + label + '</div>' +
+                            '</div>';
+                        }).join('');
+                        Array.prototype.forEach.call(list.querySelectorAll('.proy-v2-member-item'), function (item) {
+                            item.addEventListener('click', function () {
+                                var uid = item.getAttribute('data-uid');
+                                var name = item.getAttribute('data-name') || '';
+                                _addMemberToProject(uid, name);
+                            });
+                        });
+                    }
+                })
+                .catch(function () {
+                    if (list) list.innerHTML = '<div class="proy-v2-member-empty">Error al buscar</div>';
+                });
+        }, 220);
+    };
+
+    window.proyDetailMiembroKey = function(ev) {
+        if (ev.key === 'Enter') {
+            var first = document.querySelector('#proyV2MemberList .proy-v2-member-item');
+            if (first) first.click();
+        }
+    };
+
+    function _addMemberToProject(userId, name) {
+        if (!currentProjectId || !userId) return;
+        var csrf = (function(){ var v=document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v?v.pop():''; })();
+        fetch('/app/api/iamet/proyectos/' + currentProjectId + '/miembros/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ user_id: userId })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data && data.success) {
+                _closeMemberPopover();
+                _proyToast(data.already_member ? (name + ' ya es miembro') : (name + ' agregado al equipo'));
+                // Re-fetch del detalle para refrescar avatares + equipo
+                if (typeof window.proyectosVerDetalle === 'function') {
+                    window.proyectosVerDetalle(currentProjectId);
+                }
+            } else {
+                _proyToast((data && data.error) || 'No se pudo agregar el miembro');
+            }
+        })
+        .catch(function () { _proyToast('Error de red al agregar'); });
+    }
 
     // Click handler del chip Oportunidad
     window.proyDetailAbrirOportunidad = function(ev) {
@@ -3903,6 +4087,16 @@
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
         return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // Auto-abrir el detalle si la URL trae ?open_proyecto=N. Esto permite
+    // compartir un link directo al proyecto (botón Compartir).
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(window.proyectosOpenFromUrl, 500);
+        });
+    } else {
+        setTimeout(window.proyectosOpenFromUrl, 500);
     }
 
 })();

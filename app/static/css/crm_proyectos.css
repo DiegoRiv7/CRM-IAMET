@@ -415,10 +415,17 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Modal shell (overrides ligeros sobre .proy-detail-card existente) --- */
+/* --- Modal shell (overrides sobre .widget-card-lg.proy-detail-card existente) --- */
+/* El widget ocupa 95vw con max-width 1600px en crm.css; lo ampliamos para que
+   tenga más respiro lateral en monitores grandes. */
+#widgetProyectoDetalle .widget-card-lg.proy-detail-card {
+  max-width: 1900px !important;
+  width: 97vw !important;
+}
+
 .proy-detail-card {
   background: #f1f5f9;     /* slate-100 — fondo página */
-  padding: 28px 32px 0;    /* el contenido respira sin que el shell pegue */
+  padding: 26px 36px 0;    /* el contenido respira sin que el shell pegue */
 }
 
 @media (max-width: 900px) {
@@ -507,6 +514,102 @@
 }
 .proy-v2-add-member:hover { background: #f8fafc; color: #475569; }
 .proy-v2-add-member:active { transform: scale(0.94); }
+.proy-v2-add-member-wrap { display: inline-flex; align-items: center; }
+
+/* Popover de buscar/agregar miembro */
+.proy-v2-member-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15,23,42,0.14), 0 2px 6px rgba(15,23,42,0.05);
+  z-index: 10300;
+  overflow: hidden;
+  animation: proyV2FadeIn 0.16s ease;
+}
+.proy-v2-member-popover-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafafc;
+}
+.proy-v2-member-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.proy-v2-member-search:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+.proy-v2-member-popover-list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+}
+.proy-v2-member-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1e293b;
+  transition: background 0.12s ease;
+}
+.proy-v2-member-item:hover { background: #f1f5f9; }
+.proy-v2-member-item-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.proy-v2-member-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proy-v2-member-empty {
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+.proy-v2-member-loading { padding: 14px 12px; text-align: center; color: #64748b; font-size: 12.5px; }
+
+/* Toast inline para feedback de Compartir y otras acciones del topbar */
+.proy-v2-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #0f172a;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 12px 32px rgba(15,23,42,0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10500;
+}
+.proy-v2-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 
 .proy-v2-divider {
   width: 1px;
@@ -662,6 +765,42 @@
 .proy-v2-meta-alert.is-warn { color: #d97706; }
 .proy-v2-meta-alert.is-info { color: #2563eb; }
 
+/* Variante --on-dark: la meta vive dentro del card oscuro de Salud.
+   Texto en slate-300/400, separadores opacos, barra de avance con base
+   blanca translúcida y alerta en rojo claro para contraste sobre #0f172a. */
+.proy-v2-meta--on-dark {
+  gap: 12px 16px;
+  font-size: 13px;
+  color: #cbd5e1;        /* slate-300 */
+  margin: 4px 0 14px;
+  padding: 0;
+}
+.proy-v2-meta--on-dark .proy-v2-meta-state { color: #e2e8f0; font-weight: 600; }
+.proy-v2-meta--on-dark .proy-v2-meta-client,
+.proy-v2-meta--on-dark .proy-v2-meta-ubic   { color: #cbd5e1; }
+.proy-v2-meta--on-dark .proy-v2-meta-sep    { color: #475569; }
+
+.proy-v2-meta--on-dark .proy-v2-meta-progress {
+  min-width: 200px;
+  flex: 1 1 200px;
+}
+.proy-v2-meta--on-dark .proy-v2-meta-progress-label {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+.proy-v2-meta--on-dark .proy-v2-meta-progress-bar {
+  background: rgba(255,255,255,0.10);
+}
+.proy-v2-meta--on-dark .proy-v2-meta-progress-fill {
+  background: #60a5fa;   /* blue-400 — visible sobre dark */
+}
+
+.proy-v2-meta--on-dark .proy-v2-meta-alert {
+  color: #fca5a5;        /* red-300 sobre dark */
+}
+.proy-v2-meta--on-dark .proy-v2-meta-alert.is-warn { color: #fcd34d; }
+.proy-v2-meta--on-dark .proy-v2-meta-alert.is-info { color: #93c5fd; }
+
 /* ---------- Bento KPIs ---------- */
 
 .proy-v2-bento {
@@ -692,15 +831,20 @@
   color: #94a3b8;
 }
 
-/* Card oscura — Salud (el corazón del bento) */
+/* Card oscura — Salud (el corazón del bento, ahora también contiene la
+   meta operativa: estado · cliente · avance · alerta) */
 .proy-v2-kpi-salud {
   grid-column: span 5;
   background: #0f172a;
   color: #fff;
   overflow: hidden;
   box-shadow: 0 10px 24px rgba(15,23,42,0.10);
+  padding: 22px 24px 20px;
+  gap: 6px;
+  min-height: 220px;       /* más alto porque ahora carga la meta */
 }
 .proy-v2-kpi-salud .proy-v2-kpi-eyebrow { color: #64748b; }
+.proy-v2-kpi-salud-top { margin-bottom: 8px; }
 
 .proy-v2-kpi-salud-bg {
   position: absolute;
@@ -938,10 +1082,25 @@
 }
 
 .proy-tab-content {
-  padding: 20px 24px;
+  padding: 6px 0 28px;     /* sin padding lateral — los panes son cards full-width */
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Cada pane se presenta como una card limpia (estilo Tailwind/Linear) cuando
+   vivimos dentro del shell v2 — fondo blanco, borde sutil, radio amplio,
+   padding generoso. Los panes que aplican layouts especiales internos
+   pueden override su padding. */
+.proy-detail-card .proy-tab-pane {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 22px 26px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+@media (max-width: 768px) {
+  .proy-detail-card .proy-tab-pane { padding: 14px 14px; border-radius: 14px; }
 }
 
 .proy-tab-content::-webkit-scrollbar {

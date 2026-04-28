@@ -419,9 +419,17 @@ def _proyecto_overview(proyecto):
     ingeniero_dict = _get_user_card(ingeniero_user, rol_label='Ingeniero responsable')
 
     # ── Equipo (dedupe por id) ──
+    # Orden de precedencia: ingeniero responsable (proyecto.usuario), vendedor
+    # (opp.usuario), miembros agregados manualmente vía el botón "+" del topbar.
     equipo_users = []
     seen_ids = set()
-    for u in [proyecto.usuario, opp.usuario if opp else None]:
+    candidatos = [proyecto.usuario, opp.usuario if opp else None]
+    try:
+        candidatos.extend(list(proyecto.miembros.all()))
+    except Exception:
+        # M2M aún no migrado — degradamos silenciosamente.
+        pass
+    for u in candidatos:
         if u and u.id not in seen_ids:
             equipo_users.append(u)
             seen_ids.add(u.id)
@@ -915,6 +923,65 @@ def api_proyecto_detalle(request, proyecto_id):
         d['overview_error'] = str(e)
 
     return JsonResponse({'success': True, 'data': d})
+
+
+# ─── Miembros del proyecto (M2M ProyectoIAMET.miembros) ──────────────────
+# Habilita el botón "+" del topbar del detalle. Cualquier usuario autenticado
+# con acceso al proyecto puede agregar/quitar miembros (consistente con la
+# política existente "no sensible en este CRM").
+
+@login_required
+@require_http_methods(["POST"])
+def api_proyecto_miembro_agregar(request, proyecto_id):
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON invalido'}, status=400)
+
+    user_id = data.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'user_id requerido'}, status=400)
+
+    try:
+        user = User.objects.get(id=int(user_id))
+    except (User.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=404)
+
+    # Si el usuario ya es el `usuario` principal del proyecto, no agregamos
+    # duplicado al M2M (queda implícito como ingeniero responsable).
+    if proyecto.usuario_id == user.id:
+        return JsonResponse({'success': True, 'already_member': True, 'user': _get_user_card(user)})
+
+    proyecto.miembros.add(user)
+    return JsonResponse({'success': True, 'user': _get_user_card(user)})
+
+
+@login_required
+@require_http_methods(["POST", "DELETE"])
+def api_proyecto_miembro_quitar(request, proyecto_id, user_id):
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    try:
+        user = User.objects.get(id=int(user_id))
+    except (User.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=404)
+
+    proyecto.miembros.remove(user)
+    return JsonResponse({'success': True})
 
 
 @login_required

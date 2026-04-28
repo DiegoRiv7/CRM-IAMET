@@ -3882,6 +3882,12 @@ class Prospecto(models.Model):
 
 class ProyectoIAMET(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='proyectos_iamet')
+    miembros = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name='proyectos_iamet_participando',
+        help_text='Usuarios adicionales con acceso al proyecto (ingenieros, técnicos, etc).'
+    )
     oportunidad = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='proyectos_iamet_vinculados')
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True, default='')

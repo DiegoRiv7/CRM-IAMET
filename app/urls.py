@@ -324,6 +324,8 @@ urlpatterns = [
     path('api/iamet/proyectos/<int:proyecto_id>/', views_iamet.api_proyecto_detalle, name='api_iamet_proyecto_detalle'),
     path('api/iamet/proyectos/<int:proyecto_id>/actualizar/', views_iamet.api_proyecto_actualizar, name='api_iamet_proyecto_actualizar'),
     path('api/iamet/proyectos/<int:proyecto_id>/eliminar/', views_iamet.api_proyecto_eliminar, name='api_iamet_proyecto_eliminar'),
+    path('api/iamet/proyectos/<int:proyecto_id>/miembros/', views_iamet.api_proyecto_miembro_agregar, name='api_iamet_proyecto_miembro_agregar'),
+    path('api/iamet/proyectos/<int:proyecto_id>/miembros/<int:user_id>/', views_iamet.api_proyecto_miembro_quitar, name='api_iamet_proyecto_miembro_quitar'),
     # Partidas
     path('api/iamet/proyectos/<int:proyecto_id>/partidas/', views_iamet.api_partidas_lista, name='api_iamet_partidas_lista'),
     path('api/iamet/partidas/crear/', views_iamet.api_partida_crear, name='api_iamet_partida_crear'),
