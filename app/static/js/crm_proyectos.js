@@ -3155,6 +3155,12 @@
             var panel = el('proyTab' + t);
             if (panel) panel.style.display = t.toLowerCase() === tab ? '' : 'none';
         });
+        // Topbar lateral (Filtro/Ordenar/Buscar/+Nuevo) solo aplica al tab "Proyectos".
+        var isPrograma = (tab === 'programa');
+        var topLeft = el('proyTopbarLeft');
+        var topRight = el('proyTopbarRight');
+        if (topLeft) topLeft.style.display = isPrograma ? '' : 'none';
+        if (topRight) topRight.style.display = isPrograma ? '' : 'none';
         // Load data for the active tab
         if (tab === 'dashboard') _loadDashboard();
         else if (tab === 'programa') proyectosCargarLista();
