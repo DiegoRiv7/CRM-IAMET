@@ -1207,24 +1207,30 @@ def api_tareas(request):
             else:
                 # Mostrar TODAS las tareas
                 estado_filter = request.GET.get('estado', '')  # 'pendientes' | 'completadas' | ''
-                # Ver tareas de otro usuario (para el selector del calendario):
-                # ?user_id=X muestra las tareas que X vería (creador / asignado /
-                # participante / observador). Permitido para cualquier autenticado.
+                # Ver tareas de otro(s) usuario(s) (para el selector del calendario):
+                #   ?user_id=X       → tareas donde X es creador/asignado/participante/observador.
+                #   ?user_ids=X,Y,Z  → unión de los calendarios de varios usuarios.
+                # Permitido para cualquier autenticado.
                 user_id_param = request.GET.get('user_id', '').strip()
-
-                if user_id_param:
+                user_ids_param = request.GET.get('user_ids', '').strip()
+                uid_list = []
+                if user_ids_param:
+                    uid_list = [int(x) for x in user_ids_param.split(',') if x.strip().isdigit()]
+                elif user_id_param:
                     try:
-                        uid = int(user_id_param)
-                        ids_part = set(Tarea.objects.filter(participantes__id=uid).values_list('id', flat=True))
-                        ids_obs  = set(Tarea.objects.filter(observadores__id=uid).values_list('id', flat=True))
-                        ids_m2m_u = ids_part | ids_obs
-                        tareas = Tarea.objects.filter(
-                            Q(creado_por_id=uid) | Q(asignado_a_id=uid) | Q(id__in=ids_m2m_u)
-                        ).defer('descripcion').select_related(
-                            'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
-                        ).order_by('-fecha_creacion')
+                        uid_list = [int(user_id_param)]
                     except (ValueError, TypeError):
-                        tareas = Tarea.objects.none()
+                        uid_list = []
+
+                if uid_list:
+                    ids_part = set(Tarea.objects.filter(participantes__id__in=uid_list).values_list('id', flat=True))
+                    ids_obs  = set(Tarea.objects.filter(observadores__id__in=uid_list).values_list('id', flat=True))
+                    ids_m2m_u = ids_part | ids_obs
+                    tareas = Tarea.objects.filter(
+                        Q(creado_por_id__in=uid_list) | Q(asignado_a_id__in=uid_list) | Q(id__in=ids_m2m_u)
+                    ).defer('descripcion').select_related(
+                        'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
+                    ).order_by('-fecha_creacion')
                 elif request.user.is_superuser:
                     tareas = Tarea.objects.defer('descripcion').select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
@@ -2325,19 +2331,26 @@ def actividad_list_create(request):
     """
     try:
         if request.method == 'GET':
-            # Ver calendario de otro usuario: ?user_id=X muestra todas las
-            # actividades donde X es creador o participante (el calendario
-            # completo tal como lo vería X). Permitido para cualquier usuario
-            # autenticado — no sensible en este CRM.
+            # Ver calendario de otro(s) usuario(s):
+            #   ?user_id=X       → actividades donde X es creador o participante.
+            #   ?user_ids=X,Y,Z  → unión de los calendarios de varios usuarios
+            #                      (para multi-select en el selector del calendario).
+            # Permitido para cualquier usuario autenticado — no sensible en este CRM.
             user_id_param = request.GET.get('user_id', '').strip()
-            if user_id_param:
+            user_ids_param = request.GET.get('user_ids', '').strip()
+            uid_list = []
+            if user_ids_param:
+                uid_list = [int(x) for x in user_ids_param.split(',') if x.strip().isdigit()]
+            elif user_id_param:
                 try:
-                    uid = int(user_id_param)
-                    actividades = Actividad.objects.filter(
-                        Q(creado_por_id=uid) | Q(participantes__id=uid)
-                    ).distinct()
+                    uid_list = [int(user_id_param)]
                 except (ValueError, TypeError):
-                    actividades = Actividad.objects.none()
+                    uid_list = []
+
+            if uid_list:
+                actividades = Actividad.objects.filter(
+                    Q(creado_por_id__in=uid_list) | Q(participantes__id__in=uid_list)
+                ).distinct()
             elif is_supervisor(request.user):
                 actividades = Actividad.objects.all()
             else:
@@ -2477,7 +2490,7 @@ def actividad_list_create(request):
 @login_required
 def api_calendario_usuarios_con_eventos(request):
     """
-    Devuelve solo los usuarios que tienen al menos un evento (Actividad o
+    Devuelve los usuarios que tienen al menos un evento (Actividad o
     Tarea con fecha_limite) en el calendario, para alimentar el selector
     del widget de Calendario.
 
@@ -2485,23 +2498,60 @@ def api_calendario_usuarios_con_eventos(request):
       - creador o participante de alguna Actividad
       - creador, asignado, participante u observador de alguna Tarea con fecha_limite
 
-    Acepta ?q= para filtrar por nombre/apellido/username (server-side fallback;
-    el dropdown también filtra en cliente).
+    Filtros:
+      - ?mes=YYYY-MM   filtra por usuarios con eventos en ese mes (siempre
+                       incluye al usuario que hace la petición).
+      - ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD  igual pero con rango explícito.
+      - ?q=...         búsqueda por nombre/apellido/username (ignora el
+                       filtro de mes — para encontrar usuarios fuera del
+                       rango actual).
     """
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
 
     from django.contrib.auth.models import User
+    from datetime import datetime as _dt
+    from django.utils import timezone as _tz
+    import calendar as _cal
+
+    search_query = request.GET.get('q', '').strip()
+    mes_param = request.GET.get('mes', '').strip()
+    desde_param = request.GET.get('desde', '').strip()
+    hasta_param = request.GET.get('hasta', '').strip()
+
+    # Cuando se filtra por nombre, ignoramos el rango de fecha (el usuario
+    # busca fuera del mes actual).
+    aplicar_rango = (not search_query) and (mes_param or (desde_param and hasta_param))
+    rango_desde = rango_hasta = None
+    if aplicar_rango:
+        try:
+            if mes_param:
+                year, month = int(mes_param[:4]), int(mes_param[5:7])
+                last_day = _cal.monthrange(year, month)[1]
+                rango_desde = _tz.make_aware(_dt(year, month, 1, 0, 0, 0))
+                rango_hasta = _tz.make_aware(_dt(year, month, last_day, 23, 59, 59))
+            else:
+                rango_desde = _tz.make_aware(_dt.strptime(desde_param, '%Y-%m-%d').replace(hour=0, minute=0, second=0))
+                rango_hasta = _tz.make_aware(_dt.strptime(hasta_param, '%Y-%m-%d').replace(hour=23, minute=59, second=59))
+        except (ValueError, TypeError):
+            aplicar_rango = False
+
+    # Bases de querysets — restringimos por rango si aplica.
+    actividades_qs = Actividad.objects.all()
+    tareas_cal = Tarea.objects.exclude(fecha_limite__isnull=True)
+    if aplicar_rango:
+        # Una actividad cae en el rango si su intervalo se cruza con [desde, hasta].
+        actividades_qs = actividades_qs.filter(fecha_inicio__lte=rango_hasta, fecha_fin__gte=rango_desde)
+        tareas_cal = tareas_cal.filter(fecha_limite__gte=rango_desde, fecha_limite__lte=rango_hasta)
 
     # IDs con actividades (creador o participante)
-    ids_act_creador = set(Actividad.objects.values_list('creado_por_id', flat=True))
+    ids_act_creador = set(actividades_qs.values_list('creado_por_id', flat=True))
     ids_act_part = set(
-        Actividad.objects.exclude(participantes__isnull=True)
+        actividades_qs.exclude(participantes__isnull=True)
         .values_list('participantes__id', flat=True)
     )
 
     # IDs con tareas (con fecha_limite — solo esas aparecen en el calendario)
-    tareas_cal = Tarea.objects.exclude(fecha_limite__isnull=True)
     ids_t_creador = set(tareas_cal.values_list('creado_por_id', flat=True))
     ids_t_asig = set(tareas_cal.exclude(asignado_a__isnull=True).values_list('asignado_a_id', flat=True))
     ids_t_part = set(tareas_cal.exclude(participantes__isnull=True).values_list('participantes__id', flat=True))
@@ -2510,9 +2560,13 @@ def api_calendario_usuarios_con_eventos(request):
     user_ids = (ids_act_creador | ids_act_part | ids_t_creador | ids_t_asig | ids_t_part | ids_t_obs)
     user_ids.discard(None)
 
+    # Cuando se filtra por mes, siempre incluimos al usuario actual (aunque
+    # no tenga eventos ese mes — para que vea su propio calendario vacío).
+    if aplicar_rango and request.user.id:
+        user_ids.add(request.user.id)
+
     qs = User.objects.filter(id__in=user_ids)
 
-    search_query = request.GET.get('q', '').strip()
     if search_query:
         qs = qs.filter(
             Q(first_name__icontains=search_query) |

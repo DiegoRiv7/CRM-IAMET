@@ -413,6 +413,7 @@
                     },
                     datesSet: function () {
                         calUpdateNavTitle();
+                        if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
                     },
                     eventContent: function (arg) {
                         var ev = arg.event;
@@ -710,6 +711,12 @@
             return;
         }
         _calWeekStart = weekStart;
+        // Mantener _calCurrentDay alineado con la semana visible para que
+        // _calRefreshUsersForMes lea el mes correcto.
+        if (weekStart && (!_calCurrentDay || _calCurrentDay.getMonth() !== weekStart.getMonth() || _calCurrentDay.getFullYear() !== weekStart.getFullYear())) {
+            _calCurrentDay = new Date(weekStart);
+        }
+        if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
         calRenderWeekHeader(weekStart);
 
         var CAL_HOUR_H = 64;
@@ -763,14 +770,7 @@
         var allEvts = window._calAllEvents || _globalEvents;
         var sel = document.getElementById('calUserFilter');
         var filterVal = sel ? sel.value : 'all';
-        var filtered = filterVal === 'all' ? allEvts : allEvts.filter(function(ev) {
-            var parts = (ev.extendedProps||{}).participants || [];
-            var uid = parseInt(filterVal);
-            var isP = parts.some(function(p){return p.id===uid||p.value===uid;});
-            var cr = (ev.extendedProps||{}).creado_por;
-            var isC = cr ? (typeof cr==='object'?cr.id===uid:parseInt(cr)===uid) : false;
-            return isP || isC;
-        });
+        var filtered = _calFilterEventsForSelection(allEvts, filterVal);
 
         // Render each day column
         days.forEach(function(day, dayIdx) {
@@ -897,6 +897,7 @@
             requestAnimationFrame(function(){ calRenderDayView(date); });
             return;
         }
+        if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
 
         var pad = function(n){return String(n).padStart(2,'0');};
         var dateStr = date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate());
@@ -907,14 +908,7 @@
         var allEvts = window._calAllEvents || _globalEvents;
         var sel = document.getElementById('calUserFilter');
         var filterVal = sel ? sel.value : 'all';
-        var filtered = filterVal === 'all' ? allEvts : allEvts.filter(function(ev) {
-            var parts = (ev.extendedProps||{}).participants || [];
-            var uid = parseInt(filterVal);
-            var isP = parts.some(function(p){return p.id===uid||p.value===uid;});
-            var cr = (ev.extendedProps||{}).creado_por;
-            var isC = cr ? (typeof cr==='object' ? cr.id===uid : parseInt(cr)===uid) : false;
-            return isP || isC;
-        });
+        var filtered = _calFilterEventsForSelection(allEvts, filterVal);
 
         var dayEvts = filtered.filter(function(ev) {
             return ev.start && ev.start.substring(0,10) === dateStr;
@@ -1341,14 +1335,7 @@
         var allEvts = window._calAllEvents || _globalEvents;
         var sel = document.getElementById('calUserFilter');
         var filterVal = sel ? sel.value : 'all';
-        var filtered = filterVal==='all' ? allEvts : allEvts.filter(function(ev){
-            var parts=(ev.extendedProps||{}).participants||[];
-            var uid=parseInt(filterVal);
-            var isP=parts.some(function(p){return p.id===uid||p.value===uid;});
-            var cr=(ev.extendedProps||{}).creado_por;
-            var isC=cr?(typeof cr==='object'?cr.id===uid:parseInt(cr)===uid):false;
-            return isP||isC;
-        });
+        var filtered = _calFilterEventsForSelection(allEvts, filterVal);
 
         // ── Efectividad: mes o día según vista ──
         var efecEvts, efecLabel;
@@ -1486,9 +1473,15 @@
     // userId opcional: cuando se pasa, refetchea el calendario como lo vería
     // ese usuario (actividades + tareas donde es creador/participante/asignado).
     // Permite al selector mostrar el calendario completo de otra persona.
-    window.calGlobalRefetch = function (userId) {
+    window.calGlobalRefetch = function (userVal) {
+        // userVal puede ser 'all', un id ('12') o un CSV ('12,34,56').
         var csrf = (typeof getCsrf==='function')?getCsrf():(function(){ var v=document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v?v.pop():''; })();
-        var qs = (userId && userId !== 'all') ? ('?user_id=' + encodeURIComponent(userId)) : '';
+        var qs = '';
+        if (userVal && userVal !== 'all') {
+            qs = String(userVal).indexOf(',') >= 0
+                ? ('?user_ids=' + encodeURIComponent(userVal))
+                : ('?user_id=' + encodeURIComponent(userVal));
+        }
         var pActividades = fetch('/app/api/actividades/' + qs,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
         var pTareas = fetch('/app/api/tareas/' + qs).then(function(r){return r.json();});
 
@@ -1523,10 +1516,10 @@
             });
             window._calAllEvents = _globalEvents.slice();
             var sel=document.getElementById('calUserFilter');
-            // Si la petición ya se hizo con user_id (vista de otro usuario), el
-            // servidor ya devolvió el conjunto correcto; pasamos 'all' para no
-            // perder tareas donde el usuario sólo es participante/observador.
-            var filterVal = userId ? 'all' : (sel ? sel.value : 'all');
+            // Si la petición ya se hizo con user_id/user_ids (vista de otro usuario o
+            // multi-user), el servidor ya devolvió el conjunto correcto; pasamos
+            // 'all' para no perder tareas donde el usuario sólo es participante/observador.
+            var filterVal = (userVal && userVal !== 'all') ? 'all' : (sel ? sel.value : 'all');
             calApplyFilter(filterVal);
             calUpdateSidePanel();
             if (_calViewMode==='day') { calRenderDayView(_calCurrentDay); }
@@ -1535,31 +1528,63 @@
         calLoadUserFilter();
     };
 
-    /* ─── USER FILTER (custom dropdown) ─── */
+    /* ─── USER FILTER (custom dropdown, multi-select) ─── */
     var _calUsersLoaded = false;
     var _calUsers = [];
     var _calUserPickerIsOpen = false;
+    var _calUsersFetchKey = null;     // 'mes:2026-04' o 'q:juan' — caché de la última fetch
+    var _calCurrentSearchText = '';   // texto del input de búsqueda
+    var _calSearchDebounceTimer = null;
+    var _calInitialSelectionDone = false;
 
-    function calUserPickerSetValue(val, label) {
+    function _calCurrentMesParam() {
+        var d = _calCurrentDay || new Date();
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    }
+
+    function _calGetSelection() {
         var hidden = document.getElementById('calUserFilter');
+        var v = hidden ? hidden.value : 'all';
+        if (!v || v === 'all') return [];
+        return v.split(',').filter(function(s){ return s !== ''; });
+    }
+
+    function _calSetSelection(arr) {
+        var hidden = document.getElementById('calUserFilter');
+        var val = (arr && arr.length) ? arr.join(',') : 'all';
+        if (hidden) hidden.value = val;
+        _calUpdatePickerLabel(arr);
+        return val;
+    }
+
+    function _calUpdatePickerLabel(arr) {
         var lbl = document.getElementById('calUserPickerLabel');
         var btn = document.getElementById('calUserPickerBtn');
-        if (hidden) hidden.value = val;
-        if (lbl) lbl.textContent = label || 'Todos';
-        if (btn) {
-            if (val && val !== 'all') btn.classList.add('has-value');
-            else btn.classList.remove('has-value');
+        if (!lbl || !btn) return;
+        if (!arr || !arr.length) {
+            lbl.textContent = 'Todos';
+            btn.classList.remove('has-value');
+            return;
         }
+        btn.classList.add('has-value');
+        var firstId = arr[0];
+        var firstUser = _calUsers.find(function(u){ return String(u.id) === String(firstId); });
+        var firstName = firstUser ? (firstUser.nombre.split(' ')[0] || firstUser.nombre) : ('#'+firstId);
+        lbl.textContent = (arr.length === 1) ? firstName : (firstName + ' + ' + (arr.length - 1));
     }
 
     function calUserPickerRenderList(filterText) {
         var list = document.getElementById('calUserPickerList');
         if (!list) return;
-        var hidden = document.getElementById('calUserFilter');
-        var currentVal = hidden ? hidden.value : 'all';
+        var selection = _calGetSelection();
+        var selSet = {};
+        selection.forEach(function(id){ selSet[String(id)] = 1; });
         var q = (filterText||'').trim().toLowerCase();
+
         var items = [];
         items.push({ id:'all', nombre:'Todos los usuarios', iniciales:'·', avatar_url:null, isAll:true });
+        // Cuando la lista viene del servidor con ?q=, el server ya filtró;
+        // igual aplicamos filtro client-side por si el usuario escribe rápido.
         var filtered = _calUsers.filter(function(u){
             if (!q) return true;
             return (u.nombre||'').toLowerCase().indexOf(q) !== -1
@@ -1572,8 +1597,9 @@
             return;
         }
 
+        var allActive = selection.length === 0;
         var html = items.map(function(u){
-            var isActive = String(u.id) === String(currentVal);
+            var isActive = u.isAll ? allActive : !!selSet[String(u.id)];
             var av;
             if (u.isAll) {
                 av = '<div class="cal-userpick-avatar" style="background:#1D1D1F;">'
@@ -1595,10 +1621,18 @@
         Array.prototype.forEach.call(list.querySelectorAll('.cal-userpick-item'), function(el){
             el.addEventListener('click', function(){
                 var uid = el.getAttribute('data-uid');
-                var name = el.getAttribute('data-name') || 'Todos';
-                calUserPickerSetValue(uid, uid==='all' ? 'Todos' : name);
-                calUserPickerClose();
-                calFilterByUser(uid);
+                var sel = _calGetSelection();
+                if (uid === 'all') {
+                    sel = [];
+                } else {
+                    var idx = sel.indexOf(uid);
+                    if (idx >= 0) sel.splice(idx, 1);
+                    else sel.push(uid);
+                }
+                var val = _calSetSelection(sel);
+                calUserPickerRenderList(_calCurrentSearchText);
+                calFilterByUser(val);
+                // No cerramos: multi-select permite seguir clickeando.
             });
         });
     }
@@ -1619,7 +1653,11 @@
         btn.setAttribute('aria-expanded', 'true');
         _calUserPickerIsOpen = true;
         if (search) { search.value=''; }
-        calUserPickerRenderList('');
+        _calCurrentSearchText = '';
+        // Asegurar que la lista refleje el mes actual (puede haber cambiado).
+        calLoadUserFilter().then(function(){
+            calUserPickerRenderList('');
+        });
         setTimeout(function(){
             document.addEventListener('mousedown', _calUserPickerOutside, true);
             document.addEventListener('keydown', _calUserPickerEsc, true);
@@ -1647,32 +1685,74 @@
     }
 
     window.calUserPickerFilter = function (val) {
-        calUserPickerRenderList(val);
+        _calCurrentSearchText = val || '';
+        if (_calSearchDebounceTimer) clearTimeout(_calSearchDebounceTimer);
+        var trimmed = _calCurrentSearchText.trim();
+        if (!trimmed) {
+            // Búsqueda limpiada: volver a la lista filtrada por mes.
+            _calUsersFetchKey = null;
+            calLoadUserFilter().then(function(){ calUserPickerRenderList(''); });
+            return;
+        }
+        _calSearchDebounceTimer = setTimeout(function(){
+            var key = 'q:' + trimmed.toLowerCase();
+            if (_calUsersFetchKey === key) {
+                calUserPickerRenderList(_calCurrentSearchText);
+                return;
+            }
+            fetch('/app/api/calendario/usuarios-con-eventos/?q=' + encodeURIComponent(trimmed))
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    _calUsers = data.usuarios || [];
+                    _calUsersFetchKey = key;
+                    if (_calUserPickerIsOpen) calUserPickerRenderList(_calCurrentSearchText);
+                }).catch(function(){});
+        }, 220);
     };
 
     window.calUserPickerKey = function (ev) {
         if (ev.key === 'Enter') {
-            var first = document.querySelector('#calUserPickerList .cal-userpick-item');
-            if (first) first.click();
+            // Enter: agrega el primer match a la selección (ignora "Todos").
+            var item = document.querySelector('#calUserPickerList .cal-userpick-item:not([data-uid="all"])');
+            if (item) item.click();
         }
     };
 
     function calLoadUserFilter() {
-        if (_calUsersLoaded) return;
-        fetch('/app/api/calendario/usuarios-con-eventos/').then(function(r){return r.json();}).then(function(data){
-            var users = data.usuarios || [];
-            _calUsers = users;
-            _calUsersLoaded = true;
-            var currentUserId = "{{ request.user.id }}";
-            var me = users.find(function(u){ return String(u.id) === String(currentUserId); });
-            if (me) {
-                calUserPickerSetValue(String(me.id), me.nombre);
-                calApplyFilter(String(me.id));
-            } else {
-                calUserPickerSetValue('all', 'Todos');
-            }
-        }).catch(function(){});
+        var mes = _calCurrentMesParam();
+        var key = 'mes:' + mes;
+        if (_calUsersFetchKey === key && _calUsersLoaded) {
+            return Promise.resolve();
+        }
+        return fetch('/app/api/calendario/usuarios-con-eventos/?mes=' + encodeURIComponent(mes))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                _calUsers = data.usuarios || [];
+                _calUsersLoaded = true;
+                _calUsersFetchKey = key;
+                if (!_calInitialSelectionDone) {
+                    _calInitialSelectionDone = true;
+                    var currentUserId = "{{ request.user.id }}";
+                    var me = _calUsers.find(function(u){ return String(u.id) === String(currentUserId); });
+                    if (me) {
+                        var val = _calSetSelection([String(me.id)]);
+                        calApplyFilter(val);
+                    } else {
+                        _calSetSelection([]);
+                    }
+                } else {
+                    // Mes cambió: re-aplicar etiqueta para mantener nombres en sync.
+                    _calUpdatePickerLabel(_calGetSelection());
+                }
+            }).catch(function(){});
     }
+    // Refrescar la lista de usuarios cuando cambia el mes visible.
+    window._calRefreshUsersForMes = function() {
+        if (_calCurrentSearchText && _calCurrentSearchText.trim()) return; // no pisar búsqueda activa
+        calLoadUserFilter().then(function(){
+            if (_calUserPickerIsOpen) calUserPickerRenderList(_calCurrentSearchText);
+        });
+    };
 
     window.calFilterByUser = function (val) {
         // Refetch con user_id: el servidor devuelve el calendario completo
@@ -1681,20 +1761,28 @@
         calGlobalRefetch(val);
     };
 
+    // filterVal puede ser 'all' (vacío) o un CSV con uno o varios IDs ("12" / "12,34").
+    // Devuelve el subconjunto de eventos donde el creador o ALGÚN participante
+    // está en la selección.
+    function _calFilterEventsForSelection(allEvts, filterVal) {
+        if (!filterVal || filterVal === 'all') return allEvts;
+        var ids = String(filterVal).split(',').map(function(s){return parseInt(s,10);}).filter(function(n){return !isNaN(n);});
+        if (!ids.length) return allEvts;
+        var idSet = {};
+        ids.forEach(function(id){ idSet[id] = 1; });
+        return allEvts.filter(function(ev){
+            var parts = (ev.extendedProps||{}).participants || [];
+            var isP = parts.some(function(p){ var pid = p.id || p.value; return pid != null && idSet[parseInt(pid,10)]; });
+            var cr = (ev.extendedProps||{}).creado_por;
+            var crId = cr ? (typeof cr === 'object' ? cr.id : parseInt(cr,10)) : null;
+            var isC = crId != null && idSet[parseInt(crId,10)];
+            return isP || isC;
+        });
+    }
+
     function calApplyFilter(filterVal) {
-        var events=window._calAllEvents||_globalEvents;
-        var filtered;
-        if (filterVal==='all') { filtered=events; }
-        else {
-            var uid=parseInt(filterVal);
-            filtered=events.filter(function(ev){
-                var parts=(ev.extendedProps||{}).participants||[];
-                var isP=parts.some(function(p){return p.id===uid||p.value===uid;});
-                var cr=(ev.extendedProps||{}).creado_por;
-                var isC=cr?(typeof cr==='object'?cr.id===uid:parseInt(cr)===uid):false;
-                return isP||isC;
-            });
-        }
+        var events = window._calAllEvents || _globalEvents;
+        var filtered = _calFilterEventsForSelection(events, filterVal);
         if (_globalCalendar) { _globalCalendar.removeAllEventSources(); _globalCalendar.addEventSource(filtered); }
     }
 
