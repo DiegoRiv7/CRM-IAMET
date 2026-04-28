@@ -2475,6 +2475,85 @@ def actividad_list_create(request):
 
 
 @login_required
+def api_calendario_usuarios_con_eventos(request):
+    """
+    Devuelve solo los usuarios que tienen al menos un evento (Actividad o
+    Tarea con fecha_limite) en el calendario, para alimentar el selector
+    del widget de Calendario.
+
+    Un usuario "tiene calendario" si es:
+      - creador o participante de alguna Actividad
+      - creador, asignado, participante u observador de alguna Tarea con fecha_limite
+
+    Acepta ?q= para filtrar por nombre/apellido/username (server-side fallback;
+    el dropdown también filtra en cliente).
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
+
+    from django.contrib.auth.models import User
+
+    # IDs con actividades (creador o participante)
+    ids_act_creador = set(Actividad.objects.values_list('creado_por_id', flat=True))
+    ids_act_part = set(
+        Actividad.objects.exclude(participantes__isnull=True)
+        .values_list('participantes__id', flat=True)
+    )
+
+    # IDs con tareas (con fecha_limite — solo esas aparecen en el calendario)
+    tareas_cal = Tarea.objects.exclude(fecha_limite__isnull=True)
+    ids_t_creador = set(tareas_cal.values_list('creado_por_id', flat=True))
+    ids_t_asig = set(tareas_cal.exclude(asignado_a__isnull=True).values_list('asignado_a_id', flat=True))
+    ids_t_part = set(tareas_cal.exclude(participantes__isnull=True).values_list('participantes__id', flat=True))
+    ids_t_obs = set(tareas_cal.exclude(observadores__isnull=True).values_list('observadores__id', flat=True))
+
+    user_ids = (ids_act_creador | ids_act_part | ids_t_creador | ids_t_asig | ids_t_part | ids_t_obs)
+    user_ids.discard(None)
+
+    qs = User.objects.filter(id__in=user_ids)
+
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        qs = qs.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(username__icontains=search_query)
+        )
+
+    qs = qs.order_by('first_name', 'last_name', 'username')
+
+    usuarios_data = []
+    for u in qs:
+        if u.first_name and u.last_name:
+            iniciales = f"{u.first_name[0]}{u.last_name[0]}".upper()
+            nombre_completo = f"{u.first_name} {u.last_name}"
+        elif u.first_name:
+            iniciales = u.first_name[0].upper()
+            nombre_completo = u.first_name
+        else:
+            iniciales = (u.username[:1] or '?').upper()
+            nombre_completo = u.username
+
+        avatar_url = None
+        try:
+            if hasattr(u, 'userprofile'):
+                avatar_url = u.userprofile.get_avatar_url()
+        except Exception:
+            avatar_url = None
+
+        usuarios_data.append({
+            'id': u.id,
+            'nombre': nombre_completo,
+            'username': u.username,
+            'iniciales': iniciales,
+            'email': u.email or '',
+            'avatar_url': avatar_url,
+        })
+
+    return JsonResponse({'success': True, 'usuarios': usuarios_data})
+
+
+@login_required
 @csrf_exempt
 def actividad_detail(request, pk):
     """

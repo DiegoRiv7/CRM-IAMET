@@ -180,6 +180,7 @@ urlpatterns = [
     path('api/programacion/disponibilidad/', views.api_programacion_disponibilidad, name='api_programacion_disponibilidad'),
     path('api/actividades/', views.actividad_list_create, name='actividad_list_create'),
     path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),
+    path('api/calendario/usuarios-con-eventos/', views.api_calendario_usuarios_con_eventos, name='api_calendario_usuarios_con_eventos'),
     path('api/users/', views.user_list_api, name='user_list_api'),
     path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
 

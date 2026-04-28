@@ -46,6 +46,27 @@
             #calPanelOverview { display:flex; flex-direction:column; gap:1rem; padding:1.25rem; }
             #calPanelDetail { display:none; flex-direction:column; padding:1.25rem; gap:0.9rem; min-height:100%; }
             .cal-section-label { font-size:0.67rem; font-weight:700; color:#86868B; text-transform:uppercase; letter-spacing:0.06em; }
+            /* ─── User picker (custom dropdown) ─── */
+            .cal-userpick-wrap { position:relative; }
+            .cal-userpick-btn { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; max-width:220px; background:#fff; border:1px solid rgba(0,0,0,0.11); border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; color:#1D1D1F; cursor:pointer; transition:background 0.12s, border-color 0.12s, box-shadow 0.12s; }
+            .cal-userpick-btn:hover { background:#f5f5f7; }
+            .cal-userpick-btn.is-open { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+            .cal-userpick-btn.has-value { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+            .cal-userpick-menu { position:absolute; top:calc(100% + 6px); left:0; min-width:240px; max-width:300px; background:#fff; border:1px solid rgba(0,0,0,0.09); border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06); z-index:10200; overflow:hidden; animation:calUpFade 0.14s ease; }
+            @keyframes calUpFade { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+            .cal-userpick-search { display:flex; align-items:center; gap:7px; padding:9px 11px; border-bottom:1px solid rgba(0,0,0,0.06); background:#fafafa; }
+            .cal-userpick-search input { flex:1; border:none; outline:none; background:transparent; font-family:inherit; font-size:13px; color:#1D1D1F; padding:0; }
+            .cal-userpick-search input::placeholder { color:#AEAEB2; }
+            .cal-userpick-list { max-height:280px; overflow-y:auto; padding:5px; }
+            .cal-userpick-item { display:flex; align-items:center; gap:9px; height:36px; padding:0 9px; border-radius:7px; cursor:pointer; font-size:13px; font-weight:500; color:#1D1D1F; transition:background 0.1s; }
+            .cal-userpick-item:hover { background:#f5f5f7; }
+            .cal-userpick-item.is-active { background:#eff6ff; color:#1d4ed8; }
+            .cal-userpick-item .cal-userpick-avatar { width:24px; height:24px; border-radius:50%; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; background:#0052D4; color:#fff; font-size:10px; font-weight:700; overflow:hidden; }
+            .cal-userpick-item .cal-userpick-avatar img { width:100%; height:100%; object-fit:cover; }
+            .cal-userpick-item .cal-userpick-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .cal-userpick-item .cal-userpick-check { width:14px; height:14px; flex-shrink:0; opacity:0; color:#1d4ed8; }
+            .cal-userpick-item.is-active .cal-userpick-check { opacity:1; }
+            .cal-userpick-empty { padding:14px 12px; text-align:center; color:#86868B; font-size:12px; }
         </style>
 
         <!-- ── Outer header ── -->
@@ -58,9 +79,20 @@
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;">
                     <span style="font-size:0.72rem;font-weight:600;color:#86868B;">Ver:</span>
-                    <select id="calUserFilter" onchange="calFilterByUser(this.value)" style="padding:5px 10px;border:1.5px solid rgba(0,0,0,0.1);border-radius:9px;font-size:0.82rem;font-weight:600;color:#1D1D1F;outline:none;cursor:pointer;background:rgba(255,255,255,0.7);font-family:inherit;min-width:140px;">
-                        <option value="all">Todos</option>
-                    </select>
+                    <div id="calUserPickerWrap" class="cal-userpick-wrap">
+                        <button type="button" id="calUserPickerBtn" class="cal-userpick-btn" onclick="calUserPickerToggle(event)" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="calUserPickerLabel" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Todos</span>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;opacity:0.6;"><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        <div id="calUserPickerMenu" class="cal-userpick-menu" role="listbox" style="display:none;">
+                            <div class="cal-userpick-search">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                                <input type="text" id="calUserPickerSearch" placeholder="Buscar usuario…" autocomplete="off" oninput="calUserPickerFilter(this.value)" onkeydown="calUserPickerKey(event)">
+                            </div>
+                            <div id="calUserPickerList" class="cal-userpick-list"></div>
+                        </div>
+                        <input type="hidden" id="calUserFilter" value="all">
+                    </div>
                 </div>
             </div>
             <div style="display:flex;gap:1rem;align-items:center;">
@@ -1503,24 +1535,142 @@
         calLoadUserFilter();
     };
 
-    /* ─── USER FILTER ─── */
+    /* ─── USER FILTER (custom dropdown) ─── */
     var _calUsersLoaded = false;
+    var _calUsers = [];
+    var _calUserPickerIsOpen = false;
+
+    function calUserPickerSetValue(val, label) {
+        var hidden = document.getElementById('calUserFilter');
+        var lbl = document.getElementById('calUserPickerLabel');
+        var btn = document.getElementById('calUserPickerBtn');
+        if (hidden) hidden.value = val;
+        if (lbl) lbl.textContent = label || 'Todos';
+        if (btn) {
+            if (val && val !== 'all') btn.classList.add('has-value');
+            else btn.classList.remove('has-value');
+        }
+    }
+
+    function calUserPickerRenderList(filterText) {
+        var list = document.getElementById('calUserPickerList');
+        if (!list) return;
+        var hidden = document.getElementById('calUserFilter');
+        var currentVal = hidden ? hidden.value : 'all';
+        var q = (filterText||'').trim().toLowerCase();
+        var items = [];
+        items.push({ id:'all', nombre:'Todos los usuarios', iniciales:'·', avatar_url:null, isAll:true });
+        var filtered = _calUsers.filter(function(u){
+            if (!q) return true;
+            return (u.nombre||'').toLowerCase().indexOf(q) !== -1
+                || (u.username||'').toLowerCase().indexOf(q) !== -1;
+        });
+        items = items.concat(filtered);
+
+        if (items.length === 1 && q) {
+            list.innerHTML = '<div class="cal-userpick-empty">Sin resultados</div>';
+            return;
+        }
+
+        var html = items.map(function(u){
+            var isActive = String(u.id) === String(currentVal);
+            var av;
+            if (u.isAll) {
+                av = '<div class="cal-userpick-avatar" style="background:#1D1D1F;">'
+                   + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="8" r="3"/><path d="M3 21v-1a6 6 0 0 1 12 0v1"/><circle cx="17" cy="9" r="2"/><path d="M21 21v-.5a4 4 0 0 0-4-4"/></svg>'
+                   + '</div>';
+            } else if (u.avatar_url) {
+                av = '<div class="cal-userpick-avatar"><img src="'+woEscape(u.avatar_url)+'" alt=""></div>';
+            } else {
+                av = '<div class="cal-userpick-avatar">'+woEscape(u.iniciales||'?')+'</div>';
+            }
+            return '<div class="cal-userpick-item'+(isActive?' is-active':'')+'" data-uid="'+woEscape(String(u.id))+'" data-name="'+woEscape(u.nombre||'')+'">'
+                + av
+                + '<span class="cal-userpick-name">'+woEscape(u.nombre||'')+'</span>'
+                + '<svg class="cal-userpick-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>'
+                + '</div>';
+        }).join('');
+        list.innerHTML = html;
+
+        Array.prototype.forEach.call(list.querySelectorAll('.cal-userpick-item'), function(el){
+            el.addEventListener('click', function(){
+                var uid = el.getAttribute('data-uid');
+                var name = el.getAttribute('data-name') || 'Todos';
+                calUserPickerSetValue(uid, uid==='all' ? 'Todos' : name);
+                calUserPickerClose();
+                calFilterByUser(uid);
+            });
+        });
+    }
+
+    window.calUserPickerToggle = function (ev) {
+        if (ev) { ev.stopPropagation(); }
+        if (_calUserPickerIsOpen) { calUserPickerClose(); }
+        else { calUserPickerShow(); }
+    };
+
+    function calUserPickerShow() {
+        var menu = document.getElementById('calUserPickerMenu');
+        var btn = document.getElementById('calUserPickerBtn');
+        var search = document.getElementById('calUserPickerSearch');
+        if (!menu || !btn) return;
+        menu.style.display = 'block';
+        btn.classList.add('is-open');
+        btn.setAttribute('aria-expanded', 'true');
+        _calUserPickerIsOpen = true;
+        if (search) { search.value=''; }
+        calUserPickerRenderList('');
+        setTimeout(function(){
+            document.addEventListener('mousedown', _calUserPickerOutside, true);
+            document.addEventListener('keydown', _calUserPickerEsc, true);
+            if (search) search.focus();
+        }, 10);
+    }
+
+    function calUserPickerClose() {
+        var menu = document.getElementById('calUserPickerMenu');
+        var btn = document.getElementById('calUserPickerBtn');
+        if (!menu) return;
+        menu.style.display = 'none';
+        if (btn) { btn.classList.remove('is-open'); btn.setAttribute('aria-expanded','false'); }
+        _calUserPickerIsOpen = false;
+        document.removeEventListener('mousedown', _calUserPickerOutside, true);
+        document.removeEventListener('keydown', _calUserPickerEsc, true);
+    }
+
+    function _calUserPickerOutside(ev) {
+        var wrap = document.getElementById('calUserPickerWrap');
+        if (wrap && !wrap.contains(ev.target)) { calUserPickerClose(); }
+    }
+    function _calUserPickerEsc(ev) {
+        if (ev.key === 'Escape') { calUserPickerClose(); }
+    }
+
+    window.calUserPickerFilter = function (val) {
+        calUserPickerRenderList(val);
+    };
+
+    window.calUserPickerKey = function (ev) {
+        if (ev.key === 'Enter') {
+            var first = document.querySelector('#calUserPickerList .cal-userpick-item');
+            if (first) first.click();
+        }
+    };
 
     function calLoadUserFilter() {
         if (_calUsersLoaded) return;
-        fetch('/app/api/buscar-usuarios/?q=').then(function(r){return r.json();}).then(function(data){
-            var users=data.usuarios||[];
-            var sel=document.getElementById('calUserFilter');
-            if (!sel) return;
-            users.forEach(function(u){
-                var opt=document.createElement('option');
-                opt.value=String(u.id);
-                opt.textContent=u.nombre;
-                sel.appendChild(opt);
-            });
-            var currentUserId="{{ request.user.id }}";
-            if (currentUserId) { sel.value=currentUserId; calApplyFilter(currentUserId); }
-            _calUsersLoaded=true;
+        fetch('/app/api/calendario/usuarios-con-eventos/').then(function(r){return r.json();}).then(function(data){
+            var users = data.usuarios || [];
+            _calUsers = users;
+            _calUsersLoaded = true;
+            var currentUserId = "{{ request.user.id }}";
+            var me = users.find(function(u){ return String(u.id) === String(currentUserId); });
+            if (me) {
+                calUserPickerSetValue(String(me.id), me.nombre);
+                calApplyFilter(String(me.id));
+            } else {
+                calUserPickerSetValue('all', 'Todos');
+            }
         }).catch(function(){});
     }
 
