@@ -3654,7 +3654,11 @@
             (data.archivos || []).forEach(function(a) {
                 var icon = _driveFileIcon(a.extension || a.tipo_archivo);
                 var size = a.tamaño ? _formatFileSize(a.tamaño) : '';
-                var streamUrl = '/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/';
+                // El backend manda la URL correcta según la tabla de origen
+                // (ArchivoOportunidad → /oportunidad/.../drive/archivo/...,
+                //  ArchivoProyecto    → /proyecto/.../archivo/...).
+                // Reconstruirla aquí 404eaba los archivos de proyecto.
+                var streamUrl = a.url || ('/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/');
                 html += '<div class="proy-drive-item" onclick="window.open(\'' + streamUrl + '\',\'_blank\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
                     icon +
                     '<div style="flex:1;min-width:0;">' +
