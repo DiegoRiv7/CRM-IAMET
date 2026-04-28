@@ -813,38 +813,38 @@
 
 .proy-v2-kpi {
   position: relative;
-  border-radius: 18px;
-  padding: 22px 22px 20px;
+  border-radius: 16px;
+  padding: 16px 18px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 170px;
+  min-height: 130px;
   animation: proyV2FadeIn 0.35s ease backwards;
 }
 
 .proy-v2-kpi-eyebrow {
-  margin: 0 0 6px;
-  font-size: 11px;
+  margin: 0 0 4px;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #94a3b8;
 }
 
-/* Card oscura — Salud (el corazón del bento, ahora también contiene la
-   meta operativa: estado · cliente · avance · alerta) */
+/* Card oscura — Salud (el corazón del bento, también contiene la meta
+   operativa: estado · cliente · avance · alerta) */
 .proy-v2-kpi-salud {
   grid-column: span 5;
   background: #0f172a;
   color: #fff;
   overflow: hidden;
-  box-shadow: 0 10px 24px rgba(15,23,42,0.10);
-  padding: 22px 24px 20px;
-  gap: 6px;
-  min-height: 220px;       /* más alto porque ahora carga la meta */
+  box-shadow: 0 8px 20px rgba(15,23,42,0.10);
+  padding: 16px 20px 14px;
+  gap: 4px;
+  min-height: 170px;
 }
 .proy-v2-kpi-salud .proy-v2-kpi-eyebrow { color: #64748b; }
-.proy-v2-kpi-salud-top { margin-bottom: 8px; }
+.proy-v2-kpi-salud-top { margin-bottom: 4px; }
 
 .proy-v2-kpi-salud-bg {
   position: absolute;
@@ -860,11 +860,11 @@
 .proy-v2-kpi-salud[data-rag="rojo"]  .proy-v2-kpi-salud-bg { color: #ef4444; }
 
 .proy-v2-kpi-salud-headline {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.01em;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   color: #fff;
 }
 .proy-v2-kpi-salud-headline .accent-rojo  { color: #fca5a5; }
@@ -929,14 +929,14 @@
 }
 .proy-v2-kpi-fin-big,
 .proy-v2-kpi-crono-big {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #0f172a;
 }
 .proy-v2-kpi-fin-small,
 .proy-v2-kpi-crono-small {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: #94a3b8;
 }
@@ -947,7 +947,7 @@
   background: #f1f5f9;
   border-radius: 999px;
   overflow: hidden;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 .proy-v2-kpi-progress-fill {
   height: 100%;
@@ -961,8 +961,8 @@
 .proy-v2-kpi-progress-fill--red    { background: #ef4444; }
 
 .proy-v2-kpi-fin-meta {
-  margin-top: 10px;
-  font-size: 12.5px;
+  margin-top: 8px;
+  font-size: 12px;
   font-weight: 600;
   color: #64748b;
 }
@@ -971,11 +971,11 @@
 .proy-v2-kpi-fin-meta.is-good   { color: #047857; }
 
 .proy-v2-kpi-crono-row {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
 }
 .proy-v2-kpi-crono-delta { color: #64748b; }

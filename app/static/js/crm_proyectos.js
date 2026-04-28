@@ -361,30 +361,40 @@
             }
         }
 
-        // PRESUPUESTO
+        // PRESUPUESTO — gastado (izq) / contratado (der). La barra mide
+        // qué tanto del presupuesto se ha consumido (verde/ámbar/rojo
+        // según se aproxime al límite). Meta = disponible.
         var amt   = el('proyKpiFinAmounts');
         var fbar  = el('proyKpiFinBarFill');
         var fmeta = el('proyKpiFinMeta');
         if (amt && fbar && fmeta) {
             if (ov && ov.financiero) {
                 var f = ov.financiero;
+                var gastado = Number(f.gastado || 0);
+                var presupuesto = Number(f.contratado || 0);
                 amt.innerHTML =
-                    '<span class="proy-v2-kpi-fin-big">' + _esc(_fmtMoneyShort(f.cobrado || 0)) + '</span>' +
-                    '<span class="proy-v2-kpi-fin-small">/ ' + _esc(_fmtMoneyShort(f.contratado || 0)) + '</span>';
-                var pct = Math.max(0, Math.min(100, Number(f.cobrado_pct || 0)));
-                fbar.style.width = pct + '%';
-                // color de la barra según margen
-                fbar.className = 'proy-v2-kpi-progress-fill';
-                var ml = (f.margen_label || '').toLowerCase();
-                var mtone = '';
-                if (ml.indexOf('apretad') !== -1) { fbar.classList.add('proy-v2-kpi-progress-fill--amber'); mtone = 'is-warn'; }
-                else if (ml.indexOf('riesgo') !== -1 || ml.indexOf('pérdida') !== -1 || ml.indexOf('perdida') !== -1) {
-                    fbar.classList.add('proy-v2-kpi-progress-fill--red'); mtone = 'is-danger';
-                } else { fbar.classList.add('proy-v2-kpi-progress-fill--green'); mtone = 'is-good'; }
+                    '<span class="proy-v2-kpi-fin-big">' + _esc(_fmtMoneyShort(gastado)) + '</span>' +
+                    '<span class="proy-v2-kpi-fin-small">/ ' + _esc(_fmtMoneyShort(presupuesto)) + '</span>';
 
-                fmeta.className = 'proy-v2-kpi-fin-meta ' + mtone;
-                fmeta.textContent = 'Margen actual: ' + Math.round(f.margen_pct || 0) + '%' +
-                                    (f.margen_label ? ' · ' + f.margen_label : '');
+                var consumPct = presupuesto > 0 ? Math.round((gastado / presupuesto) * 100) : 0;
+                var barPct = Math.max(0, Math.min(100, consumPct));
+                fbar.style.width = barPct + '%';
+
+                fbar.className = 'proy-v2-kpi-progress-fill';
+                var ftone = '';
+                if (consumPct >= 100) { fbar.classList.add('proy-v2-kpi-progress-fill--red');   ftone = 'is-danger'; }
+                else if (consumPct >= 80) { fbar.classList.add('proy-v2-kpi-progress-fill--amber'); ftone = 'is-warn'; }
+                else { fbar.classList.add('proy-v2-kpi-progress-fill--green'); ftone = ''; }
+
+                var disponible = presupuesto - gastado;
+                fmeta.className = 'proy-v2-kpi-fin-meta ' + ftone;
+                if (presupuesto <= 0) {
+                    fmeta.textContent = 'Sin presupuesto definido';
+                } else if (disponible >= 0) {
+                    fmeta.textContent = 'Disponible: ' + _fmtMoneyShort(disponible) + ' · ' + consumPct + '% usado';
+                } else {
+                    fmeta.textContent = 'Sobregiro: ' + _fmtMoneyShort(Math.abs(disponible)) + ' (' + consumPct + '%)';
+                }
             } else {
                 amt.innerHTML = '<span class="proy-v2-kpi-fin-big">—</span>';
                 fbar.style.width = '0%';
@@ -394,39 +404,40 @@
             }
         }
 
-        // CRONOGRAMA
-        var cpct  = el('proyKpiCronoPct');
+        // COBRADO — cobrado (izq) / contratado (der). La barra mide qué
+        // tanto del contratado ya entró del cliente. Meta = por cobrar.
+        // Reusamos los IDs proyKpiCrono* (legacy) sin renombrar para no
+        // romper otros lugares que pudieran leerlos.
+        var cbig  = el('proyKpiCronoPct');
         var cbar  = el('proyKpiCronoBarFill');
+        var csub  = el('proyKpiCronoSubtitle');
         var cdelt = el('proyKpiCronoDelta');
-        if (cpct && cbar && cdelt) {
-            if (ov) {
-                var avp = (typeof ov.avance_pct === 'number' ? Math.round(ov.avance_pct) : 0);
-                cpct.textContent = avp + '%';
-                cbar.style.width = Math.max(0, Math.min(100, avp)) + '%';
+        if (cbig && cbar && cdelt) {
+            if (ov && ov.financiero) {
+                var ff = ov.financiero;
+                var cobrado = Number(ff.cobrado || 0);
+                var contratado = Number(ff.contratado || 0);
+                cbig.textContent = _fmtMoneyShort(cobrado);
+                if (csub) csub.textContent = '/ ' + _fmtMoneyShort(contratado);
 
-                var d = (typeof ov.avance_vs_tiempo_delta === 'number') ? ov.avance_vs_tiempo_delta : 0;
+                var cobradoPct = contratado > 0 ? Math.round((cobrado / contratado) * 100) : 0;
+                cbar.style.width = Math.max(0, Math.min(100, cobradoPct)) + '%';
+                cbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green';
+
                 cdelt.classList.remove('is-danger', 'is-warn', 'is-good');
-                cbar.className = 'proy-v2-kpi-progress-fill';
-                if (d <= -15) {
-                    cdelt.classList.add('is-danger');
-                    cdelt.textContent = d + '% desviación del plan';
-                    cbar.classList.add('proy-v2-kpi-progress-fill--red');
-                } else if (d < 0) {
-                    cdelt.classList.add('is-warn');
-                    cdelt.textContent = d + '% desviación del plan';
-                    cbar.classList.add('proy-v2-kpi-progress-fill--amber');
-                } else if (d > 0) {
+                if (contratado <= 0) {
+                    cdelt.textContent = 'Sin monto contratado';
+                } else if (cobrado >= contratado) {
                     cdelt.classList.add('is-good');
-                    cdelt.textContent = '+' + d + '% sobre el plan';
-                    cbar.classList.add('proy-v2-kpi-progress-fill--blue');
+                    cdelt.textContent = 'Cobrado al 100%';
                 } else {
-                    cdelt.textContent = 'En plan';
-                    cbar.classList.add('proy-v2-kpi-progress-fill--blue');
+                    cdelt.textContent = 'Por cobrar: ' + _fmtMoneyShort(contratado - cobrado) + ' · ' + cobradoPct + '%';
                 }
             } else {
-                cpct.textContent = '—';
+                cbig.textContent = '—';
+                if (csub) csub.textContent = '/ —';
                 cbar.style.width = '0%';
-                cbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--blue';
+                cbar.className = 'proy-v2-kpi-progress-fill proy-v2-kpi-progress-fill--green';
                 cdelt.textContent = '—';
                 cdelt.classList.remove('is-danger', 'is-warn', 'is-good');
             }
