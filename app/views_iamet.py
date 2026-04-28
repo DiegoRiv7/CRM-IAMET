@@ -4,6 +4,7 @@
 # ═══════════════════════════════════════════════════════════════
 
 import json
+import re
 from decimal import Decimal, InvalidOperation
 from datetime import date
 from django.http import JsonResponse
@@ -159,6 +160,352 @@ def _calcular_efectividad(proyecto):
                 efectividad -= 5
 
     return round(max(0, min(100, efectividad)), 1)
+
+
+# ─── Helpers para overview enriquecido (widget detalle proyecto) ──
+
+# Paleta determinística para color de cliente (basada en hash del id)
+_CLIENT_COLOR_PALETTE = [
+    '#0052D4', '#7B61FF', '#10B981', '#F59E0B', '#EF4444',
+    '#06B6D4', '#EC4899', '#8B5CF6', '#22C55E', '#F97316',
+    '#3B82F6', '#14B8A6',
+]
+
+
+def _iniciales(nombre):
+    """Devuelve las iniciales (máx 2) de un nombre. '' si vacío."""
+    if not nombre:
+        return ''
+    partes = [p for p in str(nombre).strip().split() if p]
+    if not partes:
+        return ''
+    if len(partes) == 1:
+        return partes[0][:2].upper()
+    return (partes[0][0] + partes[-1][0]).upper()
+
+
+def _get_user_card(user, rol_label=''):
+    """Construye un dict ligero con datos del usuario para el frontend.
+
+    Devuelve None si user es falsy.
+    """
+    if not user:
+        return None
+    nombre = (user.first_name + ' ' + user.last_name).strip() or user.username
+    avatar_url = None
+    rol = ''
+    try:
+        prof = user.userprofile
+        if prof:
+            try:
+                avatar_url = prof.get_avatar_url()
+            except Exception:
+                avatar_url = None
+            rol = (prof.rol or '').strip()
+    except Exception:
+        # Sin profile asociado — seguimos sin avatar/rol
+        pass
+    card = {
+        'id': user.id,
+        'nombre': nombre,
+        'iniciales': _iniciales(nombre),
+        'avatar_url': avatar_url,
+        'rol': rol,
+    }
+    if rol_label:
+        card['rol_label'] = rol_label
+    return card
+
+
+def _extraer_codigo_proyecto(nombre, opp):
+    """Intenta extraer un código 'PO 1234567' del nombre del proyecto o de la oportunidad.
+
+    Patrones soportados (case-insensitive):
+    - "PO 1234567" / "PO-1234567" / "PO1234567"
+    - po_number directo de la oportunidad
+
+    Asunción: si no se encuentra patrón, regresa cadena vacía.
+    """
+    # 1) Si hay PO directo en la oportunidad ligada, úsalo
+    if opp and getattr(opp, 'po_number', None):
+        po = str(opp.po_number).strip()
+        if po:
+            # Normalizar a "PO <num>" si parece ser sólo el número
+            if re.fullmatch(r'\d+', po):
+                return f'PO {po}'
+            return po
+    # 2) Buscar en el nombre del proyecto
+    if nombre:
+        m = re.search(r'\bPO[\s\-]*([A-Z0-9]+)\b', str(nombre), flags=re.IGNORECASE)
+        if m:
+            return f'PO {m.group(1)}'
+    return ''
+
+
+def _color_cliente(cliente_id):
+    """Color determinístico basado en id de cliente (hash mod paleta)."""
+    if not cliente_id:
+        return _CLIENT_COLOR_PALETTE[0]
+    return _CLIENT_COLOR_PALETTE[int(cliente_id) % len(_CLIENT_COLOR_PALETTE)]
+
+
+def _derivar_status(proyecto, avance_pct):
+    """Devuelve (status, label, color).
+
+    Reutiliza proyecto.status si es 'paused' (detenido) o 'completed'.
+    En otro caso deriva por fechas + avance.
+    Asunción: el modelo IAMET no tiene un status 'riesgo' nativo, lo derivamos.
+    """
+    hoy = timezone.localdate()
+    raw_status = (proyecto.status or '').lower()
+
+    # Mapeos directos cuando el modelo lo dice claro
+    if raw_status == 'paused':
+        return ('detenido', 'Detenido', '#ef4444')
+    if raw_status == 'completed' or (avance_pct is not None and avance_pct >= 100):
+        return ('completado', 'Completado', '#6b7280')
+
+    # Vencido y no completado → riesgo (ámbar)
+    if proyecto.fecha_fin and hoy > proyecto.fecha_fin and (avance_pct or 0) < 100:
+        return ('riesgo', 'En riesgo', '#f59e0b')
+
+    # Sin fecha_inicio o futura → planificación
+    if not proyecto.fecha_inicio or proyecto.fecha_inicio > hoy:
+        return ('planificacion', 'Planificación', '#3b82f6')
+
+    # Hoy entre fecha_inicio y fecha_fin (o sin fecha_fin)
+    if proyecto.fecha_inicio <= hoy and (not proyecto.fecha_fin or hoy <= proyecto.fecha_fin):
+        return ('ejecucion', 'En ejecución', '#10b981')
+
+    # Fallback conservador
+    return ('ejecucion', 'En ejecución', '#10b981')
+
+
+def _calcular_salud(margen_pct, avance_vs_tiempo_delta, dias_restantes, avance_pct):
+    """Devuelve {rag, label, razones} aplicando reglas en orden (rojo > ámbar > verde)."""
+    razones_rojo = []
+    razones_ambar = []
+
+    # Reglas ROJO
+    if margen_pct is not None and margen_pct < 0:
+        razones_rojo.append('En pérdida')
+    if avance_vs_tiempo_delta is not None and avance_vs_tiempo_delta < -25:
+        razones_rojo.append(f'Atrasado {abs(int(round(avance_vs_tiempo_delta)))}% vs cronograma')
+    if dias_restantes is not None and dias_restantes < 0 and (avance_pct or 0) < 100:
+        razones_rojo.append(f'Vencido hace {abs(int(dias_restantes))} días')
+
+    if razones_rojo:
+        return {
+            'rag': 'rojo',
+            'label': razones_rojo[0],
+            'razones': razones_rojo,
+        }
+
+    # Reglas ÁMBAR
+    if margen_pct is not None and margen_pct < 15:
+        razones_ambar.append(f'Margen apretado ({int(round(margen_pct))}%)')
+    if avance_vs_tiempo_delta is not None and avance_vs_tiempo_delta < -10:
+        razones_ambar.append(f'Atrasado {abs(int(round(avance_vs_tiempo_delta)))}% vs cronograma')
+    if (
+        dias_restantes is not None and 0 <= dias_restantes <= 3
+        and (avance_pct or 0) < 90
+    ):
+        razones_ambar.append(
+            'Vence hoy' if dias_restantes == 0 else f'Vence en {int(dias_restantes)} días'
+        )
+
+    if razones_ambar:
+        return {
+            'rag': 'ambar',
+            'label': razones_ambar[0],
+            'razones': razones_ambar,
+        }
+
+    return {
+        'rag': 'verde',
+        'label': 'En tiempo · sin riesgos',
+        'razones': [],
+    }
+
+
+def _proyecto_overview(proyecto):
+    """Construye el sub-objeto `overview` con datos enriquecidos para el widget de detalle.
+
+    NOTA: el modelo `ProyectoIAMET` (alias `Proyecto`) sólo tiene un único
+    `usuario` (sin M2M de miembros ni `creado_por`); por eso `equipo` se
+    arma con el `usuario` del proyecto y el `usuario` (vendedor) de la
+    oportunidad, deduplicado. `ingeniero_responsable` toma el `usuario`
+    del proyecto si su userprofile.rol == 'ingeniero', o cae al usuario
+    igualmente si no hay otro candidato.
+    """
+    hoy = timezone.localdate()
+    opp = proyecto.oportunidad if proyecto.oportunidad_id else None
+
+    # ── Fechas / tiempo ──
+    fecha_inicio = proyecto.fecha_inicio
+    fecha_fin = proyecto.fecha_fin
+    dias_totales = None
+    dias_restantes = None
+    tiempo_transcurrido_pct = 0
+    if fecha_inicio and fecha_fin and fecha_fin >= fecha_inicio:
+        dias_totales = (fecha_fin - fecha_inicio).days
+        dias_restantes = (fecha_fin - hoy).days
+        if dias_totales > 0:
+            transcurridos = (hoy - fecha_inicio).days
+            pct = (transcurridos / dias_totales) * 100
+            tiempo_transcurrido_pct = int(max(0, min(100, round(pct))))
+        else:
+            # mismo día inicio/fin: si ya pasó o es hoy, considerarlo 100%
+            tiempo_transcurrido_pct = 100 if hoy >= fecha_inicio else 0
+    elif fecha_fin:
+        dias_restantes = (fecha_fin - hoy).days
+
+    # ── Avance / status ──
+    avance_pct = _calcular_avance(proyecto)
+    avance_vs_tiempo_delta = int(round((avance_pct or 0) - tiempo_transcurrido_pct))
+    status_code, status_label, status_color = _derivar_status(proyecto, avance_pct)
+
+    # ── Cliente ──
+    cliente_dict = None
+    if opp and opp.cliente_id:
+        cli = opp.cliente
+        nombre_cli = cli.nombre_empresa or ''
+        cliente_dict = {
+            'id': cli.id,
+            'nombre': nombre_cli,
+            # 'ubicacion' = direccion del cliente (no hay city/state separado)
+            'ubicacion': (cli.direccion or '').strip(),
+            'iniciales': _iniciales(nombre_cli),
+            'color': _color_cliente(cli.id),
+            'logo_url': None,  # No hay campo de logo en Cliente (asunción)
+        }
+    elif proyecto.cliente_nombre:
+        # Fallback: el proyecto tiene cliente_nombre como texto plano
+        cliente_dict = {
+            'id': None,
+            'nombre': proyecto.cliente_nombre,
+            'ubicacion': '',
+            'iniciales': _iniciales(proyecto.cliente_nombre),
+            'color': _color_cliente(proyecto.id),  # estable por proyecto
+            'logo_url': None,
+        }
+
+    # ── Oportunidad ──
+    oportunidad_dict = None
+    if opp:
+        codigo_opp = ''
+        if getattr(opp, 'po_number', None):
+            po = str(opp.po_number).strip()
+            if po:
+                codigo_opp = f'PO {po}' if re.fullmatch(r'\d+', po) else po
+        oportunidad_dict = {
+            'id': opp.id,
+            'codigo': codigo_opp,
+            'nombre': opp.oportunidad or '',
+            'monto': float(opp.monto) if opp.monto is not None else 0.0,
+        }
+
+    # ── Vendedor (usuario de la oportunidad) ──
+    vendedor_dict = _get_user_card(opp.usuario) if opp and opp.usuario_id else None
+    if vendedor_dict:
+        # No exponemos rol_label para vendedor (frontend ya lo etiqueta)
+        vendedor_dict.pop('rol_label', None)
+
+    # ── Ingeniero responsable ──
+    # Asunción: el modelo IAMET no tiene `miembros` M2M; usamos el `usuario`
+    # del proyecto como ingeniero si su rol coincide, si no hacemos fallback
+    # al mismo usuario (que actúa como creado_por de facto).
+    ingeniero_user = proyecto.usuario
+    ingeniero_dict = _get_user_card(ingeniero_user, rol_label='Ingeniero responsable')
+
+    # ── Equipo (dedupe por id) ──
+    equipo_users = []
+    seen_ids = set()
+    for u in [proyecto.usuario, opp.usuario if opp else None]:
+        if u and u.id not in seen_ids:
+            equipo_users.append(u)
+            seen_ids.add(u.id)
+    equipo_total = len(equipo_users)
+    equipo_cards = []
+    for u in equipo_users[:8]:
+        card = _get_user_card(u)
+        if card:
+            equipo_cards.append({
+                'id': card['id'],
+                'nombre': card['nombre'],
+                'iniciales': card['iniciales'],
+                'avatar_url': card['avatar_url'],
+                'rol': card['rol'],
+            })
+
+    # ── Financiero ──
+    contratado = 0.0
+    if opp and opp.monto is not None:
+        contratado = float(opp.monto)
+    else:
+        contratado = float(proyecto.partidas.aggregate(t=Sum('precio_venta_total'))['t'] or 0)
+
+    cobrado = float(proyecto.facturas_ingreso.aggregate(t=Sum('monto'))['t'] or 0)
+    gastado_oc = proyecto.ordenes_compra.exclude(status='cancelled').aggregate(t=Sum('monto_total'))['t'] or Decimal('0')
+    gastos_no_rechazados = proyecto.gastos.exclude(estado_aprobacion='rejected').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    gastado = float(gastado_oc) + float(gastos_no_rechazados)
+
+    cobrado_pct = 0
+    if contratado > 0:
+        cobrado_pct = int(max(0, min(100, round((cobrado / contratado) * 100))))
+
+    if cobrado > 0:
+        margen_pct_raw = ((cobrado - gastado) / cobrado) * 100
+    else:
+        # Sin ingresos cobrados aún — margen "neutro" (asunción conservadora: 0)
+        margen_pct_raw = 0
+    margen_pct = int(round(margen_pct_raw))
+
+    if margen_pct < 0:
+        margen_label = 'Pérdida'
+    elif margen_pct < 15:
+        margen_label = 'En riesgo'
+    elif margen_pct < 30:
+        margen_label = 'Apretado'
+    else:
+        margen_label = 'Saludable'
+
+    # ── Salud (RAG) ──
+    salud = _calcular_salud(
+        margen_pct=margen_pct if cobrado > 0 else None,
+        avance_vs_tiempo_delta=avance_vs_tiempo_delta if (fecha_inicio and fecha_fin) else None,
+        dias_restantes=dias_restantes,
+        avance_pct=avance_pct,
+    )
+
+    return {
+        'codigo': _extraer_codigo_proyecto(proyecto.nombre, opp),
+        'status': status_code,
+        'status_label': status_label,
+        'status_color': status_color,
+        'fecha_inicio': _fmt(fecha_inicio),
+        'fecha_fin': _fmt(fecha_fin),
+        'dias_totales': dias_totales,
+        'dias_restantes': dias_restantes,
+        'tiempo_transcurrido_pct': tiempo_transcurrido_pct,
+        'avance_pct': avance_pct,
+        'avance_vs_tiempo_delta': avance_vs_tiempo_delta,
+        'cliente': cliente_dict,
+        'oportunidad': oportunidad_dict,
+        'vendedor': vendedor_dict,
+        'ingeniero_responsable': ingeniero_dict,
+        'equipo': equipo_cards,
+        'equipo_total': equipo_total,
+        'salud': salud,
+        'financiero': {
+            'contratado': contratado,
+            'cobrado': cobrado,
+            'gastado': gastado,
+            'cobrado_pct': cobrado_pct,
+            'margen_pct': margen_pct,
+            'margen_label': margen_label,
+        },
+    }
 
 
 def _proyecto_to_dict(p, include_alerts=False):
@@ -557,6 +904,15 @@ def api_proyecto_detalle(request, proyecto_id):
         }
     except ProyectoConfiguracion.DoesNotExist:
         d['configuracion'] = None
+
+    # Overview enriquecido para el nuevo widget de detalle (no rompe legacy)
+    try:
+        d['overview'] = _proyecto_overview(proyecto)
+    except Exception as e:
+        # Conservador: si algo truena al construir el overview, lo dejamos vacío
+        # en vez de tirar todo el endpoint. El frontend legacy sigue funcionando.
+        d['overview'] = None
+        d['overview_error'] = str(e)
 
     return JsonResponse({'success': True, 'data': d})
 

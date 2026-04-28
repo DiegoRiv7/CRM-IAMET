@@ -131,43 +131,109 @@
 <div class="widget-overlay" id="widgetProyectoDetalle" style="z-index:10100;display:none;">
   <div class="widget-card-lg proy-detail-card">
 
-    <!-- Detail header -->
-    <div class="proy-detail-header">
-      <button class="proy-detail-back" onclick="proyectosVolverLista()">
+    <!-- Detail header (rediseñado: identidad + equipo · status + cerrar) -->
+    <div class="proy-detail-header" id="proyDetailHeader">
+      <button class="proy-detail-back" onclick="proyectosVolverLista()" aria-label="Volver">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
       </button>
-      <h2 id="proyDetailName" class="proy-detail-name">Proyecto</h2>
-      <span id="proyDetailStatus" class="proy-status">--</span>
-      <span id="proyDetailClient" style="font-size:0.82rem;color:#8e8e93;margin-left:8px;"></span>
-      <span id="proyDetailDates" style="font-size:0.75rem;color:#aeaeb2;margin-left:auto;"></span>
-      <span id="proyDetailDesc" style="display:none;"></span>
-      <button class="proy-btn-close" onclick="proyectosVolverLista()" style="margin-left:12px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
+
+      <div class="proy-detail-identity">
+        <!-- Avatar de cliente (chip cuadrado redondeado, iniciales o logo) -->
+        <div class="proy-detail-client-avatar" id="proyDetailClientAvatar">·</div>
+
+        <div class="proy-detail-headlines">
+          <div class="proy-detail-titlerow">
+            <h2 id="proyDetailName" class="proy-detail-name">Proyecto</h2>
+          </div>
+          <div class="proy-detail-subtitle" id="proyDetailSubtitle">
+            <span id="proyDetailCodigo" class="proy-detail-codigo"></span>
+            <span class="proy-detail-sep" id="proyDetailSepClient">·</span>
+            <span id="proyDetailClient"></span>
+            <span class="proy-detail-sep" id="proyDetailSepLoc">·</span>
+            <span id="proyDetailUbicacion"></span>
+            <a href="#" class="proy-detail-opp-chip" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)">
+              <span class="proy-detail-opp-arrow">&#x21B3;</span>
+              <span id="proyDetailOppText">Oportunidad</span>
+            </a>
+          </div>
+
+          <!-- Mini-barra avance vs tiempo -->
+          <div class="proy-detail-progress" id="proyDetailProgress" style="display:none;">
+            <div class="proy-detail-progress-label">Avance vs tiempo</div>
+            <div class="proy-detail-progress-bar">
+              <div class="proy-detail-progress-time" id="proyDetailProgressTime"></div>
+              <div class="proy-detail-progress-real" id="proyDetailProgressReal"></div>
+            </div>
+            <div class="proy-detail-progress-meta" id="proyDetailProgressMeta"></div>
+          </div>
+
+          <!-- Equipo / Vendedor / Ingeniero -->
+          <div class="proy-detail-team" id="proyDetailTeam" style="display:none;">
+            <div class="proy-detail-team-slot" id="proyDetailVendedorSlot" style="display:none;">
+              <span class="proy-detail-team-role">Vendedor</span>
+              <span class="proy-detail-team-person" id="proyDetailVendedor"></span>
+            </div>
+            <div class="proy-detail-team-slot" id="proyDetailIngenieroSlot" style="display:none;">
+              <span class="proy-detail-team-role">Ing.</span>
+              <span class="proy-detail-team-person" id="proyDetailIngeniero"></span>
+            </div>
+            <div class="proy-detail-team-slot" id="proyDetailEquipoSlot" style="display:none;">
+              <span class="proy-detail-team-role">Equipo</span>
+              <span class="proy-detail-team-stack" id="proyDetailEquipoStack"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="proy-detail-actions">
+        <span id="proyDetailStatus" class="proy-detail-status-pill">--</span>
+        <span id="proyDetailDates" class="proy-detail-dates-hidden" style="display:none;"></span>
+        <span id="proyDetailDesc" style="display:none;"></span>
+        <button class="proy-btn-close" onclick="proyectosVolverLista()" aria-label="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <!-- KPI Cards -->
+    <!-- KPI Cards (3 cards: Salud · Financiero · Cronograma) -->
     <div class="proy-kpi-grid" id="proyKPIs">
-      <div class="proy-kpi-card">
-        <div class="proy-kpi-label">Utilidad Presupuestada</div>
-        <div class="proy-kpi-value" id="proyKpiPresupuesto">$0</div>
+      <!-- Card 1: Salud RAG -->
+      <div class="proy-kpi-card proy-kpi-salud" id="proyKpiSalud">
+        <div class="proy-kpi-head">
+          <span class="proy-kpi-dot" id="proyKpiSaludDot"></span>
+          <span class="proy-kpi-label" id="proyKpiSaludLabel">Salud</span>
+        </div>
+        <div class="proy-kpi-salud-msg" id="proyKpiSaludMsg">—</div>
+        <div class="proy-kpi-salud-razones" id="proyKpiSaludRazones"></div>
       </div>
-      <div class="proy-kpi-card">
-        <div class="proy-kpi-label">Utilidad Real</div>
-        <div class="proy-kpi-value" id="proyKpiReal">$0</div>
+
+      <!-- Card 2: Financiero -->
+      <div class="proy-kpi-card proy-kpi-fin" id="proyKpiFinanciero">
+        <div class="proy-kpi-head">
+          <span class="proy-kpi-label">Financiero</span>
+        </div>
+        <div class="proy-kpi-fin-amounts" id="proyKpiFinAmounts">—</div>
+        <div class="proy-kpi-fin-bar">
+          <div class="proy-kpi-fin-bar-fill" id="proyKpiFinBarFill"></div>
+        </div>
+        <div class="proy-kpi-fin-meta" id="proyKpiFinMeta">—</div>
       </div>
-      <div class="proy-kpi-card">
-        <div class="proy-kpi-label">Margen</div>
-        <div class="proy-kpi-value" id="proyKpiMargen">0%</div>
-      </div>
-      <div class="proy-kpi-card">
-        <div class="proy-kpi-label">Cobertura de Costos</div>
-        <div class="proy-kpi-value" id="proyKpiCobertura">0%</div>
+
+      <!-- Card 3: Cronograma -->
+      <div class="proy-kpi-card proy-kpi-crono" id="proyKpiCronograma">
+        <div class="proy-kpi-head">
+          <span class="proy-kpi-label">Cronograma</span>
+        </div>
+        <div class="proy-kpi-crono-pct" id="proyKpiCronoPct">—</div>
+        <div class="proy-kpi-crono-row">
+          <span class="proy-kpi-crono-dias" id="proyKpiCronoDias">—</span>
+          <span class="proy-kpi-crono-delta" id="proyKpiCronoDelta"></span>
+        </div>
       </div>
     </div>
 

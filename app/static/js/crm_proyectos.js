@@ -112,6 +112,325 @@
         return document.getElementById(id);
     }
 
+    // -- Overview helpers (header + KPI cards rediseñados) --
+
+    // Iniciales rápidas para nombres ("Eduardo Rivera" -> "ER")
+    function _initials(name) {
+        if (!name) return '·';
+        var s = String(name).trim();
+        if (!s) return '·';
+        var parts = s.split(/\s+/).filter(Boolean);
+        if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    // Format compacto: $48k / $80k (en miles), $1.2M (en millones)
+    function _fmtMoneyShort(v) {
+        var n = Number(v || 0);
+        var sign = n < 0 ? '-' : '';
+        var abs = Math.abs(n);
+        if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(abs >= 1e7 ? 0 : 1) + 'M';
+        if (abs >= 1e3) return sign + '$' + Math.round(abs / 1e3) + 'k';
+        return sign + '$' + Math.round(abs);
+    }
+
+    // Pinta avatar (chip o círculo). target: elemento, opts: {bg, text, image}
+    function _paintAvatar(target, opts) {
+        if (!target) return;
+        opts = opts || {};
+        if (opts.image) {
+            target.style.backgroundImage = 'url(' + opts.image + ')';
+            target.style.backgroundColor = 'transparent';
+            target.textContent = '';
+        } else {
+            target.style.backgroundImage = '';
+            target.style.backgroundColor = opts.bg || '#1e3a8a';
+            target.textContent = opts.text || '·';
+        }
+    }
+
+    // Calcula color del avance (verde/ámbar/rojo) según delta vs tiempo
+    function _avanceClass(delta) {
+        if (delta === null || delta === undefined) return '';
+        if (delta >= 0) return '';                 // verde (default)
+        if (delta > -15) return 'is-warn';         // ámbar
+        return 'is-danger';                        // rojo
+    }
+
+    // Render del header + KPIs partiendo de data.overview (si existe).
+    // Tolera ausencias y degrada con "—".
+    function renderProjectOverview(project) {
+        var ov = (project && project.overview) ? project.overview : null;
+
+        // ---- HEADER: identidad ----
+        var hName = el('proyDetailName');
+        if (hName) hName.textContent = (project && project.nombre) || (ov && ov.nombre) || '';
+
+        // Cliente: nombre, ubicación, avatar
+        var clienteNombre = ov && ov.cliente ? ov.cliente.nombre : (project ? project.cliente_nombre : '');
+        var clienteUbic   = ov && ov.cliente ? ov.cliente.ubicacion : '';
+        var hClient = el('proyDetailClient');
+        var hUbic   = el('proyDetailUbicacion');
+        var sepLoc  = el('proyDetailSepLoc');
+        var sepCli  = el('proyDetailSepClient');
+        if (hClient) hClient.textContent = clienteNombre || '';
+        if (hUbic)   hUbic.textContent   = clienteUbic   || '';
+        if (sepLoc)  sepLoc.style.display = (clienteUbic ? '' : 'none');
+        if (sepCli)  sepCli.style.display = (clienteNombre ? '' : 'none');
+
+        // Avatar de cliente
+        var av = el('proyDetailClientAvatar');
+        if (av) {
+            var avInit = ov && ov.cliente ? ov.cliente.iniciales : _initials(clienteNombre);
+            var avBg   = ov && ov.cliente && ov.cliente.color ? ov.cliente.color : '#1e3a8a';
+            var avLogo = ov && ov.cliente ? ov.cliente.logo_url : null;
+            _paintAvatar(av, { bg: avBg, text: avInit, image: avLogo });
+        }
+
+        // Código de proyecto
+        var hCod = el('proyDetailCodigo');
+        if (hCod) hCod.textContent = (ov && ov.codigo) ? ov.codigo : '';
+
+        // Status pill
+        var hStatus = el('proyDetailStatus');
+        if (hStatus) {
+            var sLabel, sColor;
+            if (ov) {
+                sLabel = ov.status_label || statusLabel(ov.status) || '—';
+                sColor = ov.status_color || '#10b981';
+            } else if (project) {
+                sLabel = project.oportunidad_etapa || statusLabel(project.status) || '—';
+                sColor = project.oportunidad_etapa_color || '#6B7280';
+            } else {
+                sLabel = '—'; sColor = '#94a3b8';
+            }
+            hStatus.textContent = sLabel;
+            hStatus.style.background = sColor + '15';
+            hStatus.style.borderColor = sColor + '40';
+            hStatus.style.color = sColor;
+            hStatus.className = 'proy-detail-status-pill';
+        }
+
+        // Chip oportunidad
+        var oppChip = el('proyDetailOppChip');
+        var oppText = el('proyDetailOppText');
+        if (oppChip) {
+            var oppId = ov && ov.oportunidad ? ov.oportunidad.id : (project ? project.oportunidad_id : null);
+            var oppCod = ov && ov.oportunidad ? (ov.oportunidad.codigo || ('#' + ov.oportunidad.id)) : (project && project.oportunidad_id ? '#' + project.oportunidad_id : null);
+            if (oppId) {
+                if (oppText) oppText.textContent = 'Oportunidad ' + (oppCod || '');
+                oppChip.style.display = '';
+                oppChip.setAttribute('data-opp-id', oppId);
+            } else {
+                oppChip.style.display = 'none';
+            }
+        }
+
+        // Mini-barra avance vs tiempo
+        var prog = el('proyDetailProgress');
+        if (prog) {
+            if (ov) {
+                var avancePct = Math.max(0, Math.min(100, Number(ov.avance_pct || 0)));
+                var tiempoPct = Math.max(0, Math.min(100, Number(ov.tiempo_transcurrido_pct || 0)));
+                var delta = (typeof ov.avance_vs_tiempo_delta === 'number') ? ov.avance_vs_tiempo_delta : (avancePct - tiempoPct);
+                var bTime = el('proyDetailProgressTime');
+                var bReal = el('proyDetailProgressReal');
+                if (bTime) bTime.style.width = tiempoPct + '%';
+                if (bReal) {
+                    bReal.style.width = avancePct + '%';
+                    bReal.className = 'proy-detail-progress-real ' + _avanceClass(delta);
+                }
+                var meta = el('proyDetailProgressMeta');
+                if (meta) {
+                    var diasRest = ov.dias_restantes;
+                    var diasTxt = '';
+                    if (typeof diasRest === 'number') {
+                        if (diasRest < 0)        diasTxt = ' · <span class="danger">vencido ' + Math.abs(diasRest) + ' d</span>';
+                        else if (diasRest === 0) diasTxt = ' · <span class="warn">vence hoy</span>';
+                        else                     diasTxt = ' · faltan ' + diasRest + ' d';
+                    }
+                    meta.innerHTML = avancePct + '% / ' + tiempoPct + '%' + diasTxt;
+                }
+                prog.style.display = '';
+            } else {
+                prog.style.display = 'none';
+            }
+        }
+
+        // Equipo
+        var team = el('proyDetailTeam');
+        if (team) {
+            var anySlot = false;
+            // Vendedor
+            var vSlot = el('proyDetailVendedorSlot');
+            var vBox  = el('proyDetailVendedor');
+            if (ov && ov.vendedor && vSlot && vBox) {
+                vBox.innerHTML = '<span class="proy-detail-avatar" style="background:#0ea5e9">' + (ov.vendedor.iniciales || _initials(ov.vendedor.nombre)) + '</span>' +
+                                 '<span>' + (ov.vendedor.nombre || '—') + '</span>';
+                if (ov.vendedor.avatar_url) {
+                    var ava = vBox.querySelector('.proy-detail-avatar');
+                    if (ava) { ava.style.backgroundImage = 'url(' + ov.vendedor.avatar_url + ')'; ava.textContent = ''; }
+                }
+                vSlot.style.display = ''; anySlot = true;
+            } else if (vSlot) { vSlot.style.display = 'none'; }
+
+            // Ingeniero
+            var iSlot = el('proyDetailIngenieroSlot');
+            var iBox  = el('proyDetailIngeniero');
+            if (ov && ov.ingeniero_responsable && iSlot && iBox) {
+                var ing = ov.ingeniero_responsable;
+                iBox.innerHTML = '<span class="proy-detail-avatar" style="background:#f59e0b">' + (ing.iniciales || _initials(ing.nombre)) + '</span>' +
+                                 '<span>' + (ing.nombre || '—') + '</span>';
+                if (ing.avatar_url) {
+                    var aing = iBox.querySelector('.proy-detail-avatar');
+                    if (aing) { aing.style.backgroundImage = 'url(' + ing.avatar_url + ')'; aing.textContent = ''; }
+                }
+                iSlot.style.display = ''; anySlot = true;
+            } else if (iSlot) { iSlot.style.display = 'none'; }
+
+            // Equipo
+            var eSlot  = el('proyDetailEquipoSlot');
+            var eStack = el('proyDetailEquipoStack');
+            if (ov && ov.equipo && ov.equipo.length && eSlot && eStack) {
+                var max = 4;
+                var html = '';
+                for (var i = 0; i < Math.min(ov.equipo.length, max); i++) {
+                    var m = ov.equipo[i];
+                    var initials = m.iniciales || _initials(m.nombre);
+                    var styleBg = '';
+                    if (m.avatar_url) {
+                        styleBg = 'background-image:url(' + m.avatar_url + ');';
+                        initials = '';
+                    } else {
+                        styleBg = 'background:#6366f1;';
+                    }
+                    html += '<span class="proy-detail-avatar" style="' + styleBg + '" title="' + (m.nombre || '') + '">' + initials + '</span>';
+                }
+                var totalEquipo = (typeof ov.equipo_total === 'number') ? ov.equipo_total : ov.equipo.length;
+                if (totalEquipo > max) {
+                    html += '<span class="proy-detail-avatar more" title="+' + (totalEquipo - max) + ' más">+' + (totalEquipo - max) + '</span>';
+                }
+                eStack.innerHTML = html;
+                eSlot.style.display = ''; anySlot = true;
+            } else if (eSlot) { eSlot.style.display = 'none'; }
+
+            team.style.display = anySlot ? '' : 'none';
+        }
+
+        // Descripción / fechas legacy: solo cargamos para retro-compat
+        var hDates = el('proyDetailDates');
+        var hDesc  = el('proyDetailDesc');
+        if (hDates) hDates.textContent = (project ? (fmtDate(project.fecha_inicio) + '  →  ' + fmtDate(project.fecha_fin)) : '');
+        if (hDesc)  hDesc.textContent  = (project && project.descripcion) || '';
+
+        // ---- KPI cards ----
+        renderOverviewKPIs(ov);
+    }
+
+    // Render de las 3 KPI cards. Si no hay overview, deja "—" sin romper.
+    function renderOverviewKPIs(ov) {
+        // SALUD
+        var dot   = el('proyKpiSaludDot');
+        var lbl   = el('proyKpiSaludLabel');
+        var msg   = el('proyKpiSaludMsg');
+        var raz   = el('proyKpiSaludRazones');
+        if (dot && lbl && msg && raz) {
+            if (ov && ov.salud) {
+                var rag = ov.salud.rag || 'verde';
+                dot.className = 'proy-kpi-dot rag-' + rag;
+                lbl.textContent = 'Salud ' + rag;
+                msg.textContent = ov.salud.label || '—';
+                msg.classList.remove('muted');
+                var razones = (ov.salud.razones || []).slice(0, 2);
+                if (!razones.length) {
+                    raz.innerHTML = '<span class="proy-kpi-salud-razon" style="background:#f1f5f9;color:#64748B;border-color:#e2e8f0;">Sin alertas activas</span>';
+                } else {
+                    raz.innerHTML = razones.map(function(r) {
+                        var cls = (rag === 'rojo') ? ' is-danger' : '';
+                        return '<span class="proy-kpi-salud-razon' + cls + '">' + r + '</span>';
+                    }).join('');
+                }
+            } else {
+                dot.className = 'proy-kpi-dot';
+                lbl.textContent = 'Salud';
+                msg.textContent = '—';
+                msg.classList.add('muted');
+                raz.innerHTML = '';
+            }
+        }
+
+        // FINANCIERO
+        var amt  = el('proyKpiFinAmounts');
+        var fbar = el('proyKpiFinBarFill');
+        var fmeta = el('proyKpiFinMeta');
+        if (amt && fbar && fmeta) {
+            if (ov && ov.financiero) {
+                var f = ov.financiero;
+                amt.innerHTML = _fmtMoneyShort(f.cobrado || 0) + ' <span class="of">/ ' + _fmtMoneyShort(f.contratado || 0) + '</span>';
+                var pct = Math.max(0, Math.min(100, Number(f.cobrado_pct || 0)));
+                fbar.style.width = pct + '%';
+                var pillCls = '';
+                var ml = (f.margen_label || '').toLowerCase();
+                if (ml.indexOf('apretad') !== -1) pillCls = 'is-warn';
+                else if (ml.indexOf('riesgo') !== -1 || ml.indexOf('pérdida') !== -1 || ml.indexOf('perdida') !== -1) pillCls = 'is-danger';
+                fmeta.innerHTML =
+                    'Gastado ' + _fmtMoneyShort(f.gastado || 0) +
+                    ' <span class="sep">·</span> Margen ' + Math.round(f.margen_pct || 0) + '%' +
+                    (f.margen_label ? ' <span class="proy-kpi-margin-pill ' + pillCls + '">' + f.margen_label + '</span>' : '');
+            } else {
+                amt.innerHTML = '—';
+                fbar.style.width = '0%';
+                fmeta.textContent = '—';
+            }
+        }
+
+        // CRONOGRAMA
+        var cpct = el('proyKpiCronoPct');
+        var cdias = el('proyKpiCronoDias');
+        var cdelta = el('proyKpiCronoDelta');
+        if (cpct && cdias && cdelta) {
+            if (ov) {
+                cpct.textContent = (typeof ov.avance_pct === 'number' ? Math.round(ov.avance_pct) : 0) + '%';
+                var dr = ov.dias_restantes;
+                cdias.classList.remove('is-danger', 'is-warn');
+                if (typeof dr === 'number') {
+                    if (dr < 0)        { cdias.textContent = 'Vencido ' + Math.abs(dr) + ' d'; cdias.classList.add('is-danger'); }
+                    else if (dr === 0) { cdias.textContent = 'Vence hoy';                      cdias.classList.add('is-warn'); }
+                    else               { cdias.textContent = 'Faltan ' + dr + ' d'; }
+                } else {
+                    cdias.textContent = '—';
+                }
+                var d = (typeof ov.avance_vs_tiempo_delta === 'number') ? ov.avance_vs_tiempo_delta : 0;
+                cdelta.classList.remove('is-danger', 'is-warn', 'is-good');
+                if (d <= -15)       { cdelta.classList.add('is-danger'); cdelta.textContent = d + '% vs plan'; }
+                else if (d < 0)     { cdelta.classList.add('is-warn');   cdelta.textContent = d + '% vs plan'; }
+                else if (d > 0)     { cdelta.classList.add('is-good');   cdelta.textContent = '+' + d + '% vs plan'; }
+                else                { cdelta.textContent = 'En plan'; }
+            } else {
+                cpct.textContent = '—';
+                cdias.textContent = '—';
+                cdelta.textContent = '';
+            }
+        }
+    }
+
+    // Click handler del chip Oportunidad
+    window.proyDetailAbrirOportunidad = function(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        var chip = el('proyDetailOppChip');
+        if (!chip) return;
+        var oppId = chip.getAttribute('data-opp-id');
+        if (!oppId) return;
+        if (typeof window.crmAbrirOportunidad === 'function') {
+            window.crmAbrirOportunidad(oppId);
+        } else if (typeof window.proyectosAbrirOportunidad === 'function') {
+            window.proyectosAbrirOportunidad(oppId);
+        } else {
+            // TODO: definir handler global para abrir oportunidad desde detalle de proyecto.
+            window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + oppId;
+        }
+    };
+
 
     // =========================================
     //  INIT (called when section becomes active)
@@ -446,34 +765,17 @@
         if (overlay) overlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
 
+        // Estado vac\u00edo inmediato (evita header con datos del proyecto previo)
+        renderProjectOverview(null);
+
         // Fetch project detail + financials
         _fetch('/app/api/iamet/proyectos/' + projectId + '/').then(function(resp) {
             if (resp.ok || resp.success) {
                 var project = resp.data;
                 _cachedProjectDetail = project;
 
-                // Header
-                var hName = el('proyDetailName');
-                var hStatus = el('proyDetailStatus');
-                var hClient = el('proyDetailClient');
-                var hDates = el('proyDetailDates');
-                var hDesc = el('proyDetailDesc');
-
-                if (hName) hName.textContent = project.nombre || '';
-                if (hStatus) {
-                    var etapa = project.oportunidad_etapa || statusLabel(project.status);
-                    var etapaColor = project.oportunidad_etapa_color || '#6B7280';
-                    hStatus.textContent = etapa;
-                    hStatus.style.background = etapaColor + '20';
-                    hStatus.style.color = etapaColor;
-                    hStatus.style.border = '1px solid ' + etapaColor;
-                    hStatus.className = 'proy-badge';
-                }
-                if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
-                if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
-                if (hDesc) hDesc.textContent = project.descripcion || '';
-
-                // KPIs se actualizan desde partidas al cargar el tab
+                // Render header redise\u00f1ado + 3 KPI cards (consume project.overview si existe)
+                renderProjectOverview(project);
 
                 // Render info tab if it's the current tab
                 if (currentTab === 'info') {
@@ -499,126 +801,15 @@
 
 
     // =========================================
-    //  KPIs
+    //  KPIs (legacy stubs — el header rediseñado renderiza
+    //  Salud / Financiero / Cronograma desde data.overview en
+    //  renderProjectOverview(). Estas funciones se conservan como
+    //  no-ops para no romper call sites antiguos en tabs).
     // =========================================
 
-    function renderKPIsFromAPI(projectId) {
-        var kpiContainer = el('proyKPIs');
-        if (!kpiContainer) return;
-
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
-            if (resp.ok || resp.success) {
-                var fin = resp.data;
-                var budgeted = fin.utilidad_presupuestada || 0;
-                var costosTot = fin.costos || 0;
-                var ingresosTot = fin.ingresos || 0;
-                var margin = budgeted > 0 ? Math.round((budgeted / (budgeted + costosTot)) * 100) : 0;
-
-                kpiContainer.innerHTML =
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Utilidad Presupuestada</div>' +
-                        '<div class="proy-kpi-value">' + fmtMoney(budgeted) + '</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Utilidad Real</div>' +
-                        '<div class="proy-kpi-value" style="color:' + (ingresosTot > 0 ? '#10b981' : '#ef4444') + '">' + fmtMoney(fin.utilidad_real || 0) + '</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Margen</div>' +
-                        '<div class="proy-kpi-value">' + Math.round(fin.margen || 0) + '%</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Cobertura de Costos</div>' +
-                        '<div class="proy-kpi-value">' + Math.round(fin.cobertura || 0) + '%</div>' +
-                    '</div>';
-            } else {
-                console.error('Error cargando financieros:', resp.error);
-            }
-        }).catch(function(err) {
-            console.error('Error de red cargando financieros:', err);
-        });
-    }
-
-
-    function renderOperationalKPIs(projectId) {
-        var kpiContainer = el('proyKPIs');
-        if (!kpiContainer) return;
-
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
-            if (resp.ok || resp.success) {
-                var fin = resp.data;
-                var gastado = fin.gastado || fin.costos || 0;
-                var cobrado = fin.cobrado || fin.ingresos || 0;
-                var avancePct = Math.round(fin.avance_pct || 0);
-                var efectividadPct = Math.round(fin.efectividad_pct || 0);
-
-                var avanceColor = avancePct >= 80 ? '#10b981' : (avancePct >= 50 ? '#f59e0b' : '#ef4444');
-                var efectividadColor = efectividadPct >= 80 ? '#10b981' : (efectividadPct >= 60 ? '#f59e0b' : '#ef4444');
-
-                kpiContainer.innerHTML =
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Gastado</div>' +
-                        '<div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(gastado) + '</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Cobrado</div>' +
-                        '<div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(cobrado) + '</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">% Avance</div>' +
-                        '<div class="proy-kpi-value" style="color:' + avanceColor + '">' + avancePct + '%</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Efectividad</div>' +
-                        '<div class="proy-kpi-value" style="color:' + efectividadColor + '">' + efectividadPct + '%</div>' +
-                    '</div>';
-            }
-        }).catch(function(err) {
-            console.error('Error cargando KPIs operacionales:', err);
-        });
-    }
-
-    function renderFinancialKPIs(projectId) {
-        var kpiContainer = el('proyKPIs');
-        if (!kpiContainer) return;
-
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/financieros/').then(function(resp) {
-            if (resp.ok || resp.success) {
-                var fin = resp.data;
-                // KPI 1: Utilidad Presupuestada (de partidas - lo planeado)
-                var utilPresup = fin.utilidad_presupuestada || 0;
-                // KPI 2: Costo Presupuestado (de partidas - lo que se planeo gastar)
-                var costoPresup = fin.costo_presupuestado || 0;
-                // KPI 3: Utilidad Real (cobrado - facturas proveedor - gastos aprobados)
-                var utilReal = fin.utilidad_real || 0;
-                var utilRealColor = utilReal >= 0 ? '#10b981' : '#ef4444';
-                // KPI 4: Margen Real (utilidad real / cobrado)
-                var cobrado = fin.ingresos || 0;
-                var margenReal = cobrado > 0 ? (utilReal / cobrado * 100) : 0;
-                var margenColor = margenReal >= 25 ? '#10b981' : (margenReal >= 15 ? '#f59e0b' : '#ef4444');
-
-                kpiContainer.innerHTML =
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Utilidad Presupuestada</div>' +
-                        '<div class="proy-kpi-value">' + fmtMoney(utilPresup) + '</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Costo Presupuestado</div>' +
-                        '<div class="proy-kpi-value">' + fmtMoney(costoPresup) + '</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Utilidad Real</div>' +
-                        '<div class="proy-kpi-value" style="color:' + utilRealColor + '">' + fmtMoney(utilReal) + '</div>' +
-                    '</div>' +
-                    '<div class="proy-kpi-card">' +
-                        '<div class="proy-kpi-label">Margen Real</div>' +
-                        '<div class="proy-kpi-value" style="color:' + margenColor + '">' + Math.round(margenReal) + '%</div>' +
-                    '</div>';
-            }
-        }).catch(function(err) {
-            console.error('Error cargando KPIs financieros:', err);
-        });
-    }
+    function renderKPIsFromAPI(projectId) { /* no-op: KPIs vienen de overview */ }
+    function renderOperationalKPIs(projectId) { /* no-op */ }
+    function renderFinancialKPIs(projectId) { /* no-op */ }
 
 
     // =========================================
@@ -772,17 +963,8 @@
                     });
                 }
 
-                // Update KPIs
-                var kpiC = el('proyKPIs');
-                if (kpiC) {
-                    var utilidadProy = (_cachedProjectDetail && _cachedProjectDetail.utilidad_presupuestada) ? _cachedProjectDetail.utilidad_presupuestada : totalsProfit;
-                    var marginPct = totalsSale > 0 ? Math.round(utilidadProy / totalsSale * 100) : 0;
-                    kpiC.innerHTML =
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Utilidad Presupuestada</div><div class="proy-kpi-value">' + fmtMoney(utilidadProy) + '</div></div>' +
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Costo Total</div><div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(totalsCost) + '</div></div>' +
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Venta Total</div><div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(totalsSale) + '</div></div>' +
-                        '<div class="proy-kpi-card"><div class="proy-kpi-label">Margen</div><div class="proy-kpi-value">' + marginPct + '%</div></div>';
-                }
+                // KPIs ahora vienen de project.overview en renderProjectOverview;
+                // ya no sobreescribimos el grid de cards desde aquí.
                 var foot = el('proyPartidasFoot');
                 if (foot) {
                     foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
@@ -2401,28 +2583,8 @@
                 var project = resp.data;
                 _cachedProjectDetail = project;
 
-                // Refresh header
-                var hName = el('proyDetailName');
-                var hStatus = el('proyDetailStatus');
-                var hClient = el('proyDetailClient');
-                var hDates = el('proyDetailDates');
-                var hDesc = el('proyDetailDesc');
-
-                if (hName) hName.textContent = project.nombre || '';
-                if (hStatus) {
-                    var etapa = project.oportunidad_etapa || statusLabel(project.status);
-                    var etapaColor = project.oportunidad_etapa_color || '#6B7280';
-                    hStatus.textContent = etapa;
-                    hStatus.style.background = etapaColor + '20';
-                    hStatus.style.color = etapaColor;
-                    hStatus.style.border = '1px solid ' + etapaColor;
-                    hStatus.className = 'proy-badge';
-                }
-                if (hClient) hClient.textContent = project.cliente_nombre || '\u2014';
-                if (hDates) hDates.textContent = fmtDate(project.fecha_inicio) + '  \u2192  ' + fmtDate(project.fecha_fin);
-                if (hDesc) hDesc.textContent = project.descripcion || '';
-
-                renderKPIsFromAPI(currentProjectId);
+                // Refresh header + KPIs (consume project.overview si vino)
+                renderProjectOverview(project);
 
                 // Show toast
                 _showToast('Proyecto actualizado correctamente');
@@ -2656,17 +2818,7 @@
             });
             container.innerHTML = html;
 
-            // Update KPIs with version data
-            var kpiC = el('proyKPIs');
-            if (kpiC) {
-                var marginPct = ver.total_venta > 0 ? Math.round(ver.ganancia / ver.total_venta * 100) : 0;
-                kpiC.innerHTML =
-                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Version ' + ver.version + ' — Utilidad</div><div class="proy-kpi-value">' + fmtMoney(ver.ganancia) + '</div></div>' +
-                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Costo Total</div><div class="proy-kpi-value" style="color:#ef4444">' + fmtMoney(ver.total_costo) + '</div></div>' +
-                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Venta Total</div><div class="proy-kpi-value" style="color:#10b981">' + fmtMoney(ver.total_venta) + '</div></div>' +
-                    '<div class="proy-kpi-card" style="border:1px dashed #8e8e93;"><div class="proy-kpi-label">Margen</div><div class="proy-kpi-value">' + marginPct + '%</div></div>';
-            }
-
+            // KPIs vienen de overview; el preview de versión solo afecta footer.
             // Update totals footer
             var foot = el('proyPartidasFoot');
             if (foot) {
