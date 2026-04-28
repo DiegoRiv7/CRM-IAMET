@@ -4457,6 +4457,12 @@
         var btnNeg = document.getElementById('btnNegociacion');
 
         function switchCrmView(view) {
+            // Quitar guardia anti-FOUC del admin: una vez que el JS toma
+            // control de la vista, las reglas !important de .adm-initial-hide
+            // ya no deben ganar sobre las clases .active (si no, navegar a
+            // Tareas/Proyectos desde Compras no funciona).
+            document.documentElement.classList.remove('adm-initial-hide');
+            if (document.body) document.body.classList.remove('adm-initial-hide');
             localStorage.setItem('crmView', view);
             window._crmTareasMode = (view === 'tareas');
             var widgetCompras = document.getElementById('widgetCompras');
