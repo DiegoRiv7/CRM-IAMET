@@ -2999,3 +2999,409 @@
     });
 
 })();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LVC — Levantamiento Vendedor Consulta
+   Overlay simple sólo-lectura para vendedores. Se abre con
+   levantamientoConsultaAbrir(levData) en lugar del wizard cuando
+   el backend devuelve puede_editar:false. NO usa state del wizard
+   ni dispara autosave; sólo lee y abre PDFs.
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    // Helpers locales — el archivo principal tiene su propio esc() y _fmt()
+    // dentro del IIFE de arriba; aquí redefinimos los necesarios.
+    function _esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function _$(id) { return document.getElementById(id); }
+
+    // Configuración por fase: título, helper de "tiene datos", helper de
+    // resumen corto, helper de detalle expandido, URL del PDF.
+    var STATUS_LABELS = {
+        borrador:   'Borrador',
+        revision:   'En Revisión',
+        aprobado:   'Aprobado',
+        rechazado:  'Rechazado',
+        ejecutando: 'Ejecutando',
+        completado: 'Completado',
+    };
+
+    function _fmtRel(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var diff = Math.max(0, (Date.now() - d.getTime()) / 1000);
+        if (diff < 60)    return 'hace unos segundos';
+        if (diff < 3600)  return 'hace ' + Math.round(diff / 60) + ' min';
+        if (diff < 86400) return 'hace ' + Math.round(diff / 3600) + ' h';
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    // ¿Una fase tiene datos significativos?
+    function _hasFase1(d) { d = d || {}; return !!(d.cliente || d.contacto || d.area || d.descripcion || (d.servicios||[]).length || (d.componentes||[]).length || (d.productos||[]).length); }
+    function _hasFase2(d) {
+        d = d || {};
+        return !!((d.especificaciones||[]).length || (d.comentarios||[]).length || (d.fotos||[]).length || (d.fechaInicio || d.fechaFin || d.duracion));
+    }
+    function _hasFase3(d) {
+        d = d || {};
+        return !!((d.materiales||[]).length || (d.manoObra||[]).length || (d.gastos||[]).length);
+    }
+    function _hasFase4(d) { d = d || {}; return !!((d.actividades||[]).length || (d.fases||[]).length); }
+    function _hasFase5(d) { d = d || {}; return !!((d.reportes||[]).length || d.notas); }
+
+    // Resumen corto (una línea) por fase
+    function _summary1(d) {
+        d = d || {};
+        var p = [];
+        if (d.cliente) p.push(d.cliente);
+        var nProd = (d.productos || []).length;
+        if (nProd) p.push(nProd + ' producto' + (nProd === 1 ? '' : 's'));
+        var nServ = (d.servicios || []).length;
+        if (nServ) p.push(nServ + ' servicio' + (nServ === 1 ? '' : 's'));
+        return p.length ? p.join(' · ') : 'Sin datos capturados';
+    }
+    function _summary2(d) {
+        d = d || {};
+        var p = [];
+        var nE = (d.especificaciones || []).length, nC = (d.comentarios || []).length, nF = (d.fotos || []).length;
+        if (nE) p.push(nE + ' especificación' + (nE === 1 ? '' : 'es'));
+        if (nC) p.push(nC + ' comentario' + (nC === 1 ? '' : 's'));
+        if (nF) p.push(nF + ' foto' + (nF === 1 ? '' : 's'));
+        if (d.duracion) p.push('Duración: ' + d.duracion);
+        return p.length ? p.join(' · ') : 'Sin datos capturados';
+    }
+    function _summary3(d) {
+        d = d || {};
+        var p = [];
+        var nM = (d.materiales || []).length, nMO = (d.manoObra || []).length, nG = (d.gastos || []).length;
+        if (nM)  p.push(nM + ' material' + (nM === 1 ? '' : 'es'));
+        if (nMO) p.push(nMO + ' partida' + (nMO === 1 ? '' : 's') + ' de mano de obra');
+        if (nG)  p.push(nG + ' gasto' + (nG === 1 ? '' : 's'));
+        return p.length ? p.join(' · ') : 'Sin datos capturados';
+    }
+    function _summary4(d) {
+        d = d || {};
+        var nA = (d.actividades || []).length, nFa = (d.fases || []).length;
+        var p = [];
+        if (nFa) p.push(nFa + ' fase' + (nFa === 1 ? '' : 's'));
+        if (nA)  p.push(nA + ' actividad' + (nA === 1 ? '' : 'es'));
+        return p.length ? p.join(' · ') : 'Sin datos capturados';
+    }
+    function _summary5(d) {
+        d = d || {};
+        var nR = (d.reportes || []).length;
+        if (nR) return nR + ' reporte' + (nR === 1 ? '' : 's');
+        if (d.notas) return 'Notas finales capturadas';
+        return 'Sin datos capturados';
+    }
+
+    // Detalle expandido (HTML) por fase — read-only, formato grid de campos.
+    function _detail1(d) {
+        d = d || {};
+        var html = '<div class="lvc-detail-grid">';
+        html += _detailItem('Cliente', d.cliente);
+        html += _detailItem('Contacto', d.contacto);
+        html += _detailItem('Email', d.email);
+        html += _detailItem('Teléfono', d.telefono);
+        html += _detailItem('Área', d.area);
+        html += _detailItem('Fecha levantamiento', d.fecha);
+        html += '</div>';
+        if (d.descripcion) {
+            html += '<div class="lvc-detail-block-title">Descripción / necesidad</div>';
+            html += '<div class="lvc-detail-value" style="white-space:pre-wrap;">' + _esc(d.descripcion) + '</div>';
+        }
+        var servicios = d.servicios || [];
+        if (servicios.length) {
+            html += '<div class="lvc-detail-block-title">Servicios</div>';
+            html += '<div>' + servicios.map(function(s){ return '<span class="lvc-detail-value" style="display:inline-block;background:#f1f5f9;padding:3px 10px;border-radius:999px;margin:2px;">' + _esc(s) + '</span>'; }).join('') + '</div>';
+        }
+        var productos = d.productos || [];
+        if (productos.length) {
+            html += '<div class="lvc-detail-block-title">Productos solicitados (' + productos.length + ')</div>';
+            html += '<ul class="lvc-detail-list">';
+            productos.forEach(function(p) {
+                var qty = (p.qty || p.cantidad || '?');
+                var unidad = (p.unidad || 'PZA');
+                var desc = p.desc || p.descripcion || '—';
+                var marca = p.marca ? ' · ' + p.marca : '';
+                var modelo = p.modelo ? ' / ' + p.modelo : '';
+                html += '<li class="lvc-detail-list-item">' +
+                    '<b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + _esc(marca) + _esc(modelo) +
+                '</li>';
+            });
+            html += '</ul>';
+        }
+        return html;
+    }
+
+    function _detail2(d) {
+        d = d || {};
+        var html = '<div class="lvc-detail-grid">';
+        html += _detailItem('Inicio', d.fechaInicio);
+        html += _detailItem('Fin', d.fechaFin);
+        html += _detailItem('Duración', d.duracion);
+        html += _detailItem('Turno', d.turno);
+        html += _detailItem('Personal', d.personal);
+        html += _detailItem('Apoyo cliente', d.apoyoCliente);
+        html += '</div>';
+        var espec = d.especificaciones || [];
+        if (espec.length) {
+            html += '<div class="lvc-detail-block-title">Especificaciones técnicas</div>';
+            html += '<ul class="lvc-detail-list">' + espec.map(function(s){ return '<li class="lvc-detail-list-item">' + _esc(typeof s === 'string' ? s : (s.texto || s.value || '')) + '</li>'; }).join('') + '</ul>';
+        }
+        var coms = d.comentarios || [];
+        if (coms.length) {
+            html += '<div class="lvc-detail-block-title">Comentarios</div>';
+            html += '<ul class="lvc-detail-list">' + coms.map(function(s){ return '<li class="lvc-detail-list-item">' + _esc(typeof s === 'string' ? s : (s.texto || s.value || '')) + '</li>'; }).join('') + '</ul>';
+        }
+        if (d.notasSitio) {
+            html += '<div class="lvc-detail-block-title">Notas del sitio</div>';
+            html += '<div class="lvc-detail-value" style="white-space:pre-wrap;">' + _esc(d.notasSitio) + '</div>';
+        }
+        var fotos = d.fotos || [];
+        if (fotos.length) {
+            html += '<div class="lvc-detail-block-title">Evidencia fotográfica (' + fotos.length + ')</div>';
+            html += '<div class="lvc-photos-grid">' + fotos.map(function(f) {
+                var src = f.url || f.src || (typeof f === 'string' ? f : '');
+                if (!src) return '';
+                return '<a href="' + _esc(src) + '" target="_blank" class="lvc-photo" style="background-image:url(' + _esc(src) + ');" title="Abrir foto"></a>';
+            }).join('') + '</div>';
+        }
+        return html;
+    }
+
+    // Para Fase 3 (Volumetría) — vendedor sólo ve cantidades, NO precios.
+    function _detail3(d) {
+        d = d || {};
+        var html = '';
+        var mat = d.materiales || [];
+        if (mat.length) {
+            html += '<div class="lvc-detail-block-title">Materiales / equipos (' + mat.length + ')</div>';
+            html += '<ul class="lvc-detail-list">';
+            mat.forEach(function(r) {
+                var qty = r.qty || r.cantidad || '?';
+                var unidad = r.unidad || 'PZA';
+                var desc = r.desc || r.descripcion || '—';
+                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+            });
+            html += '</ul>';
+        }
+        var mo = d.manoObra || [];
+        if (mo.length) {
+            html += '<div class="lvc-detail-block-title">Mano de obra / servicios (' + mo.length + ')</div>';
+            html += '<ul class="lvc-detail-list">';
+            mo.forEach(function(r) {
+                var qty = r.qty || r.cantidad || '?';
+                var unidad = r.unidad || 'JOR';
+                var desc = r.desc || r.descripcion || '—';
+                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+            });
+            html += '</ul>';
+        }
+        var gas = d.gastos || [];
+        if (gas.length) {
+            html += '<div class="lvc-detail-block-title">Gastos operativos (' + gas.length + ')</div>';
+            html += '<ul class="lvc-detail-list">';
+            gas.forEach(function(r) {
+                var qty = r.qty || r.cantidad || '?';
+                var unidad = r.unidad || '';
+                var desc = r.desc || r.descripcion || '—';
+                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+            });
+            html += '</ul>';
+        }
+        if (!mat.length && !mo.length && !gas.length) {
+            return '<div class="lvc-detail-value is-muted">Sin partidas capturadas.</div>';
+        }
+        // Nota: por privacidad financiera, ocultamos costos/precios al vendedor.
+        // El PDF "sin costos" cubre la entrega externa.
+        return html + '<div class="lvc-detail-value is-muted" style="margin-top:14px;font-size:11.5px;">ⓘ Los costos y precios no se muestran. Descarga el PDF de presupuesto para verlos.</div>';
+    }
+
+    function _detail4(d) {
+        d = d || {};
+        var fases = d.fases || [];
+        var html = '';
+        if (fases.length) {
+            html += '<div class="lvc-detail-block-title">Fases del programa de obra (' + fases.length + ')</div>';
+            html += '<ul class="lvc-detail-list">';
+            fases.forEach(function(f) {
+                var nombre = f.nombre || f.title || '—';
+                var ini = f.fechaInicio || f.inicio || '';
+                var fin = f.fechaFin || f.fin || '';
+                html += '<li class="lvc-detail-list-item"><b>' + _esc(nombre) + '</b>' +
+                    (ini || fin ? ' · ' + _esc(ini) + (fin ? ' → ' + _esc(fin) : '') : '') + '</li>';
+            });
+            html += '</ul>';
+        }
+        var act = d.actividades || [];
+        if (act.length) {
+            html += '<div class="lvc-detail-block-title">Actividades (' + act.length + ')</div>';
+            html += '<ul class="lvc-detail-list">' + act.map(function(a) {
+                return '<li class="lvc-detail-list-item">' + _esc(a.nombre || a.title || '—') + '</li>';
+            }).join('') + '</ul>';
+        }
+        if (!fases.length && !act.length) {
+            return '<div class="lvc-detail-value is-muted">Programa de obra aún no definido.</div>';
+        }
+        return html;
+    }
+
+    function _detail5(d) {
+        d = d || {};
+        var html = '';
+        if (d.notas) {
+            html += '<div class="lvc-detail-block-title">Notas finales</div>';
+            html += '<div class="lvc-detail-value" style="white-space:pre-wrap;">' + _esc(d.notas) + '</div>';
+        }
+        var rep = d.reportes || [];
+        if (rep.length) {
+            html += '<div class="lvc-detail-block-title">Reportes generados (' + rep.length + ')</div>';
+            html += '<ul class="lvc-detail-list">' + rep.map(function(r) {
+                return '<li class="lvc-detail-list-item">' + _esc(r.titulo || r.title || r.nombre || '—') + (r.fecha ? ' · ' + _esc(r.fecha) : '') + '</li>';
+            }).join('') + '</ul>';
+        }
+        if (!d.notas && !rep.length) {
+            return '<div class="lvc-detail-value is-muted">Aún no hay reportes.</div>';
+        }
+        return html;
+    }
+
+    function _detailItem(label, value) {
+        var v = (value == null || value === '') ? null : value;
+        return '<div class="lvc-detail-item">' +
+            '<span class="lvc-detail-label">' + _esc(label) + '</span>' +
+            '<span class="lvc-detail-value' + (v ? '' : ' is-muted') + '">' + _esc(v || '—') + '</span>' +
+        '</div>';
+    }
+
+    // URLs de PDF por fase.
+    function _pdfUrl(lev, fase) {
+        if (!lev || !lev.id) return null;
+        var base = '/app/api/iamet/levantamientos/' + lev.id + '/';
+        if (fase === 1) return base + 'levantamiento-pdf/?download=1';
+        if (fase === 2) return base + 'propuesta-pdf/?download=1';
+        // Fase 3 — para vendedor SIEMPRE entregamos versión sin costos.
+        if (fase === 3) return base + 'volumetria-pdf/?download=1&sin_costos=1';
+        if (fase === 4) {
+            if (!lev.proyecto_id) return null;
+            return '/app/api/iamet/proyectos/' + lev.proyecto_id + '/programa-obra-pdf/?download=1';
+        }
+        if (fase === 5) return base + 'reporte-pdf/?download=1';
+        return null;
+    }
+
+    var FASES = [
+        { n: 1, titulo: 'Levantamiento técnico',     has: _hasFase1, summary: _summary1, detail: _detail1 },
+        { n: 2, titulo: 'Propuesta técnica',          has: _hasFase2, summary: _summary2, detail: _detail2 },
+        { n: 3, titulo: 'Volumetría / Presupuesto',   has: _hasFase3, summary: _summary3, detail: _detail3 },
+        { n: 4, titulo: 'Programa de obra',           has: _hasFase4, summary: _summary4, detail: _detail4 },
+        { n: 5, titulo: 'Reportes',                   has: _hasFase5, summary: _summary5, detail: _detail5 },
+    ];
+
+    function _renderFase(lev, def) {
+        var data = lev['fase' + def.n + '_data'] || {};
+        var ok = def.has(data);
+        var pdfUrl = ok ? _pdfUrl(lev, def.n) : null;
+        var pdfBtn = pdfUrl
+            ? '<a href="' + _esc(pdfUrl) + '" target="_blank" class="lvc-pdf-btn" onclick="event.stopPropagation()" title="Descargar PDF"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>PDF</a>'
+            : '';
+        var chevron = ok
+            ? '<svg class="lvc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>'
+            : '';
+        var clsTail = ok ? 'has-data' : 'is-empty';
+        return '<div class="lvc-phase ' + clsTail + '" data-fase="' + def.n + '">' +
+            '<div class="lvc-phase-head" onclick="' + (ok ? 'levantamientoConsultaToggle(' + def.n + ')' : '') + '">' +
+                '<div class="lvc-phase-num">' + (ok ? '✓' : def.n) + '</div>' +
+                '<div class="lvc-phase-info">' +
+                    '<div class="lvc-phase-title">Fase ' + def.n + ' · ' + _esc(def.titulo) + '</div>' +
+                    '<div class="lvc-phase-summary">' + _esc(def.summary(data)) + '</div>' +
+                '</div>' +
+                '<div class="lvc-phase-actions">' + pdfBtn + chevron + '</div>' +
+            '</div>' +
+            (ok ? '<div class="lvc-phase-body" id="lvcFaseBody' + def.n + '"></div>' : '') +
+        '</div>';
+    }
+
+    var _currentLev = null;
+
+    window.levantamientoConsultaAbrir = function (levData) {
+        if (!levData) return;
+        _currentLev = levData;
+        var ov = _$('widgetLevantamientoConsulta');
+        if (!ov) return;
+        ov.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        var titleEl = _$('lvcTitle');
+        if (titleEl) titleEl.textContent = levData.nombre || 'Levantamiento';
+
+        var statusEl = _$('lvcStatus');
+        if (statusEl) statusEl.textContent = STATUS_LABELS[levData.status] || levData.status_label || '—';
+
+        var metaEl = _$('lvcMeta');
+        if (metaEl) {
+            var parts = [];
+            if (levData.proyecto_nombre) parts.push('Proyecto: ' + levData.proyecto_nombre);
+            if (levData.creado_por_nombre) parts.push('Creado por ' + levData.creado_por_nombre);
+            if (levData.actualizado_por_nombre && levData.actualizado_por_id !== levData.creado_por_id) {
+                parts.push('Última edición por ' + levData.actualizado_por_nombre);
+            }
+            if (levData.fecha_actualizacion) parts.push('Actualizado ' + _fmtRel(levData.fecha_actualizacion));
+            metaEl.textContent = parts.join(' · ');
+        }
+
+        var phasesEl = _$('lvcPhases');
+        if (phasesEl) {
+            phasesEl.innerHTML = FASES.map(function (def) { return _renderFase(levData, def); }).join('');
+        }
+    };
+
+    window.levantamientoConsultaCerrar = function () {
+        var ov = _$('widgetLevantamientoConsulta');
+        if (ov) ov.style.display = 'none';
+        document.body.style.overflow = '';
+        _currentLev = null;
+    };
+
+    // Toggle del detalle expandido de una fase
+    window.levantamientoConsultaToggle = function (n) {
+        if (!_currentLev) return;
+        var phasesEl = _$('lvcPhases');
+        if (!phasesEl) return;
+        var card = phasesEl.querySelector('.lvc-phase[data-fase="' + n + '"]');
+        if (!card || card.classList.contains('is-empty')) return;
+        var body = _$('lvcFaseBody' + n);
+        if (!body) return;
+        var isOpen = card.classList.contains('is-open');
+        if (isOpen) {
+            card.classList.remove('is-open');
+            body.innerHTML = '';
+        } else {
+            card.classList.add('is-open');
+            var def = FASES[n - 1];
+            var data = _currentLev['fase' + n + '_data'] || {};
+            body.innerHTML = def.detail(data);
+        }
+    };
+
+    // Cerrar con click fuera o Escape
+    document.addEventListener('keydown', function (e) {
+        var ov = _$('widgetLevantamientoConsulta');
+        if (e.key === 'Escape' && ov && ov.style.display !== 'none') {
+            window.levantamientoConsultaCerrar();
+        }
+    });
+    document.addEventListener('click', function (e) {
+        var ov = _$('widgetLevantamientoConsulta');
+        if (ov && e.target === ov) window.levantamientoConsultaCerrar();
+    });
+
+})();

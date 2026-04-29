@@ -4146,15 +4146,22 @@
     // Abre el wizard cargando el detalle del levantamiento
     window.levantamientoAbrir = function (levId) {
         _fetch('/app/api/iamet/levantamientos/' + levId + '/').then(function (resp) {
-            if (resp.ok || resp.success) {
+            if (!(resp.ok || resp.success)) {
+                if (typeof showToast === 'function') showToast(resp.error || 'No se pudo abrir', 'error');
+                return;
+            }
+            var puedeEditar = (resp.puede_editar !== false) && _levPuedeEditar;
+            if (puedeEditar) {
+                // Ingeniero / supervisor / admin → wizard editable.
                 if (typeof window.levantamientoWizardOpen === 'function') {
-                    // Pasamos puede_editar del backend para que el wizard se
-                    // abra en modo lectura (vendedor) u edición (ingeniero).
-                    var puedeEditar = (resp.puede_editar !== false) && _levPuedeEditar;
-                    window.levantamientoWizardOpen(resp.data, { puedeEditar: puedeEditar });
+                    window.levantamientoWizardOpen(resp.data, { puedeEditar: true });
                 }
             } else {
-                if (typeof showToast === 'function') showToast(resp.error || 'No se pudo abrir', 'error');
+                // Vendedor → overlay de consulta (NO carga el wizard, no
+                // dispara autosave que daría 403).
+                if (typeof window.levantamientoConsultaAbrir === 'function') {
+                    window.levantamientoConsultaAbrir(resp.data);
+                }
             }
         });
     };

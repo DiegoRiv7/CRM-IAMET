@@ -3894,3 +3894,316 @@ label.lw-soft-input {
     color: #fff !important;
     box-shadow: 0 2px 8px rgba(29, 78, 216, 0.25);
 }
+
+
+/* ==========================================================================
+   LVC — Levantamiento Vendedor Consulta
+   Overlay simple para vendedores. Muestra las 5 fases como cards con
+   resumen de campos clave + botones de descarga PDF. NO usa el wizard.
+   ========================================================================== */
+
+.lvc-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    z-index: 10200;
+    padding: 24px;
+    overflow-y: auto;
+}
+.lvc-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+    width: 100%;
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: lvcIn 0.22s ease;
+}
+@keyframes lvcIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.lvc-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+    flex-wrap: wrap;
+}
+.lvc-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    padding: 4px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+.lvc-back:hover { color: #0f172a; }
+
+.lvc-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lvc-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    background: #f1f5f9;
+    color: #475569;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.lvc-readonly-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.lvc-close {
+    width: 32px; height: 32px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.lvc-close:hover { background: rgba(15,23,42,0.06); color: #1e293b; }
+
+.lvc-meta {
+    padding: 10px 22px;
+    font-size: 12.5px;
+    color: #64748b;
+    background: #fff;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Lista de fases */
+.lvc-phases {
+    padding: 18px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.lvc-phase {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.lvc-phase.has-data { box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+.lvc-phase.has-data:hover { border-color: #cbd5e1; }
+.lvc-phase.is-empty { background: #fafbfc; }
+
+.lvc-phase-head {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+    user-select: none;
+}
+.lvc-phase.is-empty .lvc-phase-head { cursor: default; }
+
+.lvc-phase-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+.lvc-phase.has-data .lvc-phase-num {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.lvc-phase-info { min-width: 0; }
+.lvc-phase-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+}
+.lvc-phase-summary {
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lvc-phase.is-empty .lvc-phase-summary { color: #94a3b8; font-style: italic; }
+
+.lvc-phase-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lvc-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.1);
+}
+.lvc-pdf-btn:hover { background: #1e293b; }
+.lvc-pdf-btn:active { transform: scale(0.97); }
+.lvc-pdf-btn[disabled] {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.lvc-chevron {
+    color: #94a3b8;
+    transition: transform 0.18s ease;
+    flex-shrink: 0;
+}
+.lvc-phase.is-open .lvc-chevron { transform: rotate(180deg); }
+
+.lvc-phase-body {
+    display: none;
+    padding: 4px 22px 18px 58px;
+    border-top: 1px solid #f1f5f9;
+}
+.lvc-phase.is-open .lvc-phase-body { display: block; }
+
+.lvc-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 24px;
+    margin-top: 10px;
+}
+.lvc-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.lvc-detail-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.lvc-detail-value {
+    font-size: 13px;
+    color: #0f172a;
+    font-weight: 500;
+    overflow-wrap: break-word;
+}
+.lvc-detail-value.is-muted { color: #94a3b8; font-style: italic; font-weight: 400; }
+
+.lvc-detail-list {
+    margin-top: 10px;
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.lvc-detail-list-item {
+    font-size: 12.5px;
+    color: #1e293b;
+    padding: 4px 0;
+    border-bottom: 1px dashed #e2e8f0;
+}
+.lvc-detail-list-item:last-child { border-bottom: none; }
+
+.lvc-detail-block-title {
+    margin: 14px 0 6px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.lvc-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+.lvc-photo {
+    aspect-ratio: 4/3;
+    background: #f1f5f9;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+    background-size: cover;
+    background-position: center;
+}
+.lvc-photo:hover { transform: scale(1.02); }
+
+@media (max-width: 700px) {
+    .lvc-overlay { padding: 12px; }
+    .lvc-card { border-radius: 14px; }
+    .lvc-header { padding: 14px 16px; gap: 10px; }
+    .lvc-title { font-size: 15px; }
+    .lvc-phases { padding: 14px 16px 18px; }
+    .lvc-phase-head { padding: 12px 14px; }
+    .lvc-phase-body { padding: 4px 16px 14px 50px; }
+}
