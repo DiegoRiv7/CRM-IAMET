@@ -311,6 +311,145 @@
 
         // ---- KPI cells ----
         renderOverviewKPIs(ov);
+
+        // ---- Secciones extra del Dashboard (gauge, equipo, stack bar, mini-stats) ----
+        _renderDashboardSections(ov);
+    }
+
+    // Renderiza las cards adicionales del Dashboard (gauge avance,
+    // equipo, breakdown presupuesto, mini-stats). Tolera ausencia de
+    // overview con valores neutros.
+    function _renderDashboardSections(ov) {
+        // ── Gauge avance vs cronograma (semicircle SVG) ──
+        // El path "M 20 110 A 80 80 0 0 1 180 110" tiene length ≈ 251.3
+        // (π·80). stroke-dashoffset 251.3 = vacío; 0 = lleno.
+        var GAUGE_LENGTH = 251.3;
+        var gaugeReal = el('proyDashGaugeReal');
+        var gaugeTime = el('proyDashGaugeTime');
+        var gaugePct  = el('proyDashGaugePct');
+        var gaugeRealLbl = el('proyDashGaugeRealLabel');
+        var gaugeTimeLbl = el('proyDashGaugeTimeLabel');
+        var gaugeDelta = el('proyDashAvanceDelta');
+
+        var avp = (ov && typeof ov.avance_pct === 'number') ? Math.max(0, Math.min(100, Math.round(ov.avance_pct))) : 0;
+        var tpp = (ov && typeof ov.tiempo_transcurrido_pct === 'number') ? Math.max(0, Math.min(100, Math.round(ov.tiempo_transcurrido_pct))) : 0;
+        var delta = (ov && typeof ov.avance_vs_tiempo_delta === 'number') ? ov.avance_vs_tiempo_delta : (avp - tpp);
+
+        if (gaugeReal) gaugeReal.style.strokeDashoffset = (GAUGE_LENGTH * (1 - avp / 100)).toFixed(1);
+        if (gaugeTime) gaugeTime.style.strokeDashoffset = (GAUGE_LENGTH * (1 - tpp / 100)).toFixed(1);
+        if (gaugeReal) {
+            // Color del avance según delta vs tiempo
+            var color = '#10b981'; // verde
+            if (delta <= -15) color = '#ef4444';
+            else if (delta < 0) color = '#f59e0b';
+            gaugeReal.setAttribute('stroke', color);
+        }
+        if (gaugePct)    gaugePct.textContent = avp + '%';
+        if (gaugeRealLbl) gaugeRealLbl.textContent = avp + '%';
+        if (gaugeTimeLbl) gaugeTimeLbl.textContent = tpp + '%';
+        if (gaugeDelta) {
+            if (!ov) gaugeDelta.textContent = '—';
+            else if (delta > 0) gaugeDelta.textContent = '+' + delta + '% sobre el plan';
+            else if (delta === 0) gaugeDelta.textContent = 'En plan';
+            else gaugeDelta.textContent = delta + '% vs plan';
+        }
+
+        // ── Equipo grid ──
+        var equipoGrid = el('proyDashEquipoGrid');
+        var equipoCount = el('proyDashEquipoCount');
+        if (equipoGrid) {
+            var miembros = (ov && ov.equipo && ov.equipo.length) ? ov.equipo : [];
+            if (miembros.length) {
+                equipoGrid.innerHTML = miembros.map(function (m) {
+                    var ini = _esc(m.iniciales || _initials(m.nombre || ''));
+                    var nombre = _esc(m.nombre || '—');
+                    var rol = _esc(m.rol || '');
+                    var avatarHtml;
+                    if (m.avatar_url) {
+                        avatarHtml = '<div class="proy-v3-equipo-avatar" style="background-image:url(' + _esc(m.avatar_url) + ');"></div>';
+                    } else {
+                        avatarHtml = '<div class="proy-v3-equipo-avatar">' + ini + '</div>';
+                    }
+                    return '<div class="proy-v3-equipo-card">' + avatarHtml +
+                        '<div class="proy-v3-equipo-info">' +
+                            '<div class="proy-v3-equipo-name">' + nombre + '</div>' +
+                            (rol ? '<div class="proy-v3-equipo-rol">' + rol + '</div>' : '') +
+                        '</div></div>';
+                }).join('');
+            } else {
+                equipoGrid.innerHTML = '<div class="proy-v3-empty-tiny">Sin miembros asignados.</div>';
+            }
+            if (equipoCount) {
+                var total = (ov && typeof ov.equipo_total === 'number') ? ov.equipo_total : miembros.length;
+                equipoCount.textContent = total + (total === 1 ? ' miembro' : ' miembros');
+            }
+        }
+
+        // ── Stack bar: breakdown del presupuesto por categoría ──
+        var stackBar = el('proyDashStackBar');
+        var stackLegend = el('proyDashStackLegend');
+        var stackSummary = el('proyDashFinSummary');
+        if (stackBar && stackLegend) {
+            var breakdown = (ov && Array.isArray(ov.breakdown_presupuesto)) ? ov.breakdown_presupuesto : [];
+            var totalBreak = breakdown.reduce(function (s, b) { return s + Number(b.monto || 0); }, 0);
+            // Paleta determinística por orden (suficiente para 4-6 categorías típicas)
+            var palette = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#64748b'];
+
+            if (breakdown.length && totalBreak > 0) {
+                stackBar.innerHTML = breakdown.map(function (b, i) {
+                    var pct = (Number(b.monto || 0) / totalBreak) * 100;
+                    var color = palette[i % palette.length];
+                    return '<div class="proy-v3-stack-segment" style="width:' + pct.toFixed(2) + '%;background:' + color + ';" title="' + _esc(b.categoria || '') + ': ' + _fmtMoneyShort(b.monto) + '"></div>';
+                }).join('');
+                stackLegend.innerHTML = breakdown.map(function (b, i) {
+                    var color = palette[i % palette.length];
+                    var pct = Math.round((Number(b.monto || 0) / totalBreak) * 100);
+                    return '<div class="proy-v3-stack-legend-item">' +
+                        '<span class="proy-v3-stack-legend-dot" style="background:' + color + ';"></span>' +
+                        '<span class="proy-v3-stack-legend-label">' + _esc(b.categoria || 'Otros') + '</span>' +
+                        '<span class="proy-v3-stack-legend-amount">' + _fmtMoneyShort(b.monto) + ' · ' + pct + '%</span>' +
+                    '</div>';
+                }).join('');
+            } else {
+                stackBar.innerHTML = '<div class="proy-v3-stack-segment" style="width:100%;background:#e2e8f0;"></div>';
+                stackLegend.innerHTML = '<div class="proy-v3-empty-tiny">Aún no hay partidas con monto. Captura el levantamiento para ver el desglose.</div>';
+            }
+            if (stackSummary) {
+                stackSummary.textContent = totalBreak > 0 ? ('Total: ' + _fmtMoneyShort(totalBreak)) : 'Sin datos';
+            }
+        }
+
+        // ── Mini-stats ──
+        var counts = (ov && ov.counts) ? ov.counts : {};
+        var dr = (ov && typeof ov.dias_restantes === 'number') ? ov.dias_restantes : null;
+
+        var sDias = el('proyDashStatDias');
+        if (sDias) {
+            sDias.classList.remove('is-danger', 'is-warn');
+            if (dr === null)      sDias.textContent = '—';
+            else if (dr < 0)    { sDias.textContent = '−' + Math.abs(dr); sDias.classList.add('is-danger'); }
+            else if (dr <= 3)   { sDias.textContent = dr;                 sDias.classList.add('is-warn'); }
+            else                  sDias.textContent = dr;
+        }
+        var sLev = el('proyDashStatLevantamientos');
+        if (sLev) sLev.textContent = (counts.levantamientos != null) ? counts.levantamientos : '—';
+
+        var sTar = el('proyDashStatTareas');
+        if (sTar) {
+            var tp = (counts.tareas_pendientes != null) ? counts.tareas_pendientes : null;
+            sTar.classList.remove('is-warn');
+            sTar.textContent = (tp != null) ? tp : '—';
+            if (tp && tp > 5) sTar.classList.add('is-warn');
+        }
+        var sAle = el('proyDashStatAlertas');
+        if (sAle) {
+            var al = (counts.alertas != null) ? counts.alertas : null;
+            sAle.classList.remove('is-danger');
+            sAle.textContent = (al != null) ? al : '—';
+            if (al && al > 0) sAle.classList.add('is-danger');
+        }
+        var sOC = el('proyDashStatOC');
+        if (sOC) sOC.textContent = (counts.ordenes_compra_activas != null) ? counts.ordenes_compra_activas : '—';
     }
 
     // Render de las 4 celdas del KPI strip v3 (Estado · Progreso · Presupuesto · Facturado).

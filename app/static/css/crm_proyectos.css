@@ -993,12 +993,98 @@
 
 /* ---------- Top bar v3 ---------- */
 .proy-v3-topbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
+  min-height: 44px;
   flex-shrink: 0;
+}
+
+/* Tabs centrados como dynamic island en la fila del topbar.
+   Posición absolute para que el centro sea exacto sin importar el ancho
+   de los lados. Mismo look que la dynamic externa (.proy-tabs). */
+.proy-v3-topbar-tabs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 999px;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    0 4px 12px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  max-width: calc(100% - 380px);   /* deja espacio para los lados */
+  overflow-x: auto;
+  z-index: 5;
+}
+.proy-v3-topbar-tabs::-webkit-scrollbar { display: none; }
+
+.proy-v3-topbar-tabs .proy-v3-topbar-tab,
+.proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.18s ease;
+  margin: 0;
+  letter-spacing: 0;
+}
+.proy-v3-topbar-tabs .proy-v3-topbar-tab:hover,
+.proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn:hover {
+  background: rgba(15, 23, 42, 0.05);
+  color: #1e293b;
+}
+.proy-v3-topbar-tabs .proy-v3-topbar-tab.active,
+.proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn.active {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+}
+.proy-v3-topbar-tabs .proy-v3-topbar-tab.active:hover,
+.proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn.active:hover {
+  background: #0f172a;
+  color: #ffffff;
+}
+.proy-v3-topbar-tabs svg {
+  flex-shrink: 0;
+  margin: 0;
+  vertical-align: 0;
+  opacity: 0.85;
+}
+.proy-v3-topbar-tabs .active svg { opacity: 1; }
+.proy-v3-topbar-tabs.proy-tab-bar { border-bottom: none; padding: 4px; }
+
+@media (max-width: 1100px) {
+  /* En pantallas medianas las pills no caben centradas: las llevamos a una
+     segunda fila debajo del topbar y las dejamos alineadas a la izquierda. */
+  .proy-v3-topbar-tabs {
+    position: static;
+    transform: none;
+    margin: 8px 0 0;
+    max-width: 100%;
+  }
+  .proy-v3-topbar { flex-wrap: wrap; }
+  .proy-v3-topbar-left, .proy-v3-topbar-right { flex: 1 1 auto; }
+  .proy-v3-topbar-tabs { order: 3; flex: 1 0 100%; }
 }
 
 .proy-v3-topbar-left {
@@ -1384,75 +1470,219 @@
 .proy-v3-kpi-sub.is-danger { color: #b91c1c; font-weight: 600; }
 .proy-v3-kpi-sub.is-warn   { color: #b45309; font-weight: 600; }
 
-/* ---------- Tabs v3 (flat inline, active dark filled) ---------- */
-/* Sin contenedor pill ni backdrop-blur — solo botones planos sobre la
-   superficie. Active = dark filled (#0f172a). Estilo Linear/Notion. */
-.proy-v2-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  width: 100%;
-  margin: 0 0 16px;
-  gap: 4px;
-  padding: 0;
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  max-width: 100%;
-  overflow-x: auto;
-  flex-shrink: 0;
-}
-.proy-v2-tabs::-webkit-scrollbar { display: none; }
+/* ==========================================================================
+   PROY-V3 — Dashboard pane (gauge avance, equipo, breakdown, mini-stats)
+   ========================================================================== */
 
-.proy-v2-tabs .proy-v2-tab,
-.proy-v2-tabs.proy-tab-bar .proy-tab-btn {
+.proy-v3-dash-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.proy-v3-dash-row--2col { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .proy-v3-dash-row--2col { grid-template-columns: 1fr; } }
+
+.proy-v3-dash-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.proy-v3-dash-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.proy-v3-dash-card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.005em;
+}
+.proy-v3-dash-card-sub { font-size: 12px; font-weight: 600; color: #64748b; }
+.proy-v3-dash-card-body { flex: 1; min-width: 0; }
+
+/* ---- Gauge ---- */
+.proy-v3-gauge-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 6px 0 4px;
+}
+.proy-v3-gauge { width: 100%; max-width: 240px; height: auto; display: block; }
+.proy-v3-gauge-center {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+.proy-v3-gauge-pct {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.proy-v3-gauge-label {
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+.proy-v3-gauge-legend {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+}
+.proy-v3-gauge-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.proy-v3-gauge-legend-item b { color: #0f172a; font-weight: 700; font-variant-numeric: tabular-nums; }
+.proy-v3-gauge-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ---- Equipo grid ---- */
+.proy-v3-equipo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  min-height: 100px;
+}
+.proy-v3-equipo-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.proy-v3-equipo-card:hover { background: #fff; border-color: #e2e8f0; }
+.proy-v3-equipo-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  color: #64748b;
-  background: transparent;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.18s ease;
-  margin: 0;
-}
-.proy-v2-tabs .proy-v2-tab:hover,
-.proy-v2-tabs.proy-tab-bar .proy-tab-btn:hover {
-  background: rgba(15, 23, 42, 0.05);
-  color: #1e293b;
-}
-.proy-v2-tabs .proy-v2-tab.active,
-.proy-v2-tabs.proy-tab-bar .proy-tab-btn.active {
-  background: #0f172a;
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
-}
-.proy-v2-tabs .proy-v2-tab.active:hover,
-.proy-v2-tabs.proy-tab-bar .proy-tab-btn.active:hover {
-  background: #0f172a;
-  color: #ffffff;
-}
-.proy-v2-tabs .proy-v2-tab svg,
-.proy-v2-tabs.proy-tab-bar .proy-tab-btn svg {
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
   flex-shrink: 0;
-  margin: 0;
-  vertical-align: 0;
-  opacity: 0.85;
+  background-size: cover;
+  background-position: center;
 }
-.proy-v2-tabs .proy-v2-tab.active svg,
-.proy-v2-tabs.proy-tab-bar .proy-tab-btn.active svg {
-  opacity: 1;
+.proy-v3-equipo-info { min-width: 0; flex: 1; }
+.proy-v3-equipo-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proy-v3-equipo-rol {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 1px;
+  text-transform: capitalize;
 }
 
-.proy-v2-tabs.proy-tab-bar { border-bottom: none; }
+/* ---- Stack bar (breakdown presupuesto) ---- */
+.proy-v3-stack-bar {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.proy-v3-stack-segment { height: 100%; transition: width 0.5s ease; }
+.proy-v3-stack-segment + .proy-v3-stack-segment { border-left: 1px solid #fff; }
+
+.proy-v3-stack-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+  font-size: 12px;
+  color: #475569;
+}
+.proy-v3-stack-legend-item { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.proy-v3-stack-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.proy-v3-stack-legend-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: capitalize;
+  font-weight: 500;
+  color: #1e293b;
+}
+.proy-v3-stack-legend-amount { font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums; }
+
+.proy-v3-empty-tiny {
+  padding: 14px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12.5px;
+}
+
+/* ---- Mini-stats grid ---- */
+.proy-v3-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  .proy-v3-mini-stats { grid-template-columns: repeat(2, 1fr); }
+}
+.proy-v3-mini-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+.proy-v3-mini-stat-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.proy-v3-mini-stat-text { min-width: 0; flex: 1; }
+.proy-v3-mini-stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.proy-v3-mini-stat-value.is-danger { color: #b91c1c; }
+.proy-v3-mini-stat-value.is-warn   { color: #b45309; }
+.proy-v3-mini-stat-label {
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
 /* ---------- Tab System ---------- */
 

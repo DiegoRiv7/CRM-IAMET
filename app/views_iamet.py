@@ -486,6 +486,40 @@ def _proyecto_overview(proyecto):
         avance_pct=avance_pct,
     )
 
+    # ── Counts (mini-stats del Dashboard) ──
+    def _safe_count(rel):
+        try:
+            return rel.count() if rel is not None else 0
+        except Exception:
+            return 0
+
+    counts = {
+        'levantamientos': _safe_count(getattr(proyecto, 'levantamientos', None)),
+        'tareas_pendientes': _safe_count(proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled'])),
+        'alertas': _safe_count(proyecto.alertas.filter(resuelta=False)),
+        'ordenes_compra_activas': _safe_count(proyecto.ordenes_compra.exclude(status='cancelled')),
+    }
+
+    # ── Breakdown del presupuesto por categoría (de partidas) ──
+    # Si no hay partidas con monto, devolvemos lista vacía y el frontend
+    # muestra un mensaje informativo en su lugar.
+    breakdown_presupuesto = []
+    try:
+        partidas_by_cat = list(
+            proyecto.partidas.values('categoria')
+            .annotate(monto=Sum('precio_venta_total'))
+            .order_by('-monto')
+        )
+        for p in partidas_by_cat:
+            monto = float(p.get('monto') or 0)
+            if monto > 0:
+                breakdown_presupuesto.append({
+                    'categoria': p.get('categoria') or 'otros',
+                    'monto': monto,
+                })
+    except Exception:
+        breakdown_presupuesto = []
+
     return {
         'codigo': _extraer_codigo_proyecto(proyecto.nombre, opp),
         'status': status_code,
@@ -513,6 +547,8 @@ def _proyecto_overview(proyecto):
             'margen_pct': margen_pct,
             'margen_label': margen_label,
         },
+        'counts': counts,
+        'breakdown_presupuesto': breakdown_presupuesto,
     }
 
 
