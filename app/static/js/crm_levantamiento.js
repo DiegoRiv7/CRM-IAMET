@@ -2642,38 +2642,127 @@
         });
     };
 
+    // ── Modal genérico de confirmación ─────────────────────────
+    // Promise<boolean>. Reemplaza confirm() nativo por un widget
+    // consistente con el look del wizard. Soporta:
+    //   opts.title, opts.message (string o HTML), opts.confirmLabel,
+    //   opts.cancelLabel, opts.tone ('danger' | 'primary' | 'ok')
+    // Esc o click en backdrop equivale a Cancelar.
+    window.lwConfirm = function (opts) {
+        opts = opts || {};
+        var title = opts.title || 'Confirmar';
+        var message = opts.message || '';
+        var confirmLabel = opts.confirmLabel || 'Confirmar';
+        var cancelLabel = opts.cancelLabel || 'Cancelar';
+        var tone = opts.tone || 'primary';
+
+        return new Promise(function (resolve) {
+            // Crear DOM
+            var bd = document.createElement('div');
+            bd.className = 'lw-confirm-backdrop';
+            var box = document.createElement('div');
+            box.className = 'lw-confirm-box lw-confirm-' + tone;
+            box.setAttribute('role', 'dialog');
+            box.setAttribute('aria-modal', 'true');
+            box.innerHTML =
+                '<div class="lw-confirm-icon">' +
+                    (tone === 'danger'
+                        ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+                        : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 10"/></svg>') +
+                '</div>' +
+                '<div class="lw-confirm-body">' +
+                    '<div class="lw-confirm-title">' + esc(title) + '</div>' +
+                    '<div class="lw-confirm-msg">' + (typeof message === 'string' ? message : '') + '</div>' +
+                '</div>' +
+                '<div class="lw-confirm-actions">' +
+                    '<button type="button" class="lw-confirm-cancel">' + esc(cancelLabel) + '</button>' +
+                    '<button type="button" class="lw-confirm-ok">' + esc(confirmLabel) + '</button>' +
+                '</div>';
+            bd.appendChild(box);
+            document.body.appendChild(bd);
+            // Auto-focus al confirmar
+            setTimeout(function () {
+                var ok = box.querySelector('.lw-confirm-ok');
+                if (ok) ok.focus();
+            }, 30);
+
+            function close(result) {
+                document.removeEventListener('keydown', onKey, true);
+                if (bd.parentNode) bd.parentNode.removeChild(bd);
+                resolve(result);
+            }
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(false); }
+                else if (e.key === 'Enter') { e.preventDefault(); close(true); }
+            }
+            box.querySelector('.lw-confirm-cancel').onclick = function () { close(false); };
+            box.querySelector('.lw-confirm-ok').onclick      = function () { close(true);  };
+            bd.onclick = function (e) { if (e.target === bd) close(false); };
+            document.addEventListener('keydown', onKey, true);
+        });
+    };
+
     window.lwP3ToggleStatus = function () {
         if (!state.volumetriaActiva) return;
         var v = state.volumetriaActiva;
         var nuevo = v.status === 'completada' ? 'borrador' : 'completada';
-        // Confirmación al subir a completada (la deja visible para vendedores)
-        if (nuevo === 'completada' && !confirm('Marcar esta volumetría como completada? Quedará visible para vendedores.')) {
-            return;
+
+        function aplicar() {
+            apiFetch('/app/api/iamet/volumetrias/' + v.id + '/actualizar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: nuevo }),
+            }).then(function (r) {
+                if (r && r.success && r.data) {
+                    state.volumetriaActiva.status = r.data.status;
+                    state.volumetriaActiva.status_label = r.data.status_label;
+                    _lwP3RenderEditHead();
+                }
+            });
         }
-        apiFetch('/app/api/iamet/volumetrias/' + v.id + '/actualizar/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: nuevo }),
-        }).then(function (r) {
-            if (r && r.success && r.data) {
-                state.volumetriaActiva.status = r.data.status;
-                state.volumetriaActiva.status_label = r.data.status_label;
-                _lwP3RenderEditHead();
-            }
-        });
+
+        // Solo confirmamos al SUBIR a completada (es la acción que cambia
+        // la visibilidad para vendedores). Bajar a borrador es reversible
+        // y se aplica directo.
+        if (nuevo === 'completada') {
+            lwConfirm({
+                title: 'Marcar como completada',
+                message:
+                    'La volumetría <b>' + esc(v.nombre || '') + '</b> quedará visible para vendedores. ' +
+                    'Podrán consultar las cantidades y descargarla en PDF/Excel (sin costos).<br><br>' +
+                    'Puedes bajarla a borrador en cualquier momento.',
+                confirmLabel: 'Marcar como completada',
+                cancelLabel: 'Cancelar',
+                tone: 'primary',
+            }).then(function (ok) {
+                if (ok) aplicar();
+            });
+        } else {
+            aplicar();
+        }
     };
 
     window.lwP3DeleteVolumetria = function (id, nombre) {
-        if (!confirm('Eliminar la volumetría "' + (nombre || ('#' + id)) + '"? No se puede deshacer.')) return;
-        apiFetch('/app/api/iamet/volumetrias/' + id + '/eliminar/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        }).then(function (r) {
-            if (r && r.success) {
-                _lwP3FetchVolumetrias();
-            } else {
-                alert((r && r.error) || 'No se pudo eliminar.');
-            }
+        lwConfirm({
+            title: 'Eliminar volumetría',
+            message:
+                '¿Eliminar la volumetría <b>' + esc(nombre || ('#' + id)) + '</b>? ' +
+                'Esta acción no se puede deshacer.',
+            confirmLabel: 'Eliminar',
+            cancelLabel: 'Cancelar',
+            tone: 'danger',
+        }).then(function (ok) {
+            if (!ok) return;
+            apiFetch('/app/api/iamet/volumetrias/' + id + '/eliminar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            }).then(function (r) {
+                if (r && r.success) {
+                    _lwP3FetchVolumetrias();
+                } else {
+                    alert((r && r.error) || 'No se pudo eliminar.');
+                }
+            });
         });
     };
 
@@ -3724,6 +3813,12 @@
     ];
 
     function _renderFase(lev, def) {
+        // Fase 3 tiene un flujo distinto: en lugar de usar el legacy
+        // `lev.fase3_data`, listamos las volumetrías completadas del
+        // levantamiento. Cada una con su propio botón "Exportar".
+        if (def.n === 3) {
+            return _renderFase3Card(lev);
+        }
         var data = lev['fase' + def.n + '_data'] || {};
         var ok = def.has(data);
         var pdfUrl = ok ? _pdfUrl(lev, def.n) : null;
@@ -3747,11 +3842,125 @@
         '</div>';
     }
 
+    // ── Fase 3 — Card con lista de volumetrías ─────────────────────
+    // El vendedor recibe sólo las completadas (filtrado en backend);
+    // ingenieros (si abrieran el overlay) verían todas. Cada
+    // volumetría tiene su propio resumen + botón Exportar negro.
+    function _renderFase3Card(lev) {
+        var n = 3;
+        var titulo = 'Volumetría / Presupuesto';
+        var vols = _currentVolumetrias || [];
+        var nVols = vols.length;
+        var ok = nVols > 0;
+        var summaryTxt = ok
+            ? (nVols + ' volumetría' + (nVols === 1 ? '' : 's') + ' completada' + (nVols === 1 ? '' : 's'))
+            : 'Sin volumetrías completadas';
+        var chevron = ok
+            ? '<svg class="lvc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>'
+            : '';
+        var clsTail = ok ? 'has-data' : 'is-empty';
+        return '<div class="lvc-phase ' + clsTail + '" data-fase="' + n + '">' +
+            '<div class="lvc-phase-head" onclick="' + (ok ? 'levantamientoConsultaToggle(' + n + ')' : '') + '">' +
+                '<div class="lvc-phase-num">' + (ok ? '✓' : n) + '</div>' +
+                '<div class="lvc-phase-info">' +
+                    '<div class="lvc-phase-title">Fase ' + n + ' · ' + _esc(titulo) + '</div>' +
+                    '<div class="lvc-phase-summary">' + _esc(summaryTxt) + '</div>' +
+                '</div>' +
+                '<div class="lvc-phase-actions">' + chevron + '</div>' +
+            '</div>' +
+            (ok ? '<div class="lvc-phase-body" id="lvcFaseBody' + n + '"></div>' : '') +
+        '</div>';
+    }
+
+    // Body expandido de Fase 3: lista cada volumetría con su resumen
+    // y un botón "Exportar" negro con dropdown de 3 opciones.
+    function _renderFase3Body() {
+        var lev = _currentLev || {};
+        var vols = _currentVolumetrias || [];
+        if (!vols.length) return '<div class="lvc-detail-empty">No hay volumetrías completadas aún.</div>';
+        return vols.map(function (vol) {
+            var d = vol.data || {};
+            var partidasResumen = '';
+            var nM = (d.materiales || []).length;
+            var nMO = (d.manoObra || []).length;
+            var nG = (d.gastos || []).length;
+            var bits = [];
+            if (nM)  bits.push(nM  + ' material'  + (nM  === 1 ? '' : 'es'));
+            if (nMO) bits.push(nMO + ' mano de obra');
+            if (nG)  bits.push(nG  + ' gasto' + (nG === 1 ? '' : 's'));
+            partidasResumen = bits.length ? bits.join(' · ') : 'Sin partidas';
+
+            var html = '';
+            html += '<div class="lvc-vol-card" data-vol-id="' + vol.id + '">';
+            html += '<div class="lvc-vol-head">';
+            html += '<div>';
+            html += '<div class="lvc-vol-name">' + _esc(vol.nombre || 'Volumetría') + '</div>';
+            html += '<div class="lvc-vol-sub">' + _esc(partidasResumen);
+            if (vol.fecha_actualizacion) html += ' · Actualizado ' + _esc(_fmtRel(vol.fecha_actualizacion));
+            html += '</div>';
+            html += '</div>';
+            // Botón Exportar negro con dropdown
+            html += '<div class="lvc-export-wrap">';
+            html += '<button type="button" class="lvc-export-btn" onclick="event.stopPropagation(); lvcExportToggle(' + vol.id + ')" title="Exportar">';
+            html += '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>';
+            html += '<span>Exportar</span>';
+            html += '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+            html += '</button>';
+            html += '<div class="lvc-export-menu" id="lvcExportMenu' + vol.id + '">';
+            // Vendedor sólo opciones SIN COSTOS — coherente con la regla
+            // existente del overlay (vendedor nunca ve precios).
+            var base = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-pdf/?volumetria_id=' + vol.id + '&sin_costos=1';
+            var baseDl = base + '&download=1';
+            var xlsx = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-xlsx/?volumetria_id=' + vol.id + '&sin_costos=1';
+            html += '<a href="' + base + '" target="_blank" class="lvc-export-item">';
+            html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+            html += '<div><div class="lvc-export-item-title">Ver en pestaña</div><div class="lvc-export-item-sub">Previsualizar (sin costos)</div></div>';
+            html += '</a>';
+            html += '<a href="' + baseDl + '" class="lvc-export-item">';
+            html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>';
+            html += '<div><div class="lvc-export-item-title">Descargar PDF</div><div class="lvc-export-item-sub">Cantidades y descripciones</div></div>';
+            html += '</a>';
+            html += '<a href="' + xlsx + '" class="lvc-export-item">';
+            html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>';
+            html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Formato .xlsx</div></div>';
+            html += '</a>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            // Resumen de partidas (sin costos — vendedor nunca los ve)
+            html += '<div class="lvc-vol-body">' + _detail3(d) + '</div>';
+            html += '</div>';
+            return html;
+        }).join('');
+    }
+
+    // Toggle del menú "Exportar" de una volumetría. Cierra cualquier
+    // otro menú abierto antes (sólo uno abierto a la vez).
+    window.lvcExportToggle = function (volId) {
+        var all = document.querySelectorAll('.lvc-export-menu.is-open');
+        all.forEach(function (m) {
+            if (m.id !== 'lvcExportMenu' + volId) m.classList.remove('is-open');
+        });
+        var menu = _$('lvcExportMenu' + volId);
+        if (menu) menu.classList.toggle('is-open');
+    };
+
+    // Click fuera de cualquier menú abierto → cerrarlo.
+    document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('.lvc-export-wrap')) return;
+        var open = document.querySelectorAll('.lvc-export-menu.is-open');
+        open.forEach(function (m) { m.classList.remove('is-open'); });
+    });
+
     var _currentLev = null;
+    // Volumetrías completadas (para vendedor) o todas (ingeniero) del
+    // levantamiento abierto. Llenado por fetch al abrir el overlay.
+    var _currentVolumetrias = [];
 
     window.levantamientoConsultaAbrir = function (levData) {
         if (!levData) return;
         _currentLev = levData;
+        _currentVolumetrias = [];
         var ov = _$('widgetLevantamientoConsulta');
         if (!ov) return;
         ov.style.display = 'flex';
@@ -3776,8 +3985,27 @@
         }
 
         var phasesEl = _$('lvcPhases');
-        if (phasesEl) {
+        if (!phasesEl) return;
+
+        function renderAll() {
             phasesEl.innerHTML = FASES.map(function (def) { return _renderFase(levData, def); }).join('');
+        }
+
+        // Fetch volumetrías del levantamiento (vendedor recibe sólo
+        // completadas; ingeniero las recibe todas). Mientras carga
+        // mostramos un placeholder ligero. Si falla, render fallback
+        // sin volumetrías (Fase 3 quedará vacía pero el resto carga).
+        phasesEl.innerHTML = '<div class="lvc-loader">Cargando…</div>';
+        if (typeof apiFetch === 'function') {
+            apiFetch('/app/api/iamet/levantamientos/' + levData.id + '/volumetrias/').then(function (r) {
+                _currentVolumetrias = (r && r.ok && Array.isArray(r.data)) ? r.data : [];
+                renderAll();
+            }, function () {
+                _currentVolumetrias = [];
+                renderAll();
+            });
+        } else {
+            renderAll();
         }
     };
 
@@ -3803,9 +4031,15 @@
             body.innerHTML = '';
         } else {
             card.classList.add('is-open');
-            var def = FASES[n - 1];
-            var data = _currentLev['fase' + n + '_data'] || {};
-            body.innerHTML = def.detail(data);
+            // Fase 3 usa la lista de volumetrías con sus dropdowns;
+            // el resto sigue el patrón legacy (def.detail).
+            if (n === 3) {
+                body.innerHTML = _renderFase3Body();
+            } else {
+                var def = FASES[n - 1];
+                var data = _currentLev['fase' + n + '_data'] || {};
+                body.innerHTML = def.detail(data);
+            }
         }
     };
 

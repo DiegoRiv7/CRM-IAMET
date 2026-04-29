@@ -4527,3 +4527,212 @@ label.lw-soft-input {
     .lvc-phase-head { padding: 12px 14px; }
     .lvc-phase-body { padding: 4px 16px 14px 50px; }
 }
+
+/* ── Overlay de consulta — Fase 3 con volumetrías ────────────────
+   Cada volumetría completada se muestra como una sub-card dentro
+   del body expandido de la Fase 3. Botón "Exportar" negro con
+   dropdown de 3 opciones (preview, PDF, Excel — todos sin costos
+   porque el vendedor no debe ver precios). */
+
+.lvc-loader {
+    padding: 32px 16px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.lvc-detail-empty {
+    padding: 16px;
+    color: #94a3b8;
+    font-size: 12.5px;
+    font-style: italic;
+}
+
+.lvc-vol-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+.lvc-vol-card:last-child { margin-bottom: 0; }
+
+.lvc-vol-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.lvc-vol-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0f172a;
+}
+.lvc-vol-sub {
+    font-size: 11.5px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* Botón Exportar negro */
+.lvc-export-wrap { position: relative; }
+.lvc-export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+.lvc-export-btn:hover { background: #1e293b; }
+.lvc-export-btn:active { transform: scale(0.97); }
+
+/* Dropdown menu */
+.lvc-export-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 240px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.05);
+    padding: 6px;
+    z-index: 10;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+}
+.lvc-export-menu.is-open { display: flex; }
+
+.lvc-export-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: 7px;
+    color: #0f172a;
+    text-decoration: none;
+    transition: background 0.12s;
+}
+.lvc-export-item:hover { background: #f1f5f9; }
+.lvc-export-item svg { color: #64748b; flex-shrink: 0; }
+.lvc-export-item-title { font-size: 12.5px; font-weight: 600; line-height: 1.2; }
+.lvc-export-item-sub { font-size: 11px; color: #94a3b8; margin-top: 1px; line-height: 1.2; }
+
+.lvc-vol-body { margin-top: 4px; }
+
+/* ── Modal genérico de confirmación (lwConfirm) ─────────────────
+   Reemplazo del confirm() nativo. Backdrop oscuro + caja
+   centrada con icono, título, mensaje y dos botones. */
+
+.lw-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: lwConfirmFadeIn 0.16s ease;
+}
+@keyframes lwConfirmFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.lw-confirm-box {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(15, 23, 42, 0.08);
+    width: 100%;
+    max-width: 440px;
+    padding: 22px 22px 18px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 16px;
+    row-gap: 14px;
+    animation: lwConfirmPop 0.18s ease;
+}
+@keyframes lwConfirmPop {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
+.lw-confirm-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.lw-confirm-primary .lw-confirm-icon { background: #DBEAFE; color: #2563EB; }
+.lw-confirm-danger  .lw-confirm-icon { background: #FEE2E2; color: #DC2626; }
+.lw-confirm-ok-tone .lw-confirm-icon { background: #DCFCE7; color: #15803D; }
+
+.lw-confirm-body { min-width: 0; }
+.lw-confirm-title {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+}
+.lw-confirm-msg {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.5;
+}
+.lw-confirm-msg b { color: #0F172A; font-weight: 600; }
+
+.lw-confirm-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+.lw-confirm-cancel,
+.lw-confirm-ok {
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+}
+.lw-confirm-cancel {
+    background: #fff;
+    color: #475569;
+    border-color: #E2E8F0;
+}
+.lw-confirm-cancel:hover { background: #F8FAFC; border-color: #CBD5E1; color: #0F172A; }
+.lw-confirm-ok {
+    background: #2563EB;
+    color: #fff;
+}
+.lw-confirm-ok:hover { background: #1D4ED8; }
+.lw-confirm-danger .lw-confirm-ok {
+    background: #DC2626;
+}
+.lw-confirm-danger .lw-confirm-ok:hover { background: #B91C1C; }
+.lw-confirm-ok-tone .lw-confirm-ok {
+    background: #16A34A;
+}
+.lw-confirm-ok-tone .lw-confirm-ok:hover { background: #15803D; }

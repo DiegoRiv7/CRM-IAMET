@@ -3636,14 +3636,19 @@ def _fmt_qty(val):
     return '{:,.2f}'.format(n)
 
 
-def _build_volumetria_ctx(lev, sin_costos=False):
+def _build_volumetria_ctx(lev, sin_costos=False, data_override=None):
     """Construye el contexto de volumetría (usado por PDF y XLSX).
 
     Retorna un dict con materiales/mano_obra/gastos (filas formateadas) y totales.
+
+    Si `data_override` se provee (dict), se usa como fuente de la
+    volumetría en lugar de `lev.fase3_data`. Esto permite generar
+    PDF/XLSX de una volumetría específica (ProyectoVolumetria.data)
+    sin tener que mover los datos al levantamiento.
     """
     f1 = lev.fase1_data or {}
     f2 = lev.fase2_data or {}
-    f3 = lev.fase3_data or {}
+    f3 = data_override if isinstance(data_override, dict) else (lev.fase3_data or {})
 
     def _num(x):
         try:
@@ -3780,6 +3785,9 @@ def api_levantamiento_volumetria_pdf(request, levantamiento_id):
     """PDF de volumetría. Params:
       ?download=1      → fuerza descarga (attachment)
       ?sin_costos=1    → genera sin columnas de costo ni resumen financiero
+      ?volumetria_id=N → usa la data de esa ProyectoVolumetria en lugar de
+                         lev.fase3_data legacy. El vendedor sólo puede
+                         exportar volumetrías marcadas como completadas.
     """
     from django.http import HttpResponse
     from django.template.loader import render_to_string
@@ -3792,6 +3800,25 @@ def api_levantamiento_volumetria_pdf(request, levantamiento_id):
     if not _check_access(request.user, lev.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
+    # Resolver volumetria_id si vino en la URL → usa su data
+    volumetria_data_override = None
+    volumetria_obj = None
+    vol_id_raw = request.GET.get('volumetria_id')
+    if vol_id_raw:
+        try:
+            vol_id = int(vol_id_raw)
+            volumetria_obj = ProyectoVolumetria.objects.filter(
+                id=vol_id, levantamiento_id=lev.id,
+            ).first()
+        except (ValueError, TypeError):
+            volumetria_obj = None
+        if not volumetria_obj:
+            return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+        # Vendedor: sólo completadas
+        if _user_es_solo_lectura_levantamiento(request.user) and volumetria_obj.status != 'completada':
+            return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+        volumetria_data_override = volumetria_obj.data or {}
+
     def _static_file_url(rel_path):
         candidates = []
         if getattr(settings, 'STATIC_ROOT', None):
@@ -3803,7 +3830,7 @@ def api_levantamiento_volumetria_pdf(request, levantamiento_id):
         return ''
 
     sin_costos = bool(request.GET.get('sin_costos'))
-    ctx = _build_volumetria_ctx(lev, sin_costos=sin_costos)
+    ctx = _build_volumetria_ctx(lev, sin_costos=sin_costos, data_override=volumetria_data_override)
     ctx.update({
         'bajanet_hero_url': _static_file_url('images/propuesta/bajanet_hero.jpeg'),
         'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
@@ -3821,7 +3848,8 @@ def api_levantamiento_volumetria_pdf(request, levantamiento_id):
         return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'volumetria')).strip()[:80] or 'volumetria'
+    base_name = (volumetria_obj.nombre if volumetria_obj else (lev.nombre or 'volumetria'))
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in base_name).strip()[:80] or 'volumetria'
     suffix = '_SinCostos' if sin_costos else ''
     filename = f'Volumetria_{safe_name}{suffix}.pdf'
     disp = 'attachment' if request.GET.get('download') else 'inline'
@@ -3850,7 +3878,27 @@ def api_levantamiento_volumetria_xlsx(request, levantamiento_id):
     except ImportError:
         return JsonResponse({'success': False, 'error': 'openpyxl no está instalado'}, status=500)
 
-    ctx = _build_volumetria_ctx(lev, sin_costos=False)
+    # Soporte ?volumetria_id=N para exportar una volumetría específica.
+    # Vendedor sólo puede exportar las marcadas como completadas.
+    volumetria_data_override = None
+    volumetria_obj = None
+    vol_id_raw = request.GET.get('volumetria_id')
+    if vol_id_raw:
+        try:
+            vol_id = int(vol_id_raw)
+            volumetria_obj = ProyectoVolumetria.objects.filter(
+                id=vol_id, levantamiento_id=lev.id,
+            ).first()
+        except (ValueError, TypeError):
+            volumetria_obj = None
+        if not volumetria_obj:
+            return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+        if _user_es_solo_lectura_levantamiento(request.user) and volumetria_obj.status != 'completada':
+            return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+        volumetria_data_override = volumetria_obj.data or {}
+
+    sin_costos = bool(request.GET.get('sin_costos'))
+    ctx = _build_volumetria_ctx(lev, sin_costos=sin_costos, data_override=volumetria_data_override)
 
     wb = Workbook()
     ws = wb.active
@@ -4031,7 +4079,8 @@ def api_levantamiento_volumetria_xlsx(request, levantamiento_id):
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
-    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'volumetria')).strip()[:80] or 'volumetria'
+    base_name = (volumetria_obj.nombre if volumetria_obj else (lev.nombre or 'volumetria'))
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in base_name).strip()[:80] or 'volumetria'
     filename = f'Volumetria_{safe_name}.xlsx'
     response = HttpResponse(
         buf.read(),
