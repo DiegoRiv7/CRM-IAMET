@@ -371,7 +371,10 @@
     <tr>
         <td class="pt-value-cell"><b>{{ p.qty }}</b></td>
         <td class="pt-value-cell">{{ p.unidad }}</td>
-        <td style="padding:7px 11px;color:#0F172A;font-weight:500;font-size:10pt;">{{ p.desc|default:"—" }}</td>
+        <td style="padding:7px 11px;color:#0F172A;font-weight:500;font-size:10pt;">
+            {{ p.desc|default:"—" }}
+            {% if p.comentario %}<div style="margin-top:3px;color:#64748B;font-weight:400;font-size:8.5pt;font-style:italic;line-height:1.35;">{{ p.comentario|linebreaksbr }}</div>{% endif %}
+        </td>
         <td style="padding:7px 11px;color:#334155;font-size:9.5pt;">{{ p.marca|default:"—" }}</td>
         <td style="padding:7px 11px;color:#334155;font-size:9.5pt;font-family:'SF Mono',monospace;">{{ p.modelo|default:"—" }}</td>
     </tr>

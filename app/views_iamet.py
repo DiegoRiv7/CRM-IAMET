@@ -3380,13 +3380,23 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
         'notas_evidencia':  f2.get('notas_evidencia') or '',
         # Productos/Materiales — ahora se capturan en Fase 2 (con catálogo)
         # con fallback a fase1.productos para compat con levantamientos viejos.
-        'productos': [{
-            'qty':    p.get('qty') or 1,
-            'unidad': p.get('unidad') or 'PZA',
-            'desc':   p.get('desc') or '',
-            'marca':  p.get('marca') or '',
-            'modelo': p.get('modelo') or '',
-        } for p in (f2.get('productos') or f1.get('productos') or [])],
+        # Comentarios viven en fase2.comentarios como dict {idx: texto}; las
+        # llaves pueden venir como string (JSON) o int — probamos ambas.
+        'productos': [
+            {
+                'qty':    p.get('qty') or 1,
+                'unidad': p.get('unidad') or 'PZA',
+                'desc':   p.get('desc') or '',
+                'marca':  p.get('marca') or '',
+                'modelo': p.get('modelo') or '',
+                'comentario': (
+                    ((f2.get('comentarios') or {}).get(str(i))
+                     or (f2.get('comentarios') or {}).get(i)
+                     or '')
+                ),
+            }
+            for i, p in enumerate(f2.get('productos') or f1.get('productos') or [])
+        ],
         'evidencias': evidencias,
         # Recursos visuales — rutas filesystem para WeasyPrint
         'logo_url':          _static_file_url('images/iamet-logo.png'),
