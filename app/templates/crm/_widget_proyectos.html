@@ -208,38 +208,41 @@
       </div>
     </div>
 
-    <!-- ═══ HEADER: avatar cuadrado del cliente · título · status RAG + lifecycle ═══ -->
-    <div class="proy-v3-header">
-      <div class="proy-v3-client-square" id="proyDetailClientAvatar">·</div>
-      <div class="proy-v3-titleblock">
-        <h1 id="proyDetailName" class="proy-v3-name">Proyecto</h1>
-        <div class="proy-v3-status-row">
-          <span id="proyDetailStatus" class="proy-v3-rag-pill">
-            <span class="proy-v3-rag-dot"></span>
-            <span class="proy-v3-rag-text">—</span>
-          </span>
-          <span id="proyV2MetaState" class="proy-v3-state-text">—</span>
-          <!-- legacy refs ocultos para compat con código que aún los lea -->
-          <span id="proyDetailClient" style="display:none;"></span>
-          <span id="proyDetailUbicacion" style="display:none;"></span>
-          <span id="proyV2MetaSepCli" style="display:none;"></span>
-          <span id="proyV2MetaSepLoc" style="display:none;"></span>
-          <span id="proyDetailCodigo" style="display:none;"></span>
-          <span id="proyDetailDates" style="display:none;"></span>
-          <span id="proyDetailDesc" style="display:none;"></span>
-          <span id="proyV2MetaProgress" style="display:none;"></span>
-          <span id="proyV2MetaAvanceLabel" style="display:none;"></span>
-          <span id="proyV2MetaAvanceFill" style="display:none;"></span>
-          <span id="proyV2MetaAlert" style="display:none;"></span>
-          <span id="proyV2MetaAlertText" style="display:none;"></span>
-        </div>
-      </div>
-    </div>
+    <!-- ═══ HEADER minimalista (estilo Linear): título + meta line con pill RAG · cliente · fechas · alerta inline ═══ -->
+    <div class="proy-v3-header proy-v3-header--minimal">
+      <h1 id="proyDetailName" class="proy-v3-name">Proyecto</h1>
+      <div class="proy-v3-meta-line">
+        <span id="proyDetailStatus" class="proy-v3-rag-pill">
+          <span class="proy-v3-rag-dot"></span>
+          <span class="proy-v3-rag-text">—</span>
+        </span>
+        <span class="proy-v3-meta-sep" id="proyV3MetaSepCli" aria-hidden="true">·</span>
+        <span id="proyDetailClient" class="proy-v3-meta-cliente">—</span>
+        <span class="proy-v3-meta-sep" id="proyV3MetaSepFechas" aria-hidden="true">·</span>
+        <span id="proyV3Fechas" class="proy-v3-meta-fechas">—</span>
+        <span class="proy-v3-meta-sep" id="proyV3MetaSepAlert" aria-hidden="true" style="display:none;">·</span>
+        <span class="proy-v3-meta-alert-inline" id="proyV3AlertInline" style="display:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          <span id="proyV3AlertInlineText"></span>
+        </span>
 
-    <!-- ═══ Alert bar (condicional): solo aparece si rag = rojo/ambar y hay alertas críticas. ═══ -->
-    <div class="proy-v3-alert-bar" id="proyV3AlertBar" style="display:none;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-      <span id="proyV3AlertBarText"></span>
+        <!-- legacy refs ocultos para compat con código que aún los lea -->
+        <span id="proyDetailClientAvatar" style="display:none;"></span>
+        <span id="proyV2MetaState" style="display:none;"></span>
+        <span id="proyDetailUbicacion" style="display:none;"></span>
+        <span id="proyV2MetaSepCli" style="display:none;"></span>
+        <span id="proyV2MetaSepLoc" style="display:none;"></span>
+        <span id="proyDetailCodigo" style="display:none;"></span>
+        <span id="proyDetailDates" style="display:none;"></span>
+        <span id="proyDetailDesc" style="display:none;"></span>
+        <span id="proyV2MetaProgress" style="display:none;"></span>
+        <span id="proyV2MetaAvanceLabel" style="display:none;"></span>
+        <span id="proyV2MetaAvanceFill" style="display:none;"></span>
+        <span id="proyV2MetaAlert" style="display:none;"></span>
+        <span id="proyV2MetaAlertText" style="display:none;"></span>
+        <span id="proyV3AlertBar" style="display:none;"></span>
+        <span id="proyV3AlertBarText" style="display:none;"></span>
+      </div>
     </div>
 
     <!-- Tabs viven ahora en el topbar arriba (mini dynamic island centrada). -->

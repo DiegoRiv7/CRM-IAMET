@@ -1240,7 +1240,7 @@
 }
 .proy-v3-close:hover { background: rgba(15,23,42,0.06); color: #1e293b; }
 
-/* ---------- Header v3 (avatar cuadrado + título + status RAG · estado) ---------- */
+/* ---------- Header v3 minimalista (Linear-style): título + meta line ---------- */
 .proy-v3-header {
   display: flex;
   align-items: center;
@@ -1248,6 +1248,49 @@
   margin-bottom: 18px;
   flex-shrink: 0;
 }
+
+/* Variante minimal: layout vertical (título arriba, meta line abajo). */
+.proy-v3-header.proy-v3-header--minimal {
+  display: block;
+  margin-bottom: 14px;
+}
+.proy-v3-header--minimal .proy-v3-name { margin-bottom: 8px; }
+
+.proy-v3-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+.proy-v3-meta-line .proy-v3-meta-sep { color: #cbd5e1; font-weight: 500; flex-shrink: 0; }
+.proy-v3-meta-cliente {
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+.proy-v3-meta-fechas {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Alerta inline: vive en la meta line cuando rag = rojo/ámbar. Mismo
+   nivel visual que cliente/fechas pero con color semántico. */
+.proy-v3-meta-alert-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #dc2626;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.proy-v3-meta-alert-inline.is-warn { color: #d97706; }
+.proy-v3-meta-alert-inline svg { flex-shrink: 0; }
 
 .proy-v3-client-square {
   width: 56px;

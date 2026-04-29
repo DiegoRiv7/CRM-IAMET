@@ -192,6 +192,7 @@
 
     // Pinta el cuadrado oscuro del cliente (avatar v3) — iniciales en blanco
     // o logo de fondo si existe. Background #1c1c1e por defecto (uniform).
+    // Mantenido por compat con el header anterior; el v3 minimal ya no lo usa.
     function _paintClientSquare(target, cliente) {
         if (!target) return;
         var nombre = (cliente && cliente.nombre) || '';
@@ -204,6 +205,21 @@
             target.textContent = ini;
         }
         target.title = nombre;
+    }
+
+    // Formatea un rango de fechas como "10 abr → 17 abr 2026" (o "10 abr 2026
+    // → 5 may 2027" si los años difieren). Acepta strings ISO YYYY-MM-DD.
+    function _fmtDateRange(ini, fin) {
+        if (!ini && !fin) return '';
+        if (!ini) return fmtDate(fin);
+        if (!fin) return fmtDate(ini);
+        var aIni = ini.split('T')[0].split('-');
+        var aFin = fin.split('T')[0].split('-');
+        var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        var sameYear = aIni[0] === aFin[0];
+        var d1 = parseInt(aIni[2], 10) + ' ' + months[parseInt(aIni[1], 10) - 1] + (sameYear ? '' : ' ' + aIni[0]);
+        var d2 = parseInt(aFin[2], 10) + ' ' + months[parseInt(aFin[1], 10) - 1] + ' ' + aFin[0];
+        return d1 + ' → ' + d2;
     }
 
     // Render del header + KPIs partiendo de data.overview (si existe).
@@ -220,13 +236,6 @@
         // ---- TÍTULO ----
         var hName = el('proyDetailName');
         if (hName) hName.textContent = (project && project.nombre) || (ov && ov.nombre) || '';
-
-        // ---- AVATAR CUADRADO DEL CLIENTE ----
-        var avEl = el('proyDetailClientAvatar');
-        if (avEl) {
-            var cli = (ov && ov.cliente) ? ov.cliente : { nombre: project ? project.cliente_nombre : '' };
-            _paintClientSquare(avEl, cli);
-        }
 
         // ---- RAG PILL (status del header) ----
         // Antes mostraba el lifecycle (Planificación/Ejecución). Ahora muestra
@@ -245,17 +254,31 @@
             hStatus.style.color = ragColor;
         }
 
-        // ---- LIFECYCLE STATE (texto al lado del pill) ----
-        var stateEl = el('proyV2MetaState');
-        if (stateEl) stateEl.textContent = ov ? _stateLabel(ov.status) : 'Proyecto';
-
-        // Cliente / ubicación legacy (se usa también en otros lados)
-        var hClient = el('proyDetailClient');
-        var hUbic   = el('proyDetailUbicacion');
+        // ---- META LINE: cliente · fechas · alerta inline (header minimal) ----
         var clienteNombre = ov && ov.cliente ? ov.cliente.nombre : (project ? project.cliente_nombre : '');
         var clienteUbic   = ov && ov.cliente ? ov.cliente.ubicacion : '';
-        if (hClient) hClient.textContent = clienteNombre || '';
-        if (hUbic)   hUbic.textContent   = clienteUbic   || '';
+        var hClient = el('proyDetailClient');
+        if (hClient) hClient.textContent = clienteNombre || '—';
+        var sepCli = el('proyV3MetaSepCli');
+        if (sepCli) sepCli.style.display = clienteNombre ? '' : 'none';
+
+        // Rango de fechas (formato "10 abr → 17 abr 2026")
+        var fechas = el('proyV3Fechas');
+        var sepFech = el('proyV3MetaSepFechas');
+        var hUbic   = el('proyDetailUbicacion');
+        var fIni = ov ? ov.fecha_inicio : (project ? project.fecha_inicio : null);
+        var fFin = ov ? ov.fecha_fin    : (project ? project.fecha_fin    : null);
+        var rango = _fmtDateRange(fIni, fFin);
+        if (fechas) {
+            fechas.textContent = rango || 'Sin fechas';
+            fechas.classList.toggle('is-empty', !rango);
+        }
+        if (sepFech) sepFech.style.display = (rango || clienteNombre) ? '' : 'none';
+        if (hUbic) hUbic.textContent = clienteUbic || '';
+
+        // Lifecycle state legacy — el header minimal ya no lo muestra.
+        var stateEl = el('proyV2MetaState');
+        if (stateEl) stateEl.textContent = ov ? _stateLabel(ov.status) : '';
 
         // Link oportunidad (en el topbar, al lado de "Portafolio") — muestra
         // el nombre completo de la oportunidad (no solo el código), para que
@@ -278,22 +301,25 @@
             }
         }
 
-        // ---- ALERT BAR (header, condicional) ----
-        // Solo aparece si el rag es rojo o ámbar — para que el usuario vea
-        // la alerta crítica sin importar en qué tab esté. Verde = oculta.
-        var alertBar = el('proyV3AlertBar');
-        var alertText = el('proyV3AlertBarText');
-        if (alertBar && alertText) {
-            var rag = ov && ov.salud ? ov.salud.rag : null;
+        // ---- ALERTA INLINE (meta line del header minimal) ----
+        // Solo se muestra si rag = rojo o ámbar y hay razones. Vive como
+        // un fragmento más de la línea de meta, sin banner separado —
+        // mucho menos ruidoso que el alert bar grande del v2.
+        var alertInline = el('proyV3AlertInline');
+        var alertInlineText = el('proyV3AlertInlineText');
+        var alertSep = el('proyV3MetaSepAlert');
+        if (alertInline && alertInlineText) {
+            var ragV = ov && ov.salud ? ov.salud.rag : null;
             var razones = (ov && ov.salud && ov.salud.razones) ? ov.salud.razones : [];
-            if ((rag === 'rojo' || rag === 'ambar') && razones.length) {
-                alertBar.style.display = '';
-                alertBar.classList.toggle('is-warn', rag === 'ambar');
-                // Mostramos hasta 2 razones unidas con · — la 3ra y siguientes
-                // quedan en la card de Estado Global del Dashboard.
-                alertText.textContent = razones.slice(0, 2).join(' · ');
+            if ((ragV === 'rojo' || ragV === 'ambar') && razones.length) {
+                alertInline.style.display = '';
+                if (alertSep) alertSep.style.display = '';
+                alertInline.classList.toggle('is-warn', ragV === 'ambar');
+                // Solo la primera razón — la lista completa vive en el Dashboard.
+                alertInlineText.textContent = razones[0];
             } else {
-                alertBar.style.display = 'none';
+                alertInline.style.display = 'none';
+                if (alertSep) alertSep.style.display = 'none';
             }
         }
 
