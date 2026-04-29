@@ -3035,7 +3035,43 @@ def api_levantamiento_fase(request, levantamiento_id):
             pass
     lev.actualizado_por = request.user
     lev.save(update_fields=[f'fase{fase}_data', 'fase_actual', 'fecha_actualizacion', 'actualizado_por'])
-    return JsonResponse({'success': True, 'data': _lev_to_dict(lev)})
+
+    # Auto-sync de fechas Fase 2 → ProyectoIAMET.
+    # El Programa de Implementación de la propuesta técnica define
+    # la duración del proyecto. Reglas:
+    #   - Si el proyecto NO tiene fecha → se asigna automáticamente.
+    #   - Si el proyecto YA tiene fecha y coincide → no se toca.
+    #   - Si difiere → solo se sobrescribe cuando el cliente envía
+    #     force_override_proyecto_fechas=True (botón explícito en UI).
+    proyecto_fechas_aplicadas = False
+    proyecto_fechas_difieren = False
+    if fase == 2 and lev.proyecto:
+        prog = (fase_data or {}).get('programa') or {}
+        force = bool(data.get('force_override_proyecto_fechas'))
+        proy = lev.proyecto
+        cambios = []
+        for key in ('fecha_inicio', 'fecha_fin'):
+            nueva = _parse_date(prog.get(key))
+            if not nueva:
+                continue
+            actual = getattr(proy, key, None)
+            if actual is None:
+                setattr(proy, key, nueva)
+                cambios.append(key)
+            elif actual != nueva:
+                if force:
+                    setattr(proy, key, nueva)
+                    cambios.append(key)
+                else:
+                    proyecto_fechas_difieren = True
+        if cambios:
+            proy.save(update_fields=cambios + ['updated_at'])
+            proyecto_fechas_aplicadas = True
+
+    payload = _lev_to_dict(lev)
+    payload['proyecto_fechas_aplicadas'] = proyecto_fechas_aplicadas
+    payload['proyecto_fechas_difieren'] = proyecto_fechas_difieren
+    return JsonResponse({'success': True, 'data': payload})
 
 
 @login_required

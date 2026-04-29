@@ -3174,7 +3174,104 @@
     align-self: stretch;
     scroll-snap-align: start;
     scroll-snap-stop: always;
+    position: relative;
+    transition: box-shadow 0.18s ease;
 }
+
+/* ── Expand isla a fullscreen (Fase 2) ─────────────────────────
+   Click en el botón ⤢ de la esquina superior derecha de la
+   isla → la isla se vuelve un overlay fullscreen dentro del
+   wizard para trabajar la información con más espacio. */
+.lw-island-expand-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #E2E8F0;
+    background: #fff;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748B;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    z-index: 3;
+    padding: 0;
+}
+.lw-island-expand-btn:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+    color: #0F172A;
+}
+.lw-island-expand-btn svg { display: block; }
+
+/* La isla expandida toma todo el viewport del wizard */
+.lw-island.is-expanded {
+    position: fixed;
+    inset: 60px 24px 24px;
+    z-index: 1200;
+    max-width: none;
+    min-width: 0;
+    flex: none;
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+    animation: lwIslandExpand 0.2s ease;
+}
+@keyframes lwIslandExpand {
+    from { opacity: 0.85; transform: scale(0.985); }
+    to   { opacity: 1; transform: scale(1); }
+}
+.lw-island.is-expanded .lw-island-body {
+    overflow-y: auto;
+    flex: 1;
+}
+/* Backdrop oscuro detrás de la isla expandida */
+.lw-island-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    z-index: 1190;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    animation: lwBackdropIn 0.18s ease;
+}
+@keyframes lwBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+/* Cuando hay una isla expandida, el board no debe scrollear */
+.lw-islands-board.has-expanded { overflow: hidden; }
+
+/* ── Banner mismatch fechas proyecto vs Programa de Implementación ── */
+.lw-f2-fechas-mismatch {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #FEF3C7;
+    border: 1px solid #FCD34D;
+    border-radius: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12.5px;
+    color: #78350F;
+    line-height: 1.4;
+}
+.lw-f2-fechas-mismatch svg { flex-shrink: 0; margin-top: 1px; }
+.lw-f2-fechas-mismatch-text { flex: 1; min-width: 0; }
+.lw-f2-fechas-mismatch-text b { color: #451A03; }
+.lw-f2-fechas-mismatch-btn {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    background: #B45309;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.lw-f2-fechas-mismatch-btn:hover { background: #92400E; }
 
 /* Chips "roomy" — mas espacio entre chips para que Alcance no se vea amontonado */
 .lw-chips.lw-chips-roomy {

@@ -401,7 +401,10 @@
                     <div class="lw-islands-board">
 
                         <!-- ─── ISLA 1 · ESPECIFICACIONES, COMENTARIOS & MATERIALES ─── -->
-                        <section class="lw-island">
+                        <section class="lw-island" data-expandable="1">
+                            <button type="button" class="lw-island-expand-btn" onclick="lwIslandToggleExpand(this)" title="Expandir (Esc para cerrar)" aria-label="Expandir">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            </button>
                             <div class="lw-island-header">
                                 <div class="lw-island-step" style="background:#059669;">1</div>
                                 <div>
@@ -464,7 +467,10 @@
                         </section>
 
                         <!-- ─── ISLA 2 · EVIDENCIA FOTOGRÁFICA + NOTAS DEL SITIO ─── -->
-                        <section class="lw-island">
+                        <section class="lw-island" data-expandable="1">
+                            <button type="button" class="lw-island-expand-btn" onclick="lwIslandToggleExpand(this)" title="Expandir (Esc para cerrar)" aria-label="Expandir">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            </button>
                             <div class="lw-island-header">
                                 <div class="lw-island-step" style="background:#B45309;">2</div>
                                 <div>
@@ -493,7 +499,10 @@
                         </section>
 
                         <!-- ─── ISLA 3 · PROGRAMA DE IMPLEMENTACIÓN ─── -->
-                        <section class="lw-island">
+                        <section class="lw-island" data-expandable="1">
+                            <button type="button" class="lw-island-expand-btn" onclick="lwIslandToggleExpand(this)" title="Expandir (Esc para cerrar)" aria-label="Expandir">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            </button>
                             <div class="lw-island-header">
                                 <div class="lw-island-step" style="background:#7C3AED;">3</div>
                                 <div>
@@ -502,6 +511,10 @@
                                 </div>
                             </div>
                             <div class="lw-island-body">
+                                <!-- Banner: avisa cuando proyecto YA tiene fechas distintas a las
+                                     del Programa de Implementación. Botón sobrescribe. -->
+                                <div id="lwF2FechasMismatch" style="display:none;"></div>
+
                                 <div class="lw-ifield-row">
                                     <div class="lw-ifield">
                                         <label class="lw-ifield-label">Fecha inicio</label>

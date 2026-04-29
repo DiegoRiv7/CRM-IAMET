@@ -351,6 +351,56 @@
         return { canAdvance: pct >= 70, pct: pct, done: done, total: items.length };
     }
 
+    // ── Expand isla a fullscreen (Fase 2) ──────────────────────
+    // Las islas con data-expandable="1" tienen un botón ⤢ que las
+    // pone en pantalla completa dentro del wizard sin mover el DOM
+    // (preserva handlers, autosave, drop zone de fotos, etc.).
+    function _lwIslandCollapseAll() {
+        var expanded = document.querySelector('.lw-island.is-expanded');
+        if (!expanded) return false;
+        expanded.classList.remove('is-expanded');
+        var board = expanded.closest('.lw-islands-board');
+        if (board) board.classList.remove('has-expanded');
+        var bd = document.getElementById('lwIslandBackdrop');
+        if (bd && bd.parentNode) bd.parentNode.removeChild(bd);
+        // Restaurar el icono ⤢ (expandir) en el botón
+        var btn = expanded.querySelector('.lw-island-expand-btn');
+        if (btn) {
+            btn.title = 'Expandir (Esc para cerrar)';
+            btn.setAttribute('aria-label', 'Expandir');
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        }
+        return true;
+    }
+    window.lwIslandToggleExpand = function (btn) {
+        var section = btn && btn.closest('.lw-island');
+        if (!section) return;
+        // Si esta isla ya está expandida → contraer
+        if (section.classList.contains('is-expanded')) {
+            _lwIslandCollapseAll();
+            return;
+        }
+        // Si otra isla está expandida, contraerla primero
+        _lwIslandCollapseAll();
+        var board = section.closest('.lw-islands-board');
+        if (board) board.classList.add('has-expanded');
+        // Backdrop oscuro detrás
+        if (!document.getElementById('lwIslandBackdrop')) {
+            var bd = document.createElement('div');
+            bd.id = 'lwIslandBackdrop';
+            bd.className = 'lw-island-backdrop';
+            bd.addEventListener('click', _lwIslandCollapseAll);
+            document.body.appendChild(bd);
+        }
+        section.classList.add('is-expanded');
+        // Cambiar icono a ↙ (reducir)
+        btn.title = 'Reducir (Esc)';
+        btn.setAttribute('aria-label', 'Reducir');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    };
+    // Exponer el collapse para el handler global de Esc
+    window._lwIslandCollapseAll = _lwIslandCollapseAll;
+
     window.lwGoPhase = function (n) {
         if (n < 1 || n > 5) return;
         // Gate 70% Fase 1 → Fase >=2
@@ -511,6 +561,22 @@
                 _saveFailedCount = 0;
                 if (r.data && r.data.fecha_actualizacion) {
                     state.lev.fecha_actualizacion = r.data.fecha_actualizacion;
+                }
+                // El backend pudo haber sincronizado fechas del proyecto
+                // desde el Programa de Implementación (Fase 2). Refrescar
+                // state local para que Fase 4 (Programa de Obra) ya las
+                // tenga sin necesidad de recargar.
+                if (r.data && (r.data.proyecto_fecha_inicio !== undefined || r.data.proyecto_fecha_fin !== undefined)) {
+                    state.lev.proyecto_fecha_inicio = r.data.proyecto_fecha_inicio;
+                    state.lev.proyecto_fecha_fin = r.data.proyecto_fecha_fin;
+                }
+                if (r.data && r.data.proyecto_fechas_aplicadas && typeof lwCheer === 'function') {
+                    lwCheer('Fechas del proyecto sincronizadas', 'El Programa de Obra ya tiene el rango listo.', 'ok');
+                }
+                // Re-evaluar el banner mismatch en la isla 3 con los
+                // nuevos valores recién devueltos por el backend.
+                if (state.phase === 2 && typeof _lwF2UpdateMismatchBanner === 'function') {
+                    _lwF2UpdateMismatchBanner();
                 }
                 renderSaveStamp();
                 _saveStatusSet('ok');
@@ -2119,6 +2185,10 @@
         state.lev.fase2_data = f2;
         lwRefreshMetaPill(el);
         lwFieldChange();
+        // Si cambian fechas → re-evaluar banner mismatch en vivo
+        if (key === 'fecha_inicio' || key === 'fecha_fin') {
+            _lwF2UpdateMismatchBanner();
+        }
     };
 
     // Turno del Programa (chip single-select, ahora en Fase 2).
@@ -2164,7 +2234,76 @@
             state.lev.fase2_data = f2;
         }
         _lwF2RenderTurnoChips();
+        _lwF2UpdateMismatchBanner();
     }
+
+    // Banner: el proyecto YA tiene fechas distintas a las del Programa
+    // de Implementación. El backend respeta las fechas existentes del
+    // proyecto y NO las pisa salvo que el usuario apriete "Sobrescribir".
+    function _lwF2UpdateMismatchBanner() {
+        var box = $('lwF2FechasMismatch');
+        if (!box) return;
+        var f2 = state.lev.fase2_data || {};
+        var prog = f2.programa || {};
+        var pIni = prog.fecha_inicio || '';
+        var pFin = prog.fecha_fin || '';
+        var proyIni = state.lev.proyecto_fecha_inicio || '';
+        var proyFin = state.lev.proyecto_fecha_fin || '';
+        // Solo aviso cuando AMBOS lados tienen fecha y al menos una difiere.
+        var iniDiff = !!(pIni && proyIni && pIni !== proyIni);
+        var finDiff = !!(pFin && proyFin && pFin !== proyFin);
+        if (!iniDiff && !finDiff) {
+            box.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+        function fmt(d) {
+            if (!d) return '—';
+            var p = String(d).split('-');
+            if (p.length !== 3) return d;
+            return p[2] + '/' + p[1] + '/' + p[0];
+        }
+        box.innerHTML =
+            '<div class="lw-f2-fechas-mismatch">' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+                '<div class="lw-f2-fechas-mismatch-text">' +
+                    'El proyecto ya tiene fechas distintas: <b>' + fmt(proyIni) + ' → ' + fmt(proyFin) + '</b>. ' +
+                    'Tu Programa de Implementación marca <b>' + fmt(pIni) + ' → ' + fmt(pFin) + '</b>. ' +
+                    'Por defecto se respetan las del proyecto.' +
+                '</div>' +
+                '<button type="button" class="lw-f2-fechas-mismatch-btn" onclick="lwF2OverrideProyectoFechas()">Sobrescribir</button>' +
+            '</div>';
+        box.style.display = '';
+    }
+
+    // Sobrescribir las fechas del proyecto con las del Programa de
+    // Implementación. Reenvía la fase 2 con flag explícito.
+    window.lwF2OverrideProyectoFechas = function () {
+        if (!state.lev || !state.lev.id) return;
+        var f2 = state.lev.fase2_data || {};
+        var prog = f2.programa || {};
+        if (!prog.fecha_inicio && !prog.fecha_fin) return;
+        var body = JSON.stringify({
+            fase: 2,
+            data: f2,
+            fase_actual: state.lev.fase_actual,
+            force_override_proyecto_fechas: true,
+        });
+        apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/fase/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body,
+        }).then(function (r) {
+            if (r && r.success && r.data) {
+                state.lev.proyecto_fecha_inicio = r.data.proyecto_fecha_inicio;
+                state.lev.proyecto_fecha_fin = r.data.proyecto_fecha_fin;
+                _lwF2UpdateMismatchBanner();
+                if (typeof lwCheer === 'function') {
+                    lwCheer('Fechas del proyecto actualizadas', 'El Programa de Obra usará el nuevo rango.', 'ok');
+                }
+            }
+        });
+    };
 
     // ── Especificaciones + Comentarios (listas editables tipo bullet) ──
     function renderP2SpecList(kind, items) {
@@ -2988,6 +3127,16 @@
     document.addEventListener('keydown', function (e) {
         var ov = $('levantamientoWizard');
         if (!ov || ov.style.display === 'none') return;
+        // Esc cierra primero la isla expandida (Fase 2). No cierra el
+        // wizard — eso protege trabajo de campo y mantiene la regla
+        // "sólo la X cierra el wizard".
+        if (e.key === 'Escape') {
+            if (typeof window._lwIslandCollapseAll === 'function' && window._lwIslandCollapseAll()) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+        }
         var mod = e.metaKey || e.ctrlKey;
         if (mod && (e.key === 'k' || e.key === 'K') && state.phase === 1) {
             e.preventDefault();
