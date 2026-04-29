@@ -1134,6 +1134,29 @@
 }
 .proy-v3-opp-chip:hover { background: #dbeafe; border-color: #93c5fd; }
 
+/* Link sutil al lado de "Portafolio" — muestra el nombre completo de la
+   oportunidad ligada. No es un chip ruidoso, solo un text link con icon. */
+.proy-v3-topbar-sep { color: #cbd5e1; font-weight: 500; }
+.proy-v3-opp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  text-decoration: none;
+  max-width: 460px;
+  transition: color 0.15s ease;
+}
+.proy-v3-opp-link:hover { color: #0f172a; text-decoration: underline; text-decoration-color: rgba(15,23,42,0.25); text-underline-offset: 3px; }
+.proy-v3-opp-link svg { color: #94a3b8; flex-shrink: 0; }
+.proy-v3-opp-link span:not([aria-hidden]) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 .proy-v3-topbar-right {
   display: flex;
   align-items: center;

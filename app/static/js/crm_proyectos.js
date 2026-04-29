@@ -7,7 +7,7 @@
     // --- State ---
     var currentProjectId = null;
     var currentFilter = 'todos';
-    var currentTab = 'dashboard';
+    var currentTab = 'partidas';
     var _cachedProjectDetail = null;
     var searchQuery = '';
 
@@ -257,16 +257,22 @@
         if (hClient) hClient.textContent = clienteNombre || '';
         if (hUbic)   hUbic.textContent   = clienteUbic   || '';
 
-        // Chip oportunidad (top bar)
+        // Link oportunidad (en el topbar, al lado de "Portafolio") — muestra
+        // el nombre completo de la oportunidad (no solo el código), para que
+        // el usuario sepa de inmediato de qué venta nació este proyecto.
         var oppChip = el('proyDetailOppChip');
         var oppText = el('proyDetailOppText');
         if (oppChip) {
-            var oppId  = ov && ov.oportunidad ? ov.oportunidad.id : (project ? project.oportunidad_id : null);
-            var oppCod = ov && ov.oportunidad ? (ov.oportunidad.codigo || ('#' + ov.oportunidad.id)) : (project && project.oportunidad_id ? '#' + project.oportunidad_id : null);
+            var oppId   = ov && ov.oportunidad ? ov.oportunidad.id : (project ? project.oportunidad_id : null);
+            var oppName = ov && ov.oportunidad ? (ov.oportunidad.nombre || '') : '';
+            var oppCod  = ov && ov.oportunidad ? (ov.oportunidad.codigo || '') : '';
             if (oppId) {
-                if (oppText) oppText.textContent = oppCod || ('Op. #' + oppId);
+                // Preferimos el nombre completo; si no hay nombre, caemos al código.
+                var label = oppName || oppCod || ('Oportunidad #' + oppId);
+                if (oppText) oppText.textContent = label;
                 oppChip.style.display = '';
                 oppChip.setAttribute('data-opp-id', oppId);
+                oppChip.setAttribute('title', oppCod ? (oppCod + ' — ' + label) : ('Oportunidad — ' + label));
             } else {
                 oppChip.style.display = 'none';
             }
@@ -1135,7 +1141,7 @@
 
     window.proyectosVerDetalle = function(projectId) {
         currentProjectId = projectId;
-        currentTab = 'dashboard';
+        currentTab = 'partidas';
 
         // Open the detail overlay + lock body scroll
         var overlay = el('widgetProyectoDetalle');
@@ -1165,7 +1171,7 @@
             console.error('Error de red cargando proyecto:', err);
         });
 
-        proyectosSetTab('dashboard');
+        proyectosSetTab('partidas');
     };
 
     window.proyectosVolverLista = function() {

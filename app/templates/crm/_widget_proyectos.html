@@ -138,20 +138,19 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           <span>Portafolio</span>
         </button>
-        <span class="proy-v3-id" id="proyV3ProjectId">ID: —</span>
-        <a href="#" class="proy-v3-opp-chip" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)">
-          <span aria-hidden="true">&#x21B3;</span>
-          <span id="proyDetailOppText">Oportunidad</span>
+        <span class="proy-v3-topbar-sep" aria-hidden="true">·</span>
+        <a href="#" class="proy-v3-opp-link" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)" title="Abrir oportunidad ligada">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span id="proyDetailOppText">—</span>
         </a>
+        <!-- legacy ID hidden — ya no se muestra en el topbar -->
+        <span id="proyV3ProjectId" style="display:none;"></span>
       </div>
 
-      <!-- Tabs centrados como dynamic island (absolute para no desplazarse según el ancho de los lados). -->
+      <!-- Tabs centrados como dynamic island. Orden: Levantamientos (default) ·
+           Tareas · Drive · Cronograma · Finanzas · Dashboard · Info. -->
       <div class="proy-v3-topbar-tabs proy-tab-bar">
-        <button class="proy-v3-topbar-tab proy-tab-btn active" data-tab="dashboard" onclick="proyectosSetTab('dashboard')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
-          Dashboard
-        </button>
-        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="partidas" onclick="proyectosSetTab('partidas')">
+        <button class="proy-v3-topbar-tab proy-tab-btn active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
           Levantamientos
         </button>
@@ -170,6 +169,10 @@
         <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Finanzas
+        </button>
+        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="dashboard" onclick="proyectosSetTab('dashboard')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          Dashboard
         </button>
         <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="info" onclick="proyectosSetTab('info')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
