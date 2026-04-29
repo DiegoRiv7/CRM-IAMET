@@ -3649,8 +3649,22 @@
     // ¿Una fase tiene datos significativos?
     function _hasFase1(d) { d = d || {}; return !!(d.cliente || d.contacto || d.area || d.descripcion || (d.servicios||[]).length || (d.componentes||[]).length || (d.productos||[]).length); }
     function _hasFase2(d) {
+        // Shape real de fase2_data:
+        //   especificaciones [], comentarios_spec [], productos [],
+        //   notas_evidencia "", desc_proyecto "",
+        //   programa { fecha_inicio, fecha_fin, duracion, turno, ... }
+        // Las fotos NO viven aquí (están en lev.evidencias, otro modelo).
         d = d || {};
-        return !!((d.especificaciones||[]).length || (d.comentarios||[]).length || (d.fotos||[]).length || (d.fechaInicio || d.fechaFin || d.duracion));
+        var prog = d.programa || {};
+        return !!(
+            (d.especificaciones || []).length ||
+            (d.comentarios_spec || []).length ||
+            (d.productos || []).length ||
+            d.notas_evidencia ||
+            d.desc_proyecto ||
+            d.tipo_solucion ||
+            prog.fecha_inicio || prog.fecha_fin || prog.duracion
+        );
     }
     function _hasFase3(d) {
         d = d || {};
@@ -3672,12 +3686,15 @@
     }
     function _summary2(d) {
         d = d || {};
+        var prog = d.programa || {};
         var p = [];
-        var nE = (d.especificaciones || []).length, nC = (d.comentarios || []).length, nF = (d.fotos || []).length;
+        var nE = (d.especificaciones || []).length;
+        var nC = (d.comentarios_spec || []).length;
+        var nP = (d.productos || []).length;
         if (nE) p.push(nE + ' especificación' + (nE === 1 ? '' : 'es'));
         if (nC) p.push(nC + ' comentario' + (nC === 1 ? '' : 's'));
-        if (nF) p.push(nF + ' foto' + (nF === 1 ? '' : 's'));
-        if (d.duracion) p.push('Duración: ' + d.duracion);
+        if (nP) p.push(nP + ' material' + (nP === 1 ? '' : 'es'));
+        if (prog.duracion) p.push('Duración: ' + prog.duracion);
         return p.length ? p.join(' · ') : 'Sin datos capturados';
     }
     function _summary3(d) {
@@ -3746,33 +3763,57 @@
 
     function _detail2(d) {
         d = d || {};
+        var prog = d.programa || {};
         var html = '<div class="lvc-detail-grid">';
-        html += _detailItem('Inicio', d.fechaInicio);
-        html += _detailItem('Fin', d.fechaFin);
-        html += _detailItem('Duración', d.duracion);
-        html += _detailItem('Turno', d.turno);
-        html += _detailItem('Personal', d.personal);
-        html += _detailItem('Apoyo cliente', d.apoyoCliente);
+        html += _detailItem('Cliente / Planta', d.planta);
+        html += _detailItem('Solicitante', d.solicitante);
+        html += _detailItem('Departamento', d.departamento);
+        html += _detailItem('Áreas', d.areas);
+        html += _detailItem('Tipo de solución', d.tipo_solucion);
+        html += _detailItem('Inicio', prog.fecha_inicio);
+        html += _detailItem('Fin', prog.fecha_fin);
+        html += _detailItem('Duración', prog.duracion);
+        html += _detailItem('Turno', prog.turno);
+        html += _detailItem('Personal', prog.personal_req);
+        html += _detailItem('Apoyo cliente', prog.apoyo_cliente);
         html += '</div>';
+        if (d.desc_proyecto) {
+            html += '<div class="lvc-detail-block-title">Descripción del proyecto</div>';
+            html += '<div class="lvc-detail-value" style="white-space:pre-wrap;">' + _esc(d.desc_proyecto) + '</div>';
+        }
         var espec = d.especificaciones || [];
         if (espec.length) {
             html += '<div class="lvc-detail-block-title">Especificaciones técnicas</div>';
             html += '<ul class="lvc-detail-list">' + espec.map(function(s){ return '<li class="lvc-detail-list-item">' + _esc(typeof s === 'string' ? s : (s.texto || s.value || '')) + '</li>'; }).join('') + '</ul>';
         }
-        var coms = d.comentarios || [];
+        var coms = d.comentarios_spec || [];
         if (coms.length) {
             html += '<div class="lvc-detail-block-title">Comentarios</div>';
             html += '<ul class="lvc-detail-list">' + coms.map(function(s){ return '<li class="lvc-detail-list-item">' + _esc(typeof s === 'string' ? s : (s.texto || s.value || '')) + '</li>'; }).join('') + '</ul>';
         }
-        if (d.notasSitio) {
-            html += '<div class="lvc-detail-block-title">Notas del sitio</div>';
-            html += '<div class="lvc-detail-value" style="white-space:pre-wrap;">' + _esc(d.notasSitio) + '</div>';
+        var prods = d.productos || [];
+        if (prods.length) {
+            html += '<div class="lvc-detail-block-title">Productos / Materiales (' + prods.length + ')</div>';
+            html += '<ul class="lvc-detail-list">' + prods.map(function(p){
+                var qty = p.qty || 1;
+                var unidad = p.unidad || 'PZA';
+                var desc = p.desc || '—';
+                var marca = p.marca ? ' · ' + _esc(p.marca) : '';
+                var modelo = p.modelo ? ' · ' + _esc(p.modelo) : '';
+                return '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + marca + modelo + '</li>';
+            }).join('') + '</ul>';
         }
-        var fotos = d.fotos || [];
+        if (d.notas_evidencia) {
+            html += '<div class="lvc-detail-block-title">Notas del sitio</div>';
+            html += '<div class="lvc-detail-value" style="white-space:pre-wrap;">' + _esc(d.notas_evidencia) + '</div>';
+        }
+        // Las fotos viven en levantamiento.evidencias (LevantamientoEvidencia),
+        // no en fase2_data. Si el wizard las pasó al levData, las pintamos.
+        var fotos = (_currentLev && _currentLev.evidencias) || [];
         if (fotos.length) {
             html += '<div class="lvc-detail-block-title">Evidencia fotográfica (' + fotos.length + ')</div>';
             html += '<div class="lvc-photos-grid">' + fotos.map(function(f) {
-                var src = f.url || f.src || (typeof f === 'string' ? f : '');
+                var src = f.url || f.archivo_url || f.src || (typeof f === 'string' ? f : '');
                 if (!src) return '';
                 return '<a href="' + _esc(src) + '" target="_blank" class="lvc-photo" style="background-image:url(' + _esc(src) + ');" title="Abrir foto"></a>';
             }).join('') + '</div>';
@@ -4095,10 +4136,19 @@
         phasesEl.innerHTML = '<div class="lvc-loader">Cargando…</div>';
         if (typeof apiFetch === 'function') {
             apiFetch('/app/api/iamet/levantamientos/' + levData.id + '/volumetrias/').then(function (r) {
-                _currentVolumetrias = (r && r.ok && Array.isArray(r.data)) ? r.data : [];
+                // Aceptar tanto {ok:true,data:[...]} como {success:true,data:[...]}
+                var arr = (r && Array.isArray(r.data)) ? r.data : [];
+                _currentVolumetrias = arr;
+                // Log de diagnóstico — útil mientras estabilizamos. Si se
+                // ve "lev_id=X · 0 volumetrías" pero el ingeniero asegura
+                // que sí marcó una completada, lo más probable es que el
+                // levantamiento abierto NO sea el mismo (mismo proyecto,
+                // distinto id). El log lo confirma.
+                try { console.log('[consulta] lev_id=' + levData.id + ' volumetrías=' + arr.length, arr); } catch (e) {}
                 renderAll();
-            }, function () {
+            }, function (err) {
                 _currentVolumetrias = [];
+                try { console.log('[consulta] fetch volumetrías falló', err); } catch (e) {}
                 renderAll();
             });
         } else {
