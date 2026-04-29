@@ -4640,7 +4640,10 @@ label.lw-soft-input {
     background: rgba(15, 23, 42, 0.42);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    z-index: 2000;
+    /* Wizard usa z-index 10600. El modal debe estar POR ENCIMA o
+       queda invisible y los clicks apilan modales detrás (causa
+       lentitud + flash negro al cerrar el wizard). */
+    z-index: 11500;
     display: flex;
     align-items: center;
     justify-content: center;

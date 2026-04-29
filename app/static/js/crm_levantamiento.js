@@ -2657,6 +2657,16 @@
     //   opts.title, opts.message (string o HTML), opts.confirmLabel,
     //   opts.cancelLabel, opts.tone ('danger' | 'primary' | 'ok')
     // Esc o click en backdrop equivale a Cancelar.
+    // Cierra cualquier modal de confirm/prompt que ya esté abierto.
+    // Defensa contra apilar modales por dobles clicks o handlers que
+    // se llaman varias veces.
+    function _lwCloseExistingModals() {
+        var existing = document.querySelectorAll('.lw-confirm-backdrop');
+        existing.forEach(function (n) {
+            if (n.parentNode) n.parentNode.removeChild(n);
+        });
+    }
+
     window.lwConfirm = function (opts) {
         opts = opts || {};
         var title = opts.title || 'Confirmar';
@@ -2664,6 +2674,9 @@
         var confirmLabel = opts.confirmLabel || 'Confirmar';
         var cancelLabel = opts.cancelLabel || 'Cancelar';
         var tone = opts.tone || 'primary';
+
+        // Cerrar cualquier modal previo antes de abrir éste.
+        _lwCloseExistingModals();
 
         return new Promise(function (resolve) {
             // Crear DOM
@@ -2726,6 +2739,9 @@
         var confirmLabel = opts.confirmLabel || 'Aceptar';
         var cancelLabel = opts.cancelLabel || 'Cancelar';
         var required = !!opts.required;
+
+        // Cerrar modal previo (defensa contra dobles clicks)
+        _lwCloseExistingModals();
 
         return new Promise(function (resolve) {
             var bd = document.createElement('div');
