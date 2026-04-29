@@ -81,21 +81,49 @@
     }
 
     // ── Open / Close ─────────────────────────────────────────
-    window.levantamientoWizardOpen = function (levData) {
+    // opts.puedeEditar (default true): si false, abrimos en modo SOLO LECTURA
+    // (vendedores). En lectura los inputs van disabled, los botones que mutan
+    // se ocultan y la fase activa se fuerza a la última fase con datos.
+    window.levantamientoWizardOpen = function (levData, opts) {
         if (!levData) return;
+        opts = opts || {};
         state.lev = JSON.parse(JSON.stringify(levData)); // deep copy
         state.phase = Math.max(1, Math.min(5, levData.fase_actual || 1));
         state.dirty = false;
+        state.readonly = (opts.puedeEditar === false);
+
         var ov = $('levantamientoWizard');
         if (!ov) return;
         ov.style.display = 'flex';
+        ov.classList.toggle('lw-readonly', state.readonly);
         document.body.style.overflow = 'hidden';
         _lwRestoreMode(); // aplica clase lw-mode-simple/full desde localStorage
         _lwRestoreSidebar(); // aplica estado lw-sidebar-hidden desde localStorage
         renderHeader();
         renderPhaseTabs();
         renderPhase(state.phase);
+        // En modo lectura, marcar todos los inputs/textareas como readonly
+        // tras el render inicial. Cada renderPhase también vuelve a aplicar.
+        if (state.readonly) _lwApplyReadonlyToInputs();
     };
+
+    // Aplica readonly/disabled a todos los inputs del wizard. Se llama
+    // después de cada renderPhase para que afecte también a los campos
+    // creados dinámicamente.
+    function _lwApplyReadonlyToInputs() {
+        var ov = document.getElementById('levantamientoWizard');
+        if (!ov || !ov.classList.contains('lw-readonly')) return;
+        var inputs = ov.querySelectorAll('input, textarea, select');
+        Array.prototype.forEach.call(inputs, function (i) {
+            if (i.type === 'file' || i.type === 'checkbox' || i.type === 'radio') {
+                i.disabled = true;
+            } else if (i.tagName === 'SELECT') {
+                i.disabled = true;
+            } else {
+                i.readOnly = true;
+            }
+        });
+    }
 
     // Helper: confirm custom con widget de proyectos, fallback a window.confirm
     function lwConfirm(titulo, mensaje, opts) {
@@ -115,15 +143,22 @@
         var d = (state.lev && state.lev.fase1_data) || {};
         var haveName = !!(state.lev && (state.lev.nombre || '').trim());
         var haveProducts = ((d.productos || []).length > 0);
+        var wasReadonly = !!state.readonly;
         var ov = $('levantamientoWizard');
-        if (ov) ov.style.display = 'none';
+        if (ov) {
+            ov.style.display = 'none';
+            ov.classList.remove('lw-readonly');
+        }
         document.body.style.overflow = '';
-        if (haveName && haveProducts) {
+        // El toast "guardado" solo tiene sentido si hubo edición real.
+        // En modo lectura el usuario nunca tocó nada, así que lo omitimos.
+        if (haveName && haveProducts && !wasReadonly) {
             _globalCheer('✓ Levantamiento guardado', 'Queda en borrador hasta que lo aprueben.');
         }
         state.lev = null;
         state.phase = 1;
         state.dirty = false;
+        state.readonly = false;
         if (typeof window.levantamientoRefrescarLista === 'function') {
             window.levantamientoRefrescarLista();
         }
@@ -391,6 +426,11 @@
         else if (n === 3) renderPhase3();
         else if (n === 4) renderPhase4();
         else if (n === 5) renderPhase5();
+
+        // Reaplicar readonly tras cada renderPhase: las renderPhaseN crean
+        // inputs dinámicamente (productos, evidencias, etc.) y necesitan que
+        // el estado readonly se propague a esos elementos recién insertados.
+        if (state.readonly) _lwApplyReadonlyToInputs();
     }
 
     // ═══════════════════════════════════════════════════════════════

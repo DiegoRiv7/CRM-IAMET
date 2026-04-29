@@ -3888,19 +3888,33 @@
         return '<span class="' + cls + '"><i></i>' + _esc(label) + '</span>';
     }
 
+    // Permiso global de edición de levantamientos (lo manda el backend con
+    // cada lista). Si está en false, el frontend renderiza la tabla y el
+    // wizard en modo lectura — vendedores no editan ni borran.
+    var _levPuedeEditar = true;
+
     function renderLevantamientos(projectId) {
         var body = el('levListBody');
         var emptyEl = el('levListEmpty');
         if (!body) return;
-        body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#94A3B8;font-size:12.5px;">Cargando levantamientos…</td></tr>';
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:#94A3B8;font-size:12.5px;">Cargando levantamientos…</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/levantamientos/').then(function (resp) {
             if (!(resp.ok || resp.success)) {
-                body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#EF4444;font-size:12.5px;">Error cargando: ' + _esc(resp.error || '') + '</td></tr>';
+                body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:#EF4444;font-size:12.5px;">Error cargando: ' + _esc(resp.error || '') + '</td></tr>';
                 return;
             }
             var items = resp.data || [];
             _cachedLevantamientos = items;
+            // El backend dice si este usuario puede editar (no vendedor).
+            _levPuedeEditar = (resp.puede_editar !== false);
+            // Ocultar botón "Iniciar levantamiento" para vendedores.
+            var btnIniciar = el('btnIniciarLevantamiento');
+            if (btnIniciar) btnIniciar.style.display = _levPuedeEditar ? '' : 'none';
+            // Ocultar/mostrar header de la columna "acciones" según rol.
+            var thAction = document.querySelector('.lev-list-th-action');
+            if (thAction) thAction.style.display = _levPuedeEditar ? '' : 'none';
+
             if (items.length === 0) {
                 body.innerHTML = '';
                 if (emptyEl) emptyEl.style.display = '';
@@ -3910,10 +3924,18 @@
             var html = items.map(function (l) {
                 var fecha = _fmtShortDate(l.fecha_actualizacion || l.fecha_creacion);
                 var creador = l.creado_por_nombre || '—';
+                // "Editado por": muestra quién hizo la última modificación.
+                // Si es el mismo creador (o aún nadie modificó), mostramos "—".
+                var editor = l.actualizado_por_nombre && l.actualizado_por_id !== l.creado_por_id
+                    ? l.actualizado_por_nombre
+                    : (l.actualizado_por_nombre || '—');
                 var faseLbl = 'Fase ' + (l.fase_actual || 1) + '/5';
-                // Usamos JSON.stringify para quotear el id — sirve para ints
-                // del servidor Y para strings 'offline:<uuid>' del PWA offline.
                 var idArg = JSON.stringify(l.id);
+                var trashCell = _levPuedeEditar
+                    ? ('<td><button class="lev-row-del" title="Eliminar" onclick="event.stopPropagation(); levantamientoEliminar(' + idArg + ')">' +
+                       '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+                       '</button></td>')
+                    : '';
                 return '<tr class="lev-row" onclick="levantamientoAbrir(' + idArg + ')">' +
                     '<td><div class="lev-row-name">' + _esc(l.nombre || 'Sin nombre') +
                         (l._offline ? ' <span style="background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 6px;border-radius:100px;margin-left:6px;">Sin subir</span>' : '') +
@@ -3921,16 +3943,15 @@
                     '<td>' + _statusPillHtml(l.status, l.status_label) + '</td>' +
                     '<td><span class="lev-row-fase">' + faseLbl + '</span></td>' +
                     '<td><span class="lev-row-creador">' + _esc(creador) + '</span></td>' +
+                    '<td><span class="lev-row-creador">' + _esc(editor) + '</span></td>' +
                     '<td class="date"><span class="proy-tv2-fecha">' + fecha + '</span></td>' +
-                    '<td><button class="lev-row-del" title="Eliminar" onclick="event.stopPropagation(); levantamientoEliminar(' + idArg + ')">' +
-                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
-                    '</button></td>' +
+                    trashCell +
                     '</tr>';
             }).join('');
             body.innerHTML = html;
         }).catch(function (err) {
             console.error('Error levantamientos:', err);
-            body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#EF4444;font-size:12.5px;">Error de red</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:#EF4444;font-size:12.5px;">Error de red</td></tr>';
         });
     }
 
@@ -4127,7 +4148,10 @@
         _fetch('/app/api/iamet/levantamientos/' + levId + '/').then(function (resp) {
             if (resp.ok || resp.success) {
                 if (typeof window.levantamientoWizardOpen === 'function') {
-                    window.levantamientoWizardOpen(resp.data);
+                    // Pasamos puede_editar del backend para que el wizard se
+                    // abra en modo lectura (vendedor) u edición (ingeniero).
+                    var puedeEditar = (resp.puede_editar !== false) && _levPuedeEditar;
+                    window.levantamientoWizardOpen(resp.data, { puedeEditar: puedeEditar });
                 }
             } else {
                 if (typeof showToast === 'function') showToast(resp.error || 'No se pudo abrir', 'error');

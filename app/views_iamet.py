@@ -2789,6 +2789,26 @@ def api_cfdi_convertir(request):
 #  LEVANTAMIENTOS (wizard de 5 fases)
 # ══════════════════════════════════════════════════════════════
 
+def _user_es_solo_lectura_levantamiento(user):
+    """Vendedores tienen acceso de SOLO LECTURA a los levantamientos:
+    pueden ver fases completadas y descargar PDFs, pero no editar ni borrar.
+    Los ingenieros, supervisores, administradores y superusers tienen
+    acceso completo.
+    """
+    if not user or not user.is_authenticated:
+        return True
+    if user.is_superuser:
+        return False
+    if is_supervisor(user):
+        return False
+    try:
+        if hasattr(user, 'userprofile') and user.userprofile and getattr(user.userprofile, 'rol', None):
+            return user.userprofile.rol == 'vendedor'
+    except Exception:
+        pass
+    return False
+
+
 def _lev_to_dict(lev, include_evidencias=False):
     # Datos del proyecto padre (útil para Fase 4 — programa de obra — y PDFs)
     proy = lev.proyecto
@@ -2811,6 +2831,11 @@ def _lev_to_dict(lev, include_evidencias=False):
         'creado_por_nombre': (
             (lev.creado_por.get_full_name() or lev.creado_por.username)
             if lev.creado_por else None
+        ),
+        'actualizado_por_id': getattr(lev, 'actualizado_por_id', None),
+        'actualizado_por_nombre': (
+            (lev.actualizado_por.get_full_name() or lev.actualizado_por.username)
+            if getattr(lev, 'actualizado_por_id', None) else None
         ),
         'fecha_creacion': _fmt(lev.fecha_creacion),
         'fecha_actualizacion': _fmt(lev.fecha_actualizacion),
@@ -2845,10 +2870,13 @@ def api_levantamientos_lista(request, proyecto_id):
         return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
-    qs = proyecto.levantamientos.select_related('creado_por').all()
+    qs = proyecto.levantamientos.select_related('creado_por', 'actualizado_por').all()
     return JsonResponse({
         'ok': True,
         'data': [_lev_to_dict(l) for l in qs],
+        # Flag de UI: el frontend usa esto para decidir si renderiza el
+        # wizard en modo editor o en modo lectura (vendedores).
+        'puede_editar': not _user_es_solo_lectura_levantamiento(request.user),
     })
 
 
@@ -2861,6 +2889,8 @@ def api_levantamiento_crear(request, proyecto_id):
         return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden crear levantamientos'}, status=403)
 
     try:
         data = json.loads(request.body or '{}')
@@ -2915,13 +2945,17 @@ def api_levantamiento_crear(request, proyecto_id):
 def api_levantamiento_detalle(request, levantamiento_id):
     try:
         lev = ProyectoLevantamiento.objects.select_related(
-            'creado_por', 'proyecto'
+            'creado_por', 'actualizado_por', 'proyecto'
         ).prefetch_related('evidencias').get(id=levantamiento_id)
     except ProyectoLevantamiento.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
     if not _check_access(request.user, lev.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
-    return JsonResponse({'ok': True, 'data': _lev_to_dict(lev, include_evidencias=True)})
+    return JsonResponse({
+        'ok': True,
+        'data': _lev_to_dict(lev, include_evidencias=True),
+        'puede_editar': not _user_es_solo_lectura_levantamiento(request.user),
+    })
 
 
 @login_required
@@ -2934,6 +2968,8 @@ def api_levantamiento_actualizar(request, levantamiento_id):
         return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
     if not _check_access(request.user, lev.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden editar levantamientos'}, status=403)
     try:
         data = json.loads(request.body or '{}')
     except (json.JSONDecodeError, ValueError):
@@ -2956,6 +2992,7 @@ def api_levantamiento_actualizar(request, levantamiento_id):
         if k in data and isinstance(data[k], dict):
             setattr(lev, k, data[k])
 
+    lev.actualizado_por = request.user
     lev.save()
     return JsonResponse({'success': True, 'data': _lev_to_dict(lev, include_evidencias=True)})
 
@@ -2970,6 +3007,8 @@ def api_levantamiento_fase(request, levantamiento_id):
         return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
     if not _check_access(request.user, lev.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden editar levantamientos'}, status=403)
     try:
         data = json.loads(request.body or '{}')
     except (json.JSONDecodeError, ValueError):
@@ -2994,7 +3033,8 @@ def api_levantamiento_fase(request, levantamiento_id):
                 lev.fase_actual = f
         except (ValueError, TypeError):
             pass
-    lev.save(update_fields=[f'fase{fase}_data', 'fase_actual', 'fecha_actualizacion'])
+    lev.actualizado_por = request.user
+    lev.save(update_fields=[f'fase{fase}_data', 'fase_actual', 'fecha_actualizacion', 'actualizado_por'])
     return JsonResponse({'success': True, 'data': _lev_to_dict(lev)})
 
 
@@ -3007,6 +3047,8 @@ def api_levantamiento_eliminar(request, levantamiento_id):
         return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
     if not _check_access(request.user, lev.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden eliminar levantamientos'}, status=403)
     lev.delete()
     return JsonResponse({'success': True})
 

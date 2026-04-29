@@ -3828,3 +3828,69 @@ label.lw-soft-input {
     background: #FEE2E2;
     color: #DC2626;
 }
+
+
+/* ==========================================================================
+   READ-ONLY MODE (vendedor)
+   El wizard se abre con la clase .lw-readonly cuando el usuario no tiene
+   permisos de edición. Desactivamos visual y funcionalmente todo lo que
+   modifica datos, dejando inputs visibles para que se puedan leer y copiar
+   pero no editar. El botón PDF queda intacto y el botón "Siguiente fase"
+   se oculta — la navegación entre fases sigue por el sidebar de tabs.
+   ========================================================================== */
+
+/* Bloque visual: inputs readonly se ven sutilmente apagados */
+.lw-readonly input[readonly],
+.lw-readonly textarea[readonly],
+.lw-readonly select[disabled] {
+    background: #F8FAFC;
+    color: #475569;
+    cursor: text;
+}
+
+/* Botones de navegación de fase: ocultos en readonly. Los tabs del sidebar
+   siguen activos para navegar entre fases con datos. */
+.lw-readonly #lwFooterPrev,
+.lw-readonly #lwFooterNext,
+.lw-readonly #lwFooter { display: none !important; }
+
+/* Botones que mutan datos (agregar fila, eliminar, subir foto, mover, etc.) */
+.lw-readonly .lw-add-btn,
+.lw-readonly .lw-ghost-btn,
+.lw-readonly .lw-f2-prod-del,
+.lw-readonly .lw-p2-add-specs,
+.lw-readonly button[onclick*="Add"],
+.lw-readonly button[onclick*="Eliminar"],
+.lw-readonly button[onclick*="Borrar"],
+.lw-readonly button[onclick*="Quitar"],
+.lw-readonly button[onclick*="Crear"],
+.lw-readonly input[type="file"],
+.lw-readonly .lw-evidencia-upload,
+.lw-readonly .lw-photo-upload-zone,
+.lw-readonly .lw-row-del,
+.lw-readonly .lw-cell-del,
+.lw-readonly #lwSaveBtn,
+.lw-readonly #lwStatusBtn { display: none !important; }
+
+/* Avisar al usuario que está en modo lectura — banner discreto en el header */
+.lw-readonly #lwHeader::after {
+    content: '👁  Modo lectura · Solo descargas y consulta';
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    align-self: center;
+    margin-right: 12px;
+}
+
+/* PDF botón se mantiene visible y prominente (es la acción principal). */
+.lw-readonly #lwPdfWrap { display: flex !important; }
+.lw-readonly #lwPdfBtn {
+    background: #1D4ED8 !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(29, 78, 216, 0.25);
+}

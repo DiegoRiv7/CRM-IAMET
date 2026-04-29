@@ -4451,6 +4451,13 @@ class ProyectoLevantamiento(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='levantamientos_creados',
     )
+    # Quién hizo la última edición — distinto del creador. Útil cuando un
+    # ingeniero crea el levantamiento pero otro lo modifica después; el
+    # vendedor (sólo lectura) y los ingenieros pueden trazar quién tocó qué.
+    actualizado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='levantamientos_actualizados',
+    )
     fecha_creacion     = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
