@@ -5,6 +5,7 @@
 import csv
 import io
 import json
+import os
 import re
 from decimal import Decimal, InvalidOperation
 
@@ -14,6 +15,8 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
+
+from openpyxl import load_workbook
 
 from .models import (
     Almacen,
@@ -400,112 +403,395 @@ def producto_detail(request, id):
 @login_required
 @require_http_methods(["POST"])
 def productos_import(request):
-    """POST CSV. Columnas: codigo,nombre,costo,moneda,iva,clave_cfdi,unidad_cfdi,descripcion,almacenes."""
+    """
+    POST archivo XLSX o CSV con productos. Upsert por `external_id` (UUID del Excel).
+
+    Soporta:
+    - Excel real del cliente: columnas en español (`ID`, `No Producto`, `Codigo`,
+      `Titulo`, `Costo`, `Tipo de IVA.`, `Moneda`, `Clave CFDI`, `Unidad CFDI`,
+      `Descripcion`, etc.).
+    - CSV legacy (compat): columnas en inglés (`codigo`, `nombre`, ...).
+
+    Reglas:
+    - external_id presente y existe → UPDATE (sin pisar campos con valores vacíos).
+    - external_id presente pero no existe → CREATE.
+    - external_id ausente → CREATE con warning.
+    - NUNCA hace DELETE: productos que no estén en el archivo se quedan tal cual.
+    - costo solo se actualiza si Excel trae > 0 (no pisa costo capturado a mano).
+
+    Form-data:
+    - file: archivo .xlsx o .csv (requerido).
+    - crear_cfdi_faltantes: '1'/'true' para crear ClaveCFDI/UnidadCFDI faltantes
+      en lugar de fallar la fila.
+    """
     f = request.FILES.get('file') or request.FILES.get('csv')
     if not f:
         return JsonResponse({'ok': False, 'errors': {'file': 'Archivo requerido.'}}, status=400)
 
-    try:
-        raw = f.read().decode('utf-8-sig')
-    except Exception:
-        try:
-            f.seek(0)
-            raw = f.read().decode('latin-1')
-        except Exception as e:
-            return JsonResponse({'ok': False, 'errors': {'file': f'No se pudo leer el archivo: {e}'}}, status=400)
+    crear_cfdi_faltantes = (request.POST.get('crear_cfdi_faltantes') or '').strip().lower() in ('1', 'true', 'yes', 'on')
 
-    reader = csv.DictReader(io.StringIO(raw))
+    nombre_archivo = (getattr(f, 'name', '') or '').lower()
+    ext = os.path.splitext(nombre_archivo)[1]
+
+    # ── Leer filas del archivo ────────────────────────────────────
+    rows = []  # lista de dicts {col_normalizada: valor}
+    wb = None
+
+    def _norm_key(k):
+        return re.sub(r'\s+', ' ', str(k or '')).strip().lower()
+
+    try:
+        if ext == '.xlsx':
+            try:
+                wb = load_workbook(filename=f, read_only=True, data_only=True)
+            except Exception as e:
+                return JsonResponse({'ok': False, 'errors': {'file': f'No se pudo leer XLSX: {e}'}}, status=400)
+            ws = wb.active
+            headers = []
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i == 0:
+                    headers = [_norm_key(c) for c in row]
+                    continue
+                if row is None:
+                    continue
+                # Saltar filas completamente vacías
+                if all(c is None or (isinstance(c, str) and not c.strip()) for c in row):
+                    continue
+                d = {}
+                for h, v in zip(headers, row):
+                    if not h:
+                        continue
+                    d[h] = v
+                rows.append(d)
+        elif ext == '.csv' or ext == '':
+            try:
+                raw = f.read().decode('utf-8-sig')
+            except Exception:
+                try:
+                    f.seek(0)
+                    raw = f.read().decode('latin-1')
+                except Exception as e:
+                    return JsonResponse({'ok': False, 'errors': {'file': f'No se pudo leer CSV: {e}'}}, status=400)
+            reader = csv.DictReader(io.StringIO(raw))
+            for r in reader:
+                rows.append({_norm_key(k): v for k, v in r.items()})
+        else:
+            return JsonResponse({'ok': False, 'errors': {'file': f'Formato no soportado: {ext}. Usa .xlsx o .csv.'}}, status=400)
+    finally:
+        if wb is not None:
+            try:
+                wb.close()
+            except Exception:
+                pass
+
+    # ── Aliases (todos en lower-case, espacios colapsados) ───────
+    ALIASES = {
+        'external_id': ['id', 'external_id'],
+        'no_producto': ['no producto', 'no_producto', 'numero', 'número'],
+        'codigo': ['codigo', 'código'],
+        'nombre': ['titulo', 'título', 'nombre'],
+        'descripcion': ['descripcion', 'descripción'],
+        'costo': ['costo'],
+        'moneda': ['moneda'],
+        'iva': ['tipo de iva.', 'tipo de iva', 'iva'],
+        'clave_cfdi': ['clave cfdi', 'clave_cfdi'],
+        'unidad_cfdi': ['unidad cfdi', 'unidad_cfdi'],
+        'unidad_medida': ['unidad de medida', 'unidad_medida'],
+        'almacenes': ['almacenes'],
+    }
+
+    def _pick(row, field):
+        for alias in ALIASES.get(field, []):
+            if alias in row:
+                v = row[alias]
+                if v is None:
+                    return ''
+                return v
+        return ''
+
+    def _to_str(v):
+        if v is None:
+            return ''
+        if isinstance(v, str):
+            return v.strip()
+        return str(v).strip()
+
+    def _to_int(v):
+        s = _to_str(v)
+        if not s:
+            return None
+        # Permite floats tipo "12.0"
+        try:
+            return int(s)
+        except (ValueError, TypeError):
+            try:
+                return int(float(s))
+            except (ValueError, TypeError):
+                return None
+
+    def _parse_iva(v):
+        s = _to_str(v)
+        if not s:
+            return Decimal('16'), False
+        m = re.search(r'(\d+(?:\.\d+)?)', s)
+        if not m:
+            return Decimal('16'), True  # warning: no parseable
+        try:
+            n = Decimal(m.group(1))
+        except InvalidOperation:
+            return Decimal('16'), True
+        if n in (Decimal('8'), Decimal('8.00'), Decimal('16'), Decimal('16.00')):
+            return n, False
+        return Decimal('16'), True  # fuera de catálogo → 16 con warning
+
+    def _parse_costo(v):
+        if v is None or v == '':
+            return Decimal('0')
+        # Si es numérico nativo (XLSX devuelve int/float)
+        if isinstance(v, (int, float, Decimal)):
+            try:
+                return Decimal(str(v))
+            except InvalidOperation:
+                return Decimal('0')
+        s = _to_str(v)
+        if not s:
+            return Decimal('0')
+        # Limpia comas de miles y símbolos comunes
+        s = s.replace(',', '').replace('$', '').strip()
+        try:
+            return Decimal(s)
+        except InvalidOperation:
+            return Decimal('0')
+
+    # ── Caches para evitar N consultas ──────────────────────────
+    cache_claves = {c.clave: c for c in ClaveCFDI.objects.all()}
+    cache_unidades = {u.clave: u for u in UnidadCFDI.objects.all()}
+
     created = 0
+    updated = 0
+    skipped = 0
     failed = 0
+    claves_cfdi_creadas = 0
+    unidades_cfdi_creadas = 0
     errors_rows = []
 
-    for idx, row in enumerate(reader, start=2):  # 1 is header
+    for idx, row in enumerate(rows, start=2):  # fila 1 = header
         row_errors = {}
-        codigo = (row.get('codigo') or '').strip()
-        nombre = (row.get('nombre') or '').strip()
-        descripcion = (row.get('descripcion') or '').strip()
-        moneda = (row.get('moneda') or 'MXN').strip().upper()
-        clave_cfdi_str = (row.get('clave_cfdi') or '').strip()
-        unidad_cfdi_str = (row.get('unidad_cfdi') or '').strip()
-        almacenes_str = (row.get('almacenes') or '').strip()
 
-        if not codigo:
-            row_errors['codigo'] = 'Requerido'
-        if not nombre:
-            row_errors['nombre'] = 'Requerido'
-        if not descripcion:
-            row_errors['descripcion'] = 'Requerido'
+        external_id = _to_str(_pick(row, 'external_id'))
+        no_producto = _to_int(_pick(row, 'no_producto'))
+        codigo = _to_str(_pick(row, 'codigo'))
+        nombre = _to_str(_pick(row, 'nombre'))
+        descripcion = _to_str(_pick(row, 'descripcion'))
+        costo = _parse_costo(_pick(row, 'costo'))
+        moneda = _to_str(_pick(row, 'moneda')).upper()
+        iva, iva_warn = _parse_iva(_pick(row, 'iva'))
+        clave_cfdi_str = _to_str(_pick(row, 'clave_cfdi'))
+        unidad_cfdi_str = _to_str(_pick(row, 'unidad_cfdi'))
+        unidad_medida_str = _to_str(_pick(row, 'unidad_medida'))
+        almacenes_str = _to_str(_pick(row, 'almacenes'))
+
+        # Saltar filas claramente vacías (sin código y sin título)
+        if not codigo and not nombre and not external_id:
+            skipped += 1
+            continue
+
+        # En CREATE necesitamos al menos código + nombre (la BD los exige
+        # NOT NULL). En UPDATE el matched-by external_id puede traer solo
+        # algunos campos para refrescar precios / CFDI; ahí la falta no es
+        # error — solo no se sobrescribe.
+        es_update = bool(external_id and Producto.objects.filter(external_id=external_id).exists())
+        if not es_update:
+            if not codigo:
+                row_errors['codigo'] = 'Requerido para crear'
+            if not nombre:
+                row_errors['nombre'] = 'Requerido para crear'
+
+        # Defaults / fallbacks
         if moneda not in ('MXN', 'USD'):
-            row_errors['moneda'] = 'MXN o USD'
+            moneda = 'MXN'
+        if not descripcion:
+            descripcion = nombre
 
-        try:
-            costo = _to_decimal(row.get('costo') or '0', Decimal('0'))
-            if costo < 0:
-                row_errors['costo'] = 'No negativo'
-        except ValidationError:
-            row_errors['costo'] = 'Inválido'
-            costo = Decimal('0')
+        # Unidad CFDI: si > 5 chars o vacía → fallback a unidad_medida → 'H87'
+        if not unidad_cfdi_str or len(unidad_cfdi_str) > 5:
+            if unidad_medida_str and len(unidad_medida_str) <= 5:
+                unidad_cfdi_str = unidad_medida_str
+            else:
+                unidad_cfdi_str = 'H87'
 
-        try:
-            iva = _to_decimal(row.get('iva') or '16', Decimal('16'))
-            if iva not in (Decimal('8'), Decimal('16')):
-                row_errors['iva'] = '8 o 16'
-        except ValidationError:
-            row_errors['iva'] = 'Inválido'
-            iva = Decimal('16')
-
-        clave_obj = ClaveCFDI.objects.filter(clave=clave_cfdi_str).first() if clave_cfdi_str else None
-        if clave_cfdi_str and not clave_obj:
-            row_errors['clave_cfdi'] = f'No existe: {clave_cfdi_str}'
-        elif not clave_cfdi_str:
+        # Clave CFDI: validar contenido y longitud
+        if not clave_cfdi_str:
             row_errors['clave_cfdi'] = 'Requerida'
+        elif len(clave_cfdi_str) > 8:
+            row_errors['clave_cfdi'] = f'Longitud inválida (>8): {clave_cfdi_str}'
 
-        unidad_obj = UnidadCFDI.objects.filter(clave=unidad_cfdi_str).first() if unidad_cfdi_str else None
-        if unidad_cfdi_str and not unidad_obj:
-            row_errors['unidad_cfdi'] = f'No existe: {unidad_cfdi_str}'
-        elif not unidad_cfdi_str:
-            row_errors['unidad_cfdi'] = 'Requerida'
+        # Buscar/crear ClaveCFDI
+        clave_obj = None
+        if clave_cfdi_str and 'clave_cfdi' not in row_errors:
+            clave_obj = cache_claves.get(clave_cfdi_str)
+            if not clave_obj:
+                if crear_cfdi_faltantes:
+                    try:
+                        clave_obj = ClaveCFDI.objects.create(
+                            clave=clave_cfdi_str,
+                            descripcion='Importada desde Excel — revisar',
+                            tipo='producto',
+                        )
+                        cache_claves[clave_cfdi_str] = clave_obj
+                        claves_cfdi_creadas += 1
+                    except Exception as e:
+                        row_errors['clave_cfdi'] = f'No se pudo crear: {e}'
+                else:
+                    row_errors['clave_cfdi'] = 'no existe (sube con crear_cfdi_faltantes activado para crearla)'
 
+        # Buscar/crear UnidadCFDI
+        unidad_obj = None
+        if unidad_cfdi_str and 'unidad_cfdi' not in row_errors:
+            unidad_obj = cache_unidades.get(unidad_cfdi_str)
+            if not unidad_obj:
+                if crear_cfdi_faltantes:
+                    try:
+                        unidad_obj = UnidadCFDI.objects.create(
+                            clave=unidad_cfdi_str,
+                            descripcion='Importada desde Excel — revisar',
+                        )
+                        cache_unidades[unidad_cfdi_str] = unidad_obj
+                        unidades_cfdi_creadas += 1
+                    except Exception as e:
+                        row_errors['unidad_cfdi'] = f'No se pudo crear: {e}'
+                else:
+                    row_errors['unidad_cfdi'] = 'no existe (sube con crear_cfdi_faltantes activado para crearla)'
+
+        # Si servicio → forzar unidad E48
         if clave_obj and clave_obj.tipo == 'servicio':
-            e48 = UnidadCFDI.objects.filter(clave='E48').first()
+            e48 = cache_unidades.get('E48') or UnidadCFDI.objects.filter(clave='E48').first()
             if e48:
+                cache_unidades['E48'] = e48
                 unidad_obj = e48
 
         if row_errors:
             failed += 1
-            errors_rows.append({'row': idx, 'codigo': codigo, 'errors': row_errors})
+            errors_rows.append({
+                'row': idx,
+                'codigo': codigo,
+                'external_id': external_id,
+                'errors': row_errors,
+            })
             continue
 
+        # ── Upsert ────────────────────────────────────────────
         try:
             with transaction.atomic():
-                p = Producto(
-                    codigo=codigo,
-                    nombre=nombre,
-                    descripcion=descripcion,
-                    costo=costo,
-                    moneda=moneda,
-                    iva=iva,
-                    clave_cfdi=clave_obj,
-                    unidad_cfdi=unidad_obj,
-                    created_by=request.user if request.user.is_authenticated else None,
-                )
-                p.save()
-                if almacenes_str:
-                    nombres = [n.strip() for n in almacenes_str.split('|') if n.strip()]
-                    almacenes_qs = Almacen.objects.filter(nombre__in=nombres)
-                    p.almacenes.set(almacenes_qs)
-            created += 1
-        except IntegrityError:
+                existing = None
+                if external_id:
+                    existing = Producto.objects.filter(external_id=external_id).first()
+
+                if existing is not None:
+                    # UPDATE — no pisar con vacíos
+                    changed = False
+                    if nombre:
+                        if existing.nombre != nombre:
+                            existing.nombre = nombre
+                            changed = True
+                    if descripcion:
+                        if existing.descripcion != descripcion:
+                            existing.descripcion = descripcion
+                            changed = True
+                    if codigo:
+                        if existing.codigo != codigo:
+                            existing.codigo = codigo
+                            changed = True
+                    if clave_obj and existing.clave_cfdi_id != clave_obj.id:
+                        # OJO: si el tipo cambia, el save() del modelo lo bloquea.
+                        existing.clave_cfdi = clave_obj
+                        changed = True
+                    if unidad_obj and existing.unidad_cfdi_id != unidad_obj.id:
+                        existing.unidad_cfdi = unidad_obj
+                        changed = True
+                    if moneda and existing.moneda != moneda:
+                        existing.moneda = moneda
+                        changed = True
+                    if iva and existing.iva != iva:
+                        existing.iva = iva
+                        changed = True
+                    if costo and costo > 0 and existing.costo != costo:
+                        existing.costo = costo
+                        changed = True
+                    if no_producto is not None and existing.no_producto != no_producto:
+                        existing.no_producto = no_producto
+                        changed = True
+                    if changed:
+                        existing.save()
+                        updated += 1
+                    else:
+                        # Sin cambios reales — lo contamos como updated igualmente
+                        # (la fila fue procesada y matcheada).
+                        updated += 1
+                else:
+                    # CREATE — código y nombre garantizados por la validación
+                    # de arriba (es_update == False).
+                    p = Producto(
+                        external_id=external_id or None,
+                        no_producto=no_producto,
+                        codigo=codigo,
+                        nombre=nombre,
+                        descripcion=descripcion or nombre,
+                        costo=costo if costo and costo > 0 else Decimal('0'),
+                        moneda=moneda,
+                        iva=iva,
+                        clave_cfdi=clave_obj,
+                        unidad_cfdi=unidad_obj,
+                        created_by=request.user if request.user.is_authenticated else None,
+                    )
+                    p.save()
+                    if almacenes_str:
+                        nombres = [n.strip() for n in almacenes_str.split('|') if n.strip()]
+                        if nombres:
+                            almacenes_qs = Almacen.objects.filter(nombre__in=nombres)
+                            p.almacenes.set(almacenes_qs)
+                    created += 1
+                    if not external_id:
+                        # Warning: fila sin UUID estable
+                        errors_rows.append({
+                            'row': idx,
+                            'codigo': codigo,
+                            'external_id': '',
+                            'errors': {'external_id': 'WARNING: fila sin external_id; se creó pero re-imports duplicarán.'},
+                        })
+        except IntegrityError as e:
             failed += 1
-            errors_rows.append({'row': idx, 'codigo': codigo, 'errors': {'codigo': 'Ya existe.'}})
+            errors_rows.append({
+                'row': idx,
+                'codigo': codigo,
+                'external_id': external_id,
+                'errors': {'__all__': f'IntegrityError: {e}'},
+            })
+        except ValidationError as e:
+            failed += 1
+            errors_rows.append({
+                'row': idx,
+                'codigo': codigo,
+                'external_id': external_id,
+                'errors': getattr(e, 'message_dict', {'__all__': str(e)}),
+            })
         except Exception as e:
             failed += 1
-            errors_rows.append({'row': idx, 'codigo': codigo, 'errors': {'__all__': str(e)}})
+            errors_rows.append({
+                'row': idx,
+                'codigo': codigo,
+                'external_id': external_id,
+                'errors': {'__all__': str(e)},
+            })
 
     return JsonResponse({
         'ok': True,
         'created': created,
+        'updated': updated,
+        'skipped': skipped,
         'failed': failed,
+        'claves_cfdi_creadas': claves_cfdi_creadas,
+        'unidades_cfdi_creadas': unidades_cfdi_creadas,
         'errors': errors_rows,
     })
 

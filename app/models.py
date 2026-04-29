@@ -4640,7 +4640,11 @@ class Producto(models.Model):
     IVA_CHOICES = [(8.00, '8%'), (16.00, '16%')]
     ESTATUS_CHOICES = [('activo', 'Activo'), ('inactivo', 'Inactivo')]
 
-    codigo = models.CharField(max_length=30, unique=True, db_index=True)
+    # external_id: UUID del sistema origen (Excel/ERP). Llave estable para
+    # upsert al re-importar — el código viene con dups legítimos en el Excel.
+    external_id = models.CharField(max_length=64, unique=True, null=True, blank=True, db_index=True)
+    no_producto = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    codigo = models.CharField(max_length=80, db_index=True)
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField()
     costo = models.DecimalField(max_digits=14, decimal_places=4, default=0)

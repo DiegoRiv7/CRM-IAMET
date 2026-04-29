@@ -4289,10 +4289,10 @@ def api_programa_obra_pdf(request, proyecto_id):
 def api_catalogo_productos(request):
     """Buscador universal de productos para Fase 1 / Fase 3 del wizard.
 
-    Fuentes consultadas (en orden): CatalogoCableado.
+    Fuentes consultadas (en orden): CatalogoCableado, Producto (módulo Compras).
     Query: ?q=<texto>  (mínimo 1 char)  ?limit=<n>
     """
-    from .models import CatalogoCableado
+    from .models import CatalogoCableado, Producto
     q = (request.GET.get('q') or '').strip()
     try:
         limit = min(int(request.GET.get('limit') or 20), 50)
@@ -4316,6 +4316,25 @@ def api_catalogo_productos(request):
                 'precio_proveedor': float(p.precio_proveedor or 0),
                 'fuente': 'CatalogoCableado',
             })
+        # Segunda fuente: catálogo global de productos (módulo Compras).
+        # Sólo completamos hasta el cap total `limit` para no exceder lo solicitado.
+        restante = limit - len(results)
+        if restante > 0:
+            qs_prod = Producto.objects.filter(estatus='activo').filter(
+                Q(codigo__icontains=q) |
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q)
+            ).select_related('unidad_cfdi')[:restante]
+            for p in qs_prod:
+                results.append({
+                    'id': f'prod-{p.id}',
+                    'desc': p.nombre or p.descripcion or p.codigo,
+                    'marca': '',
+                    'modelo': p.codigo,
+                    'unidad': p.unidad_cfdi.clave if p.unidad_cfdi_id else 'PZA',
+                    'precio': float(p.costo or 0),
+                    'fuente': 'Producto',
+                })
     return JsonResponse({'ok': True, 'data': results, 'q': q})
 
 

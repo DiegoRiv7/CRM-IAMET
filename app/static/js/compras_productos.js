@@ -114,6 +114,8 @@
         pickerSearch: '',
         importOpen: false,
         importResult: null,
+        importLoading: false,
+        importCrearCfdiFaltantes: false,
     };
 
     // DOM cache
@@ -159,7 +161,7 @@
             if (ev.key === 'Escape') {
                 if (state.confirmTarget) { state.confirmTarget = null; renderModals(); return; }
                 if (state.modalOpen) { closeModal(); return; }
-                if (state.importOpen) { state.importOpen = false; state.importResult = null; renderModals(); return; }
+                if (state.importOpen) { state.importOpen = false; state.importResult = null; state.importLoading = false; state.importCrearCfdiFaltantes = false; renderModals(); return; }
                 if (state.detailItem) { closeDetail(); return; }
                 if (state.openPicker) { state.openPicker = null; renderModals(); return; }
                 if (state.filterOpen || state.accionesOpen || state.sortOpen) {
@@ -676,6 +678,8 @@
                     state.accionesOpen = false;
                     state.importOpen = true;
                     state.importResult = null;
+                    state.importLoading = false;
+                    state.importCrearCfdiFaltantes = false;
                     renderList();
                     renderModals();
                     break;
@@ -1371,34 +1375,87 @@
         html += '</div>';
 
         html += '<div class="cp-nm-body">';
-        html += '<h2 style="font-size:20px;font-weight:700;margin:8px 0 6px;color:#1c1c1e;">Importar desde CSV</h2>';
-        html += '<p style="font-size:13px;color:#6e6e73;line-height:1.55;margin:0 0 16px;">Sube un archivo CSV con las columnas: <code style="font-family:monospace;font-size:12px;background:#f5f5f7;padding:1px 5px;border-radius:4px;">codigo, nombre, descripcion, costo, moneda, iva, clave_cfdi, unidad_cfdi</code>.</p>';
+        html += '<h2 style="font-size:20px;font-weight:700;margin:8px 0 6px;color:#1c1c1e;">Importar productos</h2>';
+        html += '<p style="font-size:13px;color:#6e6e73;line-height:1.55;margin:0 0 8px;">Sube un archivo <strong>CSV o Excel (.xlsx)</strong> con las columnas: <code style="font-family:monospace;font-size:12px;background:#f5f5f7;padding:1px 5px;border-radius:4px;display:inline-block;line-height:1.6;">ID, No Producto, Codigo, Titulo, Descripcion, Costo, Tipo de IVA, Moneda, Unidad de Medida, Clave CFDI, Unidad CFDI</code>.</p>';
+        html += '<p style="font-size:12px;color:#86868b;line-height:1.55;margin:0 0 16px;">El <code style="font-family:monospace;font-size:11px;background:#f5f5f7;padding:1px 4px;border-radius:3px;">ID</code> (UUID) es el identificador único — al re-importar <strong>se actualizan los productos existentes y se agregan los nuevos</strong>, sin borrar nada.</p>';
 
-        if (!state.importResult) {
+        if (state.importLoading) {
+            html += '<div class="cp-import-drop" style="cursor:default;opacity:0.85;">';
+            html += '<div class="cp-import-spinner" style="width:36px;height:36px;border:3px solid #e5e5ea;border-top-color:#0071e3;border-radius:50%;animation:cpImportSpin 0.8s linear infinite;margin:0 auto 10px;"></div>';
+            html += '<div class="cp-import-drop-title">Importando…</div>';
+            html += '<div class="cp-import-drop-text">Procesando el archivo, esto puede tardar unos segundos.</div>';
+            html += '</div>';
+            html += '<div class="cp-import-progress" id="cpImportProgress" style="display:block;"><div class="cp-import-progress-bar" id="cpImportProgressBar"></div></div>';
+            html += '<style>@keyframes cpImportSpin{to{transform:rotate(360deg);}}</style>';
+        } else if (!state.importResult) {
+            var acceptAttr = '.csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv';
             html += '<div class="cp-import-drop" id="cpImportDrop" data-cp-action="import-pick">';
             html += ic('upload', 36);
-            html += '<div class="cp-import-drop-title">Arrastra un archivo CSV aquí</div>';
+            html += '<div class="cp-import-drop-title">Arrastra un archivo CSV o Excel aquí</div>';
             html += '<div class="cp-import-drop-text">o haz clic para seleccionar</div>';
-            html += '<input type="file" id="cpImportFile" accept=".csv,text/csv" style="display:none;">';
+            html += '<input type="file" id="cpImportFile" accept="' + acceptAttr + '" style="display:none;">';
             html += '</div>';
             html += '<div class="cp-import-progress" id="cpImportProgress" style="display:none;"><div class="cp-import-progress-bar" id="cpImportProgressBar"></div></div>';
+
+            // Checkbox: crear claves CFDI / unidades faltantes automáticamente
+            var checked = state.importCrearCfdiFaltantes ? ' checked' : '';
+            html += '<label class="cp-import-cfdi-toggle" for="cpImportCfdiToggle" style="display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:12px 14px;background:#f5f5f7;border-radius:8px;cursor:pointer;user-select:none;">';
+            html += '<input type="checkbox" id="cpImportCfdiToggle"' + checked + ' style="margin-top:2px;cursor:pointer;flex-shrink:0;">';
+            html += '<div style="flex:1;">';
+            html += '<div style="font-size:13px;font-weight:500;color:#1c1c1e;line-height:1.4;">Crear claves CFDI / unidades faltantes automáticamente</div>';
+            html += '<div style="font-size:12px;color:#6e6e73;line-height:1.45;margin-top:3px;">Si un producto trae una clave CFDI o unidad SAT que no existe en tu catálogo, se creará marcada como "Importada — revisar".</div>';
+            html += '</div>';
+            html += '</label>';
         } else {
             var r = state.importResult;
             var created = r.created || 0;
             var updated = r.updated || 0;
-            var failed = (r.errors && r.errors.length) || r.failed || 0;
-            html += '<div class="cp-import-summary">';
-            html += '<div class="cp-import-stat cp-success"><div class="cp-import-stat-label">Creados</div><div class="cp-import-stat-val">' + created + '</div></div>';
-            html += '<div class="cp-import-stat"><div class="cp-import-stat-label">Actualizados</div><div class="cp-import-stat-val">' + updated + '</div></div>';
-            html += '<div class="cp-import-stat ' + (failed ? 'cp-error' : '') + '"><div class="cp-import-stat-label">Errores</div><div class="cp-import-stat-val">' + failed + '</div></div>';
+            var skipped = r.skipped || 0;
+            var failed = (typeof r.failed === 'number') ? r.failed : ((r.errors && r.errors.length) || 0);
+            var clavesCreadas = r.claves_cfdi_creadas || 0;
+            var unidadesCreadas = r.unidades_cfdi_creadas || 0;
+
+            html += '<div class="cp-import-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
+            html += '<div class="cp-import-stat cp-success"><div class="cp-import-stat-label">✅ Creados</div><div class="cp-import-stat-val">' + created + '</div></div>';
+            html += '<div class="cp-import-stat"><div class="cp-import-stat-label">✏️ Actualizados</div><div class="cp-import-stat-val">' + updated + '</div></div>';
+            html += '<div class="cp-import-stat"><div class="cp-import-stat-label">⏭️ Saltados</div><div class="cp-import-stat-val">' + skipped + '</div></div>';
+            html += '<div class="cp-import-stat ' + (failed ? 'cp-error' : '') + '"><div class="cp-import-stat-label">❌ Fallidos</div><div class="cp-import-stat-val">' + failed + '</div></div>';
             html += '</div>';
+
+            if (clavesCreadas > 0 || unidadesCreadas > 0) {
+                html += '<div style="font-size:12px;color:#1c1c1e;background:#fff7e0;border:1px solid #ffe28a;border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.5;">Catálogo SAT actualizado: <strong>' + clavesCreadas + '</strong> clave' + (clavesCreadas === 1 ? '' : 's') + ', <strong>' + unidadesCreadas + '</strong> unidad' + (unidadesCreadas === 1 ? '' : 'es') + ' creada' + (unidadesCreadas === 1 && clavesCreadas <= 1 ? '' : 's') + ' — revísalas en el módulo SAT.</div>';
+            }
+
             if (r.errors && r.errors.length) {
+                var errs = r.errors;
+                var maxShow = 50;
+                var shown = errs.slice(0, maxShow);
+                var extra = errs.length - shown.length;
                 html += '<div class="cp-import-errors">';
-                r.errors.forEach(function (e) {
-                    var row = e.row || e.line || '?';
-                    var msg = e.error || e.message || JSON.stringify(e);
-                    html += '<div class="cp-import-error-row"><span class="cp-row-num">Fila ' + escHtml(row) + '</span><span class="cp-row-msg">' + escHtml(msg) + '</span></div>';
+                shown.forEach(function (e) {
+                    var row = (e.row !== undefined && e.row !== null) ? e.row : (e.line || '?');
+                    var codigo = e.codigo || e.external_id || '';
+                    var msgParts = [];
+                    if (e.errors && typeof e.errors === 'object') {
+                        Object.keys(e.errors).forEach(function (k) {
+                            var v = e.errors[k];
+                            if (Array.isArray(v)) v = v.join(', ');
+                            msgParts.push(k + ': ' + v);
+                        });
+                    } else if (e.error) {
+                        msgParts.push(e.error);
+                    } else if (e.message) {
+                        msgParts.push(e.message);
+                    }
+                    var msg = msgParts.length ? msgParts.join(' · ') : JSON.stringify(e);
+                    var label = 'Fila ' + escHtml(row);
+                    if (codigo) label += ' · Código ' + escHtml(codigo);
+                    label += ': ';
+                    html += '<div class="cp-import-error-row"><span class="cp-row-num">' + label + '</span><span class="cp-row-msg">' + escHtml(msg) + '</span></div>';
                 });
+                if (extra > 0) {
+                    html += '<div class="cp-import-error-row" style="opacity:0.75;font-style:italic;"><span class="cp-row-msg">y ' + extra + ' más…</span></div>';
+                }
                 html += '</div>';
             }
         }
@@ -1407,8 +1464,10 @@
         html += '<div class="cp-nm-footer">';
         html += '<div class="cp-nm-footer-props"></div>';
         html += '<div class="cp-nm-footer-actions">';
-        html += '<button type="button" class="cp-btn-cancel-nm" data-cp-action="import-close">' + (state.importResult ? 'Cerrar' : 'Cancelar') + '</button>';
-        if (state.importResult) {
+        var closeLabel = state.importResult ? 'Listo' : 'Cancelar';
+        var closeDisabled = state.importLoading ? ' disabled style="opacity:0.5;cursor:not-allowed;"' : '';
+        html += '<button type="button" class="cp-btn-cancel-nm" data-cp-action="import-close"' + closeDisabled + '>' + closeLabel + '</button>';
+        if (state.importResult && !state.importLoading) {
             html += '<button type="button" class="cp-btn-primary" data-cp-action="import-reset">Importar otro</button>';
         }
         html += '</div>';
@@ -1429,7 +1488,10 @@
             var overlay = t.dataset && t.dataset.cpOverlay;
             if (overlay && t.classList.contains('cp-modal-overlay')) {
                 if (overlay === 'product') closeModal();
-                else if (overlay === 'import') { state.importOpen = false; state.importResult = null; renderModals(); }
+                else if (overlay === 'import') {
+                    if (state.importLoading) return; // bloquear cierre durante upload
+                    state.importOpen = false; state.importResult = null; state.importCrearCfdiFaltantes = false; renderModals();
+                }
                 return;
             }
             if (t.classList && t.classList.contains('cp-confirm-overlay')) {
@@ -1525,12 +1587,23 @@
                     break;
                 case 'confirm-cancel': state.confirmTarget = null; renderModals(); break;
                 case 'confirm-yes': doDelete(); break;
-                case 'import-close': state.importOpen = false; state.importResult = null; renderModals(); break;
+                case 'import-close':
+                    if (state.importLoading) break; // no cerrar mientras sube
+                    state.importOpen = false; state.importResult = null; state.importCrearCfdiFaltantes = false; renderModals();
+                    break;
                 case 'import-pick':
+                    if (state.importLoading) break;
                     var f = document.getElementById('cpImportFile');
                     if (f) f.click();
                     break;
-                case 'import-reset': state.importResult = null; renderModals(); break;
+                // Nota: el toggle del checkbox "Crear claves CFDI faltantes" se
+                // maneja directamente con el evento `change` del input en
+                // bindModalEvents() para evitar doble-toggle del <label>.
+                case 'import-reset':
+                    state.importResult = null;
+                    state.importLoading = false;
+                    renderModals();
+                    break;
             }
         };
 
@@ -1565,6 +1638,15 @@
         if (fInput) {
             fInput.onchange = function () {
                 if (this.files && this.files[0]) doImport(this.files[0]);
+            };
+        }
+        // Checkbox: crear claves CFDI / unidades faltantes
+        var cfdiToggle = document.getElementById('cpImportCfdiToggle');
+        if (cfdiToggle) {
+            cfdiToggle.onchange = function () {
+                state.importCrearCfdiFaltantes = !!this.checked;
+                // No re-render: el browser ya actualizó el checkbox visualmente
+                // y mantenemos el foco/scroll del modal sin re-construir HTML.
             };
         }
         var dropZone = document.getElementById('cpImportDrop');
@@ -1686,6 +1768,13 @@
     function doImport(file) {
         var fd = new FormData();
         fd.append('file', file);
+        fd.append('crear_cfdi_faltantes', state.importCrearCfdiFaltantes ? '1' : '0');
+
+        // Activar estado "Importando…" y re-renderizar para mostrar spinner
+        state.importLoading = true;
+        state.importResult = null;
+        renderModals();
+
         var prog = document.getElementById('cpImportProgress');
         var bar = document.getElementById('cpImportProgressBar');
         if (prog) prog.style.display = 'block';
@@ -1696,32 +1785,42 @@
         xhr.open('POST', '/app/api/compras/productos/import/');
         xhr.setRequestHeader('X-CSRFToken', getCsrf());
         xhr.upload.onprogress = function (e) {
-            if (bar && e.lengthComputable) {
+            var b = document.getElementById('cpImportProgressBar');
+            if (b && e.lengthComputable) {
                 var pct = Math.min(95, (e.loaded / e.total) * 100);
-                bar.style.width = pct + '%';
+                b.style.width = pct + '%';
             }
         };
         xhr.onload = function () {
-            if (bar) bar.style.width = '100%';
+            var b = document.getElementById('cpImportProgressBar');
+            if (b) b.style.width = '100%';
+            state.importLoading = false;
             try {
                 var data = JSON.parse(xhr.responseText);
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    state.importResult = data || { created: 0, updated: 0, errors: [] };
+                    state.importResult = data || { created: 0, updated: 0, skipped: 0, failed: 0, errors: [] };
                     var ok = (state.importResult.created || 0) + (state.importResult.updated || 0);
                     toast('success', 'Importación completada · ' + ok + ' producto' + (ok === 1 ? '' : 's'));
                     fetchProductos();
                 } else {
-                    state.importResult = { created: 0, updated: 0, errors: (data && data.errors) || [{ row: '?', error: (data && data.error) || ('HTTP ' + xhr.status) }] };
+                    state.importResult = {
+                        created: 0,
+                        updated: 0,
+                        skipped: 0,
+                        failed: (data && data.failed) || 0,
+                        errors: (data && data.errors) || [{ row: '?', error: (data && data.error) || ('HTTP ' + xhr.status) }]
+                    };
                     toast('error', 'Error en la importación');
                 }
             } catch (e) {
-                state.importResult = { created: 0, updated: 0, errors: [{ row: '?', error: 'Respuesta inválida del servidor' }] };
+                state.importResult = { created: 0, updated: 0, skipped: 0, failed: 0, errors: [{ row: '?', error: 'Respuesta inválida del servidor' }] };
                 toast('error', 'Error en la importación');
             }
             renderModals();
         };
         xhr.onerror = function () {
-            state.importResult = { created: 0, updated: 0, errors: [{ row: '?', error: 'Error de red' }] };
+            state.importLoading = false;
+            state.importResult = { created: 0, updated: 0, skipped: 0, failed: 0, errors: [{ row: '?', error: 'Error de red' }] };
             renderModals();
             toast('error', 'Error de red');
         };
