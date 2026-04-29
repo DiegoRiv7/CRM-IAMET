@@ -570,8 +570,19 @@
 
             <!-- ═══ PHASE 3 — VOLUMETRÍA ═══ -->
             <div class="lw-phase" data-phase="3" id="lwPhase3" style="display:none;">
-                <div class="lw-p3-wrap">
+                <!-- Panel: lista de volumetrías del levantamiento (drafts múltiples)
+                     Se muestra cuando state.volumetriaActiva es null. -->
+                <div class="lw-p3-panel" id="lwP3Panel" style="display:none;"></div>
+
+                <!-- Editor existente: las 3 tablas. Se muestra cuando una
+                     volumetría está activa. Conserva todos los handlers. -->
+                <div class="lw-p3-wrap" id="lwP3Wrap" style="display:none;">
                     <div class="lw-p3-tables">
+                        <!-- Header del editor: nombre de la volumetría activa,
+                             botón volver al panel, toggle status. Vive dentro
+                             del scroll de tablas para no romper el layout
+                             tablas+summary lado a lado. -->
+                        <div class="lw-p3-edit-head" id="lwP3EditHead"></div>
                         <!-- Banner: precios en USD -->
                         <div class="lw-p3-usd-note">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>

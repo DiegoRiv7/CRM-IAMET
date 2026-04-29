@@ -18,6 +18,7 @@ from .models import (
     ProyectoGasto, ProyectoTarea, ProyectoAlerta,
     ProyectoConfiguracion, ProyectoVolumetriaVersion,
     ProyectoLevantamiento, LevantamientoEvidencia,
+    ProyectoVolumetria,
 )
 from .views_utils import is_supervisor
 from .views_grupos import get_usuarios_visibles_ids
@@ -3086,6 +3087,190 @@ def api_levantamiento_eliminar(request, levantamiento_id):
     if _user_es_solo_lectura_levantamiento(request.user):
         return JsonResponse({'success': False, 'error': 'Los vendedores no pueden eliminar levantamientos'}, status=403)
     lev.delete()
+    return JsonResponse({'success': True})
+
+
+# ══════════════════════════════════════════════════════════════
+#  VOLUMETRÍAS — Borradores múltiples por levantamiento
+#  ─────────────────────────────────────────────────────────────
+#  Cada volumetría es un escenario/diseño editable con su propio
+#  status (borrador/completada). Vendedores sólo ven completadas;
+#  ingenieros y admins ven todas.
+# ══════════════════════════════════════════════════════════════
+
+def _vol_to_dict(vol):
+    return {
+        'id': vol.id,
+        'levantamiento_id': vol.levantamiento_id,
+        'nombre': vol.nombre,
+        'status': vol.status,
+        'status_label': vol.get_status_display(),
+        'creado_por_id': vol.creado_por_id,
+        'creado_por_nombre': (vol.creado_por.get_full_name() or vol.creado_por.username) if vol.creado_por else '',
+        'actualizado_por_id': vol.actualizado_por_id,
+        'actualizado_por_nombre': (vol.actualizado_por.get_full_name() or vol.actualizado_por.username) if vol.actualizado_por else '',
+        'fecha_creacion': _fmt(vol.fecha_creacion),
+        'fecha_actualizacion': _fmt(vol.fecha_actualizacion),
+    }
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_volumetrias_lista(request, levantamiento_id):
+    """Lista volumetrías de un levantamiento. Vendedores reciben sólo
+    las marcadas como `completada`; ingenieros ven todas."""
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    qs = lev.volumetrias.select_related('creado_por', 'actualizado_por').all()
+    if _user_es_solo_lectura_levantamiento(request.user):
+        qs = qs.filter(status='completada')
+    return JsonResponse({
+        'ok': True,
+        'data': [_vol_to_dict(v) for v in qs],
+        'puede_editar': not _user_es_solo_lectura_levantamiento(request.user),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_volumetria_crear(request, levantamiento_id):
+    """Crea una volumetría borrador nueva en el levantamiento.
+    Auto-numera el nombre si no se provee uno."""
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden crear volumetrías'}, status=403)
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        data = {}
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        existentes = lev.volumetrias.count()
+        nombre = f'Volumetría {existentes + 1}'
+    vol = ProyectoVolumetria.objects.create(
+        levantamiento=lev,
+        nombre=nombre,
+        status='borrador',
+        data=data.get('data') or {},
+        creado_por=request.user,
+    )
+    return JsonResponse({'success': True, 'data': _vol_to_dict(vol)})
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_volumetria_detalle(request, volumetria_id):
+    """Devuelve la volumetría completa, incluyendo `data` (JSON con las
+    partidas/materiales/etc. — puede ser pesado)."""
+    try:
+        vol = ProyectoVolumetria.objects.select_related(
+            'levantamiento__proyecto', 'creado_por', 'actualizado_por',
+        ).get(id=volumetria_id)
+    except ProyectoVolumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+    if not _check_access(request.user, vol.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    # Vendedor sólo puede ver completadas.
+    if _user_es_solo_lectura_levantamiento(request.user) and vol.status != 'completada':
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    payload = _vol_to_dict(vol)
+    payload['data'] = vol.data or {}
+    return JsonResponse({'ok': True, 'data': payload})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_volumetria_actualizar(request, volumetria_id):
+    """Actualiza meta de la volumetría: nombre y/o status. La data se
+    guarda en otro endpoint (`api_volumetria_data`) por separado para
+    no mezclar autosave pesado con cambios de meta livianos."""
+    try:
+        vol = ProyectoVolumetria.objects.select_related('levantamiento__proyecto').get(id=volumetria_id)
+    except ProyectoVolumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+    if not _check_access(request.user, vol.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden editar volumetrías'}, status=403)
+    try:
+        body = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    update_fields = ['fecha_actualizacion', 'actualizado_por']
+    if 'nombre' in body:
+        nuevo = (body.get('nombre') or '').strip()
+        if not nuevo:
+            return JsonResponse({'success': False, 'error': 'Nombre vacío'}, status=400)
+        vol.nombre = nuevo[:200]
+        update_fields.append('nombre')
+    if 'status' in body:
+        nuevo_status = (body.get('status') or '').strip()
+        if nuevo_status not in dict(ProyectoVolumetria.STATUS_CHOICES):
+            return JsonResponse({'success': False, 'error': 'Status inválido'}, status=400)
+        vol.status = nuevo_status
+        update_fields.append('status')
+    vol.actualizado_por = request.user
+    vol.save(update_fields=update_fields)
+    return JsonResponse({'success': True, 'data': _vol_to_dict(vol)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_volumetria_data(request, volumetria_id):
+    """Autosave de la data (partidas, materiales, mano de obra, gastos).
+    Reemplaza completa la `data` con lo que venga en el body."""
+    try:
+        vol = ProyectoVolumetria.objects.select_related('levantamiento__proyecto').get(id=volumetria_id)
+    except ProyectoVolumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+    if not _check_access(request.user, vol.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden editar volumetrías'}, status=403)
+    try:
+        body = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    nueva_data = body.get('data')
+    if not isinstance(nueva_data, dict):
+        return JsonResponse({'success': False, 'error': 'data debe ser objeto'}, status=400)
+    vol.data = nueva_data
+    vol.actualizado_por = request.user
+    vol.save(update_fields=['data', 'fecha_actualizacion', 'actualizado_por'])
+    payload = _vol_to_dict(vol)
+    return JsonResponse({'success': True, 'data': payload})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_volumetria_eliminar(request, volumetria_id):
+    """Elimina una volumetría borrador. Las completadas no se pueden
+    eliminar — primero hay que bajarlas a borrador (regla anti-pérdida
+    de trabajo aprobado)."""
+    try:
+        vol = ProyectoVolumetria.objects.select_related('levantamiento__proyecto').get(id=volumetria_id)
+    except ProyectoVolumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+    if not _check_access(request.user, vol.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden eliminar volumetrías'}, status=403)
+    if vol.status == 'completada':
+        return JsonResponse({
+            'success': False,
+            'error': 'No se puede eliminar una volumetría completada. Bájala a borrador primero.',
+        }, status=400)
+    vol.delete()
     return JsonResponse({'success': True})
 
 

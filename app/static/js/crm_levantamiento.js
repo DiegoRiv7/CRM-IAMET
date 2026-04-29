@@ -545,11 +545,30 @@
         _saveInFlight++;
         _saveStatusSet('saving');
 
-        var body = JSON.stringify({
-            fase: state.phase,
-            data: data,
-            fase_actual: state.lev.fase_actual,
-        });
+        // Caso especial Fase 3: si hay volumetría activa, el save no
+        // va al endpoint genérico de fase del levantamiento sino al
+        // endpoint específico de la volumetría. Esto evita pisar
+        // accidentalmente fase3_data del levantamiento (legacy).
+        // Si NO hay volumetría activa estamos en el panel — no hay
+        // nada que guardar; retornamos sin tocar la red.
+        var url, body;
+        if (state.phase === 3) {
+            if (!state.volumetriaActiva || !state.volumetriaActiva.id) {
+                // Estamos en el panel de volumetrías; no hay editor abierto.
+                _saveInFlight--;
+                _saveStatusSet('');
+                return Promise.resolve({ success: true, data: null });
+            }
+            url = '/app/api/iamet/volumetrias/' + state.volumetriaActiva.id + '/data/';
+            body = JSON.stringify({ data: data });
+        } else {
+            url = '/app/api/iamet/levantamientos/' + state.lev.id + '/fase/';
+            body = JSON.stringify({
+                fase: state.phase,
+                data: data,
+                fase_actual: state.lev.fase_actual,
+            });
+        }
 
         function onDone(r) {
             _saveInFlight--;
@@ -597,7 +616,7 @@
             _scheduleRetry();
         }
 
-        return apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/fase/', {
+        return apiFetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: body,
@@ -2446,7 +2465,254 @@
         return { costoTotal: costoC * (r.qty || 0), precioVenta: precioV * (r.qty || 0) };
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 3 — VOLUMETRÍA (panel de borradores + editor)
+    //  ─────────────────────────────────────────────────────────────
+    //  Un levantamiento puede tener N volumetrías (escenarios).
+    //  Al entrar a Fase 3 ves un panel listándolas; al click abres
+    //  el editor (las 3 tablas). El editor existente opera sobre
+    //  state.lev.fase3_data — cuando hay volumetría activa hacemos
+    //  un alias `state.lev.fase3_data = state.volumetriaActiva.data`
+    //  para que el editor "no sepa" que cambió la fuente. El save
+    //  (lwSave) detecta el modo y redirige al endpoint correcto.
+    // ═══════════════════════════════════════════════════════════════
     function renderPhase3() {
+        // Estado inicial: ningún panel ni editor visible mientras
+        // se determinan las volumetrías.
+        var panel  = $('lwP3Panel');
+        var wrap   = $('lwP3Wrap');
+        if (panel) panel.style.display = 'none';
+        if (wrap)  wrap.style.display  = 'none';
+
+        // Si ya hay volumetría activa (volvimos del wizard mismo) y
+        // estamos en el mismo levantamiento → render directo.
+        if (state.volumetriaActiva && state.volumetriaActiva.levantamiento_id === state.lev.id) {
+            _renderPhase3Editor();
+            return;
+        }
+        // Limpia estado previo y carga volumetrías
+        state.volumetriaActiva = null;
+        _lwP3FetchVolumetrias();
+    }
+
+    function _lwP3FetchVolumetrias() {
+        if (!state.lev || !state.lev.id) return;
+        apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/volumetrias/').then(function (r) {
+            if (!r || !r.ok) {
+                _lwP3RenderPanel([], false);
+                return;
+            }
+            state.volumetrias = r.data || [];
+            state.volumetriasPuedeEditar = !!r.puede_editar;
+            _lwP3RenderPanel(state.volumetrias, state.volumetriasPuedeEditar);
+        });
+    }
+
+    function _lwP3RenderPanel(list, puedeEditar) {
+        var panel = $('lwP3Panel');
+        var wrap  = $('lwP3Wrap');
+        if (!panel) return;
+        if (wrap)  wrap.style.display  = 'none';
+        panel.style.display = 'block';
+
+        var h = '';
+        h += '<div class="lw-p3-panel-head">';
+        h += '<div>';
+        h += '<h2 class="lw-p3-panel-title">Volumetrías</h2>';
+        h += '<p class="lw-p3-panel-sub">Crea distintos escenarios de la volumetría. Sólo las marcadas como <b>completadas</b> son visibles para vendedores.</p>';
+        h += '</div>';
+        if (puedeEditar) {
+            h += '<button type="button" class="lw-p3-btn-primary" onclick="lwP3CrearVolumetria()">';
+            h += '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+            h += 'Iniciar volumetría</button>';
+        }
+        h += '</div>';
+
+        if (!list.length) {
+            h += '<div class="lw-p3-empty">';
+            if (puedeEditar) {
+                h += '<button type="button" class="lw-p3-empty-cta" onclick="lwP3CrearVolumetria()">';
+                h += '<svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>';
+                h += '<div class="lw-p3-empty-title">Iniciar volumetría</div>';
+                h += '<div class="lw-p3-empty-sub">Construye el desglose de materiales, mano de obra y gastos.</div>';
+                h += '</button>';
+            } else {
+                h += '<div class="lw-p3-empty-readonly">';
+                h += '<svg width="36" height="36" fill="none" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+                h += '<div style="margin-top:14px;font-weight:600;color:#0F172A;">Aún no hay volumetrías completadas</div>';
+                h += '<div style="margin-top:6px;font-size:12.5px;color:#64748B;">El ingeniero las publicará aquí cuando estén listas.</div>';
+                h += '</div>';
+            }
+            h += '</div>';
+        } else {
+            h += '<div class="lw-p3-table-wrap">';
+            h += '<table class="lw-p3-list-table"><thead><tr>';
+            h += '<th>Volumetría</th><th>Estado</th><th>Creado por</th><th>Editado por</th><th>Última edición</th>';
+            if (puedeEditar) h += '<th></th>';
+            h += '</tr></thead><tbody>';
+            list.forEach(function (v) {
+                var pillCls = v.status === 'completada' ? 'lw-p3-pill-ok' : 'lw-p3-pill-draft';
+                h += '<tr onclick="lwP3OpenVolumetria(' + v.id + ')">';
+                h += '<td class="lw-p3-list-name">' + esc(v.nombre || ('Volumetría ' + v.id)) + '</td>';
+                h += '<td><span class="lw-p3-pill ' + pillCls + '">' + esc(v.status_label || v.status) + '</span></td>';
+                h += '<td>' + esc(v.creado_por_nombre || '—') + '</td>';
+                h += '<td>' + esc(v.actualizado_por_nombre || '—') + '</td>';
+                h += '<td class="lw-p3-list-date">' + _lwP3FmtFecha(v.fecha_actualizacion) + '</td>';
+                if (puedeEditar) {
+                    h += '<td class="lw-p3-list-actions" onclick="event.stopPropagation();">';
+                    if (v.status !== 'completada') {
+                        h += '<button type="button" class="lw-p3-list-del" title="Eliminar borrador" onclick="lwP3DeleteVolumetria(' + v.id + ', \'' + esc(v.nombre || '') + '\')">';
+                        h += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
+                        h += '</button>';
+                    }
+                    h += '</td>';
+                }
+                h += '</tr>';
+            });
+            h += '</tbody></table></div>';
+        }
+        panel.innerHTML = h;
+    }
+
+    function _lwP3FmtFecha(iso) {
+        if (!iso) return '—';
+        try {
+            var d = new Date(iso);
+            var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            return d.getDate() + ' ' + meses[d.getMonth()] + ' ' + d.getFullYear();
+        } catch (e) { return iso; }
+    }
+
+    window.lwP3CrearVolumetria = function () {
+        if (!state.lev || !state.lev.id) return;
+        var nombre = prompt('Nombre de la volumetría (opcional):', '');
+        // null = canceló; '' o lo que sea = el backend autonombra
+        if (nombre === null) return;
+        apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/volumetrias/crear/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre: nombre.trim() }),
+        }).then(function (r) {
+            if (r && r.success && r.data) {
+                // Abrir directamente la nueva volumetría para que el
+                // ingeniero arranque a capturar.
+                lwP3OpenVolumetria(r.data.id);
+            }
+        });
+    };
+
+    window.lwP3OpenVolumetria = function (id) {
+        apiFetch('/app/api/iamet/volumetrias/' + id + '/').then(function (r) {
+            if (!r || !r.ok || !r.data) return;
+            state.volumetriaActiva = r.data;
+            // Alias: el editor existente lee/escribe en fase3_data.
+            // Apuntarlo físicamente a volumetria.data hace que todo
+            // el código del editor "siga funcionando" sin tocarlo.
+            state.lev.fase3_data = r.data.data || {};
+            _renderPhase3Editor();
+        });
+    };
+
+    window.lwP3VolverAlPanel = function () {
+        // Flush save pendiente antes de salir del editor
+        lwFlushSave();
+        state.volumetriaActiva = null;
+        // Limpia el alias (el editor del wizard no debe seguir escribiendo
+        // en data de una volumetría que ya no estamos editando).
+        state.lev.fase3_data = {};
+        _lwP3FetchVolumetrias();
+    };
+
+    window.lwP3RenameVolumetria = function () {
+        if (!state.volumetriaActiva) return;
+        var v = state.volumetriaActiva;
+        var nuevo = prompt('Nombre de la volumetría:', v.nombre || '');
+        if (nuevo === null) return;
+        nuevo = (nuevo || '').trim();
+        if (!nuevo) return;
+        apiFetch('/app/api/iamet/volumetrias/' + v.id + '/actualizar/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre: nuevo }),
+        }).then(function (r) {
+            if (r && r.success && r.data) {
+                state.volumetriaActiva.nombre = r.data.nombre;
+                _lwP3RenderEditHead();
+            }
+        });
+    };
+
+    window.lwP3ToggleStatus = function () {
+        if (!state.volumetriaActiva) return;
+        var v = state.volumetriaActiva;
+        var nuevo = v.status === 'completada' ? 'borrador' : 'completada';
+        // Confirmación al subir a completada (la deja visible para vendedores)
+        if (nuevo === 'completada' && !confirm('Marcar esta volumetría como completada? Quedará visible para vendedores.')) {
+            return;
+        }
+        apiFetch('/app/api/iamet/volumetrias/' + v.id + '/actualizar/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: nuevo }),
+        }).then(function (r) {
+            if (r && r.success && r.data) {
+                state.volumetriaActiva.status = r.data.status;
+                state.volumetriaActiva.status_label = r.data.status_label;
+                _lwP3RenderEditHead();
+            }
+        });
+    };
+
+    window.lwP3DeleteVolumetria = function (id, nombre) {
+        if (!confirm('Eliminar la volumetría "' + (nombre || ('#' + id)) + '"? No se puede deshacer.')) return;
+        apiFetch('/app/api/iamet/volumetrias/' + id + '/eliminar/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        }).then(function (r) {
+            if (r && r.success) {
+                _lwP3FetchVolumetrias();
+            } else {
+                alert((r && r.error) || 'No se pudo eliminar.');
+            }
+        });
+    };
+
+    function _lwP3RenderEditHead() {
+        var head = $('lwP3EditHead');
+        if (!head) return;
+        var v = state.volumetriaActiva || {};
+        var puedeEditar = state.volumetriasPuedeEditar !== false;
+        var pillCls = v.status === 'completada' ? 'lw-p3-pill-ok' : 'lw-p3-pill-draft';
+        var h = '';
+        h += '<button type="button" class="lw-p3-btn-back" onclick="lwP3VolverAlPanel()">';
+        h += '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>';
+        h += 'Volver al listado</button>';
+        h += '<div class="lw-p3-edit-title-wrap">';
+        h += '<div class="lw-p3-edit-title-line">';
+        h += '<span class="lw-p3-edit-title">' + esc(v.nombre || 'Volumetría') + '</span>';
+        if (puedeEditar) {
+            h += ' <button type="button" class="lw-p3-rename-btn" title="Renombrar" onclick="lwP3RenameVolumetria()">';
+            h += '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>';
+            h += '</button>';
+        }
+        h += '</div>';
+        h += '<span class="lw-p3-pill ' + pillCls + '">' + esc(v.status_label || v.status) + '</span>';
+        h += '</div>';
+        if (puedeEditar) {
+            var btnLabel = v.status === 'completada' ? 'Bajar a borrador' : 'Marcar como completada';
+            var btnCls = v.status === 'completada' ? 'lw-p3-btn-ghost' : 'lw-p3-btn-primary';
+            h += '<button type="button" class="' + btnCls + '" onclick="lwP3ToggleStatus()">' + btnLabel + '</button>';
+        }
+        head.innerHTML = h;
+    }
+
+    function _renderPhase3Editor() {
+        var panel = $('lwP3Panel');
+        var wrap  = $('lwP3Wrap');
+        if (panel) panel.style.display = 'none';
+        if (wrap)  wrap.style.display  = 'block';
+        _lwP3RenderEditHead();
+
         var d = state.lev.fase3_data || {};
         // Migrar productos de fase 1 si no hay materiales aún
         if (!d.materiales) {
@@ -2465,6 +2731,8 @@
         // TC default 19.50 si no hay valor guardado
         if (!d.tipo_cambio) d.tipo_cambio = 19.50;
         state.lev.fase3_data = d;
+        // Mantener el alias con la volumetría activa
+        if (state.volumetriaActiva) state.volumetriaActiva.data = d;
         // Sincronizar el input de TC con el valor guardado
         var tcInput = $('lwP3TC');
         if (tcInput) tcInput.value = (d.tipo_cambio || 19.50);

@@ -1279,6 +1279,229 @@
 }
 
 /* ── PHASE 3 specifics ── */
+
+/* Panel: lista de volumetrías (drafts) — visible cuando no hay
+   volumetría activa. Replica el look de la lista de Levantamientos. */
+.lw-p3-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+    background: #FAFAF9;
+}
+.lw-p3-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.lw-p3-panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+.lw-p3-panel-sub {
+    font-size: 12.5px;
+    color: #64748B;
+    margin: 4px 0 0;
+    max-width: 640px;
+    line-height: 1.5;
+}
+.lw-p3-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 14px;
+    background: #2563EB;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    font-family: inherit;
+}
+.lw-p3-btn-primary:hover { background: #1D4ED8; }
+.lw-p3-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #fff;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+.lw-p3-btn-ghost:hover { border-color: #CBD5E1; background: #F8FAFC; color: #0F172A; }
+.lw-p3-btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 11px;
+    background: #fff;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+.lw-p3-btn-back:hover { border-color: #CBD5E1; background: #F8FAFC; color: #0F172A; }
+
+/* Empty state — botón gigante para iniciar la primera volumetría */
+.lw-p3-empty {
+    margin-top: 24px;
+    padding: 48px 20px;
+    background: #fff;
+    border: 1px dashed #CBD5E1;
+    border-radius: 14px;
+    text-align: center;
+}
+.lw-p3-empty-cta {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 28px 36px;
+    background: #fff;
+    border: none;
+    border-radius: 14px;
+    color: #2563EB;
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: inherit;
+}
+.lw-p3-empty-cta:hover { background: #EFF6FF; transform: scale(1.02); }
+.lw-p3-empty-cta svg { color: #2563EB; }
+.lw-p3-empty-title { font-size: 16px; font-weight: 700; color: #0F172A; margin-top: 4px; }
+.lw-p3-empty-sub { font-size: 12.5px; color: #64748B; max-width: 380px; line-height: 1.5; }
+.lw-p3-empty-readonly { color: #64748B; }
+
+/* Tabla del listado */
+.lw-p3-table-wrap {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+}
+.lw-p3-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.lw-p3-list-table thead th {
+    text-align: left;
+    padding: 11px 14px;
+    background: #F8FAFC;
+    color: #64748B;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #E2E8F0;
+}
+.lw-p3-list-table tbody tr {
+    cursor: pointer;
+    transition: background 0.12s;
+    border-bottom: 1px solid #F1F5F9;
+}
+.lw-p3-list-table tbody tr:hover { background: #F8FAFC; }
+.lw-p3-list-table tbody tr:last-child { border-bottom: none; }
+.lw-p3-list-table td { padding: 13px 14px; color: #334155; }
+.lw-p3-list-name { font-weight: 600; color: #0F172A; }
+.lw-p3-list-date { color: #64748B; font-size: 12.5px; }
+.lw-p3-list-actions { width: 40px; text-align: right; }
+.lw-p3-list-del {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.lw-p3-list-del:hover { background: #FEE2E2; color: #DC2626; }
+
+/* Pills de status */
+.lw-p3-pill {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+.lw-p3-pill-draft { background: #F1F5F9; color: #475569; }
+.lw-p3-pill-ok    { background: #DCFCE7; color: #15803D; }
+
+/* Header del editor (cuando hay volumetría activa) — vive dentro del
+   scroll de .lw-p3-tables y se queda sticky arriba para que siempre
+   sea visible mientras el ingeniero scrollea capturando partidas. */
+.lw-p3-edit-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    margin: -22px -26px 4px;
+    border-bottom: 1px solid #E2E8F0;
+    background: rgba(250, 250, 250, 0.96);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    position: sticky;
+    top: -22px;
+    z-index: 5;
+}
+.lw-p3-edit-title-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.lw-p3-edit-title-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.lw-p3-edit-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+}
+.lw-p3-rename-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    border-radius: 5px;
+    color: #94A3B8;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.lw-p3-rename-btn:hover { background: #F1F5F9; color: #0F172A; }
+
+/* lw-p3-wrap: contenedor del editor. Flex row (tablas izquierda con
+   scroll, summary sticky a la derecha). El header del editor vive
+   DENTRO de `.lw-p3-tables` para no romper este layout. */
 .lw-p3-wrap {
     display: flex;
     flex: 1;

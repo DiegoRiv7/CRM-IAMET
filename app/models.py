@@ -4518,6 +4518,49 @@ class LevantamientoEvidencia(models.Model):
     def __str__(self):
         return f'Evidencia {self.id} — {self.levantamiento.nombre}'
 
+
+class ProyectoVolumetria(models.Model):
+    """Borrador editable de volumetría dentro de un levantamiento.
+    Un levantamiento puede tener N volumetrías (escenarios/diseños),
+    cada una con su propio estado (borrador/completada). El vendedor
+    sólo puede ver las marcadas como completadas; el ingeniero ve
+    todas. La data tiene el mismo shape que el legacy `fase3_data`
+    de ProyectoLevantamiento.
+    """
+    STATUS_CHOICES = [
+        ('borrador',   'Borrador'),
+        ('completada', 'Completada'),
+    ]
+
+    levantamiento = models.ForeignKey(
+        ProyectoLevantamiento,
+        on_delete=models.CASCADE,
+        related_name='volumetrias',
+    )
+    nombre = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='borrador')
+    data = models.JSONField(default=dict, blank=True)
+
+    creado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='volumetrias_creadas',
+    )
+    actualizado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='volumetrias_actualizadas',
+    )
+    fecha_creacion      = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_actualizacion']
+        verbose_name = 'Volumetría'
+        verbose_name_plural = 'Volumetrías'
+
+    def __str__(self):
+        return f'{self.nombre} ({self.get_status_display()})'
+
+
 # ── Programa de Obra (Gantt) ────────────────────────────────────────────
 
 class GanttFase(models.Model):
