@@ -125,20 +125,6 @@
         });
     }
 
-    // Helper: confirm custom con widget de proyectos, fallback a window.confirm
-    function lwConfirm(titulo, mensaje, opts) {
-        opts = opts || {};
-        if (typeof window.proyConfirm === 'function') {
-            window.proyConfirm(titulo, mensaje, {
-                textoConfirmar: opts.textoConfirmar || 'Eliminar',
-                color: opts.color || '#EF4444',
-                onConfirm: opts.onConfirm,
-            });
-            return;
-        }
-        if (window.confirm(mensaje)) { if (opts.onConfirm) opts.onConfirm(); }
-    }
-
     function _doCloseWizard() {
         var d = (state.lev && state.lev.fase1_data) || {};
         var haveName = !!(state.lev && (state.lev.nombre || '').trim());
@@ -177,10 +163,14 @@
             if (ok && !state.dirty) {
                 _doCloseWizard();
             } else {
-                lwConfirm('Cambios sin guardar', 'No pudimos guardar los últimos cambios (posible problema de red). ¿Cerrar de todas formas? Perderás lo que no alcanzó a guardar.', {
-                    textoConfirmar: 'Cerrar sin guardar',
-                    color: '#F59E0B',
-                    onConfirm: _doCloseWizard,
+                lwConfirm({
+                    title: 'Cambios sin guardar',
+                    message: 'No pudimos guardar los últimos cambios (posible problema de red). ¿Cerrar de todas formas? Perderás lo que no alcanzó a guardar.',
+                    confirmLabel: 'Cerrar sin guardar',
+                    cancelLabel: 'Cancelar',
+                    tone: 'warn',
+                }).then(function (yes) {
+                    if (yes) _doCloseWizard();
                 });
             }
         });
@@ -2084,23 +2074,27 @@
         Array.from(files).forEach(function (f) { uploadEvidencia(f); });
     };
     window.lwP2DeleteEvidencia = function (id) {
-        lwConfirm('Eliminar foto', '¿Seguro que quieres eliminar esta foto de la evidencia? Esta acción es permanente.', {
-            textoConfirmar: 'Eliminar foto',
-            onConfirm: function () {
-                apiFetch('/app/api/iamet/evidencias/' + id + '/eliminar/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: '{}',
-                }).then(function (r) {
-                    if (r.success) {
-                        state.lev.evidencias = (state.lev.evidencias || []).filter(function (e) { return e.id !== id; });
-                        renderPhase2Photos();
-                        lwCheer('Foto eliminada');
-                    } else {
-                        alert(r.error || 'No se pudo eliminar');
-                    }
-                });
-            },
+        lwConfirm({
+            title: 'Eliminar foto',
+            message: '¿Seguro que quieres eliminar esta foto de la evidencia? Esta acción es permanente.',
+            confirmLabel: 'Eliminar foto',
+            cancelLabel: 'Cancelar',
+            tone: 'danger',
+        }).then(function (ok) {
+            if (!ok) return;
+            apiFetch('/app/api/iamet/evidencias/' + id + '/eliminar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}',
+            }).then(function (r) {
+                if (r.success) {
+                    state.lev.evidencias = (state.lev.evidencias || []).filter(function (e) { return e.id !== id; });
+                    renderPhase2Photos();
+                    lwCheer('Foto eliminada');
+                } else {
+                    alert(r.error || 'No se pudo eliminar');
+                }
+            });
         });
     };
     function uploadEvidencia(file) {
@@ -2585,19 +2579,26 @@
 
     window.lwP3CrearVolumetria = function () {
         if (!state.lev || !state.lev.id) return;
-        var nombre = prompt('Nombre de la volumetría (opcional):', '');
-        // null = canceló; '' o lo que sea = el backend autonombra
-        if (nombre === null) return;
-        apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/volumetrias/crear/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre: nombre.trim() }),
-        }).then(function (r) {
-            if (r && r.success && r.data) {
-                // Abrir directamente la nueva volumetría para que el
-                // ingeniero arranque a capturar.
-                lwP3OpenVolumetria(r.data.id);
-            }
+        // Cuántas hay ya, para sugerir nombre por default
+        var sugerido = 'Volumetría ' + (((state.volumetrias || []).length) + 1);
+        lwPrompt({
+            title: 'Nueva volumetría',
+            message: 'Pónle un nombre para distinguirla. Si lo dejas vacío, el sistema le asignará uno automáticamente.',
+            placeholder: sugerido,
+            defaultValue: '',
+            confirmLabel: 'Crear',
+            cancelLabel: 'Cancelar',
+        }).then(function (nombre) {
+            if (nombre === null) return; // canceló
+            apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/volumetrias/crear/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: (nombre || '').trim() }),
+            }).then(function (r) {
+                if (r && r.success && r.data) {
+                    lwP3OpenVolumetria(r.data.id);
+                }
+            });
         });
     };
 
@@ -2626,19 +2627,27 @@
     window.lwP3RenameVolumetria = function () {
         if (!state.volumetriaActiva) return;
         var v = state.volumetriaActiva;
-        var nuevo = prompt('Nombre de la volumetría:', v.nombre || '');
-        if (nuevo === null) return;
-        nuevo = (nuevo || '').trim();
-        if (!nuevo) return;
-        apiFetch('/app/api/iamet/volumetrias/' + v.id + '/actualizar/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre: nuevo }),
-        }).then(function (r) {
-            if (r && r.success && r.data) {
-                state.volumetriaActiva.nombre = r.data.nombre;
-                _lwP3RenderEditHead();
-            }
+        lwPrompt({
+            title: 'Renombrar volumetría',
+            placeholder: 'Volumetría 1',
+            defaultValue: v.nombre || '',
+            confirmLabel: 'Guardar',
+            cancelLabel: 'Cancelar',
+            required: true,
+        }).then(function (nuevo) {
+            if (nuevo === null) return;
+            nuevo = (nuevo || '').trim();
+            if (!nuevo) return;
+            apiFetch('/app/api/iamet/volumetrias/' + v.id + '/actualizar/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: nuevo }),
+            }).then(function (r) {
+                if (r && r.success && r.data) {
+                    state.volumetriaActiva.nombre = r.data.nombre;
+                    _lwP3RenderEditHead();
+                }
+            });
         });
     };
 
@@ -2698,6 +2707,78 @@
             box.querySelector('.lw-confirm-cancel').onclick = function () { close(false); };
             box.querySelector('.lw-confirm-ok').onclick      = function () { close(true);  };
             bd.onclick = function (e) { if (e.target === bd) close(false); };
+            document.addEventListener('keydown', onKey, true);
+        });
+    };
+
+    // ── Modal genérico de prompt ────────────────────────────────
+    // Reemplazo de prompt() nativo con widget consistente. Retorna
+    // Promise<string|null>: null si canceló, string (puede ser '')
+    // si confirmó. Soporta opts:
+    //   title, message, placeholder, defaultValue, confirmLabel,
+    //   cancelLabel, required (true → bloquea OK si está vacío).
+    window.lwPrompt = function (opts) {
+        opts = opts || {};
+        var title = opts.title || 'Ingresa un valor';
+        var message = opts.message || '';
+        var placeholder = opts.placeholder || '';
+        var defaultValue = opts.defaultValue || '';
+        var confirmLabel = opts.confirmLabel || 'Aceptar';
+        var cancelLabel = opts.cancelLabel || 'Cancelar';
+        var required = !!opts.required;
+
+        return new Promise(function (resolve) {
+            var bd = document.createElement('div');
+            bd.className = 'lw-confirm-backdrop';
+            var box = document.createElement('div');
+            box.className = 'lw-confirm-box lw-confirm-primary lw-prompt-box';
+            box.setAttribute('role', 'dialog');
+            box.setAttribute('aria-modal', 'true');
+            box.innerHTML =
+                '<div class="lw-confirm-icon">' +
+                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>' +
+                '</div>' +
+                '<div class="lw-confirm-body">' +
+                    '<div class="lw-confirm-title">' + esc(title) + '</div>' +
+                    (message ? '<div class="lw-confirm-msg">' + (typeof message === 'string' ? message : '') + '</div>' : '') +
+                    '<input type="text" class="lw-prompt-input" placeholder="' + esc(placeholder) + '" value="' + esc(defaultValue) + '">' +
+                '</div>' +
+                '<div class="lw-confirm-actions">' +
+                    '<button type="button" class="lw-confirm-cancel">' + esc(cancelLabel) + '</button>' +
+                    '<button type="button" class="lw-confirm-ok">' + esc(confirmLabel) + '</button>' +
+                '</div>';
+            bd.appendChild(box);
+            document.body.appendChild(bd);
+
+            var input = box.querySelector('.lw-prompt-input');
+            var okBtn = box.querySelector('.lw-confirm-ok');
+            setTimeout(function () { input.focus(); input.select(); }, 30);
+
+            function refreshOk() {
+                if (required) {
+                    okBtn.disabled = !input.value.trim();
+                    okBtn.style.opacity = okBtn.disabled ? '0.5' : '';
+                    okBtn.style.cursor = okBtn.disabled ? 'not-allowed' : '';
+                }
+            }
+            refreshOk();
+            input.addEventListener('input', refreshOk);
+
+            function close(result) {
+                document.removeEventListener('keydown', onKey, true);
+                if (bd.parentNode) bd.parentNode.removeChild(bd);
+                resolve(result);
+            }
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(null); }
+                else if (e.key === 'Enter' && !okBtn.disabled) { e.preventDefault(); close(input.value); }
+            }
+            box.querySelector('.lw-confirm-cancel').onclick = function () { close(null); };
+            okBtn.onclick = function () {
+                if (okBtn.disabled) return;
+                close(input.value);
+            };
+            bd.onclick = function (e) { if (e.target === bd) close(null); };
             document.addEventListener('keydown', onKey, true);
         });
     };

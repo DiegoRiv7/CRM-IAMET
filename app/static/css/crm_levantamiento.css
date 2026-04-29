@@ -4736,3 +4736,33 @@ label.lw-soft-input {
     background: #16A34A;
 }
 .lw-confirm-ok-tone .lw-confirm-ok:hover { background: #15803D; }
+
+/* Tono "warn" (ámbar) — para acciones reversibles pero arriesgadas
+   como "Cerrar sin guardar". */
+.lw-confirm-warn .lw-confirm-icon { background: #FEF3C7; color: #B45309; }
+.lw-confirm-warn .lw-confirm-ok {
+    background: #B45309;
+    color: #fff;
+}
+.lw-confirm-warn .lw-confirm-ok:hover { background: #92400E; }
+
+/* lwPrompt — input integrado al modal de confirmación */
+.lw-prompt-input {
+    margin-top: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #0F172A;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+}
+.lw-prompt-input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.lw-prompt-input::placeholder { color: #94A3B8; }
