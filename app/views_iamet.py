@@ -2982,6 +2982,7 @@ def api_levantamiento_actualizar(request, levantamiento_id):
             lev.nombre = n
     if 'status' in data and data['status'] in dict(ProyectoLevantamiento.STATUS_CHOICES):
         lev.status = data['status']
+    fase_actual_anterior = lev.fase_actual
     if 'fase_actual' in data:
         try:
             f = int(data['fase_actual'])
@@ -2995,6 +2996,16 @@ def api_levantamiento_actualizar(request, levantamiento_id):
 
     lev.actualizado_por = request.user
     lev.save()
+
+    # Auto-completar volumetrías cuando el ingeniero avanza más allá de
+    # la Fase 3. Misma intención que la regla del overlay del vendedor:
+    # "si ya pasaste de la fase, lo que dejaste ahí queda visible".
+    # Solo aplica al cruzar de <=3 a >3 — no se ejecuta cada vez.
+    if fase_actual_anterior <= 3 and lev.fase_actual > 3:
+        ProyectoVolumetria.objects.filter(
+            levantamiento=lev, status='borrador',
+        ).update(status='completada', actualizado_por=request.user)
+
     return JsonResponse({'success': True, 'data': _lev_to_dict(lev, include_evidencias=True)})
 
 
@@ -3027,6 +3038,7 @@ def api_levantamiento_fase(request, levantamiento_id):
 
     setattr(lev, f'fase{fase}_data', fase_data)
     # Avanzar fase_actual si el cliente envía una señal
+    fase_actual_anterior = lev.fase_actual
     if 'fase_actual' in data:
         try:
             f = int(data['fase_actual'])
@@ -3036,6 +3048,13 @@ def api_levantamiento_fase(request, levantamiento_id):
             pass
     lev.actualizado_por = request.user
     lev.save(update_fields=[f'fase{fase}_data', 'fase_actual', 'fecha_actualizacion', 'actualizado_por'])
+
+    # Auto-completar volumetrías cuando el ingeniero cruza de <=3 a >3.
+    # Misma regla que en api_levantamiento_actualizar.
+    if fase_actual_anterior <= 3 and lev.fase_actual > 3:
+        ProyectoVolumetria.objects.filter(
+            levantamiento=lev, status='borrador',
+        ).update(status='completada', actualizado_por=request.user)
 
     # Auto-sync de fechas Fase 2 → ProyectoIAMET.
     # El Programa de Implementación de la propuesta técnica define
@@ -3118,13 +3137,27 @@ def _vol_to_dict(vol):
 @require_http_methods(["GET"])
 def api_volumetrias_lista(request, levantamiento_id):
     """Lista volumetrías de un levantamiento. Vendedores reciben sólo
-    las marcadas como `completada`; ingenieros ven todas."""
+    las marcadas como `completada`; ingenieros ven todas.
+
+    Si el ingeniero ya avanzó más allá de la Fase 3, los borradores
+    quedaron implícitamente completados — auto-curamos los datos
+    aquí (idempotente) para que la lista quede coherente.
+    """
     try:
         lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
     except ProyectoLevantamiento.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
     if not _check_access(request.user, lev.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    # Auto-curación lazy: cubre datos pre-existentes a la regla
+    # "fase_actual > 3 ⇒ volumetrías completadas".
+    if lev.fase_actual and lev.fase_actual > 3:
+        lev.volumetrias.filter(status='borrador').update(
+            status='completada',
+            actualizado_por=request.user if request.user.is_authenticated else None,
+        )
+
     qs = lev.volumetrias.select_related('creado_por', 'actualizado_por').all()
     if _user_es_solo_lectura_levantamiento(request.user):
         qs = qs.filter(status='completada')
