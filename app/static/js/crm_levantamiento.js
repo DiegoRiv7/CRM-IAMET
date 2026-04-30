@@ -3951,14 +3951,27 @@
     ];
 
     function _renderFase(lev, def) {
-        // Fase 3 tiene un flujo distinto: en lugar de usar el legacy
-        // `lev.fase3_data`, listamos las volumetrías completadas del
-        // levantamiento. Cada una con su propio botón "Exportar".
+        // Fase 3 tiene un flujo distinto: lista de volumetrías marcadas
+        // como completadas (toggle explícito del ingeniero).
         if (def.n === 3) {
             return _renderFase3Card(lev);
         }
         var data = lev['fase' + def.n + '_data'] || {};
-        var ok = def.has(data);
+        // Regla simple para 1, 2, 4, 5: si el ingeniero avanzó más allá
+        // de esta fase (fase_actual > n) la consideramos completada
+        // automáticamente — el vendedor ve LO QUE SEA que el ingeniero
+        // haya capturado (aunque sea poco). El check de shape (def.has)
+        // queda como fallback por si fase_actual no está bien.
+        var faseActual = parseInt(lev.fase_actual || 1, 10) || 1;
+        var avanzado = faseActual > def.n;
+        var hasData = def.has(data);
+        var ok = avanzado || hasData;
+        // Resumen: si hay datos los mostramos; si no pero está completada,
+        // un mensaje neutro en lugar de "Sin datos capturados".
+        var summaryTxt = def.summary(data);
+        if (avanzado && (!summaryTxt || summaryTxt === 'Sin datos capturados')) {
+            summaryTxt = 'Completada';
+        }
         var pdfUrl = ok ? _pdfUrl(lev, def.n) : null;
         var pdfBtn = pdfUrl
             ? '<a href="' + _esc(pdfUrl) + '" target="_blank" class="lvc-pdf-btn" onclick="event.stopPropagation()" title="Descargar PDF"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>PDF</a>'
@@ -3972,7 +3985,7 @@
                 '<div class="lvc-phase-num">' + (ok ? '✓' : def.n) + '</div>' +
                 '<div class="lvc-phase-info">' +
                     '<div class="lvc-phase-title">Fase ' + def.n + ' · ' + _esc(def.titulo) + '</div>' +
-                    '<div class="lvc-phase-summary">' + _esc(def.summary(data)) + '</div>' +
+                    '<div class="lvc-phase-summary">' + _esc(summaryTxt) + '</div>' +
                 '</div>' +
                 '<div class="lvc-phase-actions">' + pdfBtn + chevron + '</div>' +
             '</div>' +
