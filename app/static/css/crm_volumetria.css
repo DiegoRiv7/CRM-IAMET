@@ -86,13 +86,11 @@
     box-sizing: border-box;
 }
 
-/* ── Document header (Notion-style) ─────────────────────────────── */
+/* ── Document header (Notion-style, compacto) ───────────────────── */
 .cv-doc {
     max-width: 1100px;
-    /* No centrado: el spec pide alineado al lado izquierdo del flujo. */
-    margin: 8px 0 28px;
-    padding: 8px 4px 18px;
-    border-bottom: 1px solid var(--cv-border-soft);
+    margin: 0 0 14px;
+    padding: 0;
 }
 
 .cv-doc-title-input {
@@ -102,66 +100,79 @@
     background: transparent;
     color: var(--cv-fg);
     font-family: var(--cv-sans);
-    font-size: 34px;
-    font-weight: 600;
-    letter-spacing: -0.015em;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     line-height: 1.15;
-    padding: 4px 0 12px;
-    margin: 0 0 10px;
+    padding: 0;
+    margin: 0 0 12px;
 }
 .cv-doc-title-input::placeholder {
     color: var(--cv-fg-placeholder);
-    font-weight: 600;
+    font-weight: 700;
 }
 
+/* Metadatos como pills inline tipo Notion: ícono + valor en una caja
+   con fondo sutil. La etiqueta queda implícita en el ícono. */
 .cv-doc-meta {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 18px 28px;
-    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0;
 }
 
 .cv-meta-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    background: var(--cv-border-soft);
+    border: 1px solid transparent;
+    border-radius: 8px;
     min-width: 0;
     cursor: text;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+.cv-meta-field:hover {
+    background: rgba(228, 228, 231, 0.6);
+}
+.cv-meta-field:focus-within {
+    background: #fff;
+    border-color: var(--cv-border);
 }
 
 .cv-meta-icon {
     display: inline-flex;
     align-items: center;
     color: var(--cv-fg-faint);
-    margin-right: 6px;
-    vertical-align: -2px;
+    flex-shrink: 0;
 }
 
+/* La etiqueta queda en el DOM por accesibilidad pero oculta visualmente —
+   el ícono es el indicador. */
 .cv-meta-label {
-    color: var(--cv-fg-muted);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    display: inline-flex;
-    align-items: center;
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .cv-meta-input {
     border: none;
     outline: none;
-    border-bottom: 1px solid transparent;
     background: transparent;
     color: var(--cv-fg);
     font-family: inherit;
-    font-size: 13px;
-    padding: 4px 0 5px;
-    transition: border-color 120ms ease;
-    min-width: 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 0;
+    min-width: 90px;
+    width: 100%;
 }
 .cv-meta-input::placeholder { color: var(--cv-fg-placeholder); }
-.cv-meta-input:hover { border-bottom-color: var(--cv-border); }
-.cv-meta-input:focus { border-bottom-color: var(--cv-accent); }
 .cv-meta-input:disabled {
     color: var(--cv-fg);
     cursor: default;
@@ -170,7 +181,7 @@
 /* ── Grid de datos (Linear/Stripe) ──────────────────────────────── */
 .cv-grid {
     width: 100%;
-    margin: 0 0 24px;
+    margin: 0 0 16px;
     border-top: 1px solid var(--cv-border-soft);
     /* Permite scroll horizontal en pantallas chicas. */
     overflow-x: auto;
@@ -185,7 +196,7 @@
     z-index: 5;
     background: #ffffff;
     border-bottom: 1px solid var(--cv-border);
-    padding: 14px 8px 10px;
+    padding: 10px 8px 8px;
     min-width: 1060px;
 }
 
@@ -225,8 +236,8 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 14px 0 8px;
-    margin-top: 6px;
+    padding: 10px 0 4px;
+    margin-top: 2px;
 }
 
 .cv-section-toggle {
@@ -296,7 +307,7 @@
     display: grid;
     grid-template-columns: var(--cv-grid-cols);
     align-items: center;
-    padding: 6px 0;
+    padding: 3px 0;
     border-radius: var(--cv-radius);
     transition: background-color 100ms ease;
     position: relative;
@@ -366,13 +377,9 @@
     border-radius: var(--cv-radius-sm);
     transition: border-color 120ms ease, background-color 120ms ease;
     min-width: 0;
-    -moz-appearance: textfield;
 }
-.cv-input::-webkit-outer-spin-button,
-.cv-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
+/* Los spinners nativos quedan visibles en number inputs — el ingeniero
+   los usa para incrementar cantidades rápido (referencia del usuario). */
 .cv-input::placeholder { color: var(--cv-fg-placeholder); }
 .cv-input:hover { background: rgba(244, 244, 245, 0.5); }
 .cv-input:focus {
