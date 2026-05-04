@@ -40,7 +40,7 @@
     min-width: 0;          /* clave para tablas con overflow-x */
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
 }
 
 
@@ -212,7 +212,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 18px;
+    padding: 18px 22px;
     cursor: pointer;
     user-select: none;
     background: linear-gradient(180deg, #fafbfc, #f8fafc);
@@ -245,7 +245,7 @@
 .cv-section.cv-section-open .cv-chevron { transform: rotate(0deg); }
 
 .cv-section-title {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     color: #0f172a;
     letter-spacing: -0.01em;
@@ -259,7 +259,7 @@
     color: #475569;
     font-variant-numeric: tabular-nums;
     margin-left: auto;
-    padding: 3px 10px;
+    padding: 4px 12px;
     background: #f1f5f9;
     border-radius: 999px;
     white-space: nowrap;
@@ -272,7 +272,7 @@
 
 .cv-section-body {
     /* Estado abierto por default — `.cv-section` sin .cv-section-open lo oculta. */
-    padding: 12px 18px 18px;
+    padding: 18px 22px 22px;
     display: block;
     animation: cv-section-fade 200ms ease;
 }
@@ -395,11 +395,11 @@
     background: #f8fafc;
     color: #475569;
     font-weight: 600;
-    font-size: 10.5px;
+    font-size: 11.5px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     text-align: left;
-    padding: 9px 12px;
+    padding: 10px 12px;
     border-bottom: 1px solid #e2e8f0;
     white-space: nowrap;
 }
@@ -1081,7 +1081,7 @@
 }
 
 @media (max-width: 640px) {
-    .cv-section-title { font-size: 13px; }
+    .cv-section-title { font-size: 14px; }
     .cv-row-grand .cv-sb-value { font-size: 16px; }
 
     /* En móvil pequeño, las tablas simples también necesitan scroll-x */
@@ -1094,4 +1094,232 @@
     }
 
     .cv-catalog-backdrop { padding: 16px; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * UX POLISH PASS — estado vacío, header agrupado, sidebar hero
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Estado vacío (sub-sección sin items / tablas vacías) ─────────── */
+.cv-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 36px 20px;
+    background: #fafbfc;
+    border: 1px dashed #e2e8f0;
+    border-radius: 10px;
+    gap: 8px;
+}
+.cv-empty-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+.cv-empty-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.005em;
+}
+.cv-empty-msg {
+    font-size: 12.5px;
+    color: #64748b;
+    max-width: 380px;
+    line-height: 1.45;
+}
+.cv-empty-actions {
+    display: inline-flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ── Header agrupado de la tabla de Equipamiento (2 filas) ────────── */
+.cv-table-eq thead .cv-th-groups th {
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    text-align: center;
+    padding: 7px 8px;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #e5e7eb;
+    color: #475569;
+    background: #f8fafc;
+}
+.cv-table-eq thead .cv-th-groups th:last-child { border-right: none; }
+
+.cv-table-eq thead .cv-th-grp-basicos { background: #f8fafc; color: #475569; }
+.cv-table-eq thead .cv-th-grp-venta   {
+    background: linear-gradient(180deg, #ecfdf5, #f0fdf4);
+    color: #047857;
+}
+.cv-table-eq thead .cv-th-grp-costo   {
+    background: linear-gradient(180deg, #fef3c7, #fffbeb);
+    color: #b45309;
+}
+.cv-table-eq thead .cv-th-grp-resto   { background: #f8fafc; color: #475569; }
+
+.cv-table-eq thead .cv-th-cols th {
+    /* La fila interna mantiene su tamaño normal pero un pelo menos vertical */
+    padding: 8px 8px;
+    font-size: 11px;
+}
+
+/* Las celdas de cuerpo bajo los grupos de venta/costo reciben tinte sutil */
+.cv-table-eq tbody td:nth-child(6),  /* P. Lista (parte de Venta) */
+.cv-table-eq tbody td:nth-child(7),  /* % Desc Venta */
+.cv-table-eq tbody td:nth-child(8),  /* P. Unit V */
+.cv-table-eq tbody td:nth-child(9) { /* P. Total V */
+    background: #fbfffd;
+}
+.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(6),
+.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(7),
+.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(8),
+.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(9) {
+    background: #f0fdf4;
+}
+.cv-table-eq tbody td:nth-child(10), /* % Desc Costo */
+.cv-table-eq tbody td:nth-child(11), /* C. Unit */
+.cv-table-eq tbody td:nth-child(12) {/* C. Total */
+    background: #fffdf6;
+}
+.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(10),
+.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(11),
+.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(12) {
+    background: #fef3c7;
+}
+
+/* ── Sidebar Hero — Margen prominente ─────────────────────────────── */
+.cv-sb-hero {
+    padding: 18px 16px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: center;
+}
+.cv-sb-hero-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.cv-sb-hero-margen {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+    margin: 4px 0 10px;
+}
+.cv-sb-gauge {
+    width: 100%;
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 4px 0 12px;
+}
+.cv-sb-gauge-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 240ms ease, background 240ms ease;
+}
+.cv-sb-gauge-fill.is-low  { background: linear-gradient(90deg, #fb7185, #ef4444); }
+.cv-sb-gauge-fill.is-mid  { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.cv-sb-gauge-fill.is-high { background: linear-gradient(90deg, #34d399, #059669); }
+
+.cv-sb-hero-chips {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 4px;
+}
+.cv-sb-chip {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: left;
+}
+.cv-sb-chip-gain { background: #ecfdf5; border-color: #a7f3d0; }
+.cv-sb-chip-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.cv-sb-chip-gain .cv-sb-chip-label { color: #047857; }
+.cv-sb-chip-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+.cv-sb-chip-gain .cv-sb-chip-value { color: #059669; }
+
+/* ── Bloque resumen (debajo del hero) ─────────────────────────────── */
+.cv-sb-block {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* ── Detalle colapsable ───────────────────────────────────────────── */
+.cv-sb-details {
+    padding: 4px 16px 14px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.cv-sb-details summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 8px 0;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+.cv-sb-details summary::-webkit-details-marker { display: none; }
+.cv-sb-details summary::before {
+    content: '';
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #94a3b8;
+    transition: transform 180ms ease;
+    transform: rotate(-90deg);
+}
+.cv-sb-details[open] summary::before {
+    transform: rotate(0deg);
+}
+.cv-sb-details summary:hover { color: #0f172a; }
+.cv-sb-details .cv-sb-row {
+    padding: 3px 0;
+    font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+    .cv-empty { padding: 28px 16px; }
+    .cv-sb-hero-margen { font-size: 28px; }
 }

@@ -376,6 +376,10 @@
         var iva = num(S.volumetria.iva_pct != null ? S.volumetria.iva_pct : 16);
         var ro = S.readonly ? 'disabled' : '';
 
+        // Config bar compacta: solo TC e IVA. El botón "Buscar en catálogo"
+        // global se quitó porque queda desconectado de las filas — ahora
+        // cada fila de Equipamiento tiene su propia lupa para hacer el
+        // prefill en su contexto.
         bar.innerHTML =
             '<div class="cv-cfg-group">' +
                 '<label class="cv-cfg-label">Moneda</label>' +
@@ -393,13 +397,7 @@
                 '<input id="cv-iva" class="cv-cfg-input" type="number" step="0.01" min="0" max="100" value="' + iva + '" ' + ro + '>' +
                 '<span class="cv-cfg-suffix">%</span>' +
             '</div>' +
-            '<div class="cv-cfg-spacer"></div>' +
-            (S.readonly ? '' :
-                '<button type="button" class="cv-btn cv-btn-primary" data-cv-action="open-catalog">' +
-                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-                    'Buscar en catálogo' +
-                '</button>'
-            );
+            '<div class="cv-cfg-spacer"></div>';
 
         return bar;
     }
@@ -493,34 +491,52 @@
         return s;
     }
 
-    // Tabla de Equipamiento — 14 columnas + delete (15 con header repetido).
-    // Columnas: # · Marca · No. Parte · Cant · Descripción · P. Lista ·
-    //           %Desc V · P. Unit V · P. Total V · %Desc C · C. Unit · C. Total ·
-    //           Ganancia · Proveedor · Entrega · Notas (+ X)
+    // Tabla de Equipamiento — 14 columnas + delete.
+    // Header en 2 filas con grupos visuales: BÁSICOS · VENTA · COSTO · EXTRA
+    // para que el ingeniero no tenga que descifrar abreviaciones tipo
+    // "% D V". Si la sub-sección está vacía, se renderiza un estado
+    // vacío en lugar de la tabla con headers flotando solos.
     function renderEqTable(sub) {
+        if (!sub.items || sub.items.length === 0) {
+            return renderEmptyState({
+                kind: 'eq',
+                title: 'Aún no hay productos',
+                message: 'Agrega el primero o búscalo en el catálogo.',
+                primary: { label: 'Agregar producto', action: 'add-item' },
+                secondary: { label: 'Buscar en catálogo', action: 'add-item-from-catalog' },
+            });
+        }
+
         var tableWrap = el('div', 'cv-table-wrap');
         var table = el('table', 'cv-table cv-table-eq');
         table.setAttribute('data-section-id', sub.id);
 
+        var actCol = S.readonly ? '' : '<th class="cv-th-act" rowspan="2"></th>';
         var thead = el('thead', '', (
-            '<tr>' +
+            '<tr class="cv-th-groups">' +
+                '<th class="cv-th-grp-basicos" colspan="5">Básicos</th>' +
+                '<th class="cv-th-grp-venta" colspan="4">Venta</th>' +
+                '<th class="cv-th-grp-costo" colspan="3">Costo</th>' +
+                '<th class="cv-th-grp-resto" colspan="4">Detalle</th>' +
+                actCol +
+            '</tr>' +
+            '<tr class="cv-th-cols">' +
                 '<th class="cv-th-num">#</th>' +
                 '<th>Marca</th>' +
                 '<th>No. Parte</th>' +
                 '<th class="cv-th-num">Cant</th>' +
                 '<th>Descripción</th>' +
                 '<th class="cv-th-num">P. Lista</th>' +
-                '<th class="cv-th-num" title="% Desc Venta">% D V</th>' +
-                '<th class="cv-th-num">P. Unit V</th>' +
-                '<th class="cv-th-num">P. Total V</th>' +
-                '<th class="cv-th-num" title="% Desc Costo">% D C</th>' +
+                '<th class="cv-th-num" title="Descuento sobre lista (venta)">% Desc</th>' +
+                '<th class="cv-th-num">P. Unit</th>' +
+                '<th class="cv-th-num">P. Total</th>' +
+                '<th class="cv-th-num" title="Descuento sobre lista (costo)">% Desc</th>' +
                 '<th class="cv-th-num">C. Unit</th>' +
                 '<th class="cv-th-num">C. Total</th>' +
                 '<th class="cv-th-num">Ganancia</th>' +
                 '<th>Proveedor</th>' +
                 '<th>Entrega</th>' +
                 '<th>Notas</th>' +
-                (S.readonly ? '' : '<th class="cv-th-act"></th>') +
             '</tr>'
         ));
         table.appendChild(thead);
@@ -533,6 +549,42 @@
 
         tableWrap.appendChild(table);
         return tableWrap;
+    }
+
+    // Estado vacío genérico para una tabla sin items
+    function renderEmptyState(opts) {
+        var box = el('div', 'cv-empty');
+        if (S.readonly) {
+            box.innerHTML =
+                '<div class="cv-empty-icon">' +
+                    '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+                '</div>' +
+                '<div class="cv-empty-title">Sin información</div>' +
+                '<div class="cv-empty-msg">El ingeniero no capturó datos en esta sección.</div>';
+            return box;
+        }
+        var prim = opts.primary || {};
+        var sec = opts.secondary;
+        var html =
+            '<div class="cv-empty-icon">' +
+                '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>' +
+            '</div>' +
+            '<div class="cv-empty-title">' + esc(opts.title || 'Sin items') + '</div>' +
+            '<div class="cv-empty-msg">' + esc(opts.message || '') + '</div>' +
+            '<div class="cv-empty-actions">' +
+                '<button type="button" class="cv-btn cv-btn-primary" data-cv-action="' + esc(prim.action) + '">' +
+                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                    esc(prim.label) +
+                '</button>' +
+                (sec ?
+                    '<button type="button" class="cv-btn cv-btn-ghost" data-cv-action="' + esc(sec.action) + '">' +
+                        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+                        esc(sec.label) +
+                    '</button>'
+                : '') +
+            '</div>';
+        box.innerHTML = html;
+        return box;
     }
 
     function renderEqRow(sub, it, idx) {
@@ -611,8 +663,16 @@
     function renderMoCobrada() {
         var shell = renderSectionShell('mano_obra', 'Mano de Obra Cobrada', 'Subtotal venta');
         var body = shell.body;
-        body.appendChild(renderMoTable());
-        if (!S.readonly) body.appendChild(addRowBtn('mano_obra', 'Agregar servicio'));
+        if ((S.data.mano_obra.items || []).length === 0) {
+            body.appendChild(renderEmptyState({
+                title: 'Aún no hay servicios cobrados',
+                message: 'Captura los servicios profesionales que se le cobran al cliente.',
+                primary: { label: 'Agregar servicio', action: 'add-row-mo_cobrada' },
+            }));
+        } else {
+            body.appendChild(renderMoTable());
+            if (!S.readonly) body.appendChild(addRowBtn('mano_obra', 'Agregar servicio'));
+        }
         return shell.section;
     }
 
@@ -673,8 +733,16 @@
     function renderCostoMo() {
         var shell = renderSectionShell('costo_mo', 'Costo MO Interno', 'Total costo MO');
         var body = shell.body;
-        body.appendChild(renderCmoTable());
-        if (!S.readonly) body.appendChild(addRowBtn('costo_mo', 'Agregar recurso'));
+        if ((S.data.costo_mo.items || []).length === 0) {
+            body.appendChild(renderEmptyState({
+                title: 'Aún no hay recursos',
+                message: 'Desglosa lo que le cuesta a la empresa: técnicos, supervisores, viáticos.',
+                primary: { label: 'Agregar recurso', action: 'add-row-cmo' },
+            }));
+        } else {
+            body.appendChild(renderCmoTable());
+            if (!S.readonly) body.appendChild(addRowBtn('costo_mo', 'Agregar recurso'));
+        }
         return shell.section;
     }
 
@@ -733,8 +801,16 @@
     function renderGastos() {
         var shell = renderSectionShell('gastos', 'Gastos', 'Total gastos');
         var body = shell.body;
-        body.appendChild(renderGastosTable());
-        if (!S.readonly) body.appendChild(addRowBtn('gastos', 'Agregar gasto'));
+        if ((S.data.gastos.items || []).length === 0) {
+            body.appendChild(renderEmptyState({
+                title: 'Aún no hay gastos',
+                message: 'Otros gastos del proyecto: combustible, casetas, comidas, etc.',
+                primary: { label: 'Agregar gasto', action: 'add-row-gastos' },
+            }));
+        } else {
+            body.appendChild(renderGastosTable());
+            if (!S.readonly) body.appendChild(addRowBtn('gastos', 'Agregar gasto'));
+        }
         return shell.section;
     }
 
@@ -799,30 +875,56 @@
     }
 
     // ── Sidebar ────────────────────────────────────────────────────
+    // Jerarquía:
+    //   1) Hero — Margen % grande con barra de gauge + chips Ganancia / Total.
+    //   2) Resumen — Subtotal venta · Costo total · IVA · Total con IVA.
+    //   3) Detalle — subtotales por sección (colapsado por default, secundario).
+    //   4) MXN — equivalente al tipo de cambio actual.
     function renderSidebar() {
         var box = el('div', 'cv-sidebar-inner');
         box.innerHTML =
-            '<div class="cv-sidebar-totals">' +
-                row('Equipamiento (venta)', 'total_eq_venta') +
-                row('Equipamiento (costo)', 'total_eq_costo', 'cv-row-cost') +
-                row('Mano de Obra cobrada', 'total_mo_cobrada') +
-                row('Mano de Obra costo', 'total_mo_costo', 'cv-row-cost') +
-                row('Gastos', 'total_gastos', 'cv-row-cost') +
-                '<hr class="cv-sb-sep">' +
+            // 1) HERO — margen y headline
+            '<div class="cv-sb-hero">' +
+                '<div class="cv-sb-hero-label">Margen del proyecto</div>' +
+                '<div class="cv-sb-hero-margen" data-cv-sb="margen_pct">0.0%</div>' +
+                '<div class="cv-sb-gauge"><div class="cv-sb-gauge-fill is-low" data-cv-sb-gauge style="width:0%"></div></div>' +
+                '<div class="cv-sb-hero-chips">' +
+                    '<div class="cv-sb-chip cv-sb-chip-gain">' +
+                        '<span class="cv-sb-chip-label">Ganancia</span>' +
+                        '<span class="cv-sb-chip-value" data-cv-sb="ganancia">$0.00</span>' +
+                    '</div>' +
+                    '<div class="cv-sb-chip">' +
+                        '<span class="cv-sb-chip-label">Total c/IVA</span>' +
+                        '<span class="cv-sb-chip-value" data-cv-sb="total_con_iva">$0.00</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+
+            // 2) RESUMEN principal
+            '<div class="cv-sb-block">' +
                 row('Subtotal venta', 'subtotal_venta', 'cv-row-strong') +
                 row('Costo total', 'total_costo', 'cv-row-cost') +
-                row('Ganancia', 'ganancia', 'cv-row-gain') +
-                rowPct('Margen', 'margen_pct') +
                 '<hr class="cv-sb-sep">' +
                 row('IVA', 'iva_monto') +
-                row('Total con IVA', 'total_con_iva', 'cv-row-strong cv-row-grand') +
+                row('Total con IVA', 'total_con_iva_2', 'cv-row-grand') +
             '</div>' +
+
+            // 3) DETALLE colapsable
+            '<details class="cv-sb-details">' +
+                '<summary>Desglose por sección</summary>' +
+                row('Equipamiento · venta', 'total_eq_venta') +
+                row('Equipamiento · costo', 'total_eq_costo', 'cv-row-cost') +
+                row('MO cobrada', 'total_mo_cobrada') +
+                row('MO costo', 'total_mo_costo', 'cv-row-cost') +
+                row('Gastos', 'total_gastos', 'cv-row-cost') +
+            '</details>' +
+
+            // 4) MXN
             '<div class="cv-sidebar-mxn">' +
-                '<div class="cv-mxn-title">Equivalente en MXN</div>' +
-                '<div class="cv-mxn-tc" data-cv-sb-tc>TC: 19.50</div>' +
+                '<div class="cv-mxn-title">Equivalente en MXN <span class="cv-mxn-tc" data-cv-sb-tc>TC 19.50</span></div>' +
                 rowMxn('Subtotal venta', 'subtotal_venta_mxn') +
                 rowMxn('Costo total', 'total_costo_mxn') +
-                rowMxn('Ganancia', 'ganancia_mxn') +
+                rowMxn('Ganancia', 'ganancia_mxn', 'cv-row-gain') +
                 rowMxn('Total con IVA', 'total_con_iva_mxn', 'cv-row-strong') +
             '</div>';
 
@@ -869,6 +971,18 @@
         set('margen_pct', fmtPct(t.margen_pct));
         set('iva_monto', fmtMoney(t.iva_monto));
         set('total_con_iva', fmtMoney(t.total_con_iva));
+        set('total_con_iva_2', fmtMoney(t.total_con_iva));
+
+        // Gauge de margen (rojo<15, ámbar 15-25, verde>25)
+        var g = c.querySelector('[data-cv-sb-gauge]');
+        if (g) {
+            var p = Math.max(0, Math.min(100, t.margen_pct || 0));
+            g.style.width = p + '%';
+            g.classList.remove('is-low', 'is-mid', 'is-high');
+            if (p < 15) g.classList.add('is-low');
+            else if (p < 25) g.classList.add('is-mid');
+            else g.classList.add('is-high');
+        }
 
         // MXN
         set('subtotal_venta_mxn', fmtMoney(t.subtotal_venta * tc, 'MXN'));
@@ -877,7 +991,7 @@
         set('total_con_iva_mxn', fmtMoney(t.total_con_iva * tc, 'MXN'));
 
         var tcEl = c.querySelector('[data-cv-sb-tc]');
-        if (tcEl) tcEl.textContent = 'TC: ' + tc.toFixed(2);
+        if (tcEl) tcEl.textContent = 'TC ' + tc.toFixed(2);
 
         // Subtotales por sección (en el header del acordeón)
         setSubtotal('equipamiento', fmtMoney(t.total_eq_venta));
@@ -1201,6 +1315,19 @@
                 rerender();
                 break;
 
+            case 'add-item-from-catalog':
+                if (S.readonly) return;
+                var subElC = actionEl.closest('[data-section-id]');
+                if (!subElC) return;
+                var subC = findSub(subElC.getAttribute('data-section-id'));
+                if (!subC) return;
+                var nuevo = emptyEqItem();
+                subC.items.push(nuevo);
+                markDirty();
+                rerender();
+                openCatalog({ sectionId: subC.id, itemId: nuevo.id });
+                break;
+
             case 'add-header-row':
                 if (S.readonly) return;
                 var subEl3 = actionEl.closest('[data-section-id]');
@@ -1224,6 +1351,23 @@
                 }
                 markDirty();
                 rerender();
+                break;
+
+            // Atajos del estado vacío de cada sección
+            case 'add-row-mo_cobrada':
+                if (S.readonly) return;
+                S.data.mano_obra.items.push(emptyMoItem());
+                markDirty(); rerender();
+                break;
+            case 'add-row-cmo':
+                if (S.readonly) return;
+                S.data.costo_mo.items.push(emptyCmoItem());
+                markDirty(); rerender();
+                break;
+            case 'add-row-gastos':
+                if (S.readonly) return;
+                S.data.gastos.items.push(emptyGastoItem());
+                markDirty(); rerender();
                 break;
 
             case 'del-row':
