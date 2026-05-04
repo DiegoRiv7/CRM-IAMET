@@ -4356,6 +4356,15 @@ label.lw-soft-input {
 .lvc-phase.has-data { box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
 .lvc-phase.has-data:hover { border-color: #cbd5e1; }
 .lvc-phase.is-empty { background: #fafbfc; }
+/* Cuando la fase está abierta dejamos overflow visible para que el
+   dropdown del botón Exportar no quede recortado por el border-radius.
+   El z-index sube para que el dropdown no quede tapado por la siguiente
+   fase (que viene después en el DOM y por default pinta encima). */
+.lvc-phase.is-open {
+    overflow: visible;
+    position: relative;
+    z-index: 5;
+}
 
 .lvc-phase-head {
     display: grid;
@@ -4627,6 +4636,23 @@ label.lw-soft-input {
 .lvc-export-item svg { color: #64748b; flex-shrink: 0; }
 .lvc-export-item-title { font-size: 12.5px; font-weight: 600; line-height: 1.2; }
 .lvc-export-item-sub { font-size: 11px; color: #94a3b8; margin-top: 1px; line-height: 1.2; }
+/* Variante <button> del item — reset de estilos default del browser
+   para que se vea idéntico al <a>. */
+button.lvc-export-item {
+    width: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+.lvc-export-item-action .lvc-export-item-title { color: #0f172a; }
+.lvc-export-item-action svg { color: #0ea5e9; }
+.lvc-export-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 4px -2px;
+}
 
 .lvc-vol-body { margin-top: 4px; }
 

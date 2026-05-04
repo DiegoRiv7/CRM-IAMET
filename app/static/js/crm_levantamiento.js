@@ -4075,6 +4075,13 @@
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>';
             html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Formato .xlsx</div></div>';
             html += '</a>';
+            // Separador + opción "Generar cotización" — placeholder visual
+            // por ahora; la lógica se conecta cuando el usuario indique.
+            html += '<div class="lvc-export-divider"></div>';
+            html += '<button type="button" class="lvc-export-item lvc-export-item-action" onclick="lvcGenerarCotizacion(' + vol.id + ', ' + lev.id + ')">';
+            html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>';
+            html += '<div><div class="lvc-export-item-title">Generar cotización</div><div class="lvc-export-item-sub">Crear documento de cotización</div></div>';
+            html += '</button>';
             html += '</div>';
             html += '</div>';
             html += '</div>';
@@ -4094,6 +4101,19 @@
         });
         var menu = _$('lvcExportMenu' + volId);
         if (menu) menu.classList.toggle('is-open');
+    };
+
+    // Stub: el usuario definirá el flujo de cotización después.
+    // Por ahora cierra el dropdown y avisa que está pendiente.
+    window.lvcGenerarCotizacion = function (volId, levId) {
+        var menus = document.querySelectorAll('.lvc-export-menu.is-open');
+        menus.forEach(function (m) { m.classList.remove('is-open'); });
+        try { console.log('[cotizacion] (TODO) volId=' + volId + ' levId=' + levId); } catch (e) {}
+        if (typeof lwToast === 'function') {
+            lwToast('Generar cotización — próximamente', 'info');
+        } else {
+            alert('Generar cotización — próximamente');
+        }
     };
 
     // Click fuera de cualquier menú abierto → cerrarlo.

@@ -37,7 +37,7 @@
     {# CSS — solo lo esencial para el wizard y proyectos #}
     <link rel="stylesheet" href="{% static 'css/crm.css' %}">
     <link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
-    <link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}">
+    <link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260504-export-dropdown">
 
     <style>
         /* ── Reset / base del shell PWA ── */
@@ -512,7 +512,7 @@
     {% endcomment %}
     <script src="{% static 'js/lev_offline.js' %}"></script>
     <script src="{% static 'js/crm_proyectos.js' %}"></script>
-    <script src="{% static 'js/crm_levantamiento.js' %}?v=20260504-consulta-fetch"></script>
+    <script src="{% static 'js/crm_levantamiento.js' %}?v=20260504-export-dropdown"></script>
 
     <script>
         (function () {

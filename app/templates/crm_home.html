@@ -2,7 +2,7 @@
 {% block title %}Sistema CRM{% endblock %}
 {% block extra_head %}{% include "crm/_styles.html" %}
 <link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
-<link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}">
+<link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260504-export-dropdown">
 {% if es_ingeniero %}
 <style>
     /* Anti-FOUC: mientras body tiene .eng-initial-hide, oculta todas las
@@ -116,7 +116,7 @@
 {% include "crm/_scripts_mail.html" %}
 <script src="{% static 'js/crm_proyectos.js' %}"></script>
 <script src="{% static 'js/gantt_programa_obra.js' %}"></script>
-<script src="{% static 'js/crm_levantamiento.js' %}?v=20260504-consulta-fetch"></script>
+<script src="{% static 'js/crm_levantamiento.js' %}?v=20260504-export-dropdown"></script>
 {% if es_ingeniero %}
 {% include "crm/_scripts_ingeniero.html" %}
 {% endif %}
