@@ -40,7 +40,7 @@
     min-width: 0;          /* clave para tablas con overflow-x */
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 12px;
 }
 
 
@@ -55,7 +55,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
 }
 
@@ -662,21 +662,20 @@
 /* ===== Sidebar sticky ===== */
 
 /*
- * top: 80px aprox. = altura del header del wizard del levantamiento (~52px)
- * + un pequeño aire. Si el header del wizard cambia, ajustar esta var.
+ * El sidebar es sticky DENTRO del scroll del mount (#lwP3CvMount).
+ * top: 0 lo pega al borde superior del scroll viewport. max-height
+ * con calc evita que crezca más alto que el viewport.
  */
 .cv-sidebar {
     position: sticky;
-    top: 80px;
+    top: 0;
     align-self: start;
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
     overflow: hidden;
-    /* Limita la altura para que el sidebar nunca exceda el viewport,
-       y permite scroll interno si crece. */
-    max-height: calc(100vh - 100px);
+    max-height: calc(100vh - 120px);
     overflow-y: auto;
     display: flex;
     flex-direction: column;

@@ -406,7 +406,9 @@
     function renderSectionShell(key, titulo, subtotalLabel) {
         var sec = el('section', 'cv-section');
         sec.setAttribute('data-key', key);
-        sec.classList.add('cv-section-open'); // default expandido
+        // Por default todas las secciones arrancan colapsadas — el ingeniero
+        // ve solo los 4 headers + subtotales y abre la que necesita. Mucho
+        // mejor que tener 4 secciones abiertas saturando la vista.
 
         var head = el('div', 'cv-section-header');
         head.setAttribute('data-cv-action', 'toggle-section');
