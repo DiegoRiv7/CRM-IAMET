@@ -4143,30 +4143,27 @@
         }
 
         // Fetch volumetrías del levantamiento (vendedor recibe sólo
-        // completadas; ingeniero las recibe todas). Mientras carga
-        // mostramos un placeholder ligero. Si falla, render fallback
-        // sin volumetrías (Fase 3 quedará vacía pero el resto carga).
+        // completadas; ingeniero las recibe todas). Usa fetch nativo —
+        // `apiFetch` está en otra IIFE y no es visible desde aquí; usarla
+        // hacía que typeof === 'function' diera false y nunca se llamaba
+        // al endpoint, dejando _currentVolumetrias=[] permanentemente.
         phasesEl.innerHTML = '<div class="lvc-loader">Cargando…</div>';
-        if (typeof apiFetch === 'function') {
-            apiFetch('/app/api/iamet/levantamientos/' + levData.id + '/volumetrias/').then(function (r) {
-                // Aceptar tanto {ok:true,data:[...]} como {success:true,data:[...]}
-                var arr = (r && Array.isArray(r.data)) ? r.data : [];
-                _currentVolumetrias = arr;
-                // Log de diagnóstico — útil mientras estabilizamos. Si se
-                // ve "lev_id=X · 0 volumetrías" pero el ingeniero asegura
-                // que sí marcó una completada, lo más probable es que el
-                // levantamiento abierto NO sea el mismo (mismo proyecto,
-                // distinto id). El log lo confirma.
-                try { console.log('[consulta] lev_id=' + levData.id + ' volumetrías=' + arr.length, arr); } catch (e) {}
-                renderAll();
-            }, function (err) {
-                _currentVolumetrias = [];
-                try { console.log('[consulta] fetch volumetrías falló', err); } catch (e) {}
-                renderAll();
-            });
-        } else {
+        fetch('/app/api/iamet/levantamientos/' + levData.id + '/volumetrias/', {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(function (r) {
+            return r.json();
+        }).then(function (r) {
+            // Aceptar tanto {ok:true,data:[...]} como {success:true,data:[...]}
+            var arr = (r && Array.isArray(r.data)) ? r.data : [];
+            _currentVolumetrias = arr;
+            try { console.log('[consulta] lev_id=' + levData.id + ' volumetrías=' + arr.length, arr); } catch (e) {}
             renderAll();
-        }
+        }).catch(function (err) {
+            _currentVolumetrias = [];
+            try { console.log('[consulta] fetch volumetrías falló', err); } catch (e) {}
+            renderAll();
+        });
     };
 
     window.levantamientoConsultaCerrar = function () {
