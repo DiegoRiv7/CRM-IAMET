@@ -3124,6 +3124,8 @@ def _vol_to_dict(vol):
         'nombre': vol.nombre,
         'status': vol.status,
         'status_label': vol.get_status_display(),
+        'iva_pct': float(vol.iva_pct),
+        'tipo_cambio': float(vol.tipo_cambio),
         'creado_por_id': vol.creado_por_id,
         'creado_por_nombre': (vol.creado_por.get_full_name() or vol.creado_por.username) if vol.creado_por else '',
         'actualizado_por_id': vol.actualizado_por_id,
@@ -3252,6 +3254,24 @@ def api_volumetria_actualizar(request, volumetria_id):
             return JsonResponse({'success': False, 'error': 'Status inválido'}, status=400)
         vol.status = nuevo_status
         update_fields.append('status')
+    if 'iva_pct' in body:
+        try:
+            iva = Decimal(str(body.get('iva_pct')))
+        except (InvalidOperation, ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'iva_pct inválido'}, status=400)
+        if iva < Decimal('0') or iva > Decimal('30'):
+            return JsonResponse({'success': False, 'error': 'iva_pct fuera de rango (0–30)'}, status=400)
+        vol.iva_pct = iva
+        update_fields.append('iva_pct')
+    if 'tipo_cambio' in body:
+        try:
+            tc = Decimal(str(body.get('tipo_cambio')))
+        except (InvalidOperation, ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'tipo_cambio inválido'}, status=400)
+        if tc < Decimal('0.0001') or tc > Decimal('100'):
+            return JsonResponse({'success': False, 'error': 'tipo_cambio fuera de rango (0.0001–100)'}, status=400)
+        vol.tipo_cambio = tc
+        update_fields.append('tipo_cambio')
     vol.actualizado_por = request.user
     vol.save(update_fields=update_fields)
     return JsonResponse({'success': True, 'data': _vol_to_dict(vol)})

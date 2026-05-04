@@ -4541,6 +4541,18 @@ class ProyectoVolumetria(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='borrador')
     data = models.JSONField(default=dict, blank=True)
 
+    # Parámetros fiscales/cambiarios al momento de la volumetría. Se
+    # snapshotean aquí (y no se calculan en runtime contra el sistema)
+    # para que cotizaciones viejas conserven su contexto original.
+    iva_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('8.00'),
+        help_text='IVA aplicable (%). Tijuana frontera = 8, resto = 16',
+    )
+    tipo_cambio = models.DecimalField(
+        max_digits=10, decimal_places=4, default=Decimal('19.5000'),
+        help_text='Tipo de cambio USD→MXN al momento de la volumetría',
+    )
+
     creado_por = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='volumetrias_creadas',
