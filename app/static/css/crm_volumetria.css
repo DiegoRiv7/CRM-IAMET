@@ -1,1324 +1,623 @@
-/* ══════════════════════════════════════════════════════════════
-   VOLUMETRÍA v2 — "Mesa de creación" del ingeniero (Fase 3)
-   Linear/Notion-inspired, denso pero legible.
-   Prefijo: cv- (compass volumetría)
-   ══════════════════════════════════════════════════════════════ */
-
-
-/* ===== Root + Layout ===== */
-
-.cv-root {
-    /* Hereda la tipografía del wizard del levantamiento */
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
-    color: #0f172a;
-    background: transparent;
-    padding: 0;
-    min-height: 100%;
-    box-sizing: border-box;
-    width: 100%;
-}
-
 /*
- * Layout principal: contenido principal a la izquierda, resumen sticky
- * a la derecha. Ancho del sidebar fijo en 320px, contenido toma el resto.
+ * crm_volumetria.css — Estilos del Editor de Volumetría v3
  *
- * Decisión: usamos grid (no flex) para que el sidebar sea exactamente 320
- * sin importar contenido. min-width:0 en .cv-content evita que tablas
- * anchas (Equipamiento tiene 14 cols) hagan crecer el grid item y rompan
- * el layout — sin esto el grid auto-expande las celdas y desborda.
+ * Rediseño Linear/Notion. Paleta zinc + indigo accent.
+ * Convenciones:
+ *   - Prefijo .cv- para todas las clases (paridad con crm_volumetria.js).
+ *   - Sin !important.
+ *   - Tipografía system + mono para números.
+ *
+ * ── Inventario de clases (debe coincidir con el JS) ──
+ *
+ * Root:        .cv-root, .cv-readonly
+ * Doc header:  .cv-doc, .cv-doc-title-input, .cv-doc-meta,
+ *              .cv-meta-field, .cv-meta-icon, .cv-meta-label, .cv-meta-input
+ * Grid:        .cv-grid, .cv-grid-head, .cv-grid-head-cell,
+ *              .cv-section, .cv-section-open, .cv-section-row,
+ *              .cv-section-toggle, .cv-chevron,
+ *              .cv-section-title-input, .cv-section-actions,
+ *              .cv-row, .cv-row-cell,
+ *              .cv-cell-act, .cv-cell-num, .cv-cell-text, .cv-cell-desc,
+ *              .cv-cell-calc, .cv-cell-total, .cv-cell-mono,
+ *              .cv-input, .cv-input-num, .cv-input-text, .cv-input-desc,
+ *              .cv-notas, .cv-notas-input, .cv-has-notas,
+ *              .cv-row-del, .cv-add-row, .cv-add-section
+ *              cols: .cv-col-act .cv-col-cant .cv-col-marca .cv-col-parte
+ *                    .cv-col-desc .cv-col-plista .cv-col-desc-pct
+ *                    .cv-col-punit .cv-col-costo .cv-col-prov
+ *                    .cv-col-entrega .cv-col-total
+ * Summary:     .cv-summary, .cv-summary-title, .cv-summary-row,
+ *              .cv-summary-label, .cv-summary-value,
+ *              .cv-row-cost, .cv-row-gain, .cv-row-margin,
+ *              .cv-row-margin-low, .cv-row-iva, .cv-row-total,
+ *              .cv-summary-sep
+ * Misc:        .cv-mono, .cv-empty
  */
-.cv-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 24px;
-    align-items: start;
-    /* Sin max-width — usamos todo el ancho que el host nos da (la mesa
-       de trabajo del ingeniero debe respirar en pantallas grandes). */
+
+/* ── Variables ──────────────────────────────────────────────────── */
+.cv-root {
+    --cv-bg:            transparent;
+    --cv-fg:            #18181b;          /* zinc-900 */
+    --cv-fg-2:          #3f3f46;          /* zinc-700 */
+    --cv-fg-muted:      #71717a;          /* zinc-500 */
+    --cv-fg-faint:      #a1a1aa;          /* zinc-400 */
+    --cv-fg-placeholder:#d4d4d8;          /* zinc-300 */
+    --cv-border:        #e4e4e7;          /* zinc-200 */
+    --cv-border-soft:   #f4f4f5;          /* zinc-100 */
+    --cv-bg-row-hover:  rgba(244, 244, 245, 0.55);
+    --cv-bg-total:      rgba(244, 244, 245, 0.6);
+    --cv-bg-summary:    rgba(244, 244, 245, 0.55);
+
+    --cv-accent:        #4f46e5;          /* indigo-600 */
+    --cv-accent-soft:   #6366f1;          /* indigo-500 */
+    --cv-accent-bg:     rgba(99, 102, 241, 0.08);
+
+    --cv-positive:      #059669;          /* emerald-600 */
+    --cv-positive-2:    #10b981;          /* emerald-500 */
+    --cv-warn:          #c2410c;          /* orange-700 */
+    --cv-amber:         #d97706;          /* amber-600 */
+    --cv-danger:        #ef4444;          /* red-500 */
+
+    --cv-radius-sm: 6px;
+    --cv-radius:    10px;
+    --cv-radius-lg: 14px;
+
+    --cv-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --cv-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    --cv-mono: ui-monospace, "SF Mono", SFMono-Regular, "Menlo", "Consolas", monospace;
+    --cv-sans: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text",
+                "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* Grid template — única fuente de verdad para columnas. */
+    --cv-grid-cols: 30px 50px 100px 120px minmax(220px, 1fr) 90px 70px 100px 90px 100px 80px 110px;
+
+    color: var(--cv-fg);
+    font-family: var(--cv-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    background: var(--cv-bg);
+    padding: 0;
 }
 
-.cv-content {
-    min-width: 0;          /* clave para tablas con overflow-x */
+.cv-root *,
+.cv-root *::before,
+.cv-root *::after {
+    box-sizing: border-box;
+}
+
+/* ── Document header (Notion-style) ─────────────────────────────── */
+.cv-doc {
+    max-width: 1100px;
+    /* No centrado: el spec pide alineado al lado izquierdo del flujo. */
+    margin: 8px 0 28px;
+    padding: 8px 4px 18px;
+    border-bottom: 1px solid var(--cv-border-soft);
+}
+
+.cv-doc-title-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--cv-fg);
+    font-family: var(--cv-sans);
+    font-size: 34px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    padding: 4px 0 12px;
+    margin: 0 0 10px;
+}
+.cv-doc-title-input::placeholder {
+    color: var(--cv-fg-placeholder);
+    font-weight: 600;
+}
+
+.cv-doc-meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px 28px;
+    margin-top: 4px;
+}
+
+.cv-meta-field {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 4px;
+    min-width: 0;
+    cursor: text;
 }
 
-
-/* ===== Config Bar ===== */
-
-.cv-config-bar {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 10px 14px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-}
-
-.cv-cfg-group {
+.cv-meta-icon {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    color: var(--cv-fg-faint);
+    margin-right: 6px;
+    vertical-align: -2px;
+}
+
+.cv-meta-label {
+    color: var(--cv-fg-muted);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+}
+
+.cv-meta-input {
+    border: none;
+    outline: none;
+    border-bottom: 1px solid transparent;
+    background: transparent;
+    color: var(--cv-fg);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 4px 0 5px;
+    transition: border-color 120ms ease;
     min-width: 0;
 }
+.cv-meta-input::placeholder { color: var(--cv-fg-placeholder); }
+.cv-meta-input:hover { border-bottom-color: var(--cv-border); }
+.cv-meta-input:focus { border-bottom-color: var(--cv-accent); }
+.cv-meta-input:disabled {
+    color: var(--cv-fg);
+    cursor: default;
+}
 
-.cv-cfg-label {
+/* ── Grid de datos (Linear/Stripe) ──────────────────────────────── */
+.cv-grid {
+    width: 100%;
+    margin: 0 0 24px;
+    border-top: 1px solid var(--cv-border-soft);
+    /* Permite scroll horizontal en pantallas chicas. */
+    overflow-x: auto;
+}
+
+.cv-grid-head {
+    display: grid;
+    grid-template-columns: var(--cv-grid-cols);
+    align-items: end;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #ffffff;
+    border-bottom: 1px solid var(--cv-border);
+    padding: 14px 8px 10px;
+    min-width: 1060px;
+}
+
+.cv-grid-head-cell {
+    color: var(--cv-fg-faint);
     font-size: 11px;
     font-weight: 600;
-    color: #64748b;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    padding: 0 6px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Valor "estático" en la barra (ej. "USD" cuando moneda no es editable) */
-.cv-cfg-value {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #0f172a;
-    font-variant-numeric: tabular-nums;
-    padding: 4px 10px;
-    background: #f1f5f9;
-    border-radius: 6px;
-    white-space: nowrap;
+/* Right-align numeric headers */
+.cv-grid-head-cell.cv-col-cant,
+.cv-grid-head-cell.cv-col-plista,
+.cv-grid-head-cell.cv-col-desc-pct,
+.cv-grid-head-cell.cv-col-punit,
+.cv-grid-head-cell.cv-col-costo,
+.cv-grid-head-cell.cv-col-total {
+    text-align: right;
 }
 
-.cv-cfg-input {
-    appearance: none;
-    -webkit-appearance: none;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 7px;
-    padding: 6px 10px;
-    font-size: 12.5px;
-    font-weight: 500;
-    color: #0f172a;
-    font-family: inherit;
-    font-variant-numeric: tabular-nums;
-    transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
-    min-width: 80px;
-}
-.cv-cfg-input:hover { border-color: #cbd5e1; }
-.cv-cfg-input:focus {
-    outline: none;
-    border-color: #0ea5e9;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
-}
-
-/* Sufijo a la derecha de un input (ej. "MXN/USD", "%") */
-.cv-cfg-suffix {
-    font-size: 11px;
-    font-weight: 500;
-    color: #94a3b8;
-    white-space: nowrap;
-}
-
-/* Separador vertical entre grupos */
-.cv-cfg-sep {
-    width: 1px;
-    height: 22px;
-    background: #e2e8f0;
-    flex-shrink: 0;
-}
-
-.cv-cfg-spacer { flex: 1; }
-
-
-/* ===== Botones genéricos ===== */
-
-.cv-btn {
-    appearance: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 7px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-    font-size: 12px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: border-color 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
-}
-.cv-btn:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
-    color: #0f172a;
-}
-
-.cv-btn-primary {
-    background: linear-gradient(180deg, #3b82f6, #2563eb);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 2px 8px -2px rgba(37, 99, 235, 0.4);
-}
-.cv-btn-primary:hover {
-    background: linear-gradient(180deg, #3b82f6, #2563eb);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 4px 14px -2px rgba(37, 99, 235, 0.5);
-    transform: translateY(-1px);
-}
-
-/* Ghost — borde sutil, fondo blanco, usado en acciones de sub-sección */
-.cv-btn-ghost {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-    padding: 4px 10px;
-    font-size: 11.5px;
-}
-.cv-btn-ghost:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
-    color: #0f172a;
-}
-
-/* Danger ghost — para "eliminar sub-sección" */
-.cv-btn-danger-ghost {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-    padding: 4px 8px;
-    font-size: 11.5px;
-}
-.cv-btn-danger-ghost:hover {
-    border-color: #fecaca;
-    color: #dc2626;
-    background: #fef2f2;
-}
-
-
-/* ===== Section (acordeón top) ===== */
-
+/* ── Sección ────────────────────────────────────────────────────── */
 .cv-section {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    overflow: hidden;          /* clip del body cerrado */
-    transition: box-shadow 150ms ease, border-color 150ms ease;
+    margin-top: 8px;
+    padding: 0 8px;
+    min-width: 1060px;
 }
-.cv-section:hover { border-color: #cbd5e1; }
+.cv-section + .cv-section {
+    margin-top: 4px;
+}
 
-.cv-section-header {
+.cv-section-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 18px 22px;
-    cursor: pointer;
-    user-select: none;
-    background: linear-gradient(180deg, #fafbfc, #f8fafc);
-    border-bottom: 1px solid transparent;
-    transition: background 150ms ease, border-color 200ms ease;
-}
-.cv-section-header:hover { background: linear-gradient(180deg, #f8fafc, #f1f5f9); }
-
-.cv-section.cv-section-open .cv-section-header {
-    border-bottom-color: #e2e8f0;
+    gap: 4px;
+    padding: 14px 0 8px;
+    margin-top: 6px;
 }
 
-/* Accent border-left por sección — selecciona vía data-key */
-.cv-section[data-key="equipamiento"] .cv-section-header { box-shadow: inset 3px 0 0 #0ea5e9; }
-.cv-section[data-key="mano_obra"]    .cv-section-header { box-shadow: inset 3px 0 0 #8b5cf6; }
-.cv-section[data-key="costo_mo"]     .cv-section-header { box-shadow: inset 3px 0 0 #f59e0b; }
-.cv-section[data-key="gastos"]       .cv-section-header { box-shadow: inset 3px 0 0 #ef4444; }
-
-.cv-chevron {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    color: #64748b;
+.cv-section-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transform: rotate(-90deg);
-    transition: transform 200ms ease;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cv-fg-muted);
+    cursor: pointer;
+    border-radius: var(--cv-radius-sm);
+    flex: 0 0 auto;
 }
-.cv-section.cv-section-open .cv-chevron { transform: rotate(0deg); }
-
-.cv-section-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #0f172a;
-    letter-spacing: -0.01em;
-    margin: 0;
-    flex-shrink: 0;
+.cv-section-toggle:hover {
+    color: var(--cv-fg);
+    background: var(--cv-border-soft);
 }
 
-.cv-section-subtotal {
+.cv-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    transition: transform 140ms ease;
+}
+
+.cv-section-title-input {
+    flex: 1 1 auto;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--cv-fg);
+    font-family: inherit;
     font-size: 13px;
     font-weight: 600;
-    color: #475569;
-    font-variant-numeric: tabular-nums;
-    margin-left: auto;
-    padding: 4px 12px;
-    background: #f1f5f9;
-    border-radius: 999px;
-    white-space: nowrap;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 6px;
+    border-radius: var(--cv-radius-sm);
+    min-width: 0;
+}
+.cv-section-title-input::placeholder {
+    color: var(--cv-fg-placeholder);
+}
+.cv-section-title-input:hover {
+    background: var(--cv-border-soft);
+}
+.cv-section-title-input:focus {
+    background: var(--cv-accent-bg);
+}
+
+.cv-section-actions {
     display: inline-flex;
+    align-items: center;
     gap: 4px;
-    align-items: baseline;
+    opacity: 0;
+    transition: opacity 120ms ease;
 }
-.cv-subtotal-label { color: #64748b; font-weight: 500; }
-.cv-subtotal-value { color: #0f172a; }
+.cv-section-row:hover .cv-section-actions { opacity: 1; }
 
-.cv-section-body {
-    /* Estado abierto por default — `.cv-section` sin .cv-section-open lo oculta. */
-    padding: 18px 22px 22px;
-    display: block;
-    animation: cv-section-fade 200ms ease;
+/* ── Filas ──────────────────────────────────────────────────────── */
+.cv-row {
+    display: grid;
+    grid-template-columns: var(--cv-grid-cols);
+    align-items: center;
+    padding: 6px 0;
+    border-radius: var(--cv-radius);
+    transition: background-color 100ms ease;
+    position: relative;
 }
-@keyframes cv-section-fade {
-    from { opacity: 0; transform: translateY(-2px); }
-    to   { opacity: 1; transform: translateY(0); }
+.cv-row:hover {
+    background: var(--cv-bg-row-hover);
 }
 
-/* Acordeón cerrado: oculta el body */
-.cv-section:not(.cv-section-open) .cv-section-body { display: none; }
-
-
-/* ===== Subsection (dentro de Equipamiento) ===== */
-
-.cv-subsection {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    background: #fff;
-    overflow: hidden;
-    margin-bottom: 12px;
-    transition: border-color 120ms ease;
-}
-.cv-subsection:last-child { margin-bottom: 0; }
-.cv-subsection:hover { border-color: #cbd5e1; }
-
-.cv-subsection-header {
+.cv-row-cell {
+    padding: 0 6px;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-/* Nombre de sub-sección — versión editable e ícono "lectura" */
-.cv-subsection-name,
-.cv-subsection-name-input {
-    flex: 1;
-    min-width: 0;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #0f172a;
-    font-family: inherit;
-    letter-spacing: -0.005em;
-    transition: background 120ms ease, border-color 120ms ease;
-}
-.cv-subsection-name-input:hover {
-    background: #fff;
-    border-color: #e2e8f0;
-}
-.cv-subsection-name-input:focus {
-    outline: none;
-    background: #fff;
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
-}
-
-.cv-subsection-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-}
-
-.cv-subsection-body {
-    padding: 0;
-    /* No padding — la tabla rellena hasta los bordes del subsection */
-}
-
-
-/* ===== Tablas (base + variantes) ===== */
-
-/*
- * Wrapper externo: provee overflow-x. La tabla interna mantiene su ancho
- * mínimo y permite scroll lateral en pantallas estrechas.
- */
-.cv-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    /* Sombras de scroll lateral para hint visual */
-    background:
-        linear-gradient(90deg, #fff 30%, rgba(255,255,255,0)) left center / 24px 100% no-repeat,
-        linear-gradient(90deg, rgba(255,255,255,0), #fff 70%) right center / 24px 100% no-repeat,
-        linear-gradient(90deg, rgba(15,23,42,0.06), rgba(15,23,42,0)) left center / 8px 100% no-repeat,
-        linear-gradient(90deg, rgba(15,23,42,0), rgba(15,23,42,0.06)) right center / 8px 100% no-repeat;
-    background-attachment: local, local, scroll, scroll;
-}
-
-.cv-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    font-size: 12.5px;
-    font-variant-numeric: tabular-nums;
-    color: #0f172a;
-    background: #fff;
-}
-
-/* La tabla de Equipamiento es muy ancha (14+ cols): forzamos min-width */
-.cv-table-eq {
-    font-size: 12px;
-    min-width: 1100px;
-}
-
-/* Tablas simples (MO/CMO/Gastos) — caja con borde redondeado */
-.cv-table-mo,
-.cv-table-cmo,
-.cv-table-gastos {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
     overflow: hidden;
 }
 
-/* THEAD común a todas las tablas */
-.cv-table thead th {
-    background: #f8fafc;
-    color: #475569;
-    font-weight: 600;
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    text-align: left;
-    padding: 10px 12px;
-    border-bottom: 1px solid #e2e8f0;
-    white-space: nowrap;
-}
-.cv-table-eq thead th {
-    /* Sticky para que el header siga visible al hacer scroll horizontal/vertical */
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    padding: 8px 8px;
-    border-right: 1px solid #f1f5f9;
-}
-.cv-table-eq thead th:last-child { border-right: none; }
-
-.cv-table thead th.cv-th-num { text-align: right; }
-.cv-table thead th.cv-th-act { width: 1%; }
-
-/* TBODY */
-.cv-table tbody td {
-    padding: 8px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
-    color: #0f172a;
-    background: #fff;
-    transition: background 120ms ease;
-}
-.cv-table-eq tbody td {
-    padding: 6px 8px;
-    border-right: 1px solid #f1f5f9;
-}
-.cv-table-eq tbody td:last-child { border-right: none; }
-.cv-table tbody tr:last-child td { border-bottom: none; }
-
-/* Hover de fila — solo en filas item normales (no en rótulos) */
-.cv-table tbody tr:not(.cv-row-header):hover td { background: #f8fafc; }
-
-/* Tipos de celda */
-.cv-cell-num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    width: 1%;            /* shrink al contenido */
-    white-space: nowrap;
-}
+/* Variante: descripción ocupa 2 líneas (descripcion + notas) */
 .cv-cell-desc {
-    text-align: left;
-    min-width: 200px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    overflow: visible;
 }
-.cv-cell-act {
-    width: 1%;
-    white-space: nowrap;
+
+/* Right-align numeric/total */
+.cv-cell-num,
+.cv-cell-calc,
+.cv-cell-total {
+    justify-content: flex-end;
     text-align: right;
 }
-
-/* Celdas calculadas (P.Total, C.Total, Ganancia, etc.) — fondo levemente
-   más oscuro para señalar "no editable directamente". */
-.cv-table td.cv-cell-calc {
-    background: #f8fafc;
-}
-.cv-table tbody tr:not(.cv-row-header):hover td.cv-cell-calc {
-    background: #f1f5f9;
-}
-
-/* Celda destacada (subtotal de fila — P. Total V, Total servicio, etc.) */
-.cv-cell-strong {
-    color: #0f172a;
-    font-weight: 700;
-}
-
-/* Celda ganancia — verde por default (la mayoría de los casos) */
-.cv-cell-gain {
-    color: #059669;
-    font-weight: 600;
-}
-
-/* Filas tipo rótulo (header dentro del tbody) — destaca con amarillo claro */
-.cv-row-header td {
-    background: #fefce8;
-    color: #713f12;
-    font-weight: 600;
-    font-style: italic;
-    border-right: none;
-    padding: 7px 12px;
-}
-.cv-row-header:hover td {
-    background: #fef9c3;
-}
-.cv-header-cell {
-    /* td con colspan que contiene el rótulo */
-    padding: 4px 10px;
-}
-.cv-header-text {
-    display: inline-block;
-    font-size: 12.5px;
-}
-.cv-header-input {
-    appearance: none;
+.cv-cell-num .cv-input,
+.cv-cell-text .cv-input {
     width: 100%;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 5px;
+}
+
+.cv-cell-calc {
+    color: var(--cv-fg-muted);
+    font-size: 13px;
+    padding: 0 8px;
+}
+.cv-cell-total {
+    background: var(--cv-bg-total);
+    border-radius: var(--cv-radius-sm);
     padding: 4px 8px;
+    color: var(--cv-fg);
+    font-weight: 500;
+    margin: 0 4px;
+    height: 28px;
+}
+.cv-cell-mono {
+    font-family: var(--cv-mono);
+    font-variant-numeric: tabular-nums;
     font-size: 12.5px;
-    font-weight: 600;
-    font-style: italic;
-    color: #713f12;
-    font-family: inherit;
-    box-sizing: border-box;
-    transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
-}
-.cv-header-input:hover {
-    background: #fffbeb;
-    border-color: #fde68a;
-}
-.cv-header-input:focus {
-    outline: none;
-    background: #fff;
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
-}
-.cv-header-input::placeholder {
-    color: #b45309;
-    opacity: 0.5;
-    font-style: italic;
 }
 
-
-/* ===== Inputs y celdas readonly ===== */
-
-.cv-cell-input {
-    appearance: none;
+/* ── Inputs en celda ────────────────────────────────────────────── */
+.cv-input {
     width: 100%;
-    background: transparent;
     border: 1px solid transparent;
-    border-radius: 5px;
-    padding: 3px 6px;
-    font-size: 12px;
-    font-weight: 500;
-    color: #0f172a;
-    font-family: inherit;
-    font-variant-numeric: tabular-nums;
-    box-sizing: border-box;
-    transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
-}
-.cv-cell-num .cv-cell-input { text-align: right; }
-.cv-cell-input:hover {
-    background: #fff;
-    border-color: #e2e8f0;
-}
-.cv-cell-input:focus {
     outline: none;
-    background: #fff;
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18);
+    background: transparent;
+    color: var(--cv-fg);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: var(--cv-radius-sm);
+    transition: border-color 120ms ease, background-color 120ms ease;
+    min-width: 0;
+    -moz-appearance: textfield;
 }
-.cv-cell-input::placeholder { color: #94a3b8; }
+.cv-input::-webkit-outer-spin-button,
+.cv-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.cv-input::placeholder { color: var(--cv-fg-placeholder); }
+.cv-input:hover { background: rgba(244, 244, 245, 0.5); }
+.cv-input:focus {
+    border-color: var(--cv-accent);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px var(--cv-accent-bg);
+}
+.cv-input:disabled {
+    color: var(--cv-fg);
+    cursor: default;
+    background: transparent;
+}
 
-/* Cell readonly — span de solo lectura dentro de celda */
-.cv-cell-ro {
-    display: inline-block;
-    width: 100%;
-    padding: 3px 6px;
-    font-size: 12px;
-    font-weight: 500;
-    color: #334155;
+.cv-input-num,
+.cv-cell-num .cv-input {
+    text-align: right;
+    font-family: var(--cv-mono);
     font-variant-numeric: tabular-nums;
-    box-sizing: border-box;
 }
-.cv-cell-num .cv-cell-ro { text-align: right; }
 
-/* Mono — código/no_parte en monospace para alineación visual */
-.cv-mono {
-    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+.cv-input-desc {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Notas: ocultas por defecto, visibles en hover de la fila o si tiene texto. */
+.cv-notas-input {
     font-size: 11.5px;
-    letter-spacing: -0.01em;
+    color: var(--cv-fg-muted);
+    padding: 2px 6px;
+    height: 22px;
+    /* truco: max-height para anim sutil */
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 140ms ease, opacity 140ms ease, padding 140ms ease;
+    pointer-events: none;
+}
+.cv-row:hover .cv-notas-input,
+.cv-row.cv-has-notas .cv-notas-input,
+.cv-notas-input:focus {
+    max-height: 28px;
+    opacity: 1;
+    padding: 2px 6px;
+    pointer-events: auto;
 }
 
-
-/* ===== Botones de acción en celdas (catálogo y eliminar) ===== */
-
-.cv-row-tool,
+/* ── Botones de fila / sección ─────────────────────────────────── */
 .cv-row-del {
-    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 22px;
     height: 22px;
     border: none;
-    border-radius: 5px;
     background: transparent;
-    color: #94a3b8;
+    color: var(--cv-fg-faint);
+    border-radius: var(--cv-radius-sm);
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 120ms ease, color 120ms ease;
-    margin-left: 2px;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 120ms ease, color 120ms ease, background-color 120ms ease;
 }
-.cv-row-tool:hover {
-    background: #eff6ff;
-    color: #0ea5e9;
+.cv-row:hover .cv-row-del,
+.cv-section-row:hover .cv-row-del {
+    opacity: 1;
 }
 .cv-row-del:hover {
-    background: #fef2f2;
-    color: #dc2626;
+    color: var(--cv-danger);
+    background: rgba(239, 68, 68, 0.08);
 }
-.cv-row-tool svg,
-.cv-row-del svg { width: 14px; height: 14px; }
 
-
-/* ===== Botones "agregar" ===== */
-
-/* + producto / + rótulo dentro de subsection (botones inline al final) */
 .cv-add-row {
-    appearance: none;
-    width: 100%;
-    background: #fff;
-    border: none;
-    border-top: 1px dashed #e5e7eb;
-    padding: 9px 12px;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: #64748b;
-    cursor: pointer;
-    font-family: inherit;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     gap: 6px;
-    transition: background 120ms ease, color 120ms ease;
+    border: none;
+    background: transparent;
+    color: var(--cv-fg-faint);
+    font-family: inherit;
+    font-size: 12.5px;
+    padding: 6px 8px;
+    margin: 4px 0 8px 36px;
+    border-radius: var(--cv-radius-sm);
+    cursor: pointer;
+    transition: color 120ms ease, background-color 120ms ease;
 }
 .cv-add-row:hover {
-    background: #f8fafc;
-    color: #0ea5e9;
+    color: var(--cv-accent);
+    background: var(--cv-accent-bg);
 }
+.cv-add-row svg { width: 12px; height: 12px; }
 
-/* + subsection (al final del cuerpo de Equipamiento) */
-.cv-add-subsection {
-    appearance: none;
-    width: 100%;
-    margin-top: 8px;
-    background: #fff;
-    border: 1px dashed #cbd5e1;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #64748b;
-    cursor: pointer;
-    font-family: inherit;
+.cv-add-section {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 120ms ease;
+    gap: 8px;
+    border: 1px dashed var(--cv-border);
+    background: transparent;
+    color: var(--cv-fg-faint);
+    font-family: inherit;
+    font-size: 12.5px;
+    padding: 8px 14px;
+    margin: 16px 8px 4px;
+    border-radius: var(--cv-radius);
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
 }
-.cv-add-subsection:hover {
-    border-color: #0ea5e9;
-    color: #0ea5e9;
-    background: #f0f9ff;
-}
-
-
-/* ===== Sidebar sticky ===== */
-
-/*
- * El sidebar es sticky DENTRO del scroll del mount (#lwP3CvMount).
- * top: 0 lo pega al borde superior del scroll viewport. max-height
- * con calc evita que crezca más alto que el viewport.
- */
-.cv-sidebar {
-    position: sticky;
-    top: 0;
-    align-self: start;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
-    overflow: hidden;
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+.cv-add-section:hover {
+    color: var(--cv-accent);
+    border-color: var(--cv-accent-soft);
+    background: var(--cv-accent-bg);
 }
 
-.cv-sidebar-inner {
-    display: flex;
-    flex-direction: column;
+/* ── Empty / readonly ───────────────────────────────────────────── */
+.cv-empty {
+    color: var(--cv-fg-faint);
+    font-size: 12.5px;
+    padding: 12px 36px 16px;
+    font-style: italic;
 }
 
-.cv-sidebar-totals {
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+/* En modo readonly desactivamos hovers de delete y +. */
+.cv-root.cv-readonly .cv-row-del,
+.cv-root.cv-readonly .cv-add-row,
+.cv-root.cv-readonly .cv-add-section {
+    display: none;
+}
+.cv-root.cv-readonly .cv-input,
+.cv-root.cv-readonly .cv-meta-input,
+.cv-root.cv-readonly .cv-section-title-input,
+.cv-root.cv-readonly .cv-doc-title-input {
+    cursor: default;
 }
 
-/* Filas del sidebar (label + value) */
-.cv-sb-row {
+/* ── Summary card ───────────────────────────────────────────────── */
+.cv-summary {
+    width: 320px;
+    max-width: 100%;
+    margin: 32px 8px 24px auto;   /* esquina inferior derecha */
+    padding: 20px 22px;
+    background: var(--cv-bg-summary);
+    border: 1px solid rgba(228, 228, 231, 0.6);
+    border-radius: var(--cv-radius-lg);
+    box-shadow: var(--cv-shadow-1);
+}
+
+.cv-summary-title {
+    color: var(--cv-fg-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.cv-summary-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
     padding: 5px 0;
-    font-size: 12.5px;
 }
-
-.cv-sb-label {
-    color: #64748b;
-    font-weight: 500;
-    flex-shrink: 0;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.cv-sb-value {
-    color: #0f172a;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-    flex-shrink: 0;
-    transition: background 300ms ease;
-    padding: 0 4px;
-    border-radius: 4px;
-}
-
-/* Separador <hr> entre bloques de totales */
-.cv-sb-sep {
-    border: none;
-    height: 1px;
-    background: #e5e7eb;
-    margin: 8px 0;
-}
-
-/* Variantes de fila en el sidebar */
-.cv-row-cost .cv-sb-label,
-.cv-row-cost .cv-sb-value {
-    color: #94a3b8;          /* tonos más tenues para los costos */
-    font-weight: 500;
-}
-.cv-row-cost .cv-sb-value { color: #64748b; }
-
-.cv-row-strong .cv-sb-label {
-    color: #0f172a;
-    font-weight: 700;
-    font-size: 12.5px;
-}
-.cv-row-strong .cv-sb-value {
-    color: #0f172a;
-    font-weight: 700;
-}
-
-.cv-row-gain .cv-sb-value {
-    color: #059669;
-    font-weight: 700;
-}
-
-.cv-row-margin .cv-sb-value {
+.cv-summary-label {
+    color: var(--cv-fg-2);
     font-size: 13px;
-    font-weight: 700;
-    color: #0f172a;
+}
+.cv-summary-value {
+    color: var(--cv-fg);
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: right;
 }
 
-/* Total con IVA — la fila destacada al final del bloque USD */
-.cv-row-grand {
+.cv-row-cost .cv-summary-value {
+    color: var(--cv-warn);
+}
+
+.cv-row-gain .cv-summary-value {
+    color: var(--cv-positive);
+    font-weight: 600;
+}
+
+.cv-row-margin .cv-summary-value {
+    color: var(--cv-positive);
+    font-weight: 600;
+}
+.cv-row-margin.cv-row-margin-low .cv-summary-value {
+    color: var(--cv-amber);
+}
+
+.cv-row-iva .cv-summary-label,
+.cv-row-iva .cv-summary-value {
+    color: var(--cv-fg-muted);
+    font-size: 12.5px;
+}
+
+.cv-row-total {
     margin-top: 6px;
     padding-top: 10px;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--cv-border);
 }
-.cv-row-grand .cv-sb-label {
-    font-size: 11px;
+.cv-row-total .cv-summary-label {
+    font-weight: 600;
+    color: var(--cv-fg);
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
-    color: #0f172a;
+    letter-spacing: 0.04em;
 }
-.cv-row-grand .cv-sb-value {
-    font-size: 18px;
+.cv-row-total .cv-summary-value {
+    font-size: 22px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--cv-fg);
     letter-spacing: -0.01em;
 }
 
-
-/* ===== Bloque "EN MXN" ===== */
-
-.cv-sidebar-mxn {
-    margin: 4px 14px 14px;
-    padding: 12px 14px;
-    background: #f8fafc;
-    border-radius: 10px;
-    border: 1px solid #f1f5f9;
+.cv-summary-sep {
+    height: 1px;
+    background: var(--cv-border);
+    margin: 14px 0 10px;
 }
-.cv-mxn-title {
-    margin: 0 0 4px;
-    font-size: 10px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-.cv-mxn-tc {
-    margin-bottom: 6px;
-    font-size: 10.5px;
-    font-weight: 600;
-    color: #94a3b8;
+
+/* ── Mono helper ────────────────────────────────────────────────── */
+.cv-mono {
+    font-family: var(--cv-mono);
     font-variant-numeric: tabular-nums;
 }
-.cv-sidebar-mxn .cv-sb-row {
-    padding: 3px 0;
-    font-size: 12px;
-}
-.cv-sidebar-mxn .cv-sb-label { color: #94a3b8; }
-.cv-sidebar-mxn .cv-sb-value { color: #475569; font-weight: 500; }
-.cv-sidebar-mxn .cv-row-strong .cv-sb-label,
-.cv-sidebar-mxn .cv-row-strong .cv-sb-value {
-    color: #0f172a;
-    font-weight: 700;
-}
 
-/* Pill de monto en MXN — distintivo visual sutil del valor convertido */
-.cv-mxn {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 1px 6px;
-}
-
-
-/* ===== Modal de catálogo ===== */
-
-.cv-catalog-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    z-index: 9999;
-    display: flex;            /* JS alterna entre 'flex' y 'none' */
-    align-items: flex-start;
-    justify-content: center;
-    padding: 60px 16px 16px;
-    animation: cv-catalog-fade 160ms ease;
-}
-@keyframes cv-catalog-fade {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-
-.cv-catalog-modal {
-    width: 100%;
-    max-width: 640px;
-    max-height: calc(100vh - 100px);
-    background: #fff;
-    border-radius: 14px;
-    box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.35);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    animation: cv-catalog-pop 180ms ease;
-}
-@keyframes cv-catalog-pop {
-    from { transform: translateY(-8px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
-}
-
-.cv-catalog-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 1px solid #e2e8f0;
-    background: #fafbfc;
-}
-
-.cv-catalog-search {
-    appearance: none;
-    flex: 1;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #0f172a;
-    font-family: inherit;
-    transition: border-color 120ms ease, box-shadow 120ms ease;
-}
-.cv-catalog-search:focus {
-    outline: none;
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
-}
-.cv-catalog-search::placeholder { color: #94a3b8; }
-
-.cv-catalog-close {
-    appearance: none;
-    width: 30px;
-    height: 30px;
-    border: none;
-    border-radius: 7px;
-    background: transparent;
-    color: #64748b;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 120ms ease, color 120ms ease;
-}
-.cv-catalog-close:hover {
-    background: #f1f5f9;
-    color: #0f172a;
-}
-
-.cv-catalog-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 4px;
-}
-
-.cv-catalog-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 120ms ease;
-}
-.cv-catalog-row:hover {
-    background: #f0f9ff;
-}
-
-.cv-catalog-row-main {
-    flex: 1;
-    min-width: 0;
-}
-.cv-catalog-desc {
-    font-size: 13px;
-    font-weight: 600;
-    color: #0f172a;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.cv-catalog-sub {
-    margin-top: 2px;
-    font-size: 11.5px;
-    color: #64748b;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.cv-catalog-price {
-    font-size: 13px;
-    font-weight: 700;
-    color: #0f172a;
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-}
-
-.cv-catalog-empty {
-    padding: 28px 16px;
-    text-align: center;
-    font-size: 12.5px;
-    color: #94a3b8;
-}
-.cv-catalog-empty b { color: #475569; }
-
-.cv-catalog-foot {
-    padding: 8px 14px;
-    border-top: 1px solid #e2e8f0;
-    background: #fafbfc;
-}
-.cv-catalog-hint {
-    font-size: 11px;
-    color: #94a3b8;
-}
-.cv-catalog-hint code {
-    font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
-    font-size: 10.5px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    padding: 1px 5px;
-    color: #475569;
-}
-
-
-/* ===== Estados readonly ===== */
-
-/*
- * .cv-readonly aplicado al root deja los inputs visualmente "leídos".
- */
-.cv-readonly .cv-cell-input,
-.cv-readonly .cv-cfg-input,
-.cv-readonly .cv-subsection-name-input,
-.cv-readonly .cv-header-input {
-    background: #f8fafc;
-    color: #475569;
-    cursor: default;
-    pointer-events: none;
-    border-color: transparent;
-}
-.cv-readonly .cv-cell-input:focus,
-.cv-readonly .cv-cfg-input:focus,
-.cv-readonly .cv-subsection-name-input:focus,
-.cv-readonly .cv-header-input:focus {
-    box-shadow: none;
-    border-color: transparent;
-}
-
-.cv-readonly .cv-add-row,
-.cv-readonly .cv-add-subsection,
-.cv-readonly .cv-row-tool,
-.cv-readonly .cv-row-del,
-.cv-readonly .cv-subsection-actions,
-.cv-readonly .cv-btn-primary {
-    display: none;
-}
-
-/* Disabled individual (inline) */
-.cv-cell-input:disabled,
-.cv-cfg-input:disabled {
-    background: #f1f5f9;
-    color: #94a3b8;
-    cursor: not-allowed;
-}
-
-
-/* ===== Animaciones (reduced motion) ===== */
-
-@media (prefers-reduced-motion: reduce) {
-    .cv-chevron,
-    .cv-section-body,
-    .cv-sb-value,
-    .cv-cell-input,
-    .cv-cfg-input,
-    .cv-btn,
-    .cv-catalog-modal,
-    .cv-catalog-backdrop {
-        transition: none;
-        animation: none;
-    }
-}
-
-
-/* ===== Responsive (≤1100px) ===== */
-
+/* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-    .cv-root { padding: 12px 14px 60px; }
-
-    .cv-layout {
-        grid-template-columns: 1fr;
-        gap: 16px;
+    .cv-doc-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    /* En móvil el sidebar pasa abajo y deja de ser sticky. */
-    .cv-sidebar {
-        position: static;
-        max-height: none;
-        overflow-y: visible;
+    .cv-summary {
+        width: 100%;
+        margin: 24px 0;
     }
+    /* el grid ya hace overflow-x; sus rows mantienen min-width 1060px */
+}
 
-    .cv-config-bar {
-        gap: 10px;
-        padding: 10px;
+@media (max-width: 720px) {
+    .cv-doc-title-input {
+        font-size: 28px;
     }
-    .cv-cfg-spacer { display: none; }
-    .cv-cfg-sep   { display: none; }
-
-    .cv-section-header {
-        padding: 12px 14px;
-        gap: 10px;
-        flex-wrap: wrap;
+    .cv-doc-meta {
+        grid-template-columns: minmax(0, 1fr);
     }
-    .cv-section-subtotal { font-size: 12px; }
-    .cv-section-body { padding: 10px 12px 14px; }
-
-    .cv-table-eq { font-size: 11.5px; }
-    .cv-table-eq tbody td { padding: 6px 7px; }
-}
-
-@media (max-width: 640px) {
-    .cv-section-title { font-size: 14px; }
-    .cv-row-grand .cv-sb-value { font-size: 16px; }
-
-    /* En móvil pequeño, las tablas simples también necesitan scroll-x */
-    .cv-table-mo,
-    .cv-table-cmo,
-    .cv-table-gastos {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .cv-catalog-backdrop { padding: 16px; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════
- * UX POLISH PASS — estado vacío, header agrupado, sidebar hero
- * ═══════════════════════════════════════════════════════════════════ */
-
-/* ── Estado vacío (sub-sección sin items / tablas vacías) ─────────── */
-.cv-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 36px 20px;
-    background: #fafbfc;
-    border: 1px dashed #e2e8f0;
-    border-radius: 10px;
-    gap: 8px;
-}
-.cv-empty-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    color: #94a3b8;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 6px;
-}
-.cv-empty-title {
-    font-size: 14.5px;
-    font-weight: 700;
-    color: #0f172a;
-    letter-spacing: -0.005em;
-}
-.cv-empty-msg {
-    font-size: 12.5px;
-    color: #64748b;
-    max-width: 380px;
-    line-height: 1.45;
-}
-.cv-empty-actions {
-    display: inline-flex;
-    gap: 8px;
-    margin-top: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-/* ── Header agrupado de la tabla de Equipamiento (2 filas) ────────── */
-.cv-table-eq thead .cv-th-groups th {
-    text-transform: uppercase;
-    font-size: 10.5px;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    text-align: center;
-    padding: 7px 8px;
-    border-bottom: 1px solid #e2e8f0;
-    border-right: 1px solid #e5e7eb;
-    color: #475569;
-    background: #f8fafc;
-}
-.cv-table-eq thead .cv-th-groups th:last-child { border-right: none; }
-
-.cv-table-eq thead .cv-th-grp-basicos { background: #f8fafc; color: #475569; }
-.cv-table-eq thead .cv-th-grp-venta   {
-    background: linear-gradient(180deg, #ecfdf5, #f0fdf4);
-    color: #047857;
-}
-.cv-table-eq thead .cv-th-grp-costo   {
-    background: linear-gradient(180deg, #fef3c7, #fffbeb);
-    color: #b45309;
-}
-.cv-table-eq thead .cv-th-grp-resto   { background: #f8fafc; color: #475569; }
-
-.cv-table-eq thead .cv-th-cols th {
-    /* La fila interna mantiene su tamaño normal pero un pelo menos vertical */
-    padding: 8px 8px;
-    font-size: 11px;
-}
-
-/* Las celdas de cuerpo bajo los grupos de venta/costo reciben tinte sutil */
-.cv-table-eq tbody td:nth-child(6),  /* P. Lista (parte de Venta) */
-.cv-table-eq tbody td:nth-child(7),  /* % Desc Venta */
-.cv-table-eq tbody td:nth-child(8),  /* P. Unit V */
-.cv-table-eq tbody td:nth-child(9) { /* P. Total V */
-    background: #fbfffd;
-}
-.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(6),
-.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(7),
-.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(8),
-.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(9) {
-    background: #f0fdf4;
-}
-.cv-table-eq tbody td:nth-child(10), /* % Desc Costo */
-.cv-table-eq tbody td:nth-child(11), /* C. Unit */
-.cv-table-eq tbody td:nth-child(12) {/* C. Total */
-    background: #fffdf6;
-}
-.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(10),
-.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(11),
-.cv-table-eq tbody tr:not(.cv-row-header):hover td:nth-child(12) {
-    background: #fef3c7;
-}
-
-/* ── Sidebar Hero — Margen prominente ─────────────────────────────── */
-.cv-sb-hero {
-    padding: 18px 16px 16px;
-    border-bottom: 1px solid #e5e7eb;
-    text-align: center;
-}
-.cv-sb-hero-label {
-    font-size: 10.5px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-.cv-sb-hero-margen {
-    font-size: 32px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.05;
-    margin: 4px 0 10px;
-}
-.cv-sb-gauge {
-    width: 100%;
-    height: 6px;
-    background: #f1f5f9;
-    border-radius: 999px;
-    overflow: hidden;
-    margin: 4px 0 12px;
-}
-.cv-sb-gauge-fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 240ms ease, background 240ms ease;
-}
-.cv-sb-gauge-fill.is-low  { background: linear-gradient(90deg, #fb7185, #ef4444); }
-.cv-sb-gauge-fill.is-mid  { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
-.cv-sb-gauge-fill.is-high { background: linear-gradient(90deg, #34d399, #059669); }
-
-.cv-sb-hero-chips {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-top: 4px;
-}
-.cv-sb-chip {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 7px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    text-align: left;
-}
-.cv-sb-chip-gain { background: #ecfdf5; border-color: #a7f3d0; }
-.cv-sb-chip-label {
-    font-size: 9.5px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-.cv-sb-chip-gain .cv-sb-chip-label { color: #047857; }
-.cv-sb-chip-value {
-    font-size: 14px;
-    font-weight: 700;
-    color: #0f172a;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
-}
-.cv-sb-chip-gain .cv-sb-chip-value { color: #059669; }
-
-/* ── Bloque resumen (debajo del hero) ─────────────────────────────── */
-.cv-sb-block {
-    padding: 14px 16px;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-/* ── Detalle colapsable ───────────────────────────────────────────── */
-.cv-sb-details {
-    padding: 4px 16px 14px;
-    border-bottom: 1px solid #f1f5f9;
-}
-.cv-sb-details summary {
-    cursor: pointer;
-    list-style: none;
-    padding: 8px 0;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    user-select: none;
-}
-.cv-sb-details summary::-webkit-details-marker { display: none; }
-.cv-sb-details summary::before {
-    content: '';
-    width: 0; height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 5px solid #94a3b8;
-    transition: transform 180ms ease;
-    transform: rotate(-90deg);
-}
-.cv-sb-details[open] summary::before {
-    transform: rotate(0deg);
-}
-.cv-sb-details summary:hover { color: #0f172a; }
-.cv-sb-details .cv-sb-row {
-    padding: 3px 0;
-    font-size: 12px;
-}
-
-@media (max-width: 1100px) {
-    .cv-empty { padding: 28px 16px; }
-    .cv-sb-hero-margen { font-size: 28px; }
 }

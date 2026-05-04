@@ -1,65 +1,95 @@
 /**
- * crm_volumetria.js — Editor de Volumetría v2 (Fase A)
+ * crm_volumetria.js — Editor de Volumetría v3
  *
- * Módulo de UI para editar una volumetría (Fase 3 del wizard de levantamiento).
- * Reemplaza el editor plano `_renderPhase3Editor` que vivía en
- * crm_levantamiento.js. Toda la lógica de cálculo, render, autosave y
- * persistencia está autocontenida aquí — solo expone el global
- * `window.crmVolumetria` para que el host (crm_levantamiento.js) lo monte.
+ * Rediseño "Linear/Notion" de la Fase 3 del wizard de levantamiento:
+ *   - Document header al estilo Notion (titulo grande + 4 metadatos inline).
+ *   - Un solo grid de datos (estilo Linear/Stripe), con secciones colapsables,
+ *     edición inline, hover-only delete, P. Unit y Total calculados.
+ *   - Summary card al final (no sidebar sticky).
  *
- * Contrato del JSON `data` v2 — ver spec en repo. Estructura resumida:
+ * Schema v3 — JSON guardado en `volumetria.data`:
  *   {
- *     version: 2,
- *     equipamiento: { secciones: [{ id, nombre, items: [{row_type:'item'|'header', ...}] }] },
- *     mano_obra:    { items: [...] },
- *     costo_mo:     { items: [...] },
- *     gastos:       { items: [...] },
+ *     version: 3,
+ *     meta:    { cliente, contacto, elaboro, fecha },
+ *     secciones: [{
+ *       id, titulo, expanded,
+ *       items: [{
+ *         id, cantidad, marca, parte, descripcion, notas,
+ *         precioLista, descuentoVenta, costoUnitario, proveedor, entrega
+ *       }]
+ *     }]
  *   }
  *
- * Endpoints usados (no los modifica):
- *   POST /app/api/iamet/volumetrias/{id}/data/        ← autosave de data
- *   POST /app/api/iamet/volumetrias/{id}/actualizar/  ← meta (iva_pct, tipo_cambio, ...)
- *   GET  /app/api/iamet/catalogo-productos/?q=...     ← buscador de productos
+ * Cálculos:
+ *   precioVentaUnitario = precioLista * (1 - descuentoVenta/100)
+ *   totalVenta_item     = precioVentaUnitario * cantidad
+ *   costoTotal_item     = costoUnitario * cantidad
+ *   subtotalVenta = Σ totalVenta_item
+ *   costoTotal    = Σ costoTotal_item
+ *   ganancia      = subtotalVenta - costoTotal
+ *   margen %      = subtotalVenta > 0 ? ganancia / subtotalVenta * 100 : 0
+ *   iva (si iva_pct > 0) = subtotalVenta * iva_pct/100
+ *   totalConIva   = subtotalVenta + iva
  *
- * Convenciones:
- *   - IIFE estricto, vanilla DOM.
- *   - Logs prefijo `[volumetria]`.
- *   - Clases CSS prefijo `cv-` (las implementa otro agente en paralelo, ver
- *     bloque al final del archivo con la lista completa).
+ * Endpoints (sin cambios):
+ *   POST /app/api/iamet/volumetrias/{id}/data/        ← autosave del JSON v3
+ *   POST /app/api/iamet/volumetrias/{id}/actualizar/  ← iva_pct, tipo_cambio
+ *
+ * API pública (preservada): window.crmVolumetria.{render, getData,
+ *   getVolumetria, flushSave, destroy}.
+ *
+ * ── Inventario de clases CSS (paridad estricta con crm_volumetria.css) ──
+ *
+ * Root / shell:
+ *   .cv-root, .cv-readonly
+ *
+ * Document header (Notion-style):
+ *   .cv-doc, .cv-doc-title, .cv-doc-title-input,
+ *   .cv-doc-meta, .cv-meta-field, .cv-meta-icon, .cv-meta-label,
+ *   .cv-meta-input
+ *
+ * Grid de datos:
+ *   .cv-grid, .cv-grid-head, .cv-grid-head-cell,
+ *   .cv-section, .cv-section-row, .cv-section-toggle, .cv-chevron,
+ *   .cv-section-title-input, .cv-section-actions,
+ *   .cv-row, .cv-row-cell,
+ *   .cv-cell-act, .cv-cell-num, .cv-cell-text, .cv-cell-desc,
+ *   .cv-cell-calc, .cv-cell-total, .cv-cell-mono,
+ *   .cv-input, .cv-input-num, .cv-input-text, .cv-input-desc,
+ *   .cv-notas, .cv-notas-input, .cv-has-notas,
+ *   .cv-row-del, .cv-add-row, .cv-add-section
+ *
+ * Summary card:
+ *   .cv-summary, .cv-summary-title, .cv-summary-row,
+ *   .cv-summary-label, .cv-summary-value,
+ *   .cv-row-cost, .cv-row-gain, .cv-row-margin, .cv-row-margin-low,
+ *   .cv-row-iva, .cv-row-total, .cv-summary-sep
+ *
+ * Misc:
+ *   .cv-mono, .cv-empty
  */
 (function () {
     'use strict';
 
-    // ── Estado del módulo (singleton — solo un editor a la vez) ─────
+    // ── Estado ──────────────────────────────────────────────────────
     var S = {
-        container: null,        // HTMLElement raíz donde montamos
-        volumetria: null,       // Objeto plano: {id, nombre, status, data, iva_pct, tipo_cambio, ...}
-        levantamiento: null,    // Lev data (por si necesitamos fallback)
+        container: null,
+        volumetria: null,
+        levantamiento: null,
         readonly: false,
-        onDirty: null,
         onSaved: null,
 
-        data: null,             // El objeto v2 vivo (lo que editamos en memoria)
+        data: null,             // objeto v3 vivo
 
-        // Autosave
         saveTimer: null,
         saveInFlight: false,
-        savePending: false,     // hubo cambios mientras estábamos guardando
+        savePending: false,
 
-        // Catálogo (modal compartido — se crea bajo demanda)
-        catalogState: {
-            visible: false,
-            current: [],        // resultado de la última búsqueda
-            target: null,       // { sectionId, itemId } — fila destino
-            timer: null,
-        },
-
-        // Drag handlers globales registrados (para limpiar en destroy)
-        boundDocClick: null,
-        boundDocKey: null,
+        metaTimer: null,
+        metaPending: {},
     };
 
-    // ── Helpers básicos ──────────────────────────────────────────────
+    // ── Helpers ─────────────────────────────────────────────────────
     function log() {
         try {
             var args = ['[volumetria]'].concat(Array.prototype.slice.call(arguments));
@@ -78,7 +108,6 @@
         try {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
         } catch (_) {}
-        // Fallback RFC4122-ish
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             var r = Math.random() * 16 | 0;
             var v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -91,23 +120,33 @@
         return isNaN(n) ? 0 : n;
     }
 
-    function fmtMoney(n, currency) {
-        currency = currency || 'USD';
-        var v = num(n);
-        var sign = v < 0 ? '-' : '';
-        v = Math.abs(v);
-        var s = v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return sign + (currency === 'MXN' ? '$' : '$') + s;
+    // Format en MXN siempre — el React de referencia formatea en MXN
+    // aunque la data esté en USD; los números crudos los respetamos, esto
+    // es solo presentacional.
+    var _moneyFmt = null;
+    function fmtMoney(n) {
+        if (!_moneyFmt) {
+            try {
+                _moneyFmt = new Intl.NumberFormat('es-MX', {
+                    style: 'currency', currency: 'MXN',
+                    minimumFractionDigits: 2, maximumFractionDigits: 2,
+                });
+            } catch (_) {
+                _moneyFmt = { format: function (v) { return '$' + num(v).toFixed(2); } };
+            }
+        }
+        return _moneyFmt.format(num(n));
     }
 
     function fmtPct(n) {
-        return num(n).toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+        return num(n).toLocaleString('es-MX', {
+            minimumFractionDigits: 1, maximumFractionDigits: 1,
+        }) + '%';
     }
 
     function getCsrf() {
         var el = document.querySelector('[name=csrfmiddlewaretoken]');
         if (el) return el.value;
-        // Fallback: cookie
         var m = document.cookie.match(/(^|;\s*)csrftoken=([^;]+)/);
         return m ? m[2] : '';
     }
@@ -125,1452 +164,836 @@
         }).then(function (r) { return r.json(); });
     }
 
-    function apiGet(url) {
-        return fetch(url, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        }).then(function (r) { return r.json(); });
-    }
-
-    // ── Migración / normalización de data v2 ────────────────────────
-    // Acepta: data v2 (lo deja como está), data v1 ({materiales, manoObra, gastos}) o vacío.
-    function normalizeData(raw) {
-        raw = raw || {};
-
-        // ¿Ya es v2?
-        if (raw.version === 2 && raw.equipamiento) {
-            return ensureShape(raw);
-        }
-
-        // Migración suave desde v1 → v2:
-        var d = {
-            version: 2,
-            equipamiento: { secciones: [] },
-            mano_obra: { items: [] },
-            costo_mo: { items: [] },
-            gastos: { items: [] },
-        };
-
-        // v1.materiales → equipamiento.secciones[0].items
-        if (Array.isArray(raw.materiales) && raw.materiales.length) {
-            d.equipamiento.secciones.push({
-                id: uuid(),
-                nombre: 'Equipamiento',
-                items: raw.materiales.map(function (m) {
-                    var pLista = num(m.precioLista || m.precio || 0);
-                    var dC = num(m.descCompra || 0);
-                    var dV = num(m.descVenta || 0);
-                    return {
-                        id: uuid(),
-                        row_type: 'item',
-                        marca: m.marca || '',
-                        no_parte: m.modelo || '',
-                        cant: num(m.qty || 0),
-                        descripcion: m.desc || '',
-                        p_lista: pLista,
-                        desc_v_pct: dV,
-                        p_unit_v: 0,
-                        p_total_v: 0,
-                        desc_c_pct: dC,
-                        c_unit: 0,
-                        c_total: 0,
-                        ganancia: 0,
-                        proveedor: m.proveedor || '',
-                        entrega: m.entrega || '',
-                        notas: '',
-                    };
-                }),
-            });
-        }
-
-        // v1.manoObra → mano_obra.items (servicios cobrados)
-        if (Array.isArray(raw.manoObra) && raw.manoObra.length) {
-            d.mano_obra.items = raw.manoObra.map(function (r) {
-                return {
-                    id: uuid(),
-                    marca: r.marca || 'BAJANET',
-                    no_parte: r.modelo || 'SERVICIO',
-                    cant: num(r.qty || 0),
-                    descripcion: r.desc || '',
-                    p_unit: num(r.precioUnit || r.precio || 0),
-                    total: 0,
-                    notas: '',
-                };
-            });
-        }
-
-        // v1.gastos → gastos.items
-        if (Array.isArray(raw.gastos) && raw.gastos.length) {
-            d.gastos.items = raw.gastos.map(function (r) {
-                return {
-                    id: uuid(),
-                    cant: num(r.qty || 0),
-                    unidad: r.unid || 'PZA',
-                    descripcion: r.desc || '',
-                    costo_unit: num(r.costoUnit || r.precio || 0),
-                    total: 0,
-                };
-            });
-        }
-
-        return ensureShape(d);
-    }
-
-    // Asegura que cada nivel tenga las llaves esperadas (por si llega data parcial).
-    function ensureShape(d) {
-        d.version = 2;
-        d.equipamiento = d.equipamiento || { secciones: [] };
-        d.equipamiento.secciones = d.equipamiento.secciones || [];
-        d.mano_obra = d.mano_obra || { items: [] };
-        d.mano_obra.items = d.mano_obra.items || [];
-        d.costo_mo = d.costo_mo || { items: [] };
-        d.costo_mo.items = d.costo_mo.items || [];
-        d.gastos = d.gastos || { items: [] };
-        d.gastos.items = d.gastos.items || [];
-
-        // Si no hay ninguna sección de equipamiento, crear una por default
-        if (!d.equipamiento.secciones.length) {
-            d.equipamiento.secciones.push({
-                id: uuid(),
-                nombre: 'Equipamiento',
-                items: [],
-            });
-        }
-
-        // Asegurar que cada item tenga id + row_type
-        d.equipamiento.secciones.forEach(function (sec) {
-            sec.id = sec.id || uuid();
-            sec.items = sec.items || [];
-            sec.items.forEach(function (it) {
-                it.id = it.id || uuid();
-                it.row_type = it.row_type || 'item';
-            });
-        });
-        d.mano_obra.items.forEach(function (it) { it.id = it.id || uuid(); });
-        d.costo_mo.items.forEach(function (it) { it.id = it.id || uuid(); });
-        d.gastos.items.forEach(function (it) { it.id = it.id || uuid(); });
-
-        return d;
-    }
-
-    // ── Cálculos puros ─────────────────────────────────────────────
-    function calcEqItem(it) {
-        if (it.row_type === 'header') return { p_unit_v: 0, p_total_v: 0, c_unit: 0, c_total: 0, ganancia: 0 };
-        var pLista = num(it.p_lista);
-        var dV = num(it.desc_v_pct);
-        var dC = num(it.desc_c_pct);
-        var cant = num(it.cant);
-
-        var pUnitV = pLista * (1 - dV / 100);
-        var pTotalV = cant * pUnitV;
-        var cUnit = pLista * (1 - dC / 100);
-        var cTotal = cant * cUnit;
-        var ganancia = pTotalV - cTotal;
-
-        return {
-            p_unit_v: pUnitV,
-            p_total_v: pTotalV,
-            c_unit: cUnit,
-            c_total: cTotal,
-            ganancia: ganancia,
-        };
-    }
-
-    function calcMoRow(r) {
-        return num(r.cant) * num(r.p_unit);
-    }
-    function calcCmoRow(r) {
-        var conc = num(r.cant) * num(r.costo_unit);
-        return { concentrado: conc, total: conc * num(r.dias) };
-    }
-    function calcGastoRow(r) {
-        return num(r.cant) * num(r.costo_unit);
-    }
-
-    function computeTotals() {
-        var d = S.data;
-        var totEqV = 0, totEqC = 0;
-        d.equipamiento.secciones.forEach(function (sec) {
-            sec.items.forEach(function (it) {
-                if (it.row_type !== 'item') return;
-                var c = calcEqItem(it);
-                totEqV += c.p_total_v;
-                totEqC += c.c_total;
-            });
-        });
-        var totMoV = 0;
-        d.mano_obra.items.forEach(function (r) { totMoV += calcMoRow(r); });
-        var totMoC = 0;
-        d.costo_mo.items.forEach(function (r) { totMoC += calcCmoRow(r).total; });
-        var totGastos = 0;
-        d.gastos.items.forEach(function (r) { totGastos += calcGastoRow(r); });
-
-        var subtotalVenta = totEqV + totMoV;
-        var totalCosto = totEqC + totMoC + totGastos;
-        var ganancia = subtotalVenta - totalCosto;
-        var margenPct = subtotalVenta > 0 ? (ganancia / subtotalVenta * 100) : 0;
-        var ivaPct = num(S.volumetria.iva_pct != null ? S.volumetria.iva_pct : 16);
-        var ivaMonto = subtotalVenta * (ivaPct / 100);
-        var totalConIva = subtotalVenta + ivaMonto;
-
-        return {
-            total_eq_venta: totEqV,
-            total_eq_costo: totEqC,
-            total_mo_cobrada: totMoV,
-            total_mo_costo: totMoC,
-            total_gastos: totGastos,
-            subtotal_venta: subtotalVenta,
-            total_costo: totalCosto,
-            ganancia: ganancia,
-            margen_pct: margenPct,
-            iva_pct: ivaPct,
-            iva_monto: ivaMonto,
-            total_con_iva: totalConIva,
-        };
-    }
-
-    // ── Render principal ────────────────────────────────────────────
-    function render() {
-        var c = S.container;
-        c.innerHTML = ''; // limpia
-        var root = el('div', 'cv-root' + (S.readonly ? ' cv-readonly' : ''));
-        root.appendChild(renderConfigBar());
-
-        var layout = el('div', 'cv-layout');
-        var content = el('div', 'cv-content');
-        content.appendChild(renderEquipamiento());
-        content.appendChild(renderMoCobrada());
-        content.appendChild(renderCostoMo());
-        content.appendChild(renderGastos());
-        layout.appendChild(content);
-
-        var sidebar = el('aside', 'cv-sidebar');
-        sidebar.id = 'cv-sidebar';
-        sidebar.appendChild(renderSidebar());
-        layout.appendChild(sidebar);
-
-        root.appendChild(layout);
-
-        // Modal de catálogo (oculto por default)
-        root.appendChild(renderCatalogModal());
-
-        c.appendChild(root);
-
-        bindDelegated(root);
-        refreshSidebar();
-    }
-
-    // Helper: crea elementos
-    function el(tag, cls, html) {
-        var e = document.createElement(tag);
-        if (cls) e.className = cls;
-        if (html != null) e.innerHTML = html;
-        return e;
-    }
-
-    // ── Barra superior: Moneda · TC · IVA · catálogo ────────────────
-    function renderConfigBar() {
-        var bar = el('div', 'cv-config-bar');
-        var tc = num(S.volumetria.tipo_cambio || 19.50);
-        var iva = num(S.volumetria.iva_pct != null ? S.volumetria.iva_pct : 16);
-        var ro = S.readonly ? 'disabled' : '';
-
-        // Config bar compacta: solo TC e IVA. El botón "Buscar en catálogo"
-        // global se quitó porque queda desconectado de las filas — ahora
-        // cada fila de Equipamiento tiene su propia lupa para hacer el
-        // prefill en su contexto.
-        bar.innerHTML =
-            '<div class="cv-cfg-group">' +
-                '<label class="cv-cfg-label">Moneda</label>' +
-                '<span class="cv-cfg-value">USD</span>' +
-            '</div>' +
-            '<div class="cv-cfg-sep"></div>' +
-            '<div class="cv-cfg-group">' +
-                '<label class="cv-cfg-label" for="cv-tc">Tipo de cambio</label>' +
-                '<input id="cv-tc" class="cv-cfg-input" type="number" step="0.01" min="0" value="' + tc.toFixed(2) + '" ' + ro + '>' +
-                '<span class="cv-cfg-suffix">MXN/USD</span>' +
-            '</div>' +
-            '<div class="cv-cfg-sep"></div>' +
-            '<div class="cv-cfg-group">' +
-                '<label class="cv-cfg-label" for="cv-iva">IVA</label>' +
-                '<input id="cv-iva" class="cv-cfg-input" type="number" step="0.01" min="0" max="100" value="' + iva + '" ' + ro + '>' +
-                '<span class="cv-cfg-suffix">%</span>' +
-            '</div>' +
-            '<div class="cv-cfg-spacer"></div>';
-
-        return bar;
-    }
-
-    // ── Sección genérica con acordeón ───────────────────────────────
-    function renderSectionShell(key, titulo, subtotalLabel) {
-        var sec = el('section', 'cv-section');
-        sec.setAttribute('data-key', key);
-        // Por default todas las secciones arrancan colapsadas — el ingeniero
-        // ve solo los 4 headers + subtotales y abre la que necesita. Mucho
-        // mejor que tener 4 secciones abiertas saturando la vista.
-
-        var head = el('div', 'cv-section-header');
-        head.setAttribute('data-cv-action', 'toggle-section');
-        head.setAttribute('data-section-key', key);
-        head.innerHTML =
-            '<svg class="cv-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
-            '<h3 class="cv-section-title">' + esc(titulo) + '</h3>' +
-            '<span class="cv-section-subtotal" data-cv-subtotal="' + key + '">' +
-                '<span class="cv-subtotal-label">' + esc(subtotalLabel || 'Subtotal') + ':</span> ' +
-                '<span class="cv-subtotal-value" data-cv-subtotal-value="' + key + '">$0.00</span>' +
-            '</span>';
-        sec.appendChild(head);
-
-        var body = el('div', 'cv-section-body');
-        sec.appendChild(body);
-        return { section: sec, body: body };
-    }
-
-    // ── Equipamiento ────────────────────────────────────────────────
-    function renderEquipamiento() {
-        var shell = renderSectionShell('equipamiento', 'Equipamiento', 'Subtotal venta');
-        var body = shell.body;
-
-        S.data.equipamiento.secciones.forEach(function (sub) {
-            body.appendChild(renderSubsection(sub));
-        });
-
-        if (!S.readonly) {
-            var add = el('button', 'cv-add-subsection');
-            add.type = 'button';
-            add.setAttribute('data-cv-action', 'add-subsection');
-            add.innerHTML =
-                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-                'Agregar sub-sección';
-            body.appendChild(add);
-        }
-
-        return shell.section;
-    }
-
-    function renderSubsection(sub) {
-        var s = el('div', 'cv-subsection');
-        s.setAttribute('data-section-id', sub.id);
-
-        // Header con nombre editable + botones
-        var head = el('div', 'cv-subsection-header');
-        var nameInput;
-        if (S.readonly) {
-            nameInput = el('span', 'cv-subsection-name', esc(sub.nombre || '(sin nombre)'));
-        } else {
-            nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.className = 'cv-subsection-name-input';
-            nameInput.value = sub.nombre || '';
-            nameInput.placeholder = 'Nombre de la sub-sección';
-            nameInput.setAttribute('data-cv-bind', 'subsection-name');
-        }
-        head.appendChild(nameInput);
-
-        if (!S.readonly) {
-            var actions = el('div', 'cv-subsection-actions');
-            actions.innerHTML =
-                '<button type="button" class="cv-btn cv-btn-ghost" data-cv-action="add-item">' +
-                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-                    'Producto' +
-                '</button>' +
-                '<button type="button" class="cv-btn cv-btn-ghost" data-cv-action="add-header-row">' +
-                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/></svg>' +
-                    'Rótulo' +
-                '</button>' +
-                '<button type="button" class="cv-btn cv-btn-danger-ghost" data-cv-action="del-subsection" title="Eliminar sub-sección">' +
-                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>' +
-                '</button>';
-            head.appendChild(actions);
-        }
-        s.appendChild(head);
-
-        var body = el('div', 'cv-subsection-body');
-        body.appendChild(renderEqTable(sub));
-        s.appendChild(body);
-
-        return s;
-    }
-
-    // Tabla de Equipamiento — 14 columnas + delete.
-    // Header en 2 filas con grupos visuales: BÁSICOS · VENTA · COSTO · EXTRA
-    // para que el ingeniero no tenga que descifrar abreviaciones tipo
-    // "% D V". Si la sub-sección está vacía, se renderiza un estado
-    // vacío en lugar de la tabla con headers flotando solos.
-    function renderEqTable(sub) {
-        if (!sub.items || sub.items.length === 0) {
-            return renderEmptyState({
-                kind: 'eq',
-                title: 'Aún no hay productos',
-                message: 'Agrega el primero o búscalo en el catálogo.',
-                primary: { label: 'Agregar producto', action: 'add-item' },
-                secondary: { label: 'Buscar en catálogo', action: 'add-item-from-catalog' },
-            });
-        }
-
-        var tableWrap = el('div', 'cv-table-wrap');
-        var table = el('table', 'cv-table cv-table-eq');
-        table.setAttribute('data-section-id', sub.id);
-
-        var actCol = S.readonly ? '' : '<th class="cv-th-act" rowspan="2"></th>';
-        var thead = el('thead', '', (
-            '<tr class="cv-th-groups">' +
-                '<th class="cv-th-grp-basicos" colspan="5">Básicos</th>' +
-                '<th class="cv-th-grp-venta" colspan="4">Venta</th>' +
-                '<th class="cv-th-grp-costo" colspan="3">Costo</th>' +
-                '<th class="cv-th-grp-resto" colspan="4">Detalle</th>' +
-                actCol +
-            '</tr>' +
-            '<tr class="cv-th-cols">' +
-                '<th class="cv-th-num">#</th>' +
-                '<th>Marca</th>' +
-                '<th>No. Parte</th>' +
-                '<th class="cv-th-num">Cant</th>' +
-                '<th>Descripción</th>' +
-                '<th class="cv-th-num">P. Lista</th>' +
-                '<th class="cv-th-num" title="Descuento sobre lista (venta)">% Desc</th>' +
-                '<th class="cv-th-num">P. Unit</th>' +
-                '<th class="cv-th-num">P. Total</th>' +
-                '<th class="cv-th-num" title="Descuento sobre lista (costo)">% Desc</th>' +
-                '<th class="cv-th-num">C. Unit</th>' +
-                '<th class="cv-th-num">C. Total</th>' +
-                '<th class="cv-th-num">Ganancia</th>' +
-                '<th>Proveedor</th>' +
-                '<th>Entrega</th>' +
-                '<th>Notas</th>' +
-            '</tr>'
-        ));
-        table.appendChild(thead);
-
-        var tbody = el('tbody');
-        sub.items.forEach(function (it, i) {
-            tbody.appendChild(renderEqRow(sub, it, i));
-        });
-        table.appendChild(tbody);
-
-        tableWrap.appendChild(table);
-        return tableWrap;
-    }
-
-    // Estado vacío genérico para una tabla sin items
-    function renderEmptyState(opts) {
-        var box = el('div', 'cv-empty');
-        if (S.readonly) {
-            box.innerHTML =
-                '<div class="cv-empty-icon">' +
-                    '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
-                '</div>' +
-                '<div class="cv-empty-title">Sin información</div>' +
-                '<div class="cv-empty-msg">El ingeniero no capturó datos en esta sección.</div>';
-            return box;
-        }
-        var prim = opts.primary || {};
-        var sec = opts.secondary;
-        var html =
-            '<div class="cv-empty-icon">' +
-                '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>' +
-            '</div>' +
-            '<div class="cv-empty-title">' + esc(opts.title || 'Sin items') + '</div>' +
-            '<div class="cv-empty-msg">' + esc(opts.message || '') + '</div>' +
-            '<div class="cv-empty-actions">' +
-                '<button type="button" class="cv-btn cv-btn-primary" data-cv-action="' + esc(prim.action) + '">' +
-                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-                    esc(prim.label) +
-                '</button>' +
-                (sec ?
-                    '<button type="button" class="cv-btn cv-btn-ghost" data-cv-action="' + esc(sec.action) + '">' +
-                        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-                        esc(sec.label) +
-                    '</button>'
-                : '') +
-            '</div>';
-        box.innerHTML = html;
-        return box;
-    }
-
-    function renderEqRow(sub, it, idx) {
-        var tr = el('tr');
-        tr.setAttribute('data-item-id', it.id);
-        tr.setAttribute('data-row-type', it.row_type);
-
-        if (it.row_type === 'header') {
-            tr.classList.add('cv-row-header');
-            var totalCols = S.readonly ? 16 : 16; // 16 cells visibles + 1 acción si edit
-            // Render: una sola celda spanning con el texto editable
-            var label;
-            if (S.readonly) {
-                label = '<span class="cv-header-text">' + esc(it.texto || '') + '</span>';
-            } else {
-                label = '<input type="text" class="cv-header-input" data-cv-field="texto" value="' + esc(it.texto || '') + '" placeholder="Rótulo (ej. Escalerilla 100mm IDF3)">';
-            }
-            tr.innerHTML =
-                '<td class="cv-cell-num">' + (idx + 1) + '</td>' +
-                '<td colspan="' + (S.readonly ? 15 : 15) + '" class="cv-header-cell">' + label + '</td>' +
-                (S.readonly ? '' : '<td class="cv-cell-act">' + delBtnHtml() + '</td>');
-            return tr;
-        }
-
-        // Row item normal
-        var c = calcEqItem(it);
-        var ro = S.readonly;
-
-        function inp(field, type, val, opts) {
-            opts = opts || {};
-            if (ro) {
-                return '<span class="cv-cell-ro">' + esc(val == null ? '' : String(val)) + '</span>';
-            }
-            var step = type === 'num' ? ' step="0.01"' : '';
-            var typeAttr = type === 'num' ? 'number' : 'text';
-            return '<input type="' + typeAttr + '" class="cv-cell-input ' + (opts.cls || '') + '"' +
-                ' data-cv-field="' + field + '"' + step +
-                ' value="' + esc(val == null ? '' : String(val)) + '"' +
-                (opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '') + '>';
-        }
-
-        tr.innerHTML =
-            '<td class="cv-cell-num">' + (idx + 1) + '</td>' +
-            '<td>' + inp('marca', 'text', it.marca) + '</td>' +
-            '<td>' + inp('no_parte', 'text', it.no_parte, { cls: 'cv-mono' }) + '</td>' +
-            '<td class="cv-cell-num">' + inp('cant', 'num', it.cant) + '</td>' +
-            '<td class="cv-cell-desc">' + inp('descripcion', 'text', it.descripcion) + '</td>' +
-            '<td class="cv-cell-num">' + inp('p_lista', 'num', it.p_lista) + '</td>' +
-            '<td class="cv-cell-num">' + inp('desc_v_pct', 'num', it.desc_v_pct) + '</td>' +
-            '<td class="cv-cell-num cv-cell-calc"><span data-cv-calc="p_unit_v">' + fmtMoney(c.p_unit_v) + '</span></td>' +
-            '<td class="cv-cell-num cv-cell-calc cv-cell-strong"><span data-cv-calc="p_total_v">' + fmtMoney(c.p_total_v) + '</span></td>' +
-            '<td class="cv-cell-num">' + inp('desc_c_pct', 'num', it.desc_c_pct) + '</td>' +
-            '<td class="cv-cell-num cv-cell-calc"><span data-cv-calc="c_unit">' + fmtMoney(c.c_unit) + '</span></td>' +
-            '<td class="cv-cell-num cv-cell-calc"><span data-cv-calc="c_total">' + fmtMoney(c.c_total) + '</span></td>' +
-            '<td class="cv-cell-num cv-cell-calc cv-cell-gain"><span data-cv-calc="ganancia">' + fmtMoney(c.ganancia) + '</span></td>' +
-            '<td>' + inp('proveedor', 'text', it.proveedor) + '</td>' +
-            '<td>' + inp('entrega', 'text', it.entrega) + '</td>' +
-            '<td>' + inp('notas', 'text', it.notas) + '</td>' +
-            (S.readonly ? '' : '<td class="cv-cell-act">' +
-                '<button type="button" class="cv-row-tool" data-cv-action="catalog-prefill" title="Buscar en catálogo">' +
-                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-                '</button>' +
-                delBtnHtml() +
-            '</td>');
-
-        return tr;
-    }
-
-    function delBtnHtml() {
-        return '<button type="button" class="cv-row-del" data-cv-action="del-row" title="Eliminar fila">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
-        '</button>';
-    }
-
-    // ── Mano de Obra Cobrada ────────────────────────────────────────
-    function renderMoCobrada() {
-        var shell = renderSectionShell('mano_obra', 'Mano de Obra Cobrada', 'Subtotal venta');
-        var body = shell.body;
-        if ((S.data.mano_obra.items || []).length === 0) {
-            body.appendChild(renderEmptyState({
-                title: 'Aún no hay servicios cobrados',
-                message: 'Captura los servicios profesionales que se le cobran al cliente.',
-                primary: { label: 'Agregar servicio', action: 'add-row-mo_cobrada' },
-            }));
-        } else {
-            body.appendChild(renderMoTable());
-            if (!S.readonly) body.appendChild(addRowBtn('mano_obra', 'Agregar servicio'));
-        }
-        return shell.section;
-    }
-
-    function renderMoTable() {
-        var wrap = el('div', 'cv-table-wrap');
-        var t = el('table', 'cv-table cv-table-mo');
-        t.innerHTML =
-            '<thead><tr>' +
-                '<th class="cv-th-num">#</th>' +
-                '<th>Marca</th>' +
-                '<th>No. Parte</th>' +
-                '<th class="cv-th-num">Cant</th>' +
-                '<th>Descripción</th>' +
-                '<th class="cv-th-num">P. Unit</th>' +
-                '<th class="cv-th-num">Total</th>' +
-                '<th>Notas</th>' +
-                (S.readonly ? '' : '<th class="cv-th-act"></th>') +
-            '</tr></thead>';
-        var tb = el('tbody');
-        t.appendChild(tb);
-        S.data.mano_obra.items.forEach(function (r, i) {
-            tb.appendChild(renderMoRow(r, i));
-        });
-        wrap.appendChild(t);
-        return wrap;
-    }
-
-    function renderMoRow(r, idx) {
-        var tr = el('tr');
-        tr.setAttribute('data-item-id', r.id);
-        tr.setAttribute('data-table', 'mano_obra');
-        var total = calcMoRow(r);
-        var ro = S.readonly;
-
-        function inp(field, type, val) {
-            if (ro) return '<span class="cv-cell-ro">' + esc(val == null ? '' : String(val)) + '</span>';
-            var step = type === 'num' ? ' step="0.01"' : '';
-            var typeAttr = type === 'num' ? 'number' : 'text';
-            return '<input type="' + typeAttr + '" class="cv-cell-input"' +
-                ' data-cv-field="' + field + '"' + step +
-                ' value="' + esc(val == null ? '' : String(val)) + '">';
-        }
-
-        tr.innerHTML =
-            '<td class="cv-cell-num">' + (idx + 1) + '</td>' +
-            '<td>' + inp('marca', 'text', r.marca) + '</td>' +
-            '<td>' + inp('no_parte', 'text', r.no_parte) + '</td>' +
-            '<td class="cv-cell-num">' + inp('cant', 'num', r.cant) + '</td>' +
-            '<td class="cv-cell-desc">' + inp('descripcion', 'text', r.descripcion) + '</td>' +
-            '<td class="cv-cell-num">' + inp('p_unit', 'num', r.p_unit) + '</td>' +
-            '<td class="cv-cell-num cv-cell-calc cv-cell-strong"><span data-cv-calc="total">' + fmtMoney(total) + '</span></td>' +
-            '<td>' + inp('notas', 'text', r.notas) + '</td>' +
-            (S.readonly ? '' : '<td class="cv-cell-act">' + delBtnHtml() + '</td>');
-        return tr;
-    }
-
-    // ── Costo MO Interno ────────────────────────────────────────────
-    function renderCostoMo() {
-        var shell = renderSectionShell('costo_mo', 'Costo MO Interno', 'Total costo MO');
-        var body = shell.body;
-        if ((S.data.costo_mo.items || []).length === 0) {
-            body.appendChild(renderEmptyState({
-                title: 'Aún no hay recursos',
-                message: 'Desglosa lo que le cuesta a la empresa: técnicos, supervisores, viáticos.',
-                primary: { label: 'Agregar recurso', action: 'add-row-cmo' },
-            }));
-        } else {
-            body.appendChild(renderCmoTable());
-            if (!S.readonly) body.appendChild(addRowBtn('costo_mo', 'Agregar recurso'));
-        }
-        return shell.section;
-    }
-
-    function renderCmoTable() {
-        var wrap = el('div', 'cv-table-wrap');
-        var t = el('table', 'cv-table cv-table-cmo');
-        t.innerHTML =
-            '<thead><tr>' +
-                '<th class="cv-th-num">#</th>' +
-                '<th>Recurso</th>' +
-                '<th class="cv-th-num">Cant</th>' +
-                '<th class="cv-th-num">Costo Unit</th>' +
-                '<th class="cv-th-num">Concentrado</th>' +
-                '<th class="cv-th-num">Días</th>' +
-                '<th class="cv-th-num">Total</th>' +
-                (S.readonly ? '' : '<th class="cv-th-act"></th>') +
-            '</tr></thead>';
-        var tb = el('tbody');
-        t.appendChild(tb);
-        S.data.costo_mo.items.forEach(function (r, i) {
-            tb.appendChild(renderCmoRow(r, i));
-        });
-        wrap.appendChild(t);
-        return wrap;
-    }
-
-    function renderCmoRow(r, idx) {
-        var tr = el('tr');
-        tr.setAttribute('data-item-id', r.id);
-        tr.setAttribute('data-table', 'costo_mo');
-        var calc = calcCmoRow(r);
-        var ro = S.readonly;
-
-        function inp(field, type, val) {
-            if (ro) return '<span class="cv-cell-ro">' + esc(val == null ? '' : String(val)) + '</span>';
-            var step = type === 'num' ? ' step="0.01"' : '';
-            var typeAttr = type === 'num' ? 'number' : 'text';
-            return '<input type="' + typeAttr + '" class="cv-cell-input"' +
-                ' data-cv-field="' + field + '"' + step +
-                ' value="' + esc(val == null ? '' : String(val)) + '">';
-        }
-
-        tr.innerHTML =
-            '<td class="cv-cell-num">' + (idx + 1) + '</td>' +
-            '<td>' + inp('recurso', 'text', r.recurso) + '</td>' +
-            '<td class="cv-cell-num">' + inp('cant', 'num', r.cant) + '</td>' +
-            '<td class="cv-cell-num">' + inp('costo_unit', 'num', r.costo_unit) + '</td>' +
-            '<td class="cv-cell-num cv-cell-calc"><span data-cv-calc="concentrado">' + fmtMoney(calc.concentrado) + '</span></td>' +
-            '<td class="cv-cell-num">' + inp('dias', 'num', r.dias) + '</td>' +
-            '<td class="cv-cell-num cv-cell-calc cv-cell-strong"><span data-cv-calc="total">' + fmtMoney(calc.total) + '</span></td>' +
-            (S.readonly ? '' : '<td class="cv-cell-act">' + delBtnHtml() + '</td>');
-        return tr;
-    }
-
-    // ── Gastos ──────────────────────────────────────────────────────
-    function renderGastos() {
-        var shell = renderSectionShell('gastos', 'Gastos', 'Total gastos');
-        var body = shell.body;
-        if ((S.data.gastos.items || []).length === 0) {
-            body.appendChild(renderEmptyState({
-                title: 'Aún no hay gastos',
-                message: 'Otros gastos del proyecto: combustible, casetas, comidas, etc.',
-                primary: { label: 'Agregar gasto', action: 'add-row-gastos' },
-            }));
-        } else {
-            body.appendChild(renderGastosTable());
-            if (!S.readonly) body.appendChild(addRowBtn('gastos', 'Agregar gasto'));
-        }
-        return shell.section;
-    }
-
-    function renderGastosTable() {
-        var wrap = el('div', 'cv-table-wrap');
-        var t = el('table', 'cv-table cv-table-gastos');
-        t.innerHTML =
-            '<thead><tr>' +
-                '<th class="cv-th-num">#</th>' +
-                '<th class="cv-th-num">Cant</th>' +
-                '<th>Unidad</th>' +
-                '<th>Descripción</th>' +
-                '<th class="cv-th-num">Costo Unit</th>' +
-                '<th class="cv-th-num">Total</th>' +
-                (S.readonly ? '' : '<th class="cv-th-act"></th>') +
-            '</tr></thead>';
-        var tb = el('tbody');
-        t.appendChild(tb);
-        S.data.gastos.items.forEach(function (r, i) {
-            tb.appendChild(renderGastoRow(r, i));
-        });
-        wrap.appendChild(t);
-        return wrap;
-    }
-
-    function renderGastoRow(r, idx) {
-        var tr = el('tr');
-        tr.setAttribute('data-item-id', r.id);
-        tr.setAttribute('data-table', 'gastos');
-        var total = calcGastoRow(r);
-        var ro = S.readonly;
-
-        function inp(field, type, val) {
-            if (ro) return '<span class="cv-cell-ro">' + esc(val == null ? '' : String(val)) + '</span>';
-            var step = type === 'num' ? ' step="0.01"' : '';
-            var typeAttr = type === 'num' ? 'number' : 'text';
-            return '<input type="' + typeAttr + '" class="cv-cell-input"' +
-                ' data-cv-field="' + field + '"' + step +
-                ' value="' + esc(val == null ? '' : String(val)) + '">';
-        }
-
-        tr.innerHTML =
-            '<td class="cv-cell-num">' + (idx + 1) + '</td>' +
-            '<td class="cv-cell-num">' + inp('cant', 'num', r.cant) + '</td>' +
-            '<td>' + inp('unidad', 'text', r.unidad) + '</td>' +
-            '<td class="cv-cell-desc">' + inp('descripcion', 'text', r.descripcion) + '</td>' +
-            '<td class="cv-cell-num">' + inp('costo_unit', 'num', r.costo_unit) + '</td>' +
-            '<td class="cv-cell-num cv-cell-calc cv-cell-strong"><span data-cv-calc="total">' + fmtMoney(total) + '</span></td>' +
-            (S.readonly ? '' : '<td class="cv-cell-act">' + delBtnHtml() + '</td>');
-        return tr;
-    }
-
-    function addRowBtn(table, label) {
-        var b = el('button', 'cv-add-row');
-        b.type = 'button';
-        b.setAttribute('data-cv-action', 'add-row');
-        b.setAttribute('data-cv-table', table);
-        b.innerHTML =
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-            esc(label);
-        return b;
-    }
-
-    // ── Sidebar ────────────────────────────────────────────────────
-    // Jerarquía:
-    //   1) Hero — Margen % grande con barra de gauge + chips Ganancia / Total.
-    //   2) Resumen — Subtotal venta · Costo total · IVA · Total con IVA.
-    //   3) Detalle — subtotales por sección (colapsado por default, secundario).
-    //   4) MXN — equivalente al tipo de cambio actual.
-    function renderSidebar() {
-        var box = el('div', 'cv-sidebar-inner');
-        box.innerHTML =
-            // 1) HERO — margen y headline
-            '<div class="cv-sb-hero">' +
-                '<div class="cv-sb-hero-label">Margen del proyecto</div>' +
-                '<div class="cv-sb-hero-margen" data-cv-sb="margen_pct">0.0%</div>' +
-                '<div class="cv-sb-gauge"><div class="cv-sb-gauge-fill is-low" data-cv-sb-gauge style="width:0%"></div></div>' +
-                '<div class="cv-sb-hero-chips">' +
-                    '<div class="cv-sb-chip cv-sb-chip-gain">' +
-                        '<span class="cv-sb-chip-label">Ganancia</span>' +
-                        '<span class="cv-sb-chip-value" data-cv-sb="ganancia">$0.00</span>' +
-                    '</div>' +
-                    '<div class="cv-sb-chip">' +
-                        '<span class="cv-sb-chip-label">Total c/IVA</span>' +
-                        '<span class="cv-sb-chip-value" data-cv-sb="total_con_iva">$0.00</span>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-
-            // 2) RESUMEN principal
-            '<div class="cv-sb-block">' +
-                row('Subtotal venta', 'subtotal_venta', 'cv-row-strong') +
-                row('Costo total', 'total_costo', 'cv-row-cost') +
-                '<hr class="cv-sb-sep">' +
-                row('IVA', 'iva_monto') +
-                row('Total con IVA', 'total_con_iva_2', 'cv-row-grand') +
-            '</div>' +
-
-            // 3) DETALLE colapsable
-            '<details class="cv-sb-details">' +
-                '<summary>Desglose por sección</summary>' +
-                row('Equipamiento · venta', 'total_eq_venta') +
-                row('Equipamiento · costo', 'total_eq_costo', 'cv-row-cost') +
-                row('MO cobrada', 'total_mo_cobrada') +
-                row('MO costo', 'total_mo_costo', 'cv-row-cost') +
-                row('Gastos', 'total_gastos', 'cv-row-cost') +
-            '</details>' +
-
-            // 4) MXN
-            '<div class="cv-sidebar-mxn">' +
-                '<div class="cv-mxn-title">Equivalente en MXN <span class="cv-mxn-tc" data-cv-sb-tc>TC 19.50</span></div>' +
-                rowMxn('Subtotal venta', 'subtotal_venta_mxn') +
-                rowMxn('Costo total', 'total_costo_mxn') +
-                rowMxn('Ganancia', 'ganancia_mxn', 'cv-row-gain') +
-                rowMxn('Total con IVA', 'total_con_iva_mxn', 'cv-row-strong') +
-            '</div>';
-
-        return box;
-
-        function row(label, key, extraCls) {
-            return '<div class="cv-sb-row ' + (extraCls || '') + '">' +
-                '<span class="cv-sb-label">' + esc(label) + '</span>' +
-                '<span class="cv-sb-value" data-cv-sb="' + key + '">$0.00</span>' +
-            '</div>';
-        }
-        function rowPct(label, key) {
-            return '<div class="cv-sb-row cv-row-margin">' +
-                '<span class="cv-sb-label">' + esc(label) + '</span>' +
-                '<span class="cv-sb-value" data-cv-sb="' + key + '">0.0%</span>' +
-            '</div>';
-        }
-        function rowMxn(label, key, extraCls) {
-            return '<div class="cv-sb-row ' + (extraCls || '') + '">' +
-                '<span class="cv-sb-label">' + esc(label) + '</span>' +
-                '<span class="cv-sb-value cv-mxn" data-cv-sb="' + key + '">$0.00</span>' +
-            '</div>';
-        }
-    }
-
-    function refreshSidebar() {
-        var t = computeTotals();
-        var tc = num(S.volumetria.tipo_cambio || 19.50);
-        var c = S.container;
-
-        function set(key, value) {
-            var n = c.querySelector('[data-cv-sb="' + key + '"]');
-            if (n) n.textContent = value;
-        }
-
-        set('total_eq_venta', fmtMoney(t.total_eq_venta));
-        set('total_eq_costo', fmtMoney(t.total_eq_costo));
-        set('total_mo_cobrada', fmtMoney(t.total_mo_cobrada));
-        set('total_mo_costo', fmtMoney(t.total_mo_costo));
-        set('total_gastos', fmtMoney(t.total_gastos));
-        set('subtotal_venta', fmtMoney(t.subtotal_venta));
-        set('total_costo', fmtMoney(t.total_costo));
-        set('ganancia', fmtMoney(t.ganancia));
-        set('margen_pct', fmtPct(t.margen_pct));
-        set('iva_monto', fmtMoney(t.iva_monto));
-        set('total_con_iva', fmtMoney(t.total_con_iva));
-        set('total_con_iva_2', fmtMoney(t.total_con_iva));
-
-        // Gauge de margen (rojo<15, ámbar 15-25, verde>25)
-        var g = c.querySelector('[data-cv-sb-gauge]');
-        if (g) {
-            var p = Math.max(0, Math.min(100, t.margen_pct || 0));
-            g.style.width = p + '%';
-            g.classList.remove('is-low', 'is-mid', 'is-high');
-            if (p < 15) g.classList.add('is-low');
-            else if (p < 25) g.classList.add('is-mid');
-            else g.classList.add('is-high');
-        }
-
-        // MXN
-        set('subtotal_venta_mxn', fmtMoney(t.subtotal_venta * tc, 'MXN'));
-        set('total_costo_mxn', fmtMoney(t.total_costo * tc, 'MXN'));
-        set('ganancia_mxn', fmtMoney(t.ganancia * tc, 'MXN'));
-        set('total_con_iva_mxn', fmtMoney(t.total_con_iva * tc, 'MXN'));
-
-        var tcEl = c.querySelector('[data-cv-sb-tc]');
-        if (tcEl) tcEl.textContent = 'TC ' + tc.toFixed(2);
-
-        // Subtotales por sección (en el header del acordeón)
-        setSubtotal('equipamiento', fmtMoney(t.total_eq_venta));
-        setSubtotal('mano_obra', fmtMoney(t.total_mo_cobrada));
-        setSubtotal('costo_mo', fmtMoney(t.total_mo_costo));
-        setSubtotal('gastos', fmtMoney(t.total_gastos));
-
-        function setSubtotal(key, value) {
-            var n = c.querySelector('[data-cv-subtotal-value="' + key + '"]');
-            if (n) n.textContent = value;
-        }
-    }
-
-    // ── Modal de catálogo ──────────────────────────────────────────
-    function renderCatalogModal() {
-        var bd = el('div', 'cv-catalog-backdrop');
-        bd.id = 'cv-catalog-backdrop';
-        bd.style.display = 'none';
-        bd.innerHTML =
-            '<div class="cv-catalog-modal" role="dialog" aria-modal="true">' +
-                '<div class="cv-catalog-head">' +
-                    '<input id="cv-catalog-search" type="text" class="cv-catalog-search" placeholder="Buscar producto en catálogo (mín. 2 caracteres)…" autocomplete="off">' +
-                    '<button type="button" class="cv-catalog-close" data-cv-action="close-catalog" aria-label="Cerrar">' +
-                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
-                    '</button>' +
-                '</div>' +
-                '<div class="cv-catalog-list" id="cv-catalog-list">' +
-                    '<div class="cv-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>' +
-                '</div>' +
-                '<div class="cv-catalog-foot">' +
-                    '<span class="cv-catalog-hint">Endpoint: <code>/app/api/iamet/catalogo-productos/</code></span>' +
-                '</div>' +
-            '</div>';
-        return bd;
-    }
-
-    function openCatalog(target) {
-        S.catalogState.target = target || null; // null = "agregar nueva fila a la primera sub-sección"
-        S.catalogState.visible = true;
-        var bd = S.container.querySelector('#cv-catalog-backdrop');
-        if (!bd) return;
-        bd.style.display = 'flex';
-        var inp = bd.querySelector('#cv-catalog-search');
-        if (inp) {
-            inp.value = '';
-            try { inp.focus(); } catch (_) {}
-        }
-        var list = bd.querySelector('#cv-catalog-list');
-        if (list) list.innerHTML = '<div class="cv-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
-    }
-
-    function closeCatalog() {
-        S.catalogState.visible = false;
-        S.catalogState.target = null;
-        var bd = S.container.querySelector('#cv-catalog-backdrop');
-        if (bd) bd.style.display = 'none';
-    }
-
-    function catalogSearch(q) {
-        if (S.catalogState.timer) clearTimeout(S.catalogState.timer);
-        var list = S.container.querySelector('#cv-catalog-list');
-        if (!list) return;
-        if (q.length < 2) {
-            list.innerHTML = '<div class="cv-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
-            return;
-        }
-        list.innerHTML = '<div class="cv-catalog-empty">Buscando…</div>';
-        S.catalogState.timer = setTimeout(function () {
-            apiGet('/app/api/iamet/catalogo-productos/?q=' + encodeURIComponent(q) + '&limit=40')
-                .then(function (r) {
-                    var rows = (r && r.ok && r.data) ? r.data : [];
-                    S.catalogState.current = rows;
-                    renderCatalogList(rows, q);
-                })
-                .catch(function (err) {
-                    log('catalog search failed', err);
-                    list.innerHTML = '<div class="cv-catalog-empty">Error al buscar. Intenta de nuevo.</div>';
-                });
-        }, 220);
-    }
-
-    function renderCatalogList(rows, q) {
-        var list = S.container.querySelector('#cv-catalog-list');
-        if (!list) return;
-        if (!rows.length) {
-            list.innerHTML =
-                '<div class="cv-catalog-empty">' +
-                    'Sin resultados para "<b>' + esc(q) + '</b>".<br>' +
-                    'Puedes capturar el producto manualmente en la fila.' +
-                '</div>';
-            return;
-        }
-        list.innerHTML = rows.map(function (p, i) {
-            return '<div class="cv-catalog-row" data-cv-action="catalog-pick" data-cv-pick-idx="' + i + '">' +
-                '<div class="cv-catalog-row-main">' +
-                    '<div class="cv-catalog-desc">' + esc(p.desc || '(sin descripción)') + '</div>' +
-                    '<div class="cv-catalog-sub">' +
-                        esc(p.marca || '—') + ' · ' + esc(p.modelo || '—') +
-                        (p.unidad ? ' · ' + esc(p.unidad) : '') +
-                    '</div>' +
-                '</div>' +
-                '<div class="cv-catalog-price">' + fmtMoney(p.precio || 0) + '</div>' +
-            '</div>';
-        }).join('');
-    }
-
-    function catalogPick(idx) {
-        var p = S.catalogState.current[idx];
-        if (!p) return;
-
-        // Convertir producto del catálogo → fila item
-        // Asumimos: precio = precio lista; sin descuento default.
-        var newItem = {
+    // ── Migración / normalización a v3 ──────────────────────────────
+    function emptyItem(extra) {
+        var it = {
             id: uuid(),
-            row_type: 'item',
-            marca: p.marca || '',
-            no_parte: p.modelo || '',
-            cant: 1,
-            descripcion: p.desc || '',
-            p_lista: num(p.precio || 0),
-            desc_v_pct: 0,
-            p_unit_v: 0, p_total_v: 0,
-            desc_c_pct: 0,
-            c_unit: 0, c_total: 0,
-            ganancia: 0,
-            proveedor: p.proveedor || '',
-            entrega: 'STOCK',
+            cantidad: 0,
+            marca: '',
+            parte: '',
+            descripcion: '',
             notas: '',
+            precioLista: 0,
+            descuentoVenta: 0,
+            costoUnitario: 0,
+            proveedor: '',
+            entrega: '',
         };
+        if (extra) Object.keys(extra).forEach(function (k) { it[k] = extra[k]; });
+        return it;
+    }
 
-        var target = S.catalogState.target;
-        if (target && target.itemId && target.sectionId) {
-            // Pre-fill de fila existente
-            var sub = findSub(target.sectionId);
-            if (sub) {
-                var existing = sub.items.find(function (it) { return it.id === target.itemId; });
-                if (existing && existing.row_type === 'item') {
-                    existing.marca = newItem.marca;
-                    existing.no_parte = newItem.no_parte;
-                    existing.descripcion = newItem.descripcion;
-                    existing.p_lista = newItem.p_lista;
-                    existing.proveedor = newItem.proveedor;
-                    closeCatalog();
-                    markDirty();
-                    rerender();
+    function emptySection(titulo) {
+        return {
+            id: uuid(),
+            titulo: titulo || 'NUEVA SECCIÓN',
+            expanded: true,
+            items: [],
+        };
+    }
+
+    function defaultData(lev) {
+        var meta = { cliente: '', contacto: '', elaboro: '', fecha: '' };
+        if (lev && lev.fase1_data) {
+            var d = lev.fase1_data;
+            if (d.cliente)  meta.cliente  = d.cliente;
+            if (d.contacto) meta.contacto = d.contacto;
+            if (d.fecha)    meta.fecha    = d.fecha;
+        }
+        return {
+            version: 3,
+            meta: meta,
+            secciones: [emptySection('EQUIPAMIENTO')],
+        };
+    }
+
+    // Asegura shape v3 mínimo (rellena meta y secciones faltantes).
+    function ensureV3(data) {
+        data = data || {};
+        data.version = 3;
+        data.meta = data.meta || {};
+        ['cliente', 'contacto', 'elaboro', 'fecha'].forEach(function (k) {
+            if (data.meta[k] == null) data.meta[k] = '';
+        });
+        if (!Array.isArray(data.secciones)) data.secciones = [];
+        data.secciones = data.secciones.map(function (sec) {
+            sec = sec || {};
+            if (!sec.id) sec.id = uuid();
+            if (typeof sec.titulo !== 'string') sec.titulo = 'SECCIÓN';
+            if (typeof sec.expanded !== 'boolean') sec.expanded = true;
+            if (!Array.isArray(sec.items)) sec.items = [];
+            sec.items = sec.items.map(function (it) {
+                it = it || {};
+                if (!it.id) it.id = uuid();
+                ['marca', 'parte', 'descripcion', 'notas', 'proveedor', 'entrega'].forEach(function (k) {
+                    if (typeof it[k] !== 'string') it[k] = it[k] == null ? '' : String(it[k]);
+                });
+                ['cantidad', 'precioLista', 'descuentoVenta', 'costoUnitario'].forEach(function (k) {
+                    it[k] = num(it[k]);
+                });
+                return it;
+            });
+            return sec;
+        });
+        return data;
+    }
+
+    // Convierte items v2 (sub-sección equipamiento) a items v3.
+    function mapEqV2Item(it) {
+        it = it || {};
+        return emptyItem({
+            cantidad:       num(it.cant),
+            marca:          it.marca || '',
+            parte:          it.no_parte || '',
+            descripcion:    it.descripcion || '',
+            notas:          it.notas || '',
+            precioLista:    num(it.p_lista),
+            descuentoVenta: num(it.desc_v_pct),
+            costoUnitario:  num(it.c_unit),
+            proveedor:      it.proveedor || '',
+            entrega:        it.entrega || '',
+        });
+    }
+
+    // v2.equipamiento.secciones → array de secciones v3.
+    // Cada subsección v2 → sección v3. Si dentro de los items de una
+    // subsección aparece row_type='header', ese header arranca otra
+    // sección v3 (los items posteriores se agrupan en ella).
+    function migrateEquipamiento(eq) {
+        var out = [];
+        if (!eq || !Array.isArray(eq.secciones)) return out;
+        eq.secciones.forEach(function (sub) {
+            var current = emptySection(sub && sub.nombre ? sub.nombre : 'EQUIPAMIENTO');
+            out.push(current);
+            var items = (sub && Array.isArray(sub.items)) ? sub.items : [];
+            items.forEach(function (it) {
+                if (it && it.row_type === 'header') {
+                    current = emptySection(it.texto || it.descripcion || 'SECCIÓN');
+                    out.push(current);
                     return;
                 }
-            }
-        }
-        // Sin target → agregar al final de la primera sub-sección (o crear si no hay)
-        var sec = S.data.equipamiento.secciones[0];
-        if (!sec) {
-            sec = { id: uuid(), nombre: 'Equipamiento', items: [] };
-            S.data.equipamiento.secciones.push(sec);
-        }
-        sec.items.push(newItem);
-        closeCatalog();
-        markDirty();
-        rerender();
+                current.items.push(mapEqV2Item(it));
+            });
+        });
+        return out;
     }
 
-    function findSub(sectionId) {
-        for (var i = 0; i < S.data.equipamiento.secciones.length; i++) {
-            if (S.data.equipamiento.secciones[i].id === sectionId) return S.data.equipamiento.secciones[i];
-        }
-        return null;
+    function migrateManoObra(mo) {
+        if (!mo || !Array.isArray(mo.items) || !mo.items.length) return null;
+        var sec = emptySection('MANO DE OBRA');
+        mo.items.forEach(function (it) {
+            sec.items.push(emptyItem({
+                cantidad:    num(it.cant),
+                marca:       it.marca || '',
+                parte:       it.no_parte || '',
+                descripcion: it.descripcion || '',
+                notas:       it.notas || '',
+                precioLista: num(it.p_unit),
+            }));
+        });
+        return sec;
     }
 
-    // ── Re-render rápido vs incremental ─────────────────────────────
-    // Para autosave / cálculos vivos, cambiamos solo los nodos necesarios.
-    // Para alta/baja de filas o sub-secciones, full re-render.
-    function rerender() {
-        // Preservar el foco si lo hay
-        var active = document.activeElement;
-        var sel = null;
-        if (active && active.tagName === 'INPUT' && S.container.contains(active)) {
-            sel = {
-                field: active.getAttribute('data-cv-field'),
-                itemId: active.closest('[data-item-id]') ? active.closest('[data-item-id]').getAttribute('data-item-id') : null,
-                sectionId: active.closest('[data-section-id]') ? active.closest('[data-section-id]').getAttribute('data-section-id') : null,
-                start: active.selectionStart, end: active.selectionEnd,
-            };
+    function migrateCostoMo(cmo) {
+        // v3 simplifica: pierde `dias` y `concentrado` (aceptado).
+        if (!cmo || !Array.isArray(cmo.items) || !cmo.items.length) return null;
+        var sec = emptySection('COSTO MO INTERNO');
+        cmo.items.forEach(function (it) {
+            sec.items.push(emptyItem({
+                descripcion:   it.recurso || it.descripcion || '',
+                cantidad:      num(it.cant),
+                costoUnitario: num(it.costo_unit),
+            }));
+        });
+        return sec;
+    }
+
+    function migrateGastos(g) {
+        if (!g || !Array.isArray(g.items) || !g.items.length) return null;
+        var sec = emptySection('GASTOS');
+        g.items.forEach(function (it) {
+            sec.items.push(emptyItem({
+                cantidad:      num(it.cant),
+                descripcion:   it.descripcion || '',
+                parte:         it.unidad || '',  // unidad → "parte" (col más cercana visualmente)
+                costoUnitario: num(it.costo_unit),
+            }));
+        });
+        return sec;
+    }
+
+    // v1 legacy: { materiales: [...], manoObra: [...], gastos: [...] }
+    function migrateV1(raw) {
+        var secs = [];
+        if (Array.isArray(raw.materiales) && raw.materiales.length) {
+            var s1 = emptySection('MATERIALES');
+            raw.materiales.forEach(function (r) {
+                s1.items.push(emptyItem({
+                    cantidad:      num(r.qty),
+                    marca:         r.marca || '',
+                    parte:         r.modelo || '',
+                    descripcion:   r.desc || '',
+                    precioLista:   num(r.precio),
+                    descuentoVenta:num(r.desc_pct),
+                    costoUnitario: num(r.costo),
+                    proveedor:     r.proveedor || '',
+                }));
+            });
+            secs.push(s1);
         }
-        render();
-        // Restore focus
-        if (sel) {
-            var sel2 = '';
-            if (sel.itemId) sel2 += '[data-item-id="' + sel.itemId + '"] ';
-            if (sel.field) sel2 += '[data-cv-field="' + sel.field + '"]';
-            if (sel2) {
-                var newEl = S.container.querySelector(sel2);
-                if (newEl) {
-                    try {
-                        newEl.focus();
-                        if (sel.start != null) newEl.setSelectionRange(sel.start, sel.end);
-                    } catch (_) {}
-                }
+        if (Array.isArray(raw.manoObra) && raw.manoObra.length) {
+            var s2 = emptySection('MANO DE OBRA');
+            raw.manoObra.forEach(function (r) {
+                s2.items.push(emptyItem({
+                    cantidad:    num(r.qty),
+                    descripcion: r.desc || '',
+                    precioLista: num(r.precio),
+                }));
+            });
+            secs.push(s2);
+        }
+        if (Array.isArray(raw.gastos) && raw.gastos.length) {
+            var s3 = emptySection('GASTOS');
+            raw.gastos.forEach(function (r) {
+                s3.items.push(emptyItem({
+                    cantidad:      num(r.qty),
+                    descripcion:   r.desc || '',
+                    costoUnitario: num(r.costo),
+                }));
+            });
+            secs.push(s3);
+        }
+        return secs;
+    }
+
+    function normalizeData(raw, lev) {
+        raw = raw || {};
+
+        // Ya es v3 con secciones → solo asegurar shape.
+        if (raw.version === 3 || (raw.meta && Array.isArray(raw.secciones))) {
+            return ensureV3(raw);
+        }
+
+        // ¿Es v2? (tiene equipamiento/mano_obra/costo_mo/gastos en su raíz)
+        var isV2 = raw.version === 2 ||
+                   raw.equipamiento || raw.mano_obra || raw.costo_mo ||
+                   (raw.gastos && raw.gastos.items);
+
+        var secciones = [];
+        if (isV2) {
+            secciones = secciones.concat(migrateEquipamiento(raw.equipamiento));
+            var mo = migrateManoObra(raw.mano_obra);   if (mo)  secciones.push(mo);
+            var cm = migrateCostoMo(raw.costo_mo);     if (cm)  secciones.push(cm);
+            var ga = migrateGastos(raw.gastos);        if (ga)  secciones.push(ga);
+        } else if (raw.materiales || raw.manoObra || raw.gastos) {
+            // v1 legacy
+            secciones = migrateV1(raw);
+        }
+
+        // Fallback: estructura totalmente vacía → sección default.
+        if (!secciones.length) {
+            return defaultData(lev);
+        }
+
+        // Meta: heredar de v2 si existía, si no del lev.
+        var meta = (raw.meta && typeof raw.meta === 'object') ? raw.meta : {};
+        var defaults = defaultData(lev).meta;
+        ['cliente', 'contacto', 'elaboro', 'fecha'].forEach(function (k) {
+            if (!meta[k]) meta[k] = defaults[k];
+        });
+
+        return ensureV3({ version: 3, meta: meta, secciones: secciones });
+    }
+
+    // ── Cálculos ────────────────────────────────────────────────────
+    function calcItem(it) {
+        var pu = num(it.precioLista) * (1 - num(it.descuentoVenta) / 100);
+        var totalVenta = pu * num(it.cantidad);
+        var totalCosto = num(it.costoUnitario) * num(it.cantidad);
+        return { precioVentaUnitario: pu, totalVenta: totalVenta, totalCosto: totalCosto };
+    }
+
+    function calcTotals() {
+        var subtotalVenta = 0;
+        var costoTotal = 0;
+        (S.data.secciones || []).forEach(function (sec) {
+            (sec.items || []).forEach(function (it) {
+                var c = calcItem(it);
+                subtotalVenta += c.totalVenta;
+                costoTotal += c.totalCosto;
+            });
+        });
+        var ganancia = subtotalVenta - costoTotal;
+        var margen = subtotalVenta > 0 ? (ganancia / subtotalVenta) * 100 : 0;
+        var iva_pct = num(S.volumetria && S.volumetria.iva_pct);
+        var iva = iva_pct > 0 ? subtotalVenta * (iva_pct / 100) : 0;
+        var totalConIva = subtotalVenta + iva;
+        return {
+            subtotalVenta: subtotalVenta,
+            costoTotal: costoTotal,
+            ganancia: ganancia,
+            margen: margen,
+            iva_pct: iva_pct,
+            iva: iva,
+            totalConIva: totalConIva,
+        };
+    }
+
+    // ── SVG icons (lucide-style, inline) ────────────────────────────
+    var ICON = {
+        chevronDown: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>',
+        chevronRight: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>',
+        trash: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>',
+        plus: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>',
+        user: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
+        contact: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92V21a1 1 0 0 1-1.11 1A19 19 0 0 1 2 4.11 1 1 0 0 1 3 3h4.09a1 1 0 0 1 1 .75l1 4a1 1 0 0 1-.27 1L7 10.5a16 16 0 0 0 6.5 6.5l1.75-1.82a1 1 0 0 1 1-.27l4 1a1 1 0 0 1 .75 1z"></path></svg>',
+        calendar: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
+        coins: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M18.09 10.37A6 6 0 1 1 10.34 18"></path><path d="M7 6h1v4"></path><path d="M16.71 13.88l.7.71-2.82 2.82"></path></svg>',
+    };
+
+    // ── Render ──────────────────────────────────────────────────────
+    function render() {
+        if (!S.container) return;
+
+        var html = '<div class="cv-root' + (S.readonly ? ' cv-readonly' : '') + '">';
+        html += renderDocHeader();
+        html += renderGrid();
+        html += renderSummary();
+        html += '</div>';
+        S.container.innerHTML = html;
+
+        bindAll();
+    }
+
+    function renderDocHeader() {
+        var meta = S.data.meta || {};
+        var nombre = (S.volumetria && S.volumetria.nombre) || '';
+        var disabled = S.readonly ? 'disabled' : '';
+
+        var tcVal = S.volumetria && S.volumetria.tipo_cambio != null ? S.volumetria.tipo_cambio : '';
+        var ivaVal = S.volumetria && S.volumetria.iva_pct != null ? S.volumetria.iva_pct : '';
+
+        var h = '<div class="cv-doc">';
+        h += '<input type="text" class="cv-doc-title-input" data-meta="nombre" ' +
+             'placeholder="Sin título" value="' + esc(nombre) + '" ' + disabled + ' />';
+
+        h += '<div class="cv-doc-meta">';
+        h += metaField('cliente',  ICON.user,     'Cliente',        meta.cliente,  'ALLEGION ENSENADA');
+        h += metaField('contacto', ICON.contact,  'Contacto',       meta.contacto, 'Ing. Ricardo Sandoval');
+        h += metaField('fecha',    ICON.calendar, 'Fecha',          meta.fecha,    '',  'date');
+        // El tipo de cambio y el IVA viven en columnas del modelo, no en data.meta.
+        h += metaField('tc',       ICON.coins,    'Tipo de cambio', tcVal,         '19.50', 'number');
+        h += metaField('iva',      ICON.coins,    'IVA %',          ivaVal,        '16',    'number');
+        h += '</div>';
+
+        h += '</div>';
+        return h;
+    }
+
+    function metaField(key, icon, label, value, placeholder, type) {
+        var disabled = S.readonly ? 'disabled' : '';
+        var t = type || 'text';
+        var val = value == null ? '' : value;
+        return '<label class="cv-meta-field">' +
+               '<span class="cv-meta-icon">' + icon + '</span>' +
+               '<span class="cv-meta-label">' + esc(label) + '</span>' +
+               '<input type="' + t + '" class="cv-meta-input" data-meta="' + key + '" ' +
+                  'placeholder="' + esc(placeholder) + '" value="' + esc(val) + '" ' + disabled + ' />' +
+               '</label>';
+    }
+
+    function renderGrid() {
+        var h = '<div class="cv-grid">';
+        h += renderGridHead();
+        (S.data.secciones || []).forEach(function (sec) {
+            h += renderSection(sec);
+        });
+        if (!S.readonly) {
+            h += '<button type="button" class="cv-add-section" data-action="add-section">' +
+                 ICON.plus + '<span>Agregar sección</span></button>';
+        }
+        h += '</div>';
+        return h;
+    }
+
+    function renderGridHead() {
+        // 12 columnas. Mantener consistencia exacta con .cv-row en CSS.
+        var cols = [
+            { cls: 'cv-col-act',     label: '' },
+            { cls: 'cv-col-cant',    label: 'Cant' },
+            { cls: 'cv-col-marca',   label: 'Marca' },
+            { cls: 'cv-col-parte',   label: 'No. Parte' },
+            { cls: 'cv-col-desc',    label: 'Descripción' },
+            { cls: 'cv-col-plista',  label: 'Precio L.' },
+            { cls: 'cv-col-desc-pct',label: 'Desc %' },
+            { cls: 'cv-col-punit',   label: 'P. Unit' },
+            { cls: 'cv-col-costo',   label: 'Costo' },
+            { cls: 'cv-col-prov',    label: 'Proveedor' },
+            { cls: 'cv-col-entrega', label: 'Entrega' },
+            { cls: 'cv-col-total',   label: 'Total' },
+        ];
+        var h = '<div class="cv-grid-head">';
+        cols.forEach(function (c) {
+            h += '<div class="cv-grid-head-cell ' + c.cls + '">' + esc(c.label) + '</div>';
+        });
+        h += '</div>';
+        return h;
+    }
+
+    function renderSection(sec) {
+        var open = sec.expanded !== false;
+        var h = '<div class="cv-section' + (open ? ' cv-section-open' : '') + '" data-section="' + esc(sec.id) + '">';
+
+        // Section header (toggle row)
+        h += '<div class="cv-section-row">';
+        h += '<button type="button" class="cv-section-toggle" data-action="toggle-section" data-section="' + esc(sec.id) + '" aria-label="Expandir/colapsar">' +
+             '<span class="cv-chevron">' + (open ? ICON.chevronDown : ICON.chevronRight) + '</span>' +
+             '</button>';
+        var disabled = S.readonly ? 'disabled' : '';
+        h += '<input type="text" class="cv-section-title-input" data-section="' + esc(sec.id) + '" ' +
+             'value="' + esc(sec.titulo || '') + '" placeholder="NOMBRE DE SECCIÓN" ' + disabled + ' />';
+        if (!S.readonly) {
+            h += '<div class="cv-section-actions">';
+            h += '<button type="button" class="cv-row-del" data-action="del-section" data-section="' + esc(sec.id) + '" title="Eliminar sección">' + ICON.trash + '</button>';
+            h += '</div>';
+        }
+        h += '</div>';
+
+        if (open) {
+            (sec.items || []).forEach(function (it) {
+                h += renderRow(sec.id, it);
+            });
+            if (!S.readonly) {
+                h += '<button type="button" class="cv-add-row" data-action="add-row" data-section="' + esc(sec.id) + '">' +
+                     ICON.plus + '<span>Nueva fila</span></button>';
             }
+            if (S.readonly && !(sec.items || []).length) {
+                h += '<div class="cv-empty">Sin items.</div>';
+            }
+        }
+
+        h += '</div>';
+        return h;
+    }
+
+    function renderRow(secId, it) {
+        var c = calcItem(it);
+        var disabled = S.readonly ? 'disabled' : '';
+        var hasNotas = !!(it.notas && String(it.notas).trim());
+
+        var h = '<div class="cv-row' + (hasNotas ? ' cv-has-notas' : '') + '" ' +
+                'data-section="' + esc(secId) + '" data-item="' + esc(it.id) + '">';
+
+        // Acción (delete)
+        h += '<div class="cv-row-cell cv-cell-act">';
+        if (!S.readonly) {
+            h += '<button type="button" class="cv-row-del" data-action="del-item" ' +
+                 'data-section="' + esc(secId) + '" data-item="' + esc(it.id) + '" ' +
+                 'title="Eliminar fila">' + ICON.trash + '</button>';
+        }
+        h += '</div>';
+
+        // Cant
+        h += cellInput('num',  secId, it.id, 'cantidad', it.cantidad, 'cv-col-cant');
+
+        // Marca
+        h += cellInput('text', secId, it.id, 'marca', it.marca, 'cv-col-marca');
+
+        // No. Parte (mono)
+        h += cellInput('text', secId, it.id, 'parte', it.parte, 'cv-col-parte', { mono: true });
+
+        // Descripción + notas (debajo)
+        h += '<div class="cv-row-cell cv-cell-desc cv-col-desc">';
+        h += '<input type="text" class="cv-input cv-input-desc" data-field="descripcion" ' +
+             'data-section="' + esc(secId) + '" data-item="' + esc(it.id) + '" ' +
+             'value="' + esc(it.descripcion || '') + '" placeholder="Descripción del producto" ' + disabled + ' />';
+        h += '<input type="text" class="cv-input cv-notas-input" data-field="notas" ' +
+             'data-section="' + esc(secId) + '" data-item="' + esc(it.id) + '" ' +
+             'value="' + esc(it.notas || '') + '" placeholder="Notas (opcional)" ' + disabled + ' />';
+        h += '</div>';
+
+        // Precio L.
+        h += cellInput('num',  secId, it.id, 'precioLista', it.precioLista, 'cv-col-plista', { mono: true });
+
+        // Desc %
+        h += cellInput('num',  secId, it.id, 'descuentoVenta', it.descuentoVenta, 'cv-col-desc-pct', { mono: true });
+
+        // P. Unit calculado
+        h += '<div class="cv-row-cell cv-cell-calc cv-cell-mono cv-col-punit" data-calc="punit" ' +
+             'data-section="' + esc(secId) + '" data-item="' + esc(it.id) + '">' +
+             esc(fmtMoney(c.precioVentaUnitario)) + '</div>';
+
+        // Costo
+        h += cellInput('num',  secId, it.id, 'costoUnitario', it.costoUnitario, 'cv-col-costo', { mono: true });
+
+        // Proveedor
+        h += cellInput('text', secId, it.id, 'proveedor', it.proveedor, 'cv-col-prov');
+
+        // Entrega
+        h += cellInput('text', secId, it.id, 'entrega', it.entrega, 'cv-col-entrega');
+
+        // Total
+        h += '<div class="cv-row-cell cv-cell-total cv-cell-mono cv-col-total" data-calc="total" ' +
+             'data-section="' + esc(secId) + '" data-item="' + esc(it.id) + '">' +
+             esc(fmtMoney(c.totalVenta)) + '</div>';
+
+        h += '</div>';
+        return h;
+    }
+
+    function cellInput(kind, secId, itemId, field, value, colCls, opts) {
+        opts = opts || {};
+        var disabled = S.readonly ? 'disabled' : '';
+        var typeAttr = kind === 'num' ? 'type="number"' : 'type="text"';
+        var stepAttr = kind === 'num' ? ' step="any"' : '';
+        var cls = 'cv-input ' + (kind === 'num' ? 'cv-input-num' : 'cv-input-text');
+        if (opts.mono) cls += ' cv-mono';
+        var v = value == null ? '' : value;
+        var h = '<div class="cv-row-cell cv-cell-' + (kind === 'num' ? 'num' : 'text') + ' ' + colCls + '">';
+        h += '<input ' + typeAttr + stepAttr + ' class="' + cls + '" data-field="' + field + '" ' +
+             'data-section="' + esc(secId) + '" data-item="' + esc(itemId) + '" ' +
+             'value="' + esc(v) + '" ' + disabled + ' />';
+        h += '</div>';
+        return h;
+    }
+
+    function renderSummary() {
+        var t = calcTotals();
+        var h = '<aside class="cv-summary">';
+        h += '<div class="cv-summary-title">Resumen</div>';
+
+        h += summaryRow('Subtotal venta', fmtMoney(t.subtotalVenta));
+        h += summaryRow('Costo proyecto', fmtMoney(t.costoTotal), 'cv-row-cost');
+        h += summaryRow('Ganancia bruta', fmtMoney(t.ganancia), 'cv-row-gain');
+
+        var marginCls = 'cv-row-margin' + (t.margen < 20 ? ' cv-row-margin-low' : '');
+        h += summaryRow('Margen comercial', fmtPct(t.margen), marginCls);
+
+        h += '<div class="cv-summary-sep"></div>';
+
+        if (t.iva_pct > 0) {
+            h += summaryRow('Subtotal', fmtMoney(t.subtotalVenta));
+            h += summaryRow('IVA (' + fmtPct(t.iva_pct) + ')', fmtMoney(t.iva), 'cv-row-iva');
+            h += summaryRow('Total con IVA', fmtMoney(t.totalConIva), 'cv-row-total');
+        } else {
+            h += summaryRow('Total cotización', fmtMoney(t.subtotalVenta), 'cv-row-total');
+        }
+
+        h += '</aside>';
+        return h;
+    }
+
+    function summaryRow(label, value, cls) {
+        return '<div class="cv-summary-row ' + (cls || '') + '">' +
+               '<span class="cv-summary-label">' + esc(label) + '</span>' +
+               '<span class="cv-summary-value cv-mono">' + esc(value) + '</span>' +
+               '</div>';
+    }
+
+    // ── Event binding ───────────────────────────────────────────────
+    function bindAll() {
+        if (!S.container) return;
+
+        // Document header inputs (meta + nombre + tc + iva)
+        S.container.querySelectorAll('[data-meta]').forEach(function (inp) {
+            inp.addEventListener('input', onMetaInput);
+            inp.addEventListener('change', onMetaInput);
+        });
+
+        // Section title
+        S.container.querySelectorAll('.cv-section-title-input').forEach(function (inp) {
+            inp.addEventListener('input', onSectionTitleInput);
+        });
+
+        // Item inputs
+        S.container.querySelectorAll('.cv-row [data-field]').forEach(function (inp) {
+            inp.addEventListener('input', onItemInput);
+            inp.addEventListener('change', onItemInput);
+            inp.addEventListener('blur', onItemBlur);
+        });
+
+        // Click delegation (toggle, add-row, add-section, del-item, del-section)
+        S.container.addEventListener('click', onContainerClick);
+    }
+
+    function onContainerClick(ev) {
+        var btn = ev.target.closest && ev.target.closest('[data-action]');
+        if (!btn || !S.container.contains(btn)) return;
+        var action = btn.getAttribute('data-action');
+        var secId = btn.getAttribute('data-section');
+        var itemId = btn.getAttribute('data-item');
+
+        if (action === 'toggle-section') {
+            ev.preventDefault();
+            toggleSection(secId);
+        } else if (action === 'add-row') {
+            if (S.readonly) return;
+            ev.preventDefault();
+            addRow(secId);
+        } else if (action === 'add-section') {
+            if (S.readonly) return;
+            ev.preventDefault();
+            addSection();
+        } else if (action === 'del-item') {
+            if (S.readonly) return;
+            ev.preventDefault();
+            delItem(secId, itemId);
+        } else if (action === 'del-section') {
+            if (S.readonly) return;
+            ev.preventDefault();
+            delSection(secId);
         }
     }
 
-    // Actualiza solo las celdas calculadas de una fila (no rerender completo).
-    function refreshRowCells(itemId) {
-        var tr = S.container.querySelector('[data-item-id="' + itemId + '"]');
-        if (!tr) return;
+    function onMetaInput(ev) {
+        if (S.readonly) return;
+        var inp = ev.target;
+        var key = inp.getAttribute('data-meta');
+        var val = inp.value;
 
-        // Detectar de qué tabla viene
-        var tableAttr = tr.getAttribute('data-table');
-        if (tableAttr === 'mano_obra') {
-            var mo = findItem('mano_obra', itemId);
-            if (mo) setCell(tr, 'total', fmtMoney(calcMoRow(mo)));
+        if (key === 'nombre') {
+            if (S.volumetria) S.volumetria.nombre = val;
+            // Nombre vive en columna de modelo, no en data — pero el endpoint
+            // /actualizar/ acepta nombre. Por ahora, lo guardamos como meta
+            // para no romper nada del modelo (las versiones previas no lo
+            // tocaban aquí). Si se requiere persistir el nombre, agregar
+            // 'nombre' al body de /actualizar/. (TODO: confirmar con backend.)
+            // Lo guardamos también dentro del data para no perderlo:
+            S.data.meta._nombre = val;
+            scheduleAutosave();
             return;
         }
-        if (tableAttr === 'costo_mo') {
-            var cmo = findItem('costo_mo', itemId);
-            if (cmo) {
-                var calc = calcCmoRow(cmo);
-                setCell(tr, 'concentrado', fmtMoney(calc.concentrado));
-                setCell(tr, 'total', fmtMoney(calc.total));
-            }
+        if (key === 'tc') {
+            var tc = num(val);
+            if (S.volumetria) S.volumetria.tipo_cambio = tc;
+            scheduleMetaSave({ tipo_cambio: tc });
+            updateSummary();
             return;
         }
-        if (tableAttr === 'gastos') {
-            var g = findItem('gastos', itemId);
-            if (g) setCell(tr, 'total', fmtMoney(calcGastoRow(g)));
+        if (key === 'iva') {
+            var iv = num(val);
+            if (S.volumetria) S.volumetria.iva_pct = iv;
+            scheduleMetaSave({ iva_pct: iv });
+            updateSummary();
             return;
         }
+        // cliente / contacto / fecha / elaboro → data.meta
+        if (!S.data.meta) S.data.meta = {};
+        S.data.meta[key] = val;
+        scheduleAutosave();
+    }
 
-        // Equipamiento
-        var sec = tr.closest('[data-section-id]');
+    function onSectionTitleInput(ev) {
+        if (S.readonly) return;
+        var inp = ev.target;
+        var secId = inp.getAttribute('data-section');
+        var sec = findSection(secId);
         if (!sec) return;
-        var sub = findSub(sec.getAttribute('data-section-id'));
-        if (!sub) return;
-        var it = sub.items.find(function (x) { return x.id === itemId; });
-        if (!it || it.row_type !== 'item') return;
-        var c = calcEqItem(it);
-        setCell(tr, 'p_unit_v', fmtMoney(c.p_unit_v));
-        setCell(tr, 'p_total_v', fmtMoney(c.p_total_v));
-        setCell(tr, 'c_unit', fmtMoney(c.c_unit));
-        setCell(tr, 'c_total', fmtMoney(c.c_total));
-        setCell(tr, 'ganancia', fmtMoney(c.ganancia));
+        sec.titulo = inp.value;
+        scheduleAutosave();
     }
 
-    function setCell(tr, calcKey, value) {
-        var n = tr.querySelector('[data-cv-calc="' + calcKey + '"]');
-        if (n) n.textContent = value;
-    }
+    function onItemInput(ev) {
+        if (S.readonly) return;
+        var inp = ev.target;
+        var secId = inp.getAttribute('data-section');
+        var itemId = inp.getAttribute('data-item');
+        var field = inp.getAttribute('data-field');
+        var it = findItem(secId, itemId);
+        if (!it) return;
 
-    function findItem(table, itemId) {
-        var arr = (S.data[table] || {}).items || [];
-        for (var i = 0; i < arr.length; i++) if (arr[i].id === itemId) return arr[i];
-        return null;
-    }
+        var isNum = inp.type === 'number' ||
+                    field === 'cantidad' || field === 'precioLista' ||
+                    field === 'descuentoVenta' || field === 'costoUnitario';
 
-    // ── Eventos delegados ───────────────────────────────────────────
-    function bindDelegated(root) {
-        // Click handlers
-        root.addEventListener('click', onClick);
-        // Input handlers (input event = fuego en cada keystroke; debounced para autosave)
-        root.addEventListener('input', onInput);
-        // Change handlers (para selects / inputs num al perder foco — recalcula confirmado)
-        root.addEventListener('change', onChange);
-        // Keydown — Esc cierra catálogo
-        S.boundDocKey = function (e) {
-            if (e.key === 'Escape' && S.catalogState.visible) {
-                closeCatalog();
-            }
-        };
-        document.addEventListener('keydown', S.boundDocKey);
-    }
-
-    function onClick(e) {
-        var t = e.target;
-        var actionEl = t.closest ? t.closest('[data-cv-action]') : null;
-        if (!actionEl) {
-            // ¿click en backdrop del catálogo?
-            if (t.id === 'cv-catalog-backdrop') closeCatalog();
-            return;
-        }
-        var action = actionEl.getAttribute('data-cv-action');
-        switch (action) {
-            case 'toggle-section':
-                var key = actionEl.getAttribute('data-section-key');
-                var sec = S.container.querySelector('.cv-section[data-key="' + key + '"]');
-                if (sec) sec.classList.toggle('cv-section-open');
-                break;
-
-            case 'add-subsection':
-                if (S.readonly) return;
-                S.data.equipamiento.secciones.push({
-                    id: uuid(),
-                    nombre: 'Nueva sub-sección',
-                    items: [],
-                });
-                markDirty();
-                rerender();
-                break;
-
-            case 'del-subsection':
-                if (S.readonly) return;
-                var subEl = actionEl.closest('[data-section-id]');
-                if (!subEl) return;
-                var sid = subEl.getAttribute('data-section-id');
-                if (!confirm('¿Eliminar esta sub-sección y todas sus filas?')) return;
-                S.data.equipamiento.secciones = S.data.equipamiento.secciones.filter(function (s) { return s.id !== sid; });
-                if (!S.data.equipamiento.secciones.length) {
-                    S.data.equipamiento.secciones.push({ id: uuid(), nombre: 'Equipamiento', items: [] });
-                }
-                markDirty();
-                rerender();
-                break;
-
-            case 'add-item':
-                if (S.readonly) return;
-                var subEl2 = actionEl.closest('[data-section-id]');
-                if (!subEl2) return;
-                var sub = findSub(subEl2.getAttribute('data-section-id'));
-                if (!sub) return;
-                sub.items.push(emptyEqItem());
-                markDirty();
-                rerender();
-                break;
-
-            case 'add-item-from-catalog':
-                if (S.readonly) return;
-                var subElC = actionEl.closest('[data-section-id]');
-                if (!subElC) return;
-                var subC = findSub(subElC.getAttribute('data-section-id'));
-                if (!subC) return;
-                var nuevo = emptyEqItem();
-                subC.items.push(nuevo);
-                markDirty();
-                rerender();
-                openCatalog({ sectionId: subC.id, itemId: nuevo.id });
-                break;
-
-            case 'add-header-row':
-                if (S.readonly) return;
-                var subEl3 = actionEl.closest('[data-section-id]');
-                if (!subEl3) return;
-                var sub3 = findSub(subEl3.getAttribute('data-section-id'));
-                if (!sub3) return;
-                sub3.items.push({ id: uuid(), row_type: 'header', texto: '' });
-                markDirty();
-                rerender();
-                break;
-
-            case 'add-row':
-                if (S.readonly) return;
-                var tbl = actionEl.getAttribute('data-cv-table');
-                if (tbl === 'mano_obra') {
-                    S.data.mano_obra.items.push(emptyMoItem());
-                } else if (tbl === 'costo_mo') {
-                    S.data.costo_mo.items.push(emptyCmoItem());
-                } else if (tbl === 'gastos') {
-                    S.data.gastos.items.push(emptyGastoItem());
-                }
-                markDirty();
-                rerender();
-                break;
-
-            // Atajos del estado vacío de cada sección
-            case 'add-row-mo_cobrada':
-                if (S.readonly) return;
-                S.data.mano_obra.items.push(emptyMoItem());
-                markDirty(); rerender();
-                break;
-            case 'add-row-cmo':
-                if (S.readonly) return;
-                S.data.costo_mo.items.push(emptyCmoItem());
-                markDirty(); rerender();
-                break;
-            case 'add-row-gastos':
-                if (S.readonly) return;
-                S.data.gastos.items.push(emptyGastoItem());
-                markDirty(); rerender();
-                break;
-
-            case 'del-row':
-                if (S.readonly) return;
-                var tr = actionEl.closest('tr');
-                if (!tr) return;
-                var itemId = tr.getAttribute('data-item-id');
-                var tableName = tr.getAttribute('data-table');
-                if (tableName) {
-                    S.data[tableName].items = S.data[tableName].items.filter(function (x) { return x.id !== itemId; });
-                } else {
-                    // Equipamiento
-                    var secEl = tr.closest('[data-section-id]');
-                    if (secEl) {
-                        var subDel = findSub(secEl.getAttribute('data-section-id'));
-                        if (subDel) {
-                            subDel.items = subDel.items.filter(function (x) { return x.id !== itemId; });
-                        }
-                    }
-                }
-                markDirty();
-                rerender();
-                break;
-
-            case 'open-catalog':
-                if (S.readonly) return;
-                openCatalog(null);
-                break;
-
-            case 'catalog-prefill':
-                if (S.readonly) return;
-                var trC = actionEl.closest('tr');
-                var secC = actionEl.closest('[data-section-id]');
-                if (!trC || !secC) return;
-                openCatalog({
-                    sectionId: secC.getAttribute('data-section-id'),
-                    itemId: trC.getAttribute('data-item-id'),
-                });
-                break;
-
-            case 'close-catalog':
-                closeCatalog();
-                break;
-
-            case 'catalog-pick':
-                var idx = parseInt(actionEl.getAttribute('data-cv-pick-idx'), 10);
-                catalogPick(idx);
-                break;
-        }
-    }
-
-    function onInput(e) {
-        var t = e.target;
-        if (!t || !t.matches) return;
-
-        // Catálogo search
-        if (t.id === 'cv-catalog-search') {
-            catalogSearch((t.value || '').trim());
-            return;
-        }
-
-        // TC / IVA en barra superior
-        if (t.id === 'cv-tc') {
-            S.volumetria.tipo_cambio = num(t.value);
-            refreshSidebar();
-            scheduleMetaSave({ tipo_cambio: S.volumetria.tipo_cambio });
-            return;
-        }
-        if (t.id === 'cv-iva') {
-            S.volumetria.iva_pct = num(t.value);
-            refreshSidebar();
-            scheduleMetaSave({ iva_pct: S.volumetria.iva_pct });
-            return;
-        }
-
-        // Nombre de sub-sección
-        if (t.matches('[data-cv-bind="subsection-name"]')) {
-            var subEl = t.closest('[data-section-id]');
-            if (subEl) {
-                var sub = findSub(subEl.getAttribute('data-section-id'));
-                if (sub) {
-                    sub.nombre = t.value;
-                    markDirty();
-                }
-            }
-            return;
-        }
-
-        // Field input en una fila
-        if (t.matches('[data-cv-field]')) {
-            var field = t.getAttribute('data-cv-field');
-            var trI = t.closest('tr');
-            if (!trI) return;
-            var iid = trI.getAttribute('data-item-id');
-            var table = trI.getAttribute('data-table');
-            var item;
-            if (table) {
-                item = findItem(table, iid);
+        if (isNum) {
+            // Permitir input parcial (ej. "12.") sin convertir; pero si valor
+            // numérico válido, guardamos número.
+            var raw = inp.value;
+            if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
+                it[field] = 0;
             } else {
-                // Equipamiento
-                var secI = trI.closest('[data-section-id]');
-                if (!secI) return;
-                var subI = findSub(secI.getAttribute('data-section-id'));
-                if (!subI) return;
-                item = subI.items.find(function (x) { return x.id === iid; });
+                it[field] = num(raw);
             }
-            if (!item) return;
+        } else {
+            it[field] = inp.value;
+        }
 
-            var isNumField = NUM_FIELDS.indexOf(field) !== -1;
-            item[field] = isNumField ? num(t.value) : t.value;
-
-            // Si es item de equipamiento, recompute campos cacheados (para JSON consistente)
-            if (table == null && item.row_type === 'item') {
-                var c = calcEqItem(item);
-                item.p_unit_v = c.p_unit_v;
-                item.p_total_v = c.p_total_v;
-                item.c_unit = c.c_unit;
-                item.c_total = c.c_total;
-                item.ganancia = c.ganancia;
-            } else if (table === 'mano_obra') {
-                item.total = calcMoRow(item);
-            } else if (table === 'costo_mo') {
-                var calc = calcCmoRow(item);
-                item.concentrado = calc.concentrado;
-                item.total = calc.total;
-            } else if (table === 'gastos') {
-                item.total = calcGastoRow(item);
+        // Re-render localizado (solo la fila + summary), preservando foco.
+        if (field === 'cantidad' || field === 'precioLista' ||
+            field === 'descuentoVenta' || field === 'costoUnitario') {
+            updateRowCalcs(secId, itemId);
+            updateSummary();
+        } else if (field === 'notas') {
+            // Toggle de class cv-has-notas (visibilidad permanente).
+            var rowEl = S.container.querySelector(
+                '.cv-row[data-section="' + cssEsc(secId) + '"][data-item="' + cssEsc(itemId) + '"]'
+            );
+            if (rowEl) {
+                if ((inp.value || '').trim()) rowEl.classList.add('cv-has-notas');
+                else rowEl.classList.remove('cv-has-notas');
             }
-
-            refreshRowCells(iid);
-            refreshSidebar();
-            markDirty();
-        }
-    }
-
-    function onChange(e) {
-        // Mismo handler que input para cubrir change events sin perder consistencia.
-        // (Hoy los inputs disparan 'input' en cada keystroke; este handler es un seguro.)
-        // Disparado también para el debounce final.
-        if (e.target.matches && e.target.matches('[data-cv-field], #cv-tc, #cv-iva')) {
-            // ya manejado por onInput
-        }
-    }
-
-    var NUM_FIELDS = [
-        'cant', 'p_lista', 'desc_v_pct', 'desc_c_pct', 'p_unit', 'costo_unit',
-        'dias', 'p_unit_v', 'p_total_v', 'c_unit', 'c_total', 'ganancia', 'total', 'concentrado',
-    ];
-
-    // ── Factories de items vacíos ────────────────────────────────
-    function emptyEqItem() {
-        return {
-            id: uuid(), row_type: 'item',
-            marca: '', no_parte: '', cant: 0, descripcion: '',
-            p_lista: 0, desc_v_pct: 0, p_unit_v: 0, p_total_v: 0,
-            desc_c_pct: 0, c_unit: 0, c_total: 0, ganancia: 0,
-            proveedor: '', entrega: '', notas: '',
-        };
-    }
-    function emptyMoItem() {
-        return {
-            id: uuid(),
-            marca: 'BAJANET', no_parte: 'SERVICIOS PROFESIONALES',
-            cant: 1, descripcion: '', p_unit: 0, total: 0, notas: '',
-        };
-    }
-    function emptyCmoItem() {
-        return {
-            id: uuid(), recurso: '', cant: 1, dias: 1,
-            costo_unit: 0, concentrado: 0, total: 0,
-        };
-    }
-    function emptyGastoItem() {
-        return {
-            id: uuid(), cant: 1, unidad: 'PZA',
-            descripcion: '', costo_unit: 0, total: 0,
-        };
-    }
-
-    // ── Dirty + autosave ────────────────────────────────────────────
-    function markDirty() {
-        if (typeof S.onDirty === 'function') {
-            try { S.onDirty(); } catch (_) {}
         }
         scheduleAutosave();
     }
 
+    function onItemBlur(ev) {
+        // En blur de un campo numérico, normalizamos la representación del
+        // input (ej. "12." → "12") sin tocar el data (ya está num).
+        if (S.readonly) return;
+        var inp = ev.target;
+        var field = inp.getAttribute('data-field');
+        if (!field) return;
+        var isNum = inp.type === 'number' ||
+                    field === 'cantidad' || field === 'precioLista' ||
+                    field === 'descuentoVenta' || field === 'costoUnitario';
+        if (isNum) {
+            var n = num(inp.value);
+            // Solo reescribimos si la representación cambió, para no romper
+            // el caret durante typing.
+            if (String(n) !== inp.value) inp.value = n === 0 ? '' : String(n);
+        }
+    }
+
+    // CSS-escape para selectores con uuid (tienen guiones, OK, pero por si
+    // acaso). El uuid v4 es seguro, pero blindamos.
+    function cssEsc(s) {
+        if (window.CSS && CSS.escape) return CSS.escape(s);
+        return String(s).replace(/(["\\])/g, '\\$1');
+    }
+
+    // ── Operaciones sobre el data ───────────────────────────────────
+    function findSection(id) {
+        if (!S.data || !id) return null;
+        var arr = S.data.secciones || [];
+        for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i];
+        return null;
+    }
+
+    function findItem(secId, itemId) {
+        var sec = findSection(secId);
+        if (!sec) return null;
+        var arr = sec.items || [];
+        for (var i = 0; i < arr.length; i++) if (arr[i].id === itemId) return arr[i];
+        return null;
+    }
+
+    function toggleSection(secId) {
+        var sec = findSection(secId);
+        if (!sec) return;
+        sec.expanded = !sec.expanded;
+        // Re-render del grid (solo) — el doc header y summary no cambian.
+        rerenderGrid();
+        scheduleAutosave();
+    }
+
+    function addRow(secId) {
+        var sec = findSection(secId);
+        if (!sec) return;
+        sec.items.push(emptyItem());
+        sec.expanded = true;
+        rerenderGrid();
+        // Foco al primer input de la fila nueva.
+        var rowEls = S.container.querySelectorAll('.cv-row[data-section="' + cssEsc(secId) + '"]');
+        var last = rowEls[rowEls.length - 1];
+        if (last) {
+            var first = last.querySelector('input.cv-input-num');
+            if (first) try { first.focus(); first.select && first.select(); } catch (_) {}
+        }
+        scheduleAutosave();
+    }
+
+    function addSection() {
+        S.data.secciones.push(emptySection());
+        rerenderGrid();
+        // Foco al título de la sección nueva.
+        var sects = S.container.querySelectorAll('.cv-section-title-input');
+        var last = sects[sects.length - 1];
+        if (last) try { last.focus(); last.select && last.select(); } catch (_) {}
+        scheduleAutosave();
+    }
+
+    function delItem(secId, itemId) {
+        var sec = findSection(secId);
+        if (!sec) return;
+        sec.items = (sec.items || []).filter(function (it) { return it.id !== itemId; });
+        rerenderGrid();
+        updateSummary();
+        scheduleAutosave();
+    }
+
+    function delSection(secId) {
+        var sec = findSection(secId);
+        if (!sec) return;
+        var n = (sec.items || []).length;
+        if (n > 0) {
+            var ok = window.confirm('La sección "' + (sec.titulo || '') + '" tiene ' + n + ' items. ¿Eliminar de todos modos?');
+            if (!ok) return;
+        }
+        S.data.secciones = (S.data.secciones || []).filter(function (s) { return s.id !== secId; });
+        rerenderGrid();
+        updateSummary();
+        scheduleAutosave();
+    }
+
+    // ── Re-renders parciales ────────────────────────────────────────
+    function rerenderGrid() {
+        if (!S.container) return;
+        var oldGrid = S.container.querySelector('.cv-grid');
+        if (!oldGrid) { render(); return; }
+        var tmp = document.createElement('div');
+        tmp.innerHTML = renderGrid();
+        var newGrid = tmp.firstChild;
+        oldGrid.replaceWith(newGrid);
+        // Re-bind solo los listeners del grid.
+        newGrid.querySelectorAll('.cv-section-title-input').forEach(function (inp) {
+            inp.addEventListener('input', onSectionTitleInput);
+        });
+        newGrid.querySelectorAll('.cv-row [data-field]').forEach(function (inp) {
+            inp.addEventListener('input', onItemInput);
+            inp.addEventListener('change', onItemInput);
+            inp.addEventListener('blur', onItemBlur);
+        });
+        // El click delegado se mantiene en S.container.
+    }
+
+    function updateRowCalcs(secId, itemId) {
+        var it = findItem(secId, itemId);
+        if (!it) return;
+        var c = calcItem(it);
+        var puEl = S.container.querySelector(
+            '[data-calc="punit"][data-section="' + cssEsc(secId) + '"][data-item="' + cssEsc(itemId) + '"]'
+        );
+        var totEl = S.container.querySelector(
+            '[data-calc="total"][data-section="' + cssEsc(secId) + '"][data-item="' + cssEsc(itemId) + '"]'
+        );
+        if (puEl) puEl.textContent = fmtMoney(c.precioVentaUnitario);
+        if (totEl) totEl.textContent = fmtMoney(c.totalVenta);
+    }
+
+    function updateSummary() {
+        if (!S.container) return;
+        var oldSum = S.container.querySelector('.cv-summary');
+        var tmp = document.createElement('div');
+        tmp.innerHTML = renderSummary();
+        var newSum = tmp.firstChild;
+        if (oldSum) oldSum.replaceWith(newSum);
+        else S.container.querySelector('.cv-root').appendChild(newSum);
+    }
+
+    // ── Autosave ────────────────────────────────────────────────────
     function scheduleAutosave() {
         if (S.readonly) return;
         if (S.saveTimer) clearTimeout(S.saveTimer);
-        S.saveTimer = setTimeout(function () {
-            doAutosave();
-        }, 700);
+        S.saveTimer = setTimeout(doAutosave, 700);
     }
 
     function doAutosave() {
+        S.saveTimer = null;
         if (S.readonly) return;
         if (!S.volumetria || !S.volumetria.id) return;
 
         if (S.saveInFlight) {
-            // Si ya hay un save en vuelo, marcamos pending para reintentar
             S.savePending = true;
             return;
         }
@@ -1579,8 +1002,8 @@
 
         var url = '/app/api/iamet/volumetrias/' + S.volumetria.id + '/data/';
         var snapshot = JSON.parse(JSON.stringify(S.data));
-
         log('autosave →', url);
+
         apiPost(url, { data: snapshot }).then(function (r) {
             S.saveInFlight = false;
             if (r && (r.ok || r.success)) {
@@ -1598,7 +1021,6 @@
         }).catch(function (err) {
             S.saveInFlight = false;
             log('autosave failed', err);
-            // Reintento simple
             if (S.savePending) {
                 S.savePending = false;
                 setTimeout(doAutosave, 1500);
@@ -1606,29 +1028,26 @@
         });
     }
 
-    // Meta save (iva_pct, tipo_cambio, nombre, status...)
-    var _metaTimer = null;
-    var _metaPending = {};
     function scheduleMetaSave(partial) {
-        Object.keys(partial || {}).forEach(function (k) { _metaPending[k] = partial[k]; });
-        if (_metaTimer) clearTimeout(_metaTimer);
-        _metaTimer = setTimeout(doMetaSave, 700);
+        if (S.readonly) return;
+        Object.keys(partial || {}).forEach(function (k) { S.metaPending[k] = partial[k]; });
+        if (S.metaTimer) clearTimeout(S.metaTimer);
+        S.metaTimer = setTimeout(doMetaSave, 700);
     }
 
     function doMetaSave() {
+        S.metaTimer = null;
         if (S.readonly) return;
         if (!S.volumetria || !S.volumetria.id) return;
-        if (!Object.keys(_metaPending).length) return;
-        var body = _metaPending;
-        _metaPending = {};
+        if (!Object.keys(S.metaPending).length) return;
+        var body = S.metaPending;
+        S.metaPending = {};
         var url = '/app/api/iamet/volumetrias/' + S.volumetria.id + '/actualizar/';
         log('meta save →', body);
         apiPost(url, body).then(function (r) {
             if (r && (r.ok || r.success) && r.data) {
-                // Sincronizar la copia local con lo que el backend confirmó
                 if (r.data.iva_pct != null) S.volumetria.iva_pct = r.data.iva_pct;
                 if (r.data.tipo_cambio != null) S.volumetria.tipo_cambio = r.data.tipo_cambio;
-                refreshSidebar();
             } else {
                 log('meta save error', r);
             }
@@ -1640,14 +1059,13 @@
     // ── API pública ─────────────────────────────────────────────────
     window.crmVolumetria = {
         /**
-         * Renderiza el editor de volumetría dentro del contenedor.
+         * Monta el editor en `container`.
          * @param {HTMLElement} container
          * @param {object}      options
          * @param {object}      options.volumetria      {id, nombre, status, data, iva_pct, tipo_cambio}
-         * @param {object}      [options.levantamiento] objeto completo del lev
+         * @param {object}      [options.levantamiento] objeto del lev (para defaults de meta)
          * @param {boolean}     [options.readonly]      true → solo lectura
-         * @param {function}    [options.onDirty]       callback() cuando hay cambio
-         * @param {function}    [options.onSaved]       callback(volumetria) cuando guardamos
+         * @param {function}    [options.onSaved]       callback(volumetria) tras autosave OK
          */
         render: function (container, options) {
             options = options || {};
@@ -1655,7 +1073,7 @@
                 log('render: faltan args (container o volumetria)');
                 return;
             }
-            // Limpiar instancia anterior si existía
+            // Limpiar instancia anterior si hubiera.
             if (S.container) {
                 try { this.destroy(); } catch (_) {}
             }
@@ -1664,55 +1082,56 @@
             S.volumetria = options.volumetria;
             S.levantamiento = options.levantamiento || null;
             S.readonly = !!options.readonly;
-            S.onDirty = options.onDirty || null;
             S.onSaved = options.onSaved || null;
 
-            // Defaults de meta
-            if (S.volumetria.iva_pct == null) S.volumetria.iva_pct = 16;
+            // Defaults razonables si vienen null.
+            if (S.volumetria.iva_pct == null)     S.volumetria.iva_pct = 16;
             if (S.volumetria.tipo_cambio == null) S.volumetria.tipo_cambio = 19.50;
 
-            // Normalizar/migrar data
-            S.data = normalizeData(S.volumetria.data || {});
-            S.volumetria.data = S.data; // mantener sincronizado el alias
+            S.data = normalizeData(S.volumetria.data || {}, S.levantamiento);
+            S.volumetria.data = S.data;
 
-            log('render volumetría', S.volumetria.id, 'readonly=' + S.readonly);
+            // Si la migración cambió la shape (v1/v2 → v3), guardamos pronto
+            // para "consagrar" la migración en backend.
+            var migrated = (options.volumetria.data && options.volumetria.data.version !== 3);
+            log('render volumetría', S.volumetria.id, 'readonly=' + S.readonly,
+                'migrated=' + !!migrated);
             render();
+            if (migrated && !S.readonly) scheduleAutosave();
         },
 
-        /** Snapshot del data v2 actual. */
+        /** Snapshot JSON v3 actual (deep copy). */
         getData: function () {
             return S.data ? JSON.parse(JSON.stringify(S.data)) : null;
         },
 
-        /** Devuelve el objeto volumetria en memoria (incluye iva_pct, tipo_cambio actualizados). */
+        /** Volumetría en memoria (incluye iva_pct, tipo_cambio actualizados). */
         getVolumetria: function () {
             return S.volumetria;
         },
 
-        /** Fuerza el flush del autosave pendiente (útil al cerrar wizard). */
+        /** Fuerza flush de autosave + metaSave pendientes. */
         flushSave: function () {
             if (S.saveTimer) {
                 clearTimeout(S.saveTimer);
                 S.saveTimer = null;
                 doAutosave();
             }
-            if (_metaTimer) {
-                clearTimeout(_metaTimer);
-                _metaTimer = null;
+            if (S.metaTimer) {
+                clearTimeout(S.metaTimer);
+                S.metaTimer = null;
                 doMetaSave();
             }
         },
 
-        /** Limpia DOM + listeners. */
+        /** Destruye la instancia: quita listeners, vacía el contenedor. */
         destroy: function () {
-            if (S.boundDocKey) {
-                document.removeEventListener('keydown', S.boundDocKey);
-                S.boundDocKey = null;
-            }
             if (S.saveTimer) { clearTimeout(S.saveTimer); S.saveTimer = null; }
-            if (_metaTimer) { clearTimeout(_metaTimer); _metaTimer = null; }
-            if (S.catalogState.timer) { clearTimeout(S.catalogState.timer); S.catalogState.timer = null; }
+            if (S.metaTimer) { clearTimeout(S.metaTimer); S.metaTimer = null; }
             if (S.container) {
+                try {
+                    S.container.removeEventListener('click', onContainerClick);
+                } catch (_) {}
                 S.container.innerHTML = '';
             }
             S.container = null;
@@ -1720,99 +1139,10 @@
             S.levantamiento = null;
             S.data = null;
             S.readonly = false;
-            S.onDirty = null;
             S.onSaved = null;
             S.saveInFlight = false;
             S.savePending = false;
+            S.metaPending = {};
         },
     };
-
-    /**
-     * ─── CSS classes utilizadas (prefijo cv-) ────────────────────────
-     * El módulo de estilos correspondiente debe implementar al menos:
-     *
-     * Layout:
-     *   .cv-root                       contenedor raíz
-     *   .cv-readonly                   modificador (root) modo lectura
-     *   .cv-config-bar                 barra superior (Moneda, TC, IVA, btn catálogo)
-     *   .cv-cfg-group, .cv-cfg-label, .cv-cfg-value, .cv-cfg-input,
-     *     .cv-cfg-suffix, .cv-cfg-sep, .cv-cfg-spacer
-     *   .cv-layout                     grid 2-cols (content + sidebar)
-     *   .cv-content                    columna principal
-     *   .cv-sidebar                    columna lateral (sticky)
-     *   .cv-sidebar-inner              contenido interno del sidebar
-     *
-     * Secciones / acordeón:
-     *   .cv-section                    contenedor de cada bloque (Equipamiento, MO, ...)
-     *   .cv-section-open               modificador: acordeón expandido
-     *   .cv-section-header             cabecera clickeable
-     *   .cv-section-title              título
-     *   .cv-section-subtotal           pill con el subtotal
-     *   .cv-subtotal-label, .cv-subtotal-value
-     *   .cv-section-body               cuerpo (contenido de la sección)
-     *   .cv-chevron                    chevron del acordeón (rotar al abrir/cerrar)
-     *
-     * Sub-secciones (solo Equipamiento):
-     *   .cv-subsection                 grupo dentro de Equipamiento
-     *   .cv-subsection-header
-     *   .cv-subsection-name            modo readonly (span)
-     *   .cv-subsection-name-input      modo editable (input)
-     *   .cv-subsection-actions         botonera derecha
-     *   .cv-subsection-body
-     *   .cv-add-subsection             botón "+ sub-sección"
-     *   .cv-add-row                    botón "+ fila" en cada tabla simple
-     *
-     * Tablas:
-     *   .cv-table-wrap                 wrapper con scroll horizontal
-     *   .cv-table                      tabla base
-     *   .cv-table-eq, .cv-table-mo,
-     *   .cv-table-cmo, .cv-table-gastos
-     *   .cv-th-num, .cv-th-act         th alineado a número / col de acciones
-     *   .cv-cell-num                   td alineado a número
-     *   .cv-cell-desc                  td de descripción (usar min-width amplio)
-     *   .cv-cell-calc                  td calculado (no editable)
-     *   .cv-cell-strong                td con estilo destacado
-     *   .cv-cell-gain                  ganancia (color por signo, opcional)
-     *   .cv-cell-act                   td de acciones
-     *   .cv-cell-input                 input dentro de celda
-     *   .cv-cell-ro                    span readonly dentro de celda
-     *   .cv-mono                       mono-spaced (no_parte)
-     *   .cv-row-header                 tr de "rótulo" (style highlighted)
-     *   .cv-header-cell                td con colspan del rótulo
-     *   .cv-header-text                texto del rótulo (readonly)
-     *   .cv-header-input               input del rótulo (editable)
-     *   .cv-row-tool                   botón pequeño en celda de acciones (catálogo)
-     *   .cv-row-del                    botón eliminar fila
-     *
-     * Botones genéricos:
-     *   .cv-btn                        base
-     *   .cv-btn-primary                primario (azul)
-     *   .cv-btn-ghost                  ghost (border + texto)
-     *   .cv-btn-danger-ghost           ghost en rojo (eliminar sub-sección)
-     *
-     * Sidebar:
-     *   .cv-sidebar-totals             grid con USD
-     *   .cv-sidebar-mxn                grid con MXN al TC
-     *   .cv-mxn-title, .cv-mxn-tc, .cv-mxn
-     *   .cv-sb-row                     fila label + value
-     *   .cv-sb-label, .cv-sb-value
-     *   .cv-sb-sep                     separador <hr>
-     *   .cv-row-cost                   línea de costo (color tenue)
-     *   .cv-row-strong                 línea de subtotal/total
-     *   .cv-row-grand                  línea final (total con IVA)
-     *   .cv-row-gain                   línea de ganancia (verde/rojo)
-     *   .cv-row-margin                 línea de margen %
-     *
-     * Modal de catálogo:
-     *   .cv-catalog-backdrop           fondo oscuro
-     *   .cv-catalog-modal              caja del modal
-     *   .cv-catalog-head               cabecera con search + close
-     *   .cv-catalog-search             input de búsqueda
-     *   .cv-catalog-close              botón X
-     *   .cv-catalog-list               lista scrolleable
-     *   .cv-catalog-row                fila (clickeable)
-     *   .cv-catalog-row-main, .cv-catalog-desc, .cv-catalog-sub, .cv-catalog-price
-     *   .cv-catalog-empty              estado vacío / loading
-     *   .cv-catalog-foot, .cv-catalog-hint
-     */
 })();
