@@ -1636,22 +1636,22 @@ def api_verificar_empleado_mes(request):
     inicio_oficial = datetime(2026, 4, 1, 8, 0, 0, tzinfo=ZoneInfo("America/Tijuana"))
     if ahora_tj < inicio_oficial:
         return JsonResponse({
-            'status': 'scheduled', 
+            'status': 'scheduled',
             'message': 'El primer anuncio oficial está programado para el 1 de Abril a las 8:00 AM (Tijuana).'
         })
 
-    # 2. Regla de publicación mensual: Solo el día 1, a partir de las 8:00 AM
-    if ahora_tj.day != 1:
-        return JsonResponse({'status': 'not_ready', 'message': 'Las publicaciones automáticas ocurren el día 1 de cada mes.'})
-        
-    if ahora_tj.hour < 8:
-        return JsonResponse({'status': 'too_morning', 'message': 'El anuncio se publicará hoy a las 8:00 AM.'})
+    # 2. La ventana de publicación abre el día 1 del mes a las 8 AM Tijuana.
+    #    A partir de ese momento, si el ganador del mes anterior aún no se publicó,
+    #    se publica al primer hit (catch-up). `anuncio_publicado=True` evita duplicados.
+    inicio_mes_actual = datetime(ahora_tj.year, ahora_tj.month, 1, 8, 0, 0, tzinfo=ZoneInfo("America/Tijuana"))
+    if ahora_tj < inicio_mes_actual:
+        return JsonResponse({'status': 'too_early', 'message': 'El anuncio se publicará el día 1 a las 8:00 AM.'})
 
-    # Revisar mes anterior (ej: si es 1 de Abril, revisa Marzo)
+    # Revisar mes anterior (ej: si estamos en Mayo, revisa Abril)
     mes_target_date = ahora - relativedelta(months=1)
     m = mes_target_date.month
     y = mes_target_date.year
-    
+
     # Si ya se publicó este mes, salir
     if EficienciaMensual.objects.filter(mes=m, anio=y, anuncio_publicado=True).exists():
         return JsonResponse({'status': 'period_already_announced'})
