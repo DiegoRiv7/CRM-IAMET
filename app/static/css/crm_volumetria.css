@@ -11,11 +11,11 @@
     /* Hereda la tipografía del wizard del levantamiento */
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
     color: #0f172a;
-    background: #fafbfc;
-    padding: 16px 20px 80px;
-    /* min-height para que el sidebar sticky tenga "scroll runway" */
+    background: transparent;
+    padding: 0;
     min-height: 100%;
     box-sizing: border-box;
+    width: 100%;
 }
 
 /*
@@ -29,11 +29,11 @@
  */
 .cv-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 340px;
     gap: 24px;
     align-items: start;
-    max-width: 1600px;
-    margin: 0 auto;
+    /* Sin max-width — usamos todo el ancho que el host nos da (la mesa
+       de trabajo del ingeniero debe respirar en pantallas grandes). */
 }
 
 .cv-content {

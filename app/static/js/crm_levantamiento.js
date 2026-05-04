@@ -2913,10 +2913,14 @@
         // Delegamos la mesa de trabajo al módulo crm_volumetria (v2).
         // El template de wrap trae las tablas viejas hardcodeadas; al primer
         // mount las limpiamos preservando solo el head y montamos el módulo.
+        // La clase `lw-p3-wrap-v2` cambia el layout del wrap a columna
+        // (estaba en flex-row con summary fijo a la derecha) — lo necesitamos
+        // así porque el módulo nuevo trae su propio sidebar interno.
         var head = wrap.querySelector('#lwP3EditHead');
         var mount = wrap.querySelector('#lwP3CvMount');
         if (!mount) {
             wrap.innerHTML = '';
+            wrap.classList.add('lw-p3-wrap-v2');
             if (head) wrap.appendChild(head);
             else {
                 head = document.createElement('div');

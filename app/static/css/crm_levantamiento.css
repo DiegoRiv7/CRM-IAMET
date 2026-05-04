@@ -1508,6 +1508,33 @@
     min-height: 0;
     overflow: hidden;
 }
+
+/* Variante v2: el wrap ahora hostea el módulo `crm_volumetria` que ya
+   trae su propio sidebar interno. Convertimos el wrap a columna para
+   que el head del editor quede arriba y el módulo abajo tomando todo
+   el ancho disponible (sin centrarlo ni constrarlo). */
+.lw-p3-wrap.lw-p3-wrap-v2 {
+    flex-direction: column;
+    overflow: hidden;
+}
+.lw-p3-wrap.lw-p3-wrap-v2 > #lwP3EditHead {
+    flex: 0 0 auto;
+    padding: 16px 28px 12px;
+    background: #fff;
+    border-bottom: 1px solid #f1f5f9;
+}
+.lw-p3-wrap.lw-p3-wrap-v2 > #lwP3CvMount {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 28px 32px;
+    background: #fafbfc;
+}
+@media (max-width: 1100px) {
+    .lw-p3-wrap.lw-p3-wrap-v2 > #lwP3EditHead { padding: 12px 16px 10px; }
+    .lw-p3-wrap.lw-p3-wrap-v2 > #lwP3CvMount  { padding: 14px 16px 24px; }
+}
 .lw-p3-tables {
     flex: 1;
     overflow-y: auto;
