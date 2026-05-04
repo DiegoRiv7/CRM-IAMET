@@ -2615,11 +2615,21 @@
     };
 
     window.lwP3VolverAlPanel = function () {
-        // Flush save pendiente antes de salir del editor
+        // Flush save del módulo crm_volumetria si está montado, y destruye
+        // listeners para que el próximo render arranque limpio.
+        try {
+            if (window.crmVolumetria) {
+                if (typeof window.crmVolumetria.flushSave === 'function') {
+                    window.crmVolumetria.flushSave();
+                }
+                if (typeof window.crmVolumetria.destroy === 'function') {
+                    window.crmVolumetria.destroy();
+                }
+            }
+        } catch (e) { /* defensivo: no bloquear la salida */ }
+        // Flush del wizard también, por si algo del head quedó dirty.
         lwFlushSave();
         state.volumetriaActiva = null;
-        // Limpia el alias (el editor del wizard no debe seguir escribiendo
-        // en data de una volumetría que ya no estamos editando).
         state.lev.fase3_data = {};
         _lwP3FetchVolumetrias();
     };
@@ -2898,36 +2908,41 @@
         if (panel) panel.style.display = 'none';
         if (wrap)  wrap.style.display  = 'block';
         _lwP3RenderEditHead();
+        if (!state.volumetriaActiva) return;
 
-        var d = state.lev.fase3_data || {};
-        // Migrar productos de fase 1 si no hay materiales aún
-        if (!d.materiales) {
-            var prods = (state.lev.fase1_data || {}).productos || [];
-            d.materiales = prods.map(function (p, i) {
-                return {
-                    partida: i + 1, qty: p.qty || 1, unid: p.unidad || 'PZA',
-                    desc: p.desc || '', marca: p.marca || '', modelo: p.modelo || '',
-                    costoUnit: Number(p.precio || 0) * 0.7, precioLista: Number(p.precio || 0),
-                    descCompra: 0, descVenta: 0, proveedor: '', entrega: '',
-                };
-            });
+        // Delegamos la mesa de trabajo al módulo crm_volumetria (v2).
+        // El template de wrap trae las tablas viejas hardcodeadas; al primer
+        // mount las limpiamos preservando solo el head y montamos el módulo.
+        var head = wrap.querySelector('#lwP3EditHead');
+        var mount = wrap.querySelector('#lwP3CvMount');
+        if (!mount) {
+            wrap.innerHTML = '';
+            if (head) wrap.appendChild(head);
+            else {
+                head = document.createElement('div');
+                head.id = 'lwP3EditHead';
+                head.className = 'lw-p3-edit-head';
+                wrap.appendChild(head);
+                _lwP3RenderEditHead();
+            }
+            mount = document.createElement('div');
+            mount.id = 'lwP3CvMount';
+            mount.className = 'lw-p3-cv-mount';
+            wrap.appendChild(mount);
         }
-        if (!d.manoObra) d.manoObra = [];
-        if (!d.gastos) d.gastos = [];
-        // TC default 19.50 si no hay valor guardado
-        if (!d.tipo_cambio) d.tipo_cambio = 19.50;
-        state.lev.fase3_data = d;
-        // Mantener el alias con la volumetría activa
-        if (state.volumetriaActiva) state.volumetriaActiva.data = d;
-        // Sincronizar el input de TC con el valor guardado
-        var tcInput = $('lwP3TC');
-        if (tcInput) tcInput.value = (d.tipo_cambio || 19.50);
-        _p3RenderTCFecha();
-        renderP3Materiales();
-        renderP3ManoObra();
-        renderP3Gastos();
-        bindP3Delegation();
-        recalcP3Summary();
+
+        if (window.crmVolumetria && typeof window.crmVolumetria.render === 'function') {
+            window.crmVolumetria.render(mount, {
+                volumetria: state.volumetriaActiva,
+                levantamiento: state.lev,
+                readonly: state.readonly === true,
+                onSaved: function (vol) {
+                    if (vol) state.volumetriaActiva = vol;
+                },
+            });
+        } else {
+            mount.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8;font-size:13px;">El módulo de volumetría no se pudo cargar. Recarga la página.</div>';
+        }
     }
 
     // ── Helpers de celdas (Fase 3) ─────────────────────────────────
