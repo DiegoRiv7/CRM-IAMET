@@ -870,10 +870,10 @@
         html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; min-height: calc(100vh - 66px);">';
         
         // Table Box
-        html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:hidden;">';
+        html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:visible;">';
         
         // Toolbar (Search + Agregar Tabla)
-        html += '    <div class="px-4 py-3 border-b flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid var(--cv-border); display:flex; justify-content:space-between; align-items:center;">';
+        html += '    <div class="px-4 py-3 border-b flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid var(--cv-border); display:flex; justify-content:space-between; align-items:center; border-top-left-radius:14px; border-top-right-radius:14px;">';
         html += '      <div class="relative"><input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100);"></div>';
         if (!S.readonly) {
             html += renderAddSectionWrap();
@@ -888,7 +888,7 @@
         html += '  </div>'; // end Table Box
         
         // Bottom / Sidebar summary card
-        html += '  <div class="cv-app-bottom-summary" style="margin-top:16px;">';
+        html += '  <div class="cv-app-bottom-summary" style="margin-top:24px;">';
         html += renderBottom();
         html += '  </div>';
         
@@ -1323,10 +1323,31 @@
 
     // ── Bottom: Resumen + Estadísticas ──────────────────────────────
     function renderBottom() {
-        var h = '<div class="cv-bottom">';
+        var status = (S.volumetria && S.volumetria.status) || 'borrador';
+        var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
+        var statusCls = 'cv-status cv-status-' + status;
+        var statusEl = '';
+        
+        if (!S.readonly) {
+            statusEl =
+                '<button type="button" class="' + statusCls + '" data-action="toggle-status" style="margin-bottom:12px; height:32px;">' +
+                    '<span class="cv-status-dot"></span>' +
+                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
+                '</button>';
+        } else {
+            statusEl =
+                '<div class="' + statusCls + '" style="margin-bottom:12px; height:32px;">' +
+                    '<span class="cv-status-dot"></span>' +
+                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
+                '</div>';
+        }
+
+        // Align status left, Financiero right
+        var h = '<div class="cv-bottom" style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px;">';
+        h += '<div class="cv-bottom-left" style="flex:1;">' + statusEl + '</div>';
+        h += '<div class="cv-bottom-right" style="width: 320px; flex-shrink: 0;">';
         h += renderFinanciero();
-        h += renderStats();
-        h += '</div>';
+        h += '</div></div>';
         return h;
     }
 
@@ -1405,16 +1426,6 @@
         if (!S.container) return;
         var valuesEl = S.container.querySelector('.cv-fin-values');
         if (valuesEl) valuesEl.innerHTML = renderFinValues();
-
-        // Stats card: solo cambian los conteos; reemplazamos íntegro
-        // (no contiene inputs editables, no hay foco que preservar).
-        var oldStats = S.container.querySelector('.cv-card-stats');
-        if (oldStats) {
-            var tmp = document.createElement('div');
-            tmp.innerHTML = renderStats();
-            var newStats = tmp.firstChild;
-            oldStats.replaceWith(newStats);
-        }
     }
 
     function finRow(label, value, cls) {
