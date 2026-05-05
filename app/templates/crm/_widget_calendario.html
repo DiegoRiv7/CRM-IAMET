@@ -67,6 +67,11 @@
             .cal-userpick-item .cal-userpick-check { width:14px; height:14px; flex-shrink:0; opacity:0; color:#1d4ed8; }
             .cal-userpick-item.is-active .cal-userpick-check { opacity:1; }
             .cal-userpick-empty { padding:14px 12px; text-align:center; color:#86868B; font-size:12px; }
+            /* ─── Recurrencia (Repetir actividad) ─── */
+            .cal-recur-chip { width:30px; height:30px; border-radius:50%; border:1px solid #CBD5E1; background:#fff; color:#64748B; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+            .cal-recur-chip:hover { border-color:#3B82F6; color:#2563EB; background:#EFF6FF; }
+            .cal-recur-chip.active { background:#0052D4; color:#fff; border-color:#0052D4; }
+            .cal-recur-chip.active:hover { background:#0041A8; border-color:#0041A8; }
         </style>
 
         <!-- ── Outer header ── -->
@@ -311,6 +316,35 @@
                         <div id="calActParticipantesContainer" class="wact-pop-chips"></div>
                     </div>
                 </div>
+                <!-- Repetir / recurrencia -->
+                <div class="wact-popwrap" id="calRecurWrap">
+                    <button type="button" class="wact-tool-ghost" data-wact-btn="recurrencia" onclick="wactOpenPop('cal', 'recurrencia', event)" title="Repetir actividad">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        <span data-wact-label="recurrencia">Repetir</span>
+                    </button>
+                    <div class="wact-pop wact-pop-wide" data-wact-pop="recurrencia" style="display:none; min-width: 340px;">
+                        <div class="wact-pop-title">Repetir actividad</div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#0F172A;font-weight:500;cursor:pointer;margin-bottom:10px;">
+                            <input type="checkbox" id="calRecurEnabled" onchange="calRecurToggle()" style="width:15px;height:15px;cursor:pointer;accent-color:#0052D4;">
+                            <span>Repetir esta actividad</span>
+                        </label>
+                        <div id="calRecurBody" style="display:none;">
+                            <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 6px 2px;">Días de la semana</div>
+                            <div id="calRecurDias" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;">
+                                <button type="button" class="cal-recur-chip" data-dia="1" onclick="calRecurToggleDia(1)">L</button>
+                                <button type="button" class="cal-recur-chip" data-dia="2" onclick="calRecurToggleDia(2)">M</button>
+                                <button type="button" class="cal-recur-chip" data-dia="3" onclick="calRecurToggleDia(3)">M</button>
+                                <button type="button" class="cal-recur-chip" data-dia="4" onclick="calRecurToggleDia(4)">J</button>
+                                <button type="button" class="cal-recur-chip" data-dia="5" onclick="calRecurToggleDia(5)">V</button>
+                                <button type="button" class="cal-recur-chip" data-dia="6" onclick="calRecurToggleDia(6)">S</button>
+                                <button type="button" class="cal-recur-chip" data-dia="7" onclick="calRecurToggleDia(7)">D</button>
+                            </div>
+                            <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 6px 2px;">Repetir hasta</div>
+                            <input type="date" class="wact-pop-input" id="calRecurHasta" onchange="calRecurUpdatePreview()">
+                            <div id="calRecurPreview" style="margin-top:10px;padding:8px 10px;background:#F1F5F9;border-radius:8px;font-size:12.5px;color:#475569;line-height:1.4;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="wact-actions">
                 <button type="button" class="wact-cancel"
@@ -379,6 +413,9 @@
     var _calCurrentDay = new Date();
     var _calNowInterval = null;
     var CAL_HOUR_H = 64;
+    // Recurrencia (estado del formulario "Nueva Actividad")
+    // dias: ISO weekday (1=Lun … 7=Dom). Default L–V.
+    var _calRecurDiasSel = [1,2,3,4,5];
 
     /* ─── ABRIR / CERRAR ─── */
     window.calendarioAbrir = function () {
@@ -433,10 +470,16 @@
                         var borderC = evColor ? (evColor + '40') : (esTarea ? 'rgba(255,149,0,0.3)' : hasOpp ? 'rgba(0,82,212,0.25)' : 'rgba(29,29,31,0.16)');
                         var opacityStyle = isCompletada ? 'opacity:0.38;' : '';
                         var strikeStyle = isCompletada ? 'text-decoration:line-through;' : '';
+                        // Indicador de actividad recurrente (parte de una serie).
+                        var esRecurrente = !!(stored && stored.recurrence_group_id);
+                        var recurIcon = esRecurrente
+                            ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.85;" title="Actividad recurrente"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>'
+                            : '';
                         return { html:
                             '<div style="display:flex;align-items:center;gap:5px;padding:2px 7px 2px 6px;border-radius:5px;background:'+bgTint+';border:1px solid '+borderC+';width:100%;overflow:hidden;box-sizing:border-box;'+opacityStyle+'">' +
                             '<div style="width:5px;height:5px;border-radius:50%;background:'+color+';flex-shrink:0;"></div>' +
                             '<div style="font-size:0.77rem;font-weight:600;color:'+color+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;'+strikeStyle+'">'+title+'</div>' +
+                            recurIcon +
                             '</div>'
                         };
                     },
@@ -490,6 +533,8 @@
                         calRenderParticipantes();
                         _calSelectedColor = '#1D1D1F';
                         window._calEditandoId = null;
+                        calRecurReset();
+                        var _rw1=document.getElementById('calRecurWrap'); if (_rw1) _rw1.style.display='';
                         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
                         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
                         _globalCalendar.unselect();
@@ -1494,7 +1539,9 @@
                 // Migrar morado legacy #8B5CF6 → café #B45309 para prospectos
                 if (evtColor === '#8B5CF6') evtColor = '#B45309';
                 return { id:e.id, title:e.title, start:e.start, end:e.end, description:e.description, color:evtColor,
-                    extendedProps:{ participants:e.participants, opportunity:e.opportunity, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada } };
+                    // Top-level para que eventContent lo encuentre en `stored`.
+                    recurrence_group_id: e.recurrence_group_id || null,
+                    extendedProps:{ participants:e.participants, opportunity:e.opportunity, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada, recurrence_group_id: e.recurrence_group_id || null } };
             });
             // Convierte cualquier fecha a string local sin sufijo timezone (p.ej. "2026-03-20T14:30:00")
             // así FullCalendar y las vistas personalizadas la tratan como hora local consistente.
@@ -1797,6 +1844,10 @@
         document.getElementById('calFormActFin').value = pad(endH)+':'+pad(startM);
         document.getElementById('calFormActDesc').value = '';
         _calParticipantesSel=[]; calRenderParticipantes(); _calSelectedColor='#1D1D1F';
+        window._calEditandoId = null;
+        calRecurReset();
+        var _rw2=document.getElementById('calRecurWrap'); if (_rw2) _rw2.style.display='';
+        document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
         document.getElementById('widgetGlobalCrearActividad').style.display='flex';
     };
 
@@ -1887,8 +1938,135 @@
         calRenderParticipantes();
         _calSelectedColor=evt.color||'#0052D4';
         window._calEditandoId=id;
+        // Al editar, ocultamos el control de recurrencia: editar aplica
+        // sólo a la instancia seleccionada de la serie. Reset deja el
+        // checkbox apagado y limpia la UI por si quedaba abierto.
+        calRecurReset();
+        var recurWrap=document.getElementById('calRecurWrap');
+        if (recurWrap) recurWrap.style.display='none';
         document.getElementById('calFormActTitulo').textContent='Editar Actividad';
         document.getElementById('widgetGlobalCrearActividad').style.display='flex';
+    };
+
+    /* ─── RECURRENCIA ─── */
+    // Resetea el bloque de recurrencia a "no repetir" y deja la
+    // selección por defecto L-V + 1 semana después de la fecha.
+    function calRecurReset() {
+        _calRecurDiasSel = [1,2,3,4,5];
+        var cb = document.getElementById('calRecurEnabled');
+        if (cb) cb.checked = false;
+        var body = document.getElementById('calRecurBody');
+        if (body) body.style.display = 'none';
+        calRecurSyncDiasUI();
+        // Dejar el "hasta" 7 días después del campo de fecha (o de hoy).
+        var fechaInput = document.getElementById('calFormActFecha');
+        var base = (fechaInput && fechaInput.value) ? new Date(fechaInput.value+'T00:00:00') : new Date();
+        var hasta = new Date(base.getTime());
+        hasta.setDate(hasta.getDate()+7);
+        var pad = function(n){return String(n).padStart(2,'0');};
+        var hastaStr = hasta.getFullYear()+'-'+pad(hasta.getMonth()+1)+'-'+pad(hasta.getDate());
+        var hastaInput = document.getElementById('calRecurHasta');
+        if (hastaInput) hastaInput.value = hastaStr;
+        calRecurUpdateBtnLabel();
+        calRecurUpdatePreview();
+    }
+
+    window.calRecurToggle = function() {
+        var cb = document.getElementById('calRecurEnabled');
+        var body = document.getElementById('calRecurBody');
+        if (!cb || !body) return;
+        body.style.display = cb.checked ? 'block' : 'none';
+        // Si activa y el "hasta" está vacío o anterior, recalcular default.
+        if (cb.checked) {
+            var hastaInput = document.getElementById('calRecurHasta');
+            var fechaInput = document.getElementById('calFormActFecha');
+            if (hastaInput && (!hastaInput.value || (fechaInput && hastaInput.value < fechaInput.value))) {
+                var base = (fechaInput && fechaInput.value) ? new Date(fechaInput.value+'T00:00:00') : new Date();
+                var hasta = new Date(base.getTime()); hasta.setDate(hasta.getDate()+7);
+                var pad = function(n){return String(n).padStart(2,'0');};
+                hastaInput.value = hasta.getFullYear()+'-'+pad(hasta.getMonth()+1)+'-'+pad(hasta.getDate());
+            }
+        }
+        calRecurUpdateBtnLabel();
+        calRecurUpdatePreview();
+    };
+
+    window.calRecurToggleDia = function(dia) {
+        var idx = _calRecurDiasSel.indexOf(dia);
+        if (idx >= 0) _calRecurDiasSel.splice(idx, 1);
+        else { _calRecurDiasSel.push(dia); _calRecurDiasSel.sort(); }
+        calRecurSyncDiasUI();
+        calRecurUpdateBtnLabel();
+        calRecurUpdatePreview();
+    };
+
+    function calRecurSyncDiasUI() {
+        var chips = document.querySelectorAll('#calRecurDias .cal-recur-chip');
+        chips.forEach(function(ch){
+            var d = parseInt(ch.getAttribute('data-dia'), 10);
+            if (_calRecurDiasSel.indexOf(d) >= 0) ch.classList.add('active');
+            else ch.classList.remove('active');
+        });
+    }
+
+    function calRecurIsEnabled() {
+        var cb = document.getElementById('calRecurEnabled');
+        return !!(cb && cb.checked);
+    }
+
+    function calRecurUpdateBtnLabel() {
+        // Refleja el estado en el botón "Repetir" del toolbar (label + estado activo).
+        var btn = document.querySelector('[data-wact-btn="recurrencia"]');
+        var lbl = document.querySelector('[data-wact-label="recurrencia"]');
+        if (!btn || !lbl) return;
+        if (calRecurIsEnabled() && _calRecurDiasSel.length > 0) {
+            btn.classList.add('filled');
+            var nombres = ['L','M','M','J','V','S','D'];
+            var txt = _calRecurDiasSel.map(function(d){return nombres[d-1];}).join('·');
+            lbl.textContent = 'Repite '+txt;
+        } else {
+            btn.classList.remove('filled');
+            lbl.textContent = 'Repetir';
+        }
+    }
+
+    window.calRecurUpdatePreview = function() {
+        var prev = document.getElementById('calRecurPreview');
+        if (!prev) return;
+        if (!calRecurIsEnabled()) { prev.textContent = ''; return; }
+        var fechaInput = document.getElementById('calFormActFecha');
+        var hastaInput = document.getElementById('calRecurHasta');
+        if (!fechaInput || !fechaInput.value || !hastaInput || !hastaInput.value) {
+            prev.textContent = 'Define fecha de inicio y "Repetir hasta".';
+            return;
+        }
+        if (_calRecurDiasSel.length === 0) {
+            prev.textContent = 'Selecciona al menos un día de la semana.';
+            return;
+        }
+        var inicio = new Date(fechaInput.value+'T00:00:00');
+        var hasta = new Date(hastaInput.value+'T00:00:00');
+        if (hasta < inicio) {
+            prev.textContent = '"Repetir hasta" debe ser igual o posterior a la fecha de inicio.';
+            return;
+        }
+        // Contar fechas que cumplen y formar el resumen.
+        var n = 0;
+        var cur = new Date(inicio.getTime());
+        // JS: getDay() Sun=0..Sat=6. Convertir a ISO: 1=Lun..7=Dom.
+        var toIso = function(d){ var w = d.getDay(); return w === 0 ? 7 : w; };
+        while (cur <= hasta) {
+            if (_calRecurDiasSel.indexOf(toIso(cur)) >= 0) n++;
+            cur = new Date(cur.getTime() + 86400000);
+        }
+        var nombres = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+        var diasTxt = _calRecurDiasSel.map(function(d){return nombres[d-1];}).join(', ');
+        var fmtFecha = function(d){
+            var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            return d.getDate()+' '+meses[d.getMonth()];
+        };
+        if (n === 0) prev.textContent = 'Ningún día del rango coincide con los días seleccionados.';
+        else prev.innerHTML = 'Se crearán <strong>'+n+' actividad'+(n===1?'':'es')+'</strong> ('+diasTxt+' del '+fmtFecha(inicio)+' al '+fmtFecha(hasta)+').';
     };
 
     function calGlobalCrearActividadSubmit() {
@@ -1908,8 +2086,17 @@
             return dtStr+sign+hh+':'+mm;
         }
         var data={title:titulo,description:desc,tipo:'tarea',start:localIso(start_dt),end:localIso(end_dt),color:_calSelectedColor,opportunity:null,participants:_calParticipantesSel.map(function(u){return u.id;})};
-        var csrf=document.querySelector('[name=csrfmiddlewaretoken]')?document.querySelector('[name=csrfmiddlewaretoken]').value:'';
         var editandoId=window._calEditandoId||null;
+        // Recurrencia sólo aplica al crear (no al editar — editar afecta
+        // únicamente la instancia seleccionada de la serie).
+        if (!editandoId && calRecurIsEnabled()) {
+            if (_calRecurDiasSel.length === 0) { alert('Selecciona al menos un día de la semana para repetir.'); return; }
+            var hastaVal=document.getElementById('calRecurHasta').value;
+            if (!hastaVal) { alert('Define la fecha "Repetir hasta".'); return; }
+            if (hastaVal < fecha) { alert('"Repetir hasta" debe ser igual o posterior a la fecha de inicio.'); return; }
+            data.recurrencia = { dias: _calRecurDiasSel.slice(), hasta: hastaVal };
+        }
+        var csrf=document.querySelector('[name=csrfmiddlewaretoken]')?document.querySelector('[name=csrfmiddlewaretoken]').value:'';
         var url=editandoId?'/app/api/actividades/'+editandoId+'/':'/app/api/actividades/';
         var method=editandoId?'PUT':'POST';
         fetch(url,{method:method,headers:{'Content-Type':'application/json','X-CSRFToken':csrf},body:JSON.stringify(data)})
@@ -1984,6 +2171,13 @@
             inicioEl.addEventListener('change', function(){
                 var p=this.value.split(':'); var h=parseInt(p[0],10)+1; if(h>=24)h=23;
                 finEl.value=String(h).padStart(2,'0')+':'+p[1];
+            });
+        }
+        // Recalcular el preview de recurrencia cuando cambia la fecha de inicio.
+        var fechaEl=document.getElementById('calFormActFecha');
+        if (fechaEl) {
+            fechaEl.addEventListener('change', function(){
+                if (typeof calRecurUpdatePreview === 'function') calRecurUpdatePreview();
             });
         }
         calUpdateNavTitle();

@@ -2412,6 +2412,11 @@ def actividad_list_create(request):
                     'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
                     'es_mio': actividad.creado_por_id == request.user.pk,
                     'completada': actividad.completada,
+                    # Cuando ≠ null, indica que la actividad es parte de
+                    # una serie recurrente (varias instancias creadas
+                    # juntas). El frontend usa esto para mostrar un
+                    # indicador visual (icono de repetición).
+                    'recurrence_group_id': str(actividad.recurrence_group_id) if actividad.recurrence_group_id else None,
                 })
             return JsonResponse(events, safe=False)
 
@@ -2429,31 +2434,100 @@ def actividad_list_create(request):
             except ValueError:
                 return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
 
-            actividad = Actividad.objects.create(
-                titulo=data['title'],
-                tipo_actividad=data.get('tipo', 'otro'),
-                descripcion=data.get('description', ''),
-                fecha_inicio=start_date,
-                fecha_fin=end_date,
-                creado_por=request.user,
-                color=data.get('color', '#1D1D1F'),
-                oportunidad_id=data.get('opportunity')
-            )
-        
-            if 'participants' in data and data['participants']:
-                actividad.participantes.set(data['participants'])
+            # ── Recurrencia (opcional) ────────────────────────────────
+            # Esquema esperado en `data['recurrencia']`:
+            #   { "dias": [1..7],          # 1=Lun … 7=Dom (ISO weekday)
+            #     "hasta": "YYYY-MM-DD" }  # fecha límite inclusive
+            # Cuando viene, generamos N Actividad reales (una por cada
+            # fecha del rango que caiga en alguno de los días pedidos),
+            # todas con el mismo recurrence_group_id. Cada copia conserva
+            # la hora de inicio/fin original; sólo se desplaza la fecha.
+            recurrencia = data.get('recurrencia') or {}
+            fechas = []  # lista de (start_dt, end_dt) a crear
+            recurrence_group_id = None
+
+            if recurrencia and recurrencia.get('dias') and recurrencia.get('hasta'):
+                try:
+                    dias = [int(d) for d in recurrencia['dias'] if int(d) in (1, 2, 3, 4, 5, 6, 7)]
+                    hasta = datetime.strptime(str(recurrencia['hasta'])[:10], '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    return JsonResponse({'error': 'Recurrencia inválida.'}, status=400)
+                if not dias:
+                    return JsonResponse({'error': 'Debes seleccionar al menos un día de la semana.'}, status=400)
+
+                base_start_date = start_date.date()
+                if hasta < base_start_date:
+                    return JsonResponse({'error': '"Repetir hasta" debe ser igual o posterior a la fecha de inicio.'}, status=400)
+
+                # Tope defensivo: máximo ~1 año (366 días) para evitar
+                # que un date picker confundido genere miles de filas.
+                MAX_DAYS = 366
+                span = (hasta - base_start_date).days
+                if span > MAX_DAYS:
+                    return JsonResponse({'error': f'El rango de recurrencia no puede exceder {MAX_DAYS} días.'}, status=400)
+
+                duracion = end_date - start_date
+                cur = base_start_date
+                while cur <= hasta:
+                    # isoweekday(): Mon=1 … Sun=7 — coincide con nuestros chips.
+                    if cur.isoweekday() in dias:
+                        # Reconstruir start con la fecha actual conservando hora/zona
+                        nuevo_start = start_date.replace(year=cur.year, month=cur.month, day=cur.day)
+                        nuevo_end = nuevo_start + duracion
+                        fechas.append((nuevo_start, nuevo_end))
+                    cur += timedelta(days=1)
+
+                if not fechas:
+                    return JsonResponse({'error': 'Ningún día del rango coincide con los días seleccionados.'}, status=400)
+
+                import uuid as _uuid
+                recurrence_group_id = _uuid.uuid4()
+            else:
+                fechas = [(start_date, end_date)]
+
+            participants_ids = data.get('participants') or []
+            titulo = data['title']
+            tipo_actividad = data.get('tipo', 'otro')
+            descripcion = data.get('description', '')
+            color = data.get('color', '#1D1D1F')
+            oportunidad_id = data.get('opportunity')
+
+            from django.db import transaction
+            actividades_creadas = []
+            with transaction.atomic():
+                for s_dt, e_dt in fechas:
+                    act = Actividad.objects.create(
+                        titulo=titulo,
+                        tipo_actividad=tipo_actividad,
+                        descripcion=descripcion,
+                        fecha_inicio=s_dt,
+                        fecha_fin=e_dt,
+                        creado_por=request.user,
+                        color=color,
+                        oportunidad_id=oportunidad_id,
+                        recurrence_group_id=recurrence_group_id,
+                    )
+                    if participants_ids:
+                        act.participantes.set(participants_ids)
+                    actividades_creadas.append(act)
+
+            # Por compatibilidad con la firma original (caso no-recurrente),
+            # `actividad` apunta a la primera/única instancia.
+            actividad = actividades_creadas[0]
 
             # Registrar en chat de grupo si programó actividad para compañero
+            # (sólo una vez por participante, no N veces por la serie).
             try:
                 from .views_grupos import registrar_accion_grupo
                 actor_nombre = request.user.get_full_name() or request.user.username
                 for p in actividad.participantes.all():
                     if p != request.user:
                         prop_nombre = p.get_full_name() or p.username
+                        sufijo = f' ({len(actividades_creadas)} fechas)' if len(actividades_creadas) > 1 else ''
                         registrar_accion_grupo(
                             request.user, p,
                             'programar_actividad',
-                            f'{actor_nombre} programó la actividad "{actividad.titulo}" para {prop_nombre}',
+                            f'{actor_nombre} programó la actividad "{actividad.titulo}"{sufijo} para {prop_nombre}',
                             objeto_tipo='actividad', objeto_id=actividad.id, objeto_titulo=actividad.titulo,
                         )
             except Exception:
@@ -2467,7 +2541,7 @@ def actividad_list_create(request):
             if actividad.oportunidad:
                 opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad, 'monto': float(actividad.oportunidad.monto or 0)}
 
-            return JsonResponse({
+            response_payload = {
                 'id': actividad.id,
                 'title': actividad.titulo,
                 'tipo': actividad.tipo_actividad,
@@ -2479,7 +2553,13 @@ def actividad_list_create(request):
                 'opportunity': opportunity_data,
                 'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
                 'es_mio': True,
-            }, status=201)
+            }
+            if len(actividades_creadas) > 1:
+                response_payload['recurrence_group_id'] = str(recurrence_group_id)
+                response_payload['count'] = len(actividades_creadas)
+                response_payload['ids'] = [a.id for a in actividades_creadas]
+
+            return JsonResponse(response_payload, status=201)
     
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     except Exception as e:

@@ -2470,6 +2470,17 @@ class Actividad(models.Model):
 
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
+    # Agrupador opcional para actividades creadas como serie recurrente.
+    # Cuando el usuario marca "Repetir" en el formulario, el backend crea
+    # N Actividad reales (una por cada fecha) y todas comparten este UUID.
+    # NULL para actividades creadas individualmente (sin recurrencia).
+    recurrence_group_id = models.UUIDField(
+        null=True, blank=True,
+        db_index=True,
+        verbose_name="ID de grupo de recurrencia",
+        help_text="Identificador compartido por todas las instancias de una actividad recurrente."
+    )
+
     class Meta:
         verbose_name = "Actividad del Calendario"
         verbose_name_plural = "Actividades del Calendario"
