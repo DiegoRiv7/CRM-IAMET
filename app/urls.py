@@ -174,6 +174,19 @@ urlpatterns = [
     path('api/clientes-potenciales/<int:potencial_id>/', views.api_cliente_potencial_detalle, name='api_cliente_potencial_detalle'),
     path('api/seleccionables/', views.api_seleccionables_oportunidad, name='api_seleccionables_oportunidad'),
     path('api/dashboard/prospectos/', views.api_dashboard_prospectos, name='api_dashboard_prospectos'),
+    # Drill-down sub-tablas Dashboard Prospectos
+    path('api/dashboard/prospectos/cliente/<int:cliente_id>/prospecciones/',
+         views.api_dashboard_prospectos_cliente_prospecciones,
+         name='api_dashboard_prospectos_cliente_prospecciones'),
+    path('api/dashboard/prospectos/cliente/<int:cliente_id>/oportunidades-convertidas/',
+         views.api_dashboard_prospectos_cliente_oportunidades,
+         name='api_dashboard_prospectos_cliente_oportunidades'),
+    path('api/dashboard/prospectos/ventas-detalle/',
+         views.api_dashboard_prospectos_ventas_detalle,
+         name='api_dashboard_prospectos_ventas_detalle'),
+    path('api/dashboard/prospectos/convertidos-detalle/',
+         views.api_dashboard_prospectos_convertidos_detalle,
+         name='api_dashboard_prospectos_convertidos_detalle'),
 
     # ── APIs Ingeniero / Programación ─────────────────────────────────────────
     path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),

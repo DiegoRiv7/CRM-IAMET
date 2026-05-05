@@ -6924,6 +6924,12 @@
                 box-shadow 0.35s cubic-bezier(0.23, 1, 0.32, 1);
     animation: ckChartFadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
+/* Charts del dashboard de prospección: un poco más altos para que las
+   labels de eje X (marcas, clientes) no se corten. */
+#ckChartsSectionProsp .ck-chart-card {
+    height: clamp(320px, 40vh, 460px);
+    padding-bottom: 18px;
+}
 .ck-chart-card:hover {
     transform: translateY(-3px) scale(1.008);
     box-shadow:
@@ -6947,6 +6953,113 @@
     text-align: left;
     border-bottom: 1px solid rgba(0,0,0,0.06);
 }
+/* Alineación consistente de columnas en tablas de drill-down */
+#ckDetalleSection th.ck-th--num,
+#ckDetalleSection td.ck-td--num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    padding-right: 18px;
+}
+#ckDetalleSection th.ck-th--text,
+#ckDetalleSection td.ck-td--text {
+    text-align: left;
+}
+#ckDetalleSection td.ck-td--idx {
+    color: #9CA3AF;
+    font-weight: 600;
+    position: relative;
+}
+#ckDetalleSection td.ck-td--cliente {
+    font-weight: 600;
+    color: #007AFF;
+}
+#ckDetalleSection td.ck-td--vendedor {
+    color: #6e6e73;
+    font-size: 0.78rem;
+}
+/* Filas clickeables */
+#ckDetalleSection tr.ck-prosp-row,
+#ckDetalleSection tr.ck-prosp-opp-row {
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+#ckDetalleSection tr.ck-prosp-row:hover,
+#ckDetalleSection tr.ck-prosp-opp-row:hover {
+    background: rgba(0,122,255,0.05);
+}
+#ckDetalleSection tr.ck-prosp-row.ck-row-active {
+    background: rgba(0,122,255,0.08);
+}
+#ckDetalleSection tr.ck-prosp-row.ck-row-active .ck-chev {
+    transform: rotate(90deg);
+}
+#ckDetalleSection .ck-chev {
+    display: inline-block;
+    margin-left: 6px;
+    color: #C7C7CC;
+    font-weight: 800;
+    font-size: 0.95rem;
+    transition: transform 0.18s ease;
+    line-height: 1;
+}
+
+/* Sub-tabla expandida (drill-down) */
+#ckDetalleSection tr.ck-row-expanded > td {
+    background: rgba(244, 244, 247, 0.65);
+    padding: 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+#ckDetalleSection .ck-sub-wrap {
+    padding: 10px 18px 14px 36px;
+    animation: ckSubFade 0.22s ease;
+}
+@keyframes ckSubFade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+#ckDetalleSection .ck-sub-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255,255,255,0.85);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+#ckDetalleSection .ck-sub-table thead th {
+    padding: 8px 12px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9CA3AF;
+    background: rgba(245,245,247,0.55);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+#ckDetalleSection .ck-sub-table tbody td {
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    color: #1F2937;
+    border-bottom: 1px solid rgba(0,0,0,0.035);
+}
+#ckDetalleSection .ck-sub-table tbody tr.ck-sub-row:hover {
+    background: rgba(0,122,255,0.04);
+}
+#ckDetalleSection .ck-row-loading {
+    padding: 18px;
+    color: #8E8E93;
+    font-size: 0.78rem;
+    font-style: italic;
+}
+#ckDetalleSection .ck-sub-empty {
+    padding: 12px 18px;
+    color: #8E8E93;
+    font-size: 0.78rem;
+    font-style: italic;
+    background: rgba(245,245,247,0.4);
+    border-radius: 8px;
+    margin: 6px 18px 10px 36px;
+}
+
 #ckDetalleSection td {
     padding: 10px 14px;
     font-size: 0.85rem;

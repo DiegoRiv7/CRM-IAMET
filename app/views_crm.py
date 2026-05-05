@@ -5278,3 +5278,217 @@ def api_dashboard_prospectos(request):
         'top_vendedores': top_vendedores,
     })
 
+
+# ─────────────────────────────────────────────────────────────────────────
+# Drill-down endpoints for Dashboard Prospectos (sub-tablas en cards)
+# ─────────────────────────────────────────────────────────────────────────
+
+def _dashboard_prosp_period_filters(request):
+    """Lee mes/anio/vendedores como en _api_data y devuelve filtros aplicables.
+
+    Retorna (anios_list, meses_list, vendedores_ids, es_supervisor, user).
+    - anios_list/meses_list pueden ser None (todos), o lista de ints.
+    """
+    user = request.user
+    es_supervisor = is_supervisor(user)
+    mes_filter = (request.GET.get('mes') or '').strip()
+    anio_filter = (request.GET.get('anio') or '').strip()
+
+    def _parse_ints(s):
+        if not s:
+            return None
+        try:
+            out = [int(x) for x in s.split(',') if x.strip().lstrip('-').isdigit()]
+            return out or None
+        except Exception:
+            return None
+
+    anios_list = _parse_ints(anio_filter)
+    meses_list = _parse_ints(mes_filter)
+    if anios_list is None:
+        from django.utils import timezone as _tz
+        anios_list = [_tz.now().year]
+
+    vendedores_filter = request.GET.get('vendedores', '')
+    vendedores_ids = [int(x) for x in vendedores_filter.split(',') if x.strip().isdigit()] if vendedores_filter else []
+
+    return anios_list, meses_list, vendedores_ids, es_supervisor, user
+
+
+def _dashboard_prosp_qs(request):
+    """Queryset de Prospecto con filtros mes/anio/vendedores aplicados."""
+    from .models import Prospecto
+    anios_list, meses_list, vendedores_ids, es_supervisor, user = _dashboard_prosp_period_filters(request)
+    qs = Prospecto.objects.select_related('cliente', 'usuario').filter(fecha_creacion__year__in=anios_list)
+    if meses_list is not None:
+        qs = qs.filter(fecha_creacion__month__in=meses_list)
+    if not es_supervisor:
+        gids = get_usuarios_visibles_ids(user)
+        if gids and len(gids) > 1:
+            qs = qs.filter(usuario_id__in=gids)
+        else:
+            qs = qs.filter(usuario=user)
+    elif vendedores_ids:
+        qs = qs.filter(usuario_id__in=vendedores_ids)
+    return qs
+
+
+def _dashboard_prosp_opps_qs(request):
+    """TodoItem queryset filtrado al periodo y origen prospección."""
+    anios_list, meses_list, vendedores_ids, es_supervisor, user = _dashboard_prosp_period_filters(request)
+    qs = TodoItem.objects.select_related('cliente', 'usuario').filter(prospecto_origen__isnull=False)
+    if anios_list is not None:
+        qs = qs.filter(anio_cierre__in=anios_list)
+    if meses_list is not None:
+        qs = qs.filter(mes_cierre__in=[str(m).zfill(2) for m in meses_list])
+    if not es_supervisor:
+        gids = get_usuarios_visibles_ids(user)
+        if gids and len(gids) > 1:
+            qs = qs.filter(usuario_id__in=gids)
+        else:
+            qs = qs.filter(usuario=user)
+    elif vendedores_ids:
+        qs = qs.filter(usuario_id__in=vendedores_ids)
+    return qs.distinct()
+
+
+_VENTA_ETAPAS = ('vendido', 'comprando', 'transito', 'entregado', 'facturado', 'cobrado')
+
+
+def _q_oportunidad_vendida():
+    cond = Q(probabilidad_cierre=100)
+    for k in _VENTA_ETAPAS:
+        cond |= Q(etapa_corta__icontains=k)
+    return cond
+
+
+_PROSP_ETAPA_LABEL = {
+    'identificado': 'Identificado',
+    'calificado': 'Calificado',
+    'reunion': 'Reunión',
+    'en_progreso': 'En Progreso',
+    'procesado': 'Procesado',
+    'cerrado_ganado': 'Ganado',
+    'cerrado_perdido': 'Perdido',
+}
+
+
+def _prosp_to_dict(p):
+    from django.utils import timezone as _tz
+    fc = p.fecha_creacion
+    fa = p.fecha_actualizacion
+    vendedor = ''
+    if p.usuario_id:
+        vendedor = (p.usuario.get_full_name() or p.usuario.username) if hasattr(p, 'usuario') and p.usuario else ''
+    return {
+        'id': p.id,
+        'nombre': p.nombre or '',
+        'producto': p.producto or '',
+        'etapa': p.etapa,
+        'etapa_label': _PROSP_ETAPA_LABEL.get(p.etapa, p.etapa),
+        'fecha_creacion': fc.strftime('%Y-%m-%d') if fc else '',
+        'fecha_actualizacion': fa.strftime('%Y-%m-%d') if fa else '',
+        'vendedor': vendedor,
+        'oportunidad_creada_id': p.oportunidad_creada_id,
+        'tipo_pipeline': p.tipo_pipeline or '',
+    }
+
+
+def _opp_to_dict(o):
+    cliente_nombre = ''
+    if o.cliente_id and o.cliente:
+        cliente_nombre = o.cliente.nombre_empresa or ''
+    vendedor = ''
+    if o.usuario_id and o.usuario:
+        vendedor = (o.usuario.get_full_name() or o.usuario.username) or ''
+    monto = o.monto or Decimal('0')
+    fc = o.fecha_creacion
+    return {
+        'id': o.id,
+        'descripcion': o.oportunidad or '',
+        'cliente': cliente_nombre,
+        'cliente_id': o.cliente_id,
+        'vendedor': vendedor,
+        'monto': float(monto),
+        'monto_fmt': '${:,.0f}'.format(monto),
+        'etapa': o.etapa_corta or '',
+        'producto': o.producto or '',
+        'fecha_creacion': fc.strftime('%Y-%m-%d') if fc else '',
+        'probabilidad_cierre': o.probabilidad_cierre or 0,
+    }
+
+
+@login_required
+def api_dashboard_prospectos_cliente_prospecciones(request, cliente_id):
+    """Lista de prospecciones de un cliente en el periodo (drill-down).
+
+    Devuelve {'rows': [{id, nombre, etapa, etapa_label, fecha_creacion,
+    fecha_actualizacion, vendedor, producto, oportunidad_creada_id}]}.
+    """
+    qs = _dashboard_prosp_qs(request).filter(cliente_id=cliente_id).order_by('-fecha_actualizacion')
+    rows = [_prosp_to_dict(p) for p in qs]
+    return JsonResponse({'rows': rows, 'count': len(rows)})
+
+
+@login_required
+def api_dashboard_prospectos_cliente_oportunidades(request, cliente_id):
+    """Lista de oportunidades de un cliente que tienen prospecto_origen (drill-down).
+
+    Solo devuelve las que provienen de prospección (Prospecto.oportunidad_creada).
+    """
+    qs = _dashboard_prosp_opps_qs(request).filter(cliente_id=cliente_id).order_by('-fecha_creacion')
+    rows = [_opp_to_dict(o) for o in qs]
+    return JsonResponse({'rows': rows, 'count': len(rows)})
+
+
+@login_required
+def api_dashboard_prospectos_ventas_detalle(request):
+    """Lista de oportunidades VENDIDAS originadas de prospección.
+
+    Para el card "Ventas Generadas". Devuelve listado plano con cliente.
+    """
+    qs = _dashboard_prosp_opps_qs(request).filter(_q_oportunidad_vendida()).order_by('-fecha_creacion')
+    rows = [_opp_to_dict(o) for o in qs]
+    total = sum((r['monto'] for r in rows), 0.0)
+    return JsonResponse({
+        'rows': rows,
+        'count': len(rows),
+        'total_monto': total,
+        'total_fmt': '${:,.0f}'.format(total),
+    })
+
+
+@login_required
+def api_dashboard_prospectos_convertidos_detalle(request):
+    """Lista de clientes (con sus oportunidades) convertidos desde prospectos en el periodo.
+
+    Un cliente "convertido" aquí = cliente con prospectos en el periodo y al menos
+    un Prospecto.etapa = 'cerrado_ganado'. Para cada uno, listar sus oportunidades
+    que provienen de prospecto.
+    """
+    qs_p = _dashboard_prosp_qs(request).filter(etapa='cerrado_ganado')
+    # Agrupar por cliente
+    by_cli = {}
+    for p in qs_p:
+        if not p.cliente_id:
+            continue
+        if p.cliente_id not in by_cli:
+            by_cli[p.cliente_id] = {
+                'cliente_id': p.cliente_id,
+                'cliente': p.cliente.nombre_empresa if p.cliente else '',
+                'num_ganados': 0,
+                'oportunidades': [],
+            }
+        by_cli[p.cliente_id]['num_ganados'] += 1
+
+    # Adjuntar oportunidades del cliente que vienen de prospección
+    if by_cli:
+        opps = _dashboard_prosp_opps_qs(request).filter(cliente_id__in=list(by_cli.keys())).order_by('-fecha_creacion')
+        for o in opps:
+            if o.cliente_id in by_cli:
+                by_cli[o.cliente_id]['oportunidades'].append(_opp_to_dict(o))
+
+    rows = sorted(by_cli.values(), key=lambda r: r['cliente'])
+    return JsonResponse({'rows': rows, 'count': len(rows)})
+
+

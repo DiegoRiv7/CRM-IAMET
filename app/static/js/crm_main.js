@@ -1660,12 +1660,18 @@
 
                 var chartsProsp = document.getElementById('ckChartsSectionProsp');
 
+                // Si hay un drill-down activo (detalle visible) NO lo escondas — esto
+                // se llama desde refreshes periódicos y borraría la tabla del usuario.
+                var detalleOpen = !!(window._ckDetalleOpen) && detalle && detalle.style.display !== 'none';
+
                 if (mode === 'oportunidades') {
                     if (kpiOpp) kpiOpp.style.display = 'grid';
                     if (kpiProsp) kpiProsp.style.display = 'none';
-                    if (charts) { charts.style.display = ''; charts.style.opacity = '1'; }
-                    if (chartsProsp) chartsProsp.style.display = 'none';
-                    if (detalle) detalle.style.display = 'none';
+                    if (!detalleOpen) {
+                        if (charts) { charts.style.display = ''; charts.style.opacity = '1'; }
+                        if (chartsProsp) chartsProsp.style.display = 'none';
+                        if (detalle) detalle.style.display = 'none';
+                    }
                     // Restore footer from facturado data
                     var footerLeft = document.getElementById('footerLeft');
                     var footerRight = document.getElementById('footerRight');
@@ -1676,11 +1682,16 @@
                 } else {
                     if (kpiOpp) kpiOpp.style.display = 'none';
                     if (kpiProsp) kpiProsp.style.display = 'grid';
-                    if (charts) charts.style.display = 'none';
-                    if (chartsProsp) chartsProsp.style.display = 'block';
-                    if (detalle) detalle.style.display = 'none';
-                    _renderProspKPIs();
-                    _renderProspCharts();
+                    if (!detalleOpen) {
+                        if (charts) charts.style.display = 'none';
+                        if (chartsProsp) chartsProsp.style.display = 'block';
+                        if (detalle) detalle.style.display = 'none';
+                        _renderProspKPIs();
+                        _renderProspCharts();
+                    } else {
+                        // Detalle abierto: refrescar KPIs (no charts, no detalle).
+                        _renderProspKPIs();
+                    }
                     // Update footer for prospeccion
                     var footerLeft = document.getElementById('footerLeft');
                     var footerRight = document.getElementById('footerRight');
@@ -2151,6 +2162,33 @@
             if (_prospChartInstances[id]) { _prospChartInstances[id].destroy(); delete _prospChartInstances[id]; }
         }
 
+        // Render an "empty state" overlay on a canvas card when there's no data.
+        // Hides the canvas and shows a centered message inside the .ck-chart-card.
+        function _setProspChartEmpty(canvasId, message) {
+            var c = document.getElementById(canvasId);
+            if (!c) return;
+            var card = c.closest ? c.closest('.ck-chart-card') : null;
+            if (!card) return;
+            // Limpiar empty-state previo
+            var prev = card.querySelector('.ck-empty-state');
+            if (prev) prev.remove();
+            c.style.display = 'none';
+            var div = document.createElement('div');
+            div.className = 'ck-empty-state';
+            div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:#86868B;font-size:0.78rem;font-weight:500;text-align:center;padding:20px;';
+            div.textContent = message || 'Sin datos en el periodo';
+            card.appendChild(div);
+        }
+        function _clearProspChartEmpty(canvasId) {
+            var c = document.getElementById(canvasId);
+            if (!c) return;
+            var card = c.closest ? c.closest('.ck-chart-card') : null;
+            if (!card) return;
+            var prev = card.querySelector('.ck-empty-state');
+            if (prev) prev.remove();
+            c.style.display = '';
+        }
+
         function _renderProspCharts() {
             if (typeof Chart === 'undefined') return;
             var data = _clientesPanelData.prospeccion;
@@ -2173,24 +2211,39 @@
                 var marcas = data.chart_marcas || {};
                 var mLabels = Object.keys(marcas).sort(function(a,b){ return marcas[b]-marcas[a]; });
                 var mValues = mLabels.map(function(l){ return marcas[l]; });
-                var c1_2d = c1.getContext('2d');
-                var g1 = c1_2d.createLinearGradient(0, 0, 0, 280);
-                g1.addColorStop(0, 'rgba(0,122,255,0.85)');
-                g1.addColorStop(1, 'rgba(88,176,255,0.55)');
-                _prospChartInstances['ckChartProspMarca'] = new Chart(c1_2d, {
-                    type: 'bar',
-                    data: { labels: mLabels, datasets: [{ label: 'Prospectos', data: mValues, backgroundColor: g1, borderRadius: 10, barPercentage: 0.5 }] },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        animation: sharedAnimation,
-                        plugins: { legend: { display: false }, tooltip: sharedTooltip },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
-                            x: { grid: { display: false }, ticks: { font: { size: 9, weight: '600' }, color: '#1D1D1F', maxRotation: 35 } }
-                        },
-                        layout: { padding: { bottom: 5 } }
-                    }
-                });
+                if (!mLabels.length) {
+                    _setProspChartEmpty('ckChartProspMarca', 'Sin prospectos en el periodo');
+                } else {
+                    _clearProspChartEmpty('ckChartProspMarca');
+                    var c1_2d = c1.getContext('2d');
+                    var g1 = c1_2d.createLinearGradient(0, 0, 0, 280);
+                    g1.addColorStop(0, 'rgba(0,122,255,0.85)');
+                    g1.addColorStop(1, 'rgba(88,176,255,0.55)');
+                    _prospChartInstances['ckChartProspMarca'] = new Chart(c1_2d, {
+                        type: 'bar',
+                        data: { labels: mLabels, datasets: [{ label: 'Prospectos', data: mValues, backgroundColor: g1, borderRadius: 10, barPercentage: 0.5 }] },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            animation: sharedAnimation,
+                            plugins: { legend: { display: false }, tooltip: sharedTooltip },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: {
+                                        font: { size: 10, weight: '600' },
+                                        color: '#1D1D1F',
+                                        maxRotation: 0,
+                                        minRotation: 0,
+                                        autoSkip: false
+                                    }
+                                }
+                            },
+                            // Padding inferior amplio para que no se corten las labels.
+                            layout: { padding: { bottom: 24, top: 4 } }
+                        }
+                    });
+                }
             }
 
             // ── Chart 2: Tasa de Contacto (enviados vs respondidos, grouped bar) ──
@@ -2200,36 +2253,42 @@
                 var tEnviados = data.total_envios || 0;
                 var tRespondidos = data.total_respondidos || 0;
                 var tFavorables = data.total_favorables || 0;
-                var c2_2d = c2.getContext('2d');
-                var gEnv = c2_2d.createLinearGradient(0, 0, 0, 280);
-                gEnv.addColorStop(0, 'rgba(0,122,255,0.85)'); gEnv.addColorStop(1, 'rgba(88,176,255,0.55)');
-                var gResp = c2_2d.createLinearGradient(0, 0, 0, 280);
-                gResp.addColorStop(0, 'rgba(52,199,89,0.85)'); gResp.addColorStop(1, 'rgba(52,199,89,0.45)');
-                var gFav = c2_2d.createLinearGradient(0, 0, 0, 280);
-                gFav.addColorStop(0, 'rgba(255,149,0,0.85)'); gFav.addColorStop(1, 'rgba(255,149,0,0.45)');
-                _prospChartInstances['ckChartProspFunnel'] = new Chart(c2_2d, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Enviados', 'Respondidos', 'Favorables'],
-                        datasets: [{
-                            data: [tEnviados, tRespondidos, tFavorables],
-                            backgroundColor: [gEnv, gResp, gFav],
-                            borderRadius: 10, barPercentage: 0.45
-                        }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        animation: sharedAnimation,
-                        plugins: {
-                            legend: { display: false }, tooltip: sharedTooltip,
-                            datalabels: false
+                if (!tEnviados && !tRespondidos && !tFavorables) {
+                    _setProspChartEmpty('ckChartProspFunnel', 'Sin campañas enviadas en el periodo');
+                } else {
+                    _clearProspChartEmpty('ckChartProspFunnel');
+                    var c2_2d = c2.getContext('2d');
+                    var gEnv = c2_2d.createLinearGradient(0, 0, 0, 280);
+                    gEnv.addColorStop(0, 'rgba(0,122,255,0.85)'); gEnv.addColorStop(1, 'rgba(88,176,255,0.55)');
+                    var gResp = c2_2d.createLinearGradient(0, 0, 0, 280);
+                    gResp.addColorStop(0, 'rgba(52,199,89,0.85)'); gResp.addColorStop(1, 'rgba(52,199,89,0.45)');
+                    var gFav = c2_2d.createLinearGradient(0, 0, 0, 280);
+                    gFav.addColorStop(0, 'rgba(255,149,0,0.85)'); gFav.addColorStop(1, 'rgba(255,149,0,0.45)');
+                    _prospChartInstances['ckChartProspFunnel'] = new Chart(c2_2d, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Enviados', 'Respondidos', 'Favorables'],
+                            datasets: [{
+                                data: [tEnviados, tRespondidos, tFavorables],
+                                backgroundColor: [gEnv, gResp, gFav],
+                                borderRadius: 10, barPercentage: 0.45
+                            }]
                         },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
-                            x: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' }, color: '#1D1D1F' } }
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            animation: sharedAnimation,
+                            plugins: {
+                                legend: { display: false }, tooltip: sharedTooltip,
+                                datalabels: false
+                            },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
+                                x: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' }, color: '#1D1D1F' } }
+                            },
+                            layout: { padding: { bottom: 12, top: 4 } }
                         }
-                    }
-                });
+                    });
+                }
             }
 
             // ── Chart 3: Top Clientes (vertical bar with client names on x-axis) ──
@@ -2238,6 +2297,7 @@
             if (c3) {
                 var pRows = (data.rows||[]).filter(function(r){ return r.num_prospectos>0; }).sort(function(a,b){ return b.num_prospectos-a.num_prospectos; }).slice(0,5);
                 if (pRows.length) {
+                    _clearProspChartEmpty('ckChartProspTopClientes');
                     var c3_2d = c3.getContext('2d');
                     var g3 = c3_2d.createLinearGradient(0, 0, 0, 280);
                     g3.addColorStop(0, 'rgba(0,122,255,0.85)'); g3.addColorStop(1, 'rgba(88,176,255,0.55)');
@@ -2260,11 +2320,13 @@
                             },
                             scales: {
                                 y: { beginAtZero: true, ticks: { stepSize: 1, color: '#86868B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false } },
-                                x: { grid: { display: false }, ticks: { font: { size: 9, weight: '600' }, color: '#1D1D1F', maxRotation: 35, minRotation: 0 } }
+                                x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#1D1D1F', maxRotation: 0, minRotation: 0, autoSkip: false } }
                             },
-                            layout: { padding: { bottom: 10 } }
+                            layout: { padding: { bottom: 24, top: 4 } }
                         }
                     });
+                } else {
+                    _setProspChartEmpty('ckChartProspTopClientes', 'Sin clientes con prospectos en el periodo');
                 }
             }
 
@@ -2279,6 +2341,11 @@
                 if (et.cerrado_perdido) perdidos = et.cerrado_perdido;
                 var activos = Math.max(0, totalP - ganados - perdidos);
                 var pct = totalP>0 ? Math.round(ganados/totalP*100) : 0;
+                if (totalP === 0) {
+                    _setProspChartEmpty('ckChartProspConversion', 'Sin prospectos en el periodo');
+                    return; // último chart de la función — early-out OK
+                }
+                _clearProspChartEmpty('ckChartProspConversion');
                 var centerPlugin = {
                     id: 'prospCenter',
                     afterDraw: function(chart) {
@@ -2312,9 +2379,21 @@
                             legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, padding: 16, usePointStyle: true, font: { size: 11, weight: '600' }, color: '#3C3C43' } },
                             tooltip: sharedTooltip
                         },
-                        layout: { padding: { bottom: 5 } }
+                        layout: { padding: { bottom: 5 } },
+                        onClick: function(evt, elements) {
+                            // Click en el slice "Convertidos" (idx 0) o en el centro abre detalle.
+                            if (elements && elements.length) {
+                                var idx = elements[0].index;
+                                if (idx !== 0) return; // solo "Convertidos"
+                            }
+                            if (typeof window.ckAbrirDetalle === 'function') {
+                                window.ckAbrirDetalle('prosp_convertidos');
+                            }
+                        }
                     }
                 });
+                // Hover cursor pointer encima del chart
+                c4.style.cursor = 'pointer';
             }
         } // end _renderProspCharts
 
@@ -2566,6 +2645,8 @@
 
         window.ckAbrirDesgloseFacturacion = function () {
             // Use inline detail section (same as other KPIs)
+            window._ckDetalleOpen = true;
+            window._ckDetalleTipo = 'fact_desglose';
             var charts = document.getElementById('ckChartsSection');
             var detalle = document.getElementById('ckDetalleSection');
             if (charts) { charts.style.opacity = '0'; charts.style.transition = 'opacity 0.2s'; setTimeout(function(){ charts.style.display = 'none'; }, 200); }
@@ -2646,6 +2727,8 @@
         };
 
         window.ckAbrirDesgloseCobrado = function () {
+            window._ckDetalleOpen = true;
+            window._ckDetalleTipo = 'cob_desglose';
             var charts = document.getElementById('ckChartsSection');
             var detalle = document.getElementById('ckDetalleSection');
             if (charts) { charts.style.opacity = '0'; charts.style.transition = 'opacity 0.2s'; setTimeout(function(){ charts.style.display = 'none'; }, 200); }
@@ -3078,6 +3161,9 @@
             var charts = document.getElementById('ckChartsSection');
             var detalle = document.getElementById('ckDetalleSection');
             if (!detalle) return;
+            // Marcar drill-down abierto para que el refresh periódico no clobber-ee
+            window._ckDetalleOpen = true;
+            window._ckDetalleTipo = tipo;
 
             // Fade out charts (both oportunidades and prospeccion)
             if (charts) {
@@ -3141,39 +3227,133 @@
             else if (tipo === 'prosp_generadas') {
                 var titulo = document.getElementById('ckDetalleTitulo');
                 if (titulo) titulo.textContent = 'Prospecciones Generadas por Cliente';
-                if (head) head.innerHTML = '<th class="px-2 py-3 text-left" style="width:5%">#</th><th class="px-2 py-3 text-left" style="width:35%">Cliente</th><th class="px-2 py-3 text-left" style="width:20%">Vendedor</th><th class="py-3 pr-2 text-right" style="width:20%">Campañas</th><th class="py-3 pr-2 text-right" style="width:20%">Prospecciones</th>';
+                if (head) head.innerHTML =
+                    '<th class="ck-th--num" style="width:5%;">#</th>' +
+                    '<th class="ck-th--text" style="width:30%;">Cliente</th>' +
+                    '<th class="ck-th--text" style="width:20%;">Vendedor</th>' +
+                    '<th class="ck-th--num" style="width:20%;">Campañas</th>' +
+                    '<th class="ck-th--num" style="width:25%;">Prospecciones</th>';
                 var pRows = ((_clientesPanelData.prospeccion || {}).rows || []).filter(function(r) { return r.num_prospectos > 0 || r.num_campanas > 0; });
-                if (tbody) tbody.innerHTML = pRows.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>' : pRows.map(function(r, i) {
-                    return '<tr class="border-b border-gray-50 hover:bg-blue-50/30"><td class="px-2 py-3 text-gray-400 text-xs">' + (i+1) + '</td><td class="px-2 py-3 font-semibold text-gray-800 text-xs">' + r.cliente + '</td><td class="px-2 py-3 text-gray-600 text-xs">' + r.vendedor + '</td><td class="py-3 pr-2 text-right font-bold text-orange-500 text-sm">' + r.num_campanas + '</td><td class="py-3 pr-2 text-right font-black text-purple-600 text-sm">' + r.num_prospectos + '</td></tr>';
-                }).join('');
-                rows = pRows; // prevent "no data" fallback below
+                if (tbody) tbody.innerHTML = pRows.length === 0
+                    ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>'
+                    : pRows.map(function(r, i) {
+                        return '<tr class="ck-prosp-row" data-prosp-tipo="generadas" data-cliente-id="' + (r.cliente_id || '') + '" data-cliente-nombre="' + (r.cliente || '').replace(/"/g, '&quot;') + '">' +
+                            '<td class="ck-td--num ck-td--idx">' + (i+1) + '<span class="ck-chev">›</span></td>' +
+                            '<td class="ck-td--text ck-td--cliente">' + r.cliente + '</td>' +
+                            '<td class="ck-td--text ck-td--vendedor">' + (r.vendedor || '') + '</td>' +
+                            '<td class="ck-td--num" style="color:#FF9500;font-weight:700;">' + r.num_campanas + '</td>' +
+                            '<td class="ck-td--num" style="color:#7C3AED;font-weight:800;">' + r.num_prospectos + '</td>' +
+                        '</tr>';
+                    }).join('');
+                rows = pRows;
             }
             else if (tipo === 'prosp_opps') {
                 var titulo = document.getElementById('ckDetalleTitulo');
                 if (titulo) titulo.textContent = 'Oportunidades desde Prospección';
-                if (head) head.innerHTML = '<th class="px-2 py-3 text-left" style="width:5%">#</th><th class="px-2 py-3 text-left" style="width:30%">Cliente</th><th class="py-3 pr-2 text-right" style="width:20%">Prospectos</th><th class="py-3 pr-2 text-right" style="width:20%">Convertidas</th><th class="py-3 pr-2 text-right" style="width:25%">% Conversión</th>';
+                if (head) head.innerHTML =
+                    '<th class="ck-th--num" style="width:5%;">#</th>' +
+                    '<th class="ck-th--text" style="width:35%;">Cliente</th>' +
+                    '<th class="ck-th--num" style="width:20%;">Prospectos</th>' +
+                    '<th class="ck-th--num" style="width:20%;">Convertidas</th>' +
+                    '<th class="ck-th--num" style="width:20%;">% Conversión</th>';
                 var pRows = ((_clientesPanelData.prospeccion || {}).rows || []).filter(function(r) { return r.num_prospectos > 0; });
-                if (tbody) tbody.innerHTML = pRows.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>' : pRows.map(function(r, i) {
-                    var pct = r.num_prospectos > 0 ? Math.round(r.num_ganados / r.num_prospectos * 100) : 0;
-                    return '<tr class="border-b border-gray-50 hover:bg-blue-50/30"><td class="px-2 py-3 text-gray-400 text-xs">' + (i+1) + '</td><td class="px-2 py-3 font-semibold text-gray-800 text-xs">' + r.cliente + '</td><td class="py-3 pr-2 text-right text-sm">' + r.num_prospectos + '</td><td class="py-3 pr-2 text-right font-bold text-green-600 text-sm">' + r.num_ganados + '</td><td class="py-3 pr-2 text-right font-bold text-sm">' + pct + '%</td></tr>';
-                }).join('');
+                if (tbody) tbody.innerHTML = pRows.length === 0
+                    ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>'
+                    : pRows.map(function(r, i) {
+                        var pct = r.num_prospectos > 0 ? Math.round(r.num_ganados / r.num_prospectos * 100) : 0;
+                        return '<tr class="ck-prosp-row" data-prosp-tipo="opps" data-cliente-id="' + (r.cliente_id || '') + '" data-cliente-nombre="' + (r.cliente || '').replace(/"/g, '&quot;') + '">' +
+                            '<td class="ck-td--num ck-td--idx">' + (i+1) + '<span class="ck-chev">›</span></td>' +
+                            '<td class="ck-td--text ck-td--cliente">' + r.cliente + '</td>' +
+                            '<td class="ck-td--num">' + r.num_prospectos + '</td>' +
+                            '<td class="ck-td--num" style="color:#16A34A;font-weight:700;">' + r.num_ganados + '</td>' +
+                            '<td class="ck-td--num" style="font-weight:700;">' + pct + '%</td>' +
+                        '</tr>';
+                    }).join('');
                 rows = pRows;
             }
             else if (tipo === 'prosp_ventas') {
                 var titulo = document.getElementById('ckDetalleTitulo');
                 if (titulo) titulo.textContent = 'Ventas Generadas desde Prospección';
-                var pData = _clientesPanelData.prospeccion || {};
-                if (head) head.innerHTML = '<th class="px-2 py-3 text-left">Métrica</th><th class="py-3 pr-2 text-right">Valor</th>';
-                if (tbody) tbody.innerHTML = '<tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Monto total vendido desde prospecciones</td><td class="py-3 pr-2 text-right font-black text-green-600 text-lg">$' + (pData.ventas_generadas || '0') + '</td></tr><tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Oportunidades originadas de prospectos</td><td class="py-3 pr-2 text-right font-bold text-blue-600 text-lg">' + (pData.total_opps_from_prosp || 0) + '</td></tr><tr><td class="px-2 py-3 text-gray-800 font-semibold">Prospectos convertidos (ganados)</td><td class="py-3 pr-2 text-right font-bold text-purple-600 text-lg">' + (pData.total_ganados || 0) + '</td></tr>';
-                rows = [1]; // prevent "no data" fallback
+                if (head) head.innerHTML =
+                    '<th class="ck-th--num" style="width:5%;">#</th>' +
+                    '<th class="ck-th--text" style="width:35%;">Oportunidad</th>' +
+                    '<th class="ck-th--text" style="width:25%;">Cliente</th>' +
+                    '<th class="ck-th--text" style="width:15%;">Vendedor</th>' +
+                    '<th class="ck-th--num" style="width:20%;">Monto</th>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
+                // Fetch desde nuevo endpoint
+                var url = '/app/api/dashboard/prospectos/ventas-detalle/?' + _ckPeriodQS();
+                fetch(url, { credentials: 'same-origin' })
+                    .then(function(r){ return r.json(); })
+                    .then(function(resp) {
+                        var vrows = (resp && resp.rows) || [];
+                        if (!tbody) return;
+                        if (!vrows.length) {
+                            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay ventas desde prospección en el periodo</td></tr>';
+                            return;
+                        }
+                        tbody.innerHTML = vrows.map(function(r, i) {
+                            return '<tr class="ck-prosp-opp-row" data-oportunidad-id="' + r.id + '">' +
+                                '<td class="ck-td--num ck-td--idx">' + (i+1) + '</td>' +
+                                '<td class="ck-td--text" style="font-weight:600;color:#007AFF;">' + (r.descripcion || '—') + '</td>' +
+                                '<td class="ck-td--text">' + (r.cliente || '') + '</td>' +
+                                '<td class="ck-td--text" style="color:#6e6e73;">' + (r.vendedor || '') + '</td>' +
+                                '<td class="ck-td--num" style="color:#16A34A;font-weight:800;">' + (r.monto_fmt || '$0') + '</td>' +
+                            '</tr>';
+                        }).join('') + '<tr style="border-top:2px solid #e5e7eb;font-weight:700;background:#FAFAFA;">' +
+                            '<td></td><td colspan="3" class="ck-td--text" style="font-weight:700;">Total</td>' +
+                            '<td class="ck-td--num" style="color:#16A34A;font-weight:900;">' + (resp.total_fmt || '$0') + '</td>' +
+                        '</tr>';
+                    })
+                    .catch(function() {
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#FF3B30">Error al cargar.</td></tr>';
+                    });
+                rows = [1];
             }
             else if (tipo === 'prosp_tasa') {
                 var titulo = document.getElementById('ckDetalleTitulo');
                 if (titulo) titulo.textContent = 'Tasa de Contacto — Campañas';
                 var pData = _clientesPanelData.prospeccion || {};
-                if (head) head.innerHTML = '<th class="px-2 py-3 text-left">Métrica</th><th class="py-3 pr-2 text-right">Valor</th>';
-                if (tbody) tbody.innerHTML = '<tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Campañas enviadas</td><td class="py-3 pr-2 text-right font-bold text-blue-600 text-lg">' + (pData.total_envios || 0) + '</td></tr><tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Respondidas</td><td class="py-3 pr-2 text-right font-bold text-green-600 text-lg">' + (pData.total_respondidos || 0) + '</td></tr><tr class="border-b border-gray-50"><td class="px-2 py-3 text-gray-800 font-semibold">Respuestas favorables</td><td class="py-3 pr-2 text-right font-bold text-green-700 text-lg">' + (pData.total_favorables || 0) + '</td></tr><tr><td class="px-2 py-3 text-gray-800 font-semibold">Tasa de contacto</td><td class="py-3 pr-2 text-right font-black text-purple-600 text-xl">' + (pData.tasa_contacto || 0) + '%</td></tr>';
-                rows = [1]; // prevent "no data" fallback
+                if (head) head.innerHTML = '<th class="ck-th--text">Métrica</th><th class="ck-th--num">Valor</th>';
+                if (tbody) tbody.innerHTML =
+                    '<tr><td class="ck-td--text" style="font-weight:600;">Campañas enviadas</td><td class="ck-td--num" style="color:#2563EB;font-weight:700;font-size:1rem;">' + (pData.total_envios || 0) + '</td></tr>' +
+                    '<tr><td class="ck-td--text" style="font-weight:600;">Respondidas</td><td class="ck-td--num" style="color:#16A34A;font-weight:700;font-size:1rem;">' + (pData.total_respondidos || 0) + '</td></tr>' +
+                    '<tr><td class="ck-td--text" style="font-weight:600;">Respuestas favorables</td><td class="ck-td--num" style="color:#15803D;font-weight:700;font-size:1rem;">' + (pData.total_favorables || 0) + '</td></tr>' +
+                    '<tr><td class="ck-td--text" style="font-weight:700;">Tasa de contacto</td><td class="ck-td--num" style="color:#7C3AED;font-weight:900;font-size:1.15rem;">' + (pData.tasa_contacto || 0) + '%</td></tr>';
+                rows = [1];
+            }
+            else if (tipo === 'prosp_convertidos') {
+                var titulo = document.getElementById('ckDetalleTitulo');
+                if (titulo) titulo.textContent = 'Clientes Convertidos desde Prospección';
+                if (head) head.innerHTML =
+                    '<th class="ck-th--num" style="width:5%;">#</th>' +
+                    '<th class="ck-th--text" style="width:50%;">Cliente</th>' +
+                    '<th class="ck-th--num" style="width:20%;">Prospectos Ganados</th>' +
+                    '<th class="ck-th--num" style="width:25%;">Oportunidades</th>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
+                var url2 = '/app/api/dashboard/prospectos/convertidos-detalle/?' + _ckPeriodQS();
+                fetch(url2, { credentials: 'same-origin' })
+                    .then(function(r){ return r.json(); })
+                    .then(function(resp) {
+                        var crows = (resp && resp.rows) || [];
+                        if (!tbody) return;
+                        if (!crows.length) {
+                            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:#8e8e93">No hay clientes convertidos en el periodo</td></tr>';
+                            return;
+                        }
+                        tbody.innerHTML = crows.map(function(r, i) {
+                            return '<tr class="ck-prosp-row" data-prosp-tipo="opps" data-cliente-id="' + (r.cliente_id || '') + '" data-cliente-nombre="' + (r.cliente || '').replace(/"/g, '&quot;') + '">' +
+                                '<td class="ck-td--num ck-td--idx">' + (i+1) + '<span class="ck-chev">›</span></td>' +
+                                '<td class="ck-td--text ck-td--cliente">' + (r.cliente || '') + '</td>' +
+                                '<td class="ck-td--num" style="color:#16A34A;font-weight:800;">' + (r.num_ganados || 0) + '</td>' +
+                                '<td class="ck-td--num" style="color:#2563EB;font-weight:700;">' + ((r.oportunidades || []).length) + '</td>' +
+                            '</tr>';
+                        }).join('');
+                    })
+                    .catch(function() {
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:#FF3B30">Error al cargar.</td></tr>';
+                    });
+                rows = [1];
             }
 
             if (rows.length === 0 && tbody) {
@@ -3182,6 +3362,9 @@
         };
 
         window.ckVolverGraficas = function() {
+            // Cerrar drill-down — permitir refrescos periódicos otra vez
+            window._ckDetalleOpen = false;
+            window._ckDetalleTipo = null;
             var detalle = document.getElementById('ckDetalleSection');
             if (detalle) {
                 detalle.style.transition = 'opacity 0.2s';
@@ -3204,6 +3387,170 @@
                 }
             }
         };
+
+        // ─── Helpers de drill-down dashboard prospectos ────────────────────────
+        function _ckPeriodQS() {
+            var params = new URLSearchParams(window.location.search);
+            var mes = params.get('mes') || currentMes || '';
+            var anio = params.get('anio') || currentAnio || '';
+            var vendedores = (typeof getVendedoresParam === 'function') ? getVendedoresParam() : '';
+            var qs = 'mes=' + encodeURIComponent(mes) + '&anio=' + encodeURIComponent(anio);
+            if (vendedores) qs += '&vendedores=' + encodeURIComponent(vendedores);
+            return qs;
+        }
+
+        function _escapeHtmlSimple(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        var _PROSP_ETAPA_COLOR = {
+            'identificado': '#8E8E93', 'calificado': '#007AFF', 'reunion': '#92400E',
+            'en_progreso': '#FF9500', 'procesado': '#34C759', 'cerrado_ganado': '#30D158', 'cerrado_perdido': '#FF3B30'
+        };
+
+        function _renderSubProspecciones(items) {
+            if (!items || !items.length) {
+                return '<div class="ck-sub-empty">Sin prospecciones para este cliente en el periodo</div>';
+            }
+            var html = '<div class="ck-sub-wrap"><table class="ck-sub-table"><thead><tr>' +
+                '<th class="ck-th--text">Prospección</th>' +
+                '<th class="ck-th--text">Vendedor</th>' +
+                '<th class="ck-th--text">Producto</th>' +
+                '<th class="ck-th--text">Etapa</th>' +
+                '<th class="ck-th--num">Creado</th>' +
+                '<th class="ck-th--num">Actualizado</th>' +
+            '</tr></thead><tbody>';
+            items.forEach(function(p) {
+                var col = _PROSP_ETAPA_COLOR[p.etapa] || '#8E8E93';
+                html += '<tr class="ck-sub-row" data-prospecto-id="' + p.id + '" style="cursor:pointer;">' +
+                    '<td class="ck-td--text" style="font-weight:600;color:#1D1D1F;">' + _escapeHtmlSimple(p.nombre || '—') + (p.oportunidad_creada_id ? ' <span style="margin-left:4px;font-size:9px;padding:1px 5px;border-radius:4px;background:#34C75922;color:#16A34A;font-weight:700;">OPP</span>' : '') + '</td>' +
+                    '<td class="ck-td--text" style="color:#6e6e73;">' + _escapeHtmlSimple(p.vendedor || '') + '</td>' +
+                    '<td class="ck-td--text">' + _escapeHtmlSimple(p.producto || '') + '</td>' +
+                    '<td class="ck-td--text"><span style="background:' + col + '22;color:' + col + ';padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:700;white-space:nowrap;">' + _escapeHtmlSimple(p.etapa_label || '') + '</span></td>' +
+                    '<td class="ck-td--num" style="color:#86868B;">' + _escapeHtmlSimple(p.fecha_creacion || '') + '</td>' +
+                    '<td class="ck-td--num" style="color:#86868B;">' + _escapeHtmlSimple(p.fecha_actualizacion || '') + '</td>' +
+                '</tr>';
+            });
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function _renderSubOportunidades(items) {
+            if (!items || !items.length) {
+                return '<div class="ck-sub-empty">Sin oportunidades convertidas para este cliente en el periodo</div>';
+            }
+            var html = '<div class="ck-sub-wrap"><table class="ck-sub-table"><thead><tr>' +
+                '<th class="ck-th--text">Oportunidad</th>' +
+                '<th class="ck-th--text">Vendedor</th>' +
+                '<th class="ck-th--text">Producto</th>' +
+                '<th class="ck-th--text">Etapa</th>' +
+                '<th class="ck-th--num">Creado</th>' +
+                '<th class="ck-th--num">Monto</th>' +
+            '</tr></thead><tbody>';
+            items.forEach(function(o) {
+                html += '<tr class="ck-sub-row" data-oportunidad-id="' + o.id + '" style="cursor:pointer;">' +
+                    '<td class="ck-td--text" style="font-weight:600;color:#007AFF;">' + _escapeHtmlSimple(o.descripcion || '—') + '</td>' +
+                    '<td class="ck-td--text" style="color:#6e6e73;">' + _escapeHtmlSimple(o.vendedor || '') + '</td>' +
+                    '<td class="ck-td--text">' + _escapeHtmlSimple(o.producto || '') + '</td>' +
+                    '<td class="ck-td--text" style="color:#3C3C43;font-size:10px;">' + _escapeHtmlSimple(o.etapa || '—') + '</td>' +
+                    '<td class="ck-td--num" style="color:#86868B;">' + _escapeHtmlSimple(o.fecha_creacion || '') + '</td>' +
+                    '<td class="ck-td--num" style="color:#16A34A;font-weight:800;">' + _escapeHtmlSimple(o.monto_fmt || '$0') + '</td>' +
+                '</tr>';
+            });
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function _ckExpandRow(tr) {
+            if (!tr) return;
+            var tipo = tr.getAttribute('data-prosp-tipo');
+            var clienteId = tr.getAttribute('data-cliente-id');
+            if (!clienteId) return;
+
+            var tbody = tr.parentNode;
+            // Si la fila siguiente ya es la expandida → colapsar
+            var next = tr.nextElementSibling;
+            if (next && next.classList && next.classList.contains('ck-row-expanded')) {
+                next.remove();
+                tr.classList.remove('ck-row-active');
+                return;
+            }
+            // Colapsar otra fila expandida (solo una a la vez)
+            tbody.querySelectorAll('tr.ck-row-expanded').forEach(function(r){ r.remove(); });
+            tbody.querySelectorAll('tr.ck-row-active').forEach(function(r){ r.classList.remove('ck-row-active'); });
+
+            var ncols = tr.cells ? tr.cells.length : 5;
+            var detailRow = document.createElement('tr');
+            detailRow.className = 'ck-row-expanded';
+            detailRow.innerHTML = '<td colspan="' + ncols + '"><div class="ck-row-loading">Cargando…</div></td>';
+            tr.parentNode.insertBefore(detailRow, tr.nextSibling);
+            tr.classList.add('ck-row-active');
+
+            var url;
+            var qs = _ckPeriodQS();
+            if (tipo === 'opps') {
+                url = '/app/api/dashboard/prospectos/cliente/' + clienteId + '/oportunidades-convertidas/?' + qs;
+            } else {
+                url = '/app/api/dashboard/prospectos/cliente/' + clienteId + '/prospecciones/?' + qs;
+            }
+
+            fetch(url, { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(resp) {
+                    var items = (resp && resp.rows) || [];
+                    var cell = detailRow.querySelector('td');
+                    if (!cell) return;
+                    cell.innerHTML = (tipo === 'opps')
+                        ? _renderSubOportunidades(items)
+                        : _renderSubProspecciones(items);
+                    // Bind clicks on items (prospecto / oportunidad)
+                    cell.querySelectorAll('[data-prospecto-id]').forEach(function(el) {
+                        el.addEventListener('click', function(ev) {
+                            ev.stopPropagation();
+                            var pid = parseInt(this.getAttribute('data-prospecto-id'));
+                            if (typeof window.abrirWidgetProspecto === 'function') {
+                                window.abrirWidgetProspecto(pid);
+                            } else {
+                                console.warn('[CK] abrirWidgetProspecto no disponible (verificar carga de crm_prospeccion.js)');
+                            }
+                        });
+                    });
+                    cell.querySelectorAll('[data-oportunidad-id]').forEach(function(el) {
+                        el.addEventListener('click', function(ev) {
+                            ev.stopPropagation();
+                            var oid = parseInt(this.getAttribute('data-oportunidad-id'));
+                            if (typeof window.openDetalle === 'function') {
+                                window.openDetalle(oid);
+                            } else {
+                                console.warn('[CK] openDetalle no disponible');
+                            }
+                        });
+                    });
+                })
+                .catch(function() {
+                    var cell = detailRow.querySelector('td');
+                    if (cell) cell.innerHTML = '<div class="ck-sub-empty" style="color:#FF3B30;">Error al cargar.</div>';
+                });
+        }
+
+        // Delegated click handler para filas drill-down dentro del detalle
+        document.addEventListener('click', function(ev) {
+            var tr = ev.target.closest && ev.target.closest('tr.ck-prosp-row');
+            if (tr && document.getElementById('ckDetalleTbody') && document.getElementById('ckDetalleTbody').contains(tr)) {
+                _ckExpandRow(tr);
+                return;
+            }
+            // Click directo en filas de "ventas detalle" (oportunidad simple)
+            var oppTr = ev.target.closest && ev.target.closest('tr.ck-prosp-opp-row');
+            if (oppTr && document.getElementById('ckDetalleTbody') && document.getElementById('ckDetalleTbody').contains(oppTr)) {
+                var oid = parseInt(oppTr.getAttribute('data-oportunidad-id'));
+                if (oid && typeof window.openDetalle === 'function') {
+                    window.openDetalle(oid);
+                }
+            }
+        });
 
         function abrirDesgloseCotizaciones() {
             var vendedores = getVendedoresParam();
@@ -4625,6 +4972,8 @@
         // se acerca a vencer — el usuario ve el color moverse sin recargar.
         setInterval(function() {
             if (window._crmTareasMode) return; // solo en vista CRM
+            // Si hay drill-down (sub-tabla) activo en clientes, no clobber-ear el detalle.
+            if (window._ckDetalleOpen) return;
             var tabActivo = document.querySelector('.crm-tab.active');
             if (!tabActivo) return;
             if (typeof refreshCrmTable === 'function') {
