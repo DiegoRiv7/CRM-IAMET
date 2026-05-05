@@ -597,7 +597,7 @@ def crm_home(request):
         ETAPA_LBL = {
             'identificado': 'Identificado', 'calificado': 'Calificado',
             'reunion': 'Reunión', 'en_progreso': 'En Progreso', 'procesado': 'Procesado',
-            'cerrado_ganado': 'Cerrado', 'cerrado_perdido': 'Perdido',
+            'cerrado_ganado': 'Cerrado Ganado', 'cerrado_perdido': 'Cerrado Perdido',
         }
         # Orden visible en el kanban (cerrado_perdido no se muestra en columnas; se filtra)
         ETAPAS_ORDER = ['identificado', 'calificado', 'reunion', 'en_progreso', 'procesado', 'cerrado_ganado']

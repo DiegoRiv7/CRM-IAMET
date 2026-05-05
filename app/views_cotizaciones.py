@@ -381,7 +381,33 @@ def oportunidades_por_cliente_view(request, cliente_id):
 def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
     cliente_seleccionado = None
     oportunidad_seleccionada = None
-    
+
+    # Auto-conversión Prospecto (ClientePotencial) → Cliente.
+    # Si el flujo trae un `cliente_ref` con prefijo `p-` (ej. `p-15`),
+    # se interpreta como un ClientePotencial. Antes de seguir, lo
+    # convertimos a Cliente real (mismo nombre, mismo asignado_a) y
+    # eliminamos el potencial. La cotización se crea sobre el Cliente
+    # nuevo. Idempotente: si el ref no tiene prefijo, no hace nada.
+    cliente_ref = request.GET.get('cliente_ref') or (request.POST.get('cliente_ref') if request.method == 'POST' else None)
+    if cliente_ref and isinstance(cliente_ref, str) and cliente_ref.startswith('p-'):
+        try:
+            from .models import ClientePotencial
+            from django.db import transaction
+            from django.utils import timezone as _tz
+            pot_id = int(cliente_ref[2:])
+            with transaction.atomic():
+                pot = ClientePotencial.objects.select_for_update().get(id=pot_id)
+                cliente_nuevo = Cliente.objects.create(
+                    nombre_empresa=pot.nombre,
+                    asignado_a=pot.asignado_a,
+                    convertido_de_potencial_at=_tz.now(),
+                )
+                pot.delete()
+                cliente_id = cliente_nuevo.id
+        except (ClientePotencial.DoesNotExist, ValueError, Exception):
+            # Si falla la conversión, sigue con el flujo normal sin cliente.
+            pass
+
     # Detectar si viene de la detección automática de oportunidades (Crown Jewel Feature)
     is_auto_filled = request.GET.get('auto_filled') == 'true'
     auto_fill_data = {}

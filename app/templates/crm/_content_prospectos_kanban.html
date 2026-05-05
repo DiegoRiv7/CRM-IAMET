@@ -85,7 +85,7 @@
                             </div>
                             <div>
                                 <div style="font-size:0.58rem;font-weight:700;color:#A78060;text-transform:uppercase;letter-spacing:0.04em;">Etapa</div>
-                                <div style="font-size:0.85rem;font-weight:700;color:#3E2E1F;">{{ p.etapa_label }}</div>
+                                <div data-etapa-label style="font-size:0.85rem;font-weight:700;color:#3E2E1F;">{{ p.etapa_label }}</div>
                             </div>
                         </div>
                         <div class="{% if p.tipo_pipeline == 'proyecto' %}pk-chip-proyecto{% else %}pk-chip-runrate{% endif %}" style="font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;">{% if p.tipo_pipeline == 'proyecto' %}Proyecto{% else %}Runrate{% endif %}</div>

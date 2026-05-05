@@ -679,6 +679,11 @@ document.addEventListener('click', function(ev) {
                         setTimeout(function() { toast.classList.remove('show'); }, 3000);
                     }
                 }
+                // Live update del kanban (sin reload). Mueve la card a la
+                // columna nueva, refresca label y contadores.
+                if (typeof window.pkMoveCardToStage === 'function') {
+                    try { window.pkMoveCardToStage(id, nuevaEtapa); } catch (e) {}
+                }
                 abrirWidgetProspecto(id);
                 // Reload client widget if open
                 if (_currentWidgetClienteId) {

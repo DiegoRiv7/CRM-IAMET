@@ -329,6 +329,59 @@
         window.location.reload();
     };
 
+    // ── Live update: mover card sin reload ────────────────────────────
+    // Usado tras cambiar etapa desde el widget (crm_prospeccion.js).
+    // Mueve el card DOM a la columna nueva, actualiza data-etapa,
+    // refresca el label y los contadores de ambas columnas.
+    var ETAPA_LABEL_KANBAN = {
+        'identificado':    'Identificado',
+        'calificado':      'Calificado',
+        'reunion':         'Reunión',
+        'en_progreso':     'En Progreso',
+        'procesado':       'Procesado',
+        'cerrado_ganado':  'Cerrado Ganado',
+        'cerrado_perdido': 'Cerrado Perdido',
+    };
+
+    function _pkUpdateColCounters(col) {
+        if (!col) return;
+        var n = col.querySelectorAll('.crm-kanban-col-body .crm-postit').length;
+        col.querySelectorAll('.crm-kanban-count').forEach(function (el) { el.textContent = n; });
+        var totalEl = col.querySelector('[data-col-total]');
+        if (totalEl) totalEl.textContent = n + ' prospecto' + (n === 1 ? '' : 's');
+        var collapsed = col.querySelector('[data-col-count-collapsed]');
+        if (collapsed) collapsed.textContent = n;
+        var dot = col.querySelector('.crm-kanban-dot');
+        if (dot) dot.classList.toggle('active', n > 0);
+    }
+
+    window.pkMoveCardToStage = function (prospectoId, newEtapa) {
+        var card = document.querySelector('.crm-kanban-card[data-prospecto-id="' + prospectoId + '"]');
+        if (!card) return false;
+        var oldCol = card.closest('.crm-kanban-col');
+        var newCol = document.querySelector('.crm-kanban-col[data-stage="' + newEtapa + '"]');
+
+        // cerrado_perdido no tiene columna — el card se elimina del kanban.
+        if (!newCol) {
+            card.remove();
+            _pkUpdateColCounters(oldCol);
+            return true;
+        }
+        var newColBody = newCol.querySelector('.crm-kanban-col-body');
+        if (!newColBody) return false;
+        // Inserta al inicio para que quede visible.
+        newColBody.insertBefore(card, newColBody.firstChild);
+        card.dataset.etapa = newEtapa;
+        var lblEl = card.querySelector('[data-etapa-label]');
+        if (lblEl) {
+            var lbl = ETAPA_LABEL_KANBAN[newEtapa] || newEtapa;
+            lblEl.textContent = lbl;
+        }
+        _pkUpdateColCounters(oldCol);
+        _pkUpdateColCounters(newCol);
+        return true;
+    };
+
     setupToolbar();
     applyFilters();   // aplicar filtros guardados al cargar
     applyCollapsed(); // restaurar columnas colapsadas
