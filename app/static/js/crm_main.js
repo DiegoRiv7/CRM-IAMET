@@ -462,6 +462,18 @@
                 overlay.classList.remove('closing');
                 var wfCliente = document.getElementById('wfCliente');
                 var wfOportunidad = document.getElementById('wfOportunidad');
+                // Pre-selección desde tab "Prospectos" → "+ Oportunidad" sobre un ClientePotencial
+                if (wfCliente && window._potencialPreseleccion) {
+                    var pre = window._potencialPreseleccion;
+                    wfCliente.value = pre.nombre || '';
+                    wfCliente.dataset.refKey = 'p-' + pre.id;
+                    // Mostrar etiqueta visible
+                    var lbl = document.getElementById('wnClienteLabel');
+                    if (lbl) lbl.textContent = (pre.nombre || '') + ' · Prospecto';
+                    var btn = document.getElementById('wnClienteBtn');
+                    if (btn) btn.classList.remove('empty');
+                    window._potencialPreseleccion = null;
+                }
                 if (wfOportunidad) wfOportunidad.focus();
                 else if (wfCliente) wfCliente.focus();
             }
@@ -518,24 +530,32 @@
                 clienteInput.addEventListener('input', function () {
                     var q = this.value.trim();
                     selectedClienteId = null;
+                    // Al editar a mano, limpiamos el ref previo (se vuelve "legacy: por nombre").
+                    clienteInput.dataset.refKey = '';
                     if (q.length < 2) { if (clienteAC) clienteAC.classList.remove('open'); return; }
 
                     clearTimeout(acTimeout);
                     acTimeout = setTimeout(function () {
-                        fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q))
+                        // Fetch unificado: clientes + clientes potenciales asignados al usuario
+                        fetch('/app/api/seleccionables/?q=' + encodeURIComponent(q))
                             .then(function (r) { return r.json(); })
                             .then(function (data) {
                                 if (!clienteAC) return;
                                 clienteAC.innerHTML = '';
-                                if (data.clientes && data.clientes.length > 0) {
-                                    data.clientes.forEach(function (c) {
+                                var items = (data && data.items) || [];
+                                if (items.length > 0) {
+                                    items.forEach(function (it) {
                                         var div = document.createElement('div');
                                         div.className = 'wf-ac-item';
-                                        div.innerHTML = c.nombre + (c.contacto_principal ? '<div class="wf-ac-sub">' + c.contacto_principal + '</div>' : '');
+                                        var tag = it.tipo === 'potencial'
+                                            ? '<span style="background:#FEF3C7;color:#92400E;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:8px;margin-right:6px;">PROSPECTO</span>'
+                                            : '<span style="background:#DBEAFE;color:#1E40AF;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:8px;margin-right:6px;">CLIENTE</span>';
+                                        div.innerHTML = tag + it.nombre + (it.subtitulo ? '<div class="wf-ac-sub">' + it.subtitulo + '</div>' : '');
                                         div.addEventListener('click', function () {
-                                            clienteInput.value = c.nombre;
-                                            selectedClienteId = c.id;
-                                            window._wfSelectedClienteId = c.id;
+                                            clienteInput.value = it.nombre;
+                                            clienteInput.dataset.refKey = it.ref_key || '';
+                                            selectedClienteId = (it.tipo === 'cliente') ? it.id : null;
+                                            window._wfSelectedClienteId = selectedClienteId;
                                             clienteAC.classList.remove('open');
                                         });
                                         clienteAC.appendChild(div);
@@ -554,6 +574,7 @@
                 clienteInput.addEventListener('wn:cliente-set', function(e) {
                     selectedClienteId = e.detail.id;
                     window._wfSelectedClienteId = e.detail.id;
+                    if (e.detail.id) clienteInput.dataset.refKey = 'c-' + e.detail.id;
                 });
             }
 
@@ -609,8 +630,14 @@
                     submitBtn.textContent = 'Creando...';
 
                     var csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+                    var clienteEl = document.getElementById('wfCliente');
+                    var clienteNombre = (clienteEl && clienteEl.value || '').trim();
+                    // cliente_ref: 'c-<id>' (cliente existente) | 'p-<id>' (potencial → se promueve).
+                    // Lo setea el autocompletado/pre-selección guardando dataset.refKey.
+                    var clienteRef = clienteEl ? (clienteEl.dataset.refKey || '') : '';
                     var payload = {
-                        cliente_nombre: document.getElementById('wfCliente').value.trim(),
+                        cliente_ref: clienteRef,
+                        cliente_nombre: clienteNombre,
                         contacto_nombre: document.getElementById('wfContacto').value.trim(),
                         oportunidad: document.getElementById('wfOportunidad').value.trim(),
                         monto: document.getElementById('wfMonto').value || '0',

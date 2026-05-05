@@ -244,6 +244,10 @@ class Cliente(models.Model):
         """
         return self.nombre_empresa
 
+    # Cuándo (si fue el caso) este Cliente se promovió desde un ClientePotencial.
+    # Se usa para los KPIs del dashboard de prospectos ("convertidos este mes").
+    convertido_de_potencial_at = models.DateTimeField(null=True, blank=True, verbose_name="Convertido desde Prospecto")
+
     class Meta:
         """
         Metadatos del modelo Cliente.
@@ -251,6 +255,30 @@ class Cliente(models.Model):
         verbose_name = "Cliente"
         verbose_name_plural = "Clientes"
         ordering = ['nombre_empresa'] # Ordena los clientes por nombre de empresa por defecto
+
+
+class ClientePotencial(models.Model):
+    """Cliente potencial (Prospecto). Aún no es Cliente — solo es un nombre
+    asignado a un vendedor. Cuando se le crea una oportunidad o cotización,
+    se promueve a Cliente automáticamente y este registro se elimina.
+    """
+    nombre = models.CharField(max_length=200, verbose_name="Nombre del prospecto")
+    asignado_a = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='clientes_potenciales',
+        verbose_name="Asignado a"
+    )
+    notas = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Cliente Potencial (Prospecto)"
+        verbose_name_plural = "Clientes Potenciales (Prospectos)"
+        ordering = ['-fecha_actualizacion']
+
+    def __str__(self):
+        return f'{self.nombre} → {self.asignado_a.username}'
+
 
 class TodoItem(models.Model):
     """

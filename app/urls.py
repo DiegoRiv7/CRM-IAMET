@@ -166,8 +166,14 @@ urlpatterns = [
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),
     path('api/admin/etapas-pipeline/', views.api_admin_etapas_pipeline, name='api_admin_etapas_pipeline'),
     path('api/admin/alias-clientes/', views.api_admin_alias_clientes, name='api_admin_alias_clientes'),
+    # Clientes Potenciales (Prospectos)
     path('api/admin/prospectos/', views.api_admin_prospectos, name='api_admin_prospectos'),
-    path('api/admin/prospectos/<int:prospecto_id>/', views.api_admin_prospecto_detalle, name='api_admin_prospecto_detalle'),
+    path('api/admin/prospectos/<int:potencial_id>/', views.api_admin_prospecto_detalle, name='api_admin_prospecto_detalle'),
+    # Endpoints vendedor para sus ClientePotencial asignados
+    path('api/clientes-potenciales/', views.api_clientes_potenciales, name='api_clientes_potenciales'),
+    path('api/clientes-potenciales/<int:potencial_id>/', views.api_cliente_potencial_detalle, name='api_cliente_potencial_detalle'),
+    path('api/seleccionables/', views.api_seleccionables_oportunidad, name='api_seleccionables_oportunidad'),
+    path('api/dashboard/prospectos/', views.api_dashboard_prospectos, name='api_dashboard_prospectos'),
 
     # ── APIs Ingeniero / Programación ─────────────────────────────────────────
     path('api/ingeniero/actividades/', views.api_ingeniero_actividades, name='api_ingeniero_actividades'),

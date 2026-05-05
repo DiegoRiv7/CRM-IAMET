@@ -202,7 +202,7 @@
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
-        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' %} crm-bar--dashboard{% endif %}">
+        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' or tab_activo == 'potenciales' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' %} crm-bar--dashboard{% endif %}">
             {% if tab_activo == 'crm' %}
             <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
             <div class="crm-bar-left" id="crmBarLeft">
@@ -257,10 +257,15 @@
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
                     {% if tab_activo == 'crm' %}<span class="crm-tab-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>{% endif %}
                 </a>
+                <a href="?tab=potenciales&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    class="crm-tab {% if tab_activo == 'potenciales' %}active{% endif %}">
+                    Prospectos
+                </a>
                 <a href="?tab=prospectos&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
-                    Prospectos
+                    Pipeline
                 </a>
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
@@ -691,6 +696,208 @@
         {% elif tab_activo == 'prospectos' %}
         {% include "crm/_content_prospectos_kanban.html" %}
 
+        {% elif tab_activo == 'potenciales' %}
+        <!-- ═══════ Tab "Prospectos" (Clientes Potenciales) ═══════ -->
+        <div id="potencialesSection" style="padding:18px 20px;">
+            <!-- Dashboard KPIs -->
+            <div id="potDashboardKpis" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:18px;">
+                <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;">
+                    <div style="font-size:0.66rem;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Prospectos asignados</div>
+                    <div id="potKpiTotal" style="font-size:1.6rem;font-weight:700;color:#0F172A;margin-top:4px;">—</div>
+                </div>
+                <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;">
+                    <div style="font-size:0.66rem;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Creados este mes</div>
+                    <div id="potKpiMes" style="font-size:1.6rem;font-weight:700;color:#0F172A;margin-top:4px;">—</div>
+                </div>
+                <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;">
+                    <div style="font-size:0.66rem;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Convertidos este mes</div>
+                    <div id="potKpiConv" style="font-size:1.6rem;font-weight:700;color:#059669;margin-top:4px;">—</div>
+                </div>
+                <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;">
+                    <div style="font-size:0.66rem;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Top vendedores</div>
+                    <div id="potKpiTop" style="font-size:0.78rem;color:#374151;margin-top:4px;line-height:1.5;">—</div>
+                </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                <h3 style="margin:0;font-size:1.05rem;font-weight:700;color:#1D1D1F;">Mis Prospectos</h3>
+                <span id="potCount" style="font-size:0.78rem;color:#86868B;"></span>
+                <div style="flex:1;"></div>
+                <input id="potSearch" placeholder="Buscar..." style="padding:6px 10px;border:1px solid #E5E7EB;border-radius:8px;font-size:0.82rem;min-width:220px;">
+                <button type="button" id="potBtnNuevo" class="crm-facet-btn crm-facet-new" onclick="window.potNuevoModal&&window.potNuevoModal()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nuevo Prospecto</span>
+                </button>
+            </div>
+            <div id="potTableWrap" style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead>
+                        <tr style="background:#F9FAFB;text-align:left;">
+                            <th style="padding:10px 14px;border-bottom:1px solid #E5E7EB;font-weight:600;color:#374151;">Nombre</th>
+                            <th style="padding:10px 14px;border-bottom:1px solid #E5E7EB;font-weight:600;color:#374151;">Notas</th>
+                            <th style="padding:10px 14px;border-bottom:1px solid #E5E7EB;font-weight:600;color:#374151;">Asignado a</th>
+                            <th style="padding:10px 14px;border-bottom:1px solid #E5E7EB;font-weight:600;color:#374151;">Creado</th>
+                            <th style="padding:10px 14px;border-bottom:1px solid #E5E7EB;font-weight:600;color:#374151;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="potTbody">
+                        <tr><td colspan="5" style="padding:24px;text-align:center;color:#86868B;">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal: nuevo / editar prospecto (ClientePotencial) -->
+        <div id="potModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:9999;align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:14px;padding:22px;width:min(440px,92vw);box-shadow:0 24px 64px rgba(0,0,0,0.18);">
+                <h3 id="potModalTitle" style="margin:0 0 14px;font-size:1rem;font-weight:700;">Nuevo prospecto</h3>
+                <label style="display:block;font-size:0.78rem;color:#374151;margin-bottom:4px;">Nombre del prospecto</label>
+                <input id="potModalNombre" placeholder="Ej: Industrias Mex S.A." style="width:100%;padding:9px 11px;border:1px solid #D1D5DB;border-radius:8px;font-size:0.88rem;margin-bottom:12px;">
+                <label style="display:block;font-size:0.78rem;color:#374151;margin-bottom:4px;">Notas (opcional)</label>
+                <textarea id="potModalNotas" rows="3" placeholder="Contexto, contacto inicial, observaciones..." style="width:100%;padding:9px 11px;border:1px solid #D1D5DB;border-radius:8px;font-size:0.88rem;resize:vertical;margin-bottom:14px;"></textarea>
+                <div style="display:flex;justify-content:flex-end;gap:8px;">
+                    <button type="button" onclick="window.potCerrarModal&&window.potCerrarModal()" style="padding:8px 14px;border:1px solid #D1D5DB;background:#fff;border-radius:8px;font-size:0.84rem;cursor:pointer;">Cancelar</button>
+                    <button type="button" id="potModalSaveBtn" onclick="window.potGuardarModal&&window.potGuardarModal()" style="padding:8px 14px;border:0;background:#0052D4;color:#fff;border-radius:8px;font-size:0.84rem;cursor:pointer;font-weight:600;">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        (function(){
+            var _potItems = [];
+            var _potEditId = null;
+
+            function _csrf(){ var el=document.querySelector('[name=csrfmiddlewaretoken]'); return el?el.value:''; }
+            function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+            function _fmtDate(iso){
+                if(!iso) return '';
+                try { var d=new Date(iso); return d.toLocaleDateString('es-MX',{year:'numeric',month:'short',day:'numeric'}); }
+                catch(e){ return ''; }
+            }
+
+            function _render(){
+                var q = (document.getElementById('potSearch')||{}).value || '';
+                q = q.toLowerCase().trim();
+                var tb = document.getElementById('potTbody');
+                if(!tb) return;
+                var rows = _potItems.filter(function(p){
+                    if(!q) return true;
+                    return (p.nombre||'').toLowerCase().indexOf(q)!==-1 ||
+                           (p.notas||'').toLowerCase().indexOf(q)!==-1 ||
+                           (p.asignado_a_name||'').toLowerCase().indexOf(q)!==-1;
+                });
+                document.getElementById('potCount').textContent = '('+_potItems.length+')';
+                if(!rows.length){
+                    tb.innerHTML = '<tr><td colspan="5" style="padding:32px;text-align:center;color:#86868B;">Sin prospectos. Crea uno con "+ Nuevo Prospecto".</td></tr>';
+                    return;
+                }
+                tb.innerHTML = rows.map(function(p){
+                    var notas = (p.notas||'').slice(0,80) + ((p.notas||'').length>80?'…':'');
+                    return '<tr style="border-bottom:1px solid #F1F5F9;">'
+                        +'<td style="padding:10px 14px;font-weight:600;color:#111827;">'+_esc(p.nombre)+'</td>'
+                        +'<td style="padding:10px 14px;color:#6B7280;font-size:0.8rem;">'+_esc(notas||'—')+'</td>'
+                        +'<td style="padding:10px 14px;color:#6B7280;">'+_esc(p.asignado_a_name||'—')+'</td>'
+                        +'<td style="padding:10px 14px;color:#6B7280;">'+_fmtDate(p.fecha_creacion)+'</td>'
+                        +'<td style="padding:10px 14px;white-space:nowrap;">'
+                        +'<button type="button" onclick="window.potEditar('+p.id+')" style="background:#fff;border:1px solid #D1D5DB;border-radius:6px;padding:4px 10px;font-size:0.78rem;cursor:pointer;margin-right:4px;">Editar</button>'
+                        +'<button type="button" onclick="window.potCrearOportunidad('+p.id+')" style="background:#0052D4;color:#fff;border:0;border-radius:6px;padding:4px 10px;font-size:0.78rem;cursor:pointer;margin-right:4px;font-weight:600;">+ Oportunidad</button>'
+                        +'<button type="button" onclick="window.potEliminar('+p.id+')" style="background:#fff;border:1px solid #FCA5A5;color:#DC2626;border-radius:6px;padding:4px 10px;font-size:0.78rem;cursor:pointer;">Eliminar</button>'
+                        +'</td>'
+                        +'</tr>';
+                }).join('');
+            }
+
+            function _cargar(){
+                fetch('/app/api/clientes-potenciales/').then(function(r){return r.json();}).then(function(d){
+                    _potItems = d.prospectos || [];
+                    _render();
+                }).catch(function(){
+                    var tb=document.getElementById('potTbody');
+                    if(tb) tb.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:#DC2626;">Error al cargar.</td></tr>';
+                });
+                // KPIs
+                fetch('/app/api/dashboard/prospectos/').then(function(r){return r.json();}).then(function(d){
+                    var t=document.getElementById('potKpiTotal'); if(t) t.textContent = (d.total_asignados||0);
+                    var m=document.getElementById('potKpiMes'); if(m) m.textContent = (d.creados_este_mes||0);
+                    var c=document.getElementById('potKpiConv'); if(c) c.textContent = (d.convertidos_este_mes||0);
+                    var top=document.getElementById('potKpiTop');
+                    if (top) {
+                        var rows = (d.top_vendedores||[]).slice(0,5);
+                        if (!rows.length) { top.innerHTML='<span style="color:#86868B;">Sin datos</span>'; }
+                        else {
+                            top.innerHTML = rows.map(function(r){
+                                return '<div style="display:flex;justify-content:space-between;"><span>'+_esc(r.nombre)+'</span><strong>'+r.total+'</strong></div>';
+                            }).join('');
+                        }
+                    }
+                }).catch(function(){});
+            }
+
+            window.potNuevoModal = function(){
+                _potEditId = null;
+                document.getElementById('potModalTitle').textContent='Nuevo prospecto';
+                document.getElementById('potModalNombre').value='';
+                document.getElementById('potModalNotas').value='';
+                document.getElementById('potModal').style.display='flex';
+                setTimeout(function(){ var i=document.getElementById('potModalNombre'); if(i) i.focus(); },50);
+            };
+            window.potCerrarModal = function(){
+                document.getElementById('potModal').style.display='none';
+            };
+            window.potEditar = function(pid){
+                var p = _potItems.find(function(x){return x.id===pid;});
+                if(!p) return;
+                _potEditId = pid;
+                document.getElementById('potModalTitle').textContent='Editar prospecto';
+                document.getElementById('potModalNombre').value=p.nombre||'';
+                document.getElementById('potModalNotas').value=p.notas||'';
+                document.getElementById('potModal').style.display='flex';
+            };
+            window.potGuardarModal = function(){
+                var nombre=(document.getElementById('potModalNombre').value||'').trim();
+                var notas=(document.getElementById('potModalNotas').value||'').trim();
+                if(!nombre){ alert('Escribe el nombre del prospecto'); return; }
+                var btn=document.getElementById('potModalSaveBtn'); if(btn) btn.disabled=true;
+                var url, method;
+                if(_potEditId){ url='/app/api/clientes-potenciales/'+_potEditId+'/'; method='PUT'; }
+                else { url='/app/api/clientes-potenciales/'; method='POST'; }
+                fetch(url,{
+                    method:method,
+                    headers:{'Content-Type':'application/json','X-CSRFToken':_csrf()},
+                    body:JSON.stringify({nombre:nombre, notas:notas})
+                }).then(function(r){return r.json();}).then(function(res){
+                    if(btn) btn.disabled=false;
+                    if(res.success){ window.potCerrarModal(); _cargar(); }
+                    else alert(res.error||'Error al guardar');
+                }).catch(function(){ if(btn) btn.disabled=false; alert('Error de red'); });
+            };
+            window.potEliminar = function(pid){
+                var p = _potItems.find(function(x){return x.id===pid;});
+                var label = p ? p.nombre : 'este prospecto';
+                if(!confirm('¿Eliminar prospecto "'+label+'"?')) return;
+                fetch('/app/api/clientes-potenciales/'+pid+'/',{
+                    method:'DELETE',
+                    headers:{'X-CSRFToken':_csrf()}
+                }).then(function(r){return r.json();}).then(function(res){
+                    if(res.success) _cargar(); else alert(res.error||'Error al eliminar');
+                });
+            };
+            window.potCrearOportunidad = function(pid){
+                // Abre el widget de Nueva Oportunidad y pre-selecciona este potencial.
+                var p = _potItems.find(function(x){return x.id===pid;});
+                if(!p) return;
+                try { window._potencialPreseleccion = {id: pid, nombre: p.nombre}; } catch(e){}
+                var btn = document.getElementById('btnNegociacion');
+                if(btn) btn.click();
+                else if(typeof window.abrirNuevaOportunidad==='function') window.abrirNuevaOportunidad();
+            };
+
+            var srch=document.getElementById('potSearch');
+            if(srch) srch.addEventListener('input', _render);
+            _cargar();
+        })();
+        </script>
+
         {% elif tab_activo == 'prospeccion' %}
         <!-- Period bar + botón nuevo prospecto -->
         <div class="crm-facet-bar crm-facet-bar--minimal">
@@ -715,10 +922,81 @@
                 {% endif %}
             </div>
         </div>
+        <!-- Filtro Clientes/Prospectos/Ambos (Campañas) -->
+        <div id="campaniasFiltroBar" style="display:flex;gap:6px;align-items:center;padding:8px 0 12px;">
+            <span style="font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-right:4px;">Mostrar:</span>
+            <button type="button" data-camp-filter="ambos" class="camp-filter-btn camp-filter-active" style="padding:6px 12px;border:1px solid #0052D4;background:#0052D4;color:#fff;border-radius:18px;font-size:0.72rem;font-weight:600;cursor:pointer;">Ambos</button>
+            <button type="button" data-camp-filter="clientes" class="camp-filter-btn" style="padding:6px 12px;border:1px solid #E5E7EB;background:#fff;color:#374151;border-radius:18px;font-size:0.72rem;font-weight:600;cursor:pointer;">Solo Clientes</button>
+            <button type="button" data-camp-filter="prospectos" class="camp-filter-btn" style="padding:6px 12px;border:1px solid #E5E7EB;background:#fff;color:#374151;border-radius:18px;font-size:0.72rem;font-weight:600;cursor:pointer;">Solo Prospectos</button>
+        </div>
         <div id="prospeccionList" class="crm-prospect-list">
             <div class="crm-list-head" id="prospeccionListHead"></div>
             <div class="crm-list-body" id="prospeccionListBody"></div>
         </div>
+        <!-- Lista de Prospectos (ClientePotencial) en Campañas -->
+        <div id="campaniasProspectosList" class="crm-prospect-list" style="margin-top:18px;display:none;">
+            <div class="crm-list-head"><div class="crm-list-hcell" style="flex:1;padding-left:22px;">Prospectos asignados</div></div>
+            <div class="crm-list-body" id="campaniasProspectosBody"></div>
+        </div>
+        <script>
+        (function(){
+            // Filtro Clientes/Prospectos/Ambos en pestaña "Campañas"
+            var KEY = 'campFiltro';
+            function getFilter(){ try{return localStorage.getItem(KEY)||'ambos';}catch(e){return 'ambos';} }
+            function setFilter(v){ try{localStorage.setItem(KEY,v);}catch(e){} }
+            function _csrf(){ var el=document.querySelector('[name=csrfmiddlewaretoken]'); return el?el.value:''; }
+            function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+            function applyFilter(){
+                var f = getFilter();
+                var listClientes = document.getElementById('prospeccionList');
+                var listPros = document.getElementById('campaniasProspectosList');
+                if (listClientes) listClientes.style.display = (f==='prospectos') ? 'none' : '';
+                if (listPros) listPros.style.display = (f==='clientes') ? 'none' : '';
+                document.querySelectorAll('.camp-filter-btn').forEach(function(b){
+                    var on = (b.dataset.campFilter === f);
+                    b.classList.toggle('camp-filter-active', on);
+                    b.style.background = on ? '#0052D4' : '#fff';
+                    b.style.color = on ? '#fff' : '#374151';
+                    b.style.border = on ? '1px solid #0052D4' : '1px solid #E5E7EB';
+                });
+                if (f !== 'clientes') cargarProspectosCampaign();
+            }
+
+            function cargarProspectosCampaign(){
+                var body = document.getElementById('campaniasProspectosBody');
+                if (!body) return;
+                fetch('/app/api/clientes-potenciales/').then(function(r){return r.json();}).then(function(d){
+                    var items = (d && d.prospectos) || [];
+                    if (!items.length){
+                        body.innerHTML = '<div style="padding:18px;color:#86868B;font-size:0.82rem;">No tienes prospectos asignados.</div>';
+                        return;
+                    }
+                    body.innerHTML = items.map(function(p){
+                        return '<div class="crm-list-row crm-list-row--prospect crm-data-row">'
+                            +'<div class="crm-list-cell" style="flex:1;padding-left:22px;">'
+                            +'<div class="crm-list-title">'
+                            +'<span style="background:#FEF3C7;color:#92400E;font-size:0.62rem;font-weight:700;padding:1px 6px;border-radius:8px;margin-right:8px;">PROSPECTO</span>'
+                            +_esc(p.nombre)
+                            +'</div>'
+                            +(p.notas ? '<div class="crm-list-sub">'+_esc(p.notas)+'</div>' : '')
+                            +'</div>'
+                            +'</div>';
+                    }).join('');
+                });
+            }
+
+            // Init después de un pequeño delay para no chocar con cargarClientesProspeccion
+            document.addEventListener('click', function(e){
+                var b = e.target.closest('.camp-filter-btn');
+                if (!b) return;
+                setFilter(b.dataset.campFilter);
+                applyFilter();
+            });
+            // Defer: el JS de prospección puede tardar en montar.
+            setTimeout(applyFilter, 60);
+        })();
+        </script>
         <!-- Contenedor legacy oculto — se mantiene para no romper referencias JS viejas -->
         <table id="prospeccionTable" style="display:none;">
             <thead id="prospeccionThead"></thead>

@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, ArchivoCobrado, AliasCliente, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
+from .models import TodoItem, Cliente, ClientePotencial, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, ArchivoCobrado, AliasCliente, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -3942,17 +3942,25 @@ def nueva_oportunidad(request):
 def api_crear_oportunidad(request):
     """
     API AJAX para crear oportunidad desde el widget CRM.
+
+    Acepta cliente vía:
+      - cliente_ref = 'c-<id>'  → Cliente existente
+      - cliente_ref = 'p-<id>'  → ClientePotencial → se promueve a Cliente
+                                    y el ClientePotencial se elimina
+                                    (todo dentro de transaction.atomic).
+      - cliente_nombre (legacy) → busca/crea Cliente por nombre_empresa.
     """
     if request.method != 'POST':
         return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+
+    from django.db import transaction
 
     try:
         import json
         data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
 
-        cliente_nombre = data.get('cliente_nombre', '').strip()
-        if not cliente_nombre or len(cliente_nombre) < 2:
-            return JsonResponse({'ok': False, 'error': 'El nombre del cliente es requerido (mín. 2 caracteres).'})
+        cliente_ref = (data.get('cliente_ref') or '').strip()
+        cliente_nombre = (data.get('cliente_nombre') or '').strip()
 
         oportunidad_nombre = data.get('oportunidad', '').strip()
         if not oportunidad_nombre:
@@ -3964,70 +3972,108 @@ def api_crear_oportunidad(request):
         except Exception:
             monto = Decimal('0')
 
-        # Buscar o crear cliente (filter evita error si hay duplicados por case)
-        cliente = Cliente.objects.filter(nombre_empresa__iexact=cliente_nombre).order_by('id').first()
-        if not cliente:
-            cliente = Cliente.objects.create(nombre_empresa=cliente_nombre, asignado_a=request.user)
+        # Resolver cliente desde cliente_ref con prefijo, o por nombre legacy.
+        cliente = None
+        promovido_desde_potencial = False
+        with transaction.atomic():
+            if cliente_ref.startswith('c-'):
+                try:
+                    cliente = Cliente.objects.get(id=int(cliente_ref[2:]))
+                except (Cliente.DoesNotExist, ValueError):
+                    return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+                if not cliente_nombre:
+                    cliente_nombre = cliente.nombre_empresa
+            elif cliente_ref.startswith('p-'):
+                try:
+                    potencial = ClientePotencial.objects.select_for_update().get(id=int(cliente_ref[2:]))
+                except (ClientePotencial.DoesNotExist, ValueError):
+                    return JsonResponse({'ok': False, 'error': 'Prospecto no encontrado'}, status=404)
+                # Crear Cliente con datos del potencial
+                cliente = Cliente.objects.create(
+                    nombre_empresa=potencial.nombre,
+                    asignado_a=potencial.asignado_a,
+                    convertido_de_potencial_at=timezone.now(),
+                )
+                cliente_nombre = cliente.nombre_empresa
+                promovido_desde_potencial = True
+                # El ClientePotencial se elimina al final de la transacción
+                # (después de crear la oportunidad para que la conversión sea
+                # atómica).
+                potencial_id_a_borrar = potencial.id
+            else:
+                # Legacy: buscar por nombre, crear si no existe
+                if not cliente_nombre or len(cliente_nombre) < 2:
+                    return JsonResponse({'ok': False, 'error': 'El nombre del cliente es requerido (mín. 2 caracteres).'})
+                cliente = Cliente.objects.filter(nombre_empresa__iexact=cliente_nombre).order_by('id').first()
+                if not cliente:
+                    cliente = Cliente.objects.create(nombre_empresa=cliente_nombre, asignado_a=request.user)
 
-        # Buscar o crear contacto
-        contacto = None
-        contacto_nombre = data.get('contacto_nombre', '').strip()
-        if contacto_nombre:
-            nombre_parts = contacto_nombre.split(' ', 1)
-            contacto, _ = Contacto.objects.get_or_create(
-                nombre__iexact=nombre_parts[0],
+            # Buscar o crear contacto (dentro de la transacción)
+            contacto = None
+            contacto_nombre = data.get('contacto_nombre', '').strip()
+            if contacto_nombre:
+                nombre_parts = contacto_nombre.split(' ', 1)
+                contacto, _ = Contacto.objects.get_or_create(
+                    nombre__iexact=nombre_parts[0],
+                    cliente=cliente,
+                    defaults={
+                        'nombre': nombre_parts[0],
+                        'apellido': nombre_parts[1] if len(nombre_parts) > 1 else '',
+                        'cliente': cliente
+                    }
+                )
+
+            tipo_neg = data.get('tipo_negociacion', 'runrate')
+            # Asignar etapa inicial desde la BD (primera etapa activa del pipeline)
+            primera_etapa = EtapaPipeline.objects.filter(pipeline=tipo_neg, activo=True).order_by('orden').first()
+            if primera_etapa:
+                etapa_corta_init = primera_etapa.nombre
+                etapa_completa_init = primera_etapa.nombre
+                etapa_color_init = primera_etapa.color
+            elif tipo_neg == 'proyecto':
+                etapa_corta_init = 'Oportunidad'
+                etapa_completa_init = 'Oportunidad'
+                etapa_color_init = '#FFFFFF'
+            else:
+                etapa_corta_init = 'En Solicitud'
+                etapa_completa_init = 'Solicitud de Cotizacion'
+                etapa_color_init = '#FFFFFF'
+
+            from datetime import datetime as dt_create
+            now_dt = dt_create.now()
+            mes_actual = str(now_dt.month).zfill(2)
+
+            raw_mes = (data.get('mes_cierre') or '').strip() if isinstance(data.get('mes_cierre'), str) else str(data.get('mes_cierre') or '').strip()
+            if not raw_mes or raw_mes == 'todos':
+                raw_mes = mes_actual
+            mes_cierre_val = raw_mes
+
+            todo = TodoItem(
+                usuario=request.user,
+                oportunidad=oportunidad_nombre,
                 cliente=cliente,
-                defaults={
-                    'nombre': nombre_parts[0],
-                    'apellido': nombre_parts[1] if len(nombre_parts) > 1 else '',
-                    'cliente': cliente
-                }
+                contacto=contacto,
+                monto=monto,
+                probabilidad_cierre=int(data.get('probabilidad_cierre', 25)),
+                mes_cierre=mes_cierre_val,
+                anio_cierre=now_dt.year,
+                area=data.get('area', 'SISTEMAS'),
+                producto=data.get('producto', 'SOFTWARE'),
+                tipo_negociacion=tipo_neg,
+                comentarios=data.get('comentarios', ''),
+                etapa_corta=etapa_corta_init,
+                etapa_completa=etapa_completa_init,
+                etapa_color=etapa_color_init,
+                po_number='', # Ensure PO is empty on creation
             )
+            todo.save()
 
-        tipo_neg = data.get('tipo_negociacion', 'runrate')
-        # Asignar etapa inicial desde la BD (primera etapa activa del pipeline)
-        primera_etapa = EtapaPipeline.objects.filter(pipeline=tipo_neg, activo=True).order_by('orden').first()
-        if primera_etapa:
-            etapa_corta_init = primera_etapa.nombre
-            etapa_completa_init = primera_etapa.nombre
-            etapa_color_init = primera_etapa.color
-        elif tipo_neg == 'proyecto':
-            etapa_corta_init = 'Oportunidad'
-            etapa_completa_init = 'Oportunidad'
-            etapa_color_init = '#FFFFFF'
-        else:
-            etapa_corta_init = 'En Solicitud'
-            etapa_completa_init = 'Solicitud de Cotizacion'
-            etapa_color_init = '#FFFFFF'
-
-        from datetime import datetime as dt_create
-        now_dt = dt_create.now()
-        mes_actual = str(now_dt.month).zfill(2)
-
-        raw_mes = data.get('mes_cierre', '').strip()
-        if not raw_mes or raw_mes == 'todos':
-            raw_mes = mes_actual
-        mes_cierre_val = raw_mes
-
-        todo = TodoItem(
-            usuario=request.user,
-            oportunidad=oportunidad_nombre,
-            cliente=cliente,
-            contacto=contacto,
-            monto=monto,
-            probabilidad_cierre=int(data.get('probabilidad_cierre', 25)),
-            mes_cierre=mes_cierre_val,
-            anio_cierre=now_dt.year,
-            area=data.get('area', 'SISTEMAS'),
-            producto=data.get('producto', 'SOFTWARE'),
-            tipo_negociacion=tipo_neg,
-            comentarios=data.get('comentarios', ''),
-            etapa_corta=etapa_corta_init,
-            etapa_completa=etapa_completa_init,
-            etapa_color=etapa_color_init,
-            po_number='', # Ensure PO is empty on creation
-        )
-        todo.save()
+            # Eliminar el ClientePotencial al final de la transacción —
+            # solo si todo lo anterior tuvo éxito. Si algo falla, el rollback
+            # revierte la creación del Cliente y la oportunidad y el potencial
+            # queda intacto.
+            if promovido_desde_potencial:
+                ClientePotencial.objects.filter(id=potencial_id_a_borrar).delete()
 
         # Ejecutar automatizaciones para la etapa inicial
         try:
@@ -5050,4 +5096,185 @@ def api_toggle_pin_oportunidad(request, opp_id):
     profile.oportunidades_ancladas = ancladas
     profile.save(update_fields=["oportunidades_ancladas"])
     return JsonResponse({"success": True, "anclada": anclada})
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Clientes Potenciales — endpoints para el flujo del vendedor
+# ──────────────────────────────────────────────────────────────────────
+
+
+@login_required
+def api_clientes_potenciales(request):
+    """GET: lista los ClientePotencial del usuario actual (o todos si supervisor).
+    POST: crea uno (queda asignado al usuario actual; supervisores pueden pasar
+          asignado_a_id explícito).
+    """
+    if request.method == 'GET':
+        qs = ClientePotencial.objects.select_related('asignado_a')
+        if not is_supervisor(request.user):
+            qs = qs.filter(asignado_a=request.user)
+        qs = qs.order_by('-fecha_actualizacion')
+        data = []
+        for p in qs:
+            asig = p.asignado_a
+            data.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'asignado_a_id': asig.id if asig else None,
+                'asignado_a_name': (asig.get_full_name() or asig.username) if asig else '',
+                'notas': p.notas or '',
+                'fecha_creacion': p.fecha_creacion.isoformat() if p.fecha_creacion else None,
+                'fecha_actualizacion': p.fecha_actualizacion.isoformat() if p.fecha_actualizacion else None,
+            })
+        return JsonResponse({'prospectos': data})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        nombre = (data.get('nombre') or '').strip()
+        notas = (data.get('notas') or '').strip()
+        if not nombre:
+            return JsonResponse({'error': 'El nombre es requerido'}, status=400)
+        asignado = request.user
+        if is_supervisor(request.user) and data.get('asignado_a_id'):
+            try:
+                asignado = User.objects.get(id=int(data['asignado_a_id']))
+            except (User.DoesNotExist, ValueError, TypeError):
+                return JsonResponse({'error': 'Vendedor no encontrado'}, status=404)
+        potencial = ClientePotencial.objects.create(
+            nombre=nombre, asignado_a=asignado, notas=notas,
+        )
+        return JsonResponse({'success': True, 'id': potencial.id})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_cliente_potencial_detalle(request, potencial_id):
+    """PUT: edita nombre/notas (asignado solo si supervisor).
+       DELETE: elimina."""
+    try:
+        potencial = ClientePotencial.objects.select_related('asignado_a').get(id=potencial_id)
+    except ClientePotencial.DoesNotExist:
+        return JsonResponse({'error': 'Prospecto no encontrado'}, status=404)
+    if not is_supervisor(request.user) and potencial.asignado_a_id != request.user.id:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        if 'nombre' in data:
+            nombre = (data.get('nombre') or '').strip()
+            if not nombre:
+                return JsonResponse({'error': 'El nombre no puede estar vacío'}, status=400)
+            potencial.nombre = nombre
+        if 'notas' in data:
+            potencial.notas = (data.get('notas') or '').strip()
+        if 'asignado_a_id' in data and is_supervisor(request.user):
+            try:
+                potencial.asignado_a = User.objects.get(id=int(data['asignado_a_id']))
+            except (User.DoesNotExist, ValueError, TypeError):
+                return JsonResponse({'error': 'Vendedor no encontrado'}, status=404)
+        potencial.save()
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        potencial.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_seleccionables_oportunidad(request):
+    """Endpoint unificado: devuelve Clientes (asignados al usuario o visibles)
+    + ClientePotencial (asignados al usuario).
+
+    Cada item lleva 'tipo' ('cliente' | 'potencial') y 'ref_key' con el
+    formato 'c-<id>' o 'p-<id>' para que el frontend lo mande a
+    api_crear_oportunidad. Permite filtrar con ?q=.
+    """
+    q = (request.GET.get('q') or '').strip()
+    items = []
+
+    # Clientes visibles (con la lógica existente del CRM)
+    cli_qs = Cliente.objects.all()
+    try:
+        cli_qs = cli_qs.filter(get_clientes_visibles_q(request.user))
+    except Exception:
+        pass
+    if q:
+        cli_qs = cli_qs.filter(nombre_empresa__icontains=q)
+    for c in cli_qs.order_by('nombre_empresa')[:25]:
+        items.append({
+            'id': c.id,
+            'tipo': 'cliente',
+            'ref_key': f'c-{c.id}',
+            'nombre': c.nombre_empresa,
+            'subtitulo': c.contacto_principal or '',
+        })
+
+    # ClientePotencial del usuario (o todos si supervisor)
+    pot_qs = ClientePotencial.objects.select_related('asignado_a')
+    if not is_supervisor(request.user):
+        pot_qs = pot_qs.filter(asignado_a=request.user)
+    if q:
+        pot_qs = pot_qs.filter(nombre__icontains=q)
+    for p in pot_qs.order_by('-fecha_actualizacion')[:25]:
+        items.append({
+            'id': p.id,
+            'tipo': 'potencial',
+            'ref_key': f'p-{p.id}',
+            'nombre': p.nombre,
+            'subtitulo': (p.notas or '')[:60],
+        })
+
+    # Ordenar: clientes primero (alfabético), después potenciales por recientes.
+    return JsonResponse({'items': items})
+
+
+@login_required
+def api_dashboard_prospectos(request):
+    """KPIs y tabla del dashboard de Prospectos.
+
+    - total_asignados: # de ClientePotencial actuales del usuario (o todos si supervisor).
+    - creados_este_mes: ClientePotencial creados este mes.
+    - convertidos_este_mes: Cliente.convertido_de_potencial_at este mes.
+    - top_vendedores: top 5 con más prospectos asignados.
+    """
+    now = timezone.now()
+    mes_inicio = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    pot_qs = ClientePotencial.objects.all()
+    cli_conv_qs = Cliente.objects.filter(convertido_de_potencial_at__isnull=False)
+    if not is_supervisor(request.user):
+        pot_qs = pot_qs.filter(asignado_a=request.user)
+        cli_conv_qs = cli_conv_qs.filter(asignado_a=request.user)
+
+    total_asignados = pot_qs.count()
+    creados_este_mes = pot_qs.filter(fecha_creacion__gte=mes_inicio).count()
+    convertidos_este_mes = cli_conv_qs.filter(convertido_de_potencial_at__gte=mes_inicio).count()
+
+    # Top 5 vendedores por número de prospectos asignados.
+    top = (
+        ClientePotencial.objects.values('asignado_a__id', 'asignado_a__first_name',
+                                        'asignado_a__last_name', 'asignado_a__username')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+    top_vendedores = []
+    for t in top:
+        nombre = (f"{t['asignado_a__first_name']} {t['asignado_a__last_name']}").strip() or t['asignado_a__username']
+        top_vendedores.append({'usuario_id': t['asignado_a__id'], 'nombre': nombre, 'total': t['total']})
+
+    return JsonResponse({
+        'total_asignados': total_asignados,
+        'creados_este_mes': creados_este_mes,
+        'convertidos_este_mes': convertidos_este_mes,
+        'top_vendedores': top_vendedores,
+    })
 
