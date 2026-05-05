@@ -151,6 +151,10 @@
     line-height: 1.45;
     background: transparent;
     padding: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .cv-root *,
