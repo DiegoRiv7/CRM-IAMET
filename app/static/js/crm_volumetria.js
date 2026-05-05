@@ -74,12 +74,9 @@
  * Root / shell:
  *   .cv-root, .cv-readonly
  *
- * Document header:
- *   .cv-doc, .cv-doc-titlebar, .cv-doc-title-input,
+ * Status pill (vive en el header del card stats):
  *   .cv-status, .cv-status-borrador, .cv-status-completada,
- *   .cv-status-dot, .cv-status-label,
- *   .cv-doc-meta, .cv-meta-field, .cv-meta-icon, .cv-meta-label,
- *   .cv-meta-input
+ *   .cv-status-dot, .cv-status-label
  *
  * Sección (tarjeta-tabla):
  *   .cv-stack,
@@ -114,7 +111,9 @@
  *
  * Resumen + estadísticas:
  *   .cv-bottom, .cv-card, .cv-card-financiero, .cv-card-stats,
- *   .cv-card-header, .cv-card-title, .cv-card-body,
+ *   .cv-card-header, .cv-card-header-row, .cv-card-title, .cv-card-body,
+ *   .cv-fin-config, .cv-fin-config-field, .cv-fin-config-label,
+ *   .cv-fin-config-input, .cv-fin-config-suffix,
  *   .cv-fin-row, .cv-fin-label, .cv-fin-value,
  *   .cv-fin-row-cost, .cv-fin-row-gain, .cv-fin-row-margin,
  *   .cv-fin-row-margin-low, .cv-fin-row-iva, .cv-fin-row-total,
@@ -122,8 +121,7 @@
  *   .cv-stat-row, .cv-stat-label, .cv-stat-value,
  *   .cv-stat-pills, .cv-stat-pill,
  *   .cv-stat-pill-equipamiento, .cv-stat-pill-mano_obra,
- *   .cv-stat-pill-costo_mo, .cv-stat-pill-gastos,
- *   .cv-card-actions, .cv-export-btn
+ *   .cv-stat-pill-costo_mo, .cv-stat-pill-gastos
  *
  * Misc:
  *   .cv-mono, .cv-empty, .cv-sr-only
@@ -330,7 +328,10 @@
             tipo: tipo,
             titulo: titulo || TYPE_INFO[tipo].defaultTitle,
             expanded: true,
-            items: [],
+            // Sembramos una fila vacía: la sección recién creada es
+            // editable de inmediato sin que el usuario vea un cuerpo en
+            // blanco con un mensaje de "sin items".
+            items: [newItemForType(tipo)],
         };
     }
 
@@ -455,6 +456,14 @@
                 });
             }
         });
+
+        // Si la sección llega sin items (migración de v1/v2/v3 con secciones
+        // vacías o data corrupta), sembramos una fila vacía. Así el usuario
+        // nunca ve un body sin filas y el botón «+ Fila» no es la única
+        // pista visual para empezar a capturar.
+        if (!out.items.length) {
+            out.items.push(newItemForType(tipo));
+        }
 
         return out;
     }
@@ -790,16 +799,7 @@
         plus: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
         trash: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>',
         x: '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-        upload: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
         tag: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-        building: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>',
-        user: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-        calendar: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-        coins: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M12 18V6"/></svg>',
-        percent: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
-        edit: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>',
-        fileText: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
-        sheet: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>',
     };
 
     // ── RENDER ──────────────────────────────────────────────────────
@@ -807,7 +807,6 @@
         if (!S.container) return;
 
         var html = '<div class="cv-root' + (S.readonly ? ' cv-readonly' : '') + '">';
-        html += renderDocHeader();
         html += '<div class="cv-stack">';
         (S.data.secciones || []).forEach(function (sec) {
             html += renderSection(sec);
@@ -819,65 +818,6 @@
 
         S.container.innerHTML = html;
         bindAll();
-    }
-
-    // ── Document header ─────────────────────────────────────────────
-    function renderDocHeader() {
-        var meta = S.data.meta || {};
-        var nombre = (S.volumetria && S.volumetria.nombre) || '';
-        var disabled = S.readonly ? 'disabled' : '';
-
-        var tcVal = S.volumetria && S.volumetria.tipo_cambio != null ? S.volumetria.tipo_cambio : '';
-        var ivaVal = S.volumetria && S.volumetria.iva_pct != null ? S.volumetria.iva_pct : '';
-
-        var status = (S.volumetria && S.volumetria.status) || 'borrador';
-        var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
-        var statusCls = 'cv-status cv-status-' + status;
-        var statusBtn;
-        if (!S.readonly) {
-            statusBtn =
-                '<button type="button" class="' + statusCls + '" data-action="toggle-status">' +
-                    '<span class="cv-status-dot"></span>' +
-                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
-                '</button>';
-        } else {
-            statusBtn =
-                '<span class="' + statusCls + '">' +
-                    '<span class="cv-status-dot"></span>' +
-                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
-                '</span>';
-        }
-
-        var h = '<div class="cv-doc">';
-        h += '<div class="cv-doc-titlebar">';
-        h += '<input type="text" class="cv-doc-title-input" data-meta="nombre" ' +
-             'placeholder="Sin título" value="' + esc(nombre) + '" ' + disabled + ' />';
-        h += statusBtn;
-        h += '</div>';
-
-        h += '<div class="cv-doc-meta">';
-        h += metaField('cliente',  ICON.building, 'Cliente',        meta.cliente,  'ALLEGION ENSENADA');
-        h += metaField('contacto', ICON.user,     'Contacto',       meta.contacto, 'Ing. Ricardo Sandoval');
-        h += metaField('elaboro',  ICON.edit,     'Elaboró',        meta.elaboro,  'Jose Manuel');
-        h += metaField('fecha',    ICON.calendar, 'Fecha',          meta.fecha,    '',  'date');
-        h += metaField('tc',       ICON.coins,    'Tipo de cambio', tcVal,         '19.50', 'number');
-        h += metaField('iva',      ICON.percent,  'IVA %',          ivaVal,        '16',    'number');
-        h += '</div>';
-
-        h += '</div>';
-        return h;
-    }
-
-    function metaField(key, icon, label, value, placeholder, type) {
-        var disabled = S.readonly ? 'disabled' : '';
-        var t = type || 'text';
-        var val = value == null ? '' : value;
-        return '<label class="cv-meta-field">' +
-               '<span class="cv-meta-icon">' + icon + '</span>' +
-               '<span class="cv-meta-label">' + esc(label) + '</span>' +
-               '<input type="' + t + '" class="cv-meta-input" data-meta="' + key + '" ' +
-                  'placeholder="' + esc(placeholder) + '" value="' + esc(val) + '" ' + disabled + ' />' +
-               '</label>';
     }
 
     // ── Sección (banner + tabla) ────────────────────────────────────
@@ -928,11 +868,6 @@
         h += renderThead(sec);
         h += '<tbody class="cv-tbody">';
         var items = sec.items || [];
-        if (!items.length) {
-            var span = colCountForTipo(sec.tipo);
-            h += '<tr class="cv-tr cv-tr-empty"><td class="cv-td cv-empty" colspan="' + span + '">Sin items. ' +
-                 (S.readonly ? '' : 'Usa &laquo;+ Fila&raquo; para agregar.') + '</td></tr>';
-        }
         items.forEach(function (it, idx) {
             h += renderRow(sec, it, idx);
         });
@@ -1297,13 +1232,45 @@
     }
 
     function renderFinanciero() {
+        var h = '<aside class="cv-card cv-card-financiero">';
+        h += '<div class="cv-card-header"><div class="cv-card-title">Resumen Financiero</div></div>';
+        h += '<div class="cv-card-body">';
+        h += renderFinConfig();
+        h += '<div class="cv-fin-sep"></div>';
+        h += '<div class="cv-fin-values">' + renderFinValues() + '</div>';
+        h += '</div>';
+        h += '</aside>';
+        return h;
+    }
+
+    function renderFinConfig() {
+        var tcVal = S.volumetria && S.volumetria.tipo_cambio != null ? S.volumetria.tipo_cambio : '';
+        var ivaVal = S.volumetria && S.volumetria.iva_pct != null ? S.volumetria.iva_pct : '';
+        var disabled = S.readonly ? 'disabled' : '';
+
+        var h = '<div class="cv-fin-config">';
+        h += '<label class="cv-fin-config-field">' +
+                 '<span class="cv-fin-config-label">TC</span>' +
+                 '<input type="number" step="any" class="cv-fin-config-input cv-mono" data-meta="tc" ' +
+                    'value="' + esc(tcVal) + '" placeholder="19.50" ' + disabled + ' />' +
+                 '<span class="cv-fin-config-suffix">MXN/USD</span>' +
+             '</label>';
+        h += '<label class="cv-fin-config-field">' +
+                 '<span class="cv-fin-config-label">IVA</span>' +
+                 '<input type="number" step="any" class="cv-fin-config-input cv-mono" data-meta="iva" ' +
+                    'value="' + esc(ivaVal) + '" placeholder="16" ' + disabled + ' />' +
+                 '<span class="cv-fin-config-suffix">%</span>' +
+             '</label>';
+        h += '</div>';
+        return h;
+    }
+
+    function renderFinValues() {
         var t = calcTotals();
         var tc = num(S.volumetria && S.volumetria.tipo_cambio);
         var marginCls = 'cv-fin-row cv-fin-row-margin' + (t.margen < 20 ? ' cv-fin-row-margin-low' : '');
 
-        var h = '<aside class="cv-card cv-card-financiero">';
-        h += '<div class="cv-card-header"><div class="cv-card-title">Resumen Financiero</div></div>';
-        h += '<div class="cv-card-body">';
+        var h = '';
         h += finRow('Subtotal venta', fmtMoney(t.subtotalVenta), 'cv-fin-row');
         h += finRow('Costo total',    fmtMoney(t.totalCosto),    'cv-fin-row cv-fin-row-cost');
         h += finRow('Ganancia',       fmtMoney(t.ganancia),      'cv-fin-row cv-fin-row-gain');
@@ -1329,9 +1296,26 @@
             h += '</div>';
         }
 
-        h += '</div>';
-        h += '</aside>';
         return h;
+    }
+
+    /** Actualiza solo los renglones de valores del card financiero,
+     *  preservando el foco de los inputs de TC/IVA mientras el usuario
+     *  los está editando. También refresca el card de stats (tablas/items). */
+    function updateFinValuesAndStats() {
+        if (!S.container) return;
+        var valuesEl = S.container.querySelector('.cv-fin-values');
+        if (valuesEl) valuesEl.innerHTML = renderFinValues();
+
+        // Stats card: solo cambian los conteos; reemplazamos íntegro
+        // (no contiene inputs editables, no hay foco que preservar).
+        var oldStats = S.container.querySelector('.cv-card-stats');
+        if (oldStats) {
+            var tmp = document.createElement('div');
+            tmp.innerHTML = renderStats();
+            var newStats = tmp.firstChild;
+            oldStats.replaceWith(newStats);
+        }
     }
 
     function finRow(label, value, cls) {
@@ -1345,9 +1329,27 @@
         var s = calcStats();
         var status = (S.volumetria && S.volumetria.status) || 'borrador';
         var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
+        var statusCls = 'cv-status cv-status-' + status;
+        var statusEl;
+        if (!S.readonly) {
+            statusEl =
+                '<button type="button" class="' + statusCls + '" data-action="toggle-status">' +
+                    '<span class="cv-status-dot"></span>' +
+                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
+                '</button>';
+        } else {
+            statusEl =
+                '<span class="' + statusCls + '">' +
+                    '<span class="cv-status-dot"></span>' +
+                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
+                '</span>';
+        }
 
         var h = '<aside class="cv-card cv-card-stats">';
-        h += '<div class="cv-card-header"><div class="cv-card-title">Resumen de Estadísticas</div></div>';
+        h += '<div class="cv-card-header cv-card-header-row">';
+        h += '<div class="cv-card-title">Resumen de Estadísticas</div>';
+        h += statusEl;
+        h += '</div>';
         h += '<div class="cv-card-body">';
 
         h += '<div class="cv-stat-row">';
@@ -1371,21 +1373,6 @@
         });
         if (s.items === 0) h += '<span class="cv-stat-label cv-mono">—</span>';
         h += '</span>';
-        h += '</div>';
-
-        h += '<div class="cv-fin-sep"></div>';
-
-        h += '<div class="cv-stat-row">';
-        h += '<span class="cv-stat-label">Estado</span>';
-        h += '<span class="cv-status cv-status-' + status + '"><span class="cv-status-dot"></span>' +
-             '<span class="cv-status-label">' + esc(statusLabel) + '</span></span>';
-        h += '</div>';
-
-        h += '<div class="cv-card-actions">';
-        h += '<button type="button" class="cv-export-btn" data-action="export-pdf">' +
-             ICON.fileText + '<span>Exportar PDF</span></button>';
-        h += '<button type="button" class="cv-export-btn" data-action="export-xlsx">' +
-             ICON.sheet + '<span>Exportar Excel</span></button>';
         h += '</div>';
 
         h += '</div>';
@@ -1468,14 +1455,6 @@
             if (typeof window.lwP3ToggleStatus === 'function') {
                 window.lwP3ToggleStatus();
             }
-        } else if (action === 'export-pdf') {
-            ev.preventDefault();
-            log('TODO: export-pdf');
-            try { alert('Próximamente: exportación a PDF'); } catch (_) {}
-        } else if (action === 'export-xlsx') {
-            ev.preventDefault();
-            log('TODO: export-xlsx');
-            try { alert('Próximamente: exportación a Excel'); } catch (_) {}
         }
     }
 
@@ -1496,14 +1475,16 @@
             var tc = num(val);
             if (S.volumetria) S.volumetria.tipo_cambio = tc;
             scheduleMetaSave({ tipo_cambio: tc });
-            updateBottom();
+            // No tocamos los inputs de TC/IVA (el usuario los está editando):
+            // refrescamos solo los valores derivados.
+            updateFinValuesAndStats();
             return;
         }
         if (key === 'iva') {
             var iv = num(val);
             if (S.volumetria) S.volumetria.iva_pct = iv;
             scheduleMetaSave({ iva_pct: iv });
-            updateBottom();
+            updateFinValuesAndStats();
             return;
         }
         if (!S.data.meta) S.data.meta = {};
@@ -1781,6 +1762,15 @@
         var newBottom = tmp.firstChild;
         if (oldBottom) oldBottom.replaceWith(newBottom);
         else S.container.querySelector('.cv-root').appendChild(newBottom);
+
+        // Re-bind: el card de Resumen Financiero ahora hospeda los inputs
+        // de TC e IVA con [data-meta]; al reemplazar el bottom hay que
+        // restaurar los handlers (el click es delegado al contenedor, así
+        // que el toggle-status del card stats no requiere rebind).
+        newBottom.querySelectorAll('[data-meta]').forEach(function (inp) {
+            inp.addEventListener('input', onMetaInput);
+            inp.addEventListener('change', onMetaInput);
+        });
     }
 
     // ── Autosave ────────────────────────────────────────────────────

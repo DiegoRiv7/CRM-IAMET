@@ -19,11 +19,9 @@
  * ── Inventario de clases (debe coincidir con el JS) ──
  *
  * Root:        .cv-root, .cv-readonly
- * Doc header:  .cv-doc, .cv-doc-titlebar, .cv-doc-title-input,
- *              .cv-status, .cv-status-borrador, .cv-status-completada,
- *              .cv-status-dot, .cv-status-label,
- *              .cv-doc-meta, .cv-meta-field, .cv-meta-icon,
- *              .cv-meta-label, .cv-meta-input
+ * Status pill: .cv-status, .cv-status-borrador, .cv-status-completada,
+ *              .cv-status-dot, .cv-status-label
+ *              (se renderiza dentro del header del card de estadísticas)
  * Stack:       .cv-stack
  * Sección:     .cv-section, .cv-section-collapsed,
  *              .cv-section-equipamiento, .cv-section-mano_obra,
@@ -42,7 +40,7 @@
  *              .cv-th-group-acciones, .cv-th-group-empty,
  *              .cv-th, .cv-th-num, .cv-th-text, .cv-th-desc,
  *              .cv-th-idx, .cv-th-act,
- *              .cv-tbody, .cv-tr, .cv-tr-header, .cv-tr-empty,
+ *              .cv-tbody, .cv-tr, .cv-tr-header,
  *              .cv-td, .cv-td-num, .cv-td-text, .cv-td-desc,
  *              .cv-td-calc, .cv-td-idx, .cv-td-act, .cv-td-mono,
  *              .cv-td-total, .cv-td-positive, .cv-td-negative,
@@ -58,7 +56,11 @@
  *              .cv-add-section-icon-gastos,
  *              .cv-add-section-caret, .cv-add-section-open
  * Bottom:      .cv-bottom, .cv-card, .cv-card-financiero, .cv-card-stats,
- *              .cv-card-header, .cv-card-title, .cv-card-body,
+ *              .cv-card-header, .cv-card-header-row,
+ *              .cv-card-title, .cv-card-body,
+ *              .cv-fin-config, .cv-fin-config-field,
+ *              .cv-fin-config-label, .cv-fin-config-input,
+ *              .cv-fin-config-suffix,
  *              .cv-fin-row, .cv-fin-label, .cv-fin-value,
  *              .cv-fin-row-cost, .cv-fin-row-gain, .cv-fin-row-margin,
  *              .cv-fin-row-margin-low, .cv-fin-row-iva, .cv-fin-row-total,
@@ -66,8 +68,7 @@
  *              .cv-stat-row, .cv-stat-label, .cv-stat-value,
  *              .cv-stat-pills, .cv-stat-pill,
  *              .cv-stat-pill-equipamiento, .cv-stat-pill-mano_obra,
- *              .cv-stat-pill-costo_mo, .cv-stat-pill-gastos,
- *              .cv-card-actions, .cv-export-btn
+ *              .cv-stat-pill-costo_mo, .cv-stat-pill-gastos
  * Misc:        .cv-mono, .cv-empty, .cv-sr-only
  */
 
@@ -163,44 +164,6 @@
     clip: rect(0 0 0 0);
 }
 
-/* ── Document header ────────────────────────────────────────────── */
-.cv-doc {
-    max-width: 100%;
-    margin: 0 0 16px;
-    padding: 0;
-}
-
-.cv-doc-titlebar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 0 14px;
-}
-
-.cv-doc-title-input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: var(--cv-fg);
-    font-family: var(--cv-sans);
-    font-size: 30px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-    padding: 0;
-    margin: 0;
-}
-.cv-doc-title-input::placeholder {
-    color: var(--cv-fg-placeholder);
-    font-weight: 700;
-}
-.cv-doc-title-input:focus {
-    outline: none;
-    box-shadow: 0 1px 0 0 var(--cv-accent);
-}
-
 /* Status pill (Borrador / Completada) */
 .cv-status {
     display: inline-flex;
@@ -249,76 +212,6 @@ button.cv-status { font-family: inherit; }
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
 }
 .cv-readonly .cv-status { cursor: default; }
-
-/* Pills de metadatos */
-.cv-doc-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 8px;
-    align-items: center;
-}
-
-.cv-meta-field {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 30px;
-    padding: 0 10px 0 8px;
-    border: 1px solid var(--cv-border);
-    background: var(--cv-bg-card);
-    border-radius: 999px;
-    cursor: text;
-    transition: border-color 120ms ease, background 120ms ease;
-}
-.cv-meta-field:hover {
-    border-color: var(--cv-border-strong);
-}
-.cv-meta-field:focus-within {
-    border-color: var(--cv-accent-soft);
-    box-shadow: 0 0 0 3px var(--cv-accent-bg);
-}
-
-.cv-meta-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    color: var(--cv-fg-faint);
-    flex-shrink: 0;
-}
-
-.cv-meta-label {
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--cv-fg-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    user-select: none;
-}
-
-.cv-meta-input {
-    border: none;
-    outline: none;
-    background: transparent;
-    color: var(--cv-fg);
-    font-family: var(--cv-sans);
-    font-size: 12.5px;
-    padding: 0;
-    margin: 0;
-    min-width: 60px;
-    width: auto;
-    max-width: 220px;
-}
-.cv-meta-input::placeholder {
-    color: var(--cv-fg-placeholder);
-}
-.cv-meta-input[type="number"] { max-width: 70px; }
-.cv-meta-input[type="date"]   { max-width: 130px; }
-.cv-meta-input[disabled] {
-    color: var(--cv-fg-muted);
-    cursor: default;
-}
 
 /* ── Stack de secciones ─────────────────────────────────────────── */
 .cv-stack {
@@ -548,8 +441,8 @@ button.cv-status { font-family: inherit; }
     text-transform: uppercase;
     letter-spacing: 0.06em;
     text-align: center;
-    border-bottom: 1px solid var(--cv-border-soft);
-    border-right: 1px solid var(--cv-border-soft);
+    border-bottom: 1px solid var(--cv-border);
+    border-right: 1px solid var(--cv-border);
     white-space: nowrap;
 }
 .cv-thead-groups th:last-child { border-right: none; }
@@ -581,11 +474,13 @@ button.cv-status { font-family: inherit; }
     color: var(--cv-fg-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    border-bottom: 1px solid var(--cv-border);
+    border-bottom: 2px solid var(--cv-border-strong);
+    border-right: 1px solid var(--cv-border);
     text-align: left;
     white-space: nowrap;
     z-index: 1;
 }
+.cv-thead-cols th.cv-th:last-child { border-right: none; }
 .cv-th-num   { text-align: right; }
 .cv-th-text  { text-align: left; }
 .cv-th-desc  { min-width: 220px; }
@@ -600,28 +495,22 @@ button.cv-status { font-family: inherit; }
     background: var(--cv-bg-row-alt);
 }
 .cv-tbody .cv-tr:hover {
-    background: var(--cv-bg-hover);
+    background: var(--cv-bg-soft);
 }
 .cv-tbody .cv-tr:hover .cv-row-del {
     opacity: 1;
 }
 
-.cv-tr-empty td {
-    text-align: center;
-    color: var(--cv-fg-faint);
-    font-style: italic;
-    padding: 18px 12px;
-    background: var(--cv-bg-card);
-}
-
 /* ── Celdas ─────────────────────────────────────────────────────── */
 .cv-td {
     padding: 4px 8px;
-    border-bottom: 1px solid var(--cv-border-soft);
+    border-bottom: 1px solid var(--cv-border);
+    border-right: 1px solid var(--cv-border);
     vertical-align: middle;
     font-size: 13px;
     color: var(--cv-fg);
 }
+.cv-tbody .cv-tr > .cv-td:last-child { border-right: none; }
 .cv-td-num { text-align: right; }
 .cv-td-text { text-align: left; }
 .cv-td-idx {
@@ -646,11 +535,13 @@ button.cv-status { font-family: inherit; }
     text-align: right;
     padding: 6px 10px;
     white-space: nowrap;
+    border-right-color: var(--cv-border-strong);
 }
 .cv-td-total {
     font-weight: 700;
     color: var(--cv-fg);
     background: rgba(15, 23, 42, 0.04);
+    border-right-color: var(--cv-border-strong);
 }
 .cv-td-positive { color: var(--cv-positive); }
 .cv-td-negative { color: var(--cv-danger); }
@@ -900,12 +791,23 @@ button.cv-status { font-family: inherit; }
     padding: 12px 16px;
     border-bottom: 1px solid var(--cv-border);
 }
+.cv-card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
 .cv-card-title {
     font-size: 13px;
     font-weight: 700;
     color: var(--cv-fg);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+/* Status pill cuando vive en el header del card stats: tamaño compacto */
+.cv-card-header-row .cv-status {
+    padding: 4px 10px;
+    font-size: 11.5px;
 }
 
 .cv-card-financiero .cv-card-header {
@@ -929,6 +831,79 @@ button.cv-status { font-family: inherit; }
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+/* Wrapper de las filas de valores (subtotal, costo, ganancia, …);
+ * `display: contents` lo hace transparente para el flex del card-body
+ * para que el gap entre filas siga funcionando idéntico. */
+.cv-fin-values {
+    display: contents;
+}
+
+/* Inline TC + IVA dentro del card financiero */
+.cv-fin-config {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 2px 0 6px;
+}
+.cv-fin-config-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid var(--cv-border);
+    background: var(--cv-bg-card);
+    border-radius: var(--cv-radius-sm);
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.cv-fin-config-field:hover {
+    border-color: var(--cv-border-strong);
+}
+.cv-fin-config-field:focus-within {
+    border-color: var(--cv-accent-soft);
+    box-shadow: 0 0 0 3px var(--cv-accent-bg);
+}
+.cv-fin-config-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cv-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    user-select: none;
+}
+.cv-fin-config-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--cv-fg);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0;
+    margin: 0;
+    width: 64px;
+    text-align: right;
+    -moz-appearance: textfield;
+}
+.cv-fin-config-input::-webkit-outer-spin-button,
+.cv-fin-config-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.cv-fin-config-input::placeholder {
+    color: var(--cv-fg-placeholder);
+    font-weight: 500;
+}
+.cv-fin-config-input[disabled] {
+    color: var(--cv-fg-2);
+    cursor: default;
+}
+.cv-fin-config-suffix {
+    font-size: 11px;
+    color: var(--cv-fg-muted);
+    font-weight: 500;
+    user-select: none;
 }
 
 /* Filas del resumen financiero */
@@ -1067,36 +1042,6 @@ button.cv-status { font-family: inherit; }
     border-color: var(--cv-ga-border);
 }
 
-.cv-card-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.cv-export-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 9px 12px;
-    border: 1px solid var(--cv-border);
-    background: var(--cv-bg-card);
-    color: var(--cv-fg-2);
-    border-radius: var(--cv-radius);
-    font-family: var(--cv-sans);
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 120ms ease;
-}
-.cv-export-btn:hover {
-    background: var(--cv-bg-soft);
-    border-color: var(--cv-border-strong);
-    color: var(--cv-fg);
-}
-.cv-export-btn svg { flex-shrink: 0; }
-
 /* ── Misc ───────────────────────────────────────────────────────── */
 .cv-mono {
     font-family: var(--cv-mono);
@@ -1113,13 +1058,9 @@ button.cv-status { font-family: inherit; }
 .cv-readonly .cv-input { background: transparent; border-color: transparent; }
 .cv-readonly .cv-input:hover { background: transparent; }
 .cv-readonly .cv-section-title-input:hover { background: transparent; }
-.cv-readonly .cv-meta-field { cursor: default; }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-    .cv-doc-title-input { font-size: 26px; }
-    .cv-doc-meta { gap: 5px 6px; }
-    .cv-meta-input { max-width: 160px; }
     .cv-section-title-input { font-size: 15px; }
 }
 
@@ -1130,12 +1071,6 @@ button.cv-status { font-family: inherit; }
 }
 
 @media (max-width: 768px) {
-    .cv-doc-title-input { font-size: 22px; }
-    .cv-doc-meta { gap: 4px; }
-    .cv-meta-field { height: 28px; padding: 0 8px 0 6px; }
-    .cv-meta-label { display: none; }
-    .cv-meta-input { max-width: 130px; font-size: 12px; }
-
     .cv-section-banner {
         flex-wrap: wrap;
         gap: 8px;
@@ -1147,8 +1082,5 @@ button.cv-status { font-family: inherit; }
     }
     .cv-btn { padding: 6px 10px; font-size: 12px; }
 
-    .cv-card-actions {
-        grid-template-columns: 1fr;
-    }
     .cv-fin-row-total .cv-fin-value { font-size: 22px; }
 }
