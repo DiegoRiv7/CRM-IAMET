@@ -307,10 +307,9 @@
             var phaseLabels = ['', 'Levantamiento', 'Propuesta Técnica', 'Volumetría', 'Programa de Obra', 'Reportes'];
             fc.textContent = 'Fase ' + state.phase + ' de 5 — ' + phaseLabels[state.phase];
         }
-        // prev/next disable
-        var prev = $('lwFooterPrev');
+        // prev/next disable + label dinámico para prev en Fase 3
+        _lwUpdatePrevButton();
         var next = $('lwFooterNext');
-        if (prev) { prev.disabled = (state.phase === 1); prev.style.opacity = (state.phase === 1) ? '0.4' : ''; }
         if (next) {
             next.disabled = (state.phase === 5);
             next.style.opacity = (state.phase === 5) ? '0.4' : '';
@@ -319,6 +318,26 @@
         // Ocultar footer en fase 5 (se ve mejor sin él)
         var footer = $('lwFooter');
         if (footer) footer.style.display = state.phase === 5 ? 'none' : 'flex';
+    }
+
+    // Botón "Fase anterior" del footer es contextual:
+    //   - Fase 3 dentro de una volumetría → "← Volver al listado" (vuelve al panel)
+    //   - Cualquier otra fase / panel → "← Fase anterior" (vuelve a la anterior)
+    function _lwUpdatePrevButton() {
+        var prev = $('lwFooterPrev');
+        if (!prev) return;
+        var inVolEditor = (state.phase === 3 && state.volumetriaActiva);
+        if (inVolEditor) {
+            prev.textContent = '← Volver al listado';
+            prev.onclick = function () { window.lwP3VolverAlPanel(); };
+            prev.disabled = false;
+            prev.style.opacity = '';
+        } else {
+            prev.textContent = '← Fase anterior';
+            prev.onclick = function () { window.lwPrevPhase(); };
+            prev.disabled = (state.phase === 1);
+            prev.style.opacity = (state.phase === 1) ? '0.4' : '';
+        }
     }
 
     // Gate: no dejar avanzar a fase > 1 hasta que Fase 1 este >= 70% completa.
@@ -2632,6 +2651,8 @@
         state.volumetriaActiva = null;
         state.lev.fase3_data = {};
         _lwP3FetchVolumetrias();
+        // El botón prev del footer vuelve a "Fase anterior".
+        _lwUpdatePrevButton();
     };
 
     window.lwP3RenameVolumetria = function () {
@@ -2823,7 +2844,13 @@
                 if (r && r.success && r.data) {
                     state.volumetriaActiva.status = r.data.status;
                     state.volumetriaActiva.status_label = r.data.status_label;
-                    _lwP3RenderEditHead();
+                    // Re-render del módulo de volumetría — flush antes
+                    // para no perder edits en memoria, luego destroy +
+                    // render con la volumetría actualizada.
+                    if (window.crmVolumetria) {
+                        try { window.crmVolumetria.flushSave(); } catch (_) {}
+                    }
+                    _renderPhase3Editor();
                 }
             });
         }
@@ -2907,33 +2934,25 @@
         var wrap  = $('lwP3Wrap');
         if (panel) panel.style.display = 'none';
         if (wrap)  wrap.style.display  = 'block';
-        _lwP3RenderEditHead();
         if (!state.volumetriaActiva) return;
 
-        // Delegamos la mesa de trabajo al módulo crm_volumetria (v2).
-        // El template de wrap trae las tablas viejas hardcodeadas; al primer
-        // mount las limpiamos preservando solo el head y montamos el módulo.
-        // La clase `lw-p3-wrap-v2` cambia el layout del wrap a columna
-        // (estaba en flex-row con summary fijo a la derecha) — lo necesitamos
-        // así porque el módulo nuevo trae su propio sidebar interno.
-        var head = wrap.querySelector('#lwP3EditHead');
+        // Delegamos la mesa de trabajo al módulo crm_volumetria (v3).
+        // El head viejo ("Volver al listado · nombre · status · toggle")
+        // se removió por petición del usuario — ahora la navegación back
+        // vive en el footer del wizard ("Volver al listado") y el toggle
+        // de status está integrado al doc-header del módulo nuevo.
         var mount = wrap.querySelector('#lwP3CvMount');
         if (!mount) {
             wrap.innerHTML = '';
             wrap.classList.add('lw-p3-wrap-v2');
-            if (head) wrap.appendChild(head);
-            else {
-                head = document.createElement('div');
-                head.id = 'lwP3EditHead';
-                head.className = 'lw-p3-edit-head';
-                wrap.appendChild(head);
-                _lwP3RenderEditHead();
-            }
             mount = document.createElement('div');
             mount.id = 'lwP3CvMount';
             mount.className = 'lw-p3-cv-mount';
             wrap.appendChild(mount);
         }
+        // Botón prev del footer cambia a "Volver al listado" cuando estamos
+        // dentro de una volumetría.
+        _lwUpdatePrevButton();
 
         if (window.crmVolumetria && typeof window.crmVolumetria.render === 'function') {
             window.crmVolumetria.render(mount, {

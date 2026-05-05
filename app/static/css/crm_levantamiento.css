@@ -1518,10 +1518,10 @@
     overflow: hidden;
 }
 .lw-p3-wrap.lw-p3-wrap-v2 > #lwP3EditHead {
-    flex: 0 0 auto;
-    padding: 12px 14px 10px;
-    background: #fff;
-    border-bottom: 1px solid #f1f5f9;
+    /* Header viejo del editor (Volver al listado · nombre · status · toggle)
+       removido por petición del usuario. La navegación back vive en el
+       footer y el toggle de status está dentro del módulo nuevo. */
+    display: none;
 }
 .lw-p3-wrap.lw-p3-wrap-v2 > #lwP3CvMount {
     flex: 1;

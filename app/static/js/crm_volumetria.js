@@ -473,9 +473,33 @@
         var tcVal = S.volumetria && S.volumetria.tipo_cambio != null ? S.volumetria.tipo_cambio : '';
         var ivaVal = S.volumetria && S.volumetria.iva_pct != null ? S.volumetria.iva_pct : '';
 
+        // Pill de estado: muestra Borrador/Completada y al click toggea
+        // (la lógica vive en el wizard: window.lwP3ToggleStatus). Usa
+        // el ID de la volumetría como guard (en standalone no hay wizard).
+        var status = (S.volumetria && S.volumetria.status) || 'borrador';
+        var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
+        var statusCls = 'cv-status cv-status-' + status;
+        var statusBtn = '';
+        if (!S.readonly) {
+            statusBtn =
+                '<button type="button" class="' + statusCls + '" data-action="toggle-status">' +
+                    '<span class="cv-status-dot"></span>' +
+                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
+                '</button>';
+        } else {
+            statusBtn =
+                '<span class="' + statusCls + '">' +
+                    '<span class="cv-status-dot"></span>' +
+                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
+                '</span>';
+        }
+
         var h = '<div class="cv-doc">';
+        h += '<div class="cv-doc-titlebar">';
         h += '<input type="text" class="cv-doc-title-input" data-meta="nombre" ' +
              'placeholder="Sin título" value="' + esc(nombre) + '" ' + disabled + ' />';
+        h += statusBtn;
+        h += '</div>';
 
         h += '<div class="cv-doc-meta">';
         h += metaField('cliente',  ICON.user,     'Cliente',        meta.cliente,  'ALLEGION ENSENADA');
@@ -742,6 +766,14 @@
             if (S.readonly) return;
             ev.preventDefault();
             delSection(secId);
+        } else if (action === 'toggle-status') {
+            if (S.readonly) return;
+            ev.preventDefault();
+            // Delega al wizard host (lwP3ToggleStatus tiene la confirmación
+            // y maneja la persistencia + re-render del módulo).
+            if (typeof window.lwP3ToggleStatus === 'function') {
+                window.lwP3ToggleStatus();
+            }
         }
     }
 
