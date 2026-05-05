@@ -1243,3 +1243,58 @@ button.cv-status { font-family: inherit; }
     .cv-section-subtotal-value { font-size: 20px; }
     .cv-item-icon { width: 36px; height: 36px; }
 }
+
+/* Layout PWA UI / React UI equivalents */
+.cv-app-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #ffffff; padding: 12px 24px; border-bottom: 1px solid var(--cv-border);
+    position: sticky; top: 0; z-index: 30;
+}
+.cv-app-header h1 { margin: 0; font-size: 16px; font-weight: 700; color: var(--cv-fg); }
+.cv-app-header p { margin: 4px 0 0 0; font-size: 11px; color: var(--cv-fg-muted); }
+
+.cv-app-main {
+    display: flex; gap: 16px; padding: 16px;
+    min-height: calc(100vh - 66px); /* Fill remaining space */
+}
+
+.cv-app-left {
+    flex: 1; min-width: 0;
+    background: #ffffff; border: 1px solid var(--cv-border);
+    border-radius: var(--cv-radius-xl); display: flex; flex-direction: column;
+    overflow: hidden;
+}
+
+.cv-app-right {
+    width: 320px; display: flex; flex-direction: column; gap: 16px;
+    flex-shrink: 0; transition: margin-right 0.3s ease, opacity 0.3s ease, width 0.3s ease;
+    overflow-y: auto; overflow-x: hidden;
+}
+
+.cv-sidebar-hidden .cv-app-right {
+    width: 0;
+    margin-left: -16px; /* Negate the gap */
+    opacity: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.cv-app-table-scroll {
+    flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; background: #fafafa;
+}
+
+/* Modificamos los .cv-section y .cv-item para que parezcan filas de tabla */
+.cv-app-table-scroll .cv-stack { gap: 0; border: 1px solid var(--cv-border); border-radius: var(--cv-radius-lg); overflow: hidden; background: #fff;}
+.cv-app-table-scroll .cv-section {
+    border: none; border-radius: 0; box-shadow: none; border-bottom: 1px solid var(--cv-border);
+}
+.cv-app-table-scroll .cv-section:last-child { border-bottom: none; }
+.cv-app-table-scroll .cv-section-body { padding: 0; background: #fff; }
+.cv-app-table-scroll .cv-items { gap: 0; }
+.cv-app-table-scroll .cv-item {
+    border: none; border-radius: 0; box-shadow: none; border-bottom: 1px solid var(--cv-border-soft);
+    padding: 6px 12px; margin: 0;
+}
+.cv-app-table-scroll .cv-item-header { padding: 8px 12px; }
+.cv-app-table-scroll .cv-item:last-child { border-bottom: none; }
+.cv-app-table-scroll .cv-section-actions { padding: 12px 16px; border-top: 1px solid var(--cv-border-soft); }

@@ -855,13 +855,50 @@
         if (!S.container) return;
 
         var html = '<div class="cv-root' + (S.readonly ? ' cv-readonly' : '') + '">';
-        html += '<div class="cv-stack">';
+        
+        // Header
+        html += '<header class="cv-app-header border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">';
+        html += '  <div>';
+        var cliName = esc((S.data && S.data.meta && S.data.meta.cliente) || "Proyecto");
+        var levDate = esc((S.data && S.data.meta && S.data.meta.fecha) || "Reciente");
+        html += '    <h1 class="text-xl font-semibold text-gray-900">Proyecto: ' + cliName + '</h1>';
+        html += '    <p class="text-xs text-gray-500 mt-0.5">Última edición: ' + levDate + '</p>';
+        html += '  </div>';
+        html += '  <div class="flex gap-3">';
+        html += '    <button type="button" class="cv-btn cv-btn-toggle-sidebar" data-action="toggle-sidebar">Ocultar / Mostrar Resumen</button>';
+        html += '  </div>';
+        html += '</header>';
+
+        // Main App Body
+        html += '<main class="cv-app-main flex-1 flex overflow-hidden p-4 gap-4">';
+        
+        // Left Column (Table area)
+        html += '  <div class="cv-app-left flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">';
+        
+        // Toolbar (Search placeholder)
+        html += '    <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid #e5e7eb;">';
+        html += '      <div class="relative"><input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100);"></div>';
+        html += '    </div>';
+
+        html += '    <div class="cv-app-table-scroll"><div class="cv-stack">';
         (S.data.secciones || []).forEach(function (sec, idx) {
             html += renderSection(sec, idx);
         });
-        html += '</div>';
-        if (!S.readonly) html += renderAddSectionWrap();
+        html += '    </div>';
+        
+        if (!S.readonly) {
+            html += '<div style="padding:16px;">' + renderAddSectionWrap() + '</div>';
+        }
+        
+        html += '    </div>'; // end scroller
+        html += '  </div>'; // end Left Column
+        
+        // Right Column (Sidebar)
+        html += '  <div class="cv-app-right w-80 flex flex-col gap-4">';
         html += renderBottom();
+        html += '  </div>';
+        
+        html += '</main>';
         html += '</div>';
 
         S.container.innerHTML = html;
@@ -1545,6 +1582,10 @@
             if (typeof window.lwP3ToggleStatus === 'function') {
                 window.lwP3ToggleStatus();
             }
+        } else if (action === 'toggle-sidebar') {
+            ev.preventDefault();
+            var root = S.container.querySelector('.cv-root');
+            if (root) root.classList.toggle('cv-sidebar-hidden');
         }
     }
 
