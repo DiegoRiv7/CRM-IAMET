@@ -316,6 +316,19 @@
                         <div id="calActParticipantesContainer" class="wact-pop-chips"></div>
                     </div>
                 </div>
+                <!-- Responsable (solo admins / supervisores / jefes de grupo) -->
+                <div class="wact-popwrap" id="calResponsableWrap" style="display:none;">
+                    <button type="button" class="wact-tool-ghost" data-wact-btn="responsable" onclick="wactOpenPop('cal', 'responsable', event)" title="Asignar responsable">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span data-wact-label="responsable">Responsable: yo</span>
+                    </button>
+                    <div class="wact-pop wact-pop-wide" data-wact-pop="responsable" style="display:none; min-width: 280px;">
+                        <div class="wact-pop-title">Responsable de la actividad</div>
+                        <div style="font-size:11.5px;color:#64748B;margin:0 0 8px 0;line-height:1.4;">Asignar a otro usuario para que aparezca en su calendario.</div>
+                        <input type="text" id="calResponsableSearch" class="wact-pop-input" placeholder="Buscar usuario…" oninput="calResponsableFilter(this.value)">
+                        <div id="calResponsableLista" class="wact-pop-dropdown" style="display:block;max-height:240px;overflow:auto;margin-top:6px;border-radius:8px;border:1px solid #E5E5EA;"></div>
+                    </div>
+                </div>
                 <!-- Repetir / recurrencia -->
                 <div class="wact-popwrap" id="calRecurWrap">
                     <button type="button" class="wact-tool-ghost" data-wact-btn="recurrencia" onclick="wactOpenPop('cal', 'recurrencia', event)" title="Repetir actividad">
@@ -416,6 +429,11 @@
     // Recurrencia (estado del formulario "Nueva Actividad")
     // dias: ISO weekday (1=Lun … 7=Dom). Default L–V.
     var _calRecurDiasSel = [1,2,3,4,5];
+    // Responsable (selector visible sólo para admins/supervisores/jefes).
+    // Cache de usuarios seleccionables; se llena al primer abrir del form.
+    var _calResponsableUsers = null;          // null=no cargado, []=cargado
+    var _calResponsableSelectedId = null;     // null = "yo" (el creador actual)
+    var _calResponsableMyId = parseInt("{{ request.user.id|default:'0' }}", 10) || null;
 
     /* ─── ABRIR / CERRAR ─── */
     window.calendarioAbrir = function () {
@@ -534,6 +552,8 @@
                         _calSelectedColor = '#1D1D1F';
                         window._calEditandoId = null;
                         calRecurReset();
+                        calResponsableReset();
+                        calResponsableEnsureLoaded();
                         var _rw1=document.getElementById('calRecurWrap'); if (_rw1) _rw1.style.display='';
                         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
                         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
@@ -1124,6 +1144,8 @@
         calRenderParticipantes();
         _calSelectedColor = '#1D1D1F';
         window._calEditandoId = null;
+        calResponsableReset();
+        calResponsableEnsureLoaded();
         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
     };
@@ -1846,6 +1868,8 @@
         _calParticipantesSel=[]; calRenderParticipantes(); _calSelectedColor='#1D1D1F';
         window._calEditandoId = null;
         calRecurReset();
+        calResponsableReset();
+        calResponsableEnsureLoaded();
         var _rw2=document.getElementById('calRecurWrap'); if (_rw2) _rw2.style.display='';
         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
         document.getElementById('widgetGlobalCrearActividad').style.display='flex';
@@ -1944,6 +1968,10 @@
         calRecurReset();
         var recurWrap=document.getElementById('calRecurWrap');
         if (recurWrap) recurWrap.style.display='none';
+        // Responsable: ocultar al editar (no se permite cambiar dueño tras crear).
+        calResponsableReset();
+        var respWrap=document.getElementById('calResponsableWrap');
+        if (respWrap) respWrap.style.display='none';
         document.getElementById('calFormActTitulo').textContent='Editar Actividad';
         document.getElementById('widgetGlobalCrearActividad').style.display='flex';
     };
@@ -2096,6 +2124,10 @@
             if (hastaVal < fecha) { alert('"Repetir hasta" debe ser igual o posterior a la fecha de inicio.'); return; }
             data.recurrencia = { dias: _calRecurDiasSel.slice(), hasta: hastaVal };
         }
+        // Responsable (sólo en alta): si el usuario eligió a alguien distinto a sí mismo.
+        if (!editandoId && _calResponsableSelectedId && _calResponsableSelectedId !== _calResponsableMyId) {
+            data.responsable_id = _calResponsableSelectedId;
+        }
         var csrf=document.querySelector('[name=csrfmiddlewaretoken]')?document.querySelector('[name=csrfmiddlewaretoken]').value:'';
         var url=editandoId?'/app/api/actividades/'+editandoId+'/':'/app/api/actividades/';
         var method=editandoId?'PUT':'POST';
@@ -2145,6 +2177,104 @@
             var currentUserName="{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}".trim()||"{{ request.user.username|escapejs }}";
             c.innerHTML='<span style="color:#86868B;font-size:0.85rem;padding:6px;font-weight:500;">'+woEscape(currentUserName)+'</span>';
         }
+    }
+
+    /* ─── RESPONSABLE (admins / supervisores / jefes de grupo) ─── */
+    // Carga (una sola vez por sesión) la lista de usuarios que el usuario
+    // actual puede asignar como responsable. Si la lista trae a alguien
+    // distinto a sí mismo, muestra el botón "Responsable" en el toolbar.
+    function calResponsableEnsureLoaded() {
+        if (_calResponsableUsers !== null) {
+            calResponsableUpdateVisibility();
+            return Promise.resolve();
+        }
+        return fetch('/app/api/calendario/seleccionables-responsable/', {credentials:'same-origin'})
+            .then(function(r){ return r.ok ? r.json() : {usuarios:[], puede_asignar:false}; })
+            .then(function(data){
+                _calResponsableUsers = data.usuarios || [];
+                var meta = _calResponsableUsers.find(function(u){return u.es_yo;});
+                if (meta) _calResponsableMyId = meta.id;
+                calResponsableUpdateVisibility();
+                calResponsableRenderLista('');
+            })
+            .catch(function(){ _calResponsableUsers = []; });
+    }
+    function calResponsableUpdateVisibility() {
+        var wrap = document.getElementById('calResponsableWrap');
+        if (!wrap) return;
+        var puedeAsignar = (_calResponsableUsers||[]).some(function(u){return !u.es_yo;});
+        // Sólo ocultamos cuando estamos editando una actividad existente
+        // (el modelo Actividad no soporta cambiar de responsable después
+        // de creada — para mantener simple el alcance de este cambio).
+        var editando = !!window._calEditandoId;
+        wrap.style.display = (puedeAsignar && !editando) ? '' : 'none';
+    }
+    function calResponsableReset() {
+        _calResponsableSelectedId = null;
+        calResponsableUpdateLabel();
+        calResponsableRenderLista(document.getElementById('calResponsableSearch')?document.getElementById('calResponsableSearch').value:'');
+    }
+    function calResponsableUpdateLabel() {
+        var lbl = document.querySelector('[data-wact-label="responsable"]');
+        var btn = document.querySelector('[data-wact-btn="responsable"]');
+        if (!lbl) return;
+        if (!_calResponsableSelectedId || _calResponsableSelectedId === _calResponsableMyId) {
+            lbl.textContent = 'Responsable: yo';
+            if (btn) btn.style.color = '';
+        } else {
+            var u = (_calResponsableUsers||[]).find(function(x){return x.id===_calResponsableSelectedId;});
+            lbl.textContent = 'Responsable: ' + ((u && u.nombre_completo) || '#'+_calResponsableSelectedId);
+            if (btn) btn.style.color = '#0052D4';
+        }
+    }
+    window.calResponsableSelect = function(id) {
+        if (!id || id === _calResponsableMyId) {
+            _calResponsableSelectedId = null;
+        } else {
+            _calResponsableSelectedId = id;
+        }
+        calResponsableUpdateLabel();
+        calResponsableRenderLista(document.getElementById('calResponsableSearch')?document.getElementById('calResponsableSearch').value:'');
+        // Cerramos el popover.
+        var pop = document.querySelector('[data-wact-pop="responsable"]');
+        if (pop) pop.style.display = 'none';
+    };
+    window.calResponsableFilter = function(query) {
+        calResponsableRenderLista(query||'');
+    };
+    function calResponsableRenderLista(query) {
+        var cont = document.getElementById('calResponsableLista');
+        if (!cont) return;
+        var users = _calResponsableUsers || [];
+        var q = (query||'').trim().toLowerCase();
+        if (q) {
+            users = users.filter(function(u){
+                return (u.nombre_completo||'').toLowerCase().indexOf(q) !== -1
+                    || (u.username||'').toLowerCase().indexOf(q) !== -1;
+            });
+        }
+        var html = '';
+        // Opción especial "Yo (sin asignar)" siempre arriba para volver al default.
+        var isMine = !_calResponsableSelectedId;
+        html += '<div onclick="calResponsableSelect(null)" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;gap:10px;font-size:0.88rem;background:'+(isMine?'#EEF4FF':'#fff')+';">'
+              + '<div style="width:26px;height:26px;border-radius:50%;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;">YO</div>'
+              + '<div style="display:flex;flex-direction:column;flex:1;"><strong style="color:#1D1D1F;">Yo (sin asignar a otro)</strong><span style="color:#86868B;font-size:0.72rem;">La actividad será mía</span></div>'
+              + (isMine?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'')
+              + '</div>';
+        users.forEach(function(u){
+            if (u.es_yo) return; // ya cubierto arriba
+            var checked = (_calResponsableSelectedId === u.id);
+            var iniciales = (u.nombre_completo||u.username||'?').trim().split(/\s+/).map(function(p){return p[0];}).slice(0,2).join('').toUpperCase();
+            html += '<div onclick="calResponsableSelect('+u.id+')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;gap:10px;font-size:0.88rem;background:'+(checked?'#EEF4FF':'#fff')+';">'
+                  + '<div style="width:26px;height:26px;border-radius:50%;background:#475569;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;">'+woEscape(iniciales)+'</div>'
+                  + '<div style="display:flex;flex-direction:column;flex:1;"><strong style="color:#1D1D1F;">'+woEscape(u.nombre_completo)+'</strong><span style="color:#86868B;font-size:0.72rem;">@'+woEscape(u.username)+'</span></div>'
+                  + (checked?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'')
+                  + '</div>';
+        });
+        if (!users.length) {
+            html += '<div style="padding:14px;color:#86868B;font-size:0.82rem;text-align:center;">Sin resultados.</div>';
+        }
+        cont.innerHTML = html;
     }
 
     window.calSelColor = function(color, btn) {

@@ -2323,6 +2323,76 @@ def api_buscar_oportunidades_proyecto(request):
         return JsonResponse({'error': 'Error interno del servidor'}, status=500)
 
 
+def _usuarios_seleccionables_responsable(request_user):
+    """
+    Devuelve un queryset (puede estar vacío) con los usuarios que `request_user`
+    puede asignar como responsable de una actividad de calendario.
+
+    Reglas:
+      - Admin / superuser / supervisor global → todos los usuarios activos.
+      - Jefe de grupo (supervisor_grupo de un GrupoTrabajo activo) → miembros
+        de sus grupos (incluido él mismo y otros jefes de esos grupos).
+      - Cualquier otro → solo él mismo (queryset con un único elemento).
+    """
+    from app.models import GrupoTrabajo
+
+    if request_user.is_superuser or is_supervisor(request_user) or is_administrador(request_user):
+        return User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+
+    # Jefes de grupo: usuarios que figuran como supervisor_grupo en algún grupo activo.
+    grupos_jefe = GrupoTrabajo.objects.filter(supervisor_grupo=request_user, activo=True)
+    if grupos_jefe.exists():
+        ids = {request_user.id}
+        for g in grupos_jefe.prefetch_related('miembros'):
+            ids.update(g.miembros.values_list('id', flat=True))
+        return User.objects.filter(id__in=ids, is_active=True).order_by('first_name', 'last_name', 'username')
+
+    # Sin permiso especial: solo se puede asignar a sí mismo.
+    return User.objects.filter(id=request_user.id)
+
+
+@login_required
+def api_calendario_seleccionables_responsable(request):
+    """
+    Devuelve la lista de usuarios que el solicitante puede seleccionar como
+    responsable al crear una actividad de calendario.
+
+    Respuesta:
+        {
+          "puede_asignar": bool,            # True si tiene a alguien además de sí mismo
+          "es_admin": bool,                 # True si es admin/super/supervisor global
+          "usuarios": [
+            {"id": 12, "username": "ana", "nombre_completo": "Ana López", "es_yo": false},
+            ...
+          ]
+        }
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
+
+    qs = _usuarios_seleccionables_responsable(request.user)
+    usuarios = []
+    for u in qs:
+        nombre = (u.first_name + ' ' + u.last_name).strip() or u.username
+        usuarios.append({
+            'id': u.id,
+            'username': u.username,
+            'nombre_completo': nombre,
+            'es_yo': (u.id == request.user.id),
+        })
+
+    es_admin = bool(
+        request.user.is_superuser or is_supervisor(request.user) or is_administrador(request.user)
+    )
+    # "puede_asignar" → hay al menos un usuario distinto al solicitante.
+    puede_asignar = any(not u['es_yo'] for u in usuarios)
+    return JsonResponse({
+        'puede_asignar': puede_asignar,
+        'es_admin': es_admin,
+        'usuarios': usuarios,
+    })
+
+
 @login_required
 @csrf_exempt
 def actividad_list_create(request):
@@ -2492,6 +2562,31 @@ def actividad_list_create(request):
             color = data.get('color', '#1D1D1F')
             oportunidad_id = data.get('opportunity')
 
+            # ── Responsable (opcional) ────────────────────────────────
+            # Admins / supervisores globales / jefes de grupo pueden agendar
+            # actividades a nombre de otro usuario. El frontend manda
+            # `responsable_id` cuando seleccionan a alguien distinto.
+            responsable_id_raw = data.get('responsable_id')
+            try:
+                responsable_id = int(responsable_id_raw) if responsable_id_raw else None
+            except (ValueError, TypeError):
+                responsable_id = None
+
+            creador_obj = request.user
+            if responsable_id and responsable_id != request.user.id:
+                seleccionables_ids = set(
+                    _usuarios_seleccionables_responsable(request.user).values_list('id', flat=True)
+                )
+                if responsable_id not in seleccionables_ids:
+                    return JsonResponse(
+                        {'error': 'No tienes permiso para asignar la actividad a ese usuario.'},
+                        status=403,
+                    )
+                try:
+                    creador_obj = User.objects.get(id=responsable_id, is_active=True)
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'Usuario responsable no encontrado.'}, status=404)
+
             from django.db import transaction
             actividades_creadas = []
             with transaction.atomic():
@@ -2502,7 +2597,7 @@ def actividad_list_create(request):
                         descripcion=descripcion,
                         fecha_inicio=s_dt,
                         fecha_fin=e_dt,
-                        creado_por=request.user,
+                        creado_por=creador_obj,
                         color=color,
                         oportunidad_id=oportunidad_id,
                         recurrence_group_id=recurrence_group_id,
@@ -2520,10 +2615,20 @@ def actividad_list_create(request):
             try:
                 from .views_grupos import registrar_accion_grupo
                 actor_nombre = request.user.get_full_name() or request.user.username
+                sufijo = f' ({len(actividades_creadas)} fechas)' if len(actividades_creadas) > 1 else ''
+                # Notificar al responsable cuando un admin/jefe se la asignó.
+                if creador_obj.id != request.user.id:
+                    prop_nombre = creador_obj.get_full_name() or creador_obj.username
+                    registrar_accion_grupo(
+                        request.user, creador_obj,
+                        'programar_actividad',
+                        f'{actor_nombre} agendó la actividad "{actividad.titulo}"{sufijo} para {prop_nombre}',
+                        objeto_tipo='actividad', objeto_id=actividad.id, objeto_titulo=actividad.titulo,
+                    )
+                # Notificar a los participantes (excluyendo al creador para no duplicar).
                 for p in actividad.participantes.all():
-                    if p != request.user:
+                    if p.id != request.user.id and p.id != creador_obj.id:
                         prop_nombre = p.get_full_name() or p.username
-                        sufijo = f' ({len(actividades_creadas)} fechas)' if len(actividades_creadas) > 1 else ''
                         registrar_accion_grupo(
                             request.user, p,
                             'programar_actividad',
@@ -2552,7 +2657,7 @@ def actividad_list_create(request):
                 'participants': participants_data,
                 'opportunity': opportunity_data,
                 'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
-                'es_mio': True,
+                'es_mio': actividad.creado_por_id == request.user.pk,
             }
             if len(actividades_creadas) > 1:
                 response_payload['recurrence_group_id'] = str(recurrence_group_id)
