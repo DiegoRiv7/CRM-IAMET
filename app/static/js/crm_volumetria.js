@@ -864,37 +864,31 @@
         html += '    <h1 class="text-xl font-semibold text-gray-900">Proyecto: ' + cliName + '</h1>';
         html += '    <p class="text-xs text-gray-500 mt-0.5">Última edición: ' + levDate + '</p>';
         html += '  </div>';
-        html += '  <div class="flex gap-3">';
-        html += '    <button type="button" class="cv-btn cv-btn-toggle-sidebar" data-action="toggle-sidebar">Ocultar / Mostrar Resumen</button>';
-        html += '  </div>';
         html += '</header>';
 
         // Main App Body
-        html += '<main class="cv-app-main flex-1 flex overflow-hidden p-4 gap-4">';
+        html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; min-height: calc(100vh - 66px);">';
         
-        // Left Column (Table area)
-        html += '  <div class="cv-app-left flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">';
+        // Table Box
+        html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:hidden;">';
         
-        // Toolbar (Search placeholder)
-        html += '    <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid #e5e7eb;">';
+        // Toolbar (Search + Agregar Tabla)
+        html += '    <div class="px-4 py-3 border-b flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid var(--cv-border); display:flex; justify-content:space-between; align-items:center;">';
         html += '      <div class="relative"><input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100);"></div>';
+        if (!S.readonly) {
+            html += renderAddSectionWrap();
+        }
         html += '    </div>';
 
-        html += '    <div class="cv-app-table-scroll"><div class="cv-stack">';
+        html += '    <div class="cv-app-table-scroll" style="overflow-y:auto;"><div class="cv-stack">';
         (S.data.secciones || []).forEach(function (sec, idx) {
             html += renderSection(sec, idx);
         });
-        html += '    </div>';
+        html += '    </div></div>'; // end scroller
+        html += '  </div>'; // end Table Box
         
-        if (!S.readonly) {
-            html += '<div style="padding:16px;">' + renderAddSectionWrap() + '</div>';
-        }
-        
-        html += '    </div>'; // end scroller
-        html += '  </div>'; // end Left Column
-        
-        // Right Column (Sidebar)
-        html += '  <div class="cv-app-right w-80 flex flex-col gap-4">';
+        // Bottom / Sidebar summary card
+        html += '  <div class="cv-app-bottom-summary" style="margin-top:16px;">';
         html += renderBottom();
         html += '  </div>';
         
@@ -976,10 +970,6 @@
                 h += '<div class="cv-section-actions">';
                 h += '<button type="button" class="cv-btn cv-btn-add-row" data-action="add-row" data-section="' + esc(sec.id) + '">' +
                      ICON.plus + '<span>Agregar fila</span></button>';
-                if (sec.tipo === 'equipamiento') {
-                    h += '<button type="button" class="cv-btn cv-btn-add-header" data-action="add-header" data-section="' + esc(sec.id) + '">' +
-                         ICON.tag + '<span>Rótulo</span></button>';
-                }
                 h += '<button type="button" class="cv-btn cv-btn-del-section" data-action="del-section" data-section="' + esc(sec.id) + '" title="Eliminar tabla">' +
                      ICON.trash + '<span class="cv-sr-only">Eliminar tabla</span></button>';
                 h += '</div>';
@@ -1099,6 +1089,7 @@
         var cls = 'cv-item-total';
         if (opts.positive) cls += ' cv-item-positive';
         if (opts.negative) cls += ' cv-item-negative';
+        if (opts.cls) cls += ' ' + opts.cls;
         return '<div class="' + cls + '" data-calc="' + esc(opts.calc || 'totalCli') + '">' +
                '<span class="cv-item-total-label">' + esc(label) + '</span>' +
                '<span class="cv-item-total-value cv-mono">' + esc(fmtMoney(value)) + '</span>' +
@@ -1152,28 +1143,30 @@
             descPlaceholder: 'Descripción del producto',
         });
         h += '<div class="cv-item-fields">';
-        h += fieldBox('Cant', inputNum(sec, it, 'cantidad', it.cantidad, { mini: true, min: 0 }));
-        h += fieldBox('Desc %', inputNum(sec, it, 'descuentoVenta', it.descuentoVenta, { mini: true, min: 0 }));
+        h += fieldBox('Cant.', inputNum(sec, it, 'cantidad', it.cantidad, { mini: true, min: 0 }));
+        h += fieldBox('Precio Un.', inputNum(sec, it, 'precioLista', it.precioLista, { mini: true, min: 0 }));
+        h += fieldBox('Costo Un.',
+            '<input type="number" step="any" class="cv-input cv-input-num cv-input-mini cv-mono" ' +
+            'data-field="costoUnitario" data-section="' + esc(sec.id) + '" ' +
+            'data-item="' + esc(it.id) + '" placeholder="' + esc(fmtPlain(c.cUnit)) + '" ' +
+            'value="' + esc(it.costoUnitario != null ? it.costoUnitario : '') + '" ' +
+            (S.readonly ? 'disabled' : '') + ' />');
         h += '</div>';
-        h += totalBox('Total', c.totalCli, { calc: 'totalCli' });
+        
+        var gainCls = c.ganancia >= 0 ? 'cv-item-positive' : 'cv-item-negative';
+        h += totalBox('Ganancia', c.ganancia, { calc: 'ganancia', cls: gainCls });
+        
         h += renderItemDel(sec, it);
         h += '</div>';
 
         // Detalle expandible
         h += '<div class="cv-item-detail">';
         h += '<div class="cv-item-detail-grid">';
-        h += detailCell('P. Lista',     inputNum(sec, it, 'precioLista', it.precioLista, { mini: true, min: 0 }));
+        h += detailCell('Desc % Vnta',  inputNum(sec, it, 'descuentoVenta', it.descuentoVenta, { mini: true, min: 0 }));
         h += detailCell('Desc % Costo', inputNum(sec, it, 'descuentoCosto', it.descuentoCosto, { mini: true, min: 0 }));
-        h += detailCell('C. Unit',
-            '<input type="number" step="any" class="cv-input cv-input-num cv-input-mini cv-mono" ' +
-            'data-field="costoUnitario" data-section="' + esc(sec.id) + '" ' +
-            'data-item="' + esc(it.id) + '" placeholder="' + esc(fmtPlain(c.cUnit)) + '" ' +
-            'value="' + esc(it.costoUnitario != null ? it.costoUnitario : '') + '" ' +
-            (S.readonly ? 'disabled' : '') + ' />');
         h += detailCalc('P. Unit Venta', fmtMoney(c.pVentaUnit), 'pVentaUnit', sec, it);
         h += detailCalc('C. Total',      fmtMoney(c.totalCosto), 'totalCosto',  sec, it);
-        var gainCls = c.ganancia >= 0 ? 'cv-item-positive' : 'cv-item-negative';
-        h += detailCalc('Ganancia',      fmtMoney(c.ganancia),   'ganancia',    sec, it, gainCls);
+        h += detailCalc('Total Cli.',    fmtMoney(c.totalCli),   'totalCli',    sec, it);
         h += detailCell('Proveedor', inputText(sec, it, 'proveedor', it.proveedor, { mini: true, placeholder: '—' }));
         h += detailCell('Entrega',   inputText(sec, it, 'entrega',   it.entrega,   { mini: true, placeholder: '—' }));
         h += '</div>';
