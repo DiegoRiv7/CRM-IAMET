@@ -1,13 +1,16 @@
 /**
- * crm_volumetria.js — Editor de Volumetría v4
+ * crm_volumetria.js — Editor de Volumetría v4 (rediseño card-row)
  *
- * Rediseño "multi-tabla por tipo" inspirado en el cotizador legacy de
- * nethive.mx pero con la estructura de columnas del Excel real
- * (Volumetria Instalacion de rutas de escalerilla IDF2.xlsx). Cada sección
- * se renderiza como una tarjeta-tabla independiente con su propia banda de
- * header de color (según tipo), botones de acción y headers agrupados con
- * bandas pastel ("INFORMACIÓN DEL CLIENTE" azul / "COSTOS Y MÁRGENES"
- * verde / "ACCIONES" gris).
+ * Cambio visual mayor (mayo 2026): se sustituye el layout estilo "tabla
+ * Excel" por un layout estilo Linear / Notion: cada sección es una
+ * tarjeta blanca con padding generoso, número grande "01" en pill gris a
+ * la izquierda, título de sección al centro, y subtotal de zona alineado
+ * a la derecha. Cada item dentro de la sección es una mini-card
+ * independiente con icono coloreado a la izquierda y los campos
+ * esenciales (cantidad / desc% / total) alineados a la derecha. El click
+ * sobre el cuerpo del item lo expande inline mostrando todos los campos
+ * adicionales (P. Lista, Desc% Costo, C. Unit, C. Total, Ganancia,
+ * Proveedor, Entrega, Notas) — la lógica y el modelo de datos no cambian.
  *
  * Tipos de sección y su shape de items:
  *
@@ -78,38 +81,46 @@
  *   .cv-status, .cv-status-borrador, .cv-status-completada,
  *   .cv-status-dot, .cv-status-label
  *
- * Sección (tarjeta-tabla):
+ * Sección (card grande):
  *   .cv-stack,
  *   .cv-section, .cv-section-collapsed,
  *   .cv-section-equipamiento, .cv-section-mano_obra,
  *   .cv-section-costo_mo, .cv-section-gastos,
- *   .cv-section-banner, .cv-section-banner-left,
- *   .cv-section-icon, .cv-section-title-input,
- *   .cv-section-actions, .cv-section-toggle, .cv-chevron,
+ *   .cv-section-head, .cv-section-head-left, .cv-section-head-right,
+ *   .cv-section-num, .cv-section-title-block,
+ *   .cv-section-title-input, .cv-section-meta,
+ *   .cv-section-subtotal-label, .cv-section-subtotal-value,
+ *   .cv-section-toggle, .cv-chevron,
+ *   .cv-section-actions,
  *   .cv-btn, .cv-btn-add-row, .cv-btn-add-header,
- *   .cv-btn-del-section, .cv-btn-icon
+ *   .cv-btn-del-section, .cv-btn-icon,
+ *   .cv-section-body, .cv-items, .cv-items-empty
  *
- * Tabla:
- *   .cv-table-wrap,
- *   .cv-table, .cv-table-equipamiento, .cv-table-mano_obra,
- *   .cv-table-costo_mo, .cv-table-gastos,
- *   .cv-thead, .cv-thead-groups, .cv-thead-cols,
- *   .cv-th-group, .cv-th-group-info, .cv-th-group-costos,
- *   .cv-th-group-acciones, .cv-th-group-empty,
- *   .cv-th, .cv-th-num, .cv-th-text,
- *   .cv-tbody, .cv-tr, .cv-tr-header,
- *   .cv-td, .cv-td-num, .cv-td-text, .cv-td-calc, .cv-td-act,
- *   .cv-td-mono, .cv-td-total, .cv-td-positive, .cv-td-negative,
- *   .cv-td-rotulo,
- *   .cv-input, .cv-input-num, .cv-input-text, .cv-input-rotulo,
- *   .cv-row-del, .cv-tfoot, .cv-tfoot-tr, .cv-tfoot-label,
- *   .cv-tfoot-value
+ * Items (mini-cards):
+ *   .cv-item, .cv-item-equipamiento, .cv-item-mano_obra,
+ *   .cv-item-costo_mo, .cv-item-gastos,
+ *   .cv-item-expanded, .cv-item-header,
+ *   .cv-item-icon, .cv-item-icon-eq, .cv-item-icon-mo,
+ *   .cv-item-icon-cmo, .cv-item-icon-ga,
+ *   .cv-item-main, .cv-item-id, .cv-item-brand, .cv-item-brand-wide,
+ *   .cv-item-part, .cv-item-desc,
+ *   .cv-item-fields, .cv-item-field, .cv-item-field-label,
+ *   .cv-item-total, .cv-item-total-label, .cv-item-total-value,
+ *   .cv-item-positive, .cv-item-negative,
+ *   .cv-item-detail, .cv-item-detail-grid, .cv-item-detail-cell,
+ *   .cv-item-detail-cell-calc, .cv-item-detail-label,
+ *   .cv-item-detail-value, .cv-item-detail-full,
+ *   .cv-item-rotulo, .cv-item-rotulo-input,
+ *   .cv-item-del, .cv-row-del,
+ *   .cv-input, .cv-input-num, .cv-input-text, .cv-input-mini
  *
  * Add section dropdown:
  *   .cv-add-section-wrap, .cv-add-section, .cv-add-section-menu,
- *   .cv-add-section-item, .cv-add-section-icon, .cv-add-section-open
+ *   .cv-add-section-item, .cv-add-section-icon, .cv-add-section-icon-equipamiento,
+ *   .cv-add-section-icon-mano_obra, .cv-add-section-icon-costo_mo,
+ *   .cv-add-section-icon-gastos, .cv-add-section-caret, .cv-add-section-open
  *
- * Resumen + estadísticas:
+ * Resumen + estadísticas (NO cambia):
  *   .cv-bottom, .cv-card, .cv-card-financiero, .cv-card-stats,
  *   .cv-card-header, .cv-card-header-row, .cv-card-title, .cv-card-body,
  *   .cv-fin-config, .cv-fin-config-field, .cv-fin-config-label,
@@ -117,7 +128,7 @@
  *   .cv-fin-row, .cv-fin-label, .cv-fin-value,
  *   .cv-fin-row-cost, .cv-fin-row-gain, .cv-fin-row-margin,
  *   .cv-fin-row-margin-low, .cv-fin-row-iva, .cv-fin-row-total,
- *   .cv-fin-sep, .cv-fin-foot,
+ *   .cv-fin-sep, .cv-fin-foot, .cv-fin-values,
  *   .cv-stat-row, .cv-stat-label, .cv-stat-value,
  *   .cv-stat-pills, .cv-stat-pill,
  *   .cv-stat-pill-equipamiento, .cv-stat-pill-mano_obra,
@@ -149,6 +160,10 @@
         // Para el dropdown "+ Agregar Tabla"
         addMenuOpen: false,
         outsideClickHandler: null,
+
+        // Set de IDs de items actualmente expandidos (vista detalle inline).
+        // No se persiste en el JSON v4 — es solo estado de UI.
+        expandedItems: null,
     };
 
     // ── Helpers ─────────────────────────────────────────────────────
@@ -227,6 +242,15 @@
     function cssEsc(s) {
         if (window.CSS && CSS.escape) return CSS.escape(s);
         return String(s).replace(/(["\\])/g, '\\$1');
+    }
+
+    function pad2(n) {
+        n = parseInt(n, 10) || 0;
+        return n < 10 ? '0' + n : String(n);
+    }
+
+    function isItemExpanded(itemId) {
+        return !!(S.expandedItems && S.expandedItems.has && S.expandedItems.has(itemId));
     }
 
     // ── Tipos de sección — defaults ─────────────────────────────────
@@ -800,7 +824,31 @@
         trash: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>',
         x: '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
         tag: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+
+        // Iconos para el cuadrado de cada item (3D-ish, 18px)
+        boxItem: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+        wrenchItem: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+        clockItem: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        receiptItem: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z" transform="translate(0 0)"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>',
     };
+
+    // Mapeo tipo → icono del item
+    function itemIconForTipo(tipo) {
+        switch (tipo) {
+            case 'mano_obra': return ICON.wrenchItem;
+            case 'costo_mo':  return ICON.clockItem;
+            case 'gastos':    return ICON.receiptItem;
+        }
+        return ICON.boxItem;
+    }
+    function itemIconClassForTipo(tipo) {
+        switch (tipo) {
+            case 'mano_obra': return 'cv-item-icon-mo';
+            case 'costo_mo':  return 'cv-item-icon-cmo';
+            case 'gastos':    return 'cv-item-icon-ga';
+        }
+        return 'cv-item-icon-eq';
+    }
 
     // ── RENDER ──────────────────────────────────────────────────────
     function render() {
@@ -808,8 +856,8 @@
 
         var html = '<div class="cv-root' + (S.readonly ? ' cv-readonly' : '') + '">';
         html += '<div class="cv-stack">';
-        (S.data.secciones || []).forEach(function (sec) {
-            html += renderSection(sec);
+        (S.data.secciones || []).forEach(function (sec, idx) {
+            html += renderSection(sec, idx);
         });
         html += '</div>';
         if (!S.readonly) html += renderAddSectionWrap();
@@ -820,219 +868,124 @@
         bindAll();
     }
 
-    // ── Sección (banner + tabla) ────────────────────────────────────
-    function renderSection(sec) {
+    // ── Sección (card-row) ──────────────────────────────────────────
+    /**
+     * Render de la sección como card grande:
+     *
+     *   ┌─ HEAD ────────────────────────────────────────────────────┐
+     *   │  [01]  ▾  📦  Equipamiento          SUBTOTAL ZONA         │
+     *   │                                     $123,456.78           │
+     *   ├─ BODY ────────────────────────────────────────────────────┤
+     *   │   ┌─ item ─────────────────────────────────────────────┐  │
+     *   │   │ [📦] CHARFIL · MG-51-431EZ   Cant Desc%  TOTAL  🗑│  │
+     *   │   │      Charola tipo malla       [12] [ 0]  $420.00 │  │
+     *   │   └────────────────────────────────────────────────────┘  │
+     *   │   …                                                       │
+     *   │   [+ Fila]  [+ Rótulo]  [🗑 sección]                      │
+     *   └───────────────────────────────────────────────────────────┘
+     */
+    function renderSection(sec, sectionIdx) {
         var open = sec.expanded !== false;
+        var t = calcSection(sec);
+        var subtotal = (sec.tipo === 'costo_mo' || sec.tipo === 'gastos')
+            ? t.totalCosto : t.totalCli;
         var info = TYPE_INFO[sec.tipo] || TYPE_INFO.equipamiento;
         var cls = 'cv-section cv-section-' + sec.tipo + (open ? '' : ' cv-section-collapsed');
 
         var h = '<section class="' + cls + '" data-section="' + esc(sec.id) + '" data-tipo="' + esc(sec.tipo) + '">';
 
-        // Banner
-        h += '<header class="cv-section-banner">';
-        h += '<div class="cv-section-banner-left">';
+        // Head: [01] · toggle · título · subtotal zona
+        h += '<header class="cv-section-head">';
+
+        h += '<div class="cv-section-head-left">';
+        h += '<span class="cv-section-num">' + esc(pad2((sectionIdx || 0) + 1)) + '</span>';
         h += '<button type="button" class="cv-section-toggle" data-action="toggle-section" data-section="' + esc(sec.id) + '" aria-label="Expandir/colapsar">' +
              '<span class="cv-chevron">' + (open ? ICON.chevronDown : ICON.chevronRight) + '</span>' +
              '</button>';
-        h += '<span class="cv-section-icon">' + info.icon + '</span>';
+
+        h += '<div class="cv-section-title-block">';
         var titDisabled = S.readonly ? 'disabled' : '';
         h += '<input type="text" class="cv-section-title-input" data-section="' + esc(sec.id) + '" ' +
              'value="' + esc(sec.titulo || '') + '" placeholder="' + esc(info.defaultTitle) + '" ' + titDisabled + ' />';
+        var nItems = (sec.items || []).filter(function (x) { return x.row_type !== 'header'; }).length;
+        h += '<span class="cv-section-meta">' + esc(info.label) +
+             ' <span aria-hidden="true">·</span> ' + nItems +
+             (nItems === 1 ? ' item' : ' items') + '</span>';
+        h += '</div>';
         h += '</div>';
 
-        if (!S.readonly) {
-            h += '<div class="cv-section-actions">';
-            h += '<button type="button" class="cv-btn cv-btn-add-row" data-action="add-row" data-section="' + esc(sec.id) + '">' +
-                 ICON.plus + '<span>Fila</span></button>';
-            if (sec.tipo === 'equipamiento') {
-                h += '<button type="button" class="cv-btn cv-btn-add-header" data-action="add-header" data-section="' + esc(sec.id) + '">' +
-                     ICON.tag + '<span>Rótulo</span></button>';
-            }
-            h += '<button type="button" class="cv-btn cv-btn-del-section" data-action="del-section" data-section="' + esc(sec.id) + '" title="Eliminar tabla">' +
-                 ICON.trash + '</button>';
-            h += '</div>';
-        }
+        // Right: subtotal zona
+        h += '<div class="cv-section-head-right">';
+        h += '<span class="cv-section-subtotal-label">Subtotal zona</span>';
+        h += '<span class="cv-section-subtotal-value cv-mono">' + esc(fmtMoney(subtotal)) + '</span>';
+        h += '</div>';
+
         h += '</header>';
 
         if (open) {
-            h += renderTable(sec);
+            h += '<div class="cv-section-body">';
+            h += '<div class="cv-items">';
+            var items = sec.items || [];
+            if (!items.length) {
+                h += '<div class="cv-items-empty">Sin items en esta sección.</div>';
+            } else {
+                items.forEach(function (it, idx) {
+                    h += renderItem(sec, it, idx);
+                });
+            }
+            h += '</div>';
+
+            if (!S.readonly) {
+                h += '<div class="cv-section-actions">';
+                h += '<button type="button" class="cv-btn cv-btn-add-row" data-action="add-row" data-section="' + esc(sec.id) + '">' +
+                     ICON.plus + '<span>Agregar fila</span></button>';
+                if (sec.tipo === 'equipamiento') {
+                    h += '<button type="button" class="cv-btn cv-btn-add-header" data-action="add-header" data-section="' + esc(sec.id) + '">' +
+                         ICON.tag + '<span>Rótulo</span></button>';
+                }
+                h += '<button type="button" class="cv-btn cv-btn-del-section" data-action="del-section" data-section="' + esc(sec.id) + '" title="Eliminar tabla">' +
+                     ICON.trash + '<span class="cv-sr-only">Eliminar tabla</span></button>';
+                h += '</div>';
+            }
+
+            h += '</div>'; // cv-section-body
         }
+
         h += '</section>';
         return h;
     }
 
-    // ── Tabla (HTML <table> real) ───────────────────────────────────
-    function renderTable(sec) {
-        var h = '<div class="cv-table-wrap">';
-        h += '<table class="cv-table cv-table-' + sec.tipo + '">';
-        h += renderThead(sec);
-        h += '<tbody class="cv-tbody">';
-        var items = sec.items || [];
-        items.forEach(function (it, idx) {
-            h += renderRow(sec, it, idx);
-        });
-        h += '</tbody>';
-        h += renderTfoot(sec);
-        h += '</table>';
-        h += '</div>';
-        return h;
-    }
-
-    function colCountForTipo(tipo) {
-        switch (tipo) {
-            case 'equipamiento': return 16;  // # + 14 + acción
-            case 'mano_obra':    return 10;  // # + 8 + acción
-            case 'costo_mo':     return 8;   // # + 6 + acción
-            case 'gastos':       return 7;   // # + 5 + acción
-        }
-        return 6;
-    }
-
-    // ── Headers (groups + cols) ─────────────────────────────────────
-    function renderThead(sec) {
-        switch (sec.tipo) {
-            case 'equipamiento': return renderTheadEquipamiento();
-            case 'mano_obra':    return renderTheadManoObra();
-            case 'costo_mo':     return renderTheadCostoMo();
-            case 'gastos':       return renderTheadGastos();
-        }
-        return '';
-    }
-
-    function renderTheadEquipamiento() {
-        // Grupos: # | INFO CLIENTE (8 cols hasta Total Cliente) | COSTOS Y MÁRGENES (4) | ACCIONES (Prov + Entrega + Notas) | x
-        // Columnas exactas (15 datos): # · Marca · No.Parte · Cant · Descripción · P.Lista · %V · P.Unit · Total Cliente · %C · C.Unit · Total Costo · Ganancia · Proveedor · Entrega · Notas · [del]
-        // Para mantener el espec del usuario (INFO CLIENTE 8 / COSTOS 4 / ACCIONES 3) — agrupamos:
-        //   INFO CLIENTE = Marca, NoP, Cant, Descripción, P.Lista, %V, P.Unit, Total Cliente (8)
-        //   COSTOS Y MÁRGENES = %C, C.Unit, Total Costo, Ganancia (4)
-        //   ACCIONES = Proveedor, Entrega, Notas (3)
-        var h = '<thead class="cv-thead">';
-        // Fila 1: bandas de grupo
-        h += '<tr class="cv-thead-groups">';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '<th class="cv-th-group cv-th-group-info" colspan="8">INFORMACIÓN DEL CLIENTE</th>';
-        h += '<th class="cv-th-group cv-th-group-costos" colspan="4">COSTOS Y MÁRGENES</th>';
-        h += '<th class="cv-th-group cv-th-group-acciones" colspan="3">ACCIONES Y NOTAS</th>';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '</tr>';
-        // Fila 2: cabeceras de columna
-        h += '<tr class="cv-thead-cols">';
-        h += '<th class="cv-th cv-th-num cv-th-idx">#</th>';
-        h += '<th class="cv-th cv-th-text">Marca</th>';
-        h += '<th class="cv-th cv-th-text">No. Parte</th>';
-        h += '<th class="cv-th cv-th-num">Cant</th>';
-        h += '<th class="cv-th cv-th-text cv-th-desc">Descripción</th>';
-        h += '<th class="cv-th cv-th-num">P. Lista</th>';
-        h += '<th class="cv-th cv-th-num">% V</th>';
-        h += '<th class="cv-th cv-th-num">P. Unit</th>';
-        h += '<th class="cv-th cv-th-num">Total Cliente</th>';
-        h += '<th class="cv-th cv-th-num">% C</th>';
-        h += '<th class="cv-th cv-th-num">C. Unit</th>';
-        h += '<th class="cv-th cv-th-num">Total Costo</th>';
-        h += '<th class="cv-th cv-th-num">Ganancia</th>';
-        h += '<th class="cv-th cv-th-text">Proveedor</th>';
-        h += '<th class="cv-th cv-th-text">Entrega</th>';
-        h += '<th class="cv-th cv-th-text">Notas</th>';
-        h += '<th class="cv-th cv-th-act"></th>';
-        h += '</tr>';
-        h += '</thead>';
-        return h;
-    }
-
-    function renderTheadManoObra() {
-        var h = '<thead class="cv-thead">';
-        h += '<tr class="cv-thead-groups">';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '<th class="cv-th-group cv-th-group-info" colspan="7">INFORMACIÓN DEL CLIENTE</th>';
-        h += '<th class="cv-th-group cv-th-group-acciones" colspan="1">NOTAS</th>';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '</tr>';
-        h += '<tr class="cv-thead-cols">';
-        h += '<th class="cv-th cv-th-num cv-th-idx">#</th>';
-        h += '<th class="cv-th cv-th-text">Marca</th>';
-        h += '<th class="cv-th cv-th-text">No. Parte</th>';
-        h += '<th class="cv-th cv-th-num">Cant</th>';
-        h += '<th class="cv-th cv-th-text cv-th-desc">Descripción</th>';
-        h += '<th class="cv-th cv-th-num">P. Lista</th>';
-        h += '<th class="cv-th cv-th-num">% V</th>';
-        h += '<th class="cv-th cv-th-num">P. Unit</th>';
-        h += '<th class="cv-th cv-th-num">Total</th>';
-        h += '<th class="cv-th cv-th-text">Notas</th>';
-        h += '<th class="cv-th cv-th-act"></th>';
-        h += '</tr>';
-        h += '</thead>';
-        return h;
-    }
-
-    function renderTheadCostoMo() {
-        var h = '<thead class="cv-thead">';
-        h += '<tr class="cv-thead-groups">';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '<th class="cv-th-group cv-th-group-costos" colspan="6">RECURSO INTERNO</th>';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '</tr>';
-        h += '<tr class="cv-thead-cols">';
-        h += '<th class="cv-th cv-th-num cv-th-idx">#</th>';
-        h += '<th class="cv-th cv-th-text cv-th-desc">Recurso</th>';
-        h += '<th class="cv-th cv-th-num">Cant</th>';
-        h += '<th class="cv-th cv-th-num">Costo Unit</th>';
-        h += '<th class="cv-th cv-th-num">Concentrado</th>';
-        h += '<th class="cv-th cv-th-num">Días</th>';
-        h += '<th class="cv-th cv-th-num">Total</th>';
-        h += '<th class="cv-th cv-th-act"></th>';
-        h += '</tr>';
-        h += '</thead>';
-        return h;
-    }
-
-    function renderTheadGastos() {
-        var h = '<thead class="cv-thead">';
-        h += '<tr class="cv-thead-groups">';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '<th class="cv-th-group cv-th-group-costos" colspan="5">CONCEPTO DE GASTO</th>';
-        h += '<th class="cv-th-group cv-th-group-empty"></th>';
-        h += '</tr>';
-        h += '<tr class="cv-thead-cols">';
-        h += '<th class="cv-th cv-th-num cv-th-idx">#</th>';
-        h += '<th class="cv-th cv-th-num">Cant</th>';
-        h += '<th class="cv-th cv-th-text">Unidad</th>';
-        h += '<th class="cv-th cv-th-text cv-th-desc">Descripción</th>';
-        h += '<th class="cv-th cv-th-num">Costo Unit</th>';
-        h += '<th class="cv-th cv-th-num">Total</th>';
-        h += '<th class="cv-th cv-th-act"></th>';
-        h += '</tr>';
-        h += '</thead>';
-        return h;
-    }
-
-    // ── Filas ───────────────────────────────────────────────────────
-    function renderRow(sec, it, idx) {
+    // ── Item (mini-card) ────────────────────────────────────────────
+    function renderItem(sec, it, idx) {
         if (sec.tipo === 'equipamiento' && it.row_type === 'header') {
-            return renderEquipHeaderRow(sec, it, idx);
+            return renderRotuloItem(sec, it, idx);
         }
         switch (sec.tipo) {
-            case 'equipamiento': return renderEquipRow(sec, it, idx);
-            case 'mano_obra':    return renderMoRow(sec, it, idx);
-            case 'costo_mo':     return renderCmoRow(sec, it, idx);
-            case 'gastos':       return renderGastoRow(sec, it, idx);
+            case 'equipamiento': return renderEquipItem(sec, it, idx);
+            case 'mano_obra':    return renderMoItem(sec, it, idx);
+            case 'costo_mo':     return renderCmoItem(sec, it, idx);
+            case 'gastos':       return renderGastoItem(sec, it, idx);
         }
         return '';
     }
 
-    function rowAttrs(sec, it) {
+    function itemAttrs(sec, it) {
         return 'data-section="' + esc(sec.id) + '" data-item="' + esc(it.id) + '"';
     }
 
+    // Inputs para el card (versión más densa que la antigua versión-tabla)
     function inputNum(sec, it, field, value, opts) {
         opts = opts || {};
         var disabled = S.readonly ? 'disabled' : '';
         var v = (value == null || value === '') ? '' : value;
-        var cls = 'cv-input cv-input-num';
-        if (opts.mono !== false) cls += ' cv-mono';
+        var cls = 'cv-input cv-input-num cv-mono';
+        if (opts.mini) cls += ' cv-input-mini';
         var ph = opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '';
-        return '<input type="number" step="any" class="' + cls + '" ' +
+        var step = opts.step != null ? opts.step : 'any';
+        var min = opts.min != null ? ' min="' + esc(opts.min) + '"' : '';
+        return '<input type="number" step="' + esc(step) + '"' + min + ' class="' + cls + '" ' +
                'data-field="' + field + '" data-section="' + esc(sec.id) + '" ' +
-               'data-item="' + esc(it.id) + '" value="' + esc(v) + '" ' + ph + ' ' + disabled + ' />';
+               'data-item="' + esc(it.id) + '" value="' + esc(v) + '"' + ph + ' ' + disabled + ' />';
     }
     function inputText(sec, it, field, value, opts) {
         opts = opts || {};
@@ -1040,160 +993,276 @@
         var v = value == null ? '' : value;
         var cls = 'cv-input cv-input-text';
         if (opts.mono) cls += ' cv-mono';
+        if (opts.mini) cls += ' cv-input-mini';
         var ph = opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '';
         return '<input type="text" class="' + cls + '" ' +
                'data-field="' + field + '" data-section="' + esc(sec.id) + '" ' +
                'data-item="' + esc(it.id) + '" value="' + esc(v) + '"' + ph + ' ' + disabled + ' />';
     }
 
-    function renderEquipHeaderRow(sec, it, idx) {
-        var disabled = S.readonly ? 'disabled' : '';
-        var h = '<tr class="cv-tr cv-tr-header" ' + rowAttrs(sec, it) + ' data-row-type="header">';
-        h += '<td class="cv-td cv-td-num cv-td-idx">' + (idx + 1) + '</td>';
-        h += '<td class="cv-td cv-td-rotulo" colspan="15">';
-        h += '<input type="text" class="cv-input cv-input-rotulo" ' +
-             'data-field="texto" data-section="' + esc(sec.id) + '" ' +
-             'data-item="' + esc(it.id) + '" value="' + esc(it.texto || '') + '" ' +
-             'placeholder="Rótulo (ej. Escalerilla 100mm IDF3)" ' + disabled + ' />';
-        h += '</td>';
-        h += renderDelCell(sec, it);
-        h += '</tr>';
-        return h;
+    /** Icono cuadrado del item (rellena `cv-item-icon` con el SVG del tipo). */
+    function renderItemIcon(sec) {
+        var iconCls = 'cv-item-icon ' + itemIconClassForTipo(sec.tipo);
+        var iconHtml = itemIconForTipo(sec.tipo);
+        return '<div class="' + iconCls + '">' + iconHtml + '</div>';
     }
 
-    function renderEquipRow(sec, it, idx) {
-        var c = calcEquipItem(it);
-        var h = '<tr class="cv-tr" ' + rowAttrs(sec, it) + '>';
-        h += '<td class="cv-td cv-td-num cv-td-idx">' + (idx + 1) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'marca', it.marca) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'parte', it.parte, { mono: true }) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'cantidad', it.cantidad) + '</td>';
-        h += '<td class="cv-td cv-td-text cv-td-desc">' + inputText(sec, it, 'descripcion', it.descripcion) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'precioLista', it.precioLista) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'descuentoVenta', it.descuentoVenta) + '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono" data-calc="pVentaUnit" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.pVentaUnit)) + '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono cv-td-total" data-calc="totalCli" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.totalCli)) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'descuentoCosto', it.descuentoCosto) + '</td>';
-        // C. Unit: si el usuario tipea, override; vacío = usa descuentoCosto.
-        h += '<td class="cv-td cv-td-num">' +
-             '<input type="number" step="any" class="cv-input cv-input-num cv-mono" ' +
-             'data-field="costoUnitario" data-section="' + esc(sec.id) + '" ' +
-             'data-item="' + esc(it.id) + '" placeholder="' + esc(fmtPlain(c.cUnit)) + '" ' +
-             'value="' + esc(it.costoUnitario != null ? it.costoUnitario : '') + '" ' +
-             (S.readonly ? 'disabled' : '') + ' />' +
-             '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono" data-calc="totalCosto" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.totalCosto)) + '</td>';
-        var gainCls = c.ganancia >= 0 ? 'cv-td-positive' : 'cv-td-negative';
-        h += '<td class="cv-td cv-td-calc cv-td-mono ' + gainCls + '" data-calc="ganancia" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.ganancia)) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'proveedor', it.proveedor) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'entrega', it.entrega) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'notas', it.notas) + '</td>';
-        h += renderDelCell(sec, it);
-        h += '</tr>';
-        return h;
-    }
+    /** Cabecera del item (compacto): brand/parte + descripción.
+     *  Hermano del icono dentro del .cv-item-header (no incluye al icono
+     *  para que el flex del header los acomode horizontalmente). */
+    function renderItemMain(sec, it, opts) {
+        opts = opts || {};
 
-    function renderMoRow(sec, it, idx) {
-        var c = calcMoItem(it);
-        var h = '<tr class="cv-tr" ' + rowAttrs(sec, it) + '>';
-        h += '<td class="cv-td cv-td-num cv-td-idx">' + (idx + 1) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'marca', it.marca) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'parte', it.parte, { mono: true }) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'cantidad', it.cantidad) + '</td>';
-        h += '<td class="cv-td cv-td-text cv-td-desc">' + inputText(sec, it, 'descripcion', it.descripcion) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'precioLista', it.precioLista) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'descuentoVenta', it.descuentoVenta) + '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono" data-calc="pVentaUnit" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.pVentaUnit)) + '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono cv-td-total" data-calc="totalCli" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.totalCli)) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'notas', it.notas) + '</td>';
-        h += renderDelCell(sec, it);
-        h += '</tr>';
-        return h;
-    }
+        var h = '<div class="cv-item-main" ' + itemAttrs(sec, it) + '>';
 
-    function renderCmoRow(sec, it, idx) {
-        var c = calcCmoItem(it);
-        var h = '<tr class="cv-tr" ' + rowAttrs(sec, it) + '>';
-        h += '<td class="cv-td cv-td-num cv-td-idx">' + (idx + 1) + '</td>';
-        h += '<td class="cv-td cv-td-text cv-td-desc">' + inputText(sec, it, 'recurso', it.recurso) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'cantidad', it.cantidad) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'costoUnitario', it.costoUnitario) + '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono" data-calc="concentrado" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.concentrado)) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'dias', it.dias) + '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono cv-td-total" data-calc="totalCosto" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.totalCosto)) + '</td>';
-        h += renderDelCell(sec, it);
-        h += '</tr>';
-        return h;
-    }
+        h += '<div class="cv-item-id">';
+        if (opts.brandField) {
+            h += '<span class="cv-item-brand">' +
+                 inputText(sec, it, opts.brandField, it[opts.brandField],
+                           { mini: true, placeholder: opts.brandPlaceholder || 'Marca' }) +
+                 '</span>';
+        }
+        if (opts.partField) {
+            h += '<span class="cv-item-part">' +
+                 inputText(sec, it, opts.partField, it[opts.partField],
+                           { mini: true, mono: true, placeholder: opts.partPlaceholder || 'No. parte' }) +
+                 '</span>';
+        }
+        if (opts.singleField) {
+            // Para costo_mo (recurso) — un solo input ancho.
+            h += '<span class="cv-item-brand cv-item-brand-wide">' +
+                 inputText(sec, it, opts.singleField, it[opts.singleField],
+                           { mini: true, placeholder: opts.singlePlaceholder || '' }) +
+                 '</span>';
+        }
+        h += '</div>';
 
-    function renderGastoRow(sec, it, idx) {
-        var c = calcGastoItem(it);
-        var h = '<tr class="cv-tr" ' + rowAttrs(sec, it) + '>';
-        h += '<td class="cv-td cv-td-num cv-td-idx">' + (idx + 1) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'cantidad', it.cantidad) + '</td>';
-        h += '<td class="cv-td cv-td-text">' + inputText(sec, it, 'unidad', it.unidad) + '</td>';
-        h += '<td class="cv-td cv-td-text cv-td-desc">' + inputText(sec, it, 'descripcion', it.descripcion) + '</td>';
-        h += '<td class="cv-td cv-td-num">' + inputNum(sec, it, 'costoUnitario', it.costoUnitario) + '</td>';
-        h += '<td class="cv-td cv-td-calc cv-td-mono cv-td-total" data-calc="totalCosto" ' + rowAttrs(sec, it) + '>' +
-             esc(fmtMoney(c.totalCosto)) + '</td>';
-        h += renderDelCell(sec, it);
-        h += '</tr>';
-        return h;
-    }
-
-    function renderDelCell(sec, it) {
-        if (S.readonly) return '<td class="cv-td cv-td-act"></td>';
-        return '<td class="cv-td cv-td-act">' +
-               '<button type="button" class="cv-row-del" data-action="del-item" ' +
-               'data-section="' + esc(sec.id) + '" data-item="' + esc(it.id) + '" ' +
-               'title="Eliminar fila">' + ICON.x + '</button>' +
-               '</td>';
-    }
-
-    // ── Footer (totales por sección) ────────────────────────────────
-    function renderTfoot(sec) {
-        var t = calcSection(sec);
-        var h = '<tfoot class="cv-tfoot">';
-        h += '<tr class="cv-tfoot-tr">';
-
-        if (sec.tipo === 'equipamiento') {
-            // Span: idx (1) + 7 cols hasta antes de Total Cliente
-            h += '<td class="cv-tfoot-label" colspan="8">TOTALES</td>';
-            h += '<td class="cv-tfoot-value cv-mono">' + esc(fmtMoney(t.totalCli)) + '</td>';
-            h += '<td colspan="2"></td>';
-            h += '<td class="cv-tfoot-value cv-mono">' + esc(fmtMoney(t.totalCosto)) + '</td>';
-            var gCls = t.ganancia >= 0 ? 'cv-td-positive' : 'cv-td-negative';
-            h += '<td class="cv-tfoot-value cv-mono ' + gCls + '">' + esc(fmtMoney(t.ganancia)) + '</td>';
-            h += '<td colspan="3"></td>';
-            h += '<td></td>';
-        } else if (sec.tipo === 'mano_obra') {
-            // 1 (idx) + 7 = 8 cols antes de Total
-            h += '<td class="cv-tfoot-label" colspan="8">TOTAL MANO DE OBRA</td>';
-            h += '<td class="cv-tfoot-value cv-mono">' + esc(fmtMoney(t.totalCli)) + '</td>';
-            h += '<td colspan="2"></td>';
-        } else if (sec.tipo === 'costo_mo') {
-            // 1 (idx) + 5 = 6 cols antes de Total
-            h += '<td class="cv-tfoot-label" colspan="6">TOTAL COSTO MO</td>';
-            h += '<td class="cv-tfoot-value cv-mono">' + esc(fmtMoney(t.totalCosto)) + '</td>';
-            h += '<td></td>';
-        } else if (sec.tipo === 'gastos') {
-            // 1 (idx) + 4 = 5 cols antes de Total
-            h += '<td class="cv-tfoot-label" colspan="5">TOTAL GASTOS</td>';
-            h += '<td class="cv-tfoot-value cv-mono">' + esc(fmtMoney(t.totalCosto)) + '</td>';
-            h += '<td></td>';
+        if (opts.descField) {
+            h += '<div class="cv-item-desc">' +
+                 inputText(sec, it, opts.descField, it[opts.descField],
+                           { mini: true, placeholder: opts.descPlaceholder || 'Descripción' }) +
+                 '</div>';
         }
 
-        h += '</tr>';
-        h += '</tfoot>';
+        h += '</div>'; // cv-item-main
         return h;
+    }
+
+    /** Caja de campos numéricos compactos a la derecha, con label encima. */
+    function fieldBox(label, html) {
+        return '<label class="cv-item-field">' +
+               '<span class="cv-item-field-label">' + esc(label) + '</span>' +
+               html +
+               '</label>';
+    }
+
+    /** Total del item (a la extrema derecha). */
+    function totalBox(label, value, opts) {
+        opts = opts || {};
+        var cls = 'cv-item-total';
+        if (opts.positive) cls += ' cv-item-positive';
+        if (opts.negative) cls += ' cv-item-negative';
+        return '<div class="' + cls + '" data-calc="' + esc(opts.calc || 'totalCli') + '">' +
+               '<span class="cv-item-total-label">' + esc(label) + '</span>' +
+               '<span class="cv-item-total-value cv-mono">' + esc(fmtMoney(value)) + '</span>' +
+               '</div>';
+    }
+
+    /** Botón de eliminar item (visible al hover, esquina superior derecha). */
+    function renderItemDel(sec, it) {
+        if (S.readonly) return '';
+        return '<button type="button" class="cv-row-del cv-item-del" data-action="del-item" ' +
+               'data-section="' + esc(sec.id) + '" data-item="' + esc(it.id) + '" ' +
+               'title="Eliminar fila">' + ICON.x + '</button>';
+    }
+
+    /** Wrapper común del item-card */
+    function itemWrapStart(sec, it) {
+        var expanded = isItemExpanded(it.id);
+        var cls = 'cv-item cv-item-' + sec.tipo + (expanded ? ' cv-item-expanded' : '');
+        return '<article class="' + cls + '" ' + itemAttrs(sec, it) + '>';
+    }
+
+    /** Equipamiento: row_type 'header' = rótulo */
+    function renderRotuloItem(sec, it, idx) {
+        var disabled = S.readonly ? 'disabled' : '';
+        var h = '<article class="cv-item cv-item-rotulo" ' + itemAttrs(sec, it) + ' data-row-type="header">';
+        h += renderItemDel(sec, it);
+        h += '<input type="text" class="cv-input cv-input-text cv-item-rotulo-input" ' +
+             'data-field="texto" data-section="' + esc(sec.id) + '" ' +
+             'data-item="' + esc(it.id) + '" value="' + esc(it.texto || '') + '" ' +
+             'placeholder="Rótulo de subsección (ej. Escalerilla 100mm IDF3)" ' + disabled + ' />';
+        h += '</article>';
+        return h;
+    }
+
+    /** Equipamiento (item) */
+    function renderEquipItem(sec, it, idx) {
+        var c = calcEquipItem(it);
+        var expanded = isItemExpanded(it.id);
+
+        var h = itemWrapStart(sec, it);
+
+        // Header compacto (clickable → expandir detalle)
+        h += '<div class="cv-item-header" data-action="toggle-item" ' + itemAttrs(sec, it) + '>';
+        h += renderItemIcon(sec);
+        h += renderItemMain(sec, it, {
+            brandField: 'marca',
+            brandPlaceholder: 'Marca',
+            partField: 'parte',
+            partPlaceholder: 'No. parte',
+            descField: 'descripcion',
+            descPlaceholder: 'Descripción del producto',
+        });
+        h += '<div class="cv-item-fields">';
+        h += fieldBox('Cant', inputNum(sec, it, 'cantidad', it.cantidad, { mini: true, min: 0 }));
+        h += fieldBox('Desc %', inputNum(sec, it, 'descuentoVenta', it.descuentoVenta, { mini: true, min: 0 }));
+        h += '</div>';
+        h += totalBox('Total', c.totalCli, { calc: 'totalCli' });
+        h += renderItemDel(sec, it);
+        h += '</div>';
+
+        // Detalle expandible
+        h += '<div class="cv-item-detail">';
+        h += '<div class="cv-item-detail-grid">';
+        h += detailCell('P. Lista',     inputNum(sec, it, 'precioLista', it.precioLista, { mini: true, min: 0 }));
+        h += detailCell('Desc % Costo', inputNum(sec, it, 'descuentoCosto', it.descuentoCosto, { mini: true, min: 0 }));
+        h += detailCell('C. Unit',
+            '<input type="number" step="any" class="cv-input cv-input-num cv-input-mini cv-mono" ' +
+            'data-field="costoUnitario" data-section="' + esc(sec.id) + '" ' +
+            'data-item="' + esc(it.id) + '" placeholder="' + esc(fmtPlain(c.cUnit)) + '" ' +
+            'value="' + esc(it.costoUnitario != null ? it.costoUnitario : '') + '" ' +
+            (S.readonly ? 'disabled' : '') + ' />');
+        h += detailCalc('P. Unit Venta', fmtMoney(c.pVentaUnit), 'pVentaUnit', sec, it);
+        h += detailCalc('C. Total',      fmtMoney(c.totalCosto), 'totalCosto',  sec, it);
+        var gainCls = c.ganancia >= 0 ? 'cv-item-positive' : 'cv-item-negative';
+        h += detailCalc('Ganancia',      fmtMoney(c.ganancia),   'ganancia',    sec, it, gainCls);
+        h += detailCell('Proveedor', inputText(sec, it, 'proveedor', it.proveedor, { mini: true, placeholder: '—' }));
+        h += detailCell('Entrega',   inputText(sec, it, 'entrega',   it.entrega,   { mini: true, placeholder: '—' }));
+        h += '</div>';
+        h += '<label class="cv-item-detail-cell cv-item-detail-full">' +
+             '<span class="cv-item-detail-label">Notas</span>' +
+             inputText(sec, it, 'notas', it.notas, { mini: true, placeholder: 'Notas internas / observaciones' }) +
+             '</label>';
+        h += '</div>';
+
+        h += '</article>';
+        return h;
+    }
+
+    /** Mano de obra (item) */
+    function renderMoItem(sec, it, idx) {
+        var c = calcMoItem(it);
+
+        var h = itemWrapStart(sec, it);
+
+        h += '<div class="cv-item-header" data-action="toggle-item" ' + itemAttrs(sec, it) + '>';
+        h += renderItemIcon(sec);
+        h += renderItemMain(sec, it, {
+            brandField: 'marca',
+            brandPlaceholder: 'Marca / Concepto',
+            partField: 'parte',
+            partPlaceholder: 'Código',
+            descField: 'descripcion',
+            descPlaceholder: 'Descripción de la mano de obra',
+        });
+        h += '<div class="cv-item-fields">';
+        h += fieldBox('Cant', inputNum(sec, it, 'cantidad', it.cantidad, { mini: true, min: 0 }));
+        h += fieldBox('Desc %', inputNum(sec, it, 'descuentoVenta', it.descuentoVenta, { mini: true, min: 0 }));
+        h += '</div>';
+        h += totalBox('Total', c.totalCli, { calc: 'totalCli' });
+        h += renderItemDel(sec, it);
+        h += '</div>';
+
+        h += '<div class="cv-item-detail">';
+        h += '<div class="cv-item-detail-grid">';
+        h += detailCell('P. Lista', inputNum(sec, it, 'precioLista', it.precioLista, { mini: true, min: 0 }));
+        h += detailCalc('P. Unit Venta', fmtMoney(c.pVentaUnit), 'pVentaUnit', sec, it);
+        h += '</div>';
+        h += '<label class="cv-item-detail-cell cv-item-detail-full">' +
+             '<span class="cv-item-detail-label">Notas</span>' +
+             inputText(sec, it, 'notas', it.notas, { mini: true, placeholder: 'Notas internas / observaciones' }) +
+             '</label>';
+        h += '</div>';
+
+        h += '</article>';
+        return h;
+    }
+
+    /** Costo MO (item) — costo interno; sin venta */
+    function renderCmoItem(sec, it, idx) {
+        var c = calcCmoItem(it);
+
+        var h = itemWrapStart(sec, it);
+
+        h += '<div class="cv-item-header" data-action="toggle-item" ' + itemAttrs(sec, it) + '>';
+        h += renderItemIcon(sec);
+        h += renderItemMain(sec, it, {
+            singleField: 'recurso',
+            singlePlaceholder: 'Nombre del recurso (ej. Técnico A)',
+        });
+        h += '<div class="cv-item-fields">';
+        h += fieldBox('Cant',      inputNum(sec, it, 'cantidad',      it.cantidad,      { mini: true, min: 0 }));
+        h += fieldBox('Costo Unit',inputNum(sec, it, 'costoUnitario', it.costoUnitario, { mini: true, min: 0 }));
+        h += fieldBox('Días',      inputNum(sec, it, 'dias',          it.dias,          { mini: true, min: 0 }));
+        h += '</div>';
+        h += totalBox('Total', c.totalCosto, { calc: 'totalCosto' });
+        h += renderItemDel(sec, it);
+        h += '</div>';
+
+        h += '<div class="cv-item-detail">';
+        h += '<div class="cv-item-detail-grid">';
+        h += detailCalc('Concentrado (Cant × Costo)', fmtMoney(c.concentrado), 'concentrado', sec, it);
+        h += detailCalc('Total (Concentrado × Días)',  fmtMoney(c.totalCosto),  'totalCosto',  sec, it);
+        h += '</div>';
+        h += '</div>';
+
+        h += '</article>';
+        return h;
+    }
+
+    /** Gastos (item) — costo interno; estructura simple */
+    function renderGastoItem(sec, it, idx) {
+        var c = calcGastoItem(it);
+
+        var h = itemWrapStart(sec, it);
+
+        h += '<div class="cv-item-header">';
+        h += renderItemIcon(sec);
+        h += renderItemMain(sec, it, {
+            singleField: 'descripcion',
+            singlePlaceholder: 'Descripción del gasto',
+        });
+        h += '<div class="cv-item-fields">';
+        h += fieldBox('Cant',       inputNum(sec, it, 'cantidad',      it.cantidad,      { mini: true, min: 0 }));
+        h += fieldBox('Unidad',     inputText(sec, it, 'unidad',       it.unidad,        { mini: true, placeholder: 'PZA' }));
+        h += fieldBox('Costo Unit', inputNum(sec, it, 'costoUnitario', it.costoUnitario, { mini: true, min: 0 }));
+        h += '</div>';
+        h += totalBox('Total', c.totalCosto, { calc: 'totalCosto' });
+        h += renderItemDel(sec, it);
+        h += '</div>';
+
+        // Gastos no tiene detalle — el header del item ya muestra todo.
+        // Aún así, un detail vacío (sin clase de animación) preserva
+        // el shape consistente; pero como expanding no aporta nada, lo omitimos.
+
+        h += '</article>';
+        return h;
+    }
+
+    function detailCell(label, html) {
+        return '<label class="cv-item-detail-cell">' +
+               '<span class="cv-item-detail-label">' + esc(label) + '</span>' +
+               html +
+               '</label>';
+    }
+    function detailCalc(label, value, calcKey, sec, it, extraCls) {
+        var cls = 'cv-item-detail-cell cv-item-detail-cell-calc' +
+                  (extraCls ? ' ' + extraCls : '');
+        return '<div class="' + cls + '" data-calc="' + esc(calcKey) + '" ' + itemAttrs(sec, it) + '>' +
+               '<span class="cv-item-detail-label">' + esc(label) + '</span>' +
+               '<span class="cv-item-detail-value cv-mono">' + esc(value) + '</span>' +
+               '</div>';
     }
 
     function fmtPlain(n) {
@@ -1393,7 +1462,7 @@
             inp.addEventListener('input', onSectionTitleInput);
         });
 
-        S.container.querySelectorAll('.cv-tbody [data-field], .cv-tr-header [data-field]').forEach(function (inp) {
+        S.container.querySelectorAll('.cv-items [data-field]').forEach(function (inp) {
             inp.addEventListener('input', onItemInput);
             inp.addEventListener('change', onItemInput);
             inp.addEventListener('blur', onItemBlur);
@@ -1421,9 +1490,30 @@
         var itemId = btn.getAttribute('data-item');
         var tipo = btn.getAttribute('data-tipo');
 
+        // Si el click cayó sobre un input/textarea/select/label/button
+        // dentro del bloque (pero el bloque sí tiene data-action), lo
+        // dejamos pasar al elemento natural — NO togglemos. Esto aplica
+        // sobre todo a `toggle-item` (cuyo área engloba los mini-inputs
+        // de marca/parte/descripción y los <label> que envuelven los
+        // inputs cant/desc%).
+        if (action === 'toggle-item') {
+            // toggle-item está en `.cv-item-header` (un div). Si el click
+            // cayó sobre un input/label/button hijo, lo dejamos pasar.
+            var inner = ev.target;
+            if (inner && inner !== btn) {
+                var skip = inner.closest && inner.closest(
+                    'input, textarea, select, button, a, label'
+                );
+                if (skip && skip !== btn && btn.contains(skip)) return;
+            }
+        }
+
         if (action === 'toggle-section') {
             ev.preventDefault();
             toggleSection(secId);
+        } else if (action === 'toggle-item') {
+            ev.preventDefault();
+            toggleItem(secId, itemId);
         } else if (action === 'add-row') {
             if (S.readonly) return;
             ev.preventDefault();
@@ -1586,15 +1676,34 @@
         scheduleAutosave();
     }
 
+    /** Expande/colapsa el detalle inline de un item. Estado UI puro
+     *  (no se persiste). Mutamos solo la clase del DOM y el Set
+     *  S.expandedItems — sin re-render para mantener el foco / la
+     *  posición del scroll. */
+    function toggleItem(secId, itemId) {
+        if (!S.expandedItems) return;
+        var itemEl = S.container && S.container.querySelector(
+            '.cv-item[data-section="' + cssEsc(secId) + '"][data-item="' + cssEsc(itemId) + '"]'
+        );
+        if (!itemEl) return;
+        if (S.expandedItems.has(itemId)) {
+            S.expandedItems.delete(itemId);
+            itemEl.classList.remove('cv-item-expanded');
+        } else {
+            S.expandedItems.add(itemId);
+            itemEl.classList.add('cv-item-expanded');
+        }
+    }
+
     function addRow(secId) {
         var sec = findSection(secId);
         if (!sec) return;
         sec.items.push(newItemForType(sec.tipo));
         sec.expanded = true;
         rerenderSection(sec);
-        // Foco al primer input editable de la fila nueva
+        // Foco al primer input editable del item nuevo
         var rows = S.container.querySelectorAll(
-            'section[data-section="' + cssEsc(secId) + '"] .cv-tbody .cv-tr'
+            'section[data-section="' + cssEsc(secId) + '"] .cv-items > .cv-item'
         );
         var last = rows[rows.length - 1];
         if (last) {
@@ -1612,11 +1721,11 @@
         sec.expanded = true;
         rerenderSection(sec);
         var rows = S.container.querySelectorAll(
-            'section[data-section="' + cssEsc(secId) + '"] .cv-tbody .cv-tr-header'
+            'section[data-section="' + cssEsc(secId) + '"] .cv-items > .cv-item-rotulo'
         );
         var last = rows[rows.length - 1];
         if (last) {
-            var inp = last.querySelector('input.cv-input-rotulo');
+            var inp = last.querySelector('input.cv-item-rotulo-input');
             if (inp) try { inp.focus(); } catch (_) {}
         }
         scheduleAutosave();
@@ -1641,6 +1750,7 @@
         var sec = findSection(secId);
         if (!sec) return;
         sec.items = (sec.items || []).filter(function (it) { return it.id !== itemId; });
+        if (S.expandedItems && S.expandedItems.delete) S.expandedItems.delete(itemId);
         rerenderSection(sec);
         updateBottom();
         scheduleAutosave();
@@ -1654,6 +1764,10 @@
             var ok = window.confirm('La tabla "' + (sec.titulo || '') + '" tiene ' + n + ' item' +
                 (n === 1 ? '' : 's') + '. ¿Eliminar de todos modos?');
             if (!ok) return;
+        }
+        // Limpiar expanded de todos los items de esta sección
+        if (S.expandedItems && S.expandedItems.delete) {
+            (sec.items || []).forEach(function (it) { S.expandedItems.delete(it.id); });
         }
         S.data.secciones = (S.data.secciones || []).filter(function (s) { return s.id !== secId; });
         render();
@@ -1700,15 +1814,21 @@
         if (!S.container) return;
         var oldEl = S.container.querySelector('section[data-section="' + cssEsc(sec.id) + '"]');
         if (!oldEl) { render(); return; }
+        // Calcular idx actual de la sección (para el pill "01" / "02" / …).
+        var idx = 0;
+        var arr = (S.data && S.data.secciones) || [];
+        for (var i = 0; i < arr.length; i++) {
+            if (arr[i].id === sec.id) { idx = i; break; }
+        }
         var tmp = document.createElement('div');
-        tmp.innerHTML = renderSection(sec);
+        tmp.innerHTML = renderSection(sec, idx);
         var newEl = tmp.firstChild;
         oldEl.replaceWith(newEl);
         // Re-bind del trozo
         newEl.querySelectorAll('.cv-section-title-input').forEach(function (inp) {
             inp.addEventListener('input', onSectionTitleInput);
         });
-        newEl.querySelectorAll('.cv-tbody [data-field], .cv-tr-header [data-field]').forEach(function (inp) {
+        newEl.querySelectorAll('.cv-items [data-field]').forEach(function (inp) {
             inp.addEventListener('input', onItemInput);
             inp.addEventListener('change', onItemInput);
             inp.addEventListener('blur', onItemBlur);
@@ -1719,20 +1839,29 @@
         if (!S.container) return;
         if (sec.tipo === 'equipamiento' && it.row_type === 'header') return;
         var c = calcItem(sec, it);
+        // Item-card raíz
         var rowEl = S.container.querySelector(
-            '.cv-tr[data-section="' + cssEsc(sec.id) + '"][data-item="' + cssEsc(it.id) + '"]'
+            '.cv-item[data-section="' + cssEsc(sec.id) + '"][data-item="' + cssEsc(it.id) + '"]'
         );
         if (!rowEl) return;
+        // El total de la cabecera y los calcs del detalle viven todos
+        // bajo el item; los marcamos con [data-calc].
         var calcs = rowEl.querySelectorAll('[data-calc]');
         calcs.forEach(function (cell) {
             var k = cell.getAttribute('data-calc');
             var val = c[k];
             if (val == null) return;
-            cell.textContent = fmtMoney(val);
+            // El total del header tiene un span interno con el valor.
+            var valSpan = cell.querySelector('.cv-item-total-value, .cv-item-detail-value');
+            if (valSpan) {
+                valSpan.textContent = fmtMoney(val);
+            } else {
+                cell.textContent = fmtMoney(val);
+            }
             // Color de ganancia
             if (k === 'ganancia') {
-                cell.classList.toggle('cv-td-positive', val >= 0);
-                cell.classList.toggle('cv-td-negative', val < 0);
+                cell.classList.toggle('cv-item-positive', val >= 0);
+                cell.classList.toggle('cv-item-negative', val < 0);
             }
         });
         // Actualizar placeholder de C.Unit en equipamiento (refleja calc actual)
@@ -1742,16 +1871,27 @@
         }
     }
 
+    /** Refresca el "Subtotal zona" del head + el meta de # items.
+     *  (Antes esto era el tfoot de la tabla; ahora el subtotal vive en
+     *  el head como dato visible incluso al colapsar la sección.) */
     function updateSectionTfoot(sec) {
         if (!S.container) return;
         var secEl = S.container.querySelector('section[data-section="' + cssEsc(sec.id) + '"]');
         if (!secEl) return;
-        var oldFoot = secEl.querySelector('.cv-tfoot');
-        if (!oldFoot) return;
-        var tmp = document.createElement('table');
-        tmp.innerHTML = renderTfoot(sec);
-        var newFoot = tmp.querySelector('.cv-tfoot');
-        if (newFoot) oldFoot.replaceWith(newFoot);
+        var t = calcSection(sec);
+        var subtotal = (sec.tipo === 'costo_mo' || sec.tipo === 'gastos')
+            ? t.totalCosto : t.totalCli;
+        var subEl = secEl.querySelector('.cv-section-subtotal-value');
+        if (subEl) subEl.textContent = fmtMoney(subtotal);
+        // Meta de items (ej. "Equipamiento · 3 items")
+        var info = TYPE_INFO[sec.tipo] || TYPE_INFO.equipamiento;
+        var nItems = (sec.items || []).filter(function (x) { return x.row_type !== 'header'; }).length;
+        var metaEl = secEl.querySelector('.cv-section-meta');
+        if (metaEl) {
+            metaEl.innerHTML = esc(info.label) +
+                ' <span aria-hidden="true">·</span> ' + nItems +
+                (nItems === 1 ? ' item' : ' items');
+        }
     }
 
     function updateBottom() {
@@ -1877,6 +2017,7 @@
             S.readonly = !!options.readonly;
             S.onSaved = options.onSaved || null;
             S.addMenuOpen = false;
+            S.expandedItems = (typeof Set !== 'undefined') ? new Set() : null;
 
             if (S.volumetria.iva_pct == null)     S.volumetria.iva_pct = 16;
             if (S.volumetria.tipo_cambio == null) S.volumetria.tipo_cambio = 19.50;
@@ -1933,6 +2074,7 @@
             S.savePending = false;
             S.metaPending = {};
             S.addMenuOpen = false;
+            S.expandedItems = null;
         },
     };
 })();

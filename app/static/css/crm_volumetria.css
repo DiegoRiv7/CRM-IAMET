@@ -1,53 +1,57 @@
 /*
- * crm_volumetria.css — Estilos del Editor de Volumetría v4
+ * crm_volumetria.css — Estilos del Editor de Volumetría v4 (card-row)
  *
- * Multi-tabla por tipo (Equipamiento / Mano de Obra / Costo MO / Gastos),
- * inspirado en el cotizador legacy de nethive pero con paleta light theme
- * (Linear/Notion/Stripe). Cada sección es una tarjeta-tabla con su propia
- * banda de color en el banner según el tipo, y dentro de la tabla los
- * grupos de columnas tienen bandas pastel:
- *   - INFORMACIÓN DEL CLIENTE  → azul claro
- *   - COSTOS Y MÁRGENES        → verde claro
- *   - ACCIONES Y NOTAS         → gris claro
+ * Layout estilo Linear / Notion: cada sección es una tarjeta blanca
+ * con padding generoso, número grande "01" en pill gris a la izquierda,
+ * título de sección al centro, subtotal de zona alineado a la derecha.
+ * Cada item dentro de la sección es una mini-card independiente con
+ * icono coloreado, brand + parte, descripción, inputs CANT/DESC% y
+ * total a la derecha. Click en el cuerpo del item lo expande inline
+ * mostrando el detalle (P. Lista, Desc % Costo, C. Unit, etc).
  *
  * Convenciones:
- *   - Prefijo .cv- en todas las clases (paridad estricta con crm_volumetria.js).
- *   - Sin !important salvo overrides responsive específicos.
+ *   - Prefijo .cv- en TODAS las clases (paridad estricta con el JS).
  *   - Variables CSS en .cv-root para facilitar ajustes.
  *   - Mono font solo en números y códigos de parte.
+ *   - Sombras suaves: 0 1px 2px (item) / 0 2px 8px (sección).
  *
  * ── Inventario de clases (debe coincidir con el JS) ──
  *
  * Root:        .cv-root, .cv-readonly
  * Status pill: .cv-status, .cv-status-borrador, .cv-status-completada,
  *              .cv-status-dot, .cv-status-label
- *              (se renderiza dentro del header del card de estadísticas)
  * Stack:       .cv-stack
  * Sección:     .cv-section, .cv-section-collapsed,
  *              .cv-section-equipamiento, .cv-section-mano_obra,
  *              .cv-section-costo_mo, .cv-section-gastos,
- *              .cv-section-banner, .cv-section-banner-left,
+ *              .cv-section-head, .cv-section-head-left, .cv-section-head-right,
+ *              .cv-section-num,
  *              .cv-section-toggle, .cv-chevron,
- *              .cv-section-icon, .cv-section-title-input,
+ *              .cv-section-title-block,
+ *              .cv-section-title-input, .cv-section-meta,
+ *              .cv-section-subtotal-label, .cv-section-subtotal-value,
+ *              .cv-section-body, .cv-items, .cv-items-empty,
  *              .cv-section-actions
  * Botones:     .cv-btn, .cv-btn-add-row, .cv-btn-add-header,
  *              .cv-btn-del-section, .cv-btn-icon
- * Tabla:       .cv-table-wrap, .cv-table,
- *              .cv-table-equipamiento, .cv-table-mano_obra,
- *              .cv-table-costo_mo, .cv-table-gastos,
- *              .cv-thead, .cv-thead-groups, .cv-thead-cols,
- *              .cv-th-group, .cv-th-group-info, .cv-th-group-costos,
- *              .cv-th-group-acciones, .cv-th-group-empty,
- *              .cv-th, .cv-th-num, .cv-th-text, .cv-th-desc,
- *              .cv-th-idx, .cv-th-act,
- *              .cv-tbody, .cv-tr, .cv-tr-header,
- *              .cv-td, .cv-td-num, .cv-td-text, .cv-td-desc,
- *              .cv-td-calc, .cv-td-idx, .cv-td-act, .cv-td-mono,
- *              .cv-td-total, .cv-td-positive, .cv-td-negative,
- *              .cv-td-rotulo,
- *              .cv-input, .cv-input-num, .cv-input-text, .cv-input-rotulo,
- *              .cv-row-del,
- *              .cv-tfoot, .cv-tfoot-tr, .cv-tfoot-label, .cv-tfoot-value
+ * Item:        .cv-item, .cv-item-equipamiento, .cv-item-mano_obra,
+ *              .cv-item-costo_mo, .cv-item-gastos, .cv-item-rotulo,
+ *              .cv-item-expanded,
+ *              .cv-item-header,
+ *              .cv-item-icon, .cv-item-icon-eq, .cv-item-icon-mo,
+ *              .cv-item-icon-cmo, .cv-item-icon-ga,
+ *              .cv-item-main, .cv-item-id, .cv-item-brand,
+ *              .cv-item-brand-wide, .cv-item-part, .cv-item-desc,
+ *              .cv-item-fields, .cv-item-field, .cv-item-field-label,
+ *              .cv-item-total, .cv-item-total-label, .cv-item-total-value,
+ *              .cv-item-positive, .cv-item-negative,
+ *              .cv-item-detail, .cv-item-detail-grid, .cv-item-detail-cell,
+ *              .cv-item-detail-cell-calc,
+ *              .cv-item-detail-label, .cv-item-detail-value,
+ *              .cv-item-detail-full,
+ *              .cv-item-rotulo-input,
+ *              .cv-item-del, .cv-row-del,
+ *              .cv-input, .cv-input-num, .cv-input-text, .cv-input-mini
  * Add section: .cv-add-section-wrap, .cv-add-section, .cv-add-section-menu,
  *              .cv-add-section-item, .cv-add-section-icon,
  *              .cv-add-section-icon-equipamiento,
@@ -60,7 +64,7 @@
  *              .cv-card-title, .cv-card-body,
  *              .cv-fin-config, .cv-fin-config-field,
  *              .cv-fin-config-label, .cv-fin-config-input,
- *              .cv-fin-config-suffix,
+ *              .cv-fin-config-suffix, .cv-fin-values,
  *              .cv-fin-row, .cv-fin-label, .cv-fin-value,
  *              .cv-fin-row-cost, .cv-fin-row-gain, .cv-fin-row-margin,
  *              .cv-fin-row-margin-low, .cv-fin-row-iva, .cv-fin-row-total,
@@ -84,7 +88,8 @@
     --cv-bg-card:        #ffffff;
     --cv-bg-soft:        #f8fafc;          /* slate-50 */
     --cv-bg-hover:       #f1f5f9;          /* slate-100 */
-    --cv-bg-row-alt:     #fafafa;
+    --cv-bg-zinc-50:     #fafafa;
+    --cv-bg-zinc-100:    #f4f4f5;
     --cv-fg:             #0f172a;          /* slate-900 */
     --cv-fg-2:           #334155;          /* slate-700 */
     --cv-fg-muted:       #64748b;          /* slate-500 */
@@ -105,46 +110,44 @@
     --cv-danger:        #dc2626;           /* red-600 */
     --cv-danger-bg:     rgba(239, 68, 68, 0.08);
 
-    /* Tipos de sección — banner gradient + accent */
-    --cv-eq-from:       #eff6ff;           /* blue-50 */
-    --cv-eq-to:         #dbeafe;           /* blue-100 */
-    --cv-eq-accent:     #1d4ed8;           /* blue-700 */
-    --cv-eq-border:     #bfdbfe;           /* blue-200 */
+    /* Tipos de sección — paleta del icono pastel + accent oscuro */
+    --cv-eq-icon-bg:    #dbeafe;           /* blue-100 */
+    --cv-eq-icon-fg:    #1d4ed8;           /* blue-700 */
+    --cv-eq-pill-bg:    #eff6ff;
+    --cv-eq-pill-fg:    #1e40af;
+    --cv-eq-pill-bd:    #bfdbfe;
 
-    --cv-mo-from:       #faf5ff;           /* purple-50 */
-    --cv-mo-to:         #f3e8ff;           /* purple-100 */
-    --cv-mo-accent:     #7c3aed;           /* violet-600 */
-    --cv-mo-border:     #e9d5ff;           /* purple-200 */
+    --cv-mo-icon-bg:    #ede9fe;           /* violet-100 */
+    --cv-mo-icon-fg:    #6d28d9;           /* violet-700 */
+    --cv-mo-pill-bg:    #faf5ff;
+    --cv-mo-pill-fg:    #6b21a8;
+    --cv-mo-pill-bd:    #e9d5ff;
 
-    --cv-cm-from:       #fffbeb;           /* amber-50 */
-    --cv-cm-to:         #fef3c7;           /* amber-100 */
-    --cv-cm-accent:     #b45309;           /* amber-700 */
-    --cv-cm-border:     #fde68a;           /* amber-200 */
+    --cv-cm-icon-bg:    #fef3c7;           /* amber-100 */
+    --cv-cm-icon-fg:    #b45309;           /* amber-700 */
+    --cv-cm-pill-bg:    #fffbeb;
+    --cv-cm-pill-fg:    #92400e;
+    --cv-cm-pill-bd:    #fde68a;
 
-    --cv-ga-from:       #fef2f2;           /* red-50 */
-    --cv-ga-to:         #fee2e2;           /* red-100 */
-    --cv-ga-accent:     #b91c1c;           /* red-700 */
-    --cv-ga-border:     #fecaca;           /* red-200 */
-
-    /* Grupos de columnas */
-    --cv-grp-info-bg:        #eff6ff;
-    --cv-grp-info-fg:        #1e40af;
-    --cv-grp-costos-bg:      #f0fdf4;      /* green-50 */
-    --cv-grp-costos-fg:      #166534;      /* green-800 */
-    --cv-grp-acciones-bg:    #f9fafb;
-    --cv-grp-acciones-fg:    #374151;
+    --cv-ga-icon-bg:    #fee2e2;           /* red-100 */
+    --cv-ga-icon-fg:    #b91c1c;           /* red-700 */
+    --cv-ga-pill-bg:    #fef2f2;
+    --cv-ga-pill-fg:    #991b1b;
+    --cv-ga-pill-bd:    #fecaca;
 
     /* Sombras / radios */
     --cv-radius-sm: 6px;
     --cv-radius:    8px;
-    --cv-radius-lg: 12px;
-    --cv-shadow-1:  0 1px 2px rgba(15, 23, 42, 0.04);
-    --cv-shadow-2:  0 2px 8px rgba(15, 23, 42, 0.06);
-    --cv-shadow-3:  0 4px 14px rgba(15, 23, 42, 0.08);
+    --cv-radius-md: 10px;
+    --cv-radius-lg: 14px;
+    --cv-radius-xl: 18px;
+    --cv-shadow-item:    0 1px 2px rgba(15, 23, 42, 0.04);
+    --cv-shadow-section: 0 2px 8px rgba(15, 23, 42, 0.06);
+    --cv-shadow-pop:     0 4px 14px rgba(15, 23, 42, 0.08);
 
     color: var(--cv-fg);
     font-family: var(--cv-sans);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.45;
     background: transparent;
     padding: 0;
@@ -164,7 +167,7 @@
     clip: rect(0 0 0 0);
 }
 
-/* Status pill (Borrador / Completada) */
+/* ── Status pill (vive en el header del card stats) ─────────────── */
 .cv-status {
     display: inline-flex;
     align-items: center;
@@ -217,48 +220,65 @@ button.cv-status { font-family: inherit; }
 .cv-stack {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
 }
 
-/* ── Sección (tarjeta-tabla) ────────────────────────────────────── */
+/* ── Sección (card grande) ──────────────────────────────────────── */
 .cv-section {
     background: var(--cv-bg-card);
     border: 1px solid var(--cv-border);
-    border-radius: var(--cv-radius-lg);
-    box-shadow: var(--cv-shadow-1);
+    border-radius: var(--cv-radius-xl);
+    box-shadow: var(--cv-shadow-section);
     overflow: hidden;
 }
 
-.cv-section-banner {
+/* Head (zona superior con número, título, subtotal) */
+.cv-section-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--cv-border);
-    background: var(--cv-bg-soft);
+    gap: 16px;
+    padding: 22px 26px 18px;
 }
 
-.cv-section-banner-left {
+.cv-section-head-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     flex: 1;
     min-width: 0;
+}
+
+.cv-section-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 30px;
+    padding: 4px 10px;
+    background: var(--cv-bg-zinc-100);
+    color: #3f3f46; /* zinc-700 */
+    font-family: var(--cv-mono);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 8px;
+    user-select: none;
+    flex-shrink: 0;
 }
 
 .cv-section-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border: none;
     background: transparent;
     color: var(--cv-fg-muted);
     border-radius: var(--cv-radius-sm);
     cursor: pointer;
-    transition: background 120ms ease;
+    transition: background 120ms ease, color 120ms ease;
     flex-shrink: 0;
 }
 .cv-section-toggle:hover {
@@ -271,29 +291,25 @@ button.cv-status { font-family: inherit; }
     justify-content: center;
 }
 
-.cv-section-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: var(--cv-radius-sm);
-    flex-shrink: 0;
-}
-
-.cv-section-title-input {
+.cv-section-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     flex: 1;
     min-width: 0;
+}
+.cv-section-title-input {
+    width: 100%;
     border: none;
     outline: none;
     background: transparent;
     color: var(--cv-fg);
     font-family: var(--cv-sans);
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
-    letter-spacing: -0.005em;
-    padding: 4px 6px;
-    margin: 0;
+    letter-spacing: -0.01em;
+    padding: 2px 4px;
+    margin: 0 -4px;
     border-radius: 6px;
     transition: background 120ms ease;
 }
@@ -305,65 +321,96 @@ button.cv-status { font-family: inherit; }
     background: rgba(15, 23, 42, 0.04);
 }
 .cv-section-title-input[disabled] { background: transparent; }
-
-/* Variantes de banner por tipo */
-.cv-section-equipamiento .cv-section-banner {
-    background: linear-gradient(135deg, var(--cv-eq-from), var(--cv-eq-to));
-    border-bottom-color: var(--cv-eq-border);
-}
-.cv-section-equipamiento .cv-section-icon {
-    background: rgba(59, 130, 246, 0.18);
-    color: var(--cv-eq-accent);
-}
-.cv-section-mano_obra .cv-section-banner {
-    background: linear-gradient(135deg, var(--cv-mo-from), var(--cv-mo-to));
-    border-bottom-color: var(--cv-mo-border);
-}
-.cv-section-mano_obra .cv-section-icon {
-    background: rgba(168, 85, 247, 0.18);
-    color: var(--cv-mo-accent);
-}
-.cv-section-costo_mo .cv-section-banner {
-    background: linear-gradient(135deg, var(--cv-cm-from), var(--cv-cm-to));
-    border-bottom-color: var(--cv-cm-border);
-}
-.cv-section-costo_mo .cv-section-icon {
-    background: rgba(245, 158, 11, 0.18);
-    color: var(--cv-cm-accent);
-}
-.cv-section-gastos .cv-section-banner {
-    background: linear-gradient(135deg, var(--cv-ga-from), var(--cv-ga-to));
-    border-bottom-color: var(--cv-ga-border);
-}
-.cv-section-gastos .cv-section-icon {
-    background: rgba(248, 113, 113, 0.18);
-    color: var(--cv-ga-accent);
+.cv-section-meta {
+    font-size: 11.5px;
+    color: var(--cv-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    padding: 0 4px;
 }
 
-/* Sección colapsada: solo banner, sin tabla */
-.cv-section-collapsed .cv-section-banner {
-    border-bottom-color: transparent;
+/* Right: subtotal de zona */
+.cv-section-head-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+    text-align: right;
+}
+.cv-section-subtotal-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--cv-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    user-select: none;
+}
+.cv-section-subtotal-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--cv-fg);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
 }
 
-/* ── Acciones de sección (botones del banner) ───────────────────── */
+/* Sección colapsada: solo head, sin body */
+.cv-section-collapsed .cv-section-head {
+    padding-bottom: 22px;
+}
+
+/* Tinte sutil del subtotal según el tipo (solo borde-acento de color) */
+.cv-section-equipamiento .cv-section-subtotal-value { color: var(--cv-fg); }
+.cv-section-mano_obra .cv-section-subtotal-value     { color: var(--cv-fg); }
+.cv-section-costo_mo .cv-section-subtotal-value      { color: var(--cv-cm-icon-fg); }
+.cv-section-gastos .cv-section-subtotal-value        { color: var(--cv-ga-icon-fg); }
+
+/* ── Body de la sección ─────────────────────────────────────────── */
+.cv-section-body {
+    padding: 0 26px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cv-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cv-items-empty {
+    padding: 18px 14px;
+    color: var(--cv-fg-faint);
+    font-style: italic;
+    font-size: 13px;
+    text-align: center;
+    border: 1px dashed var(--cv-border);
+    border-radius: var(--cv-radius);
+    background: var(--cv-bg-soft);
+}
+
+/* ── Acciones de sección (fila inferior con + Fila / + Rótulo / 🗑) ── */
 .cv-section-actions {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .cv-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 7px 12px;
+    gap: 6px;
+    padding: 8px 14px;
     border: 1px solid var(--cv-border);
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--cv-bg-card);
     color: var(--cv-fg-2);
     border-radius: var(--cv-radius);
     font-family: var(--cv-sans);
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 120ms ease;
@@ -371,24 +418,25 @@ button.cv-status { font-family: inherit; }
     line-height: 1;
 }
 .cv-btn:hover {
-    background: #ffffff;
+    background: var(--cv-bg-soft);
     border-color: var(--cv-border-strong);
-    box-shadow: var(--cv-shadow-1);
+    box-shadow: var(--cv-shadow-item);
 }
 .cv-btn svg { flex-shrink: 0; }
 
 .cv-btn-add-row {
-    color: #1d4ed8;
+    color: var(--cv-eq-icon-fg);
     border-color: #bfdbfe;
+    background: #fff;
 }
 .cv-btn-add-row:hover {
     background: #eff6ff;
     border-color: #93c5fd;
-    color: #1e40af;
+    color: #1e3a8a;
 }
 
 .cv-btn-add-header {
-    color: #6d28d9;
+    color: var(--cv-mo-icon-fg);
     border-color: #ddd6fe;
 }
 .cv-btn-add-header:hover {
@@ -400,7 +448,8 @@ button.cv-status { font-family: inherit; }
 .cv-btn-del-section {
     color: var(--cv-danger);
     border-color: #fecaca;
-    padding: 7px 9px;
+    padding: 8px 11px;
+    margin-left: auto;
 }
 .cv-btn-del-section:hover {
     background: #fef2f2;
@@ -409,175 +458,326 @@ button.cv-status { font-family: inherit; }
 }
 
 .cv-btn-icon {
-    padding: 7px 9px;
-}
-
-/* ── Tabla ──────────────────────────────────────────────────────── */
-.cv-table-wrap {
-    overflow-x: auto;
-    overflow-y: visible;
-    background: var(--cv-bg-card);
-    -webkit-overflow-scrolling: touch;
-}
-
-.cv-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    font-size: 13px;
-    color: var(--cv-fg);
-    table-layout: auto;
-}
-
-/* ── Headers ────────────────────────────────────────────────────── */
-.cv-thead {
-    background: var(--cv-bg-card);
-}
-
-.cv-thead-groups th {
-    padding: 6px 10px;
-    font-size: 10.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    text-align: center;
-    border-bottom: 1px solid var(--cv-border);
-    border-right: 1px solid var(--cv-border);
-    white-space: nowrap;
-}
-.cv-thead-groups th:last-child { border-right: none; }
-
-.cv-th-group-empty {
-    background: var(--cv-bg-card);
-    border-right-color: var(--cv-border-soft);
-}
-.cv-th-group-info {
-    background: var(--cv-grp-info-bg);
-    color: var(--cv-grp-info-fg);
-}
-.cv-th-group-costos {
-    background: var(--cv-grp-costos-bg);
-    color: var(--cv-grp-costos-fg);
-}
-.cv-th-group-acciones {
-    background: var(--cv-grp-acciones-bg);
-    color: var(--cv-grp-acciones-fg);
-}
-
-.cv-thead-cols th.cv-th {
-    position: sticky;
-    top: 0;
-    background: var(--cv-bg-card);
     padding: 8px 10px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--cv-fg-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-bottom: 2px solid var(--cv-border-strong);
-    border-right: 1px solid var(--cv-border);
-    text-align: left;
-    white-space: nowrap;
-    z-index: 1;
 }
-.cv-thead-cols th.cv-th:last-child { border-right: none; }
-.cv-th-num   { text-align: right; }
-.cv-th-text  { text-align: left; }
-.cv-th-desc  { min-width: 220px; }
-.cv-th-idx   { width: 36px; text-align: center; padding-left: 8px; padding-right: 8px; color: var(--cv-fg-faint); }
-.cv-th-act   { width: 34px; padding: 0; }
 
-/* ── Filas ──────────────────────────────────────────────────────── */
-.cv-tbody .cv-tr {
-    transition: background 100ms ease;
+/* ── Item (mini-card) ───────────────────────────────────────────── */
+.cv-item {
+    position: relative;
+    background: var(--cv-bg-card);
+    border: 1px solid var(--cv-border);
+    border-radius: var(--cv-radius-md);
+    box-shadow: var(--cv-shadow-item);
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+    overflow: hidden;
 }
-.cv-tbody .cv-tr:nth-child(even) {
-    background: var(--cv-bg-row-alt);
+.cv-item:hover {
+    border-color: var(--cv-border-strong);
 }
-.cv-tbody .cv-tr:hover {
-    background: var(--cv-bg-soft);
-}
-.cv-tbody .cv-tr:hover .cv-row-del {
+.cv-item:hover > .cv-item-header > .cv-item-del,
+.cv-item:hover > .cv-item-del {
     opacity: 1;
 }
 
-/* ── Celdas ─────────────────────────────────────────────────────── */
-.cv-td {
-    padding: 4px 8px;
-    border-bottom: 1px solid var(--cv-border);
-    border-right: 1px solid var(--cv-border);
-    vertical-align: middle;
-    font-size: 13px;
-    color: var(--cv-fg);
+.cv-item-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    cursor: default;
 }
-.cv-tbody .cv-tr > .cv-td:last-child { border-right: none; }
-.cv-td-num { text-align: right; }
-.cv-td-text { text-align: left; }
-.cv-td-idx {
-    text-align: center;
-    color: var(--cv-fg-faint);
+.cv-item-header[data-action="toggle-item"] { cursor: pointer; }
+.cv-item-header[data-action="toggle-item"]:hover {
+    background: rgba(15, 23, 42, 0.015);
+}
+
+/* Icono cuadrado a la izquierda */
+.cv-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--cv-radius);
+    flex-shrink: 0;
+}
+.cv-item-icon-eq  { background: var(--cv-eq-icon-bg); color: var(--cv-eq-icon-fg); }
+.cv-item-icon-mo  { background: var(--cv-mo-icon-bg); color: var(--cv-mo-icon-fg); }
+.cv-item-icon-cmo { background: var(--cv-cm-icon-bg); color: var(--cv-cm-icon-fg); }
+.cv-item-icon-ga  { background: var(--cv-ga-icon-bg); color: var(--cv-ga-icon-fg); }
+
+/* Bloque "main": icono ya está hermano; aquí van id (brand+parte) + desc */
+.cv-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.cv-item-id {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+.cv-item-brand {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+.cv-item-brand .cv-input {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cv-fg);
+    padding: 2px 4px;
+    width: 100px;
+    background: transparent;
+}
+.cv-item-brand-wide .cv-input {
+    width: 240px;
+    text-transform: none;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+.cv-item-part {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+.cv-item-part .cv-input {
     font-family: var(--cv-mono);
     font-size: 11.5px;
-    width: 36px;
-    padding: 4px 6px;
-}
-.cv-td-act {
-    width: 34px;
-    text-align: center;
-    padding: 4px;
-}
-.cv-td-mono { font-family: var(--cv-mono); font-size: 12.5px; }
-.cv-td-calc {
+    font-weight: 600;
     color: var(--cv-fg-2);
-    background: rgba(15, 23, 42, 0.02);
+    padding: 2px 8px;
+    width: 130px;
+    background: var(--cv-bg-zinc-100);
+    border-radius: 5px;
+}
+.cv-item-part .cv-input:focus {
+    background: var(--cv-bg-card);
+}
+.cv-item-desc {
+    display: block;
+    min-width: 0;
+}
+.cv-item-desc .cv-input {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--cv-fg);
+    padding: 2px 4px;
+    width: 100%;
+    background: transparent;
+}
+.cv-item-desc .cv-input::placeholder {
+    color: var(--cv-fg-faint);
+    font-weight: 400;
+}
+
+/* Campos numéricos compactos a la derecha de la cabecera (cant, desc%) */
+.cv-item-fields {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.cv-item-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.cv-item-field-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--cv-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    user-select: none;
+    text-align: center;
+}
+.cv-item-field .cv-input-mini {
+    width: 78px;
+    text-align: right;
+    padding: 6px 8px;
+    background: var(--cv-bg-card);
+    border: 1px solid var(--cv-border);
+    border-radius: 6px;
+    font-family: var(--cv-mono);
+    font-size: 13px;
+    font-weight: 600;
+}
+.cv-item-field .cv-input-text.cv-input-mini {
+    text-align: center;
+    text-transform: uppercase;
+    font-family: var(--cv-mono);
+    font-size: 12px;
+    width: 70px;
+}
+
+/* Total a la extrema derecha */
+.cv-item-total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 110px;
+    flex-shrink: 0;
+    padding-left: 8px;
+    border-left: 1px solid var(--cv-border-soft);
+    margin-left: 4px;
+}
+.cv-item-total-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--cv-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+.cv-item-total-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--cv-fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+.cv-item-total.cv-item-positive .cv-item-total-value { color: var(--cv-positive); }
+.cv-item-total.cv-item-negative .cv-item-total-value { color: var(--cv-danger); }
+
+/* Botón de eliminar item (esquina superior derecha, hover-only) */
+.cv-row-del,
+.cv-item-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--cv-fg-faint);
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 100ms ease;
+}
+.cv-item-del {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+}
+.cv-row-del:hover,
+.cv-item-del:hover {
+    background: var(--cv-danger-bg);
+    color: var(--cv-danger);
+    border-color: #fecaca;
+    opacity: 1;
+}
+.cv-readonly .cv-row-del,
+.cv-readonly .cv-item-del { display: none; }
+
+/* ── Detalle inline (expandible) ────────────────────────────────── */
+.cv-item-detail {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 220ms ease, padding 220ms ease, border-top-color 220ms ease;
+    border-top: 1px solid transparent;
+    background: var(--cv-bg-soft);
+    padding: 0 18px;
+}
+.cv-item-expanded .cv-item-detail {
+    max-height: 600px;
+    padding: 14px 18px 16px;
+    border-top-color: var(--cv-border-soft);
+}
+
+.cv-item-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 14px;
+}
+.cv-item-detail-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.cv-item-detail-cell-calc {
+    background: var(--cv-bg-card);
+    border: 1px solid var(--cv-border-soft);
+    border-radius: 6px;
+    padding: 6px 8px;
+}
+.cv-item-detail-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--cv-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    user-select: none;
+}
+.cv-item-detail-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cv-fg);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.cv-item-detail-cell-calc.cv-item-positive .cv-item-detail-value { color: var(--cv-positive); }
+.cv-item-detail-cell-calc.cv-item-negative .cv-item-detail-value { color: var(--cv-danger); }
+
+.cv-item-detail-full {
+    margin-top: 10px;
+    grid-column: 1 / -1;
+}
+.cv-item-detail-cell .cv-input {
+    background: var(--cv-bg-card);
+    border: 1px solid var(--cv-border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 13px;
+}
+.cv-item-detail-cell .cv-input-num {
     font-family: var(--cv-mono);
     font-size: 12.5px;
     text-align: right;
-    padding: 6px 10px;
-    white-space: nowrap;
-    border-right-color: var(--cv-border-strong);
 }
-.cv-td-total {
-    font-weight: 700;
-    color: var(--cv-fg);
-    background: rgba(15, 23, 42, 0.04);
-    border-right-color: var(--cv-border-strong);
-}
-.cv-td-positive { color: var(--cv-positive); }
-.cv-td-negative { color: var(--cv-danger); }
 
-/* Rótulo (row_type=header en equipamiento) */
-.cv-tr-header {
+/* ── Rótulo (row_type=header en equipamiento) ───────────────────── */
+.cv-item-rotulo {
     background: linear-gradient(90deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02) 60%, transparent);
+    border-color: rgba(99, 102, 241, 0.18);
+    padding: 12px 18px;
 }
-.cv-tr-header:hover { background: rgba(99, 102, 241, 0.1); }
-.cv-tr-header .cv-td-idx { color: var(--cv-accent-soft); }
-.cv-td-rotulo {
-    padding: 4px 8px;
+.cv-item-rotulo:hover {
+    background: linear-gradient(90deg, rgba(99,102,241,0.10), rgba(99,102,241,0.04) 60%, transparent);
+    border-color: rgba(99, 102, 241, 0.28);
 }
-.cv-input-rotulo {
+.cv-item-rotulo-input {
     width: 100%;
     border: none;
     outline: none;
     background: transparent;
     font-family: var(--cv-sans);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--cv-accent);
     letter-spacing: 0.005em;
     padding: 6px 4px;
     border-radius: 4px;
 }
-.cv-input-rotulo::placeholder {
+.cv-item-rotulo-input::placeholder {
     color: var(--cv-accent-soft);
     opacity: 0.55;
     font-weight: 600;
 }
-.cv-input-rotulo:focus {
+.cv-item-rotulo-input:focus {
     background: rgba(99, 102, 241, 0.08);
 }
 
-/* ── Inputs en celdas ───────────────────────────────────────────── */
+/* ── Inputs base ────────────────────────────────────────────────── */
 .cv-input {
     width: 100%;
     border: 1px solid transparent;
@@ -585,10 +785,10 @@ button.cv-status { font-family: inherit; }
     background: transparent;
     color: var(--cv-fg);
     font-family: var(--cv-sans);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.3;
-    padding: 5px 7px;
-    border-radius: 5px;
+    padding: 6px 8px;
+    border-radius: 6px;
     transition: background 100ms ease, border-color 100ms ease, box-shadow 100ms ease;
     min-width: 0;
 }
@@ -609,87 +809,31 @@ button.cv-status { font-family: inherit; }
     opacity: 1;
 }
 .cv-input-num {
-    text-align: right;
-    font-family: var(--cv-mono);
-    font-size: 12.5px;
-    -moz-appearance: textfield;
-}
-.cv-input-num::-webkit-outer-spin-button,
-.cv-input-num::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Mono override genérico (cuando se aplica a un input-text) */
-.cv-input.cv-mono { font-family: var(--cv-mono); font-size: 12.5px; }
-
-/* Botón de eliminar fila (hover-only) */
-.cv-row-del {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--cv-fg-faint);
-    border-radius: 5px;
-    cursor: pointer;
-    opacity: 0;
-    transition: all 100ms ease;
-}
-.cv-row-del:hover {
-    background: var(--cv-danger-bg);
-    color: var(--cv-danger);
-    border-color: #fecaca;
-    opacity: 1;
-}
-.cv-readonly .cv-row-del { display: none; }
-
-/* ── Footer de tabla ────────────────────────────────────────────── */
-.cv-tfoot { background: var(--cv-bg-soft); }
-.cv-tfoot-tr td {
-    padding: 8px 10px;
-    border-top: 1px solid var(--cv-border);
-    border-bottom: none;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--cv-fg);
-    background: var(--cv-bg-soft);
-}
-.cv-tfoot-label {
-    text-align: right;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--cv-fg-muted);
-    font-size: 11px;
-}
-.cv-tfoot-value {
-    text-align: right;
     font-family: var(--cv-mono);
     font-size: 13px;
-    color: var(--cv-fg);
-    white-space: nowrap;
 }
+/* IMPORTANTE: el usuario quiere que se vean los spinners nativos del
+ * número — NO los ocultamos. */
+.cv-input.cv-mono { font-family: var(--cv-mono); font-size: 13px; }
 
 /* ── Add section dropdown ───────────────────────────────────────── */
 .cv-add-section-wrap {
     position: relative;
     display: flex;
-    margin: 14px 0 0;
+    margin: 18px 0 0;
 }
 
 .cv-add-section {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 9px 14px;
+    gap: 8px;
+    padding: 11px 18px;
     border: 1px dashed var(--cv-accent-soft);
     background: var(--cv-bg-card);
     color: var(--cv-accent);
     border-radius: var(--cv-radius);
     font-family: var(--cv-sans);
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
     transition: all 120ms ease;
@@ -711,13 +855,13 @@ button.cv-status { font-family: inherit; }
 
 .cv-add-section-menu {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + 8px);
     left: 0;
-    min-width: 240px;
+    min-width: 250px;
     background: var(--cv-bg-card);
     border: 1px solid var(--cv-border);
     border-radius: var(--cv-radius);
-    box-shadow: var(--cv-shadow-3);
+    box-shadow: var(--cv-shadow-pop);
     padding: 6px;
     z-index: 50;
     display: flex;
@@ -729,13 +873,13 @@ button.cv-status { font-family: inherit; }
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 10px;
+    padding: 9px 10px;
     border: none;
     background: transparent;
     color: var(--cv-fg);
     border-radius: var(--cv-radius-sm);
     font-family: var(--cv-sans);
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
     cursor: pointer;
     text-align: left;
@@ -749,41 +893,41 @@ button.cv-status { font-family: inherit; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: var(--cv-radius-sm);
     flex-shrink: 0;
 }
 .cv-add-section-icon-equipamiento {
-    background: var(--cv-eq-to);
-    color: var(--cv-eq-accent);
+    background: var(--cv-eq-icon-bg);
+    color: var(--cv-eq-icon-fg);
 }
 .cv-add-section-icon-mano_obra {
-    background: var(--cv-mo-to);
-    color: var(--cv-mo-accent);
+    background: var(--cv-mo-icon-bg);
+    color: var(--cv-mo-icon-fg);
 }
 .cv-add-section-icon-costo_mo {
-    background: var(--cv-cm-to);
-    color: var(--cv-cm-accent);
+    background: var(--cv-cm-icon-bg);
+    color: var(--cv-cm-icon-fg);
 }
 .cv-add-section-icon-gastos {
-    background: var(--cv-ga-to);
-    color: var(--cv-ga-accent);
+    background: var(--cv-ga-icon-bg);
+    color: var(--cv-ga-icon-fg);
 }
 
-/* ── Bottom (Resumen + Estadísticas) ────────────────────────────── */
+/* ── Bottom (Resumen Financiero + Estadísticas) ────────────────── */
 .cv-bottom {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
-    margin: 18px 0 0;
+    margin: 22px 0 0;
 }
 
 .cv-card {
     background: var(--cv-bg-card);
     border: 1px solid var(--cv-border);
     border-radius: var(--cv-radius-lg);
-    box-shadow: var(--cv-shadow-1);
+    box-shadow: var(--cv-shadow-item);
     overflow: hidden;
 }
 
@@ -804,7 +948,6 @@ button.cv-status { font-family: inherit; }
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-/* Status pill cuando vive en el header del card stats: tamaño compacto */
 .cv-card-header-row .cv-status {
     padding: 4px 10px;
     font-size: 11.5px;
@@ -833,9 +976,6 @@ button.cv-status { font-family: inherit; }
     gap: 6px;
 }
 
-/* Wrapper de las filas de valores (subtotal, costo, ganancia, …);
- * `display: contents` lo hace transparente para el flex del card-body
- * para que el gap entre filas siga funcionando idéntico. */
 .cv-fin-values {
     display: contents;
 }
@@ -1022,24 +1162,24 @@ button.cv-status { font-family: inherit; }
     border: 1px solid;
 }
 .cv-stat-pill-equipamiento {
-    background: var(--cv-eq-from);
-    color: var(--cv-eq-accent);
-    border-color: var(--cv-eq-border);
+    background: var(--cv-eq-pill-bg);
+    color: var(--cv-eq-pill-fg);
+    border-color: var(--cv-eq-pill-bd);
 }
 .cv-stat-pill-mano_obra {
-    background: var(--cv-mo-from);
-    color: var(--cv-mo-accent);
-    border-color: var(--cv-mo-border);
+    background: var(--cv-mo-pill-bg);
+    color: var(--cv-mo-pill-fg);
+    border-color: var(--cv-mo-pill-bd);
 }
 .cv-stat-pill-costo_mo {
-    background: var(--cv-cm-from);
-    color: var(--cv-cm-accent);
-    border-color: var(--cv-cm-border);
+    background: var(--cv-cm-pill-bg);
+    color: var(--cv-cm-pill-fg);
+    border-color: var(--cv-cm-pill-bd);
 }
 .cv-stat-pill-gastos {
-    background: var(--cv-ga-from);
-    color: var(--cv-ga-accent);
-    border-color: var(--cv-ga-border);
+    background: var(--cv-ga-pill-bg);
+    color: var(--cv-ga-pill-fg);
+    border-color: var(--cv-ga-pill-bd);
 }
 
 /* ── Misc ───────────────────────────────────────────────────────── */
@@ -1061,26 +1201,45 @@ button.cv-status { font-family: inherit; }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-    .cv-section-title-input { font-size: 15px; }
+    .cv-section-title-input { font-size: 17px; }
+    .cv-section-subtotal-value { font-size: 22px; }
+    .cv-item-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
-    .cv-bottom {
-        grid-template-columns: 1fr;
-    }
+    .cv-bottom { grid-template-columns: 1fr; }
+    .cv-section-head { padding: 18px 18px 14px; }
+    .cv-section-body { padding: 0 18px 18px; }
+    .cv-item-header { flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+    .cv-item-main { flex: 1 1 100%; order: 1; }
+    .cv-item-fields { order: 2; }
+    .cv-item-total { order: 3; margin-left: auto; }
+    .cv-item-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
-    .cv-section-banner {
+    .cv-section-head {
         flex-wrap: wrap;
+        gap: 12px;
+    }
+    .cv-section-head-right {
+        flex-direction: row;
+        align-items: baseline;
         gap: 8px;
     }
     .cv-section-actions {
-        flex-wrap: wrap;
         width: 100%;
-        justify-content: flex-end;
+        justify-content: flex-start;
     }
-    .cv-btn { padding: 6px 10px; font-size: 12px; }
+    .cv-btn { padding: 8px 12px; font-size: 12.5px; }
 
     .cv-fin-row-total .cv-fin-value { font-size: 22px; }
+}
+
+@media (max-width: 540px) {
+    .cv-item-detail-grid { grid-template-columns: 1fr; }
+    .cv-section-num { min-width: 32px; height: 26px; font-size: 12.5px; padding: 3px 8px; }
+    .cv-section-title-input { font-size: 16px; }
+    .cv-section-subtotal-value { font-size: 20px; }
+    .cv-item-icon { width: 36px; height: 36px; }
 }
