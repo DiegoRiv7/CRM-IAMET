@@ -46,28 +46,39 @@ document.addEventListener('click', function(ev) {
     // ── Persistencia: reabrir prospecto sin actividad al cargar ──
     (function() {
         var pendienteId = localStorage.getItem('_pendienteProspectoSinActividad');
-        if (pendienteId) {
-            // Verificar si tiene actividades
-            fetch('/app/api/prospecto/' + pendienteId + '/actividades/')
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    var acts = data.actividades || [];
-                    if (acts.length === 0) {
-                        // Sigue sin actividad, reabrir widget
-                        setTimeout(function() {
-                            if (typeof abrirWidgetProspecto === 'function') {
-                                abrirWidgetProspecto(parseInt(pendienteId));
-                            }
-                        }, 1000);
-                    } else {
-                        // Ya tiene actividad, limpiar
-                        localStorage.removeItem('_pendienteProspectoSinActividad');
-                    }
-                })
-                .catch(function() {
+        if (!pendienteId) return;
+        // Primero verificar etapa: si está cerrado, limpiar y no reabrir.
+        fetch('/app/api/prospecto/' + pendienteId + '/detalle/')
+            .then(function(r) { return r.json(); })
+            .then(function(det) {
+                if (det && (det.etapa === 'cerrado_ganado' || det.etapa === 'cerrado_perdido')) {
                     localStorage.removeItem('_pendienteProspectoSinActividad');
-                });
-        }
+                    return;
+                }
+                // Verificar si tiene actividades
+                fetch('/app/api/prospecto/' + pendienteId + '/actividades/')
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        var acts = data.actividades || [];
+                        if (acts.length === 0) {
+                            // Sigue sin actividad, reabrir widget
+                            setTimeout(function() {
+                                if (typeof abrirWidgetProspecto === 'function') {
+                                    abrirWidgetProspecto(parseInt(pendienteId));
+                                }
+                            }, 1000);
+                        } else {
+                            // Ya tiene actividad, limpiar
+                            localStorage.removeItem('_pendienteProspectoSinActividad');
+                        }
+                    })
+                    .catch(function() {
+                        localStorage.removeItem('_pendienteProspectoSinActividad');
+                    });
+            })
+            .catch(function() {
+                localStorage.removeItem('_pendienteProspectoSinActividad');
+            });
     })();
 
     // ══════════════════════════════════════════════════════════════
@@ -433,6 +444,11 @@ document.addEventListener('click', function(ev) {
     }
     window.abrirWidgetProspecto = abrirWidgetProspecto;
 
+    function _isProspectoCerrado(data) {
+        if (!data) return false;
+        return data.etapa === 'cerrado_ganado' || data.etapa === 'cerrado_perdido';
+    }
+
     function renderProspectoDetalle(data) {
         // Store current prospecto
         window._currentProspectoId = data.id;
@@ -443,6 +459,23 @@ document.addEventListener('click', function(ev) {
         document.getElementById('wpContacto').textContent = data.contacto || '-';
         document.getElementById('wpProducto').textContent = data.producto || '-';
         document.getElementById('wpArea').textContent = data.area || '-';
+
+        // Si el prospecto está cerrado (ganado/perdido), ocultar CTA de nueva
+        // actividad — no debe pedirse crear actividades en prospectos cerrados.
+        var btnNuevaAct = document.getElementById('wpBtnNuevaActividad');
+        if (btnNuevaAct) {
+            btnNuevaAct.style.display = _isProspectoCerrado(data) ? 'none' : '';
+        }
+        // Limpiar persistencia de "pendiente sin actividad" si el prospecto
+        // ya está cerrado — no hay que pedir actividad nunca más.
+        if (_isProspectoCerrado(data)) {
+            try {
+                var pendId = localStorage.getItem('_pendienteProspectoSinActividad');
+                if (pendId && parseInt(pendId) === data.id) {
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
+                }
+            } catch (e) {}
+        }
 
         // Tipo Pipeline badge
         var tipoPipEl = document.getElementById('wpTipoPipeline');
@@ -786,11 +819,17 @@ document.addEventListener('click', function(ev) {
         var body = document.getElementById('wpActividadRecienteBody');
         if (!body) return;
 
+        var cerrado = _isProspectoCerrado(window._currentProspectoData);
+
         // Find the closest pending activity
         var pendientes = actividades.filter(function(a) { return !a.completada; });
         if (pendientes.length === 0) {
             if (actividades.length === 0) {
-                body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;">Sin actividades</div>';
+                if (cerrado) {
+                    body.innerHTML = '<div style="font-size:0.78rem;color:#9CA3AF;font-style:italic;">Prospecto cerrado — sin nuevas actividades</div>';
+                } else {
+                    body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;">Sin actividades</div>';
+                }
             } else {
                 body.innerHTML = '<div style="font-size:0.82rem;color:#34C759;">Todas completadas</div>';
             }
@@ -1186,6 +1225,14 @@ document.addEventListener('click', function(ev) {
         if (!id) {
             var w = document.getElementById('widgetProspecto');
             if (w) w.classList.remove('active');
+            return;
+        }
+        // Si el prospecto ya está cerrado (ganado/perdido), cerrar el widget
+        // sin pedir actividad — no aplica para prospectos cerrados.
+        if (_isProspectoCerrado(window._currentProspectoData)) {
+            var w0 = document.getElementById('widgetProspecto');
+            if (w0) w0.classList.remove('active');
+            localStorage.removeItem('_pendienteProspectoSinActividad');
             return;
         }
         // Verificar si tiene actividades antes de cerrar

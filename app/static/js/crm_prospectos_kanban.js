@@ -37,6 +37,7 @@
         if (_filters.producto && (card.dataset.producto || '').toUpperCase() !== _filters.producto.toUpperCase()) return false;
         if (_filters.vendedor && String(card.dataset.usuarioId) !== String(_filters.vendedor)) return false;
         if (_filters.vencida === 'only' && card.dataset.vencida !== '1') return false;
+        if (_filters.solo_ganados === '1' && (card.dataset.etapa || '') !== 'cerrado_ganado') return false;
         return true;
     }
 
@@ -122,7 +123,7 @@
     function updateClearVisibility() {
         var btnClear = document.getElementById('pkBtnClear');
         if (!btnClear) return;
-        var hasFilters = _flow !== 'both' || _filters.producto || _filters.vendedor || _filters.vencida === 'only';
+        var hasFilters = _flow !== 'both' || _filters.producto || _filters.vendedor || _filters.vencida === 'only' || _filters.solo_ganados === '1';
         btnClear.style.display = hasFilters ? 'inline-flex' : 'none';
     }
 
@@ -209,6 +210,7 @@
             }
             html += '<div class="pk-pop-section">Estado</div>';
             html += '<button type="button" class="pk-pop-item' + (_filters.vencida === 'only' ? ' active' : '') + '" data-vencida="' + (_filters.vencida === 'only' ? '' : 'only') + '">Solo con actividad vencida</button>';
+            html += '<button type="button" class="pk-pop-item' + (_filters.solo_ganados === '1' ? ' active' : '') + '" data-solo-ganados="' + (_filters.solo_ganados === '1' ? '' : '1') + '">Solo Ganados</button>';
 
             popFilter.innerHTML = html;
             popFilter.querySelectorAll('[data-flow]').forEach(function(btn){
@@ -244,6 +246,16 @@
                 btn.addEventListener('click', function(){
                     var v = btn.dataset.vencida;
                     if (v) _filters.vencida = v; else delete _filters.vencida;
+                    localStorage.setItem(LS_KEY_FILTER, JSON.stringify(_filters));
+                    applyFilters();
+                    updateClearVisibility();
+                    renderFilterPop();
+                });
+            });
+            popFilter.querySelectorAll('[data-solo-ganados]').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                    var v = btn.dataset.soloGanados;
+                    if (v === '1') _filters.solo_ganados = '1'; else delete _filters.solo_ganados;
                     localStorage.setItem(LS_KEY_FILTER, JSON.stringify(_filters));
                     applyFilters();
                     updateClearVisibility();
