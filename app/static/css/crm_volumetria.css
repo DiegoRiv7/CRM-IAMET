@@ -1280,7 +1280,7 @@ button.cv-status { font-family: inherit; }
 }
 
 .cv-app-table-scroll {
-    flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; background: #fafafa;
+    flex: 1; overflow: visible; padding: 16px; background: #fafafa;
 }
 
 /* Modificamos los .cv-section y .cv-item para que parezcan filas de tabla */

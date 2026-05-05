@@ -883,20 +883,23 @@
         html += '</header>';
 
         // Main App Body
-        html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; min-height: calc(100vh - 66px);">';
+        html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; flex:1; overflow-y:auto; padding-bottom:120px;">';
         
         // Table Box
-        html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:visible;">';
+        html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:visible; flex-shrink:0;">';
         
         // Toolbar (Search + Agregar Tabla)
         html += '    <div class="px-4 py-3 border-b flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid var(--cv-border); display:flex; justify-content:space-between; align-items:center; border-top-left-radius:14px; border-top-right-radius:14px;">';
-        html += '      <div class="relative"><input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100);"></div>';
+        html += '      <div class="relative" style="position:relative;">';
+        html += '        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#9ca3af;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+        html += '        <input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100); padding-left:34px;">';
+        html += '      </div>';
         if (!S.readonly) {
             html += renderAddSectionWrap();
         }
         html += '    </div>';
 
-        html += '    <div class="cv-app-table-scroll" style="overflow-y:auto;"><div class="cv-stack">';
+        html += '    <div class="cv-app-table-scroll"><div class="cv-stack">';
         (S.data.secciones || []).forEach(function (sec, idx) {
             html += renderSection(sec, idx);
         });
