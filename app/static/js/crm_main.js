@@ -3234,6 +3234,15 @@
                     '<th class="ck-th--num" style="width:20%;">Campañas</th>' +
                     '<th class="ck-th--num" style="width:25%;">Prospecciones</th>';
                 var pRows = ((_clientesPanelData.prospeccion || {}).rows || []).filter(function(r) { return r.num_prospectos > 0 || r.num_campanas > 0; });
+                // Ordenar de mayor a menor por # prospecciones (KPI principal de esta vista).
+                // Tiebreaker: # campañas desc, luego nombre A→Z.
+                pRows.sort(function(a, b) {
+                    var d = (b.num_prospectos || 0) - (a.num_prospectos || 0);
+                    if (d) return d;
+                    d = (b.num_campanas || 0) - (a.num_campanas || 0);
+                    if (d) return d;
+                    return (a.cliente || '').localeCompare(b.cliente || '');
+                });
                 if (tbody) tbody.innerHTML = pRows.length === 0
                     ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>'
                     : pRows.map(function(r, i) {
@@ -3257,6 +3266,18 @@
                     '<th class="ck-th--num" style="width:20%;">Convertidas</th>' +
                     '<th class="ck-th--num" style="width:20%;">% Conversión</th>';
                 var pRows = ((_clientesPanelData.prospeccion || {}).rows || []).filter(function(r) { return r.num_prospectos > 0; });
+                // Ordenar por # convertidas desc (KPI principal de esta vista).
+                // Tiebreaker: % conversión desc, # prospectos desc, nombre.
+                pRows.sort(function(a, b) {
+                    var d = (b.num_ganados || 0) - (a.num_ganados || 0);
+                    if (d) return d;
+                    var pa = (a.num_prospectos || 0) ? (a.num_ganados || 0) / a.num_prospectos : 0;
+                    var pb = (b.num_prospectos || 0) ? (b.num_ganados || 0) / b.num_prospectos : 0;
+                    if (pa !== pb) return pb - pa;
+                    d = (b.num_prospectos || 0) - (a.num_prospectos || 0);
+                    if (d) return d;
+                    return (a.cliente || '').localeCompare(b.cliente || '');
+                });
                 if (tbody) tbody.innerHTML = pRows.length === 0
                     ? '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay datos para este periodo</td></tr>'
                     : pRows.map(function(r, i) {
@@ -3292,6 +3313,13 @@
                             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8e8e93">No hay ventas desde prospección en el periodo</td></tr>';
                             return;
                         }
+                        // Ordenar por monto desc (KPI principal). Tiebreaker: cliente A→Z.
+                        vrows.sort(function(a, b) {
+                            var ma = parseFloat(a.monto || 0) || 0;
+                            var mb = parseFloat(b.monto || 0) || 0;
+                            if (ma !== mb) return mb - ma;
+                            return (a.cliente || '').localeCompare(b.cliente || '');
+                        });
                         tbody.innerHTML = vrows.map(function(r, i) {
                             return '<tr class="ck-prosp-opp-row" data-oportunidad-id="' + r.id + '">' +
                                 '<td class="ck-td--num ck-td--idx">' + (i+1) + '</td>' +
@@ -3341,6 +3369,14 @@
                             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:#8e8e93">No hay clientes convertidos en el periodo</td></tr>';
                             return;
                         }
+                        // Ordenar por # ganados desc, luego # oportunidades desc, nombre.
+                        crows.sort(function(a, b) {
+                            var d = (b.num_ganados || 0) - (a.num_ganados || 0);
+                            if (d) return d;
+                            d = ((b.oportunidades || []).length) - ((a.oportunidades || []).length);
+                            if (d) return d;
+                            return (a.cliente || '').localeCompare(b.cliente || '');
+                        });
                         tbody.innerHTML = crows.map(function(r, i) {
                             return '<tr class="ck-prosp-row" data-prosp-tipo="opps" data-cliente-id="' + (r.cliente_id || '') + '" data-cliente-nombre="' + (r.cliente || '').replace(/"/g, '&quot;') + '">' +
                                 '<td class="ck-td--num ck-td--idx">' + (i+1) + '<span class="ck-chev">›</span></td>' +
