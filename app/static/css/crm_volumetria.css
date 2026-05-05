@@ -151,11 +151,15 @@
     line-height: 1.45;
     background: transparent;
     padding: 0;
-    flex: 1;
-    min-height: 0;
+    /* IMPORTANTE: NO usamos `overflow-y: auto` aquí. Cuando el módulo
+       se monta dentro de #lwP3CvMount (host del wizard, que ya tiene su
+       propio scroll), cualquier scroll local en .cv-root recortaba el
+       contenido de la página de Volumetría al agregar muchas filas.
+       Dejamos que el host (o el viewport) se encargue del scroll y
+       que .cv-root crezca naturalmente. */
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    min-height: 0;
 }
 
 #lwP3CvMount {
@@ -375,7 +379,7 @@ button.cv-status { font-family: inherit; }
 .cv-section-equipamiento .cv-section-subtotal-value { color: var(--cv-fg); }
 .cv-section-mano_obra .cv-section-subtotal-value     { color: var(--cv-fg); }
 .cv-section-costo_mo .cv-section-subtotal-value      { color: var(--cv-cm-icon-fg); }
-.cv-section-gastos .cv-section-subtotal-value        { color: var(--cv-ga-icon-fg); }
+/* `.cv-section-gastos`: tipo retirado en mayo 2026 — sin estilo dedicado. */
 
 /* ── Body de la sección ─────────────────────────────────────────── */
 .cv-section-body {
@@ -514,7 +518,7 @@ button.cv-status { font-family: inherit; }
 .cv-item-icon-eq  { background: var(--cv-eq-icon-bg); color: var(--cv-eq-icon-fg); }
 .cv-item-icon-mo  { background: var(--cv-mo-icon-bg); color: var(--cv-mo-icon-fg); }
 .cv-item-icon-cmo { background: var(--cv-cm-icon-bg); color: var(--cv-cm-icon-fg); }
-.cv-item-icon-ga  { background: var(--cv-ga-icon-bg); color: var(--cv-ga-icon-fg); }
+/* `.cv-item-icon-ga`: usado por el tipo `gastos` (retirado en v4d). */
 
 /* Bloque "main": icono ya está hermano; aquí van id (brand+parte) + desc */
 .cv-item-main {
@@ -826,6 +830,36 @@ button.cv-status { font-family: inherit; }
  * número — NO los ocultamos. */
 .cv-input.cv-mono { font-family: var(--cv-mono); font-size: 13px; }
 
+/* ── Textarea (notas largas en mano de obra) ──────────────────────── */
+textarea.cv-input,
+.cv-input-textarea {
+    resize: vertical;
+    min-height: 76px;
+    line-height: 1.45;
+    font-family: var(--cv-sans);
+    white-space: pre-wrap;
+}
+.cv-item-detail-cell .cv-input-textarea {
+    width: 100%;
+}
+
+/* ── Preview de descripción / notas (1ª línea, debajo del header) ── */
+.cv-item-desc-preview {
+    padding: 0 14px 10px 60px;
+    margin-top: -4px;
+    color: var(--cv-fg-muted);
+    font-size: 12.5px;
+    line-height: 1.4;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cv-item-desc-preview:hover { color: var(--cv-fg-2); }
+.cv-item-desc-preview-more { color: var(--cv-fg-faint); font-weight: 600; }
+.cv-app-table-scroll .cv-item-desc-preview { padding: 0 12px 6px 60px; margin-top: -2px; }
+.cv-item-expanded .cv-item-desc-preview { display: none; }
+
 /* ── Add section dropdown ───────────────────────────────────────── */
 .cv-add-section-wrap {
     position: relative;
@@ -920,10 +954,7 @@ button.cv-status { font-family: inherit; }
     background: var(--cv-cm-icon-bg);
     color: var(--cv-cm-icon-fg);
 }
-.cv-add-section-icon-gastos {
-    background: var(--cv-ga-icon-bg);
-    color: var(--cv-ga-icon-fg);
-}
+/* `.cv-add-section-icon-gastos`: tipo retirado en v4d. */
 
 /* ── Bottom (Resumen Financiero + Estadísticas) ────────────────── */
 .cv-bottom {
@@ -1186,11 +1217,7 @@ button.cv-status { font-family: inherit; }
     color: var(--cv-cm-pill-fg);
     border-color: var(--cv-cm-pill-bd);
 }
-.cv-stat-pill-gastos {
-    background: var(--cv-ga-pill-bg);
-    color: var(--cv-ga-pill-fg);
-    border-color: var(--cv-ga-pill-bd);
-}
+/* `.cv-stat-pill-gastos`: tipo retirado en v4d. */
 
 /* ── Misc ───────────────────────────────────────────────────────── */
 .cv-mono {
@@ -1265,7 +1292,10 @@ button.cv-status { font-family: inherit; }
 
 .cv-app-main {
     display: flex; gap: 16px; padding: 16px;
-    min-height: calc(100vh - 66px); /* Fill remaining space */
+    /* No fijamos `min-height: calc(100vh - 66px)` ni `flex:1` aquí —
+       el alto crece según el contenido y el host (#lwP3CvMount) hace
+       el scroll vertical. Esto evita que tablas/filas se queden
+       cortadas en la parte baja de la página. */
 }
 
 .cv-app-left {

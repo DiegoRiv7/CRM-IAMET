@@ -20,15 +20,21 @@
  *       descuentoVenta, descuentoCosto, costoUnitario|null, proveedor,
  *       entrega, notas }
  *
- *   mano_obra     (8 cols) — cobrada al cliente; ganancia 100%:
+ *   mano_obra     (9 cols) — cobrada al cliente; ganancia 100%:
  *     { marca, parte, cantidad, descripcion, precioLista, descuentoVenta,
- *       notas }
+ *       notas } — `notas` es texto multi-línea (textarea).
+ *     Defaults sugeridos: marca="BAJANET", parte="SERVICIOS PROFESIONALES".
  *
  *   costo_mo      (6 cols) — costo interno; resta a la ganancia:
- *     { recurso, cantidad, costoUnitario, dias }
+ *     { descripcion, cantidad, costoUnitario, dias }
+ *     (en el Excel se mapea: Descripción · Cantidad · Costo Unit · Días.
+ *      Concentrado y Total son derivados — no se almacenan.)
  *
- *   gastos        (5 cols) — costo interno; resta a la ganancia:
- *     { cantidad, unidad, descripcion, costoUnitario }
+ *   gastos        — ELIMINADO en mayo 2026. Los items que antes vivían
+ *                   aquí (combustible, casetas, comidas) ahora se
+ *                   capturan como filas adicionales en `costo_mo`. La
+ *                   migración v3→v4 convierte secciones `tipo:'gastos'`
+ *                   a `costo_mo` automáticamente.
  *
  * Cálculos:
  *
@@ -41,8 +47,8 @@
  *     ganancia   = totalCli - totalCosto
  *
  *   mano_obra:
- *     pVentaUnit = precioLista * (1 - descuentoVenta/100)
- *     totalCli   = cantidad * pVentaUnit
+ *     unitario   = precioLista * (1 - descuentoVenta/100)
+ *     totalCli   = cantidad * unitario
  *     totalCosto = 0
  *     ganancia   = totalCli
  *
@@ -51,11 +57,6 @@
  *     totalCosto  = concentrado * dias
  *     totalCli    = 0
  *     ganancia    = -totalCosto
- *
- *   gastos:
- *     totalCosto = cantidad * costoUnitario
- *     totalCli   = 0
- *     ganancia   = -totalCosto
  *
  *   Globales:
  *     subtotal_venta = Σ totalCli (todas las secciones)
@@ -85,7 +86,7 @@
  *   .cv-stack,
  *   .cv-section, .cv-section-collapsed,
  *   .cv-section-equipamiento, .cv-section-mano_obra,
- *   .cv-section-costo_mo, .cv-section-gastos,
+ *   .cv-section-costo_mo,
  *   .cv-section-head, .cv-section-head-left, .cv-section-head-right,
  *   .cv-section-num, .cv-section-title-block,
  *   .cv-section-title-input, .cv-section-meta,
@@ -98,12 +99,12 @@
  *
  * Items (mini-cards):
  *   .cv-item, .cv-item-equipamiento, .cv-item-mano_obra,
- *   .cv-item-costo_mo, .cv-item-gastos,
+ *   .cv-item-costo_mo,
  *   .cv-item-expanded, .cv-item-header,
  *   .cv-item-icon, .cv-item-icon-eq, .cv-item-icon-mo,
- *   .cv-item-icon-cmo, .cv-item-icon-ga,
+ *   .cv-item-icon-cmo,
  *   .cv-item-main, .cv-item-id, .cv-item-brand, .cv-item-brand-wide,
- *   .cv-item-part, .cv-item-desc,
+ *   .cv-item-part, .cv-item-desc, .cv-item-desc-preview,
  *   .cv-item-fields, .cv-item-field, .cv-item-field-label,
  *   .cv-item-total, .cv-item-total-label, .cv-item-total-value,
  *   .cv-item-positive, .cv-item-negative,
@@ -112,13 +113,14 @@
  *   .cv-item-detail-value, .cv-item-detail-full,
  *   .cv-item-rotulo, .cv-item-rotulo-input,
  *   .cv-item-del, .cv-row-del,
- *   .cv-input, .cv-input-num, .cv-input-text, .cv-input-mini
+ *   .cv-input, .cv-input-num, .cv-input-text, .cv-input-mini,
+ *   .cv-input-textarea
  *
  * Add section dropdown:
  *   .cv-add-section-wrap, .cv-add-section, .cv-add-section-menu,
  *   .cv-add-section-item, .cv-add-section-icon, .cv-add-section-icon-equipamiento,
  *   .cv-add-section-icon-mano_obra, .cv-add-section-icon-costo_mo,
- *   .cv-add-section-icon-gastos, .cv-add-section-caret, .cv-add-section-open
+ *   .cv-add-section-caret, .cv-add-section-open
  *
  * Resumen + estadísticas (NO cambia):
  *   .cv-bottom, .cv-card, .cv-card-financiero, .cv-card-stats,
@@ -132,7 +134,7 @@
  *   .cv-stat-row, .cv-stat-label, .cv-stat-value,
  *   .cv-stat-pills, .cv-stat-pill,
  *   .cv-stat-pill-equipamiento, .cv-stat-pill-mano_obra,
- *   .cv-stat-pill-costo_mo, .cv-stat-pill-gastos
+ *   .cv-stat-pill-costo_mo
  *
  * Misc:
  *   .cv-mono, .cv-empty, .cv-sr-only
@@ -254,7 +256,10 @@
     }
 
     // ── Tipos de sección — defaults ─────────────────────────────────
-    var SECTION_TYPES = ['equipamiento', 'mano_obra', 'costo_mo', 'gastos'];
+    // NOTA: el tipo `gastos` fue eliminado en mayo 2026; la migración
+    // v3 → v4 lo convierte a `costo_mo` automáticamente para no romper
+    // datos viejos. Si llegan datos con `tipo:'gastos'`, se reasignan.
+    var SECTION_TYPES = ['equipamiento', 'mano_obra', 'costo_mo'];
 
     var TYPE_INFO = {
         equipamiento: {
@@ -271,11 +276,6 @@
             label: 'Costo MO Interno',
             icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
             defaultTitle: 'Costo MO Interno',
-        },
-        gastos: {
-            label: 'Gastos',
-            icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
-            defaultTitle: 'Gastos',
         },
     };
 
@@ -307,8 +307,8 @@
     function newMoItem() {
         return {
             id: uuid(),
-            marca: '',
-            parte: '',
+            marca: 'BAJANET',
+            parte: 'SERVICIOS PROFESIONALES',
             cantidad: 0,
             descripcion: '',
             precioLista: 0,
@@ -319,19 +319,10 @@
     function newCmoItem() {
         return {
             id: uuid(),
-            recurso: '',
-            cantidad: 0,
-            costoUnitario: 0,
-            dias: 0,
-        };
-    }
-    function newGastoItem() {
-        return {
-            id: uuid(),
-            cantidad: 0,
-            unidad: 'PZA',
             descripcion: '',
+            cantidad: 0,
             costoUnitario: 0,
+            dias: 1,
         };
     }
 
@@ -340,7 +331,6 @@
             case 'equipamiento': return newEquipItem();
             case 'mano_obra':    return newMoItem();
             case 'costo_mo':     return newCmoItem();
-            case 'gastos':       return newGastoItem();
         }
         return newEquipItem();
     }
@@ -387,12 +377,13 @@
         }
         if (!sample) sample = items[0] || {};
 
-        // costo_mo: tiene recurso o dias, sin parte
+        // costo_mo: tiene recurso o dias, sin parte. También capturamos
+        // los items "estilo gastos" (unidad + costoUnitario, sin parte ni
+        // precioLista) — desde v4d ya viven como costo_mo.
         if (sample.recurso != null || sample.dias != null) {
             if (!sample.parte) return 'costo_mo';
         }
-        // gastos: tiene unidad explícita o (descripcion + costoUnitario sin parte/precioLista)
-        if (sample.unidad && !sample.parte && !sample.precioLista) return 'gastos';
+        if (sample.unidad && !sample.parte && !sample.precioLista) return 'costo_mo';
         // mano_obra: tiene parte/precioLista pero sin costoUnitario y sin descuentoCosto
         var hasCosto = sample.costoUnitario != null && Number(sample.costoUnitario) > 0;
         var hasParte = !!sample.parte;
@@ -410,6 +401,11 @@
     function migrateV3SectionToV4(sec) {
         sec = sec || {};
         var tipo = sec.tipo;
+        // Migración v4d (mayo 2026): el tipo `gastos` fue retirado.
+        // Las secciones con `tipo:'gastos'` se reasignan a `costo_mo`
+        // (cantidad/costoUnitario/dias=1). Los items se mapean abajo.
+        var wasGastos = (tipo === 'gastos');
+        if (wasGastos) tipo = 'costo_mo';
         if (SECTION_TYPES.indexOf(tipo) < 0) tipo = inferTipoFromV3Section(sec);
 
         var out = {
@@ -463,21 +459,35 @@
                     notas: it.notas || '',
                 });
             } else if (tipo === 'costo_mo') {
-                out.items.push({
-                    id: it.id || uuid(),
-                    recurso: it.recurso || it.descripcion || '',
-                    cantidad: num(it.cantidad),
-                    costoUnitario: num(it.costoUnitario),
-                    dias: it.dias != null ? num(it.dias) : 1,
-                });
-            } else if (tipo === 'gastos') {
-                out.items.push({
-                    id: it.id || uuid(),
-                    cantidad: num(it.cantidad),
-                    unidad: it.unidad || it.parte || 'PZA',
-                    descripcion: it.descripcion || '',
-                    costoUnitario: num(it.costoUnitario),
-                });
+                if (wasGastos) {
+                    // Item estilo `gastos` (cantidad, unidad, descripcion,
+                    // costoUnitario) → fila de costo_mo. Conservamos la
+                    // unidad anexándola a la descripción si es informativa
+                    // (ej. "Combustible · LT").
+                    var desc = it.descripcion || it.recurso || '';
+                    var unidad = (it.unidad || '').trim();
+                    if (unidad && unidad !== 'PZA' && unidad !== 'pza') {
+                        desc = desc ? (desc + ' · ' + unidad) : unidad;
+                    }
+                    out.items.push({
+                        id: it.id || uuid(),
+                        descripcion: desc,
+                        cantidad: num(it.cantidad),
+                        costoUnitario: num(it.costoUnitario),
+                        dias: it.dias != null ? num(it.dias) : 1,
+                    });
+                } else {
+                    // Item costo_mo nativo. En v3 el campo era `recurso`;
+                    // en v4d pasa a llamarse `descripcion` (alineado con
+                    // el Excel). Preservamos `recurso` como fallback.
+                    out.items.push({
+                        id: it.id || uuid(),
+                        descripcion: it.descripcion || it.recurso || '',
+                        cantidad: num(it.cantidad),
+                        costoUnitario: num(it.costoUnitario),
+                        dias: it.dias != null ? num(it.dias) : 1,
+                    });
+                }
             }
         });
 
@@ -566,7 +576,7 @@
             raw.costo_mo.items.forEach(function (it) {
                 cmoSec.items.push({
                     id: uuid(),
-                    recurso: it.recurso || '',
+                    descripcion: it.recurso || it.descripcion || '',
                     cantidad: num(it.cant),
                     costoUnitario: num(it.costo_unit),
                     dias: num(it.dias) || 1,
@@ -574,21 +584,34 @@
             });
             secs.push(cmoSec);
         }
+        // v2/v3 traía la zona `gastos` como sección aparte; en v4d esos
+        // items pasan a costo_mo (días=1, sin venta). Los anexamos a la
+        // sección `costo_mo` recién creada o, si no existe, creamos una
+        // dedicada. La heurística: si ya hay un costo_mo, anexamos; si
+        // no, creamos uno con título "Gastos" para conservar contexto.
         if (raw.gastos && Array.isArray(raw.gastos.items) && raw.gastos.items.length) {
-            var gSec = {
-                id: uuid(), titulo: 'Gastos', expanded: true,
-                tipo: 'gastos', items: [],
-            };
+            var targetSec = secs.filter(function (s) { return s.tipo === 'costo_mo'; })[0];
+            if (!targetSec) {
+                targetSec = {
+                    id: uuid(), titulo: 'Gastos', expanded: true,
+                    tipo: 'costo_mo', items: [],
+                };
+                secs.push(targetSec);
+            }
             raw.gastos.items.forEach(function (it) {
-                gSec.items.push({
+                var desc = it.descripcion || '';
+                var unidad = String(it.unidad || '').trim();
+                if (unidad && unidad !== 'PZA' && unidad !== 'pza') {
+                    desc = desc ? (desc + ' · ' + unidad) : unidad;
+                }
+                targetSec.items.push({
                     id: uuid(),
+                    descripcion: desc,
                     cantidad: num(it.cant),
-                    unidad: it.unidad || 'PZA',
-                    descripcion: it.descripcion || '',
                     costoUnitario: num(it.costo_unit),
+                    dias: 1,
                 });
             });
-            secs.push(gSec);
         }
         return secs;
     }
@@ -635,15 +658,22 @@
             secs.push(s2);
         }
         if (Array.isArray(raw.gastos) && raw.gastos.length) {
+            // v4d: `gastos` ya no es un tipo válido — se mapea a costo_mo
+            // con días=1. La unidad (si != PZA) se anexa a la descripción.
             var s3 = { id: uuid(), titulo: 'Gastos', expanded: true,
-                       tipo: 'gastos', items: [] };
+                       tipo: 'costo_mo', items: [] };
             raw.gastos.forEach(function (r) {
+                var desc = r.desc || '';
+                var unidad = String(r.unidad || '').trim();
+                if (unidad && unidad !== 'PZA' && unidad !== 'pza') {
+                    desc = desc ? (desc + ' · ' + unidad) : unidad;
+                }
                 s3.items.push({
                     id: uuid(),
+                    descripcion: desc,
                     cantidad: num(r.qty),
-                    unidad: r.unidad || 'PZA',
-                    descripcion: r.desc || '',
                     costoUnitario: num(r.costo),
+                    dias: 1,
                 });
             });
             secs.push(s3);
@@ -737,18 +767,12 @@
         };
     }
     function calcCmoItem(it) {
+        // dias por defecto 1 si no viene definido (esquema Excel R52-R59)
+        var dias = (it.dias != null && it.dias !== '') ? num(it.dias) : 1;
         var concentrado = num(it.cantidad) * num(it.costoUnitario);
-        var totalCosto = concentrado * num(it.dias);
+        var totalCosto = concentrado * dias;
         return {
             concentrado: concentrado,
-            totalCli: 0,
-            totalCosto: totalCosto,
-            ganancia: -totalCosto,
-        };
-    }
-    function calcGastoItem(it) {
-        var totalCosto = num(it.cantidad) * num(it.costoUnitario);
-        return {
             totalCli: 0,
             totalCosto: totalCosto,
             ganancia: -totalCosto,
@@ -759,7 +783,6 @@
             case 'equipamiento': return calcEquipItem(it);
             case 'mano_obra':    return calcMoItem(it);
             case 'costo_mo':     return calcCmoItem(it);
-            case 'gastos':       return calcGastoItem(it);
         }
         return { totalCli: 0, totalCosto: 0, ganancia: 0 };
     }
@@ -805,7 +828,7 @@
     function calcStats() {
         var secs = (S.data.secciones || []);
         var total = 0;
-        var byTipo = { equipamiento: 0, mano_obra: 0, costo_mo: 0, gastos: 0 };
+        var byTipo = { equipamiento: 0, mano_obra: 0, costo_mo: 0 };
         secs.forEach(function (sec) {
             (sec.items || []).forEach(function (it) {
                 if (it.row_type === 'header') return;
@@ -837,7 +860,6 @@
         switch (tipo) {
             case 'mano_obra': return ICON.wrenchItem;
             case 'costo_mo':  return ICON.clockItem;
-            case 'gastos':    return ICON.receiptItem;
         }
         return ICON.boxItem;
     }
@@ -845,7 +867,6 @@
         switch (tipo) {
             case 'mano_obra': return 'cv-item-icon-mo';
             case 'costo_mo':  return 'cv-item-icon-cmo';
-            case 'gastos':    return 'cv-item-icon-ga';
         }
         return 'cv-item-icon-eq';
     }
@@ -883,7 +904,11 @@
         html += '</header>';
 
         // Main App Body
-        html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; flex:1; overflow-y:auto; padding-bottom:120px;">';
+        // OJO: NO ponemos `overflow-y:auto` ni `flex:1` aquí — el host
+        // (#lwP3CvMount) ya hospeda el scroll. Dejar el main con su
+        // propio scroll recortaba las tablas inferiores cuando había
+        // muchas filas. Sólo `padding-bottom` para respirar al final.
+        html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; padding-bottom:48px;">';
         
         // Table Box
         html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:visible; flex-shrink:0;">';
@@ -937,7 +962,7 @@
     function renderSection(sec, sectionIdx) {
         var open = sec.expanded !== false;
         var t = calcSection(sec);
-        var subtotal = (sec.tipo === 'costo_mo' || sec.tipo === 'gastos')
+        var subtotal = (sec.tipo === 'costo_mo')
             ? t.totalCosto : t.totalCli;
         var info = TYPE_INFO[sec.tipo] || TYPE_INFO.equipamiento;
         var cls = 'cv-section cv-section-' + sec.tipo + (open ? '' : ' cv-section-collapsed');
@@ -1010,7 +1035,6 @@
             case 'equipamiento': return renderEquipItem(sec, it, idx);
             case 'mano_obra':    return renderMoItem(sec, it, idx);
             case 'costo_mo':     return renderCmoItem(sec, it, idx);
-            case 'gastos':       return renderGastoItem(sec, it, idx);
         }
         return '';
     }
@@ -1044,6 +1068,23 @@
         return '<input type="text" class="' + cls + '" ' +
                'data-field="' + field + '" data-section="' + esc(sec.id) + '" ' +
                'data-item="' + esc(it.id) + '" value="' + esc(v) + '"' + ph + ' ' + disabled + ' />';
+    }
+
+    /** Textarea multilínea para campos largos (ej. notas de mano de
+     *  obra). El esc() preserva los saltos de línea — sólo escapamos
+     *  caracteres HTML. */
+    function inputTextarea(sec, it, field, value, opts) {
+        opts = opts || {};
+        var disabled = S.readonly ? 'disabled' : '';
+        var v = value == null ? '' : value;
+        var cls = 'cv-input cv-input-text cv-input-textarea';
+        if (opts.mini) cls += ' cv-input-mini';
+        var ph = opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '';
+        var rows = opts.rows ? ' rows="' + opts.rows + '"' : ' rows="3"';
+        return '<textarea class="' + cls + '"' + rows + ' ' +
+               'data-field="' + field + '" data-section="' + esc(sec.id) + '" ' +
+               'data-item="' + esc(it.id) + '"' + ph + ' ' + disabled + '>' +
+               esc(v) + '</textarea>';
     }
 
     /** Icono cuadrado del item (rellena `cv-item-icon` con el SVG del tipo). */
@@ -1199,9 +1240,17 @@
         return h;
     }
 
-    /** Mano de obra (item) */
+    /** Mano de obra (item)
+     *  Esquema Excel R42-R50:
+     *    Marca · No. Parte · Cantidad · Descripción · Precio Lista ·
+     *    Desc% · Unitario(calc) · Total(calc) · Notas (texto largo)
+     *  Defaults: marca=BAJANET, parte=SERVICIOS PROFESIONALES.
+     *  Las notas son multilínea — en compacto se muestra solo la
+     *  primera línea con ellipsis; en expandido un textarea grande. */
     function renderMoItem(sec, it, idx) {
         var c = calcMoItem(it);
+        var notas = String(it.notas || '');
+        var firstLine = notas.split(/\r?\n/)[0] || '';
 
         var h = itemWrapStart(sec, it);
 
@@ -1209,28 +1258,42 @@
         h += renderItemIcon(sec);
         h += renderItemMain(sec, it, {
             brandField: 'marca',
-            brandPlaceholder: 'Marca / Concepto',
+            brandPlaceholder: 'Marca',
             partField: 'parte',
-            partPlaceholder: 'Código',
+            partPlaceholder: 'No. parte',
             descField: 'descripcion',
             descPlaceholder: 'Descripción de la mano de obra',
         });
         h += '<div class="cv-item-fields">';
         h += fieldBox('Cant', inputNum(sec, it, 'cantidad', it.cantidad, { mini: true, min: 0 }));
+        h += fieldBox('P. Lista', inputNum(sec, it, 'precioLista', it.precioLista, { mini: true, min: 0 }));
         h += fieldBox('Desc %', inputNum(sec, it, 'descuentoVenta', it.descuentoVenta, { mini: true, min: 0 }));
         h += '</div>';
         h += totalBox('Total', c.totalCli, { calc: 'totalCli' });
         h += renderItemDel(sec, it);
         h += '</div>';
 
+        // Preview de notas (primera línea, debajo del header). Solo se
+        // muestra si hay notas — sirve como pista visual sin abrir el
+        // detalle. La preview es view-only (clickear el item lo expande).
+        if (firstLine) {
+            h += '<div class="cv-item-desc-preview" data-action="toggle-item" ' + itemAttrs(sec, it) + '>' +
+                 esc(firstLine) +
+                 (notas.indexOf('\n') >= 0 ? ' <span class="cv-item-desc-preview-more">…</span>' : '') +
+                 '</div>';
+        }
+
         h += '<div class="cv-item-detail">';
         h += '<div class="cv-item-detail-grid">';
-        h += detailCell('P. Lista', inputNum(sec, it, 'precioLista', it.precioLista, { mini: true, min: 0 }));
-        h += detailCalc('P. Unit Venta', fmtMoney(c.pVentaUnit), 'pVentaUnit', sec, it);
+        h += detailCalc('Unitario',  fmtMoney(c.pVentaUnit), 'pVentaUnit', sec, it);
+        h += detailCalc('Total',     fmtMoney(c.totalCli),   'totalCli',   sec, it);
         h += '</div>';
         h += '<label class="cv-item-detail-cell cv-item-detail-full">' +
              '<span class="cv-item-detail-label">Notas</span>' +
-             inputText(sec, it, 'notas', it.notas, { mini: true, placeholder: 'Notas internas / observaciones' }) +
+             inputTextarea(sec, it, 'notas', it.notas, {
+                 placeholder: 'Notas largas / observaciones (Enter para nueva línea)',
+                 rows: 4,
+             }) +
              '</label>';
         h += '</div>';
 
@@ -1238,7 +1301,12 @@
         return h;
     }
 
-    /** Costo MO (item) — costo interno; sin venta */
+    /** Costo MO (item) — costo interno; sin venta.
+     *  Esquema Excel R52-R59:
+     *    Cantidad · Descripción · Costo Unit · Concentrado(calc) ·
+     *    Costo Total(calc) · Días
+     *  Compacto: Descripción + Cant + Costo Unit + Días + Total.
+     *  Expandido: muestra Concentrado (Cant × Costo Unit) read-only. */
     function renderCmoItem(sec, it, idx) {
         var c = calcCmoItem(it);
 
@@ -1247,13 +1315,13 @@
         h += '<div class="cv-item-header" data-action="toggle-item" ' + itemAttrs(sec, it) + '>';
         h += renderItemIcon(sec);
         h += renderItemMain(sec, it, {
-            singleField: 'recurso',
-            singlePlaceholder: 'Nombre del recurso (ej. Técnico A)',
+            singleField: 'descripcion',
+            singlePlaceholder: 'Descripción (ej. Técnico, Combustible, Casetas)',
         });
         h += '<div class="cv-item-fields">';
-        h += fieldBox('Cant',      inputNum(sec, it, 'cantidad',      it.cantidad,      { mini: true, min: 0 }));
-        h += fieldBox('Costo Unit',inputNum(sec, it, 'costoUnitario', it.costoUnitario, { mini: true, min: 0 }));
-        h += fieldBox('Días',      inputNum(sec, it, 'dias',          it.dias,          { mini: true, min: 0 }));
+        h += fieldBox('Cant',       inputNum(sec, it, 'cantidad',      it.cantidad,      { mini: true, min: 0 }));
+        h += fieldBox('Costo Unit', inputNum(sec, it, 'costoUnitario', it.costoUnitario, { mini: true, min: 0 }));
+        h += fieldBox('Días',       inputNum(sec, it, 'dias',          it.dias,          { mini: true, min: 0 }));
         h += '</div>';
         h += totalBox('Total', c.totalCosto, { calc: 'totalCosto' });
         h += renderItemDel(sec, it);
@@ -1261,39 +1329,10 @@
 
         h += '<div class="cv-item-detail">';
         h += '<div class="cv-item-detail-grid">';
-        h += detailCalc('Concentrado (Cant × Costo)', fmtMoney(c.concentrado), 'concentrado', sec, it);
-        h += detailCalc('Total (Concentrado × Días)',  fmtMoney(c.totalCosto),  'totalCosto',  sec, it);
+        h += detailCalc('Concentrado (Cant × Costo Unit)', fmtMoney(c.concentrado), 'concentrado', sec, it);
+        h += detailCalc('Costo Total (Concentrado × Días)', fmtMoney(c.totalCosto),  'totalCosto',  sec, it);
         h += '</div>';
         h += '</div>';
-
-        h += '</article>';
-        return h;
-    }
-
-    /** Gastos (item) — costo interno; estructura simple */
-    function renderGastoItem(sec, it, idx) {
-        var c = calcGastoItem(it);
-
-        var h = itemWrapStart(sec, it);
-
-        h += '<div class="cv-item-header">';
-        h += renderItemIcon(sec);
-        h += renderItemMain(sec, it, {
-            singleField: 'descripcion',
-            singlePlaceholder: 'Descripción del gasto',
-        });
-        h += '<div class="cv-item-fields">';
-        h += fieldBox('Cant',       inputNum(sec, it, 'cantidad',      it.cantidad,      { mini: true, min: 0 }));
-        h += fieldBox('Unidad',     inputText(sec, it, 'unidad',       it.unidad,        { mini: true, placeholder: 'PZA' }));
-        h += fieldBox('Costo Unit', inputNum(sec, it, 'costoUnitario', it.costoUnitario, { mini: true, min: 0 }));
-        h += '</div>';
-        h += totalBox('Total', c.totalCosto, { calc: 'totalCosto' });
-        h += renderItemDel(sec, it);
-        h += '</div>';
-
-        // Gastos no tiene detalle — el header del item ya muestra todo.
-        // Aún así, un detail vacío (sin clase de animación) preserva
-        // el shape consistente; pero como expanding no aporta nada, lo omitimos.
 
         h += '</article>';
         return h;
@@ -1788,32 +1827,88 @@
         scheduleAutosave();
     }
 
+    /** Promise que resuelve `true` si el usuario confirma la acción.
+     *  Usa el widget custom `window.lwConfirm` (definido por el host
+     *  `crm_levantamiento.js`). Si por alguna razón no está disponible
+     *  (ej. el módulo se monta fuera del wizard), cae a `window.confirm`
+     *  para no romper el flujo. */
+    function askConfirm(opts) {
+        opts = opts || {};
+        if (typeof window.lwConfirm === 'function') {
+            return window.lwConfirm(opts);
+        }
+        var ok = window.confirm(
+            (opts.title ? opts.title + '\n\n' : '') +
+            String(opts.message || '').replace(/<[^>]+>/g, '')
+        );
+        return Promise.resolve(!!ok);
+    }
+
     function delItem(secId, itemId) {
         var sec = findSection(secId);
         if (!sec) return;
-        sec.items = (sec.items || []).filter(function (it) { return it.id !== itemId; });
-        if (S.expandedItems && S.expandedItems.delete) S.expandedItems.delete(itemId);
-        rerenderSection(sec);
-        updateBottom();
-        scheduleAutosave();
+        var it = (sec.items || []).filter(function (x) { return x.id === itemId; })[0];
+        // Etiqueta para el mensaje: descripcion / texto / parte / fallback
+        var label = '';
+        if (it) {
+            if (it.row_type === 'header') label = it.texto || 'rótulo';
+            else label = it.descripcion || it.parte || it.recurso || it.marca || '';
+        }
+        var msg;
+        if (label) {
+            msg = '¿Eliminar la fila <b>"' + esc(label) + '"</b>? Esta acción no se puede deshacer.';
+        } else {
+            msg = '¿Eliminar esta fila? Esta acción no se puede deshacer.';
+        }
+        askConfirm({
+            title: 'Eliminar fila',
+            message: msg,
+            confirmLabel: 'Eliminar',
+            cancelLabel: 'Cancelar',
+            tone: 'danger',
+        }).then(function (ok) {
+            if (!ok) return;
+            // Re-resolvemos sec/items por si el data cambió mientras tanto.
+            var s = findSection(secId);
+            if (!s) return;
+            s.items = (s.items || []).filter(function (x) { return x.id !== itemId; });
+            if (S.expandedItems && S.expandedItems.delete) S.expandedItems.delete(itemId);
+            rerenderSection(s);
+            updateBottom();
+            scheduleAutosave();
+        });
     }
 
     function delSection(secId) {
         var sec = findSection(secId);
         if (!sec) return;
         var n = (sec.items || []).filter(function (it) { return it.row_type !== 'header'; }).length;
+        var titulo = sec.titulo || 'esta tabla';
+        var msg;
         if (n > 0) {
-            var ok = window.confirm('La tabla "' + (sec.titulo || '') + '" tiene ' + n + ' item' +
-                (n === 1 ? '' : 's') + '. ¿Eliminar de todos modos?');
+            msg = 'La tabla <b>"' + esc(titulo) + '"</b> tiene ' + n + ' item' +
+                  (n === 1 ? '' : 's') + '. Esta acción no se puede deshacer.';
+        } else {
+            msg = '¿Eliminar la tabla <b>"' + esc(titulo) + '"</b>? Esta acción no se puede deshacer.';
+        }
+        askConfirm({
+            title: 'Eliminar tabla',
+            message: msg,
+            confirmLabel: 'Eliminar',
+            cancelLabel: 'Cancelar',
+            tone: 'danger',
+        }).then(function (ok) {
             if (!ok) return;
-        }
-        // Limpiar expanded de todos los items de esta sección
-        if (S.expandedItems && S.expandedItems.delete) {
-            (sec.items || []).forEach(function (it) { S.expandedItems.delete(it.id); });
-        }
-        S.data.secciones = (S.data.secciones || []).filter(function (s) { return s.id !== secId; });
-        render();
-        scheduleAutosave();
+            var s = findSection(secId);
+            if (!s) return;
+            // Limpiar expanded de todos los items de esta sección
+            if (S.expandedItems && S.expandedItems.delete) {
+                (s.items || []).forEach(function (x) { S.expandedItems.delete(x.id); });
+            }
+            S.data.secciones = (S.data.secciones || []).filter(function (z) { return z.id !== secId; });
+            render();
+            scheduleAutosave();
+        });
     }
 
     function toggleAddMenu() {
@@ -1921,7 +2016,7 @@
         var secEl = S.container.querySelector('section[data-section="' + cssEsc(sec.id) + '"]');
         if (!secEl) return;
         var t = calcSection(sec);
-        var subtotal = (sec.tipo === 'costo_mo' || sec.tipo === 'gastos')
+        var subtotal = (sec.tipo === 'costo_mo')
             ? t.totalCosto : t.totalCli;
         var subEl = secEl.querySelector('.cv-section-subtotal-value');
         if (subEl) subEl.textContent = fmtMoney(subtotal);
