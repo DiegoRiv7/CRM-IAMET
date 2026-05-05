@@ -861,8 +861,24 @@
         html += '  <div>';
         var cliName = esc((S.data && S.data.meta && S.data.meta.cliente) || "Proyecto");
         var levDate = esc((S.data && S.data.meta && S.data.meta.fecha) || "Reciente");
+        
+        var status = (S.volumetria && S.volumetria.status) || 'borrador';
+        var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
+        var statusCls = 'cv-status cv-status-' + status;
+        var statusEl = '';
+        if (!S.readonly) {
+            statusEl = '<button type="button" class="' + statusCls + '" data-action="toggle-status" style="margin-left:12px; height:22px; padding:2px 10px; font-size:10px; line-height:1;">' +
+                       '<span class="cv-status-dot" style="width:6px; height:6px;"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></button>';
+        } else {
+            statusEl = '<div class="' + statusCls + '" style="margin-left:12px; height:22px; padding:2px 10px; font-size:10px; line-height:1;">' +
+                       '<span class="cv-status-dot" style="width:6px; height:6px;"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></div>';
+        }
+
         html += '    <h1 class="text-xl font-semibold text-gray-900">Proyecto: ' + cliName + '</h1>';
-        html += '    <p class="text-xs text-gray-500 mt-0.5">Última edición: ' + levDate + '</p>';
+        html += '    <div style="display:flex; align-items:center;">';
+        html += '      <p class="text-xs text-gray-500 mt-0.5" style="margin:0;">Última edición: ' + levDate + '</p>';
+        html += statusEl;
+        html += '    </div>';
         html += '  </div>';
         html += '</header>';
 
@@ -1321,33 +1337,11 @@
         return h;
     }
 
-    // ── Bottom: Resumen + Estadísticas ──────────────────────────────
+    // ── Bottom: Resumen Financiero Horizontal ──────────────────────────────
     function renderBottom() {
-        var status = (S.volumetria && S.volumetria.status) || 'borrador';
-        var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
-        var statusCls = 'cv-status cv-status-' + status;
-        var statusEl = '';
-        
-        if (!S.readonly) {
-            statusEl =
-                '<button type="button" class="' + statusCls + '" data-action="toggle-status" style="margin-bottom:12px; height:32px;">' +
-                    '<span class="cv-status-dot"></span>' +
-                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
-                '</button>';
-        } else {
-            statusEl =
-                '<div class="' + statusCls + '" style="margin-bottom:12px; height:32px;">' +
-                    '<span class="cv-status-dot"></span>' +
-                    '<span class="cv-status-label">' + esc(statusLabel) + '</span>' +
-                '</div>';
-        }
-
-        // Align status left, Financiero right
-        var h = '<div class="cv-bottom" style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px;">';
-        h += '<div class="cv-bottom-left" style="flex:1;">' + statusEl + '</div>';
-        h += '<div class="cv-bottom-right" style="width: 320px; flex-shrink: 0;">';
+        var h = '<div class="cv-bottom" style="width: 100%;">';
         h += renderFinanciero();
-        h += '</div></div>';
+        h += '</div>';
         return h;
     }
 
