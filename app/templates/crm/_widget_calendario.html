@@ -554,6 +554,7 @@
                         calRecurReset();
                         calResponsableReset();
                         calResponsableEnsureLoaded();
+                        calResponsableApplyDefaultFromVisible();
                         var _rw1=document.getElementById('calRecurWrap'); if (_rw1) _rw1.style.display='';
                         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
                         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
@@ -1146,6 +1147,7 @@
         window._calEditandoId = null;
         calResponsableReset();
         calResponsableEnsureLoaded();
+        calResponsableApplyDefaultFromVisible();
         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
     };
@@ -1870,6 +1872,7 @@
         calRecurReset();
         calResponsableReset();
         calResponsableEnsureLoaded();
+        calResponsableApplyDefaultFromVisible();
         var _rw2=document.getElementById('calRecurWrap'); if (_rw2) _rw2.style.display='';
         document.getElementById('calFormActTitulo').textContent = 'Nueva Actividad';
         document.getElementById('widgetGlobalCrearActividad').style.display='flex';
@@ -2196,6 +2199,9 @@
                 if (meta) _calResponsableMyId = meta.id;
                 calResponsableUpdateVisibility();
                 calResponsableRenderLista('');
+                // Si el composer ya está abierto cuando llega la lista (primera vez
+                // que se abre), re-aplicamos el default con el usuario visualizado.
+                if (!window._calEditandoId) calResponsableApplyDefaultFromVisible();
             })
             .catch(function(){ _calResponsableUsers = []; });
     }
@@ -2213,6 +2219,28 @@
         _calResponsableSelectedId = null;
         calResponsableUpdateLabel();
         calResponsableRenderLista(document.getElementById('calResponsableSearch')?document.getElementById('calResponsableSearch').value:'');
+    }
+    // Cuando un admin/supervisor/jefe está viendo el calendario de OTRA persona
+    // (selector "Ver:" del header con un único usuario distinto a sí mismo),
+    // el responsable por defecto del composer debe ser ese usuario visualizado.
+    // Si la lista de seleccionables aún no cargó, no hace nada — la función
+    // se vuelve a llamar desde el .then() de calResponsableEnsureLoaded().
+    // El usuario sigue pudiendo cambiarlo manualmente.
+    function calResponsableApplyDefaultFromVisible() {
+        try {
+            var sel = (typeof _calGetSelection === 'function') ? _calGetSelection() : [];
+            // Sólo aplicamos cuando "Ver:" tiene exactamente un usuario distinto a mí.
+            if (!sel || sel.length !== 1) return;
+            var visibleId = parseInt(sel[0], 10);
+            if (!visibleId || visibleId === _calResponsableMyId) return;
+            // Fallback: si el usuario visualizado no está entre los seleccionables, no tocamos el default.
+            if (!_calResponsableUsers) return;
+            var match = _calResponsableUsers.find(function(u){ return u.id === visibleId; });
+            if (!match) return;
+            _calResponsableSelectedId = visibleId;
+            calResponsableUpdateLabel();
+            calResponsableRenderLista(document.getElementById('calResponsableSearch')?document.getElementById('calResponsableSearch').value:'');
+        } catch(e) { /* noop */ }
     }
     function calResponsableUpdateLabel() {
         var lbl = document.querySelector('[data-wact-label="responsable"]');
