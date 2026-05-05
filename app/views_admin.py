@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, AliasCliente, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, AliasCliente, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, Prospecto
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -145,6 +145,18 @@ def api_admin_usuario_detalle(request, user_id):
 
         return JsonResponse({'success': True})
 
+    if request.method == 'DELETE':
+        # Guards: no auto-eliminacion, no superusers desde aqui
+        if usuario.id == request.user.id:
+            return JsonResponse({'error': 'No puedes eliminar tu propio usuario'}, status=400)
+        if usuario.is_superuser:
+            return JsonResponse({'error': 'No se puede eliminar un superusuario desde el panel'}, status=400)
+        try:
+            usuario.delete()
+        except Exception as e:
+            return JsonResponse({'error': f'No se pudo eliminar: {e}'}, status=400)
+        return JsonResponse({'success': True})
+
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
@@ -193,6 +205,11 @@ def api_admin_cliente_detalle(request, cliente_id):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'JSON inválido'}, status=400)
 
+        if 'nombre_empresa' in data:
+            nombre = (data.get('nombre_empresa') or '').strip()
+            if not nombre:
+                return JsonResponse({'error': 'El nombre de la empresa no puede estar vacío'}, status=400)
+            cliente.nombre_empresa = nombre
         if 'asignado_a_id' in data:
             uid = data['asignado_a_id']
             if uid:
@@ -219,6 +236,25 @@ def api_admin_cliente_detalle(request, cliente_id):
                 pass
         cliente.save()
 
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        # Guard: no permitir borrar si tiene oportunidades o cotizaciones asociadas
+        opp_count = TodoItem.objects.filter(cliente=cliente).count()
+        cot_count = Cotizacion.objects.filter(cliente=cliente).count()
+        if opp_count or cot_count:
+            partes = []
+            if opp_count:
+                partes.append(f'{opp_count} oportunidad(es)')
+            if cot_count:
+                partes.append(f'{cot_count} cotización(es)')
+            return JsonResponse({
+                'error': 'No se puede eliminar: el cliente tiene ' + ' y '.join(partes) + ' asociadas.'
+            }, status=400)
+        try:
+            cliente.delete()
+        except Exception as e:
+            return JsonResponse({'error': f'No se pudo eliminar: {e}'}, status=400)
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -2135,6 +2171,129 @@ def api_admin_alias_clientes(request):
         data = json.loads(request.body)
         alias_id = data.get('id')
         AliasCliente.objects.filter(id=alias_id).delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Prospectos (panel admin)
+# ──────────────────────────────────────────────────────────────────────
+
+# Etapas que indican un prospecto "no activo" (ya procesado / cerrado)
+_PROSPECTO_ETAPAS_INACTIVAS = ('procesado', 'cerrado_ganado', 'cerrado_perdido')
+
+
+@login_required
+def api_admin_prospectos(request):
+    """GET: lista prospectos activos. POST: crea un prospecto (auto-crea Cliente si no existe)."""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    if request.method == 'GET':
+        qs = (
+            Prospecto.objects
+            .select_related('cliente', 'usuario')
+            .filter(oportunidad_creada__isnull=True)
+            .exclude(etapa__in=_PROSPECTO_ETAPAS_INACTIVAS)
+            .order_by('-fecha_actualizacion')
+        )
+        data = []
+        for p in qs:
+            asig = p.usuario
+            data.append({
+                'id': p.id,
+                'nombre': p.nombre,
+                'cliente_id': p.cliente_id,
+                'cliente_nombre': p.cliente.nombre_empresa if p.cliente else '',
+                'asignado_a_id': asig.id if asig else None,
+                'asignado_a_name': (asig.get_full_name() or asig.username) if asig else '',
+                'etapa': p.etapa,
+                'producto': p.producto,
+                'fecha_creacion': p.fecha_creacion.isoformat() if p.fecha_creacion else None,
+                'fecha_actualizacion': p.fecha_actualizacion.isoformat() if p.fecha_actualizacion else None,
+            })
+        return JsonResponse({'prospectos': data})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        nombre = (data.get('nombre') or '').strip()
+        asignado_id = data.get('asignado_a_id')
+
+        if not nombre:
+            return JsonResponse({'error': 'El nombre del prospecto es requerido'}, status=400)
+        if not asignado_id:
+            return JsonResponse({'error': 'Debes asignar el prospecto a un vendedor'}, status=400)
+
+        try:
+            vendedor = User.objects.get(id=asignado_id)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Vendedor no encontrado'}, status=404)
+
+        # Buscar cliente existente con mismo nombre_empresa exacto (case-insensitive),
+        # si no existe lo creamos con asignado_a = vendedor.
+        cliente = Cliente.objects.filter(nombre_empresa__iexact=nombre).first()
+        if cliente is None:
+            cliente = Cliente.objects.create(
+                nombre_empresa=nombre,
+                asignado_a=vendedor,
+            )
+
+        prospecto = Prospecto.objects.create(
+            usuario=vendedor,
+            nombre=nombre,
+            cliente=cliente,
+            etapa='identificado',
+        )
+        return JsonResponse({'success': True, 'id': prospecto.id})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_admin_prospecto_detalle(request, prospecto_id):
+    """PUT: edita nombre y asignado. DELETE: elimina el prospecto (deja el cliente)."""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        prospecto = Prospecto.objects.select_related('cliente', 'usuario').get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'error': 'Prospecto no encontrado'}, status=404)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+        if 'nombre' in data:
+            nombre = (data.get('nombre') or '').strip()
+            if not nombre:
+                return JsonResponse({'error': 'El nombre no puede estar vacío'}, status=400)
+            prospecto.nombre = nombre
+
+        if 'asignado_a_id' in data:
+            uid = data.get('asignado_a_id')
+            if not uid:
+                return JsonResponse({'error': 'Debes asignar el prospecto a un vendedor'}, status=400)
+            try:
+                prospecto.usuario = User.objects.get(id=uid)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Vendedor no encontrado'}, status=404)
+
+        prospecto.save()
+        return JsonResponse({'success': True})
+
+    if request.method == 'DELETE':
+        try:
+            prospecto.delete()
+        except Exception as e:
+            return JsonResponse({'error': f'No se pudo eliminar: {e}'}, status=400)
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)

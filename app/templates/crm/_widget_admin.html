@@ -240,6 +240,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
           Clientes
         </button>
+        <button class="admin-nav-item" id="admNav-prospectos" onclick="adminNavClick(this,'prospectos')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          Prospectos
+        </button>
         <button class="admin-nav-item" id="admNav-contactos" onclick="adminNavClick(this,'contactos')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 3.08 4.18 2 2 0 0 1 5.09 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           Contactos
@@ -378,6 +382,7 @@ window.loadAdminSection = function(section){
   ac.innerHTML = '<div style="text-align:center;color:#8E8E93;margin-top:60px;">Cargando...</div>';
   if(section==='usuarios')  loadUsuarios();
   else if(section==='clientes')  loadClientes();
+  else if(section==='prospectos') loadProspectos();
   else if(section==='contactos') loadContactos();
   else if(section==='metas')     loadMetas();
   else if(section==='tareas_auto') loadTareasAuto();
@@ -430,7 +435,10 @@ window.loadUsuarios = function(){
       h += '<td>'+rolBadge+'</td>';
       h += '<td><label class="admin-toggle"><input type="checkbox" '+supChk+' onchange="admToggleSupervisor('+u.id+',this.checked)"><span class="admin-toggle-slider"></span></label></td>';
       h += '<td>'+estadoBadge+'</td>';
-      h += '<td><button class="admin-btn-icon" onclick="admEditUser('+u.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>';
+      h += '<td style="white-space:nowrap;">';
+      h += '<button class="admin-btn-icon" onclick="admEditUser('+u.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+      h += '<button class="admin-btn-icon" style="color:#FF3B30;" onclick="admDeleteUser('+u.id+')" title="Eliminar"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>';
+      h += '</td>';
       h += '</tr>';
       h += '<tr id="admEditRow-'+u.id+'" style="display:none;"><td colspan="7"><div class="admin-inline-form" id="admEditForm-'+u.id+'"></div></td></tr>';
     });
@@ -599,6 +607,22 @@ window.admSaveEditUser = function(uid){
   });
 };
 
+window.admDeleteUser = function(uid){
+  var u = (window._admUsuarios||[]).find(function(x){ return x.id===uid; });
+  var label = u ? ('@'+u.username) : 'este usuario';
+  adminConfirm('Eliminar usuario',
+    '¿Eliminar a '+label+'? Esta acción no se puede deshacer y borrará sus datos asociados.',
+    function(){
+      fetch('/app/api/admin/usuarios/'+uid+'/',{
+        method:'DELETE',
+        headers:{'X-CSRFToken':getCsrf()}
+      }).then(function(r){return r.json();}).then(function(res){
+        if(res.success){ _showAdminToast('Usuario eliminado'); loadUsuarios(); }
+        else _showAdminToast(res.error||'Error al eliminar', false);
+      });
+    });
+};
+
 /* ── Clientes ────────────────────────────────────────── */
 window.loadClientes = function(){
   var ac = getAC();
@@ -631,7 +655,10 @@ window.loadClientes = function(){
       h += '<td>'+catBadge+'</td>';
       h += '<td style="color:#636366;">'+(asig||'&mdash;')+'</td>';
       h += '<td>'+(c.meta_mensual ? _fmtMXN(c.meta_mensual) : '&mdash;')+'</td>';
-      h += '<td><button class="admin-btn-icon" onclick="admEditCliente('+c.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>';
+      h += '<td style="white-space:nowrap;">';
+      h += '<button class="admin-btn-icon" onclick="admEditCliente('+c.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+      h += '<button class="admin-btn-icon" style="color:#FF3B30;" onclick="admDeleteCliente('+c.id+')" title="Eliminar"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>';
+      h += '</td>';
       h += '</tr>';
       h += '<tr id="admCEditRow-'+c.id+'" style="display:none;"><td colspan="5"><div class="admin-inline-form" id="admCEditForm-'+c.id+'"></div></td></tr>';
     });
@@ -671,8 +698,13 @@ window.admEditCliente = function(cid){
     opts += '<option value="'+u.id+'"'+sel+'>'+(u.first_name+' '+u.last_name).trim()+'</option>';
   });
   var f = document.getElementById('admCEditForm-'+cid);
+  // Escapar nombre_empresa para el value del input
+  var nombreEsc = String(c.nombre_empresa||'').replace(/"/g,'&quot;');
   f.innerHTML = ''
     +'<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Editar: '+c.nombre_empresa+'</div>'
+    +'<div class="admin-form-row">'
+    +'<div style="flex:2;"><label class="admin-help" style="display:block;margin-bottom:3px;">Nombre de la empresa</label><input class="admin-input" id="ceNombre-'+cid+'" type="text" value="'+nombreEsc+'" placeholder="Nombre de la empresa"></div>'
+    +'</div>'
     +'<div class="admin-form-row">'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Asignado a</label><select class="admin-input" id="ceAsig-'+cid+'">'+opts+'</select></div>'
     +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Categor&iacute;a</label><select class="admin-input" id="ceCat-'+cid+'"><option value="A"'+(c.categoria==='A'?' selected':'')+'>A</option><option value="B"'+(c.categoria==='B'?' selected':'')+'>B</option><option value="C"'+(c.categoria==='C'?' selected':'')+'>C</option></select></div>'
@@ -694,7 +726,9 @@ window.admEditCliente = function(cid){
 
 window.admGuardarCliente = function(cid){
   var asigEl = document.getElementById('ceAsig-'+cid);
+  var nombreEl = document.getElementById('ceNombre-'+cid);
   var body = {
+    nombre_empresa:    nombreEl ? (nombreEl.value||'').trim() : undefined,
     asignado_a_id:     asigEl&&asigEl.value ? parseInt(asigEl.value) : null,
     categoria:         (document.getElementById('ceCat-'+cid)||{}).value||'C',
     rfc:               (document.getElementById('ceRFC-'+cid)||{}).value||'',
@@ -703,6 +737,13 @@ window.admGuardarCliente = function(cid){
     meta_oportunidades:_parseMXN((document.getElementById('ceMO-'+cid)||{}).value),
     meta_cotizado_numero: (document.getElementById('ceMQN-'+cid)||{}).value||0
   };
+  if (body.nombre_empresa === '') {
+    _showAdminToast('El nombre de la empresa es requerido', false);
+    return;
+  }
+  if (typeof body.nombre_empresa === 'undefined') {
+    delete body.nombre_empresa;
+  }
   fetch('/app/api/admin/clientes/'+cid+'/',{
     method:'PUT',
     headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
@@ -711,6 +752,178 @@ window.admGuardarCliente = function(cid){
     if(res.success){ _showAdminToast('Cliente guardado'); loadClientes(); }
     else _showAdminToast(res.error||'Error al guardar', false);
   });
+};
+
+window.admDeleteCliente = function(cid){
+  var c = (window._admClientes||[]).find(function(x){return x.id===cid;});
+  var label = c ? c.nombre_empresa : 'este cliente';
+  adminConfirm('Eliminar cliente',
+    '¿Eliminar al cliente "'+label+'"? Si tiene oportunidades o cotizaciones asociadas, no se podrá eliminar.',
+    function(){
+      fetch('/app/api/admin/clientes/'+cid+'/',{
+        method:'DELETE',
+        headers:{'X-CSRFToken':getCsrf()}
+      }).then(function(r){return r.json();}).then(function(res){
+        if(res.success){ _showAdminToast('Cliente eliminado'); loadClientes(); }
+        else _showAdminToast(res.error||'Error al eliminar', false);
+      });
+    });
+};
+
+/* ── Prospectos ──────────────────────────────────────── */
+window.loadProspectos = function(){
+  var ac = getAC();
+  Promise.all([
+    fetch('/app/api/admin/prospectos/').then(function(r){return r.json();}),
+    fetch('/app/api/admin/usuarios/').then(function(r){return r.json();})
+  ]).then(function(results){
+    var prospectos = results[0].prospectos||[];
+    var usuarios   = results[1].usuarios||[];
+    // Vendedores activos (no supervisores ni ingenieros) — mostramos vendedores y administradores activos
+    var vendedores = usuarios.filter(function(u){
+      var rol = u.rol||'vendedor';
+      return u.is_active && (rol === 'vendedor' || rol === 'administrador');
+    });
+    window._admProspectos = prospectos;
+    window._admProspectosUsuarios = usuarios;
+    window._admProspectosVendedores = vendedores;
+
+    function _vendOpts(selectedId){
+      var opts = '<option value="">Selecciona vendedor...</option>';
+      vendedores.forEach(function(u){
+        var nm = (u.first_name+' '+u.last_name).trim() || u.username;
+        var sel = (selectedId && u.id===selectedId) ? ' selected' : '';
+        opts += '<option value="'+u.id+'"'+sel+'>'+nm+'</option>';
+      });
+      return opts;
+    }
+    window._admProspVendOpts = _vendOpts;
+
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header">';
+    h += '<span class="admin-content-title">Prospectos ('+prospectos.length+')</span>';
+    h += '<div style="display:flex;gap:8px;align-items:center;">';
+    h += '<div class="admin-search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="admProspectoSearch" placeholder="Buscar prospecto..."></div>';
+    h += '<button class="admin-btn admin-btn-primary" onclick="admNuevoProspectoForm()">+ Nuevo Prospecto</button>';
+    h += '</div></div>';
+    h += '<p class="admin-help">Solo se muestran prospectos activos (sin negociaci&oacute;n ni cotizaci&oacute;n). Cuando un prospecto genera una oportunidad o cotizaci&oacute;n, se procesa autom&aacute;ticamente.</p>';
+
+    /* New prospecto form */
+    h += '<div id="admNewProspectoForm" class="admin-inline-form" style="display:none;">';
+    h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Nuevo Prospecto</div>';
+    h += '<div class="admin-form-row">';
+    h += '<div style="flex:2;"><label class="admin-help" style="display:block;margin-bottom:3px;">Nombre del prospecto</label><input class="admin-input" id="npNombre" placeholder="Ej: Industrias Mex S.A."></div>';
+    h += '<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Asignado a</label><select class="admin-input" id="npAsig">'+_vendOpts(null)+'</select></div>';
+    h += '</div>';
+    h += '<div style="display:flex;gap:8px;margin-top:4px;"><button class="admin-btn admin-btn-primary" onclick="admGuardarNuevoProspecto()">Crear</button><button class="admin-btn admin-btn-secondary" onclick="admNuevoProspectoForm()">Cancelar</button></div>';
+    h += '</div>';
+
+    /* Table */
+    if(!prospectos.length){
+      h += '<div style="color:#8E8E93;text-align:center;font-size:0.82rem;padding:24px;">No hay prospectos activos.</div>';
+    } else {
+      h += '<table class="admin-table"><thead><tr><th>Prospecto</th><th>Cliente</th><th>Asignado a</th><th>Etapa</th><th>Acciones</th></tr></thead><tbody>';
+      prospectos.forEach(function(p){
+        var etapaLabel = (p.etapa||'identificado').replace(/_/g,' ');
+        h += '<tr id="admPRow-'+p.id+'">';
+        h += '<td><strong>'+p.nombre+'</strong></td>';
+        h += '<td style="color:#636366;">'+(p.cliente_nombre||'&mdash;')+'</td>';
+        h += '<td style="color:#636366;">'+(p.asignado_a_name||'&mdash;')+'</td>';
+        h += '<td><span class="admin-badge admin-badge-blue" style="text-transform:capitalize;">'+etapaLabel+'</span></td>';
+        h += '<td style="white-space:nowrap;">';
+        h += '<button class="admin-btn-icon" onclick="admEditProspecto('+p.id+')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+        h += '<button class="admin-btn-icon" style="color:#FF3B30;" onclick="admDeleteProspecto('+p.id+')" title="Eliminar"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>';
+        h += '</td>';
+        h += '</tr>';
+        h += '<tr id="admPEditRow-'+p.id+'" style="display:none;"><td colspan="5"><div class="admin-inline-form" id="admPEditForm-'+p.id+'"></div></td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    h += '</div>';
+    ac.innerHTML = h;
+
+    /* Search */
+    var s = document.getElementById('admProspectoSearch');
+    if(s) s.addEventListener('input', function(){
+      var q = this.value.toLowerCase();
+      document.querySelectorAll('[id^="admPRow-"]').forEach(function(row){
+        row.style.display = row.textContent.toLowerCase().indexOf(q)!==-1 ? '' : 'none';
+      });
+    });
+  });
+};
+
+window.admNuevoProspectoForm = function(){
+  var f = document.getElementById('admNewProspectoForm');
+  if(f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+};
+
+window.admGuardarNuevoProspecto = function(){
+  var nombre = ((document.getElementById('npNombre')||{}).value||'').trim();
+  var asig = (document.getElementById('npAsig')||{}).value;
+  if(!nombre){ _showAdminToast('Escribe el nombre del prospecto', false); return; }
+  if(!asig){ _showAdminToast('Selecciona un vendedor', false); return; }
+  fetch('/app/api/admin/prospectos/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({nombre:nombre, asignado_a_id: parseInt(asig)})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success){ _showAdminToast('Prospecto creado'); loadProspectos(); }
+    else _showAdminToast(res.error||'Error al crear prospecto', false);
+  });
+};
+
+window.admEditProspecto = function(pid){
+  var p = (window._admProspectos||[]).find(function(x){ return x.id===pid; });
+  if(!p) return;
+  var editRow = document.getElementById('admPEditRow-'+pid);
+  if(!editRow) return;
+  if(editRow.style.display!=='none'){ editRow.style.display='none'; return; }
+  document.querySelectorAll('[id^="admPEditRow-"]').forEach(function(r){ r.style.display='none'; });
+  var nombreEsc = String(p.nombre||'').replace(/"/g,'&quot;');
+  var f = document.getElementById('admPEditForm-'+pid);
+  f.innerHTML = ''
+    +'<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Editar: '+p.nombre+'</div>'
+    +'<div class="admin-form-row">'
+    +'<div style="flex:2;"><label class="admin-help" style="display:block;margin-bottom:3px;">Nombre</label><input class="admin-input" id="peNombre-'+pid+'" type="text" value="'+nombreEsc+'"></div>'
+    +'<div style="flex:1;"><label class="admin-help" style="display:block;margin-bottom:3px;">Asignado a</label><select class="admin-input" id="peAsig-'+pid+'">'+(window._admProspVendOpts ? window._admProspVendOpts(p.asignado_a_id) : '')+'</select></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:4px;">'
+    +'<button class="admin-btn admin-btn-primary" onclick="admGuardarProspecto('+pid+')">Guardar</button>'
+    +'<button class="admin-btn admin-btn-secondary" onclick="document.getElementById(\'admPEditRow-'+pid+'\').style.display=\'none\'">Cancelar</button>'
+    +'</div>';
+  editRow.style.display='';
+};
+
+window.admGuardarProspecto = function(pid){
+  var nombre = ((document.getElementById('peNombre-'+pid)||{}).value||'').trim();
+  var asig = (document.getElementById('peAsig-'+pid)||{}).value;
+  if(!nombre){ _showAdminToast('El nombre no puede estar vacío', false); return; }
+  if(!asig){ _showAdminToast('Selecciona un vendedor', false); return; }
+  fetch('/app/api/admin/prospectos/'+pid+'/',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({nombre:nombre, asignado_a_id: parseInt(asig)})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success){ _showAdminToast('Prospecto guardado'); loadProspectos(); }
+    else _showAdminToast(res.error||'Error al guardar', false);
+  });
+};
+
+window.admDeleteProspecto = function(pid){
+  var p = (window._admProspectos||[]).find(function(x){ return x.id===pid; });
+  var label = p ? p.nombre : 'este prospecto';
+  adminConfirm('Eliminar prospecto',
+    '¿Eliminar prospecto "'+label+'"? El cliente vinculado quedará sin tocar.',
+    function(){
+      fetch('/app/api/admin/prospectos/'+pid+'/',{
+        method:'DELETE',
+        headers:{'X-CSRFToken':getCsrf()}
+      }).then(function(r){return r.json();}).then(function(res){
+        if(res.success){ _showAdminToast('Prospecto eliminado'); loadProspectos(); }
+        else _showAdminToast(res.error||'Error al eliminar', false);
+      });
+    });
 };
 
 /* ── Contactos ───────────────────────────────────────── */
