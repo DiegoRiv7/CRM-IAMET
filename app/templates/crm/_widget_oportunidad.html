@@ -300,6 +300,40 @@
             </div>
         </div>
 
+        <!-- Toolbar: búsqueda + filtros + toggle vista -->
+        <div id="woDriveToolbar" class="wo-drive-toolbar">
+            <div class="wo-drive-toolbar-search">
+                <svg width="16" height="16" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="woDriveSearch" placeholder="Buscar archivos..." autocomplete="off">
+                <button type="button" id="woDriveSearchClear" class="wo-drive-search-clear" title="Limpiar" aria-label="Limpiar búsqueda" style="display:none;">&times;</button>
+            </div>
+            <div class="wo-drive-toolbar-controls">
+                <label class="wo-drive-select-wrap" title="Filtrar por tipo">
+                    <span class="wo-drive-select-label">Tipo</span>
+                    <select id="woDriveFilterTipo">
+                        <option value="todos">Todos</option>
+                        <option value="carpeta">Carpetas</option>
+                        <option value="pdf">PDF</option>
+                        <option value="img">Imágenes</option>
+                        <option value="excel">Excel/CSV</option>
+                        <option value="word">Word/Texto</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </label>
+                <div class="wo-drive-view-toggle" role="group" aria-label="Cambiar vista">
+                    <button type="button" id="woDriveViewGrid" class="wo-drive-view-btn is-active" title="Cuadrícula" aria-label="Vista cuadrícula">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    </button>
+                    <button type="button" id="woDriveViewList" class="wo-drive-view-btn" title="Lista" aria-label="Vista lista">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Dropzone & File List -->
         <div id="woDriveDropzone" style="flex:1;overflow-y:auto;padding:1.5rem;position:relative;">
             <div id="woDriveDragOverlay" style="display:none;"></div>
@@ -325,9 +359,18 @@
                     computadora.</div>
             </div>
 
+            <!-- Sin coincidencias -->
+            <div id="woDriveNoMatch" style="display:none;text-align:center;padding:3rem 2rem;color:#86868B;">
+                <svg width="56" height="56" fill="none" stroke="#D1D1D6" stroke-width="1.4" viewBox="0 0 24 24" style="margin:0 auto 1rem;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.25rem;">Sin coincidencias</div>
+                <div style="font-size:0.85rem;">Ajusta tu búsqueda o filtro para ver más resultados.</div>
+            </div>
+
             <!-- Grid Items -->
-            <div id="woDriveGrid"
-                style="display:grid;grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));gap:1rem;">
+            <div id="woDriveGrid" class="wo-drive-grid drive-view-grid">
                 <!-- Items (Folders & Files) injected here -->
             </div>
         </div>
@@ -681,6 +724,245 @@
             transform: rotate(360deg)
         }
     }
+
+    /* ── Drive widget: toolbar ── */
+    .wo-drive-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.65rem 1rem;
+        background: #fff;
+        border-bottom: 1px solid #E5E5EA;
+        flex-wrap: wrap;
+    }
+    .wo-drive-toolbar-search {
+        flex: 1 1 240px;
+        min-width: 200px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #F2F2F7;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 0.4rem 0.65rem;
+        transition: border-color 0.15s, background 0.15s;
+    }
+    .wo-drive-toolbar-search:focus-within {
+        background: #fff;
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.12);
+    }
+    .wo-drive-toolbar-search input {
+        flex: 1;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 0.85rem;
+        color: #1D1D1F;
+        min-width: 0;
+    }
+    .wo-drive-toolbar-search input::placeholder { color: #86868B; }
+    .wo-drive-search-clear {
+        background: none;
+        border: none;
+        color: #86868B;
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+        border-radius: 4px;
+    }
+    .wo-drive-search-clear:hover { background: rgba(0,0,0,0.06); color: #1D1D1F; }
+
+    .wo-drive-toolbar-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .wo-drive-select-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #fff;
+        border: 1px solid #E5E5EA;
+        border-radius: 8px;
+        padding: 0.3rem 0.55rem;
+        cursor: pointer;
+        transition: border-color 0.15s;
+    }
+    .wo-drive-select-wrap:hover { border-color: #C7C7CC; }
+    .wo-drive-select-label {
+        font-size: 0.72rem;
+        color: #86868B;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+    .wo-drive-select-wrap select {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 0.82rem;
+        color: #1D1D1F;
+        font-weight: 500;
+        cursor: pointer;
+        padding-right: 2px;
+    }
+    .wo-drive-view-toggle {
+        display: inline-flex;
+        background: #F2F2F7;
+        border-radius: 8px;
+        padding: 2px;
+        gap: 2px;
+    }
+    .wo-drive-view-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: #86868B;
+        padding: 5px 9px;
+        border-radius: 6px;
+        transition: background 0.15s, color 0.15s;
+    }
+    .wo-drive-view-btn:hover { color: #1D1D1F; }
+    .wo-drive-view-btn.is-active {
+        background: #fff;
+        color: #0052D4;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    /* ── Drive widget: grid base ── */
+    .wo-drive-grid.drive-view-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+    }
+
+    /* Atributos de fila (modo lista). Se ocultan en grid. */
+    .wo-drive-grid.drive-view-grid .drive-row-meta { display: none; }
+    .wo-drive-grid.drive-view-grid .drive-row-actions { display: none; }
+
+    /* ── Drive widget: lista compacta ── */
+    .wo-drive-grid.drive-view-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .wo-drive-grid.drive-view-list .drive-item {
+        display: flex !important;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.5rem 0.75rem !important;
+        text-align: left !important;
+        background: #fff;
+        border: 1px solid #E5E5EA;
+        border-radius: 8px !important;
+        transition: background 0.12s, border-color 0.12s;
+    }
+    .wo-drive-grid.drive-view-list .drive-item:hover {
+        background: #F9FAFB;
+        border-color: #C7C7CC;
+    }
+    .wo-drive-grid.drive-view-list .drive-item-inner {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .wo-drive-grid.drive-view-list .drive-icon {
+        width: 24px !important;
+        height: 24px !important;
+        margin: 0 !important;
+        flex-shrink: 0;
+    }
+    .wo-drive-grid.drive-view-list .drive-name {
+        flex: 1;
+        min-width: 0;
+        margin: 0 !important;
+        text-align: left !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+    }
+    /* Oculta el extBadge + tamaño del modo grid en lista */
+    .wo-drive-grid.drive-view-list .drive-grid-meta { display: none !important; }
+    /* Oculta acciones inline del grid; las reemplazan las del modo lista */
+    .wo-drive-grid.drive-view-list .drive-grid-actions { display: none !important; }
+
+    .wo-drive-grid.drive-view-list .drive-row-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        color: #86868B;
+    }
+    .wo-drive-grid.drive-view-list .drive-row-meta > span {
+        display: inline-block;
+    }
+    .wo-drive-grid.drive-view-list .drive-row-meta .drive-col-tipo {
+        min-width: 48px;
+        text-align: right;
+        font-weight: 600;
+    }
+    .wo-drive-grid.drive-view-list .drive-row-meta .drive-col-size {
+        min-width: 70px;
+        text-align: right;
+    }
+    .wo-drive-grid.drive-view-list .drive-row-meta .drive-col-fecha {
+        min-width: 90px;
+        text-align: right;
+    }
+    .wo-drive-grid.drive-view-list .drive-row-actions {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        flex-shrink: 0;
+    }
+    .wo-drive-grid.drive-view-list .drive-item:hover .drive-row-actions {
+        opacity: 1;
+    }
+    .wo-drive-grid.drive-view-list .drive-row-actions a,
+    .wo-drive-grid.drive-view-list .drive-row-actions button {
+        font-size: 0.7rem;
+        text-decoration: none;
+        padding: 3px 8px;
+        border-radius: 5px;
+        cursor: pointer;
+        background: #F2F2F7;
+        border: none;
+        color: #1D1D1F;
+    }
+    .wo-drive-grid.drive-view-list .drive-row-actions a.act-ver { color: #0052D4; background: #F0F5FF; }
+    .wo-drive-grid.drive-view-list .drive-row-actions a.act-dl { color: #34C759; background: #F0FFF5; }
+    .wo-drive-grid.drive-view-list .drive-menu-trigger {
+        position: static !important;
+        opacity: 0;
+    }
+    .wo-drive-grid.drive-view-list .drive-item:hover .drive-menu-trigger { opacity: 1; }
+
+    /* Badges en lista: aún muestra Bitrix pero más chico */
+    .wo-drive-grid.drive-view-list .drive-bitrix-badge {
+        position: static !important;
+        font-size: 0.6rem;
+        margin-left: 4px;
+    }
+
+    /* Responsive: ocultar columnas auxiliares en pantallas chicas */
+    @media (max-width: 720px) {
+        .wo-drive-grid.drive-view-list .drive-col-fecha { display: none; }
+    }
+    @media (max-width: 560px) {
+        .wo-drive-grid.drive-view-list .drive-col-size { display: none; }
+        .wo-drive-grid.drive-view-list .drive-row-actions { opacity: 1; }
+    }
 </style>
 
 <script>
@@ -694,6 +976,131 @@
         var _woDriveMode = 'opp';       // 'opp' | 'proyecto'
         var _woDriveProyecto = null;    // { id, nombre } del proyecto vinculado
 
+        // Estado UI: vista (grid|list), filtro de tipo, búsqueda
+        var _woDriveView = 'grid';
+        var _woDriveFilterTipoVal = 'todos';
+        var _woDriveSearchTerm = '';
+        var _woDriveSearchTimer = null;
+
+        function _woDriveLoadPrefs() {
+            try {
+                var v = localStorage.getItem('crmDriveView');
+                if (v === 'grid' || v === 'list') _woDriveView = v;
+                var t = localStorage.getItem('crmDriveFilterTipo');
+                if (t) _woDriveFilterTipoVal = t;
+            } catch (e) { /* localStorage bloqueado: usa defaults */ }
+        }
+        function _woDriveSavePrefs() {
+            try {
+                localStorage.setItem('crmDriveView', _woDriveView);
+                localStorage.setItem('crmDriveFilterTipo', _woDriveFilterTipoVal);
+            } catch (e) { /* ignore */ }
+        }
+
+        function _woDriveAplicarVista() {
+            var grid = document.getElementById('woDriveGrid');
+            if (!grid) return;
+            grid.classList.remove('drive-view-grid', 'drive-view-list');
+            grid.classList.add(_woDriveView === 'list' ? 'drive-view-list' : 'drive-view-grid');
+            var bGrid = document.getElementById('woDriveViewGrid');
+            var bList = document.getElementById('woDriveViewList');
+            if (bGrid) bGrid.classList.toggle('is-active', _woDriveView === 'grid');
+            if (bList) bList.classList.toggle('is-active', _woDriveView === 'list');
+        }
+
+        function _woDriveAplicarFiltros() {
+            var grid = document.getElementById('woDriveGrid');
+            var noMatch = document.getElementById('woDriveNoMatch');
+            var emptyEl = document.getElementById('woDriveEmpty');
+            if (!grid) return;
+            var items = grid.querySelectorAll('.drive-item');
+            if (!items.length) {
+                // Sin items renderizados: respetar el estado vacío natural (woDriveEmpty)
+                if (noMatch) noMatch.style.display = 'none';
+                return;
+            }
+            var term = (_woDriveSearchTerm || '').trim().toLowerCase();
+            var filtro = _woDriveFilterTipoVal || 'todos';
+            var visibles = 0;
+            items.forEach(function (it) {
+                var tipo = it.getAttribute('data-tipo') || 'otros';
+                var nombre = it.getAttribute('data-nombre') || '';
+                var matchTipo = (filtro === 'todos') || (tipo === filtro);
+                var matchTerm = !term || (nombre.indexOf(term) >= 0);
+                var ok = matchTipo && matchTerm;
+                it.style.display = ok ? '' : 'none';
+                if (ok) visibles++;
+            });
+            if (visibles === 0) {
+                if (noMatch) noMatch.style.display = 'block';
+                grid.style.display = 'none';
+                if (emptyEl) emptyEl.style.display = 'none';
+            } else {
+                if (noMatch) noMatch.style.display = 'none';
+                grid.style.display = '';
+                if (emptyEl) emptyEl.style.display = 'none';
+            }
+        }
+
+        function _woDriveBindToolbar() {
+            var search = document.getElementById('woDriveSearch');
+            var clearBtn = document.getElementById('woDriveSearchClear');
+            var sel = document.getElementById('woDriveFilterTipo');
+            var bGrid = document.getElementById('woDriveViewGrid');
+            var bList = document.getElementById('woDriveViewList');
+            if (!search || search._woBound) return;
+            search._woBound = true;
+
+            search.addEventListener('input', function () {
+                _woDriveSearchTerm = search.value || '';
+                if (clearBtn) clearBtn.style.display = _woDriveSearchTerm ? '' : 'none';
+                if (_woDriveSearchTimer) clearTimeout(_woDriveSearchTimer);
+                _woDriveSearchTimer = setTimeout(_woDriveAplicarFiltros, 150);
+            });
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function () {
+                    search.value = '';
+                    _woDriveSearchTerm = '';
+                    clearBtn.style.display = 'none';
+                    _woDriveAplicarFiltros();
+                    search.focus();
+                });
+            }
+            if (sel) {
+                sel.addEventListener('change', function () {
+                    _woDriveFilterTipoVal = sel.value || 'todos';
+                    _woDriveSavePrefs();
+                    _woDriveAplicarFiltros();
+                });
+            }
+            if (bGrid) {
+                bGrid.addEventListener('click', function () {
+                    _woDriveView = 'grid';
+                    _woDriveSavePrefs();
+                    _woDriveAplicarVista();
+                });
+            }
+            if (bList) {
+                bList.addEventListener('click', function () {
+                    _woDriveView = 'list';
+                    _woDriveSavePrefs();
+                    _woDriveAplicarVista();
+                });
+            }
+        }
+
+        function _woDriveSyncToolbarUI() {
+            var sel = document.getElementById('woDriveFilterTipo');
+            if (sel) sel.value = _woDriveFilterTipoVal;
+            var search = document.getElementById('woDriveSearch');
+            if (search) {
+                search.value = _woDriveSearchTerm || '';
+                var clearBtn = document.getElementById('woDriveSearchClear');
+                if (clearBtn) clearBtn.style.display = (search.value ? '' : 'none');
+            }
+            _woDriveAplicarVista();
+        }
+
         window.woAbrirGestorDrive = function () {
             if (!_woCurrentOppId) {
                 alert('No hay oportunidad seleccionada');
@@ -706,6 +1113,10 @@
                 _woDriveBreadcrumbs = [];
                 _woDriveMode = 'opp';
                 _woDriveProyecto = null;
+                _woDriveLoadPrefs();
+                _woDriveSearchTerm = ''; // búsqueda no persiste entre aperturas
+                _woDriveBindToolbar();
+                _woDriveSyncToolbarUI();
                 woDriveCargarDirectorio();
             }
         };
@@ -713,6 +1124,12 @@
         window.woCerrarGestorDrive = function () {
             var w = document.getElementById('widgetOppDrive');
             if (w) { w.style.display = 'none'; }
+            // Reset búsqueda al cerrar (la vista y el filtro tipo persisten en localStorage)
+            _woDriveSearchTerm = '';
+            var search = document.getElementById('woDriveSearch');
+            if (search) search.value = '';
+            var clearBtn = document.getElementById('woDriveSearchClear');
+            if (clearBtn) clearBtn.style.display = 'none';
         };
 
         window.woFileViewerOpen = function(url, nombre, tipo, extension) {
@@ -1029,19 +1446,60 @@
             }
         };
 
+        // ── Detección de tipo de archivo (para filtros) ──
+        function _woDriveTipoArchivo(archivo) {
+            var nombre = (archivo.nombre || archivo.nombre_original || '').toLowerCase();
+            var ext = (archivo.extension || nombre.split('.').pop() || '').toLowerCase().replace(/^\./, '');
+            if (ext === 'pdf') return 'pdf';
+            if (['jpg','jpeg','png','gif','webp','svg','heic','bmp','tiff'].indexOf(ext) >= 0) return 'img';
+            if (['xlsx','xls','csv'].indexOf(ext) >= 0) return 'excel';
+            if (['docx','doc','txt','md','rtf'].indexOf(ext) >= 0) return 'word';
+            return 'otros';
+        }
+
+        function _woDriveFmtFecha(iso) {
+            if (!iso) return '';
+            try {
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return '';
+                var dd = String(d.getDate()).padStart(2, '0');
+                var mm = String(d.getMonth() + 1).padStart(2, '0');
+                var yy = String(d.getFullYear()).slice(-2);
+                return dd + '/' + mm + '/' + yy;
+            } catch (e) { return ''; }
+        }
+
+        function _woDriveFmtSize(bytes) {
+            if (!bytes || bytes <= 0) return '—';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
         function woDriveRenderCarpeta(c, readOnly) {
             var esProyecto = (c.tipo === 'carpeta_proyecto');
             var onClickFn = esProyecto
                 ? 'woDriveEntrarProyectoCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\', ' + (c.proyecto_id || 'null') + ')'
                 : 'woDriveEntrarCarpeta(' + c.id + ', \'' + woEscape(c.nombre) + '\')';
             var menu = (readOnly || esProyecto) ? '' :
-                '<div style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;" onclick="event.stopPropagation(); woDriveMenu(\'carpeta\', ' + c.id + ', \'' + woEscape(c.nombre) + '\')">' +
+                '<div class="drive-menu-trigger" style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;cursor:pointer;" onclick="event.stopPropagation(); woDriveMenu(\'carpeta\', ' + c.id + ', \'' + woEscape(c.nombre) + '\')">' +
                 '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>';
-            return '<div style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+            var fechaTxt = _woDriveFmtFecha(c.fecha_creacion);
+            var nombreEsc = woEscape(c.nombre);
+            var nombreLow = woEscape((c.nombre || '').toLowerCase());
+            return '<div class="drive-item drive-item-carpeta" data-tipo="carpeta" data-nombre="' + nombreLow + '" onclick="' + onClickFn + '" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
                 menu +
-                '<div onclick="' + onClickFn + '" style="text-align:center;">' +
-                '<svg width="42" height="42" fill="#FFCF3A" stroke="none" viewBox="0 0 24 24" style="margin:0.5rem auto;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
-                '<div style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(c.nombre) + '</div></div></div>';
+                '<div class="drive-item-inner" style="text-align:center;">' +
+                '<svg class="drive-icon" width="42" height="42" fill="#FFCF3A" stroke="none" viewBox="0 0 24 24" style="margin:0.5rem auto;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
+                '<div class="drive-name" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nombreEsc + '</div>' +
+                '</div>' +
+                '<div class="drive-row-meta">' +
+                    '<span class="drive-col-tipo">Carpeta</span>' +
+                    '<span class="drive-col-size"></span>' +
+                    '<span class="drive-col-fecha">' + fechaTxt + '</span>' +
+                '</div>' +
+                '<div class="drive-row-actions"></div>' +
+                '</div>';
         }
 
         function _woDriveFileIcon(tipo, ext) {
@@ -1066,30 +1524,48 @@
             var tipoArchivo = a.tipo_archivo || 'otro';
             var iconInfo = _woDriveFileIcon(tipoArchivo, a.extension || '');
             var iconColor = esBitrix ? '#FF6B00' : iconInfo.color;
-            var badge = esBitrix ? '<span style="position:absolute;top:0.4rem;left:0.5rem;font-size:0.6rem;background:#FF6B00;color:#fff;border-radius:4px;padding:1px 4px;">Bitrix</span>' : '';
+            var badge = esBitrix ? '<span class="drive-bitrix-badge" style="position:absolute;top:0.4rem;left:0.5rem;font-size:0.6rem;background:#FF6B00;color:#fff;border-radius:4px;padding:1px 4px;">Bitrix</span>' : '';
             var extLabel = (a.extension || '').toUpperCase();
             var extBadge = extLabel ? '<span style="font-size:0.6rem;color:' + iconColor + ';font-weight:700;background:' + iconColor + '14;border-radius:3px;padding:1px 4px;">' + extLabel + '</span>' : '';
             var menu = readOnly ? '' :
-                '<div style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;z-index:10;" onclick="event.stopPropagation(); woDriveMenu(\'archivo\', ' + a.id + ', \'' + woEscape(a.nombre || a.nombre_original || '') + '\')">' +
+                '<div class="drive-menu-trigger" style="position:absolute;top:0.5rem;right:0.5rem;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#86868B;z-index:10;cursor:pointer;" onclick="event.stopPropagation(); woDriveMenu(\'archivo\', ' + a.id + ', \'' + woEscape(a.nombre || a.nombre_original || '') + '\')">' +
                 '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>';
             var nombre = woEscape(a.nombre || a.nombre_original || '');
-            var acciones = streamUrl
-                ? '<div style="display:flex;gap:4px;justify-content:center;margin-top:0.3rem;position:relative;z-index:3;">' +
+            var nombreLow = woEscape((a.nombre || a.nombre_original || '').toLowerCase());
+            var tipoFiltro = _woDriveTipoArchivo(a);
+            var fechaTxt = _woDriveFmtFecha(a.fecha_subida || a.fecha_creacion);
+            var sizeTxt = _woDriveFmtSize(a.tamaño);
+            var accionesGrid = streamUrl
+                ? '<div class="drive-grid-actions" style="display:flex;gap:4px;justify-content:center;margin-top:0.3rem;position:relative;z-index:3;">' +
                   '<a href="javascript:void(0)" onclick="event.stopPropagation();woFileViewerOpen(\'' + woEscape(streamUrl) + '\', \'' + nombre + '\', \'' + tipoArchivo + '\', \'' + (a.extension||'') + '\')" style="font-size:0.65rem;color:#0052D4;text-decoration:none;background:#F0F5FF;border-radius:4px;padding:2px 6px;">Ver</a>' +
                   '<a href="' + woEscape(dlUrl) + '" style="font-size:0.65rem;color:#34C759;text-decoration:none;background:#F0FFF5;border-radius:4px;padding:2px 6px;" onclick="event.stopPropagation();">Descargar</a>' +
                   '</div>' : '';
-            return '<div onclick="if(\'' + woEscape(streamUrl) + '\') woFileViewerOpen(\'' + woEscape(streamUrl) + '\', \'' + nombre + '\', \'' + tipoArchivo + '\', \'' + (a.extension||'') + '\')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;cursor:pointer;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+            var accionesList = streamUrl
+                ? '<a href="javascript:void(0)" class="act-ver" onclick="event.stopPropagation();woFileViewerOpen(\'' + woEscape(streamUrl) + '\', \'' + nombre + '\', \'' + tipoArchivo + '\', \'' + (a.extension||'') + '\')">Ver</a>' +
+                  '<a href="' + woEscape(dlUrl) + '" class="act-dl" onclick="event.stopPropagation();">Descargar</a>'
+                : '';
+            return '<div class="drive-item drive-item-archivo" data-tipo="' + tipoFiltro + '" data-nombre="' + nombreLow + '" onclick="if(\'' + woEscape(streamUrl) + '\') woFileViewerOpen(\'' + woEscape(streamUrl) + '\', \'' + nombre + '\', \'' + tipoArchivo + '\', \'' + (a.extension||'') + '\')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;cursor:pointer;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
                 badge + menu +
-                '<div style="text-align:center;">' +
-                '<svg width="42" height="42" fill="none" stroke="' + iconColor + '" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;">' + iconInfo.svg + '</svg>' +
-                '<div title="' + nombre + '" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:0.2rem;">' + nombre + '</div>' +
-                '<div style="font-size:0.7rem;color:#9CA3AF;display:flex;align-items:center;justify-content:center;gap:4px;">' + extBadge + ' ' + (a.tamaño > 0 ? (a.tamaño / 1024).toFixed(1) + ' KB' : '—') + '</div>' +
-                acciones + '</div></div>';
+                '<div class="drive-item-inner" style="text-align:center;">' +
+                '<svg class="drive-icon" width="42" height="42" fill="none" stroke="' + iconColor + '" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;display:block;">' + iconInfo.svg + '</svg>' +
+                '<div class="drive-name" title="' + nombre + '" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:0.2rem;">' + nombre + '</div>' +
+                '<div class="drive-grid-meta" style="font-size:0.7rem;color:#9CA3AF;display:flex;align-items:center;justify-content:center;gap:4px;">' + extBadge + ' ' + (a.tamaño > 0 ? (a.tamaño / 1024).toFixed(1) + ' KB' : '—') + '</div>' +
+                accionesGrid +
+                '</div>' +
+                '<div class="drive-row-meta">' +
+                    '<span class="drive-col-tipo">' + (extLabel || '—') + '</span>' +
+                    '<span class="drive-col-size">' + sizeTxt + '</span>' +
+                    '<span class="drive-col-fecha">' + fechaTxt + '</span>' +
+                '</div>' +
+                '<div class="drive-row-actions">' + accionesList + '</div>' +
+                '</div>';
         }
 
         function woDriveCargarDirectorio() {
             document.getElementById('woDriveLoading').style.display = 'block';
             document.getElementById('woDriveEmpty').style.display = 'none';
+            var noMatch = document.getElementById('woDriveNoMatch');
+            if (noMatch) noMatch.style.display = 'none';
             document.getElementById('woDriveGrid').style.display = 'none';
             document.getElementById('woDriveGrid').innerHTML = '';
 
@@ -1118,7 +1594,8 @@
                         document.getElementById('woDriveEmpty').style.display = 'block';
                         document.getElementById('woDriveEmpty').innerHTML = '<svg width="64" height="64" fill="none" stroke="#D1D1D6" stroke-width="1" viewBox="0 0 24 24" style="margin:0 auto 1rem;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><div style="font-size:1.1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.5rem;">Carpeta vacía</div><div style="font-size:0.9rem;">Sube archivos o crea carpetas aquí.</div>';
                     } else {
-                        document.getElementById('woDriveGrid').style.display = 'grid';
+                        var grid = document.getElementById('woDriveGrid');
+                        grid.style.display = '';
                         var html = '';
 
                         carpetas.forEach(function (c) {
@@ -1129,7 +1606,7 @@
                             var ro = (a.tipo === 'archivo_proyecto');
                             html += woDriveRenderArchivo(a, ro);
                         });
-                        document.getElementById('woDriveGrid').innerHTML = html;
+                        grid.innerHTML = html;
                     }
 
                     // Breadcrumbs
@@ -1141,6 +1618,10 @@
                         else bc += '<span onclick="woDriveIrACarpeta(' + b.id + ', ' + i + ')" style="cursor:pointer;color:#0052D4;">' + woEscape(b.nombre) + '</span>';
                     });
                     document.getElementById('woDriveBreadcrumb').innerHTML = bc;
+
+                    // Re-aplicar vista y filtros tras render
+                    _woDriveAplicarVista();
+                    _woDriveAplicarFiltros();
                 })
                 .catch(function (e) { console.error('Error Drive:', e); });
         }
