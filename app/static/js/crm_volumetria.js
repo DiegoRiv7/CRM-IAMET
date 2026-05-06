@@ -920,7 +920,10 @@
         html += '        <input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100); padding-left:34px;">';
         html += '      </div>';
         if (!S.readonly) {
+            html += '<div class="cv-toolbar-actions">';
+            html += renderImportBtn();
             html += renderAddSectionWrap();
+            html += '</div>';
         }
         html += '    </div>';
 
@@ -1379,6 +1382,136 @@
         return h;
     }
 
+    // ── Import button (Subir volumetría desde Excel) ────────────────
+    var ICON_UPLOAD = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+
+    function renderImportBtn() {
+        // Usamos <label> + <input type="file" hidden> para que el click
+        // sobre toda el área dispare el file picker nativo, sin handlers.
+        return '<label class="cv-import-btn" data-role="import-vol" title="Importar Excel de volumetría legacy">' +
+                   ICON_UPLOAD +
+                   '<span>Subir volumetría</span>' +
+                   '<input type="file" accept=".xlsx,.xls" hidden data-role="import-input" />' +
+               '</label>';
+    }
+
+    function onImportFileChange(ev) {
+        if (S.readonly) return;
+        var input = ev.target;
+        var file = input && input.files && input.files[0];
+        if (!file) return;
+
+        var hasItems = false;
+        try {
+            (S.data && S.data.secciones || []).some(function (sec) {
+                var n = (sec.items || []).filter(function (x) {
+                    return x && x.row_type !== 'header';
+                }).length;
+                if (n > 0) { hasItems = true; return true; }
+                return false;
+            });
+        } catch (_) {}
+
+        var doImport = function () {
+            runImport(file).finally(function () {
+                // Limpiamos el input para permitir re-importar el mismo archivo
+                try { input.value = ''; } catch (_) {}
+            });
+        };
+
+        if (hasItems) {
+            askConfirm({
+                title: 'Reemplazar volumetría',
+                message: 'El contenido actual se reemplazará con los datos del Excel. ' +
+                         'Se guardará un snapshot del contenido actual por seguridad.',
+                confirmLabel: 'Importar',
+                cancelLabel: 'Cancelar',
+                tone: 'danger',
+            }).then(function (ok) {
+                if (!ok) {
+                    try { input.value = ''; } catch (_) {}
+                    return;
+                }
+                doImport();
+            });
+        } else {
+            doImport();
+        }
+    }
+
+    function runImport(file) {
+        if (!S.volumetria || !S.volumetria.id) return Promise.resolve();
+        var url = '/app/api/iamet/volumetrias/' + S.volumetria.id + '/importar-excel/';
+        var fd = new FormData();
+        fd.append('archivo', file);
+
+        // Flush autosave pendiente para que no pise el resultado del import
+        if (S.saveTimer) {
+            try { clearTimeout(S.saveTimer); } catch (_) {}
+            S.saveTimer = null;
+        }
+
+        log('importar-excel →', url, file.name);
+        return fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRFToken': getCsrf(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: fd,
+        }).then(function (r) {
+            return r.json().then(function (j) { return { status: r.status, body: j }; });
+        }).then(function (res) {
+            var j = res.body || {};
+            if (!(j.success || j.ok) || !j.data) {
+                var msg = j.error || ('HTTP ' + res.status);
+                log('importar-excel error', msg, j);
+                window.alert('No se pudo importar el Excel.\n\n' + msg);
+                return;
+            }
+            // Actualizar volumetria en memoria con la respuesta y re-renderizar.
+            var v = j.data;
+            // El endpoint devuelve la volumetría con `data` adentro; el
+            // crmVolumetria.render espera `volumetria.data`.
+            var newVol = {
+                id: v.id || S.volumetria.id,
+                nombre: v.nombre != null ? v.nombre : S.volumetria.nombre,
+                status: v.status || S.volumetria.status,
+                iva_pct: v.iva_pct != null ? v.iva_pct : S.volumetria.iva_pct,
+                tipo_cambio: v.tipo_cambio != null ? v.tipo_cambio : S.volumetria.tipo_cambio,
+                data: v.data || {},
+            };
+            // Re-render limpio (destroy + render con la data nueva).
+            var container = S.container;
+            var levantamiento = S.levantamiento;
+            var readonly = S.readonly;
+            var onSaved = S.onSaved;
+            window.crmVolumetria.render(container, {
+                volumetria: newVol,
+                levantamiento: levantamiento,
+                readonly: readonly,
+                onSaved: onSaved,
+            });
+            var resumen = j.resumen || {};
+            var nEq = resumen.equipamiento_items || 0;
+            var nMo = resumen.mano_obra_items || 0;
+            var nCmo = resumen.costo_mo_items || 0;
+            var tcMsg = resumen.tipo_cambio_detectado
+                ? ' · TC ' + Number(resumen.tipo_cambio_detectado).toFixed(2)
+                : '';
+            // Notificación discreta — el host puede definir lwToast.
+            if (typeof window.lwToast === 'function') {
+                window.lwToast('Volumetría importada · ' + nEq + ' eq · ' + nMo + ' MO · ' + nCmo + ' CMO' + tcMsg, 'success');
+            } else {
+                console.log('[crmVolumetria] Importado: eq=' + nEq + ' mo=' + nMo + ' cmo=' + nCmo + tcMsg);
+            }
+        }).catch(function (err) {
+            log('importar-excel failed', err);
+            window.alert('Error al importar el Excel: ' + (err && err.message || err));
+        });
+    }
+
     // ── Bottom: Resumen Financiero Horizontal ──────────────────────────────
     function renderBottom() {
         var h = '<div class="cv-bottom" style="width: 100%;">';
@@ -1543,6 +1676,11 @@
             inp.addEventListener('input', onItemInput);
             inp.addEventListener('change', onItemInput);
             inp.addEventListener('blur', onItemBlur);
+        });
+
+        // Import file input (Subir volumetría)
+        S.container.querySelectorAll('input[data-role="import-input"]').forEach(function (inp) {
+            inp.addEventListener('change', onImportFileChange);
         });
 
         // Click delegation

@@ -956,6 +956,45 @@ textarea.cv-input,
 }
 /* `.cv-add-section-icon-gastos`: tipo retirado en v4d. */
 
+/* ── Toolbar actions (Agregar tabla + Subir volumetría) ────────── */
+.cv-toolbar-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* El wrapper de "Agregar tabla" tenía `margin: 18px 0 0` para
+ * separarlo verticalmente cuando vivía solo en la toolbar; al
+ * estar dentro de `.cv-toolbar-actions` ya no lo necesitamos. */
+.cv-toolbar-actions .cv-add-section-wrap {
+    margin: 0;
+}
+
+/* ── Botón "Subir volumetría" (importar Excel) ────────────────── */
+.cv-import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #fff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 9px;
+    color: #4f46e5;
+    font-family: var(--cv-sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+    white-space: nowrap;
+}
+.cv-import-btn:hover {
+    background: #f0f9ff;
+    border-color: #4f46e5;
+}
+.cv-import-btn svg {
+    flex-shrink: 0;
+}
+
 /* ── Bottom (Resumen Financiero + Estadísticas) ────────────────── */
 .cv-bottom {
     display: grid;
