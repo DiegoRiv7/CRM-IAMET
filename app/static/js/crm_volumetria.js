@@ -745,7 +745,12 @@
         if (it.costoUnitario != null && it.costoUnitario !== '' && Number(it.costoUnitario) >= 0) {
             cUnit = num(it.costoUnitario);
         } else {
-            cUnit = num(it.precioLista) * (1 - num(it.descuentoCosto) / 100);
+            // costoUnitario null/vacío → derivar de precioLista × (1 - descCosto/100).
+            // PERO si descCosto también es 0, el ítem es pura ganancia (cobramos
+            // sin costo real — ej. MISCELANEOS). Devolver 0 en vez de precioLista,
+            // que era el bug que inflaba el costo total por el monto de venta.
+            var dc = num(it.descuentoCosto);
+            cUnit = dc > 0 ? num(it.precioLista) * (1 - dc / 100) : 0;
         }
         var totalCosto = num(it.cantidad) * cUnit;
         return {
