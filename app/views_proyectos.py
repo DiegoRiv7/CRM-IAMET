@@ -2704,62 +2704,61 @@ def api_calendario_usuarios_con_eventos(request):
     desde_param = request.GET.get('desde', '').strip()
     hasta_param = request.GET.get('hasta', '').strip()
 
-    # Cuando se filtra por nombre, ignoramos el rango de fecha (el usuario
-    # busca fuera del mes actual).
-    aplicar_rango = (not search_query) and (mes_param or (desde_param and hasta_param))
-    rango_desde = rango_hasta = None
-    if aplicar_rango:
-        try:
-            if mes_param:
-                year, month = int(mes_param[:4]), int(mes_param[5:7])
-                last_day = _cal.monthrange(year, month)[1]
-                rango_desde = _tz.make_aware(_dt(year, month, 1, 0, 0, 0))
-                rango_hasta = _tz.make_aware(_dt(year, month, last_day, 23, 59, 59))
-            else:
-                rango_desde = _tz.make_aware(_dt.strptime(desde_param, '%Y-%m-%d').replace(hour=0, minute=0, second=0))
-                rango_hasta = _tz.make_aware(_dt.strptime(hasta_param, '%Y-%m-%d').replace(hour=23, minute=59, second=59))
-        except (ValueError, TypeError):
-            aplicar_rango = False
-
-    # Bases de querysets — restringimos por rango si aplica.
-    actividades_qs = Actividad.objects.all()
-    tareas_cal = Tarea.objects.exclude(fecha_limite__isnull=True)
-    if aplicar_rango:
-        # Una actividad cae en el rango si su intervalo se cruza con [desde, hasta].
-        actividades_qs = actividades_qs.filter(fecha_inicio__lte=rango_hasta, fecha_fin__gte=rango_desde)
-        tareas_cal = tareas_cal.filter(fecha_limite__gte=rango_desde, fecha_limite__lte=rango_hasta)
-
-    # IDs con actividades (creador o participante)
-    ids_act_creador = set(actividades_qs.values_list('creado_por_id', flat=True))
-    ids_act_part = set(
-        actividades_qs.exclude(participantes__isnull=True)
-        .values_list('participantes__id', flat=True)
-    )
-
-    # IDs con tareas (con fecha_limite — solo esas aparecen en el calendario)
-    ids_t_creador = set(tareas_cal.values_list('creado_por_id', flat=True))
-    ids_t_asig = set(tareas_cal.exclude(asignado_a__isnull=True).values_list('asignado_a_id', flat=True))
-    ids_t_part = set(tareas_cal.exclude(participantes__isnull=True).values_list('participantes__id', flat=True))
-    ids_t_obs = set(tareas_cal.exclude(observadores__isnull=True).values_list('observadores__id', flat=True))
-
-    user_ids = (ids_act_creador | ids_act_part | ids_t_creador | ids_t_asig | ids_t_part | ids_t_obs)
-    user_ids.discard(None)
-
-    # Cuando se filtra por mes, siempre incluimos al usuario actual (aunque
-    # no tenga eventos ese mes — para que vea su propio calendario vacío).
-    if aplicar_rango and request.user.id:
-        user_ids.add(request.user.id)
-
-    qs = User.objects.filter(id__in=user_ids)
-
     if search_query:
-        qs = qs.filter(
+        # MODO BÚSQUEDA LIBRE: devuelve TODOS los usuarios activos cuyo
+        # nombre/apellido/username coincida — tengan o NO eventos en el
+        # calendario. Permite a admins/supervisores/jefes encontrar a
+        # cualquier persona aunque nunca le hayan agendado nada.
+        qs = User.objects.filter(is_active=True).filter(
             Q(first_name__icontains=search_query) |
             Q(last_name__icontains=search_query) |
             Q(username__icontains=search_query)
+        ).order_by('first_name', 'last_name', 'username')
+    else:
+        # MODO LISTA: solo usuarios que tienen al menos un evento (Actividad
+        # o Tarea con fecha_limite) — opcionalmente acotado por mes/rango.
+        aplicar_rango = mes_param or (desde_param and hasta_param)
+        rango_desde = rango_hasta = None
+        if aplicar_rango:
+            try:
+                if mes_param:
+                    year, month = int(mes_param[:4]), int(mes_param[5:7])
+                    last_day = _cal.monthrange(year, month)[1]
+                    rango_desde = _tz.make_aware(_dt(year, month, 1, 0, 0, 0))
+                    rango_hasta = _tz.make_aware(_dt(year, month, last_day, 23, 59, 59))
+                else:
+                    rango_desde = _tz.make_aware(_dt.strptime(desde_param, '%Y-%m-%d').replace(hour=0, minute=0, second=0))
+                    rango_hasta = _tz.make_aware(_dt.strptime(hasta_param, '%Y-%m-%d').replace(hour=23, minute=59, second=59))
+            except (ValueError, TypeError):
+                aplicar_rango = False
+
+        actividades_qs = Actividad.objects.all()
+        tareas_cal = Tarea.objects.exclude(fecha_limite__isnull=True)
+        if aplicar_rango:
+            # Una actividad cae en el rango si su intervalo cruza [desde, hasta].
+            actividades_qs = actividades_qs.filter(fecha_inicio__lte=rango_hasta, fecha_fin__gte=rango_desde)
+            tareas_cal = tareas_cal.filter(fecha_limite__gte=rango_desde, fecha_limite__lte=rango_hasta)
+
+        ids_act_creador = set(actividades_qs.values_list('creado_por_id', flat=True))
+        ids_act_part = set(
+            actividades_qs.exclude(participantes__isnull=True)
+            .values_list('participantes__id', flat=True)
         )
 
-    qs = qs.order_by('first_name', 'last_name', 'username')
+        ids_t_creador = set(tareas_cal.values_list('creado_por_id', flat=True))
+        ids_t_asig = set(tareas_cal.exclude(asignado_a__isnull=True).values_list('asignado_a_id', flat=True))
+        ids_t_part = set(tareas_cal.exclude(participantes__isnull=True).values_list('participantes__id', flat=True))
+        ids_t_obs = set(tareas_cal.exclude(observadores__isnull=True).values_list('observadores__id', flat=True))
+
+        user_ids = (ids_act_creador | ids_act_part | ids_t_creador | ids_t_asig | ids_t_part | ids_t_obs)
+        user_ids.discard(None)
+
+        # Siempre incluimos al usuario actual (para ver su propio calendario
+        # aunque esté vacío en el rango filtrado).
+        if request.user.id:
+            user_ids.add(request.user.id)
+
+        qs = User.objects.filter(id__in=user_ids).order_by('first_name', 'last_name', 'username')
 
     usuarios_data = []
     for u in qs:
