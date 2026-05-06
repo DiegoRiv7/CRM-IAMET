@@ -3557,6 +3557,20 @@ def api_volumetria_importar_excel(request, volumetria_id):
             if cantidad == 0 and precio_lista == 0 and costo_unit == 0 and not ca_str and not col_b:
                 continue
 
+            # `costoUnitario`:
+            #   - Si Excel trae costo > 0 → lo usamos tal cual (override).
+            #   - Si costo == 0 PERO descuentoCosto > 0 → None para que el
+            #     frontend lo derive de `precioLista * (1 - descCosto/100)`.
+            #   - Si AMBOS son 0 → 0 explícito (item de pura ganancia,
+            #     ej. MISCELANEOS donde se cobra 150 y no cuesta nada). Si
+            #     pusiéramos None aquí, el frontend derivaría 150 (= precioLista)
+            #     y el costo total se infla, dañando el resumen financiero.
+            if costo_unit > 0:
+                costo_v4 = float(costo_unit)
+            elif desc_costo_dec > 0:
+                costo_v4 = None
+            else:
+                costo_v4 = 0.0
             eq_items.append({
                 'id': _vol_uuid(),
                 'row_type': 'item',
@@ -3567,10 +3581,7 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 'precioLista': float(precio_lista),
                 'descuentoVenta': float((desc_venta_dec * Decimal('100')).quantize(Decimal('0.01'))),
                 'descuentoCosto': float((desc_costo_dec * Decimal('100')).quantize(Decimal('0.01'))),
-                # `costoUnitario`: si > 0, lo usamos como override; si 0, lo
-                # dejamos en None para que el frontend lo derive desde
-                # `precioLista * (1 - descuentoCosto/100)`.
-                'costoUnitario': float(costo_unit) if costo_unit > 0 else None,
+                'costoUnitario': costo_v4,
                 'proveedor': str(col_l or '').strip(),
                 'entrega': str(col_m or '').strip(),
                 'notas': '',
