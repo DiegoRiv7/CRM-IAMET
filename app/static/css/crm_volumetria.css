@@ -1,19 +1,13 @@
 /*
- * crm_volumetria.css — Estilos del Editor de Volumetría v4 (card-row)
+ * crm_volumetria.css — Editor de Volumetría · Estilo iPadOS / Apple HIG
  *
- * Layout estilo Linear / Notion: cada sección es una tarjeta blanca
- * con padding generoso, número grande "01" en pill gris a la izquierda,
- * título de sección al centro, subtotal de zona alineado a la derecha.
- * Cada item dentro de la sección es una mini-card independiente con
- * icono coloreado, brand + parte, descripción, inputs CANT/DESC% y
- * total a la derecha. Click en el cuerpo del item lo expande inline
- * mostrando el detalle (P. Lista, Desc % Costo, C. Unit, etc).
+ * Inspiración: Numbers, Reminders, Files, Settings de iPadOS 17+.
+ * Workspace gris suave (#F2F2F7), cards blancos con border-radius 18px,
+ * sombras sutiles, sin bordes duros. Tipografía SF Pro / system,
+ * acento azul iOS (#007AFF), separadores en alpha bajo.
  *
- * Convenciones:
- *   - Prefijo .cv- en TODAS las clases (paridad estricta con el JS).
- *   - Variables CSS en .cv-root para facilitar ajustes.
- *   - Mono font solo en números y códigos de parte.
- *   - Sombras suaves: 0 1px 2px (item) / 0 2px 8px (sección).
+ * Las clases mantienen el mismo nombre que la versión anterior — solo
+ * cambia la capa visual. Cualquier cambio de markup vive en el JS.
  *
  * ── Inventario de clases (debe coincidir con el JS) ──
  *
@@ -23,10 +17,9 @@
  * Stack:       .cv-stack
  * Sección:     .cv-section, .cv-section-collapsed,
  *              .cv-section-equipamiento, .cv-section-mano_obra,
- *              .cv-section-costo_mo, .cv-section-gastos,
+ *              .cv-section-costo_mo,
  *              .cv-section-head, .cv-section-head-left, .cv-section-head-right,
- *              .cv-section-num,
- *              .cv-section-toggle, .cv-chevron,
+ *              .cv-section-num, .cv-section-toggle, .cv-chevron,
  *              .cv-section-title-block,
  *              .cv-section-title-input, .cv-section-meta,
  *              .cv-section-subtotal-label, .cv-section-subtotal-value,
@@ -35,29 +28,26 @@
  * Botones:     .cv-btn, .cv-btn-add-row, .cv-btn-add-header,
  *              .cv-btn-del-section, .cv-btn-icon
  * Item:        .cv-item, .cv-item-equipamiento, .cv-item-mano_obra,
- *              .cv-item-costo_mo, .cv-item-gastos, .cv-item-rotulo,
- *              .cv-item-expanded,
- *              .cv-item-header,
- *              .cv-item-icon, .cv-item-icon-eq, .cv-item-icon-mo,
- *              .cv-item-icon-cmo, .cv-item-icon-ga,
- *              .cv-item-main, .cv-item-id, .cv-item-brand,
- *              .cv-item-brand-wide, .cv-item-part, .cv-item-desc,
+ *              .cv-item-costo_mo, .cv-item-rotulo, .cv-item-expanded,
+ *              .cv-item-header, .cv-item-icon,
+ *              .cv-item-icon-eq, .cv-item-icon-mo, .cv-item-icon-cmo,
+ *              .cv-item-main, .cv-item-id, .cv-item-brand, .cv-item-brand-wide,
+ *              .cv-item-part, .cv-item-desc,
  *              .cv-item-fields, .cv-item-field, .cv-item-field-label,
  *              .cv-item-total, .cv-item-total-label, .cv-item-total-value,
  *              .cv-item-positive, .cv-item-negative,
  *              .cv-item-detail, .cv-item-detail-grid, .cv-item-detail-cell,
  *              .cv-item-detail-cell-calc,
- *              .cv-item-detail-label, .cv-item-detail-value,
- *              .cv-item-detail-full,
+ *              .cv-item-detail-label, .cv-item-detail-value, .cv-item-detail-full,
  *              .cv-item-rotulo-input,
  *              .cv-item-del, .cv-row-del,
- *              .cv-input, .cv-input-num, .cv-input-text, .cv-input-mini
+ *              .cv-input, .cv-input-num, .cv-input-text, .cv-input-mini,
+ *              .cv-input-textarea
  * Add section: .cv-add-section-wrap, .cv-add-section, .cv-add-section-menu,
  *              .cv-add-section-item, .cv-add-section-icon,
  *              .cv-add-section-icon-equipamiento,
  *              .cv-add-section-icon-mano_obra,
  *              .cv-add-section-icon-costo_mo,
- *              .cv-add-section-icon-gastos,
  *              .cv-add-section-caret, .cv-add-section-open
  * Bottom:      .cv-bottom, .cv-card, .cv-card-financiero, .cv-card-stats,
  *              .cv-card-header, .cv-card-header-row,
@@ -69,94 +59,124 @@
  *              .cv-fin-row-cost, .cv-fin-row-gain, .cv-fin-row-margin,
  *              .cv-fin-row-margin-low, .cv-fin-row-iva, .cv-fin-row-total,
  *              .cv-fin-sep, .cv-fin-foot,
+ *              .cv-fin-table, .cv-fin-col, .cv-fin-col-title, .cv-fin-col-body,
+ *              .cv-fin-cell-row, .cv-fin-cell-label, .cv-fin-cell-value,
+ *              .cv-fin-grand, .cv-fin-pct, .cv-fin-pct-low, .cv-fin-mxn,
  *              .cv-stat-row, .cv-stat-label, .cv-stat-value,
  *              .cv-stat-pills, .cv-stat-pill,
  *              .cv-stat-pill-equipamiento, .cv-stat-pill-mano_obra,
- *              .cv-stat-pill-costo_mo, .cv-stat-pill-gastos
- * Misc:        .cv-mono, .cv-empty, .cv-sr-only
+ *              .cv-stat-pill-costo_mo
+ * Misc:        .cv-mono, .cv-empty, .cv-sr-only,
+ *              .cv-app-header, .cv-app-main, .cv-app-left, .cv-app-right,
+ *              .cv-app-table-scroll, .cv-app-bottom-summary,
+ *              .cv-toolbar-actions, .cv-import-btn
  */
 
-/* ── Variables ──────────────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Variables (Apple system colors / iPadOS)
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-root {
-    /* Tipografía */
+    /* Tipografía SF Pro */
+    --cv-sans: -apple-system, "SF Pro Display", "SF Pro Text", BlinkMacSystemFont,
+               "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cv-mono: ui-monospace, "SF Mono", SFMono-Regular, "Menlo", "Consolas", monospace;
-    --cv-sans: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text",
-                "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-    /* Paleta neutral (light) */
-    --cv-bg-page:        #fdfdfd;
-    --cv-bg-card:        #ffffff;
-    --cv-bg-soft:        #f8fafc;          /* slate-50 */
-    --cv-bg-hover:       #f1f5f9;          /* slate-100 */
-    --cv-bg-zinc-50:     #fafafa;
-    --cv-bg-zinc-100:    #f4f4f5;
-    --cv-fg:             #0f172a;          /* slate-900 */
-    --cv-fg-2:           #334155;          /* slate-700 */
-    --cv-fg-muted:       #64748b;          /* slate-500 */
-    --cv-fg-faint:       #94a3b8;          /* slate-400 */
-    --cv-fg-placeholder: #cbd5e1;          /* slate-300 */
-    --cv-border:         #e5e7eb;          /* gray-200 */
-    --cv-border-soft:    #f1f5f9;          /* slate-100 */
-    --cv-border-strong:  #d1d5db;          /* gray-300 */
+    /* Backgrounds */
+    --cv-bg-page:        #F2F2F7;          /* system gray 6 light (workspace) */
+    --cv-bg-card:        #FFFFFF;          /* card / surface */
+    --cv-bg-soft:        #F2F2F7;          /* input bg / nested surface */
+    --cv-bg-hover:       rgba(0, 0, 0, 0.03);
+    --cv-bg-pressed:     rgba(0, 0, 0, 0.06);
+    --cv-bg-zinc-50:     #FAFAFA;
+    --cv-bg-zinc-100:    #E5E5EA;          /* system gray 5 (chip / pill bg) */
 
-    /* Acentos */
-    --cv-accent:        #4f46e5;           /* indigo-600 */
-    --cv-accent-soft:   #6366f1;
-    --cv-accent-bg:     rgba(99, 102, 241, 0.08);
-    --cv-positive:      #059669;           /* emerald-600 */
-    --cv-positive-bg:   rgba(16, 185, 129, 0.08);
-    --cv-warn:          #c2410c;
-    --cv-amber:         #d97706;
-    --cv-danger:        #dc2626;           /* red-600 */
-    --cv-danger-bg:     rgba(239, 68, 68, 0.08);
+    /* Foregrounds (label hierarchy) */
+    --cv-fg:             #1C1C1E;          /* label primary */
+    --cv-fg-2:           #3C3C43;          /* label secondary */
+    --cv-fg-muted:       rgba(60, 60, 67, 0.6);  /* secondary 60% */
+    --cv-fg-faint:       rgba(60, 60, 67, 0.4);  /* tertiary 40% */
+    --cv-fg-placeholder: rgba(60, 60, 67, 0.3);
 
-    /* Tipos de sección — paleta del icono pastel + accent oscuro */
-    --cv-eq-icon-bg:    #dbeafe;           /* blue-100 */
-    --cv-eq-icon-fg:    #1d4ed8;           /* blue-700 */
-    --cv-eq-pill-bg:    #eff6ff;
-    --cv-eq-pill-fg:    #1e40af;
-    --cv-eq-pill-bd:    #bfdbfe;
+    /* Separators (Apple uses alpha for "no hard lines") */
+    --cv-border:         rgba(60, 60, 67, 0.12);
+    --cv-border-soft:    rgba(60, 60, 67, 0.08);
+    --cv-border-strong:  rgba(60, 60, 67, 0.18);
 
-    --cv-mo-icon-bg:    #ede9fe;           /* violet-100 */
-    --cv-mo-icon-fg:    #6d28d9;           /* violet-700 */
-    --cv-mo-pill-bg:    #faf5ff;
-    --cv-mo-pill-fg:    #6b21a8;
-    --cv-mo-pill-bd:    #e9d5ff;
+    /* iOS system colors */
+    --cv-accent:         #007AFF;          /* system blue */
+    --cv-accent-soft:    #409CFF;
+    --cv-accent-bg:      rgba(0, 122, 255, 0.13);   /* tinted */
+    --cv-accent-bg-soft: rgba(0, 122, 255, 0.08);
+    --cv-accent-ring:    rgba(0, 122, 255, 0.25);   /* focus ring */
 
-    --cv-cm-icon-bg:    #fef3c7;           /* amber-100 */
-    --cv-cm-icon-fg:    #b45309;           /* amber-700 */
-    --cv-cm-pill-bg:    #fffbeb;
-    --cv-cm-pill-fg:    #92400e;
-    --cv-cm-pill-bd:    #fde68a;
+    --cv-positive:       #30D158;          /* system green */
+    --cv-positive-fg:    #248A3D;          /* darker green for text on light bg */
+    --cv-positive-bg:    rgba(48, 209, 88, 0.13);
 
-    --cv-ga-icon-bg:    #fee2e2;           /* red-100 */
-    --cv-ga-icon-fg:    #b91c1c;           /* red-700 */
-    --cv-ga-pill-bg:    #fef2f2;
-    --cv-ga-pill-fg:    #991b1b;
-    --cv-ga-pill-bd:    #fecaca;
+    --cv-warn:           #FF9500;          /* system orange */
+    --cv-amber:          #FFCC00;          /* system yellow */
+    --cv-amber-bg:       rgba(255, 204, 0, 0.18);
+    --cv-amber-edge:     rgba(255, 204, 0, 0.45);
 
-    /* Sombras / radios */
-    --cv-radius-sm: 6px;
-    --cv-radius:    8px;
-    --cv-radius-md: 10px;
-    --cv-radius-lg: 14px;
-    --cv-radius-xl: 18px;
-    --cv-shadow-item:    0 1px 2px rgba(15, 23, 42, 0.04);
-    --cv-shadow-section: 0 2px 8px rgba(15, 23, 42, 0.06);
-    --cv-shadow-pop:     0 4px 14px rgba(15, 23, 42, 0.08);
+    --cv-danger:         #FF3B30;          /* system red */
+    --cv-danger-bg:      rgba(255, 59, 48, 0.13);
+
+    --cv-purple:         #AF52DE;          /* system purple */
+
+    /* Tipos de sección · tinte iOS */
+    --cv-eq-icon-bg:    rgba(0, 122, 255, 0.13);
+    --cv-eq-icon-fg:    #007AFF;
+    --cv-eq-pill-bg:    rgba(0, 122, 255, 0.10);
+    --cv-eq-pill-fg:    #0A6CDB;
+    --cv-eq-pill-bd:    rgba(0, 122, 255, 0.18);
+
+    --cv-mo-icon-bg:    rgba(175, 82, 222, 0.13);
+    --cv-mo-icon-fg:    #AF52DE;
+    --cv-mo-pill-bg:    rgba(175, 82, 222, 0.10);
+    --cv-mo-pill-fg:    #8E3BB3;
+    --cv-mo-pill-bd:    rgba(175, 82, 222, 0.18);
+
+    --cv-cm-icon-bg:    rgba(255, 149, 0, 0.13);
+    --cv-cm-icon-fg:    #FF9500;
+    --cv-cm-pill-bg:    rgba(255, 149, 0, 0.10);
+    --cv-cm-pill-fg:    #C2700A;
+    --cv-cm-pill-bd:    rgba(255, 149, 0, 0.18);
+
+    --cv-ga-icon-bg:    rgba(255, 59, 48, 0.13);
+    --cv-ga-icon-fg:    #FF3B30;
+    --cv-ga-pill-bg:    rgba(255, 59, 48, 0.10);
+    --cv-ga-pill-fg:    #C42820;
+    --cv-ga-pill-bd:    rgba(255, 59, 48, 0.18);
+
+    /* Sombras / radios iOS */
+    --cv-radius-sm:  8px;
+    --cv-radius:     10px;
+    --cv-radius-md:  14px;
+    --cv-radius-lg:  16px;
+    --cv-radius-xl:  18px;
+    --cv-radius-2xl: 22px;
+
+    --cv-shadow-item:    0 1px 3px rgba(15, 23, 42, 0.04);
+    --cv-shadow-section: 0 2px 16px rgba(15, 23, 42, 0.05);
+    --cv-shadow-pop:     0 8px 24px rgba(15, 23, 42, 0.10),
+                         0 2px 6px rgba(15, 23, 42, 0.06);
+    --cv-shadow-hover:   0 4px 20px rgba(15, 23, 42, 0.07);
+
+    /* Easing iOS (ease-out cubic) */
+    --cv-ease:           cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --cv-ease-spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
 
     color: var(--cv-fg);
     font-family: var(--cv-sans);
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.45;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     background: transparent;
     padding: 0;
-    /* IMPORTANTE: NO usamos `overflow-y: auto` aquí. Cuando el módulo
-       se monta dentro de #lwP3CvMount (host del wizard, que ya tiene su
-       propio scroll), cualquier scroll local en .cv-root recortaba el
-       contenido de la página de Volumetría al agregar muchas filas.
-       Dejamos que el host (o el viewport) se encargue del scroll y
-       que .cv-root crezca naturalmente. */
+    /* IMPORTANTE: NO usamos `overflow-y: auto` aquí. El host del wizard
+       (#lwP3CvMount) ya tiene su propio scroll. */
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -181,28 +201,78 @@
     clip: rect(0 0 0 0);
 }
 
-/* ── Status pill (vive en el header del card stats) ─────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Header del documento (proyecto + última edición + status)
+ * ═════════════════════════════════════════════════════════════════════ */
+.cv-app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    background: rgba(242, 242, 247, 0.85);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    padding: 18px 32px;
+    border-bottom: 0.5px solid var(--cv-border);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+.cv-app-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.cv-app-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.cv-app-header h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--cv-fg);
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+}
+.cv-app-header p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--cv-fg-muted);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+ * Status pill (Borrador / Completada)
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-status {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
+    padding: 5px 12px;
     border-radius: 999px;
-    border: 1px solid var(--cv-border);
-    background: var(--cv-bg-card);
+    border: none;
+    background: var(--cv-bg-zinc-100);
     color: var(--cv-fg-2);
     font-family: var(--cv-sans);
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.005em;
     cursor: pointer;
-    transition: all 120ms ease;
+    transition: background 160ms var(--cv-ease), transform 160ms var(--cv-ease);
     white-space: nowrap;
+    line-height: 1.2;
 }
 button.cv-status { font-family: inherit; }
 .cv-status:hover {
-    border-color: var(--cv-border-strong);
-    background: var(--cv-bg-soft);
+    background: rgba(0, 0, 0, 0.07);
+}
+.cv-status:active {
+    transform: scale(0.97);
 }
 .cv-status-dot {
     width: 7px;
@@ -213,46 +283,113 @@ button.cv-status { font-family: inherit; }
 }
 .cv-status-borrador {
     color: var(--cv-fg-2);
-    background: #f9fafb;
-    border-color: #e5e7eb;
+    background: var(--cv-bg-zinc-100);
 }
 .cv-status-borrador .cv-status-dot {
-    background: #94a3b8;
+    background: var(--cv-fg-faint);
 }
 .cv-status-completada {
-    color: #166534;
-    background: #f0fdf4;
-    border-color: #bbf7d0;
+    color: #FFFFFF;
+    background: var(--cv-positive);
+}
+.cv-status-completada:hover {
+    background: #2BC351;
 }
 .cv-status-completada .cv-status-dot {
-    background: var(--cv-positive);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    background: #FFFFFF;
 }
 .cv-readonly .cv-status { cursor: default; }
 
-/* ── Stack de secciones ─────────────────────────────────────────── */
-.cv-stack {
+/* ═════════════════════════════════════════════════════════════════════
+ * Workspace (cv-app-main) y layout principal
+ * ═════════════════════════════════════════════════════════════════════ */
+.cv-app-main {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 0;
+    padding: 24px 32px 64px;
+    background: var(--cv-bg-page);
+    min-height: 0;
 }
 
-/* ── Sección (card grande) ──────────────────────────────────────── */
-.cv-section {
+.cv-app-left {
+    flex: 1;
+    min-width: 0;
     background: var(--cv-bg-card);
-    border: 1px solid var(--cv-border);
+    border: none;
     border-radius: var(--cv-radius-xl);
     box-shadow: var(--cv-shadow-section);
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
-/* Head (zona superior con número, título, subtotal) */
+.cv-app-right {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-shrink: 0;
+    transition: margin-right 240ms var(--cv-ease),
+                opacity 240ms var(--cv-ease),
+                width 240ms var(--cv-ease);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.cv-sidebar-hidden .cv-app-right {
+    width: 0;
+    margin-left: -16px;
+    opacity: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Toolbar superior (search + agregar tabla + subir) */
+.cv-app-table-scroll {
+    flex: 1;
+    overflow: visible;
+    padding: 24px;
+    background: transparent;
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+ * Stack de secciones
+ * ═════════════════════════════════════════════════════════════════════ */
+.cv-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+ * Sección (card grande estilo iPadOS)
+ * ═════════════════════════════════════════════════════════════════════ */
+.cv-section {
+    background: var(--cv-bg-card);
+    border: none;
+    border-radius: var(--cv-radius-xl);
+    box-shadow: var(--cv-shadow-section);
+    overflow: hidden;
+    transition: box-shadow 200ms var(--cv-ease),
+                transform 200ms var(--cv-ease);
+}
+.cv-section:hover {
+    box-shadow: var(--cv-shadow-hover);
+}
+
+/* Head: número [01] + título + subtotal */
 .cv-section-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    padding: 22px 26px 18px;
+    padding: 22px 24px 16px;
+    border-bottom: 0.5px solid var(--cv-border);
+}
+.cv-section-collapsed .cv-section-head {
+    border-bottom: none;
+    padding-bottom: 22px;
 }
 
 .cv-section-head-left {
@@ -267,16 +404,16 @@ button.cv-status { font-family: inherit; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 38px;
-    height: 30px;
+    min-width: 34px;
+    height: 26px;
     padding: 4px 10px;
     background: var(--cv-bg-zinc-100);
-    color: #3f3f46; /* zinc-700 */
+    color: var(--cv-fg-2);
     font-family: var(--cv-mono);
-    font-size: 14px;
+    font-size: 12.5px;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    border-radius: 8px;
+    letter-spacing: 0;
+    border-radius: 999px;
     user-select: none;
     flex-shrink: 0;
 }
@@ -285,19 +422,22 @@ button.cv-status { font-family: inherit; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border: none;
     background: transparent;
     color: var(--cv-fg-muted);
-    border-radius: var(--cv-radius-sm);
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    transition: background 160ms var(--cv-ease), color 160ms var(--cv-ease);
     flex-shrink: 0;
 }
 .cv-section-toggle:hover {
-    background: rgba(15, 23, 42, 0.06);
+    background: var(--cv-bg-hover);
     color: var(--cv-fg);
+}
+.cv-section-toggle:active {
+    background: var(--cv-bg-pressed);
 }
 .cv-chevron {
     display: inline-flex;
@@ -319,29 +459,29 @@ button.cv-status { font-family: inherit; }
     background: transparent;
     color: var(--cv-fg);
     font-family: var(--cv-sans);
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    padding: 2px 4px;
-    margin: 0 -4px;
-    border-radius: 6px;
-    transition: background 120ms ease;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    padding: 2px 6px;
+    margin: 0 -6px;
+    border-radius: 8px;
+    transition: background 160ms var(--cv-ease);
 }
 .cv-section-title-input::placeholder {
     color: var(--cv-fg-faint);
     font-weight: 600;
 }
 .cv-section-title-input:focus {
-    background: rgba(15, 23, 42, 0.04);
+    background: var(--cv-bg-soft);
 }
 .cv-section-title-input[disabled] { background: transparent; }
 .cv-section-meta {
-    font-size: 11.5px;
+    font-size: 12.5px;
     color: var(--cv-fg-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 500;
-    padding: 0 4px;
+    text-transform: none;
+    letter-spacing: -0.005em;
+    font-weight: 400;
+    padding: 0 6px;
 }
 
 /* Right: subtotal de zona */
@@ -349,7 +489,7 @@ button.cv-status { font-family: inherit; }
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 4px;
+    gap: 2px;
     flex-shrink: 0;
     text-align: right;
 }
@@ -358,32 +498,28 @@ button.cv-status { font-family: inherit; }
     font-weight: 600;
     color: var(--cv-fg-muted);
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.08em;
     user-select: none;
 }
 .cv-section-subtotal-value {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 600;
     color: var(--cv-fg);
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
 }
 
-/* Sección colapsada: solo head, sin body */
-.cv-section-collapsed .cv-section-head {
-    padding-bottom: 22px;
-}
-
-/* Tinte sutil del subtotal según el tipo (solo borde-acento de color) */
+/* Tinte sutil del subtotal según el tipo */
 .cv-section-equipamiento .cv-section-subtotal-value { color: var(--cv-fg); }
 .cv-section-mano_obra .cv-section-subtotal-value     { color: var(--cv-fg); }
 .cv-section-costo_mo .cv-section-subtotal-value      { color: var(--cv-cm-icon-fg); }
-/* `.cv-section-gastos`: tipo retirado en mayo 2026 — sin estilo dedicado. */
 
-/* ── Body de la sección ─────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Body de la sección
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-section-body {
-    padding: 0 26px 22px;
+    padding: 0 24px 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -392,101 +528,115 @@ button.cv-status { font-family: inherit; }
 .cv-items {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
 }
 
 .cv-items-empty {
-    padding: 18px 14px;
-    color: var(--cv-fg-faint);
-    font-style: italic;
-    font-size: 13px;
+    padding: 24px 16px;
+    color: var(--cv-fg-muted);
+    font-style: normal;
+    font-size: 14px;
     text-align: center;
-    border: 1px dashed var(--cv-border);
+    border: none;
     border-radius: var(--cv-radius);
     background: var(--cv-bg-soft);
 }
 
-/* ── Acciones de sección (fila inferior con + Fila / + Rótulo / 🗑) ── */
+/* Acciones de sección */
 .cv-section-actions {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    padding-top: 4px;
 }
 
+/* ═════════════════════════════════════════════════════════════════════
+ * Botones (sistema iOS: primary / tinted / ghost / destructive)
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 14px;
-    border: 1px solid var(--cv-border);
-    background: var(--cv-bg-card);
-    color: var(--cv-fg-2);
-    border-radius: var(--cv-radius);
+    padding: 9px 16px;
+    border: none;
+    background: transparent;
+    color: var(--cv-accent);
+    border-radius: var(--cv-radius-md);
     font-family: var(--cv-sans);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
+    letter-spacing: -0.005em;
     cursor: pointer;
-    transition: all 120ms ease;
+    transition: background 160ms var(--cv-ease),
+                transform 160ms var(--cv-ease);
     white-space: nowrap;
-    line-height: 1;
+    line-height: 1.2;
 }
 .cv-btn:hover {
-    background: var(--cv-bg-soft);
-    border-color: var(--cv-border-strong);
-    box-shadow: var(--cv-shadow-item);
+    background: var(--cv-accent-bg-soft);
+}
+.cv-btn:active {
+    transform: scale(0.97);
+    background: var(--cv-accent-bg);
 }
 .cv-btn svg { flex-shrink: 0; }
 
+/* Tinted (acción secundaria positiva — agregar fila) */
 .cv-btn-add-row {
-    color: var(--cv-eq-icon-fg);
-    border-color: #bfdbfe;
-    background: #fff;
+    color: var(--cv-accent);
+    background: var(--cv-accent-bg);
 }
 .cv-btn-add-row:hover {
-    background: #eff6ff;
-    border-color: #93c5fd;
-    color: #1e3a8a;
+    background: rgba(0, 122, 255, 0.18);
 }
 
 .cv-btn-add-header {
-    color: var(--cv-mo-icon-fg);
-    border-color: #ddd6fe;
+    color: var(--cv-purple);
+    background: var(--cv-mo-pill-bg);
 }
 .cv-btn-add-header:hover {
-    background: #f5f3ff;
-    border-color: #c4b5fd;
-    color: #5b21b6;
+    background: rgba(175, 82, 222, 0.18);
 }
 
+/* Destructive (eliminar tabla) — ghost rojo */
 .cv-btn-del-section {
     color: var(--cv-danger);
-    border-color: #fecaca;
-    padding: 8px 11px;
+    background: transparent;
+    padding: 9px 12px;
     margin-left: auto;
 }
 .cv-btn-del-section:hover {
-    background: #fef2f2;
-    border-color: #fca5a5;
-    color: #991b1b;
+    background: var(--cv-danger-bg);
+    color: var(--cv-danger);
 }
 
 .cv-btn-icon {
-    padding: 8px 10px;
+    padding: 9px 11px;
 }
 
-/* ── Item (mini-card) ───────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Item rows (fila de items dentro de la sección)
+ *
+ * En el contenedor por defecto (.cv-section-body), cada item es una
+ * fila con separador 0.5px en lugar de mini-card. En el layout
+ * "tabla" (.cv-app-table-scroll) ya viene apretado sin border.
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-item {
     position: relative;
-    background: var(--cv-bg-card);
-    border: 1px solid var(--cv-border);
-    border-radius: var(--cv-radius-md);
-    box-shadow: var(--cv-shadow-item);
-    transition: border-color 120ms ease, box-shadow 120ms ease;
-    overflow: hidden;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: 0.5px solid var(--cv-border);
+    transition: background 160ms var(--cv-ease);
+    overflow: visible;
+}
+.cv-item:last-child {
+    border-bottom: none;
 }
 .cv-item:hover {
-    border-color: var(--cv-border-strong);
+    background: var(--cv-bg-hover);
 }
 .cv-item:hover > .cv-item-header > .cv-item-del,
 .cv-item:hover > .cv-item-del {
@@ -497,34 +647,31 @@ button.cv-status { font-family: inherit; }
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 18px;
+    padding: 12px 16px;
     cursor: default;
+    border-radius: 10px;
 }
 .cv-item-header[data-action="toggle-item"] { cursor: pointer; }
-.cv-item-header[data-action="toggle-item"]:hover {
-    background: rgba(15, 23, 42, 0.015);
-}
 
-/* Icono cuadrado a la izquierda */
+/* Icono cuadrado a la izquierda (44x44 redondeado 12px) */
 .cv-item-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--cv-radius);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     flex-shrink: 0;
 }
 .cv-item-icon-eq  { background: var(--cv-eq-icon-bg); color: var(--cv-eq-icon-fg); }
 .cv-item-icon-mo  { background: var(--cv-mo-icon-bg); color: var(--cv-mo-icon-fg); }
 .cv-item-icon-cmo { background: var(--cv-cm-icon-bg); color: var(--cv-cm-icon-fg); }
-/* `.cv-item-icon-ga`: usado por el tipo `gastos` (retirado en v4d). */
 
-/* Bloque "main": icono ya está hermano; aquí van id (brand+parte) + desc */
+/* Bloque "main": id (brand+parte) + descripción */
 .cv-item-main {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     flex: 1;
     min-width: 0;
 }
@@ -543,18 +690,31 @@ button.cv-status { font-family: inherit; }
     font-size: 11.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--cv-fg);
-    padding: 2px 4px;
-    width: 100px;
-    background: transparent;
+    letter-spacing: 0.04em;
+    color: var(--cv-eq-pill-fg);
+    padding: 3px 10px;
+    width: 110px;
+    background: var(--cv-eq-pill-bg);
+    border-radius: 999px;
+}
+.cv-section-mano_obra .cv-item-brand .cv-input {
+    color: var(--cv-mo-pill-fg);
+    background: var(--cv-mo-pill-bg);
+}
+.cv-section-costo_mo .cv-item-brand .cv-input {
+    color: var(--cv-cm-pill-fg);
+    background: var(--cv-cm-pill-bg);
 }
 .cv-item-brand-wide .cv-input {
-    width: 240px;
+    width: 280px;
     text-transform: none;
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0;
+    font-size: 14.5px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    color: var(--cv-fg);
+    background: transparent;
+    border-radius: 8px;
+    padding: 4px 6px;
 }
 .cv-item-part {
     display: inline-flex;
@@ -565,36 +725,39 @@ button.cv-status { font-family: inherit; }
     font-size: 11.5px;
     font-weight: 600;
     color: var(--cv-fg-2);
-    padding: 2px 8px;
-    width: 130px;
+    padding: 3px 10px;
+    width: 140px;
     background: var(--cv-bg-zinc-100);
-    border-radius: 5px;
+    border-radius: 999px;
 }
 .cv-item-part .cv-input:focus {
     background: var(--cv-bg-card);
+    box-shadow: 0 0 0 3px var(--cv-accent-ring);
 }
 .cv-item-desc {
     display: block;
     min-width: 0;
 }
 .cv-item-desc .cv-input {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 14.5px;
+    font-weight: 400;
     color: var(--cv-fg);
-    padding: 2px 4px;
-    width: 100%;
+    padding: 4px 6px;
+    margin-left: -6px;
+    width: calc(100% + 6px);
     background: transparent;
+    letter-spacing: -0.005em;
 }
 .cv-item-desc .cv-input::placeholder {
     color: var(--cv-fg-faint);
     font-weight: 400;
 }
 
-/* Campos numéricos compactos a la derecha de la cabecera (cant, desc%) */
+/* ─── Campos numéricos compactos (cant, precio, costo, días) ─────── */
 .cv-item-fields {
     display: inline-flex;
     align-items: flex-end;
-    gap: 10px;
+    gap: 8px;
     flex-shrink: 0;
 }
 .cv-item-field {
@@ -604,77 +767,89 @@ button.cv-status { font-family: inherit; }
     min-width: 0;
 }
 .cv-item-field-label {
-    font-size: 9.5px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 600;
     color: var(--cv-fg-muted);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     user-select: none;
     text-align: center;
 }
 .cv-item-field .cv-input-mini {
-    width: 78px;
+    width: 84px;
     text-align: right;
-    padding: 6px 8px;
-    background: var(--cv-bg-card);
-    border: 1px solid var(--cv-border);
-    border-radius: 6px;
+    padding: 8px 10px;
+    background: var(--cv-bg-soft);
+    border: none;
+    border-radius: 10px;
     font-family: var(--cv-mono);
     font-size: 13px;
     font-weight: 600;
+    color: var(--cv-fg);
+    transition: background 160ms var(--cv-ease),
+                box-shadow 160ms var(--cv-ease);
+}
+.cv-item-field .cv-input-mini:hover:not([disabled]) {
+    background: rgba(0, 0, 0, 0.05);
+}
+.cv-item-field .cv-input-mini:focus:not([disabled]) {
+    background: var(--cv-bg-card);
+    box-shadow: 0 0 0 3px var(--cv-accent-ring);
 }
 .cv-item-field .cv-input-text.cv-input-mini {
     text-align: center;
     text-transform: uppercase;
     font-family: var(--cv-mono);
     font-size: 12px;
-    width: 70px;
+    width: 76px;
 }
 
-/* Total a la extrema derecha */
+/* ─── Total a la extrema derecha ─────────────────────────────────── */
 .cv-item-total {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 2px;
-    min-width: 110px;
+    min-width: 116px;
     flex-shrink: 0;
-    padding-left: 8px;
-    border-left: 1px solid var(--cv-border-soft);
+    padding-left: 12px;
     margin-left: 4px;
+    border-left: 0.5px solid var(--cv-border);
 }
 .cv-item-total-label {
-    font-size: 9.5px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 600;
     color: var(--cv-fg-muted);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
 }
 .cv-item-total-value {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--cv-fg);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
 }
-.cv-item-total.cv-item-positive .cv-item-total-value { color: var(--cv-positive); }
+.cv-item-total.cv-item-positive .cv-item-total-value { color: var(--cv-positive-fg); }
 .cv-item-total.cv-item-negative .cv-item-total-value { color: var(--cv-danger); }
 
-/* Botón de eliminar item (esquina superior derecha, hover-only) */
+/* ─── Botón de eliminar item (hover-only, esquina superior derecha) ── */
 .cv-row-del,
 .cv-item-del {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: 1px solid transparent;
+    width: 28px;
+    height: 28px;
+    border: none;
     background: transparent;
-    color: var(--cv-fg-faint);
-    border-radius: 6px;
+    color: var(--cv-fg-muted);
+    border-radius: 8px;
     cursor: pointer;
     opacity: 0;
-    transition: all 100ms ease;
+    transition: opacity 140ms var(--cv-ease),
+                background 140ms var(--cv-ease),
+                color 140ms var(--cv-ease);
 }
 .cv-item-del {
     position: absolute;
@@ -686,25 +861,29 @@ button.cv-status { font-family: inherit; }
 .cv-item-del:hover {
     background: var(--cv-danger-bg);
     color: var(--cv-danger);
-    border-color: #fecaca;
     opacity: 1;
 }
 .cv-readonly .cv-row-del,
 .cv-readonly .cv-item-del { display: none; }
 
-/* ── Detalle inline (expandible) ────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Detalle inline (expandible)
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-item-detail {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 220ms ease, padding 220ms ease, border-top-color 220ms ease;
-    border-top: 1px solid transparent;
-    background: var(--cv-bg-soft);
-    padding: 0 18px;
+    transition: max-height 240ms var(--cv-ease),
+                padding 240ms var(--cv-ease),
+                background 240ms var(--cv-ease);
+    background: transparent;
+    padding: 0 16px;
 }
 .cv-item-expanded .cv-item-detail {
-    max-height: 600px;
-    padding: 14px 18px 16px;
-    border-top-color: var(--cv-border-soft);
+    max-height: 800px;
+    padding: 14px 18px 18px;
+    background: var(--cv-bg-soft);
+    border-radius: 0 0 12px 12px;
+    margin: 0 16px 8px;
 }
 
 .cv-item-detail-grid {
@@ -715,31 +894,33 @@ button.cv-status { font-family: inherit; }
 .cv-item-detail-cell {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
 }
 .cv-item-detail-cell-calc {
     background: var(--cv-bg-card);
-    border: 1px solid var(--cv-border-soft);
-    border-radius: 6px;
-    padding: 6px 8px;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 .cv-item-detail-label {
-    font-size: 9.5px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 600;
     color: var(--cv-fg-muted);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     user-select: none;
 }
 .cv-item-detail-value {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     color: var(--cv-fg);
     text-align: right;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
 }
-.cv-item-detail-cell-calc.cv-item-positive .cv-item-detail-value { color: var(--cv-positive); }
+.cv-item-detail-cell-calc.cv-item-positive .cv-item-detail-value { color: var(--cv-positive-fg); }
 .cv-item-detail-cell-calc.cv-item-negative .cv-item-detail-value { color: var(--cv-danger); }
 
 .cv-item-detail-full {
@@ -748,26 +929,32 @@ button.cv-status { font-family: inherit; }
 }
 .cv-item-detail-cell .cv-input {
     background: var(--cv-bg-card);
-    border: 1px solid var(--cv-border);
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-size: 13px;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.cv-item-detail-cell .cv-input:focus:not([disabled]) {
+    box-shadow: 0 0 0 3px var(--cv-accent-ring);
 }
 .cv-item-detail-cell .cv-input-num {
     font-family: var(--cv-mono);
-    font-size: 12.5px;
+    font-size: 13px;
     text-align: right;
 }
 
-/* ── Rótulo (row_type=header en equipamiento) ───────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Rótulo (row_type=header en equipamiento)
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-item-rotulo {
-    background: linear-gradient(90deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02) 60%, transparent);
-    border-color: rgba(99, 102, 241, 0.18);
-    padding: 12px 18px;
+    background: var(--cv-accent-bg-soft);
+    border-bottom: 0.5px solid var(--cv-border);
+    padding: 8px 16px;
+    border-radius: 0;
 }
 .cv-item-rotulo:hover {
-    background: linear-gradient(90deg, rgba(99,102,241,0.10), rgba(99,102,241,0.04) 60%, transparent);
-    border-color: rgba(99, 102, 241, 0.28);
+    background: var(--cv-accent-bg);
 }
 .cv-item-rotulo-input {
     width: 100%;
@@ -776,11 +963,12 @@ button.cv-status { font-family: inherit; }
     background: transparent;
     font-family: var(--cv-sans);
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--cv-accent);
-    letter-spacing: 0.005em;
-    padding: 6px 4px;
-    border-radius: 4px;
+    letter-spacing: -0.005em;
+    padding: 6px 6px;
+    border-radius: 8px;
+    transition: background 160ms var(--cv-ease);
 }
 .cv-item-rotulo-input::placeholder {
     color: var(--cv-accent-soft);
@@ -788,34 +976,36 @@ button.cv-status { font-family: inherit; }
     font-weight: 600;
 }
 .cv-item-rotulo-input:focus {
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(0, 122, 255, 0.10);
 }
 
-/* ── Inputs base ────────────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Inputs base
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-input {
     width: 100%;
-    border: 1px solid transparent;
+    border: none;
     outline: none;
     background: transparent;
     color: var(--cv-fg);
     font-family: var(--cv-sans);
-    font-size: 14px;
+    font-size: 14.5px;
     line-height: 1.3;
     padding: 6px 8px;
-    border-radius: 6px;
-    transition: background 100ms ease, border-color 100ms ease, box-shadow 100ms ease;
+    border-radius: 8px;
+    transition: background 160ms var(--cv-ease),
+                box-shadow 160ms var(--cv-ease);
     min-width: 0;
 }
 .cv-input::placeholder {
     color: var(--cv-fg-placeholder);
 }
 .cv-input:hover:not([disabled]) {
-    background: rgba(15, 23, 42, 0.025);
+    background: var(--cv-bg-hover);
 }
 .cv-input:focus:not([disabled]) {
     background: var(--cv-bg-card);
-    border-color: var(--cv-accent-soft);
-    box-shadow: 0 0 0 3px var(--cv-accent-bg);
+    box-shadow: 0 0 0 3px var(--cv-accent-ring);
 }
 .cv-input[disabled] {
     color: var(--cv-fg-2);
@@ -824,18 +1014,16 @@ button.cv-status { font-family: inherit; }
 }
 .cv-input-num {
     font-family: var(--cv-mono);
-    font-size: 13px;
+    font-size: 13.5px;
 }
-/* IMPORTANTE: el usuario quiere que se vean los spinners nativos del
- * número — NO los ocultamos. */
-.cv-input.cv-mono { font-family: var(--cv-mono); font-size: 13px; }
+.cv-input.cv-mono { font-family: var(--cv-mono); font-size: 13.5px; }
 
-/* ── Textarea (notas largas en mano de obra) ──────────────────────── */
+/* Textareas */
 textarea.cv-input,
 .cv-input-textarea {
     resize: vertical;
-    min-height: 76px;
-    line-height: 1.45;
+    min-height: 80px;
+    line-height: 1.5;
     font-family: var(--cv-sans);
     white-space: pre-wrap;
 }
@@ -843,12 +1031,12 @@ textarea.cv-input,
     width: 100%;
 }
 
-/* ── Preview de descripción / notas (1ª línea, debajo del header) ── */
+/* Preview de descripción / notas */
 .cv-item-desc-preview {
-    padding: 0 14px 10px 60px;
+    padding: 0 16px 10px 76px;
     margin-top: -4px;
     color: var(--cv-fg-muted);
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.4;
     cursor: pointer;
     white-space: nowrap;
@@ -857,41 +1045,53 @@ textarea.cv-input,
 }
 .cv-item-desc-preview:hover { color: var(--cv-fg-2); }
 .cv-item-desc-preview-more { color: var(--cv-fg-faint); font-weight: 600; }
-.cv-app-table-scroll .cv-item-desc-preview { padding: 0 12px 6px 60px; margin-top: -2px; }
 .cv-item-expanded .cv-item-desc-preview { display: none; }
 
-/* ── Add section dropdown ───────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Add section dropdown (Agregar tabla ▾)
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-add-section-wrap {
     position: relative;
-    display: flex;
-    margin: 18px 0 0;
+    display: inline-flex;
+    margin: 0;
 }
 
+/* Primary button (azul iOS) */
 .cv-add-section {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 11px 18px;
-    border: 1px dashed var(--cv-accent-soft);
-    background: var(--cv-bg-card);
-    color: var(--cv-accent);
-    border-radius: var(--cv-radius);
+    gap: 6px;
+    padding: 9px 18px;
+    border: none;
+    background: var(--cv-accent);
+    color: #FFFFFF;
+    border-radius: var(--cv-radius-md);
     font-family: var(--cv-sans);
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 600;
+    letter-spacing: -0.005em;
     cursor: pointer;
-    transition: all 120ms ease;
+    transition: background 160ms var(--cv-ease),
+                transform 160ms var(--cv-ease),
+                box-shadow 160ms var(--cv-ease);
+    box-shadow: 0 1px 2px rgba(0, 122, 255, 0.18);
 }
 .cv-add-section:hover {
-    background: var(--cv-accent-bg);
-    border-style: solid;
+    background: #006FE0;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.24);
+}
+.cv-add-section:active {
+    transform: scale(0.97);
+}
+.cv-add-section svg {
+    color: rgba(255, 255, 255, 0.95);
 }
 .cv-add-section-caret {
     display: inline-flex;
     align-items: center;
-    margin-left: 4px;
-    color: var(--cv-fg-muted);
-    transition: transform 120ms ease;
+    margin-left: 2px;
+    color: rgba(255, 255, 255, 0.85);
+    transition: transform 200ms var(--cv-ease);
 }
 .cv-add-section-open .cv-add-section-caret {
     transform: rotate(180deg);
@@ -900,46 +1100,53 @@ textarea.cv-input,
 .cv-add-section-menu {
     position: absolute;
     top: calc(100% + 8px);
-    left: 0;
-    min-width: 250px;
+    right: 0;
+    min-width: 260px;
     background: var(--cv-bg-card);
-    border: 1px solid var(--cv-border);
-    border-radius: var(--cv-radius);
+    border: 0.5px solid var(--cv-border);
+    border-radius: var(--cv-radius-md);
     box-shadow: var(--cv-shadow-pop);
     padding: 6px;
     z-index: 50;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
+    animation: cv-pop-in 200ms var(--cv-ease) both;
+}
+@keyframes cv-pop-in {
+    0% { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .cv-add-section-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
+    gap: 12px;
+    padding: 10px 12px;
     border: none;
     background: transparent;
     color: var(--cv-fg);
-    border-radius: var(--cv-radius-sm);
+    border-radius: 8px;
     font-family: var(--cv-sans);
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 500;
+    letter-spacing: -0.005em;
     cursor: pointer;
     text-align: left;
-    transition: background 100ms ease;
+    transition: background 140ms var(--cv-ease);
 }
 .cv-add-section-item:hover {
-    background: var(--cv-bg-hover);
+    background: var(--cv-accent-bg);
+    color: var(--cv-accent);
 }
 
 .cv-add-section-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: var(--cv-radius-sm);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
     flex-shrink: 0;
 }
 .cv-add-section-icon-equipamiento {
@@ -954,143 +1161,207 @@ textarea.cv-input,
     background: var(--cv-cm-icon-bg);
     color: var(--cv-cm-icon-fg);
 }
-/* `.cv-add-section-icon-gastos`: tipo retirado en v4d. */
 
-/* ── Toolbar actions (Agregar tabla + Subir volumetría) ────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Toolbar superior (Search · Subir · Agregar tabla)
+ * ═════════════════════════════════════════════════════════════════════ */
+.cv-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    border-bottom: 0.5px solid var(--cv-border);
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-top-left-radius: var(--cv-radius-xl);
+    border-top-right-radius: var(--cv-radius-xl);
+}
+
+/* Search input estilo iOS Spotlight */
+.cv-search {
+    position: relative;
+    flex: 1;
+    max-width: 360px;
+    min-width: 200px;
+}
+.cv-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--cv-fg-muted);
+    pointer-events: none;
+}
+.cv-search-input {
+    width: 100%;
+    height: 36px;
+    padding: 0 14px 0 36px;
+    background: var(--cv-bg-zinc-100);
+    border: none;
+    outline: none;
+    border-radius: var(--cv-radius);
+    font-family: var(--cv-sans);
+    font-size: 14.5px;
+    font-weight: 400;
+    color: var(--cv-fg);
+    letter-spacing: -0.005em;
+    transition: background 160ms var(--cv-ease),
+                box-shadow 160ms var(--cv-ease);
+}
+.cv-search-input::placeholder {
+    color: var(--cv-fg-placeholder);
+}
+.cv-search-input:focus {
+    background: var(--cv-bg-card);
+    box-shadow: 0 0 0 3px var(--cv-accent-ring);
+}
+
 .cv-toolbar-actions {
     display: inline-flex;
     align-items: center;
     gap: 10px;
 }
-
-/* El wrapper de "Agregar tabla" tenía `margin: 18px 0 0` para
- * separarlo verticalmente cuando vivía solo en la toolbar; al
- * estar dentro de `.cv-toolbar-actions` ya no lo necesitamos. */
 .cv-toolbar-actions .cv-add-section-wrap {
     margin: 0;
 }
 
-/* ── Botón "Subir volumetría" (importar Excel) ────────────────── */
+/* Subir volumetría — tinted button (azul claro) */
 .cv-import-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 14px;
-    background: #fff;
-    border: 1px dashed #cbd5e1;
-    border-radius: 9px;
-    color: #4f46e5;
+    padding: 9px 16px;
+    background: var(--cv-accent-bg);
+    border: none;
+    border-radius: var(--cv-radius-md);
+    color: var(--cv-accent);
     font-family: var(--cv-sans);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 600;
+    letter-spacing: -0.005em;
     cursor: pointer;
-    transition: background 120ms ease, border-color 120ms ease;
+    transition: background 160ms var(--cv-ease),
+                transform 160ms var(--cv-ease);
     white-space: nowrap;
+    line-height: 1.2;
 }
 .cv-import-btn:hover {
-    background: #f0f9ff;
-    border-color: #4f46e5;
+    background: rgba(0, 122, 255, 0.18);
+}
+.cv-import-btn:active {
+    transform: scale(0.97);
 }
 .cv-import-btn svg {
     flex-shrink: 0;
 }
 
-/* ── Bottom (Resumen Financiero + Estadísticas) ────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Bottom — Resumen Financiero + Estadísticas
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-bottom {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin: 22px 0 0;
+    gap: 16px;
+    margin: 24px 0 0;
 }
 
 .cv-card {
     background: var(--cv-bg-card);
-    border: 1px solid var(--cv-border);
-    border-radius: var(--cv-radius-lg);
-    box-shadow: var(--cv-shadow-item);
+    border: none;
+    border-radius: var(--cv-radius-xl);
+    box-shadow: var(--cv-shadow-section);
     overflow: hidden;
 }
 
 .cv-card-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--cv-border);
+    padding: 20px 24px 14px;
+    border-bottom: 0.5px solid var(--cv-border);
+    background: transparent;
 }
 .cv-card-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
 }
 .cv-card-title {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 17px;
+    font-weight: 600;
     color: var(--cv-fg);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: none;
+    letter-spacing: -0.02em;
 }
 .cv-card-header-row .cv-status {
-    padding: 4px 10px;
-    font-size: 11.5px;
+    padding: 4px 12px;
+    font-size: 12px;
 }
 
+/* Cards específicas — sin gradientes pesados, todo limpio */
 .cv-card-financiero .cv-card-header {
-    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-    border-bottom-color: #a7f3d0;
+    background: transparent;
+    border-bottom-color: var(--cv-border);
 }
 .cv-card-financiero .cv-card-title {
-    color: #065f46;
+    color: var(--cv-fg);
 }
 
 .cv-card-stats .cv-card-header {
-    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
-    border-bottom-color: #c7d2fe;
+    background: transparent;
+    border-bottom-color: var(--cv-border);
 }
 .cv-card-stats .cv-card-title {
-    color: #3730a3;
+    color: var(--cv-fg);
 }
 
 .cv-card-body {
-    padding: 12px 16px 16px;
+    padding: 18px 24px 22px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .cv-fin-values {
     display: contents;
 }
 
-/* Inline TC + IVA dentro del card financiero */
+/* ─── Inline TC + IVA dentro del card financiero ─────────────────── */
 .cv-fin-config {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 10px 14px;
-    padding: 2px 0 6px;
+    align-items: stretch;
+    gap: 12px;
+    padding: 4px 0 12px;
 }
 .cv-fin-config-field {
     display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    border: 1px solid var(--cv-border);
-    background: var(--cv-bg-card);
-    border-radius: var(--cv-radius-sm);
-    transition: border-color 120ms ease, box-shadow 120ms ease;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 14px;
+    border: none;
+    background: var(--cv-bg-soft);
+    border-radius: var(--cv-radius);
+    transition: background 160ms var(--cv-ease),
+                box-shadow 160ms var(--cv-ease);
+    min-width: 110px;
 }
 .cv-fin-config-field:hover {
-    border-color: var(--cv-border-strong);
+    background: rgba(0, 0, 0, 0.05);
 }
 .cv-fin-config-field:focus-within {
-    border-color: var(--cv-accent-soft);
-    box-shadow: 0 0 0 3px var(--cv-accent-bg);
+    background: var(--cv-bg-card);
+    box-shadow: 0 0 0 3px var(--cv-accent-ring);
 }
 .cv-fin-config-label {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 10.5px;
+    font-weight: 600;
     color: var(--cv-fg-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     user-select: none;
 }
 .cv-fin-config-input {
@@ -1098,13 +1369,16 @@ textarea.cv-input,
     outline: none;
     background: transparent;
     color: var(--cv-fg);
-    font-size: 13px;
+    font-family: var(--cv-mono);
+    font-size: 18px;
     font-weight: 600;
+    letter-spacing: -0.01em;
     padding: 0;
     margin: 0;
-    width: 64px;
-    text-align: right;
+    width: 100%;
+    text-align: left;
     -moz-appearance: textfield;
+    font-variant-numeric: tabular-nums;
 }
 .cv-fin-config-input::-webkit-outer-spin-button,
 .cv-fin-config-input::-webkit-inner-spin-button {
@@ -1120,62 +1394,63 @@ textarea.cv-input,
     cursor: default;
 }
 .cv-fin-config-suffix {
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--cv-fg-muted);
     font-weight: 500;
     user-select: none;
+    margin-top: -2px;
 }
 
-/* Filas del resumen financiero */
+/* ─── Filas legacy del resumen financiero (si se renderizan) ───── */
 .cv-fin-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 4px 0;
+    padding: 6px 0;
 }
 .cv-fin-label {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--cv-fg-muted);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: -0.005em;
 }
 .cv-fin-value {
-    font-size: 14px;
+    font-size: 14.5px;
     color: var(--cv-fg);
     font-weight: 600;
     text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
-.cv-fin-row-cost   .cv-fin-value { color: #b45309; }
-.cv-fin-row-gain   .cv-fin-value { color: var(--cv-positive); font-weight: 700; }
-.cv-fin-row-margin .cv-fin-value { color: var(--cv-positive); font-weight: 700; }
+.cv-fin-row-cost   .cv-fin-value { color: var(--cv-warn); }
+.cv-fin-row-gain   .cv-fin-value { color: var(--cv-positive-fg); font-weight: 700; }
+.cv-fin-row-margin .cv-fin-value { color: var(--cv-positive-fg); font-weight: 700; }
 .cv-fin-row-margin-low .cv-fin-value { color: var(--cv-warn); }
 .cv-fin-row-iva    .cv-fin-value { color: var(--cv-fg-2); }
 
 .cv-fin-row-total {
-    margin-top: 4px;
-    padding: 8px 0 2px;
-    border-top: 1px dashed var(--cv-border);
+    margin-top: 6px;
+    padding: 10px 0 2px;
+    border-top: 0.5px solid var(--cv-border);
 }
 .cv-fin-row-total .cv-fin-label {
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--cv-fg);
-    letter-spacing: 0.04em;
 }
 .cv-fin-row-total .cv-fin-value {
-    font-size: 26px;
-    font-weight: 700;
+    font-size: 28px;
+    font-weight: 600;
     color: var(--cv-fg);
     line-height: 1.1;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
 }
 
 .cv-fin-sep {
-    height: 1px;
-    background: var(--cv-border-soft);
+    height: 0.5px;
+    background: var(--cv-border);
     margin: 4px 0;
 }
 
@@ -1184,49 +1459,50 @@ textarea.cv-input,
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 8px 10px;
-    margin: 8px -4px 0;
+    padding: 10px 14px;
+    margin: 10px -4px 0;
     background: var(--cv-bg-soft);
     border-radius: var(--cv-radius);
 }
 .cv-fin-foot .cv-fin-label {
-    font-size: 11px;
+    font-size: 12px;
     text-transform: none;
     letter-spacing: 0;
     color: var(--cv-fg-muted);
 }
 .cv-fin-foot .cv-fin-value {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--cv-fg-2);
     font-weight: 500;
 }
 
-/* Estadísticas */
+/* ─── Estadísticas ───────────────────────────────────────────────── */
 .cv-stat-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 4px 0;
+    padding: 6px 0;
 }
 .cv-stat-label {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--cv-fg-muted);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: -0.005em;
 }
 .cv-stat-value {
     font-size: 16px;
     color: var(--cv-fg);
-    font-weight: 700;
+    font-weight: 600;
     text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .cv-stat-pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 6px;
+    gap: 6px;
     justify-content: flex-end;
     align-items: center;
 }
@@ -1234,63 +1510,65 @@ textarea.cv-input,
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 999px;
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    border: 1px solid;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    border: none;
 }
 .cv-stat-pill-equipamiento {
     background: var(--cv-eq-pill-bg);
     color: var(--cv-eq-pill-fg);
-    border-color: var(--cv-eq-pill-bd);
 }
 .cv-stat-pill-mano_obra {
     background: var(--cv-mo-pill-bg);
     color: var(--cv-mo-pill-fg);
-    border-color: var(--cv-mo-pill-bd);
 }
 .cv-stat-pill-costo_mo {
     background: var(--cv-cm-pill-bg);
     color: var(--cv-cm-pill-fg);
-    border-color: var(--cv-cm-pill-bd);
 }
-/* `.cv-stat-pill-gastos`: tipo retirado en v4d. */
 
-/* ── Misc ───────────────────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Misc
+ * ═════════════════════════════════════════════════════════════════════ */
 .cv-mono {
     font-family: var(--cv-mono);
     font-variant-numeric: tabular-nums;
 }
 
 .cv-empty {
-    color: var(--cv-fg-faint);
-    font-style: italic;
-    font-size: 12.5px;
+    color: var(--cv-fg-muted);
+    font-style: normal;
+    font-size: 13px;
 }
 
-/* ── Readonly tweaks ────────────────────────────────────────────── */
-.cv-readonly .cv-input { background: transparent; border-color: transparent; }
+/* Readonly tweaks */
+.cv-readonly .cv-input { background: transparent; }
 .cv-readonly .cv-input:hover { background: transparent; }
 .cv-readonly .cv-section-title-input:hover { background: transparent; }
 
-/* ── Responsive ─────────────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * Responsive
+ * ═════════════════════════════════════════════════════════════════════ */
 @media (max-width: 1100px) {
-    .cv-section-title-input { font-size: 17px; }
-    .cv-section-subtotal-value { font-size: 22px; }
+    .cv-section-title-input { font-size: 18px; }
+    .cv-section-subtotal-value { font-size: 20px; }
     .cv-item-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
     .cv-bottom { grid-template-columns: 1fr; }
-    .cv-section-head { padding: 18px 18px 14px; }
-    .cv-section-body { padding: 0 18px 18px; }
-    .cv-item-header { flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+    .cv-section-head { padding: 18px 18px 12px; }
+    .cv-section-body { padding: 0 18px 16px; }
+    .cv-item-header { flex-wrap: wrap; gap: 12px; padding: 12px 14px; }
     .cv-item-main { flex: 1 1 100%; order: 1; }
     .cv-item-fields { order: 2; }
     .cv-item-total { order: 3; margin-left: auto; }
     .cv-item-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cv-app-main { padding: 16px 16px 48px; gap: 16px; }
+    .cv-app-header { padding: 14px 18px; }
 }
 
 @media (max-width: 768px) {
@@ -1307,204 +1585,204 @@ textarea.cv-input,
         width: 100%;
         justify-content: flex-start;
     }
-    .cv-btn { padding: 8px 12px; font-size: 12.5px; }
+    .cv-btn { padding: 9px 14px; font-size: 13.5px; }
 
-    .cv-fin-row-total .cv-fin-value { font-size: 22px; }
+    .cv-fin-row-total .cv-fin-value { font-size: 24px; }
 }
 
 @media (max-width: 540px) {
     .cv-item-detail-grid { grid-template-columns: 1fr; }
-    .cv-section-num { min-width: 32px; height: 26px; font-size: 12.5px; padding: 3px 8px; }
-    .cv-section-title-input { font-size: 16px; }
-    .cv-section-subtotal-value { font-size: 20px; }
-    .cv-item-icon { width: 36px; height: 36px; }
+    .cv-section-num { min-width: 32px; height: 24px; font-size: 11.5px; padding: 3px 9px; }
+    .cv-section-title-input { font-size: 17px; }
+    .cv-section-subtotal-value { font-size: 19px; }
+    .cv-item-icon { width: 40px; height: 40px; border-radius: 11px; }
 }
 
-/* Layout PWA UI / React UI equivalents */
-.cv-app-header {
-    display: flex; justify-content: space-between; align-items: center;
-    background: #ffffff; padding: 12px 24px; border-bottom: 1px solid var(--cv-border);
-    position: sticky; top: 0; z-index: 30;
+/* ═════════════════════════════════════════════════════════════════════
+ * Layout PWA — overrides cuando vivimos dentro de .cv-app-table-scroll
+ *
+ * En este contexto las secciones viven apiladas dentro de un contenedor
+ * blanco (.cv-app-left). Cada sección sigue siendo card pero sin
+ * sombra individual; el contenedor padre ya provee la sombra.
+ * ═════════════════════════════════════════════════════════════════════ */
+.cv-app-table-scroll .cv-stack {
+    gap: 12px;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
 }
-.cv-app-header h1 { margin: 0; font-size: 16px; font-weight: 700; color: var(--cv-fg); }
-.cv-app-header p { margin: 4px 0 0 0; font-size: 11px; color: var(--cv-fg-muted); }
-
-.cv-app-main {
-    display: flex; gap: 16px; padding: 16px;
-    /* No fijamos `min-height: calc(100vh - 66px)` ni `flex:1` aquí —
-       el alto crece según el contenido y el host (#lwP3CvMount) hace
-       el scroll vertical. Esto evita que tablas/filas se queden
-       cortadas en la parte baja de la página. */
-}
-
-.cv-app-left {
-    flex: 1; min-width: 0;
-    background: #ffffff; border: 1px solid var(--cv-border);
-    border-radius: var(--cv-radius-xl); display: flex; flex-direction: column;
-    overflow: hidden;
-}
-
-.cv-app-right {
-    width: 320px; display: flex; flex-direction: column; gap: 16px;
-    flex-shrink: 0; transition: margin-right 0.3s ease, opacity 0.3s ease, width 0.3s ease;
-    overflow-y: auto; overflow-x: hidden;
-}
-
-.cv-sidebar-hidden .cv-app-right {
-    width: 0;
-    margin-left: -16px; /* Negate the gap */
-    opacity: 0;
-    padding: 0;
-    overflow: hidden;
-}
-
-.cv-app-table-scroll {
-    flex: 1; overflow: visible; padding: 16px; background: #fafafa;
-}
-
-/* Modificamos los .cv-section y .cv-item para que parezcan filas de tabla */
-.cv-app-table-scroll .cv-stack { gap: 0; border: 1px solid var(--cv-border); border-radius: var(--cv-radius-lg); overflow: hidden; background: #fff;}
 .cv-app-table-scroll .cv-section {
-    border: none; border-radius: 0; box-shadow: none; border-bottom: 1px solid var(--cv-border);
+    border: none;
+    border-radius: var(--cv-radius-lg);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    background: var(--cv-bg-card);
 }
-.cv-app-table-scroll .cv-section:last-child { border-bottom: none; }
-.cv-app-table-scroll .cv-section-body { padding: 0; background: #fff; }
-.cv-app-table-scroll .cv-items { gap: 0; }
+.cv-app-table-scroll .cv-section:hover {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+.cv-app-table-scroll .cv-section-body {
+    padding: 0;
+    background: transparent;
+}
+.cv-app-table-scroll .cv-items {
+    gap: 0;
+}
 .cv-app-table-scroll .cv-item {
-    border: none; border-radius: 0; box-shadow: none; border-bottom: 1px solid var(--cv-border-soft);
-    padding: 6px 12px; margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: 0.5px solid var(--cv-border);
+    padding: 0;
+    margin: 0;
 }
-.cv-app-table-scroll .cv-item-header { padding: 8px 12px; }
-.cv-app-table-scroll .cv-item:last-child { border-bottom: none; }
-.cv-app-table-scroll .cv-section-actions { padding: 12px 16px; border-top: 1px solid var(--cv-border-soft); }
+.cv-app-table-scroll .cv-item-header {
+    padding: 12px 18px;
+}
+.cv-app-table-scroll .cv-item:last-child {
+    border-bottom: none;
+}
+.cv-app-table-scroll .cv-section-actions {
+    padding: 12px 18px;
+    border-top: 0.5px solid var(--cv-border);
+}
+.cv-app-table-scroll .cv-item-desc-preview {
+    padding: 0 18px 8px 76px;
+    margin-top: -2px;
+}
 
-/* Resumen Financiero Horizontal Rectangle */
-.cv-app-bottom-summary .cv-card-financiero {
-    width: 100%; display: flex; flex-direction: column; padding: 20px 24px;
-    border-radius: var(--cv-radius-xl); border: 1px solid var(--cv-border);
+/* ═════════════════════════════════════════════════════════════════════
+ * Resumen Financiero — Tabla 2 columnas estilo Numbers/iPadOS
+ * (Análisis de Ganancia · Total Cotización)
+ * ═════════════════════════════════════════════════════════════════════ */
+.cv-app-bottom-summary {
+    margin-top: 24px;
 }
-.cv-app-bottom-summary .cv-card-header { padding: 0 0 16px 0; border: none; }
+.cv-app-bottom-summary .cv-card-financiero {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 28px;
+    border-radius: var(--cv-radius-xl);
+    border: none;
+    box-shadow: var(--cv-shadow-section);
+}
+.cv-app-bottom-summary .cv-card-header {
+    padding: 0 0 18px;
+    border: none;
+}
 .cv-app-bottom-summary .cv-card-body {
-    display: flex; flex-direction: row; align-items: stretch; gap: 32px;
+    display: block;
+    padding: 0;
 }
 .cv-app-bottom-summary .cv-fin-config {
-    flex-direction: column; min-width: 160px; padding-right: 32px;
-    border-right: 1px solid var(--cv-border-soft); justify-content: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 0 0 16px;
+    border: none;
+    gap: 10px;
 }
 .cv-app-bottom-summary .cv-fin-values {
-    flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 32px;
-}
-.cv-app-bottom-summary .cv-fin-row {
-    flex-direction: column; align-items: flex-start; gap: 4px;
-}
-.cv-app-bottom-summary .cv-fin-sep { display: none; }
-.cv-app-bottom-summary .cv-fin-foot {
-    grid-column: 1 / -1; margin-top: 8px; border-top: 1px solid var(--cv-border-soft); padding-top: 12px;
+    display: block;
 }
 
-
-/* ═══════════════════════════════════════════════════════════════════
- * Resumen Financiero — Tabla de dos columnas estilo Excel
- * (Análisis de Ganancia · Total Cotización)
- * ═══════════════════════════════════════════════════════════════════ */
 .cv-fin-table {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-top: 14px;
+    margin-top: 10px;
 }
 .cv-fin-col {
-    border: 1px solid var(--cv-border);
-    border-radius: 10px;
+    border: none;
+    border-radius: var(--cv-radius);
     overflow: hidden;
-    background: #fff;
+    background: var(--cv-bg-card);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 .cv-fin-col-title {
-    background: linear-gradient(180deg, #1f2937, #111827);
-    color: #fff;
-    padding: 10px 14px;
-    font-size: 11px;
-    font-weight: 700;
+    background: #1C1C1E;
+    color: #FFFFFF;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
 }
 .cv-fin-col-body {
-    padding: 4px 14px 4px;
+    padding: 4px 16px 4px;
 }
 .cv-fin-cell-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 13px;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--cv-border);
+    font-size: 14px;
 }
 .cv-fin-cell-row:last-child { border-bottom: none; }
 .cv-fin-cell-label {
-    color: #475569;
-    font-weight: 500;
+    color: var(--cv-fg-2);
+    font-weight: 400;
+    letter-spacing: -0.005em;
 }
 .cv-fin-cell-value {
-    color: #0f172a;
+    color: var(--cv-fg);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     text-align: right;
+    letter-spacing: -0.01em;
 }
 
-/* Fila destacada (Total de Ganancia / Total con IVA) — fondo amarillo
-   estilo Excel para que el ojo vaya directo al número final. */
+/* Fila destacada (Total de Ganancia / Total con IVA) — amarillo iOS */
 .cv-fin-grand {
-    background: #fef9c3;
-    margin: 0 -14px;
-    padding: 10px 14px;
+    background: var(--cv-amber-bg);
+    margin: 4px -16px 0;
+    padding: 14px 16px;
     border-bottom: none;
-    border-top: 1px solid #fde68a;
+    border-top: 0.5px solid var(--cv-amber-edge);
 }
 .cv-fin-grand .cv-fin-cell-label {
-    color: #0f172a;
-    font-weight: 700;
+    color: var(--cv-fg);
+    font-weight: 600;
 }
 .cv-fin-grand .cv-fin-cell-value {
-    color: #0f172a;
-    font-weight: 800;
-    font-size: 14.5px;
+    color: var(--cv-fg);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.02em;
 }
 
-/* Margen — destacado, color verde si >=20%, naranja si <20% */
+/* Margen — verde si >=20%, naranja si <20% (semáforo) */
 .cv-fin-pct .cv-fin-cell-value {
-    color: var(--cv-positive);
-    font-weight: 700;
-    font-size: 13.5px;
+    color: var(--cv-positive-fg);
+    font-weight: 600;
+    font-size: 14px;
 }
 .cv-fin-pct-low .cv-fin-cell-value {
     color: var(--cv-warn);
 }
 
-/* Equivalente en MXN — fila adicional sutil al final del card derecho */
+/* Equivalente en MXN — fila sutil al final del card derecho */
 .cv-fin-mxn {
-    margin: 8px -14px -4px;
-    padding: 10px 14px;
-    background: #f8fafc;
-    border-top: 1px solid var(--cv-border-soft);
-    border-bottom: none !important;
+    margin: 8px -16px -4px;
+    padding: 12px 16px;
+    background: var(--cv-bg-soft);
+    border-top: 0.5px solid var(--cv-border);
+    border-bottom: none;
 }
 .cv-fin-mxn .cv-fin-cell-label {
-    font-size: 10.5px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: var(--cv-fg-muted);
+    font-weight: 600;
 }
 .cv-fin-mxn .cv-fin-cell-value {
     color: var(--cv-fg-2);
-    font-weight: 700;
+    font-weight: 600;
 }
 
 @media (max-width: 768px) {
     .cv-fin-table { grid-template-columns: 1fr; }
 }
-
-/* Override: con la nueva tabla bicolumna ya no usamos los .cv-fin-row*
-   anteriores. Los .cv-app-bottom-summary overrides asumen la antigua
-   grid de 3 cols — ahora forzamos 1 col interna a la card financiera
-   para que la nueva grid de 2 cols quepa. */
-.cv-app-bottom-summary .cv-fin-values { display: block; }

@@ -887,28 +887,28 @@
         var html = '<div class="cv-root' + (S.readonly ? ' cv-readonly' : '') + '">';
         
         // Header
-        html += '<header class="cv-app-header border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">';
-        html += '  <div>';
+        html += '<header class="cv-app-header">';
+        html += '  <div class="cv-app-header-info">';
         var cliName = esc((S.data && S.data.meta && S.data.meta.cliente) || "Proyecto");
         var levDate = esc((S.data && S.data.meta && S.data.meta.fecha) || "Reciente");
-        
+
         var status = (S.volumetria && S.volumetria.status) || 'borrador';
         var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
         var statusCls = 'cv-status cv-status-' + status;
         var statusEl = '';
         if (!S.readonly) {
-            statusEl = '<button type="button" class="' + statusCls + '" data-action="toggle-status" style="margin-left:12px; height:22px; padding:2px 10px; font-size:10px; line-height:1;">' +
-                       '<span class="cv-status-dot" style="width:6px; height:6px;"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></button>';
+            statusEl = '<button type="button" class="' + statusCls + '" data-action="toggle-status">' +
+                       '<span class="cv-status-dot"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></button>';
         } else {
-            statusEl = '<div class="' + statusCls + '" style="margin-left:12px; height:22px; padding:2px 10px; font-size:10px; line-height:1;">' +
-                       '<span class="cv-status-dot" style="width:6px; height:6px;"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></div>';
+            statusEl = '<div class="' + statusCls + '">' +
+                       '<span class="cv-status-dot"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></div>';
         }
 
-        html += '    <h1 class="text-xl font-semibold text-gray-900">Proyecto: ' + cliName + '</h1>';
-        html += '    <div style="display:flex; align-items:center;">';
-        html += '      <p class="text-xs text-gray-500 mt-0.5" style="margin:0;">Última edición: ' + levDate + '</p>';
+        html += '    <h1>' + cliName + '</h1>';
+        html += '    <p>Última edición · ' + levDate + '</p>';
+        html += '  </div>';
+        html += '  <div class="cv-app-header-actions">';
         html += statusEl;
-        html += '    </div>';
         html += '  </div>';
         html += '</header>';
 
@@ -916,17 +916,17 @@
         // OJO: NO ponemos `overflow-y:auto` ni `flex:1` aquí — el host
         // (#lwP3CvMount) ya hospeda el scroll. Dejar el main con su
         // propio scroll recortaba las tablas inferiores cuando había
-        // muchas filas. Sólo `padding-bottom` para respirar al final.
-        html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; padding-bottom:48px;">';
-        
-        // Table Box
-        html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:visible; flex-shrink:0;">';
-        
-        // Toolbar (Search + Agregar Tabla)
-        html += '    <div class="px-4 py-3 border-b flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid var(--cv-border); display:flex; justify-content:space-between; align-items:center; border-top-left-radius:14px; border-top-right-radius:14px;">';
-        html += '      <div class="relative" style="position:relative;">';
-        html += '        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#9ca3af;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
-        html += '        <input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100); padding-left:34px;">';
+        // muchas filas.
+        html += '<main class="cv-app-main">';
+
+        // Table Box (workspace blanco — todas las secciones viven aquí)
+        html += '  <div class="cv-app-left">';
+
+        // Toolbar (Search + Subir + Agregar Tabla)
+        html += '    <div class="cv-toolbar">';
+        html += '      <div class="cv-search">';
+        html += '        <svg class="cv-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+        html += '        <input type="text" placeholder="Buscar" class="cv-search-input">';
         html += '      </div>';
         if (!S.readonly) {
             html += '<div class="cv-toolbar-actions">';
@@ -941,13 +941,13 @@
             html += renderSection(sec, idx);
         });
         html += '    </div></div>'; // end scroller
-        html += '  </div>'; // end Table Box
-        
-        // Bottom / Sidebar summary card
-        html += '  <div class="cv-app-bottom-summary" style="margin-top:24px;">';
+        html += '  </div>'; // end cv-app-left
+
+        // Bottom / Resumen Financiero
+        html += '  <div class="cv-app-bottom-summary">';
         html += renderBottom();
         html += '  </div>';
-        
+
         html += '</main>';
         html += '</div>';
 
