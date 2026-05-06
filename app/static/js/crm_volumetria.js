@@ -273,9 +273,9 @@
             defaultTitle: 'Mano de Obra',
         },
         costo_mo: {
-            label: 'Costo MO Interno',
+            label: 'Costos Adicionales',
             icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-            defaultTitle: 'Costo MO Interno',
+            defaultTitle: 'Costos Adicionales',
         },
     };
 
@@ -410,10 +410,18 @@
         if (wasGastos) tipo = 'costo_mo';
         if (SECTION_TYPES.indexOf(tipo) < 0) tipo = inferTipoFromV3Section(sec);
 
+        // Auto-rename: secciones viejas con titulo "Costo MO Interno"
+        // (heredado de versiones anteriores) ahora se llaman "Costos
+        // Adicionales". Solo aplica si el usuario no lo renombró ya
+        // a algo distinto.
+        var titulo = sec.titulo || TYPE_INFO[tipo].defaultTitle;
+        if (tipo === 'costo_mo' && titulo === 'Costo MO Interno') {
+            titulo = 'Costos Adicionales';
+        }
         var out = {
             id: sec.id || uuid(),
             tipo: tipo,
-            titulo: sec.titulo || TYPE_INFO[tipo].defaultTitle,
+            titulo: titulo,
             expanded: sec.expanded !== false,
             items: [],
         };
@@ -1590,6 +1598,9 @@
 
         var h = '<div class="cv-fin-table">';
 
+        // Ganancia convertida a MXN (= total ganancia × tipo de cambio).
+        var gananciaMxn = tc > 0 ? t.ganancia * tc : 0;
+
         // ── Columna izquierda: Análisis de Ganancia ───────────────
         h += '<div class="cv-fin-col">';
         h += '<div class="cv-fin-col-title">Análisis de Ganancia</div>';
@@ -1607,6 +1618,10 @@
         h += '<div class="cv-fin-col-body">';
         h += finCell('Sub-Total',                            fmtMoney(t.subtotalVenta));
         h += finCell('IVA (' + fmtPct(t.iva_pct) + ')',      fmtMoney(t.iva));
+        // Ganancia en pesos = total de ganancia × TC. Solo se muestra si hay TC.
+        if (tc > 0) {
+            h += finCell('Ganancia en pesos',                fmtMoney(gananciaMxn) + ' MXN', 'cv-fin-pct');
+        }
         h += finCell('Total con IVA',                        fmtMoney(t.totalConIva), 'cv-fin-grand');
         h += finCell('Margen',                               fmtPct(t.margen), (t.margen < 20 ? 'cv-fin-pct cv-fin-pct-low' : 'cv-fin-pct'));
         if (tc > 0) {

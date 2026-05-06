@@ -3674,13 +3674,15 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 pass
 
         # ── Construir secciones v4 ─────────────────────────────
+        # Importadas COLAPSADAS por default — el ingeniero ve los
+        # subtotales de un vistazo y abre la que necesita revisar.
         secciones = []
         if eq_items:
             secciones.append({
                 'id': _vol_uuid(),
                 'tipo': 'equipamiento',
                 'titulo': 'Equipamiento',
-                'expanded': True,
+                'expanded': False,
                 'items': eq_items,
             })
         if mo_items:
@@ -3688,15 +3690,15 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 'id': _vol_uuid(),
                 'tipo': 'mano_obra',
                 'titulo': 'Mano de Obra',
-                'expanded': True,
+                'expanded': False,
                 'items': mo_items,
             })
         if cmo_items:
             secciones.append({
                 'id': _vol_uuid(),
                 'tipo': 'costo_mo',
-                'titulo': 'Costo MO Interno',
-                'expanded': True,
+                'titulo': 'Costos Adicionales',
+                'expanded': False,
                 'items': cmo_items,
             })
 
