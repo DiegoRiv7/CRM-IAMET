@@ -438,10 +438,14 @@
                     precioLista: num(it.precioLista),
                     descuentoVenta: num(it.descuentoVenta),
                     descuentoCosto: it.descuentoCosto != null ? num(it.descuentoCosto) : 0,
-                    // En v3, costoUnitario era 0 por defecto; preservamos
-                    // como override solo si > 0, sino dejamos null para que
-                    // el cálculo derivado use descuentoCosto.
-                    costoUnitario: (it.costoUnitario != null && Number(it.costoUnitario) > 0)
+                    // costoUnitario:
+                    //   - número (incluido 0 explícito) → preserva tal cual.
+                    //     0 ES un valor válido para items de pura ganancia
+                    //     (ej. MISCELANEOS del Excel real: cobramos 150 y
+                    //     no nos cuesta nada). Lavar 0 a null y luego
+                    //     derivar inflaba el costo total por el monto de venta.
+                    //   - null/'' → null (frontend deriva desde descCosto).
+                    costoUnitario: (it.costoUnitario != null && it.costoUnitario !== '')
                         ? num(it.costoUnitario) : null,
                     proveedor: it.proveedor || '',
                     entrega: it.entrega || '',
