@@ -1269,7 +1269,10 @@ textarea.cv-input,
  * ═════════════════════════════════════════════════════════════════════ */
 .cv-bottom {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* Una sola columna full-width: solo hay Resumen Financiero (la card
+       de Estadísticas fue eliminada en commits anteriores). Antes era
+       1fr 1fr por costumbre, lo que dejaba el resumen en la mitad. */
+    grid-template-columns: 1fr;
     gap: 16px;
     margin: 24px 0 0;
 }
