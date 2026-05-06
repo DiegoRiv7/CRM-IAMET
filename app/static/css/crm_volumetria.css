@@ -371,7 +371,9 @@ button.cv-status { font-family: inherit; }
  * ═════════════════════════════════════════════════════════════════════ */
 .cv-section {
     background: var(--cv-bg-card);
-    border: none;
+    /* Borde 1px visible para feel de tabla sólida en lugar de
+       solo box-shadow flotante. */
+    border: 1px solid rgba(60, 60, 67, 0.16);
     border-radius: var(--cv-radius-xl);
     box-shadow: var(--cv-shadow-section);
     overflow: hidden;
@@ -382,18 +384,20 @@ button.cv-status { font-family: inherit; }
     box-shadow: var(--cv-shadow-hover);
 }
 
-/* Head: número [01] + título + subtotal */
+/* Head: número [01] + título + subtotal — fondo gris claro estilo
+   "header de tabla" (Numbers/Excel) para distinguirlo del body. */
 .cv-section-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    padding: 22px 24px 16px;
-    border-bottom: 0.5px solid var(--cv-border);
+    padding: 18px 22px 14px;
+    background: linear-gradient(180deg, #FAFAFB 0%, #F4F4F6 100%);
+    border-bottom: 1px solid rgba(60, 60, 67, 0.18);
 }
 .cv-section-collapsed .cv-section-head {
     border-bottom: none;
-    padding-bottom: 22px;
+    padding-bottom: 18px;
 }
 
 .cv-section-head-left {
@@ -632,12 +636,18 @@ button.cv-status { font-family: inherit; }
     border: none;
     border-radius: 0;
     box-shadow: none;
-    border-bottom: 0.5px solid var(--cv-border);
+    /* Border más visible para que se note el separador de fila —
+       antes era 0.5px alpha 0.12, casi invisible. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.18);
     transition: background 160ms var(--cv-ease);
     overflow: visible;
 }
 .cv-item:last-child {
     border-bottom: none;
+}
+/* Filas alternas para feel de tabla sólida — striping sutil. */
+.cv-item:nth-child(even) {
+    background: rgba(0, 0, 0, 0.018);
 }
 .cv-item:hover {
     background: var(--cv-bg-hover);
@@ -650,22 +660,27 @@ button.cv-status { font-family: inherit; }
 .cv-item-header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 8px 14px;
     cursor: default;
-    border-radius: 10px;
+    border-radius: 0;
 }
 .cv-item-header[data-action="toggle-item"] { cursor: pointer; }
 
-/* Icono cuadrado a la izquierda (44x44 redondeado 12px) */
+/* Icono más compacto (32×32, antes 44×44) — gana espacio en cada fila
+   sin perder reconocimiento del tipo de tabla. */
 .cv-item-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     flex-shrink: 0;
+}
+.cv-item-icon svg {
+    width: 16px;
+    height: 16px;
 }
 .cv-item-icon-eq  { background: var(--cv-eq-icon-bg); color: var(--cv-eq-icon-fg); }
 .cv-item-icon-mo  { background: var(--cv-mo-icon-bg); color: var(--cv-mo-icon-fg); }
