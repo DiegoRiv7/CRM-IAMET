@@ -2933,7 +2933,12 @@
         var panel = $('lwP3Panel');
         var wrap  = $('lwP3Wrap');
         if (panel) panel.style.display = 'none';
-        if (wrap)  wrap.style.display  = 'block';
+        // 'flex' en vez de 'block' para que .lw-p3-wrap-v2 tome el
+        // flex-direction:column del CSS y el #lwP3CvMount herede el
+        // espacio constreñido necesario para que su overflow-y:auto
+        // realmente scrollee. Con 'block' el contenido crecía sin
+        // tope y la página no scrolleaba abajo.
+        if (wrap)  wrap.style.display  = 'flex';
         if (!state.volumetriaActiva) return;
 
         // Delegamos la mesa de trabajo al módulo crm_volumetria (v3).
