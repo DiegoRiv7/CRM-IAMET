@@ -1566,35 +1566,66 @@
     function renderFinValues() {
         var t = calcTotals();
         var tc = num(S.volumetria && S.volumetria.tipo_cambio);
-        var marginCls = 'cv-fin-row cv-fin-row-margin' + (t.margen < 20 ? ' cv-fin-row-margin-low' : '');
 
-        var h = '';
-        h += finRow('Subtotal venta', fmtMoney(t.subtotalVenta), 'cv-fin-row');
-        h += finRow('Costo total',    fmtMoney(t.totalCosto),    'cv-fin-row cv-fin-row-cost');
-        h += finRow('Ganancia',       fmtMoney(t.ganancia),      'cv-fin-row cv-fin-row-gain');
-        h += finRow('Margen',         fmtPct(t.margen),          marginCls);
+        // Desglose por tipo de sección para la columna izquierda
+        // (Análisis de Ganancia, equivalente al cuadro inferior izquierdo
+        // del Excel "Análisis de Costos").
+        var bd = { matVenta: 0, matCosto: 0, moVenta: 0, cmoCosto: 0 };
+        (S.data.secciones || []).forEach(function (sec) {
+            var st = calcSection(sec);
+            if (sec.tipo === 'equipamiento') {
+                bd.matVenta  += st.totalCli;
+                bd.matCosto  += st.totalCosto;
+            } else if (sec.tipo === 'mano_obra') {
+                bd.moVenta   += st.totalCli;
+            } else if (sec.tipo === 'costo_mo') {
+                bd.cmoCosto  += st.totalCosto;
+            }
+        });
+        var matGanancia = bd.matVenta - bd.matCosto;
+        var moGanancia  = bd.moVenta  - bd.cmoCosto;
+        var totalMxn    = tc > 0 ? t.totalConIva * tc : 0;
 
-        h += '<div class="cv-fin-sep"></div>';
+        var h = '<div class="cv-fin-table">';
 
-        if (t.iva_pct > 0) {
-            h += finRow('IVA (' + fmtPct(t.iva_pct) + ')', fmtMoney(t.iva), 'cv-fin-row cv-fin-row-iva');
-            h += finRow('Total con IVA', fmtMoney(t.totalConIva), 'cv-fin-row cv-fin-row-total');
-        } else {
-            h += finRow('Total cotización', fmtMoney(t.subtotalVenta), 'cv-fin-row cv-fin-row-total');
-        }
+        // ── Columna izquierda: Análisis de Ganancia ───────────────
+        h += '<div class="cv-fin-col">';
+        h += '<div class="cv-fin-col-title">Análisis de Ganancia</div>';
+        h += '<div class="cv-fin-col-body">';
+        h += finCell('Precio de Lista',    fmtMoney(bd.matVenta));
+        h += finCell('Precio Costo',       fmtMoney(bd.matCosto));
+        h += finCell('Ganancia Material',  fmtMoney(matGanancia));
+        h += finCell('Mano de Obra',       fmtMoney(moGanancia));
+        h += finCell('Total de Ganancia',  fmtMoney(t.ganancia), 'cv-fin-grand');
+        h += '</div></div>';
 
+        // ── Columna derecha: Total Cotización ─────────────────────
+        h += '<div class="cv-fin-col">';
+        h += '<div class="cv-fin-col-title">Total Cotización</div>';
+        h += '<div class="cv-fin-col-body">';
+        h += finCell('Sub-Total',                            fmtMoney(t.subtotalVenta));
+        h += finCell('IVA (' + fmtPct(t.iva_pct) + ')',      fmtMoney(t.iva));
+        h += finCell('Total con IVA',                        fmtMoney(t.totalConIva), 'cv-fin-grand');
+        h += finCell('Margen',                               fmtPct(t.margen), (t.margen < 20 ? 'cv-fin-pct cv-fin-pct-low' : 'cv-fin-pct'));
         if (tc > 0) {
-            var usdSubtotal = t.subtotalVenta / tc;
-            var usdTotal = t.totalConIva / tc;
-            h += '<div class="cv-fin-foot">';
-            h += '<span class="cv-fin-label">En USD @ ' + esc(tc.toFixed(2)) + '</span>';
-            h += '<span class="cv-fin-value cv-mono">$' + esc(usdSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
-                 (t.iva_pct > 0 ? ' &middot; c/IVA $' + esc(usdTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '') +
+            h += '<div class="cv-fin-cell-row cv-fin-mxn">';
+            h += '<span class="cv-fin-cell-label">En MXN @ ' + esc(tc.toFixed(2)) + '</span>';
+            h += '<span class="cv-fin-cell-value cv-mono">$' +
+                 esc(totalMxn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
                  '</span>';
             h += '</div>';
         }
+        h += '</div></div>';
 
+        h += '</div>'; // /.cv-fin-table
         return h;
+    }
+
+    function finCell(label, value, extraCls) {
+        return '<div class="cv-fin-cell-row ' + (extraCls || '') + '">' +
+                   '<span class="cv-fin-cell-label">' + esc(label) + '</span>' +
+                   '<span class="cv-fin-cell-value cv-mono">' + esc(value) + '</span>' +
+               '</div>';
     }
 
     /** Actualiza solo los renglones de valores del card financiero,

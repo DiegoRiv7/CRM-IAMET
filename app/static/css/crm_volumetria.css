@@ -1401,3 +1401,110 @@ textarea.cv-input,
 .cv-app-bottom-summary .cv-fin-foot {
     grid-column: 1 / -1; margin-top: 8px; border-top: 1px solid var(--cv-border-soft); padding-top: 12px;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * Resumen Financiero — Tabla de dos columnas estilo Excel
+ * (Análisis de Ganancia · Total Cotización)
+ * ═══════════════════════════════════════════════════════════════════ */
+.cv-fin-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+}
+.cv-fin-col {
+    border: 1px solid var(--cv-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+.cv-fin-col-title {
+    background: linear-gradient(180deg, #1f2937, #111827);
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.cv-fin-col-body {
+    padding: 4px 14px 4px;
+}
+.cv-fin-cell-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+.cv-fin-cell-row:last-child { border-bottom: none; }
+.cv-fin-cell-label {
+    color: #475569;
+    font-weight: 500;
+}
+.cv-fin-cell-value {
+    color: #0f172a;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* Fila destacada (Total de Ganancia / Total con IVA) — fondo amarillo
+   estilo Excel para que el ojo vaya directo al número final. */
+.cv-fin-grand {
+    background: #fef9c3;
+    margin: 0 -14px;
+    padding: 10px 14px;
+    border-bottom: none;
+    border-top: 1px solid #fde68a;
+}
+.cv-fin-grand .cv-fin-cell-label {
+    color: #0f172a;
+    font-weight: 700;
+}
+.cv-fin-grand .cv-fin-cell-value {
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 14.5px;
+}
+
+/* Margen — destacado, color verde si >=20%, naranja si <20% */
+.cv-fin-pct .cv-fin-cell-value {
+    color: var(--cv-positive);
+    font-weight: 700;
+    font-size: 13.5px;
+}
+.cv-fin-pct-low .cv-fin-cell-value {
+    color: var(--cv-warn);
+}
+
+/* Equivalente en MXN — fila adicional sutil al final del card derecho */
+.cv-fin-mxn {
+    margin: 8px -14px -4px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-top: 1px solid var(--cv-border-soft);
+    border-bottom: none !important;
+}
+.cv-fin-mxn .cv-fin-cell-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cv-fg-muted);
+}
+.cv-fin-mxn .cv-fin-cell-value {
+    color: var(--cv-fg-2);
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .cv-fin-table { grid-template-columns: 1fr; }
+}
+
+/* Override: con la nueva tabla bicolumna ya no usamos los .cv-fin-row*
+   anteriores. Los .cv-app-bottom-summary overrides asumen la antigua
+   grid de 3 cols — ahora forzamos 1 col interna a la card financiera
+   para que la nueva grid de 2 cols quepa. */
+.cv-app-bottom-summary .cv-fin-values { display: block; }
