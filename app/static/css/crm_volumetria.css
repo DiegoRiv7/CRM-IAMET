@@ -1686,7 +1686,10 @@ textarea.cv-input,
     grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr);
     gap: 20px;
     padding: 0;
-    align-items: start;
+    /* `stretch` para que ambas tablas ocupen la misma altura — TC/IVA
+       se centran via align-self. Esto evita que la columna más corta
+       deje espacio en blanco mientras la otra termina más abajo. */
+    align-items: stretch;
 }
 .cv-app-bottom-summary .cv-fin-config {
     flex-direction: column;
@@ -1695,6 +1698,9 @@ textarea.cv-input,
     border: none;
     gap: 10px;
     grid-column: 1;
+    /* TC e IVA centrados verticalmente entre las dos tablas. */
+    align-self: center;
+    justify-self: center;
 }
 .cv-app-bottom-summary .cv-fin-sep {
     /* Sin separador en layout horizontal — la grid ya distribuye. */
@@ -1704,10 +1710,31 @@ textarea.cv-input,
     display: block;
     grid-column: 2 / span 2;
     width: 100%;
+    height: 100%;
 }
 .cv-app-bottom-summary .cv-fin-table {
     margin-top: 0;
     width: 100%;
+    height: 100%;
+    /* Mismo height en ambas columnas y filas distribuidas equitativamente. */
+    align-items: stretch;
+}
+.cv-app-bottom-summary .cv-fin-col {
+    display: flex;
+    flex-direction: column;
+}
+.cv-app-bottom-summary .cv-fin-col-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.cv-app-bottom-summary .cv-fin-col-body .cv-fin-cell-row {
+    /* Cada fila ocupa partes iguales del alto disponible — así
+       Análisis y Total quedan visualmente alineados aunque sus
+       contenidos sean distintos. min-height para que no se aplasten
+       cuando la sección colapsa. */
+    flex: 1;
+    min-height: 44px;
 }
 
 @media (max-width: 980px) {

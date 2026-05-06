@@ -360,7 +360,9 @@
         return {
             version: 4,
             meta: meta,
-            secciones: [newSection('equipamiento')],
+            // Vacío por default: ni tabla ni fila preconfigurada. El
+            // usuario decide qué tipos de tablas crear desde "Agregar tabla".
+            secciones: [],
         };
     }
 
