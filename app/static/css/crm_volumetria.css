@@ -321,7 +321,11 @@ button.cv-status { font-family: inherit; }
     box-shadow: var(--cv-shadow-section);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    /* `visible` para que el dropdown "Agregar tabla" pueda salir del card.
+       El clipping para el border-radius lo damos a los hijos (toolbar arriba
+       con su propio border-radius top, y .cv-app-table-scroll abajo que ya
+       tiene su scroll/overflow). */
+    overflow: visible;
 }
 
 .cv-app-right {
@@ -1657,6 +1661,7 @@ textarea.cv-input,
  * ═════════════════════════════════════════════════════════════════════ */
 .cv-app-bottom-summary {
     margin-top: 24px;
+    width: 100%;
 }
 .cv-app-bottom-summary .cv-card-financiero {
     width: 100%;
@@ -1671,19 +1676,50 @@ textarea.cv-input,
     padding: 0 0 18px;
     border: none;
 }
+/* Layout horizontal de 3 columnas (config + análisis + total) que abarca
+   todo el ancho del card. Mantiene armonía con las tablas superiores. */
 .cv-app-bottom-summary .cv-card-body {
-    display: block;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
     padding: 0;
+    align-items: start;
 }
 .cv-app-bottom-summary .cv-fin-config {
-    flex-direction: row;
-    flex-wrap: wrap;
-    padding: 0 0 16px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    padding: 0;
     border: none;
     gap: 10px;
+    grid-column: 1;
+}
+.cv-app-bottom-summary .cv-fin-sep {
+    /* Sin separador en layout horizontal — la grid ya distribuye. */
+    display: none;
 }
 .cv-app-bottom-summary .cv-fin-values {
     display: block;
+    grid-column: 2 / span 2;
+    width: 100%;
+}
+.cv-app-bottom-summary .cv-fin-table {
+    margin-top: 0;
+    width: 100%;
+}
+
+@media (max-width: 980px) {
+    /* En pantallas chicas: stack vertical (config arriba, luego tablas
+       lado a lado, y abajo la sub-fila MXN). */
+    .cv-app-bottom-summary .cv-card-body {
+        grid-template-columns: 1fr;
+    }
+    .cv-app-bottom-summary .cv-fin-config { grid-column: 1; flex-direction: row; flex-wrap: wrap; }
+    .cv-app-bottom-summary .cv-fin-values { grid-column: 1; }
+}
+@media (max-width: 640px) {
+    .cv-app-bottom-summary .cv-fin-table {
+        grid-template-columns: 1fr;
+    }
 }
 
 .cv-fin-table {
