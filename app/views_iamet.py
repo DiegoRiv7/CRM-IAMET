@@ -3364,6 +3364,12 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
     from decimal import Decimal as _D
 
     try:
+        body = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        body = {}
+    nombre_override = (body.get('nombre') or '').strip()
+
+    try:
         vol = ProyectoVolumetria.objects.select_related(
             'levantamiento__proyecto'
         ).get(id=volumetria_id)
@@ -3430,11 +3436,15 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
         iva_pct_dec = _D('8')
     iva_rate = (iva_pct_dec / _D('100')).quantize(_D('0.01'))
 
-    # Nombre legible para el PDF / título de la cotización.
-    nombre_cot = (
-        (lev.nombre or 'Cotización').strip()
-        + (' - ' + vol.nombre.strip() if vol.nombre else '')
-    )[:255]
+    # Nombre legible para el PDF / título de la cotización. Si el
+    # frontend envió `nombre`, lo usamos; si no, default a "lev - vol".
+    if nombre_override:
+        nombre_cot = nombre_override[:255]
+    else:
+        nombre_cot = (
+            (lev.nombre or 'Cotización').strip()
+            + (' - ' + vol.nombre.strip() if vol.nombre else '')
+        )[:255]
 
     marcas_validas = {m for m, _ in DetalleCotizacion.MARCA_CHOICES}
 
@@ -3444,7 +3454,11 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
             cliente=cliente,
             usuario_final='',
             oportunidad=oportunidad,
-            descripcion=f"Generada automáticamente desde la volumetría #{vol.id} ({vol.nombre or 'sin nombre'}).",
+            # `descripcion` se queda vacía: el template del PDF lo imprime
+            # como "Notas:" en Términos y Condiciones, y para cotizaciones
+            # generadas auto no aporta valor — solo metadata interna que
+            # no debe ir al cliente. Si el ingeniero/vendedor quiere notas,
+            # las agrega editando la cotización.
             nombre_cotizacion=nombre_cot,
             iva_rate=iva_rate,
             moneda='USD',

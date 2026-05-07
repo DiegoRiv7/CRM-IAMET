@@ -4345,48 +4345,69 @@
         var menus = document.querySelectorAll('.lvc-export-menu.is-open');
         menus.forEach(function (m) { m.classList.remove('is-open'); });
 
-        if (typeof lwToast === 'function') {
-            lwToast('Generando cotización…', 'info');
-        }
+        // Default de nombre: "<Levantamiento> - <Volumetría>", igual al
+        // que arma el backend si no le mandamos uno. Lo pre-llenamos en
+        // el prompt para que sea un click si quiere usarlo tal cual.
+        var lev = _currentLev || {};
+        var vol = (_currentVolumetrias || []).filter(function (v) { return v.id === volId; })[0] || {};
+        var nombreDefault = (lev.nombre || 'Cotización').trim();
+        if (vol.nombre) nombreDefault += ' - ' + vol.nombre.trim();
 
-        // CSRF token desde la cookie (Django default)
-        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        var promptPromise = (typeof lwPrompt === 'function')
+            ? lwPrompt({
+                title: 'Generar cotización',
+                message: 'Confirma el nombre de la cotización antes de generarla. Aparece como título del PDF y en el listado de cotizaciones de la oportunidad.',
+                placeholder: nombreDefault,
+                defaultValue: nombreDefault,
+                confirmLabel: 'Generar',
+                cancelLabel: 'Cancelar',
+                required: false,
+              })
+            : Promise.resolve(window.prompt('Nombre de la cotización:', nombreDefault));
 
-        fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-        }).then(function (r) {
-            return r.json().then(function (data) { return { ok: r.ok, data: data }; });
-        }).then(function (res) {
-            if (!res.ok || !res.data || res.data.success !== true) {
-                var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+        promptPromise.then(function (nombreInput) {
+            if (nombreInput === null) return;  // canceló
+            var nombre = (nombreInput || '').trim() || nombreDefault;
+
+            if (typeof lwToast === 'function') {
+                lwToast('Generando cotización…', 'info');
+            }
+
+            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+
+            fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ nombre: nombre }),
+            }).then(function (r) {
+                return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+            }).then(function (res) {
+                if (!res.ok || !res.data || res.data.success !== true) {
+                    var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                    if (typeof lwToast === 'function') lwToast(msg, 'error');
+                    else alert(msg);
+                    return;
+                }
+                try {
+                    window.open(res.data.pdf_url, '_blank');
+                } catch (e) {
+                    location.href = res.data.pdf_url;
+                }
+                if (typeof lwToast === 'function') {
+                    lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+                }
+                try {
+                    if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                        window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                    }
+                } catch (e) { /* defensivo */ }
+            }).catch(function (err) {
+                var msg = 'Error de red al generar cotización';
                 if (typeof lwToast === 'function') lwToast(msg, 'error');
                 else alert(msg);
-                return;
-            }
-            // Abre el PDF de la cotización recién creada en pestaña nueva.
-            // Si el bloqueo de popups lo impide, cae al onclick natural.
-            try {
-                window.open(res.data.pdf_url, '_blank');
-            } catch (e) {
-                location.href = res.data.pdf_url;
-            }
-            if (typeof lwToast === 'function') {
-                lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
-            }
-            // Refresca la lista de cotizaciones de la oportunidad si el
-            // widget está visible (vendedor pudo abrirlo en paralelo).
-            try {
-                if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
-                    window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
-                }
-            } catch (e) { /* defensivo */ }
-        }).catch(function (err) {
-            var msg = 'Error de red al generar cotización';
-            if (typeof lwToast === 'function') lwToast(msg, 'error');
-            else alert(msg);
-            try { console.error('[cotizacion]', err); } catch (e) {}
+                try { console.error('[cotizacion]', err); } catch (e) {}
+            });
         });
     };
 
