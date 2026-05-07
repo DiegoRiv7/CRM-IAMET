@@ -1491,23 +1491,27 @@
             }
             // Actualizar volumetria en memoria con la respuesta y re-renderizar.
             var v = j.data;
-            // El endpoint devuelve la volumetría con `data` adentro; el
-            // crmVolumetria.render espera `volumetria.data`.
-            var newVol = {
-                id: v.id || S.volumetria.id,
-                nombre: v.nombre != null ? v.nombre : S.volumetria.nombre,
-                status: v.status || S.volumetria.status,
-                iva_pct: v.iva_pct != null ? v.iva_pct : S.volumetria.iva_pct,
-                tipo_cambio: v.tipo_cambio != null ? v.tipo_cambio : S.volumetria.tipo_cambio,
-                data: v.data || {},
-            };
-            // Re-render limpio (destroy + render con la data nueva).
+            // CRÍTICO: mutamos S.volumetria IN-PLACE en lugar de crear un
+            // objeto nuevo. El wizard host mantiene su propia referencia
+            // (state.volumetriaActiva) al MISMO objeto. Si reemplazáramos
+            // por uno nuevo, el wizard quedaría apuntando a un objeto sin
+            // la data importada, y el siguiente re-render (ej. al marcar
+            // como completada) volvería a mostrar la volumetría vacía y
+            // dispararía un autosave que la borraría en BD.
+            var hostVol = S.volumetria;
+            if (v.nombre != null)      hostVol.nombre = v.nombre;
+            if (v.status != null)      hostVol.status = v.status;
+            if (v.status_label != null) hostVol.status_label = v.status_label;
+            if (v.iva_pct != null)     hostVol.iva_pct = v.iva_pct;
+            if (v.tipo_cambio != null) hostVol.tipo_cambio = v.tipo_cambio;
+            hostVol.data = v.data || {};
+            // Re-render limpio (destroy + render) sobre la MISMA referencia.
             var container = S.container;
             var levantamiento = S.levantamiento;
             var readonly = S.readonly;
             var onSaved = S.onSaved;
             window.crmVolumetria.render(container, {
-                volumetria: newVol,
+                volumetria: hostVol,
                 levantamiento: levantamiento,
                 readonly: readonly,
                 onSaved: onSaved,
@@ -2398,7 +2402,14 @@
             S.data = normalizeData(rawIn, S.levantamiento);
             S.volumetria.data = S.data;
 
-            var migrated = (rawIn && rawIn.version !== 4);
+            // `migrated` arranca un autosave inmediato para persistir el
+            // shape v4 cuando viene de un schema viejo. PERO si la entrada
+            // es un dict vacío `{}`, no hay nada que migrar y disparar
+            // autosave aquí sobreescribiría una data legítima en BD con
+            // vacío (regresión observada al marcar volumetrías como
+            // completadas tras importar Excel — bug de referencia).
+            var hasItems = !!(rawIn && Array.isArray(rawIn.secciones) && rawIn.secciones.length);
+            var migrated = (rawIn && rawIn.version !== 4 && hasItems);
             log('render volumetría', S.volumetria.id, 'readonly=' + S.readonly,
                 'tipos=' + (S.data.secciones || []).map(function (s) { return s.tipo; }).join(','),
                 'migrated=' + !!migrated);
