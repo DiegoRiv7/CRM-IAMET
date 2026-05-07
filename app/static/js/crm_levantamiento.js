@@ -553,36 +553,35 @@
 
     window.lwSave = function (showFlash) {
         if (!state.lev) return Promise.resolve(null);
+
+        // ── Fase 3: el módulo `crmVolumetria` tiene su propio autosave
+        // que escribe S.data v4 al endpoint /data/ de la volumetría
+        // activa. El wizard NO debe tocar vol.data: state.lev.fase3_data
+        // es un alias legacy que puede contener un shape v1 viejo
+        // (`materiales: [{...}]`). Si lo mandáramos, sobreescribiría
+        // los 135 items v4 con basura. Solo delegamos el flush.
+        if (state.phase === 3) {
+            try {
+                if (window.crmVolumetria && typeof window.crmVolumetria.flushSave === 'function') {
+                    window.crmVolumetria.flushSave();
+                }
+            } catch (e) { /* defensivo */ }
+            return Promise.resolve({ success: true, data: null });
+        }
+
         var mySeq = ++_saveSeq;
         var data = collectPhaseData(state.phase);
         state.lev['fase' + state.phase + '_data'] = data;
         _saveInFlight++;
         _saveStatusSet('saving');
 
-        // Caso especial Fase 3: si hay volumetría activa, el save no
-        // va al endpoint genérico de fase del levantamiento sino al
-        // endpoint específico de la volumetría. Esto evita pisar
-        // accidentalmente fase3_data del levantamiento (legacy).
-        // Si NO hay volumetría activa estamos en el panel — no hay
-        // nada que guardar; retornamos sin tocar la red.
         var url, body;
-        if (state.phase === 3) {
-            if (!state.volumetriaActiva || !state.volumetriaActiva.id) {
-                // Estamos en el panel de volumetrías; no hay editor abierto.
-                _saveInFlight--;
-                _saveStatusSet('');
-                return Promise.resolve({ success: true, data: null });
-            }
-            url = '/app/api/iamet/volumetrias/' + state.volumetriaActiva.id + '/data/';
-            body = JSON.stringify({ data: data });
-        } else {
-            url = '/app/api/iamet/levantamientos/' + state.lev.id + '/fase/';
-            body = JSON.stringify({
-                fase: state.phase,
-                data: data,
-                fase_actual: state.lev.fase_actual,
-            });
-        }
+        url = '/app/api/iamet/levantamientos/' + state.lev.id + '/fase/';
+        body = JSON.stringify({
+            fase: state.phase,
+            data: data,
+            fase_actual: state.lev.fase_actual,
+        });
 
         function onDone(r) {
             _saveInFlight--;
