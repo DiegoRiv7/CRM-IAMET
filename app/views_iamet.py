@@ -1286,16 +1286,77 @@ def _partida_key(numero_parte, descripcion):
     return (np, desc)
 
 
-def _sync_partidas_proyecto_from_volumetria(proyecto, vol):
+def _snapshot_partidas_actual(proyecto, archivo_nombre='Actualización auto', subido_por=None):
+    """Crea un ProyectoVolumetriaVersion con el estado actual de las
+    partidas del proyecto. Se ejecuta ANTES de cualquier re-sync para
+    poder restaurar a este punto desde el historial."""
+    existing = list(proyecto.partidas.all())
+    if not existing:
+        return None
+    last_ver = ProyectoVolumetriaVersion.objects.filter(proyecto=proyecto).order_by('-version').first()
+    next_ver = (last_ver.version + 1) if last_ver else 1
+    snapshot = []
+    sc = Decimal('0')
+    sv = Decimal('0')
+    for p in existing:
+        cu = p.costo_unitario or Decimal('0')
+        vu = p.precio_venta_unitario or Decimal('0')
+        q = p.cantidad or Decimal('0')
+        sc += cu * q
+        sv += vu * q
+        snapshot.append({
+            'categoria': p.categoria, 'descripcion': p.descripcion, 'marca': p.marca,
+            'numero_parte': p.numero_parte, 'cantidad': float(q),
+            'cantidad_pendiente': float(p.cantidad_pendiente or 0),
+            'precio_lista': float(p.precio_lista or 0),
+            'descuento': float(p.descuento or 0),
+            'costo_unitario': float(cu), 'precio_venta_unitario': float(vu),
+            'ganancia': float((vu - cu) * q),
+            'proveedor': p.proveedor, 'status': p.status,
+        })
+    sg = sv - sc
+    return ProyectoVolumetriaVersion.objects.create(
+        proyecto=proyecto, version=next_ver,
+        archivo_nombre=archivo_nombre,
+        subido_por=subido_por,
+        total_costo=sc, total_venta=sv, ganancia=sg,
+        margen=(sg / sv * 100) if sv > 0 else Decimal('0'),
+        num_partidas=len(existing), partidas_json=snapshot,
+    )
+
+
+def _sync_partidas_proyecto_from_volumetria(proyecto, vol, subido_por=None,
+                                            archivo_nombre='Actualización desde volumetría'):
     """Reemplaza las ProyectoPartida del proyecto con los items de la
-    volumetría v4. Preserva cantidad_pendiente, status y OCs cuando hay
-    match por (numero_parte, descripcion)."""
+    volumetría v4. Preserva las partidas que ya tienen OCs (al menos
+    una unidad mandada a comprar) — esas se quedan permanentemente.
+
+    Reglas:
+      • Match por (numero_parte, descripcion):
+        - Sin OCs → actualiza todos los campos, cantidad_pendiente = nueva_cantidad.
+        - Con OCs → actualiza precios/cantidad pero `cantidad_pendiente`
+          se calcula como `nueva_cantidad - ya_comprada` (mínimo 0).
+          Status: pending si pendiente>0 sin OCs, ordered si pendiente>0
+          con OCs, closed si pendiente=0.
+      • Sin match (partidas viejas que ya no están en la volumetría):
+        - Sin OCs → se eliminan.
+        - Con OCs → se quedan (historial de compras intacto).
+
+    Antes del re-sync se crea un snapshot de versión para poder
+    restaurar el estado anterior desde el historial.
+    """
+    resumen = {'creadas': 0, 'actualizadas': 0, 'eliminadas': 0, 'preservadas': 0, 'snapshot_version': None}
     if not proyecto or not vol:
-        return {'creadas': 0, 'actualizadas': 0, 'eliminadas': 0, 'preservadas': 0}
+        return resumen
 
     lev = vol.levantamiento
     if not lev:
-        return {'creadas': 0, 'actualizadas': 0, 'eliminadas': 0, 'preservadas': 0}
+        return resumen
+
+    # Snapshot ANTES de cualquier cambio
+    snap = _snapshot_partidas_actual(proyecto, archivo_nombre=archivo_nombre, subido_por=subido_por)
+    if snap:
+        resumen['snapshot_version'] = snap.version
 
     ctx = _build_volumetria_ctx(
         lev, sin_costos=False,
@@ -1303,7 +1364,7 @@ def _sync_partidas_proyecto_from_volumetria(proyecto, vol):
     )
 
     # Construir lista plana de items destino con sus valores normalizados.
-    nuevos = []   # [(key, payload)]
+    nuevos = []
     for sec in (ctx.get('sections_eq') or []):
         for r in (sec.get('rows') or []):
             if r.get('is_header'):
@@ -1344,8 +1405,7 @@ def _sync_partidas_proyecto_from_volumetria(proyecto, vol):
             }
             nuevos.append((_partida_key(payload['numero_parte'], payload['descripcion']), payload))
 
-    # Index por clave (si una clave matchea varias entradas en la
-    # volumetría, agrupamos sumando cantidades).
+    # Agregar por clave (suma cantidades si hay duplicados).
     nuevos_por_key = {}
     for k, p in nuevos:
         if k in nuevos_por_key:
@@ -1353,7 +1413,6 @@ def _sync_partidas_proyecto_from_volumetria(proyecto, vol):
         else:
             nuevos_por_key[k] = dict(p)
 
-    # Cargar partidas existentes.
     existentes = list(ProyectoPartida.objects.filter(proyecto=proyecto))
     existentes_por_key = {}
     for p in existentes:
@@ -1367,11 +1426,24 @@ def _sync_partidas_proyecto_from_volumetria(proyecto, vol):
     for key, payload in nuevos_por_key.items():
         if key in existentes_por_key and existentes_por_key[key]:
             partida = existentes_por_key[key].pop(0)
-            # Preservamos cantidad_pendiente y status si ya hubo OCs.
-            had_ocs = partida.ordenes_compra.exists()
+            # Cantidad ya comprada (suma de OCs) — para recalcular pendiente.
+            ya_comprada = sum(
+                (oc.cantidad or Decimal('0')) for oc in partida.ordenes_compra.all()
+            ) or Decimal('0')
+            # Aplica todos los campos del payload (precios, costos, etc).
             for f, v in payload.items():
                 setattr(partida, f, v)
-            if not had_ocs:
+            # Pendiente recalculado:
+            if ya_comprada > 0:
+                pendiente = payload['cantidad'] - ya_comprada
+                if pendiente < 0:
+                    pendiente = Decimal('0')
+                partida.cantidad_pendiente = pendiente
+                if pendiente == 0:
+                    partida.status = 'closed'
+                else:
+                    partida.status = 'ordered'  # ya hubo compras parciales
+            else:
                 partida.cantidad_pendiente = payload['cantidad']
                 partida.status = 'pending'
             partida.save()
@@ -1385,22 +1457,22 @@ def _sync_partidas_proyecto_from_volumetria(proyecto, vol):
             )
             creadas += 1
 
-    # Limpiar partidas que ya no están: borrar las sin OCs, conservar
-    # las que tienen OCs (no perdemos historial de compras).
+    # Limpieza de partidas viejas que ya no aparecen.
     for sobrantes in existentes_por_key.values():
         for partida in sobrantes:
             if partida.ordenes_compra.exists():
-                preservadas += 1
+                preservadas += 1  # mantener — historial de compras
             else:
                 partida.delete()
                 eliminadas += 1
 
-    return {
+    resumen.update({
         'creadas': creadas,
         'actualizadas': actualizadas,
         'eliminadas': eliminadas,
         'preservadas': preservadas,
-    }
+    })
+    return resumen
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -3434,6 +3506,8 @@ def api_volumetria_actualizar(request, volumetria_id):
         try:
             _sync_partidas_proyecto_from_volumetria(
                 vol.levantamiento.proyecto, vol,
+                subido_por=request.user,
+                archivo_nombre=f"Completada · {vol.nombre or ('Vol ' + str(vol.id))}",
             )
         except Exception as _sync_err:
             print('[partidas-sync] error en actualizar:', _sync_err)
@@ -4049,6 +4123,8 @@ def api_volumetria_importar_excel(request, volumetria_id):
             if vol.levantamiento and vol.levantamiento.proyecto:
                 sync_resumen = _sync_partidas_proyecto_from_volumetria(
                     vol.levantamiento.proyecto, vol,
+                    subido_por=request.user,
+                    archivo_nombre=f"Importación Excel · {(getattr(archivo, 'name', '') or 'archivo')[:60]}",
                 )
         except Exception as _sync_err:
             print('[partidas-sync] error en import:', _sync_err)

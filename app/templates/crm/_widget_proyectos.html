@@ -470,35 +470,55 @@
 
       <!-- TAB: Partidas (sincronizado con la última volumetría completada) -->
       <div id="proyPane_partidasv4" class="proy-tab-pane" style="display:none;">
-        <div class="proy-tab-header">
-          <h3>Partidas</h3>
-          <div class="proy-tab-actions" style="display:flex;align-items:center;gap:10px;">
-            <span id="proyPartidasOrigen" style="font-size:0.75rem;color:#86868B;"></span>
+        <div class="proy-tab-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <h3 style="margin:0;">Partidas</h3>
+            <div id="proyPartidasOrigen" style="font-size:0.72rem;color:#86868B;margin-top:2px;"></div>
+          </div>
+          <div class="proy-tab-actions" style="display:flex;align-items:center;gap:8px;">
+            <button class="proy-btn proy-btn-outline" type="button" onclick="proyPartidasHistorialAbrir()" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+              Historial
+            </button>
           </div>
         </div>
-        <div class="proy-partidas-table-wrap" style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:10px;">
+        <div class="proy-partidas-table-wrap" style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:12px;background:#fff;">
           <table class="proy-partidas-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
             <thead>
-              <tr style="background:#F8F9FB;color:#48484A;text-align:left;">
-                <th style="padding:10px 12px;">Categoría</th>
-                <th style="padding:10px 12px;">Descripción</th>
-                <th style="padding:10px 12px;">Marca</th>
-                <th style="padding:10px 12px;">No. Parte</th>
-                <th style="padding:10px 12px;text-align:center;">Cant.</th>
-                <th style="padding:10px 12px;text-align:center;">Pendiente</th>
-                <th style="padding:10px 12px;text-align:right;">P. Lista</th>
-                <th style="padding:10px 12px;text-align:center;">Desc.</th>
-                <th style="padding:10px 12px;text-align:right;">Costo Unit.</th>
-                <th style="padding:10px 12px;text-align:right;">P. Venta</th>
-                <th style="padding:10px 12px;text-align:right;">Ganancia</th>
-                <th style="padding:10px 12px;">Proveedor</th>
-                <th style="padding:10px 12px;">Estado</th>
-                <th style="padding:10px 12px;text-align:center;width:36px;"></th>
+              <tr style="background:#F8F9FB;color:#48484A;text-align:left;border-bottom:1px solid rgba(0,0,0,0.06);">
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Categoría</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Descripción</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Marca</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">No. Parte</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:center;">Cant.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:center;">Pend.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">P. Lista</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:center;">Desc.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">Costo Un.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">P. Venta</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">Ganancia</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Proveedor</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Estado</th>
+                <th style="padding:11px 14px;width:36px;"></th>
               </tr>
             </thead>
             <tbody id="proyPartidasBody"></tbody>
             <tfoot id="proyPartidasFoot"></tfoot>
           </table>
+        </div>
+      </div>
+
+      <!-- Modal Historial de Partidas -->
+      <div id="proyPartidasHistorialBackdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:11000;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:14px;width:min(960px,92vw);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.25);">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(0,0,0,0.06);">
+            <div>
+              <h3 style="margin:0;font-size:1.05rem;">Historial de partidas</h3>
+              <div style="font-size:0.74rem;color:#86868B;margin-top:2px;">Cada vez que se importa una volumetría o se marca como completada, se guarda un snapshot.</div>
+            </div>
+            <button type="button" onclick="proyPartidasHistorialCerrar()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#86868B;line-height:1;padding:4px 8px;">×</button>
+          </div>
+          <div id="proyPartidasHistorialBody" style="overflow-y:auto;padding:18px 24px;"></div>
         </div>
       </div>
 

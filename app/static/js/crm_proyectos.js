@@ -4312,6 +4312,95 @@
         return (bytes / 1048576).toFixed(1) + ' MB';
     }
 
+    // ── Historial de partidas (modal) ────────────────────────────
+    window.proyPartidasHistorialAbrir = function () {
+        if (!currentProjectId) return;
+        var bd = document.getElementById('proyPartidasHistorialBackdrop');
+        var body = document.getElementById('proyPartidasHistorialBody');
+        if (!bd || !body) return;
+        bd.style.display = 'flex';
+        body.innerHTML = '<div style="text-align:center;padding:40px;color:#86868B;">Cargando…</div>';
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/volumetria-versiones/').then(function (resp) {
+            if (!(resp.ok || resp.success) || !Array.isArray(resp.data)) {
+                body.innerHTML = '<div style="padding:30px;text-align:center;color:#EF4444;">No se pudo cargar el historial.</div>';
+                return;
+            }
+            var versiones = resp.data;
+            if (!versiones.length) {
+                body.innerHTML = '<div style="padding:30px;text-align:center;color:#86868B;">' +
+                    'Aún no hay versiones registradas. Cada vez que el ingeniero importa una volumetría o marca una como completada, ' +
+                    'se guarda un snapshot que aparecerá aquí.' +
+                    '</div>';
+                return;
+            }
+            var html = '<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+            html += '<thead><tr style="background:#F8F9FB;text-align:left;">' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">Versión</th>' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">Origen</th>' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">Subido por</th>' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">Fecha</th>' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:center;">Partidas</th>' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:right;">Costo</th>' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:right;">Venta</th>' +
+                '<th style="padding:10px 12px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:right;">Ganancia</th>' +
+                '<th style="padding:10px 12px;width:36px;"></th>' +
+                '</tr></thead><tbody>';
+            versiones.forEach(function (v) {
+                var fechaStr = v.fecha ? new Date(v.fecha).toLocaleString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+                var esActual = !!v.is_current;
+                html += '<tr style="border-bottom:1px solid rgba(0,0,0,0.04);' + (esActual ? 'background:rgba(0,122,255,0.05);' : '') + '">' +
+                    '<td style="padding:10px 12px;font-weight:600;">' + (esActual ? '<span style="color:#007AFF;">Actual</span>' : ('v' + v.version)) + '</td>' +
+                    '<td style="padding:10px 12px;color:#48484A;">' + (v.archivo || '—') + '</td>' +
+                    '<td style="padding:10px 12px;color:#48484A;">' + (v.subido_por || '—') + '</td>' +
+                    '<td style="padding:10px 12px;color:#86868B;">' + fechaStr + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center;">' + (v.num_partidas || 0) + '</td>' +
+                    '<td style="padding:10px 12px;text-align:right;">' + fmtMoney(v.total_costo || 0) + '</td>' +
+                    '<td style="padding:10px 12px;text-align:right;">' + fmtMoney(v.total_venta || 0) + '</td>' +
+                    '<td style="padding:10px 12px;text-align:right;color:#10B981;">' + fmtMoney(v.ganancia || 0) + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center;">' +
+                        (esActual ? '' :
+                            '<button class="proy-btn proy-btn-outline" type="button" onclick="proyPartidasRestaurar(' + v.version + ')" style="font-size:0.7rem;padding:4px 10px;">Restaurar</button>') +
+                    '</td>' +
+                    '</tr>';
+            });
+            html += '</tbody></table>';
+            body.innerHTML = html;
+        }).catch(function () {
+            body.innerHTML = '<div style="padding:30px;text-align:center;color:#EF4444;">Error de red.</div>';
+        });
+    };
+
+    window.proyPartidasHistorialCerrar = function () {
+        var bd = document.getElementById('proyPartidasHistorialBackdrop');
+        if (bd) bd.style.display = 'none';
+    };
+
+    // Click en backdrop cierra el modal
+    document.addEventListener('click', function (e) {
+        var bd = document.getElementById('proyPartidasHistorialBackdrop');
+        if (bd && e.target === bd) bd.style.display = 'none';
+    });
+
+    window.proyPartidasRestaurar = function (versionNum) {
+        if (!currentProjectId) return;
+        if (!confirm('¿Restaurar las partidas a la versión v' + versionNum + '?\n\nEl estado actual quedará guardado en el historial como una versión nueva, así que esta acción es reversible.')) return;
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        fetch('/app/api/iamet/proyectos/' + currentProjectId + '/restaurar-version/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ version: versionNum }),
+        }).then(function (r) { return r.json(); }).then(function (j) {
+            if (j && j.ok) {
+                window.proyPartidasHistorialCerrar();
+                if (typeof renderPartidas === 'function') renderPartidas(currentProjectId);
+                alert('Partidas restauradas a la versión v' + versionNum + '.');
+            } else {
+                alert((j && j.error) || 'No se pudo restaurar.');
+            }
+        }).catch(function () { alert('Error de red al restaurar.'); });
+    };
+
     // Auto-abrir el detalle si la URL trae ?open_proyecto=N. Esto permite
     // compartir un link directo al proyecto (botón Compartir).
     if (document.readyState === 'loading') {
