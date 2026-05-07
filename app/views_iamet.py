@@ -3648,244 +3648,40 @@ def api_volumetria_importar_excel(request, volumetria_id):
 
     try:
         import openpyxl
+        from .volumetria_importers import detect_and_parse
         wb = openpyxl.load_workbook(archivo, data_only=True)
         ws = wb.active
 
-        # ── PASS 1: pre-scan de filas-marcador ─────────────────
-        total_mo_row = None        # row de "TOTAL MANO DE OBRA:"
-        costo_mo_row = None        # row de "COSTO MANO DE OBRA:"
-        cmo_header_row = None      # row con "Cantidad/Descripcion/Costo unit"
-        mo_header_row = None       # row con encabezado de MO ("Marca|No.Parte|...")
-        mo_section_start_row = None  # row de "MANO DE OBRA"
-        analisis_row = None        # row de "Análisis de Costos"
-        for r in range(1, ws.max_row + 1):
-            ca = str(ws.cell(r, 1).value or '').strip().lower()
-            cd = str(ws.cell(r, 4).value or '').strip().lower()
-            ce = str(ws.cell(r, 5).value or '').strip().lower()
-            if 'total mano de obra' in ca or 'total mano de obra' in cd:
-                total_mo_row = r
-            if 'costo mano de obra' in ca or 'costo mano de obra' in cd:
-                costo_mo_row = r
-            if cd in ('descripcion', 'descripción') and ce in ('costo unit', 'costo unitario'):
-                cmo_header_row = r
-            if ca == 'mano de obra' and mo_section_start_row is None:
-                mo_section_start_row = r
-            if ca == 'marca' and cd in ('descripcion', 'descripción') and mo_header_row is None and mo_section_start_row:
-                if r > mo_section_start_row:
-                    mo_header_row = r
-            if 'analisis de costos' in ca or 'análisis de costos' in ca:
-                analisis_row = r
+        # ── Detección de formato + parseo (registry) ───────────
+        # El registry prueba todos los perfiles registrados (v1 con
+        # marcadores, v2 resumido tipo Jacuzzi, futuros) y elige el de
+        # mayor score. Si nadie pasa el umbral, devolvemos error claro.
+        parsed = detect_and_parse(ws)
+        if not parsed.get('profile_id'):
+            return JsonResponse({
+                'success': False,
+                'error': parsed.get('error') or 'No se reconoció el formato del Excel.',
+                'all_scores': parsed.get('all_scores', []),
+            }, status=400)
 
-        # ── Tipo de cambio: prioridad celda L3, fallback I4 ────
-        tipo_cambio = Decimal('0')
-        try:
-            v_l3 = ws.cell(3, 12).value
-            if v_l3 is not None and v_l3 != '':
-                tc_try = _dec(v_l3)
-                if tc_try > Decimal('0.0001') and tc_try < Decimal('100'):
-                    tipo_cambio = tc_try
-        except Exception:
-            pass
-        if tipo_cambio == 0:
-            try:
-                cell_i4 = str(ws.cell(4, 9).value or '')
-                if 'dolar' in cell_i4.lower():
-                    m = re.search(r'\d+\.?\d*', cell_i4.replace('Dolares', '').replace('dolares', ''))
-                    if m:
-                        tc_try = _dec(m.group())
-                        if tc_try > Decimal('0.0001') and tc_try < Decimal('100'):
-                            tipo_cambio = tc_try
-            except Exception:
-                pass
+        meta = parsed['meta']
+        # Tipo de cambio viene como Decimal desde el módulo; lo normalizamos.
+        tipo_cambio = meta.get('tipo_cambio') or Decimal('0')
+        if not isinstance(tipo_cambio, Decimal):
+            tipo_cambio = _dec(tipo_cambio)
+        # Limpio el TC del meta para no persistirlo dentro del JSON
+        # (vol.tipo_cambio es DecimalField del modelo).
+        meta = {k: v for k, v in meta.items() if k != 'tipo_cambio'}
 
-        # ── Header → meta v4 ───────────────────────────────────
-        meta = {
-            'cliente': str(ws.cell(1, 3).value or '').strip(),
-            'contacto': str(ws.cell(1, 6).value or '').strip(),
-            'elaboro': str(ws.cell(2, 6).value or '').strip(),
-            'fecha': _excel_iso_date(ws.cell(2, 12).value),
+        eq_items = parsed['eq_items']
+        mo_items = parsed['mo_items']
+        cmo_items = parsed['cmo_items']
+        formato_detectado = {
+            'id': parsed['profile_id'],
+            'name': parsed['profile_name'],
+            'confidence': parsed['confidence'],
+            'all_scores': parsed['all_scores'],
         }
-
-        # ── PASS 2: parseo de items ────────────────────────────
-        eq_items = []      # equipamiento
-        mo_items = []      # mano_obra
-        cmo_items = []     # costo_mo
-
-        # Heuristica de sub-rótulos en EQUIPAMIENTO:
-        #   1. col A en mayúsculas, sin numero_parte/cantidad/descripcion en col D
-        #      (ej. "EQUIPAMIENTO", "ACCESORIOS", "EQUIPO ELEVACION")
-        #   2. col D con texto y sin marca / sin numero_parte / sin cantidad
-        #      (ej. "ESCALERILLA DE 100 MM PARA IDF3", "INCLUYE:")
-        eq_summary_kw = ('total materiales', 'total de materiales')
-
-        # Bloque EQUIPAMIENTO: filas anteriores a "MANO DE OBRA"
-        eq_end = mo_section_start_row or total_mo_row or cmo_header_row or analisis_row or (ws.max_row + 1)
-        for r in range(6, eq_end):
-            col_a = ws.cell(r, 1).value
-            col_b = ws.cell(r, 2).value
-            col_c = ws.cell(r, 3).value
-            col_d = ws.cell(r, 4).value
-            col_e = ws.cell(r, 5).value   # Precio Lista
-            col_f = ws.cell(r, 6).value   # Desc venta (decimal 0-1)
-            col_i = ws.cell(r, 9).value   # Desc costo (decimal 0-1)
-            col_j = ws.cell(r, 10).value  # Costo Unitario
-            col_l = ws.cell(r, 12).value  # Proveedor
-            col_m = ws.cell(r, 13).value  # Entrega
-
-            ca_str = str(col_a or '').strip()
-            cd_str = str(col_d or '').strip()
-            ca_low = ca_str.lower()
-            cd_low = cd_str.lower()
-
-            # Skip totales / fila completamente vacía
-            if not ca_str and not cd_str and not col_b and not col_c:
-                continue
-            if any(kw in ca_low for kw in eq_summary_kw):
-                continue
-            if any(kw in cd_low for kw in eq_summary_kw):
-                continue
-
-            # Sub-rótulo tipo 1: col A en mayúsculas (sin marca de producto)
-            # — heurística: col A no vacío, col B/C/E vacíos, no es "Marca" (header de tabla).
-            is_table_header = (
-                ca_low == 'marca'
-                and cd_low in ('descripcion', 'descripción', '')
-            )
-            if is_table_header:
-                continue
-            is_subrotulo_a = (
-                ca_str and not col_b and not col_c
-                and (col_e is None or col_e == '')
-            )
-            if is_subrotulo_a:
-                eq_items.append({
-                    'id': _vol_uuid(),
-                    'row_type': 'header',
-                    'texto': ca_str,
-                })
-                continue
-
-            # Sub-rótulo tipo 2: col D con texto descriptivo,
-            # sin marca/parte/cantidad cuantificable.
-            is_subrotulo_d = (
-                cd_str and not col_a and not col_b
-                and (col_c is None or col_c == '' or _dec(col_c) == 0
-                     and (col_e is None or col_e == ''))
-            )
-            # Refinamiento: si la descripción está en col D pero hay marca, es item normal.
-            # Si la cantidad es 0 y todo lo demás está vacío, lo tratamos como rótulo.
-            if is_subrotulo_d:
-                eq_items.append({
-                    'id': _vol_uuid(),
-                    'row_type': 'header',
-                    'texto': cd_str,
-                })
-                continue
-
-            # Item normal: requiere descripción
-            if not cd_str:
-                continue
-
-            cantidad = _dec(col_c)
-            precio_lista = _dec(col_e)
-            desc_venta_dec = _dec(col_f)  # 0-1
-            desc_costo_dec = _dec(col_i)  # 0-1
-            costo_unit = _dec(col_j)
-
-            # Permitimos cantidad=0 (productos opcionales del catálogo).
-            # Si TODO está en cero (incluyendo sin marca), saltamos para
-            # no inundar de filas vacías.
-            if cantidad == 0 and precio_lista == 0 and costo_unit == 0 and not ca_str and not col_b:
-                continue
-
-            # `costoUnitario`:
-            #   - Si Excel trae costo > 0 → lo usamos tal cual (override).
-            #   - Si costo == 0 PERO descuentoCosto > 0 → None para que el
-            #     frontend lo derive de `precioLista * (1 - descCosto/100)`.
-            #   - Si AMBOS son 0 → 0 explícito (item de pura ganancia,
-            #     ej. MISCELANEOS donde se cobra 150 y no cuesta nada). Si
-            #     pusiéramos None aquí, el frontend derivaría 150 (= precioLista)
-            #     y el costo total se infla, dañando el resumen financiero.
-            if costo_unit > 0:
-                costo_v4 = float(costo_unit)
-            elif desc_costo_dec > 0:
-                costo_v4 = None
-            else:
-                costo_v4 = 0.0
-            eq_items.append({
-                'id': _vol_uuid(),
-                'row_type': 'item',
-                'marca': ca_str,
-                'parte': str(col_b or '').strip(),
-                'cantidad': float(cantidad),
-                'descripcion': cd_str,
-                'precioLista': float(precio_lista),
-                'descuentoVenta': float((desc_venta_dec * Decimal('100')).quantize(Decimal('0.01'))),
-                'descuentoCosto': float((desc_costo_dec * Decimal('100')).quantize(Decimal('0.01'))),
-                'costoUnitario': costo_v4,
-                'proveedor': str(col_l or '').strip(),
-                'entrega': str(col_m or '').strip(),
-                'notas': '',
-            })
-
-        # Bloque MANO DE OBRA: entre mo_header_row (excl.) y total_mo_row (excl.)
-        if mo_header_row and total_mo_row and total_mo_row > mo_header_row:
-            for r in range(mo_header_row + 1, total_mo_row):
-                col_a = ws.cell(r, 1).value
-                col_b = ws.cell(r, 2).value
-                col_c = ws.cell(r, 3).value
-                col_d = ws.cell(r, 4).value
-                col_e = ws.cell(r, 5).value
-                col_f = ws.cell(r, 6).value
-                col_i = ws.cell(r, 9).value  # Notas (texto largo)
-
-                ca_str = str(col_a or '').strip()
-                cd_str = str(col_d or '').strip()
-                if not cd_str:
-                    continue
-                # No intentamos detectar sub-rótulos aquí; la mano_obra es
-                # plana en el Excel actual.
-
-                cantidad = _dec(col_c)
-                precio_lista = _dec(col_e)
-                desc_venta_dec = _dec(col_f)
-                # Si todo está en cero y sin marca, saltamos
-                if cantidad == 0 and precio_lista == 0 and not ca_str:
-                    continue
-
-                mo_items.append({
-                    'id': _vol_uuid(),
-                    'marca': ca_str or 'BAJANET',
-                    'parte': str(col_b or '').strip() or 'SERVICIOS PROFESIONALES',
-                    'cantidad': float(cantidad),
-                    'descripcion': cd_str,
-                    'precioLista': float(precio_lista),
-                    'descuentoVenta': float((desc_venta_dec * Decimal('100')).quantize(Decimal('0.01'))),
-                    'notas': str(col_i or '').strip(),
-                })
-
-        # Bloque COSTO MO INTERNO: entre cmo_header_row (excl.) y costo_mo_row (excl.)
-        if cmo_header_row and costo_mo_row and costo_mo_row > cmo_header_row:
-            for r in range(cmo_header_row + 1, costo_mo_row):
-                col_c = ws.cell(r, 3).value   # Cantidad
-                col_d = ws.cell(r, 4).value   # Descripción
-                col_e = ws.cell(r, 5).value   # Costo unit
-                col_i = ws.cell(r, 9).value   # Días
-                cd_str = str(col_d or '').strip()
-                if not cd_str:
-                    continue
-                cantidad = _dec(col_c)
-                costo_unit = _dec(col_e)
-                dias = _dec(col_i, default=Decimal('1'))
-                if cantidad == 0 and costo_unit == 0:
-                    continue
-                cmo_items.append({
-                    'id': _vol_uuid(),
-                    'descripcion': cd_str,
-                    'cantidad': float(cantidad),
-                    'costoUnitario': float(costo_unit),
-                    'dias': float(dias) if dias > 0 else 1.0,
-                })
 
         # ── Snapshot defensivo de la data anterior ─────────────
         old_data = vol.data if isinstance(vol.data, dict) else {}
@@ -3980,6 +3776,7 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 'costo_mo_items': len(cmo_items),
                 'tipo_cambio_detectado': float(tipo_cambio) if tipo_cambio > 0 else None,
                 'meta': meta,
+                'formato_detectado': formato_detectado,
             },
         })
     except Exception as e:

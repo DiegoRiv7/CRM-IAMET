@@ -1519,11 +1519,19 @@
             var tcMsg = resumen.tipo_cambio_detectado
                 ? ' · TC ' + Number(resumen.tipo_cambio_detectado).toFixed(2)
                 : '';
-            // Notificación discreta — el host puede definir lwToast.
+            // Formato detectado por el registry — útil para que el ingeniero
+            // sepa qué perfil "ganó" (y reportar si detectó mal).
+            var fmt = resumen.formato_detectado || {};
+            var fmtMsg = fmt.name
+                ? ' · formato: ' + fmt.name + ' (' + (fmt.confidence || 0) + '%)'
+                : '';
             if (typeof window.lwToast === 'function') {
-                window.lwToast('Volumetría importada · ' + nEq + ' eq · ' + nMo + ' MO · ' + nCmo + ' CMO' + tcMsg, 'success');
+                window.lwToast(
+                    'Volumetría importada · ' + nEq + ' eq · ' + nMo + ' MO · ' + nCmo + ' CMO' + tcMsg + fmtMsg,
+                    'success'
+                );
             } else {
-                console.log('[crmVolumetria] Importado: eq=' + nEq + ' mo=' + nMo + ' cmo=' + nCmo + tcMsg);
+                console.log('[crmVolumetria] Importado: eq=' + nEq + ' mo=' + nMo + ' cmo=' + nCmo + tcMsg + fmtMsg);
             }
         }).catch(function (err) {
             log('importar-excel failed', err);
