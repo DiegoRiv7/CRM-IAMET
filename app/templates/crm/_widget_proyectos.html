@@ -154,6 +154,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
           Levantamientos
         </button>
+        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="partidasv4" onclick="proyectosSetTab('partidasv4')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M3 11h18v4H3z"/><path d="M3 19h18v2H3z"/></svg>
+          Partidas
+        </button>
         <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="tareas" onclick="proyectosSetTab('tareas')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           Tareas
@@ -461,6 +465,40 @@
             <div class="lev-list-empty-title">Sin levantamientos todavía</div>
             <div class="lev-list-empty-hint">Haz clic en <b>Iniciar levantamiento</b> para arrancar el wizard de 5 fases.</div>
           </div>
+        </div>
+      </div>
+
+      <!-- TAB: Partidas (sincronizado con la última volumetría completada) -->
+      <div id="proyPane_partidasv4" class="proy-tab-pane" style="display:none;">
+        <div class="proy-tab-header">
+          <h3>Partidas</h3>
+          <div class="proy-tab-actions" style="display:flex;align-items:center;gap:10px;">
+            <span id="proyPartidasOrigen" style="font-size:0.75rem;color:#86868B;"></span>
+          </div>
+        </div>
+        <div class="proy-partidas-table-wrap" style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:10px;">
+          <table class="proy-partidas-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+            <thead>
+              <tr style="background:#F8F9FB;color:#48484A;text-align:left;">
+                <th style="padding:10px 12px;">Categoría</th>
+                <th style="padding:10px 12px;">Descripción</th>
+                <th style="padding:10px 12px;">Marca</th>
+                <th style="padding:10px 12px;">No. Parte</th>
+                <th style="padding:10px 12px;text-align:center;">Cant.</th>
+                <th style="padding:10px 12px;text-align:center;">Pendiente</th>
+                <th style="padding:10px 12px;text-align:right;">P. Lista</th>
+                <th style="padding:10px 12px;text-align:center;">Desc.</th>
+                <th style="padding:10px 12px;text-align:right;">Costo Unit.</th>
+                <th style="padding:10px 12px;text-align:right;">P. Venta</th>
+                <th style="padding:10px 12px;text-align:right;">Ganancia</th>
+                <th style="padding:10px 12px;">Proveedor</th>
+                <th style="padding:10px 12px;">Estado</th>
+                <th style="padding:10px 12px;text-align:center;width:36px;"></th>
+              </tr>
+            </thead>
+            <tbody id="proyPartidasBody"></tbody>
+            <tfoot id="proyPartidasFoot"></tfoot>
+          </table>
         </div>
       </div>
 

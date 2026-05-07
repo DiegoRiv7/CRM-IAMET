@@ -1249,6 +1249,7 @@
         switch (tabName) {
             case 'info':       renderInfo(); break;
             case 'partidas':   renderLevantamientos(currentProjectId); break;
+            case 'partidasv4': renderPartidas(currentProjectId); break;
             case 'financiero': renderFinanciero(currentProjectId); break;
             case 'programa':   renderProgramaObra(currentProjectId); break;
             case 'tareas':     renderTareas(currentProjectId); break;
@@ -1256,7 +1257,7 @@
         }
 
         // Update KPIs based on active tab
-        if (tabName === 'partidas' || tabName === 'programa') {
+        if (tabName === 'partidas' || tabName === 'partidasv4' || tabName === 'programa') {
             renderOperationalKPIs(currentProjectId);
         } else if (tabName === 'financiero') {
             renderFinancialKPIs(currentProjectId);
@@ -1296,7 +1297,11 @@
                 var apiTotales = Array.isArray(respData) ? null : (respData.totales || null);
 
                 if (items.length === 0) {
-                    container.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#8e8e93">No hay partidas registradas</td></tr>';
+                    container.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#8e8e93">' +
+                        '<div style="font-size:0.95rem;color:#48484A;margin-bottom:6px;">Aún no hay partidas en este proyecto</div>' +
+                        '<div style="font-size:0.78rem;color:#86868B;">Las partidas se llenan automáticamente cuando un ingeniero importa una volumetría desde Excel ' +
+                        'o marca una volumetría como completada en la <b>Fase 3</b> del levantamiento.</div>' +
+                        '</td></tr>';
                     var foot = el('proyPartidasFoot');
                     if (foot) foot.innerHTML = '';
                     return;

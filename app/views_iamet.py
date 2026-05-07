@@ -1262,6 +1262,147 @@ def api_partida_eliminar(request, partida_id):
     return JsonResponse({'success': True, 'data': {'deleted': partida_id}})
 
 
+# ─── Sincronización Volumetría → ProyectoPartida ────────────────
+#
+# Cuando el ingeniero importa un Excel o marca una volumetría como
+# completada, las partidas del proyecto (sección "Partidas" del
+# widget) se actualizan automáticamente con los items de esa
+# volumetría. Equipamiento + Mano de Obra entran como partidas
+# (Costos Adicionales NO — son costos internos nuestros).
+#
+# La sincronización es un upsert por clave (numero_parte,
+# descripcion[:80]) para preservar las OCs ya capturadas:
+#   - Match → actualiza precios/cantidad/costos. Mantiene
+#     cantidad_pendiente y status (OCs de compra ya hechas).
+#   - No match → crea una partida nueva con cantidad_pendiente = cantidad.
+#   - Partidas viejas que ya no aparecen:
+#     · Si tienen OCs asociadas → se quedan (OCs no se pierden).
+#     · Si no → se eliminan.
+
+def _partida_key(numero_parte, descripcion):
+    """Clave de matching estable y barata para upsert."""
+    np = (numero_parte or '').strip().lower()
+    desc = (descripcion or '').strip().lower()[:80]
+    return (np, desc)
+
+
+def _sync_partidas_proyecto_from_volumetria(proyecto, vol):
+    """Reemplaza las ProyectoPartida del proyecto con los items de la
+    volumetría v4. Preserva cantidad_pendiente, status y OCs cuando hay
+    match por (numero_parte, descripcion)."""
+    if not proyecto or not vol:
+        return {'creadas': 0, 'actualizadas': 0, 'eliminadas': 0, 'preservadas': 0}
+
+    lev = vol.levantamiento
+    if not lev:
+        return {'creadas': 0, 'actualizadas': 0, 'eliminadas': 0, 'preservadas': 0}
+
+    ctx = _build_volumetria_ctx(
+        lev, sin_costos=False,
+        data_override=vol.data, volumetria_obj=vol,
+    )
+
+    # Construir lista plana de items destino con sus valores normalizados.
+    nuevos = []   # [(key, payload)]
+    for sec in (ctx.get('sections_eq') or []):
+        for r in (sec.get('rows') or []):
+            if r.get('is_header'):
+                continue
+            qty = Decimal(str(r.get('qty') or 0))
+            if qty <= 0:
+                continue
+            payload = {
+                'categoria': 'equipamiento',
+                'descripcion': (r.get('desc') or '')[:500] or 'Item sin descripción',
+                'marca': (r.get('marca') or '')[:255],
+                'numero_parte': (r.get('parte') or '')[:255],
+                'cantidad': qty,
+                'precio_lista': Decimal(str(r.get('precio_lista') or 0)),
+                'descuento': Decimal(str(r.get('desc_venta') or 0)),
+                'costo_unitario': Decimal(str(r.get('costo_unit') or 0)),
+                'precio_venta_unitario': Decimal(str(r.get('precio_unit') or 0)),
+                'proveedor': (r.get('proveedor') or '')[:255],
+            }
+            nuevos.append((_partida_key(payload['numero_parte'], payload['descripcion']), payload))
+
+    for sec in (ctx.get('sections_mo') or []):
+        for r in (sec.get('rows') or []):
+            qty = Decimal(str(r.get('qty') or 0))
+            if qty <= 0:
+                continue
+            payload = {
+                'categoria': 'mano_obra',
+                'descripcion': (r.get('desc') or '')[:500] or 'Servicio sin descripción',
+                'marca': (r.get('marca') or '')[:255],
+                'numero_parte': (r.get('parte') or '')[:255],
+                'cantidad': qty,
+                'precio_lista': Decimal(str(r.get('precio_lista') or 0)),
+                'descuento': Decimal('0'),
+                'costo_unitario': Decimal('0'),
+                'precio_venta_unitario': Decimal(str(r.get('precio_unit') or 0)),
+                'proveedor': '',
+            }
+            nuevos.append((_partida_key(payload['numero_parte'], payload['descripcion']), payload))
+
+    # Index por clave (si una clave matchea varias entradas en la
+    # volumetría, agrupamos sumando cantidades).
+    nuevos_por_key = {}
+    for k, p in nuevos:
+        if k in nuevos_por_key:
+            nuevos_por_key[k]['cantidad'] += p['cantidad']
+        else:
+            nuevos_por_key[k] = dict(p)
+
+    # Cargar partidas existentes.
+    existentes = list(ProyectoPartida.objects.filter(proyecto=proyecto))
+    existentes_por_key = {}
+    for p in existentes:
+        existentes_por_key.setdefault(
+            _partida_key(p.numero_parte, p.descripcion), []
+        ).append(p)
+
+    creadas = actualizadas = eliminadas = preservadas = 0
+
+    # Upsert
+    for key, payload in nuevos_por_key.items():
+        if key in existentes_por_key and existentes_por_key[key]:
+            partida = existentes_por_key[key].pop(0)
+            # Preservamos cantidad_pendiente y status si ya hubo OCs.
+            had_ocs = partida.ordenes_compra.exists()
+            for f, v in payload.items():
+                setattr(partida, f, v)
+            if not had_ocs:
+                partida.cantidad_pendiente = payload['cantidad']
+                partida.status = 'pending'
+            partida.save()
+            actualizadas += 1
+        else:
+            ProyectoPartida.objects.create(
+                proyecto=proyecto,
+                cantidad_pendiente=payload['cantidad'],
+                status='pending',
+                **payload,
+            )
+            creadas += 1
+
+    # Limpiar partidas que ya no están: borrar las sin OCs, conservar
+    # las que tienen OCs (no perdemos historial de compras).
+    for sobrantes in existentes_por_key.values():
+        for partida in sobrantes:
+            if partida.ordenes_compra.exists():
+                preservadas += 1
+            else:
+                partida.delete()
+                eliminadas += 1
+
+    return {
+        'creadas': creadas,
+        'actualizadas': actualizadas,
+        'eliminadas': eliminadas,
+        'preservadas': preservadas,
+    }
+
+
 # ═══════════════════════════════════════════════════════════════
 #  ORDENES DE COMPRA
 # ═══════════════════════════════════════════════════════════════
@@ -3281,8 +3422,22 @@ def api_volumetria_actualizar(request, volumetria_id):
             return JsonResponse({'success': False, 'error': 'tipo_cambio fuera de rango (0.0001–100)'}, status=400)
         vol.tipo_cambio = tc
         update_fields.append('tipo_cambio')
+    status_anterior = vol.status
     vol.actualizado_por = request.user
     vol.save(update_fields=update_fields)
+
+    # Cuando una volumetría se marca como completada, sincronizamos
+    # las partidas del proyecto con sus items (es la fuente de verdad
+    # de la sección "Partidas" del widget de proyecto).
+    if (status_anterior != 'completada' and vol.status == 'completada'
+            and vol.levantamiento and vol.levantamiento.proyecto):
+        try:
+            _sync_partidas_proyecto_from_volumetria(
+                vol.levantamiento.proyecto, vol,
+            )
+        except Exception as _sync_err:
+            print('[partidas-sync] error en actualizar:', _sync_err)
+
     return JsonResponse({'success': True, 'data': _vol_to_dict(vol)})
 
 
@@ -3886,6 +4041,18 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 pass
         vol.save(update_fields=update_fields)
 
+        # Sincronizar las partidas del proyecto con esta volumetría.
+        # La volumetría recién importada se vuelve la fuente de verdad
+        # del tab "Partidas" del widget de proyecto.
+        sync_resumen = None
+        try:
+            if vol.levantamiento and vol.levantamiento.proyecto:
+                sync_resumen = _sync_partidas_proyecto_from_volumetria(
+                    vol.levantamiento.proyecto, vol,
+                )
+        except Exception as _sync_err:
+            print('[partidas-sync] error en import:', _sync_err)
+
         payload = _vol_to_dict(vol)
         payload['data'] = vol.data
         return JsonResponse({
@@ -3899,6 +4066,7 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 'tipo_cambio_detectado': float(tipo_cambio) if tipo_cambio > 0 else None,
                 'meta': meta,
                 'formato_detectado': formato_detectado,
+                'partidas_sync': sync_resumen,
             },
         })
     except Exception as e:
