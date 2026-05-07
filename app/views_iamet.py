@@ -3163,9 +3163,18 @@ def api_volumetrias_lista(request, levantamiento_id):
     qs = lev.volumetrias.select_related('creado_por', 'actualizado_por').all()
     if _user_es_solo_lectura_levantamiento(request.user):
         qs = qs.filter(status='completada')
+    # Incluimos `data` en el listado para que el overlay del vendedor
+    # pueda renderizar el resumen de partidas sin pegarle un fetch
+    # adicional por cada volumetría (eran 0 partidas mostradas porque
+    # _vol_to_dict no traía data).
+    payload = []
+    for v in qs:
+        item = _vol_to_dict(v)
+        item['data'] = v.data or {}
+        payload.append(item)
     return JsonResponse({
         'ok': True,
-        'data': [_vol_to_dict(v) for v in qs],
+        'data': payload,
         'puede_editar': not _user_es_solo_lectura_levantamiento(request.user),
     })
 
