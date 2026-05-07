@@ -2428,14 +2428,22 @@
         var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/';
         var url;
         if (state.phase === 3) {
+            // Pasamos volumetria_id para que el endpoint lea ProyectoVolumetria.data
+            // (v4) en lugar del legacy lev.fase3_data. Sin esto el export sale vacío.
+            var volId = state.volumetriaActiva && state.volumetriaActiva.id;
+            if (!volId) {
+                alert('Abrí una volumetría antes de exportar.');
+                return;
+            }
+            var qsVol = 'volumetria_id=' + encodeURIComponent(volId);
             if (mode === 'dl-vol-xlsx') {
-                url = base + 'volumetria-xlsx/';
+                url = base + 'volumetria-xlsx/?' + qsVol;
             } else if (mode === 'view-vol-full') {
-                url = base + 'volumetria-pdf/';
+                url = base + 'volumetria-pdf/?' + qsVol;
             } else if (mode === 'dl-vol-full') {
-                url = base + 'volumetria-pdf/?download=1';
+                url = base + 'volumetria-pdf/?download=1&' + qsVol;
             } else if (mode === 'dl-vol-nocost') {
-                url = base + 'volumetria-pdf/?download=1&sin_costos=1';
+                url = base + 'volumetria-pdf/?download=1&sin_costos=1&' + qsVol;
             } else {
                 return;
             }
