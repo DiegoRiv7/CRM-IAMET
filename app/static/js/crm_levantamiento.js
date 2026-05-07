@@ -4294,8 +4294,9 @@
             // listas para enviar como propuesta externa al cliente.
             var volBase = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-pdf/?volumetria_id=' + vol.id;
             var viewUrl = volBase;                                  // ver = completa con costos
-            var dlPdf   = volBase + '&download=1&sin_costos=1';     // descarga = sin costos
-            var xlsx    = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-xlsx/?volumetria_id=' + vol.id + '&sin_costos=1';
+            var dlPdf   = volBase + '&download=1&sin_costos=1';     // descarga PDF = sin costos (cliente)
+            // Excel: completo con costos (uso interno del vendedor)
+            var xlsx    = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-xlsx/?volumetria_id=' + vol.id;
             html += '<a href="' + viewUrl + '" target="_blank" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
             html += '<div><div class="lvc-export-item-title">Ver en pestaña</div><div class="lvc-export-item-sub">Versión completa (con costos)</div></div>';
@@ -4306,7 +4307,7 @@
             html += '</a>';
             html += '<a href="' + xlsx + '" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>';
-            html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Sin costos — formato .xlsx</div></div>';
+            html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Versión completa con costos — formato .xlsx</div></div>';
             html += '</a>';
             // Separador + opción "Generar cotización" — placeholder visual
             // por ahora; la lógica se conecta cuando el usuario indique.

@@ -3404,10 +3404,13 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
         data_override=vol.data, volumetria_obj=vol,
     )
     sections_eq = ctx.get('sections_eq') or []
-    if not sections_eq or not any((s.get('rows') or []) for s in sections_eq):
+    sections_mo_pre = ctx.get('sections_mo') or []
+    has_eq_rows = any((s.get('rows') or []) for s in sections_eq)
+    has_mo_rows = any((s.get('rows') or []) for s in sections_mo_pre)
+    if not has_eq_rows and not has_mo_rows:
         return JsonResponse({
             'success': False,
-            'error': 'La volumetría no tiene equipamiento capturado para cotizar.',
+            'error': 'La volumetría no tiene equipamiento ni mano de obra para cotizar.',
         }, status=400)
 
     # Marca del documento — preparado para configuración futura.
@@ -3449,90 +3452,171 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
             created_by=request.user,
         )
 
+        # ── Recolectar filas (títulos + items) en una lista plana ──
+        # Lo construimos primero en memoria para poder filtrar títulos
+        # que no tienen ningún item real debajo (sub-rótulos vacíos del
+        # Excel, ej. "1 1/2\" STEEL CONNECTOR" sin productos).
+        pending = []  # [{tipo: 'titulo'|'producto', ...}]
+
+        def _push_titulo(texto):
+            t = (texto or '').strip()
+            if t:
+                pending.append({'tipo': 'titulo', 'texto': t})
+
+        def _push_producto_eq(r):
+            try:
+                qty_raw = float(r.get('qty') or 0)
+            except (TypeError, ValueError):
+                qty_raw = 0
+            if qty_raw <= 0:
+                return
+            qty = max(1, int(round(qty_raw)))
+            try:
+                precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
+            except Exception:
+                precio_unit = _D('0.00')
+            total_row = (precio_unit * qty).quantize(_D('0.01'))
+            marca_raw = (r.get('marca') or '').strip()
+            marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
+            parte_raw = (r.get('parte') or '').strip()
+            desc_raw = (r.get('desc') or '').strip()
+            nombre = parte_raw or marca_raw or (desc_raw[:80] if desc_raw else 'Producto')
+            if not marca_db and marca_raw:
+                nombre = (marca_raw + ' ' + nombre).strip()
+            pending.append({
+                'tipo': 'producto',
+                'nombre': nombre[:255],
+                'desc': desc_raw,
+                'cantidad': qty,
+                'precio_unit': precio_unit,
+                'total': total_row,
+                'marca_db': marca_db,
+                'parte': parte_raw[:100],
+            })
+
+        def _push_producto_mo(r):
+            try:
+                qty_raw = float(r.get('qty') or 0)
+            except (TypeError, ValueError):
+                qty_raw = 0
+            if qty_raw <= 0:
+                return
+            qty = max(1, int(round(qty_raw)))
+            try:
+                precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
+            except Exception:
+                precio_unit = _D('0.00')
+            total_row = (precio_unit * qty).quantize(_D('0.01'))
+            desc_raw = (r.get('desc') or '').strip()
+            parte_raw = (r.get('parte') or '').strip() or 'SERVICIOS PROFESIONALES'
+            marca_raw = (r.get('marca') or '').strip() or 'BAJANET'
+            marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
+            nombre = parte_raw or desc_raw[:80] or 'Servicio'
+            if not marca_db:
+                nombre = (marca_raw + ' ' + nombre).strip() if marca_raw else nombre
+            pending.append({
+                'tipo': 'producto',
+                'nombre': nombre[:255],
+                'desc': desc_raw,
+                'cantidad': qty,
+                'precio_unit': precio_unit,
+                'total': total_row,
+                'marca_db': marca_db,
+                'parte': parte_raw[:100],
+            })
+
+        # Equipamiento + Mano de Obra (mano de obra cuenta como partida
+        # cobrada al cliente, así que sí va al subtotal del PDF).
+        sections_mo = ctx.get('sections_mo') or []
+
+        if sections_eq:
+            _push_titulo('EQUIPAMIENTO / MATERIALES')
+            for sec in sections_eq:
+                _push_titulo(sec.get('titulo'))
+                for r in (sec.get('rows') or []):
+                    if r.get('is_header'):
+                        _push_titulo(r.get('texto'))
+                    else:
+                        _push_producto_eq(r)
+
+        if sections_mo:
+            _push_titulo('MANO DE OBRA / SERVICIOS')
+            for sec in sections_mo:
+                _push_titulo(sec.get('titulo'))
+                for r in (sec.get('rows') or []):
+                    _push_producto_mo(r)
+
+        # ── Filtrar títulos sin items reales debajo ────────────────
+        # Pasada hacia atrás: solo conservamos un título si entre él y el
+        # siguiente título hay al menos UN producto. Resultado: limpia
+        # los rótulos vacíos del Excel.
+        filtered = []
+        i = 0
+        n = len(pending)
+        while i < n:
+            row = pending[i]
+            if row['tipo'] == 'titulo':
+                # ¿Hay un producto antes del próximo título?
+                tiene_items = False
+                j = i + 1
+                while j < n and pending[j]['tipo'] != 'titulo':
+                    if pending[j]['tipo'] == 'producto':
+                        tiene_items = True
+                        break
+                    j += 1
+                if tiene_items:
+                    filtered.append(row)
+            else:
+                filtered.append(row)
+            i += 1
+
+        # También colapsamos títulos consecutivos: si dos títulos quedan
+        # uno tras otro (porque un sub-rótulo se eliminó), nos quedamos
+        # solo con el último (es el más cercano a los productos reales).
+        compact = []
+        for row in filtered:
+            if (row['tipo'] == 'titulo' and compact
+                    and compact[-1]['tipo'] == 'titulo'):
+                compact[-1] = row
+            else:
+                compact.append(row)
+
+        # ── Persistir partidas ────────────────────────────────────
         orden = 0
         subtotal = _D('0.00')
-
-        def _emitir_titulo(texto):
-            nonlocal orden
-            DetalleCotizacion.objects.create(
-                cotizacion=cotizacion,
-                nombre_producto=(texto or '')[:255],
-                descripcion='',
-                cantidad=0,
-                precio_unitario=_D('0.00'),
-                descuento_porcentaje=_D('0.00'),
-                precio_con_descuento=_D('0.00'),
-                total=_D('0.00'),
-                marca=None,
-                no_parte='',
-                orden=orden,
-                tipo='titulo',
-            )
-            orden += 1
-
-        for sec in sections_eq:
-            sec_titulo = (sec.get('titulo') or '').strip()
-            if sec_titulo:
-                _emitir_titulo(sec_titulo)
-            for r in (sec.get('rows') or []):
-                # Headers inline (rótulos) → también van como título de
-                # sub-sección dentro de la cotización.
-                if r.get('is_header'):
-                    txt = (r.get('texto') or '').strip()
-                    if txt:
-                        _emitir_titulo(txt)
-                    continue
-
-                # Cantidad — el modelo Cotizacion la guarda como entero.
-                # Volumetría puede traer floats (ej. metros), pero para
-                # cotizaciones reales casi siempre son piezas. Redondeamos
-                # con piso de 1 si la cantidad de captura era > 0.
-                try:
-                    qty_raw = float(r.get('qty') or 0)
-                except (TypeError, ValueError):
-                    qty_raw = 0
-                if qty_raw <= 0:
-                    continue
-                qty = max(1, int(round(qty_raw)))
-
-                # Precio unitario: ya viene con descuento de venta aplicado,
-                # así que NO usamos descuento_porcentaje en la línea.
-                try:
-                    precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
-                except Exception:
-                    precio_unit = _D('0.00')
-                total_row = (precio_unit * qty).quantize(_D('0.01'))
-
-                # Marca: si está en el catálogo restringido del modelo la
-                # guardamos en el campo marca. Si no, la prependemos al
-                # nombre del producto para que no se pierda.
-                marca_raw = (r.get('marca') or '').strip()
-                marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
-
-                # Nombre del producto — preferimos el no. parte; fallback a
-                # marca; fallback a la primera línea de la descripción.
-                parte_raw = (r.get('parte') or '').strip()
-                desc_raw = (r.get('desc') or '').strip()
-                nombre = parte_raw or marca_raw or (desc_raw[:80] if desc_raw else 'Producto')
-                if not marca_db and marca_raw:
-                    nombre = (marca_raw + ' ' + nombre).strip()
-
+        for row in compact:
+            if row['tipo'] == 'titulo':
                 DetalleCotizacion.objects.create(
                     cotizacion=cotizacion,
-                    nombre_producto=nombre[:255],
-                    descripcion=desc_raw,
-                    cantidad=qty,
-                    precio_unitario=precio_unit,
+                    nombre_producto=row['texto'][:255],
+                    descripcion='',
+                    cantidad=0,
+                    precio_unitario=_D('0.00'),
                     descuento_porcentaje=_D('0.00'),
-                    precio_con_descuento=precio_unit,
-                    total=total_row,
-                    marca=marca_db,
-                    no_parte=parte_raw[:100],
+                    precio_con_descuento=_D('0.00'),
+                    total=_D('0.00'),
+                    marca=None,
+                    no_parte='',
+                    orden=orden,
+                    tipo='titulo',
+                )
+            else:
+                DetalleCotizacion.objects.create(
+                    cotizacion=cotizacion,
+                    nombre_producto=row['nombre'],
+                    descripcion=row['desc'],
+                    cantidad=row['cantidad'],
+                    precio_unitario=row['precio_unit'],
+                    descuento_porcentaje=_D('0.00'),
+                    precio_con_descuento=row['precio_unit'],
+                    total=row['total'],
+                    marca=row['marca_db'],
+                    no_parte=row['parte'],
                     orden=orden,
                     tipo='producto',
                 )
-                subtotal += total_row
-                orden += 1
+                subtotal += row['total']
+            orden += 1
 
         iva_amount = (subtotal * iva_rate).quantize(_D('0.01'))
         cotizacion.subtotal = subtotal.quantize(_D('0.01'))
