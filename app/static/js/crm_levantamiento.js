@@ -3978,51 +3978,115 @@
     }
 
     // Para Fase 3 (Volumetría) — vendedor sólo ve cantidades, NO precios.
+    // Resumen v4 → cuenta items (sin headers/rótulos) por tipo de sección.
+    function _v4Counts(d) {
+        d = d || {};
+        var secs = Array.isArray(d.secciones) ? d.secciones : [];
+        var n = { eq: 0, mo: 0, cmo: 0 };
+        secs.forEach(function (sec) {
+            var tipo = sec.tipo || 'equipamiento';
+            (sec.items || []).forEach(function (it) {
+                if ((it || {}).row_type === 'header') return;
+                if (tipo === 'equipamiento') n.eq++;
+                else if (tipo === 'mano_obra') n.mo++;
+                else if (tipo === 'costo_mo') n.cmo++;
+            });
+        });
+        return n;
+    }
+
     function _detail3(d) {
         d = d || {};
-        var html = '';
+        // ── Schema v4: lee `secciones[]` con items tipados ───────────
+        var secs = Array.isArray(d.secciones) ? d.secciones : null;
+        if (secs && secs.length) {
+            var html = '';
+            // Agrupar por tipo para mostrar bloques claros
+            var byTipo = { equipamiento: [], mano_obra: [], costo_mo: [] };
+            secs.forEach(function (sec) {
+                var tipo = sec.tipo || 'equipamiento';
+                if (!byTipo[tipo]) byTipo[tipo] = [];
+                byTipo[tipo].push(sec);
+            });
+            var blocks = [
+                { tipo: 'equipamiento', label: 'Equipamiento / Materiales' },
+                { tipo: 'mano_obra',    label: 'Mano de obra / servicios' },
+                { tipo: 'costo_mo',     label: 'Costos adicionales' },
+            ];
+            var totalItems = 0;
+            blocks.forEach(function (b) {
+                var lst = byTipo[b.tipo] || [];
+                var items = [];
+                lst.forEach(function (sec) {
+                    (sec.items || []).forEach(function (it) {
+                        if ((it || {}).row_type === 'header') return;
+                        items.push(it);
+                    });
+                });
+                if (!items.length) return;
+                totalItems += items.length;
+                html += '<div class="lvc-detail-block-title">' + _esc(b.label) +
+                        ' (' + items.length + ')</div>';
+                html += '<ul class="lvc-detail-list">';
+                items.forEach(function (it) {
+                    var qty = it.cantidad != null ? it.cantidad : '?';
+                    var desc = it.descripcion || '—';
+                    var marca = it.marca ? _esc(it.marca) + ' · ' : '';
+                    var parte = it.parte ? ' (' + _esc(it.parte) + ')' : '';
+                    html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + '</b> · ' +
+                            marca + _esc(desc) + parte + '</li>';
+                });
+                html += '</ul>';
+            });
+            if (!totalItems) {
+                return '<div class="lvc-detail-value is-muted">Sin partidas capturadas.</div>';
+            }
+            return html + '<div class="lvc-detail-value is-muted" style="margin-top:14px;font-size:11.5px;">' +
+                   'ⓘ Aquí solo se listan cantidades y descripciones. Para ver costos y precios, descarga el PDF.' +
+                   '</div>';
+        }
+        // ── Fallback: schema v1 legacy ───────────────────────────────
+        var html2 = '';
         var mat = d.materiales || [];
         if (mat.length) {
-            html += '<div class="lvc-detail-block-title">Materiales / equipos (' + mat.length + ')</div>';
-            html += '<ul class="lvc-detail-list">';
+            html2 += '<div class="lvc-detail-block-title">Materiales / equipos (' + mat.length + ')</div>';
+            html2 += '<ul class="lvc-detail-list">';
             mat.forEach(function(r) {
                 var qty = r.qty || r.cantidad || '?';
                 var unidad = r.unidad || 'PZA';
                 var desc = r.desc || r.descripcion || '—';
-                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+                html2 += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
             });
-            html += '</ul>';
+            html2 += '</ul>';
         }
         var mo = d.manoObra || [];
         if (mo.length) {
-            html += '<div class="lvc-detail-block-title">Mano de obra / servicios (' + mo.length + ')</div>';
-            html += '<ul class="lvc-detail-list">';
+            html2 += '<div class="lvc-detail-block-title">Mano de obra / servicios (' + mo.length + ')</div>';
+            html2 += '<ul class="lvc-detail-list">';
             mo.forEach(function(r) {
                 var qty = r.qty || r.cantidad || '?';
                 var unidad = r.unidad || 'JOR';
                 var desc = r.desc || r.descripcion || '—';
-                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+                html2 += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
             });
-            html += '</ul>';
+            html2 += '</ul>';
         }
         var gas = d.gastos || [];
         if (gas.length) {
-            html += '<div class="lvc-detail-block-title">Gastos operativos (' + gas.length + ')</div>';
-            html += '<ul class="lvc-detail-list">';
+            html2 += '<div class="lvc-detail-block-title">Gastos operativos (' + gas.length + ')</div>';
+            html2 += '<ul class="lvc-detail-list">';
             gas.forEach(function(r) {
                 var qty = r.qty || r.cantidad || '?';
                 var unidad = r.unidad || '';
                 var desc = r.desc || r.descripcion || '—';
-                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+                html2 += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
             });
-            html += '</ul>';
+            html2 += '</ul>';
         }
         if (!mat.length && !mo.length && !gas.length) {
             return '<div class="lvc-detail-value is-muted">Sin partidas capturadas.</div>';
         }
-        // Nota: por privacidad financiera, ocultamos costos/precios al vendedor.
-        // El PDF "sin costos" cubre la entrega externa.
-        return html + '<div class="lvc-detail-value is-muted" style="margin-top:14px;font-size:11.5px;">ⓘ Los costos y precios no se muestran. Descarga el PDF de presupuesto para verlos.</div>';
+        return html2 + '<div class="lvc-detail-value is-muted" style="margin-top:14px;font-size:11.5px;">ⓘ Los costos y precios no se muestran. Descarga el PDF de presupuesto para verlos.</div>';
     }
 
     function _detail4(d) {
@@ -4187,15 +4251,26 @@
         if (!vols.length) return '<div class="lvc-detail-empty">No hay volumetrías completadas aún.</div>';
         return vols.map(function (vol) {
             var d = vol.data || {};
+            // Resumen de partidas: schema v4 (secciones) con fallback a v1.
             var partidasResumen = '';
-            var nM = (d.materiales || []).length;
-            var nMO = (d.manoObra || []).length;
-            var nG = (d.gastos || []).length;
-            var bits = [];
-            if (nM)  bits.push(nM  + ' material'  + (nM  === 1 ? '' : 'es'));
-            if (nMO) bits.push(nMO + ' mano de obra');
-            if (nG)  bits.push(nG  + ' gasto' + (nG === 1 ? '' : 's'));
-            partidasResumen = bits.length ? bits.join(' · ') : 'Sin partidas';
+            var hasV4 = Array.isArray(d.secciones) && d.secciones.length;
+            if (hasV4) {
+                var c = _v4Counts(d);
+                var bits = [];
+                if (c.eq)  bits.push(c.eq  + ' equipamiento');
+                if (c.mo)  bits.push(c.mo  + ' mano de obra');
+                if (c.cmo) bits.push(c.cmo + ' costo' + (c.cmo === 1 ? '' : 's'));
+                partidasResumen = bits.length ? bits.join(' · ') : 'Sin partidas';
+            } else {
+                var nM = (d.materiales || []).length;
+                var nMO = (d.manoObra || []).length;
+                var nG = (d.gastos || []).length;
+                var bits1 = [];
+                if (nM)  bits1.push(nM  + ' material'  + (nM  === 1 ? '' : 'es'));
+                if (nMO) bits1.push(nMO + ' mano de obra');
+                if (nG)  bits1.push(nG  + ' gasto' + (nG === 1 ? '' : 's'));
+                partidasResumen = bits1.length ? bits1.join(' · ') : 'Sin partidas';
+            }
 
             var html = '';
             html += '<div class="lvc-vol-card" data-vol-id="' + vol.id + '">';
@@ -4214,22 +4289,25 @@
             html += '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
             html += '</button>';
             html += '<div class="lvc-export-menu" id="lvcExportMenu' + vol.id + '">';
-            // Vendedor sólo opciones SIN COSTOS — coherente con la regla
-            // existente del overlay (vendedor nunca ve precios).
-            var base = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-pdf/?volumetria_id=' + vol.id + '&sin_costos=1';
-            var baseDl = base + '&download=1';
-            var xlsx = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-xlsx/?volumetria_id=' + vol.id + '&sin_costos=1';
-            html += '<a href="' + base + '" target="_blank" class="lvc-export-item">';
+            // "Ver en pestaña": versión COMPLETA (con costos) — para que
+            // el vendedor revise costos y precios antes de mandarle al
+            // cliente. Las descargas (PDF / Excel) van sin costos —
+            // listas para enviar como propuesta externa al cliente.
+            var volBase = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-pdf/?volumetria_id=' + vol.id;
+            var viewUrl = volBase;                                  // ver = completa con costos
+            var dlPdf   = volBase + '&download=1&sin_costos=1';     // descarga = sin costos
+            var xlsx    = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-xlsx/?volumetria_id=' + vol.id + '&sin_costos=1';
+            html += '<a href="' + viewUrl + '" target="_blank" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-            html += '<div><div class="lvc-export-item-title">Ver en pestaña</div><div class="lvc-export-item-sub">Previsualizar (sin costos)</div></div>';
+            html += '<div><div class="lvc-export-item-title">Ver en pestaña</div><div class="lvc-export-item-sub">Versión completa (con costos)</div></div>';
             html += '</a>';
-            html += '<a href="' + baseDl + '" class="lvc-export-item">';
+            html += '<a href="' + dlPdf + '" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>';
-            html += '<div><div class="lvc-export-item-title">Descargar PDF</div><div class="lvc-export-item-sub">Cantidades y descripciones</div></div>';
+            html += '<div><div class="lvc-export-item-title">Descargar PDF para cliente</div><div class="lvc-export-item-sub">Sin costos — solo cantidades y descripciones</div></div>';
             html += '</a>';
             html += '<a href="' + xlsx + '" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>';
-            html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Formato .xlsx</div></div>';
+            html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Sin costos — formato .xlsx</div></div>';
             html += '</a>';
             // Separador + opción "Generar cotización" — placeholder visual
             // por ahora; la lógica se conecta cuando el usuario indique.
