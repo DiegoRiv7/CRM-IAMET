@@ -1316,20 +1316,22 @@
                     // Encode item data as JSON attribute for menu actions
                     var itemJson = encodeURIComponent(JSON.stringify(item));
 
-                    html += '<tr class="proy-partida-row" data-partida-idx="' + idx + '">' +
-                        '<td>' + categoryDot(item.categoria) + (item.categoria || '\u2014') + '</td>' +
-                        '<td title="' + (item.descripcion || '') + '">' + truncate(item.descripcion, 28) + '</td>' +
-                        '<td>' + (item.marca || '\u2014') + '</td>' +
-                        '<td style="font-size:0.72rem;color:#aeaeb2">' + (item.numero_parte || '\u2014') + '</td>' +
-                        '<td style="text-align:center">' + (item.cantidad || 0) + '</td>' +
-                        '<td style="text-align:center;color:' + ((item.cantidad_pendiente || 0) > 0 ? '#f59e0b' : '#10b981') + '">' + (item.cantidad_pendiente || 0) + '</td>' +
-                        '<td style="text-align:right">' + fmtMoney(item.precio_lista) + '</td>' +
-                        '<td style="text-align:center">' + (item.descuento || 0) + '%</td>' +
-                        '<td style="text-align:right">' + fmtMoney(item.costo_unitario) + '</td>' +
-                        '<td style="text-align:right">' + fmtMoney(item.precio_venta_unitario) + '</td>' +
-                        '<td style="text-align:right;color:#10b981">' + fmtMoney(totalProfit) + '</td>' +
-                        '<td>' + truncate(item.proveedor, 16) + '</td>' +
-                        '<td><span class="proy-badge ' + statusClass(item.status) + '">' + statusLabel(item.status) + '</span></td>' +
+                    var rowStyle = 'border-bottom:1px solid rgba(0,0,0,0.04);';
+                    var cellStyle = 'padding:14px 14px;';
+                    html += '<tr class="proy-partida-row" data-partida-idx="' + idx + '" style="' + rowStyle + '">' +
+                        '<td style="' + cellStyle + '">' + categoryDot(item.categoria) + (item.categoria || '\u2014') + '</td>' +
+                        '<td style="' + cellStyle + '" title="' + (item.descripcion || '') + '">' + truncate(item.descripcion, 32) + '</td>' +
+                        '<td style="' + cellStyle + '">' + (item.marca || '\u2014') + '</td>' +
+                        '<td style="' + cellStyle + 'font-size:0.72rem;color:#aeaeb2">' + (item.numero_parte || '\u2014') + '</td>' +
+                        '<td style="' + cellStyle + 'text-align:center">' + (item.cantidad || 0) + '</td>' +
+                        '<td style="' + cellStyle + 'text-align:center;color:' + ((item.cantidad_pendiente || 0) > 0 ? '#f59e0b' : '#10b981') + '">' + (item.cantidad_pendiente || 0) + '</td>' +
+                        '<td style="' + cellStyle + 'text-align:right">' + fmtMoney(item.precio_lista) + '</td>' +
+                        '<td style="' + cellStyle + 'text-align:center">' + (item.descuento || 0) + '%</td>' +
+                        '<td style="' + cellStyle + 'text-align:right">' + fmtMoney(item.costo_unitario) + '</td>' +
+                        '<td style="' + cellStyle + 'text-align:right">' + fmtMoney(item.precio_venta_unitario) + '</td>' +
+                        '<td style="' + cellStyle + 'text-align:right;color:#10b981">' + fmtMoney(totalProfit) + '</td>' +
+                        '<td style="' + cellStyle + '">' + truncate(item.proveedor, 16) + '</td>' +
+                        '<td style="' + cellStyle + '"><span class="proy-badge ' + statusClass(item.status) + '">' + statusLabel(item.status) + '</span></td>' +
                         '<td style="text-align:center;width:36px;position:relative;">' +
                             '<button class="proy-partida-menu-btn" data-partida="' + itemJson + '" onclick="event.stopPropagation();proyectosPartidaMenuToggle(this)" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:#8e8e93;padding:4px 8px;border-radius:6px;line-height:1;" title="Opciones">' +
                                 '\u22EF' +
@@ -4319,6 +4321,7 @@
         var body = document.getElementById('proyPartidasHistorialBody');
         if (!bd || !body) return;
         bd.style.display = 'flex';
+        _historialBodyCache = null;
         body.innerHTML = '<div style="text-align:center;padding:40px;color:#86868B;">Cargando…</div>';
         _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/volumetria-versiones/').then(function (resp) {
             if (!(resp.ok || resp.success) || !Array.isArray(resp.data)) {
@@ -4349,17 +4352,18 @@
                 var fechaStr = v.fecha ? new Date(v.fecha).toLocaleString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
                 var esActual = !!v.is_current;
                 html += '<tr style="border-bottom:1px solid rgba(0,0,0,0.04);' + (esActual ? 'background:rgba(0,122,255,0.05);' : '') + '">' +
-                    '<td style="padding:10px 12px;font-weight:600;">' + (esActual ? '<span style="color:#007AFF;">Actual</span>' : ('v' + v.version)) + '</td>' +
-                    '<td style="padding:10px 12px;color:#48484A;">' + (v.archivo || '—') + '</td>' +
-                    '<td style="padding:10px 12px;color:#48484A;">' + (v.subido_por || '—') + '</td>' +
-                    '<td style="padding:10px 12px;color:#86868B;">' + fechaStr + '</td>' +
-                    '<td style="padding:10px 12px;text-align:center;">' + (v.num_partidas || 0) + '</td>' +
-                    '<td style="padding:10px 12px;text-align:right;">' + fmtMoney(v.total_costo || 0) + '</td>' +
-                    '<td style="padding:10px 12px;text-align:right;">' + fmtMoney(v.total_venta || 0) + '</td>' +
-                    '<td style="padding:10px 12px;text-align:right;color:#10B981;">' + fmtMoney(v.ganancia || 0) + '</td>' +
-                    '<td style="padding:10px 12px;text-align:center;">' +
+                    '<td style="padding:12px 12px;font-weight:600;">' + (esActual ? '<span style="color:#007AFF;">Actual</span>' : ('v' + v.version)) + '</td>' +
+                    '<td style="padding:12px 12px;color:#48484A;">' + (v.archivo || '—') + '</td>' +
+                    '<td style="padding:12px 12px;color:#48484A;">' + (v.subido_por || '—') + '</td>' +
+                    '<td style="padding:12px 12px;color:#86868B;">' + fechaStr + '</td>' +
+                    '<td style="padding:12px 12px;text-align:center;">' + (v.num_partidas || 0) + '</td>' +
+                    '<td style="padding:12px 12px;text-align:right;">' + fmtMoney(v.total_costo || 0) + '</td>' +
+                    '<td style="padding:12px 12px;text-align:right;">' + fmtMoney(v.total_venta || 0) + '</td>' +
+                    '<td style="padding:12px 12px;text-align:right;color:#10B981;">' + fmtMoney(v.ganancia || 0) + '</td>' +
+                    '<td style="padding:12px 12px;text-align:right;white-space:nowrap;">' +
                         (esActual ? '' :
-                            '<button class="proy-btn proy-btn-outline" type="button" onclick="proyPartidasRestaurar(' + v.version + ')" style="font-size:0.7rem;padding:4px 10px;">Restaurar</button>') +
+                            '<button class="proy-btn proy-btn-outline" type="button" onclick="proyPartidasPrevisualizar(' + v.version + ')" style="font-size:0.7rem;padding:5px 10px;margin-right:6px;">Previsualizar</button>' +
+                            '<button class="proy-btn proy-btn-outline" type="button" onclick="proyPartidasRestaurar(' + v.version + ')" style="font-size:0.7rem;padding:5px 10px;">Restaurar</button>') +
                     '</td>' +
                     '</tr>';
             });
@@ -4373,6 +4377,7 @@
     window.proyPartidasHistorialCerrar = function () {
         var bd = document.getElementById('proyPartidasHistorialBackdrop');
         if (bd) bd.style.display = 'none';
+        _historialBodyCache = null;
     };
 
     // Click en backdrop cierra el modal
@@ -4380,6 +4385,102 @@
         var bd = document.getElementById('proyPartidasHistorialBackdrop');
         if (bd && e.target === bd) bd.style.display = 'none';
     });
+
+    // Previsualizar las partidas de una versión específica (solo lectura).
+    // Reusa el mismo backdrop del Historial pero reemplaza el body con
+    // la tabla de partidas snapshot — sin modificar nada en BD.
+    var _historialBodyCache = null;
+    window.proyPartidasPrevisualizar = function (versionNum) {
+        if (!currentProjectId) return;
+        var body = document.getElementById('proyPartidasHistorialBody');
+        if (!body) return;
+        if (_historialBodyCache === null) _historialBodyCache = body.innerHTML;
+        body.innerHTML = '<div style="text-align:center;padding:40px;color:#86868B;">Cargando…</div>';
+
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/volumetria-versiones/').then(function (resp) {
+            if (!(resp.ok || resp.success) || !Array.isArray(resp.data)) {
+                body.innerHTML = '<div style="padding:30px;text-align:center;color:#EF4444;">No se pudo cargar la versión.</div>';
+                return;
+            }
+            var v = resp.data.filter(function (x) { return x.version === versionNum && !x.is_current; })[0];
+            if (!v) {
+                body.innerHTML = '<div style="padding:30px;text-align:center;color:#EF4444;">Versión no encontrada.</div>';
+                return;
+            }
+            var partidas = v.partidas_json || [];
+            var fechaStr = v.fecha ? new Date(v.fecha).toLocaleString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+
+            var html = '';
+            // Header con back + datos de la versión + acciones
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap;">';
+            html += '<div style="display:flex;align-items:center;gap:10px;">';
+            html += '<button type="button" onclick="proyPartidasHistorialVolver()" class="proy-btn proy-btn-outline" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:4px;padding:5px 10px;">' +
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+                    'Volver al historial</button>';
+            html += '<div>';
+            html += '<div style="font-size:0.95rem;font-weight:700;">Vista previa · v' + v.version + '</div>';
+            html += '<div style="font-size:0.72rem;color:#86868B;">' + (v.archivo || 'Sin nombre') + ' · ' + (v.subido_por || '—') + ' · ' + fechaStr + '</div>';
+            html += '</div></div>';
+            html += '<button type="button" class="proy-btn proy-btn-primary" onclick="proyPartidasRestaurar(' + v.version + ')" style="font-size:0.74rem;padding:6px 14px;">Restaurar esta versión</button>';
+            html += '</div>';
+
+            // Resumen de totales
+            html += '<div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">';
+            html += '<div style="flex:1;min-width:130px;padding:10px 14px;background:#F8F9FB;border-radius:10px;"><div style="font-size:0.65rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Partidas</div><div style="font-size:1.1rem;font-weight:700;margin-top:2px;">' + (v.num_partidas || partidas.length) + '</div></div>';
+            html += '<div style="flex:1;min-width:130px;padding:10px 14px;background:#F8F9FB;border-radius:10px;"><div style="font-size:0.65rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Costo total</div><div style="font-size:1.1rem;font-weight:700;margin-top:2px;">' + fmtMoney(v.total_costo || 0) + '</div></div>';
+            html += '<div style="flex:1;min-width:130px;padding:10px 14px;background:#F8F9FB;border-radius:10px;"><div style="font-size:0.65rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Venta total</div><div style="font-size:1.1rem;font-weight:700;margin-top:2px;">' + fmtMoney(v.total_venta || 0) + '</div></div>';
+            html += '<div style="flex:1;min-width:130px;padding:10px 14px;background:#ECFDF5;border-radius:10px;"><div style="font-size:0.65rem;color:#047857;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Ganancia</div><div style="font-size:1.1rem;font-weight:700;margin-top:2px;color:#10B981;">' + fmtMoney(v.ganancia || 0) + '</div></div>';
+            html += '</div>';
+
+            // Tabla de partidas snapshot (solo lectura)
+            if (!partidas.length) {
+                html += '<div style="padding:30px;text-align:center;color:#86868B;border:1px dashed #E5E7EB;border-radius:10px;">Esta versión quedó sin partidas.</div>';
+            } else {
+                html += '<div style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:10px;">';
+                html += '<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+                html += '<thead><tr style="background:#F8F9FB;text-align:left;border-bottom:1px solid rgba(0,0,0,0.06);">' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">Categoría</th>' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">Descripción</th>' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">Marca</th>' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;">No. Parte</th>' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:center;">Cant.</th>' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:right;">Costo Un.</th>' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:right;">P. Venta</th>' +
+                    '<th style="padding:10px 12px;font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:#48484A;text-align:right;">Ganancia</th>' +
+                    '</tr></thead><tbody>';
+                partidas.forEach(function (p) {
+                    var ganancia = p.ganancia != null ? p.ganancia : ((p.precio_venta_unitario || 0) - (p.costo_unitario || 0)) * (p.cantidad || 0);
+                    html += '<tr style="border-bottom:1px solid rgba(0,0,0,0.04);">' +
+                        '<td style="padding:11px 12px;">' + (p.categoria || '—') + '</td>' +
+                        '<td style="padding:11px 12px;" title="' + (p.descripcion || '') + '">' + truncate(p.descripcion || '—', 38) + '</td>' +
+                        '<td style="padding:11px 12px;">' + (p.marca || '—') + '</td>' +
+                        '<td style="padding:11px 12px;font-size:0.72rem;color:#aeaeb2;">' + (p.numero_parte || '—') + '</td>' +
+                        '<td style="padding:11px 12px;text-align:center;">' + (p.cantidad || 0) + '</td>' +
+                        '<td style="padding:11px 12px;text-align:right;">' + fmtMoney(p.costo_unitario || 0) + '</td>' +
+                        '<td style="padding:11px 12px;text-align:right;">' + fmtMoney(p.precio_venta_unitario || 0) + '</td>' +
+                        '<td style="padding:11px 12px;text-align:right;color:#10B981;">' + fmtMoney(ganancia) + '</td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            body.innerHTML = html;
+        }).catch(function () {
+            body.innerHTML = '<div style="padding:30px;text-align:center;color:#EF4444;">Error de red.</div>';
+        });
+    };
+
+    // Volver del preview al listado de versiones
+    window.proyPartidasHistorialVolver = function () {
+        var body = document.getElementById('proyPartidasHistorialBody');
+        if (!body) return;
+        if (_historialBodyCache !== null) {
+            body.innerHTML = _historialBodyCache;
+            _historialBodyCache = null;
+        } else {
+            // Fallback: re-fetchea desde cero
+            window.proyPartidasHistorialAbrir();
+        }
+    };
 
     window.proyPartidasRestaurar = function (versionNum) {
         if (!currentProjectId) return;
