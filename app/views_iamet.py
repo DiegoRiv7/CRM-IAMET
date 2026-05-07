@@ -1143,6 +1143,27 @@ def api_partidas_lista(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
+    # Auto-sync on-demand: si el proyecto no tiene partidas pero hay
+    # alguna volumetría completada en sus levantamientos, sincronizamos
+    # al vuelo. Esto cubre proyectos que se completaron antes del
+    # despliegue del trigger automático y proyectos legacy.
+    if not proyecto.partidas.exists():
+        ultima_vol = ProyectoVolumetria.objects.filter(
+            levantamiento__proyecto=proyecto,
+            status='completada',
+        ).order_by('-fecha_actualizacion').first()
+        if ultima_vol and isinstance(ultima_vol.data, dict):
+            secs = ultima_vol.data.get('secciones')
+            if isinstance(secs, list) and any((s or {}).get('items') for s in secs):
+                try:
+                    _sync_partidas_proyecto_from_volumetria(
+                        proyecto, ultima_vol,
+                        subido_por=request.user,
+                        archivo_nombre=f"Auto-sync · {ultima_vol.nombre or ('Vol ' + str(ultima_vol.id))}",
+                    )
+                except Exception as _sync_err:
+                    print('[partidas-sync] auto-sync error:', _sync_err)
+
     partidas = list(proyecto.partidas.all())
     items = [_partida_to_dict(p) for p in partidas]
 
@@ -1260,6 +1281,63 @@ def api_partida_eliminar(request, partida_id):
 
     partida.delete()
     return JsonResponse({'success': True, 'data': {'deleted': partida_id}})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_partidas_sync(request, proyecto_id):
+    """Resincroniza las partidas del proyecto a partir de su última
+    volumetría (más recientemente actualizada). Útil cuando el ingeniero
+    editó la volumetría sin marcarla como completada y quiere reflejar
+    el cambio en el tab Partidas."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    # Preferimos la última completada; si no hay, la última cualquiera
+    # (puede ser borrador). Esto da control al usuario para refrescar.
+    ultima_vol = (
+        ProyectoVolumetria.objects.filter(
+            levantamiento__proyecto=proyecto, status='completada',
+        ).order_by('-fecha_actualizacion').first()
+        or ProyectoVolumetria.objects.filter(
+            levantamiento__proyecto=proyecto,
+        ).order_by('-fecha_actualizacion').first()
+    )
+    if not ultima_vol:
+        return JsonResponse({
+            'success': False,
+            'error': 'El proyecto no tiene volumetrías capturadas en ningún levantamiento.',
+        }, status=400)
+
+    secs = (ultima_vol.data or {}).get('secciones') if isinstance(ultima_vol.data, dict) else None
+    if not isinstance(secs, list) or not any((s or {}).get('items') for s in secs):
+        return JsonResponse({
+            'success': False,
+            'error': 'La última volumetría está vacía. Pídele al ingeniero importarla o capturar items.',
+        }, status=400)
+
+    try:
+        resumen = _sync_partidas_proyecto_from_volumetria(
+            proyecto, ultima_vol,
+            subido_por=request.user,
+            archivo_nombre=f"Sync manual · {ultima_vol.nombre or ('Vol ' + str(ultima_vol.id))}",
+        )
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error sincronizando: {e}'}, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'resumen': resumen,
+        'volumetria': {
+            'id': ultima_vol.id,
+            'nombre': ultima_vol.nombre,
+            'status': ultima_vol.status,
+        },
+    })
 
 
 # ─── Sincronización Volumetría → ProyectoPartida ────────────────

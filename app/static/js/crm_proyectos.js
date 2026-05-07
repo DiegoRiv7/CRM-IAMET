@@ -4314,6 +4314,32 @@
         return (bytes / 1048576).toFixed(1) + ' MB';
     }
 
+    // ── Sync manual de partidas desde la última volumetría ───────
+    window.proyPartidasSync = function () {
+        if (!currentProjectId) return;
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        fetch('/app/api/iamet/proyectos/' + currentProjectId + '/partidas/sync/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+        }).then(function (r) { return r.json(); }).then(function (j) {
+            if (j && j.success) {
+                if (typeof renderPartidas === 'function') renderPartidas(currentProjectId);
+                var r = j.resumen || {};
+                var vol = j.volumetria || {};
+                var msg = 'Sincronizado desde "' + (vol.nombre || ('Vol #' + vol.id)) + '" · ' +
+                          (r.creadas || 0) + ' nuevas, ' +
+                          (r.actualizadas || 0) + ' actualizadas, ' +
+                          (r.eliminadas || 0) + ' eliminadas, ' +
+                          (r.preservadas || 0) + ' con OCs preservadas.';
+                if (typeof window.lwToast === 'function') window.lwToast(msg, 'ok');
+                else alert(msg);
+            } else {
+                alert((j && j.error) || 'No se pudo sincronizar.');
+            }
+        }).catch(function () { alert('Error de red al sincronizar.'); });
+    };
+
     // ── Historial de partidas (modal) ────────────────────────────
     window.proyPartidasHistorialAbrir = function () {
         if (!currentProjectId) return;

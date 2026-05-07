@@ -350,6 +350,7 @@ urlpatterns = [
     path('api/iamet/proyectos/<int:proyecto_id>/miembros/<int:user_id>/', views_iamet.api_proyecto_miembro_quitar, name='api_iamet_proyecto_miembro_quitar'),
     # Partidas
     path('api/iamet/proyectos/<int:proyecto_id>/partidas/', views_iamet.api_partidas_lista, name='api_iamet_partidas_lista'),
+    path('api/iamet/proyectos/<int:proyecto_id>/partidas/sync/', views_iamet.api_partidas_sync, name='api_iamet_partidas_sync'),
     path('api/iamet/partidas/crear/', views_iamet.api_partida_crear, name='api_iamet_partida_crear'),
     path('api/iamet/partidas/<int:partida_id>/actualizar/', views_iamet.api_partida_actualizar, name='api_iamet_partida_actualizar'),
     path('api/iamet/partidas/<int:partida_id>/eliminar/', views_iamet.api_partida_eliminar, name='api_iamet_partida_eliminar'),
