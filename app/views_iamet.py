@@ -4178,6 +4178,9 @@ def _build_volumetria_ctx(lev, sin_costos=False, data_override=None, volumetria_
                         'texto': (it.get('texto') or it.get('descripcion') or '').strip(),
                     })
                     continue
+                # idx solo cuenta items (no headers/rótulos), así el #
+                # del PDF refleja el item N de la sección, no el N de
+                # la lista completa de filas.
                 qty = _num((it or {}).get('cantidad'))
                 p_lista = _num((it or {}).get('precioLista'))
                 desc_v = _num((it or {}).get('descuentoVenta'))
@@ -4200,6 +4203,7 @@ def _build_volumetria_ctx(lev, sin_costos=False, data_override=None, volumetria_
                 n_items += 1
                 rows.append({
                     'is_header': False,
+                    'idx': n_items,
                     'qty': qty, 'qty_fmt': _fmt_qty(qty),
                     'marca': (it or {}).get('marca') or '',
                     'parte': (it or {}).get('parte') or '',
