@@ -486,6 +486,11 @@
         else if (n === 4) renderPhase4();
         else if (n === 5) renderPhase5();
 
+        // El botón Exportar de la toolbar puede deshabilitarse en Fase 3
+        // según la cantidad de volumetrías (ver _lwP3SyncTopExportBtn).
+        // En el resto de fases siempre se habilita.
+        try { _lwP3SyncTopExportBtn(); } catch (e) { /* defensivo */ }
+
         // Reaplicar readonly tras cada renderPhase: las renderPhaseN crean
         // inputs dinámicamente (productos, evidencias, etc.) y necesitan que
         // el estado readonly se propague a esos elementos recién insertados.
@@ -2406,6 +2411,11 @@
     // ── Dropdown PDF ───────────────────────────────────────
     window.lwPdfMenuToggle = function (e) {
         if (e) e.stopPropagation();
+        var btn = $('lwPdfBtn');
+        if (btn && (btn.disabled || btn.classList.contains('is-disabled'))) {
+            // El botón está gris: el hover ya muestra la razón en el title.
+            return;
+        }
         var m = $('lwPdfMenu');
         if (!m) return;
         m.style.display = m.style.display === 'block' ? 'none' : 'block';
@@ -2430,9 +2440,15 @@
         if (state.phase === 3) {
             // Pasamos volumetria_id para que el endpoint lea ProyectoVolumetria.data
             // (v4) en lugar del legacy lev.fase3_data. Sin esto el export sale vacío.
+            // Si estamos en el listado con UNA sola volumetría, la usamos
+            // por default. Con 2+ obligamos a usar las acciones de fila.
             var volId = state.volumetriaActiva && state.volumetriaActiva.id;
             if (!volId) {
-                alert('Abrí una volumetría antes de exportar.');
+                var lst = state.volumetrias || [];
+                if (lst.length === 1) volId = lst[0].id;
+            }
+            if (!volId) {
+                alert('Abrí una volumetría antes de exportar (o usa el botón de la columna Acciones cuando hay varias).');
                 return;
             }
             var qsVol = 'volumetria_id=' + encodeURIComponent(volId);
@@ -2569,30 +2585,115 @@
             h += '<div class="lw-p3-table-wrap">';
             h += '<table class="lw-p3-list-table"><thead><tr>';
             h += '<th>Volumetría</th><th>Estado</th><th>Creado por</th><th>Editado por</th><th>Última edición</th>';
-            if (puedeEditar) h += '<th></th>';
+            h += '<th class="lw-p3-list-actions-th">Acciones</th>';
             h += '</tr></thead><tbody>';
             list.forEach(function (v) {
                 var pillCls = v.status === 'completada' ? 'lw-p3-pill-ok' : 'lw-p3-pill-draft';
+                var nombreSafe = esc(v.nombre || '').replace(/'/g, '&#39;');
                 h += '<tr onclick="lwP3OpenVolumetria(' + v.id + ')">';
                 h += '<td class="lw-p3-list-name">' + esc(v.nombre || ('Volumetría ' + v.id)) + '</td>';
                 h += '<td><span class="lw-p3-pill ' + pillCls + '">' + esc(v.status_label || v.status) + '</span></td>';
                 h += '<td>' + esc(v.creado_por_nombre || '—') + '</td>';
                 h += '<td>' + esc(v.actualizado_por_nombre || '—') + '</td>';
                 h += '<td class="lw-p3-list-date">' + _lwP3FmtFecha(v.fecha_actualizacion) + '</td>';
-                if (puedeEditar) {
-                    h += '<td class="lw-p3-list-actions" onclick="event.stopPropagation();">';
-                    if (v.status !== 'completada') {
-                        h += '<button type="button" class="lw-p3-list-del" title="Eliminar borrador" onclick="lwP3DeleteVolumetria(' + v.id + ', \'' + esc(v.nombre || '') + '\')">';
-                        h += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
-                        h += '</button>';
-                    }
-                    h += '</td>';
+                h += '<td class="lw-p3-list-actions" onclick="event.stopPropagation();">';
+                // Botón Exportar (todos los usuarios)
+                h += '<div class="lw-p3-row-actions">';
+                h += '<div class="lw-p3-export-wrap">';
+                h += '<button type="button" class="lw-p3-row-btn" title="Exportar" onclick="lwP3RowExportToggle(event, ' + v.id + ')">';
+                h += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+                h += '</button>';
+                h += '<div class="lw-p3-export-menu" id="lwP3ExportMenu_' + v.id + '">';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'view-vol-full\')">Ver PDF (con costos)</div>';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-full\')">Descargar PDF completo</div>';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-nocost\')">Descargar PDF sin costos</div>';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-xlsx\')">Descargar Excel</div>';
+                h += '</div>';
+                h += '</div>';
+                // Botón Eliminar — solo ingeniero y solo borradores
+                if (puedeEditar && v.status !== 'completada') {
+                    h += '<button type="button" class="lw-p3-row-btn lw-p3-row-btn-danger" title="Eliminar borrador" onclick="lwP3DeleteVolumetria(' + v.id + ', \'' + nombreSafe + '\')">';
+                    h += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
+                    h += '</button>';
                 }
+                h += '</div>';
+                h += '</td>';
                 h += '</tr>';
             });
             h += '</tbody></table></div>';
         }
         panel.innerHTML = h;
+        // Sincroniza el estado del botón Exportar de la toolbar
+        // (se deshabilita si no hay exactamente 1 volumetría en el listado).
+        _lwP3SyncTopExportBtn();
+    }
+
+    // Toggle del menú de export por fila. Cierra los demás abiertos.
+    window.lwP3RowExportToggle = function (e, volId) {
+        if (e) e.stopPropagation();
+        var openMenu = document.getElementById('lwP3ExportMenu_' + volId);
+        // Cierra todos los menús abiertos primero
+        document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+            if (el !== openMenu) el.classList.remove('is-open');
+        });
+        if (openMenu) openMenu.classList.toggle('is-open');
+    };
+
+    // Disparador del export para una volumetría específica desde la fila.
+    window.lwP3RowExport = function (volId, mode) {
+        // Cierra menú abierto
+        document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+            el.classList.remove('is-open');
+        });
+        var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/';
+        var qs = 'volumetria_id=' + encodeURIComponent(volId);
+        var url;
+        if (mode === 'dl-vol-xlsx')        url = base + 'volumetria-xlsx/?' + qs;
+        else if (mode === 'view-vol-full') url = base + 'volumetria-pdf/?' + qs;
+        else if (mode === 'dl-vol-full')   url = base + 'volumetria-pdf/?download=1&' + qs;
+        else if (mode === 'dl-vol-nocost') url = base + 'volumetria-pdf/?download=1&sin_costos=1&' + qs;
+        else return;
+        window.open(url, '_blank');
+    };
+
+    // Cierra los menús de export al hacer click fuera.
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest || !e.target.closest('.lw-p3-export-wrap')) {
+            document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+                el.classList.remove('is-open');
+            });
+        }
+    });
+
+    // Habilita/deshabilita el botón Exportar de la toolbar según el contexto:
+    //  - Editor de volumetría (state.volumetriaActiva) → habilitado.
+    //  - Listado con 1 volumetría → habilitado (la usa por default).
+    //  - Listado con 0 o ≥2 volumetrías → deshabilitado (el usuario debe
+    //    exportar desde la columna Acciones de cada fila).
+    function _lwP3SyncTopExportBtn() {
+        var btn = $('lwPdfBtn');
+        if (!btn) return;
+        // Solo aplica en Fase 3
+        if (state.phase !== 3) {
+            btn.disabled = false;
+            btn.classList.remove('is-disabled');
+            btn.title = 'Exportar documento';
+            return;
+        }
+        var nVol = (state.volumetrias || []).length;
+        var enListado = !state.volumetriaActiva;
+        var disable = false;
+        var reason = '';
+        if (enListado && nVol === 0) {
+            disable = true;
+            reason = 'No hay volumetrías para exportar';
+        } else if (enListado && nVol > 1) {
+            disable = true;
+            reason = 'Hay varias volumetrías — usa el botón de la columna Acciones';
+        }
+        btn.disabled = disable;
+        btn.classList.toggle('is-disabled', disable);
+        btn.title = reason || 'Exportar documento';
     }
 
     function _lwP3FmtFecha(iso) {
@@ -2948,6 +3049,10 @@
         // tope y la página no scrolleaba abajo.
         if (wrap)  wrap.style.display  = 'flex';
         if (!state.volumetriaActiva) return;
+
+        // El editor sí tiene una volumetría activa: habilita el botón
+        // Exportar de la toolbar (en el listado se deshabilita en >1 vols).
+        try { _lwP3SyncTopExportBtn(); } catch (e) { /* defensivo */ }
 
         // Delegamos la mesa de trabajo al módulo crm_volumetria (v3).
         // El head viejo ("Volver al listado · nombre · status · toggle")

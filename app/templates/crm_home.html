@@ -2,7 +2,7 @@
 {% block title %}Sistema CRM{% endblock %}
 {% block extra_head %}{% include "crm/_styles.html" %}
 <link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
-<link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260504-export-dropdown">
+<link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260506-vol-actions">
 <link rel="stylesheet" href="{% static 'css/crm_volumetria.css' %}?v=20260506-ipados6">
 {% if es_ingeniero %}
 <style>
@@ -118,7 +118,7 @@
 <script src="{% static 'js/crm_proyectos.js' %}"></script>
 <script src="{% static 'js/gantt_programa_obra.js' %}"></script>
 <script src="{% static 'js/crm_volumetria.js' %}?v=20260506-ipados6"></script>
-<script src="{% static 'js/crm_levantamiento.js' %}?v=20260506-export-volid"></script>
+<script src="{% static 'js/crm_levantamiento.js' %}?v=20260506-vol-actions"></script>
 {% if es_ingeniero %}
 {% include "crm/_scripts_ingeniero.html" %}
 {% endif %}
