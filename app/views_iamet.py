@@ -3649,14 +3649,23 @@ def api_volumetria_importar_excel(request, volumetria_id):
     try:
         import openpyxl
         from .volumetria_importers import detect_and_parse
+        # Abrir DOS veces: una con valores, otra con fórmulas. Algunos
+        # perfiles (v2) leen fórmulas para filtrar items excluidos del
+        # subtotal global y para detectar el % de IVA.
         wb = openpyxl.load_workbook(archivo, data_only=True)
         ws = wb.active
+        try:
+            archivo.seek(0)
+            wb_f = openpyxl.load_workbook(archivo, data_only=False)
+            ws_formulas = wb_f.active
+        except Exception:
+            ws_formulas = None
 
         # ── Detección de formato + parseo (registry) ───────────
         # El registry prueba todos los perfiles registrados (v1 con
         # marcadores, v2 resumido tipo Jacuzzi, futuros) y elige el de
         # mayor score. Si nadie pasa el umbral, devolvemos error claro.
-        parsed = detect_and_parse(ws)
+        parsed = detect_and_parse(ws, ws_formulas=ws_formulas)
         if not parsed.get('profile_id'):
             return JsonResponse({
                 'success': False,
@@ -3665,13 +3674,13 @@ def api_volumetria_importar_excel(request, volumetria_id):
             }, status=400)
 
         meta = parsed['meta']
-        # Tipo de cambio viene como Decimal desde el módulo; lo normalizamos.
+        # Tipo de cambio e IVA vienen en meta — los sacamos para
+        # persistirlos en columnas del modelo, no dentro del JSON.
         tipo_cambio = meta.get('tipo_cambio') or Decimal('0')
         if not isinstance(tipo_cambio, Decimal):
             tipo_cambio = _dec(tipo_cambio)
-        # Limpio el TC del meta para no persistirlo dentro del JSON
-        # (vol.tipo_cambio es DecimalField del modelo).
-        meta = {k: v for k, v in meta.items() if k != 'tipo_cambio'}
+        iva_pct_excel = meta.get('iva_pct')  # float | None
+        meta = {k: v for k, v in meta.items() if k not in ('tipo_cambio', 'iva_pct')}
 
         eq_items = parsed['eq_items']
         mo_items = parsed['mo_items']
@@ -3762,6 +3771,12 @@ def api_volumetria_importar_excel(request, volumetria_id):
         if tipo_cambio > 0:
             vol.tipo_cambio = tipo_cambio
             update_fields.append('tipo_cambio')
+        if iva_pct_excel is not None:
+            try:
+                vol.iva_pct = Decimal(str(iva_pct_excel))
+                update_fields.append('iva_pct')
+            except (InvalidOperation, ValueError):
+                pass
         vol.save(update_fields=update_fields)
 
         payload = _vol_to_dict(vol)

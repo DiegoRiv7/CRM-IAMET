@@ -9,9 +9,16 @@ más alto. Para añadir soporte a un formato nuevo:
     2. Registrarla en `PROFILES`.
     3. (Opcional) Documentar el formato en el docstring de la clase.
 
-Output común de `parse(ws)` → dict con:
+Para perfiles que usan fórmulas (v2 Jacuzzi), abrir el workbook DOS veces:
+una con data_only=True (valores) y otra con data_only=False (fórmulas
+literales). Esto permite leer los rangos de los subtotales para saber
+qué filas el Excel SÍ cuenta y cuáles excluye manualmente, y detectar
+el % de IVA hardcodeado en la fórmula del análisis.
+
+Output común de `parse(ws, ws_formulas=None)` -> dict con:
     {
-      'meta':      {cliente, contacto, elaboro, fecha, tipo_cambio},
+      'meta':      {cliente, contacto, elaboro, fecha, tipo_cambio,
+                    iva_pct (opcional)},
       'eq_items':  [...],   # equipamiento (con headers inline)
       'mo_items':  [...],   # mano de obra
       'cmo_items': [...],   # costos adicionales (CMO interno)
@@ -72,8 +79,10 @@ class BaseProfile:
         este perfil al worksheet. 0 = no matchea, 100 = match perfecto."""
         raise NotImplementedError
 
-    def parse(self, ws) -> dict:
-        """Devuelve {meta, eq_items, mo_items, cmo_items}."""
+    def parse(self, ws, ws_formulas=None) -> dict:
+        """Devuelve {meta, eq_items, mo_items, cmo_items}.
+        `ws_formulas` es opcional: el mismo sheet pero con `data_only=False`
+        para que perfiles que necesiten leer fórmulas puedan hacerlo."""
         raise NotImplementedError
 
 
@@ -125,9 +134,13 @@ def _emit_eq_header(items, texto):
     items.append({'id': _vol_uuid(), 'row_type': 'header', 'texto': texto})
 
 
-def _emit_eq_item(items, ws, r, *, marca, parte, descripcion):
+def _emit_eq_item(items, ws, r, *, marca, parte, descripcion, force_zero_cost=False):
     """Crea un item de equipamiento estándar. Toma los valores de las
-    columnas fijas E/F/I/J/L/M y los normaliza al schema v4."""
+    columnas fijas E/F/I/J/L/M y los normaliza al schema v4.
+
+    Si `force_zero_cost=True`, marca el item con costoUnitario=0 ignorando
+    lo que diga el Excel. Esto sirve para items que el Excel incluye en
+    venta pero excluye en costo (ej. rangos SUM(H...) ≠ SUM(K...))."""
     col_e = ws.cell(r, 5).value   # Precio Lista
     col_f = ws.cell(r, 6).value   # Desc venta (decimal 0-1)
     col_i = ws.cell(r, 9).value   # Desc costo (decimal 0-1)
@@ -142,10 +155,13 @@ def _emit_eq_item(items, ws, r, *, marca, parte, descripcion):
     costo_unit = _dec(col_j)
 
     # costoUnitario v4:
+    #   - force_zero_cost → 0 explícito (excluido del subtotal de costo).
     #   - costo > 0 → guarda tal cual.
     #   - costo == 0 PERO descCosto > 0 → null (frontend lo deriva).
     #   - ambos en 0 → 0 explícito (item de pura ganancia).
-    if costo_unit > 0:
+    if force_zero_cost:
+        costo_v4 = 0.0
+    elif costo_unit > 0:
         costo_v4 = float(costo_unit)
     elif desc_costo_dec > 0:
         costo_v4 = None
@@ -204,7 +220,8 @@ class IametV1Marcadores(BaseProfile):
                 break
         return min(score, 100)
 
-    def parse(self, ws):
+    def parse(self, ws, ws_formulas=None):
+        # v1 no usa ws_formulas; tiene markers explícitos.
         # ── PASS 1: pre-scan de filas-marcador ─────────────────
         total_mo_row = None
         costo_mo_row = None
@@ -265,7 +282,7 @@ class IametV1Marcadores(BaseProfile):
         }
 
     # ── Helpers de fila (compartidos entre v1 y v2 vía herencia) ─
-    def _parse_eq_row(self, ws, r, eq_items, summary_kw=()):
+    def _parse_eq_row(self, ws, r, eq_items, summary_kw=(), force_zero_cost=False):
         col_a = ws.cell(r, 1).value
         col_b = ws.cell(r, 2).value
         col_c = ws.cell(r, 3).value
@@ -343,6 +360,7 @@ class IametV1Marcadores(BaseProfile):
         _emit_eq_item(
             eq_items, ws, r,
             marca=ca_str, parte=cb_str, descripcion=cd_str,
+            force_zero_cost=force_zero_cost,
         )
 
     def _parse_mo_row(self, ws, r, mo_items):
@@ -464,7 +482,7 @@ class IametV2Resumen(IametV1Marcadores):
             score = max(0, score - 60)
         return min(score, 100)
 
-    def parse(self, ws):
+    def parse(self, ws, ws_formulas=None):
         # ── PASS 1: localizar bloques ─────────────────────────
         mo_section_start_row = None  # row con "Mano de obra"
         mo_header_row = None         # row con "Marca | Descripcion | ..." dentro del bloque MO
@@ -495,19 +513,46 @@ class IametV2Resumen(IametV1Marcadores):
         l2_val = ws.cell(2, 12).value
         is_l2_date = isinstance(l2_val, (date, datetime))
 
+        # Rangos de venta y costo que el Excel SÍ cuenta. El Excel a
+        # veces excluye una fila del costo aunque la incluya en venta
+        # (item de venta sin costo asignado), por eso necesitamos los
+        # dos sets para reproducir las cifras exactas.
+        rows_venta, rows_costo = (
+            self._extract_subtotal_rows(ws_formulas)
+            if ws_formulas else (None, None)
+        )
+        # IVA: si la fórmula del IVA está hardcodeada a un %, lo
+        # respetamos. Si no, None y el endpoint usa el snapshot del modelo.
+        iva_pct = self._extract_iva_pct(ws_formulas, analisis_row) if ws_formulas else None
+
         meta = {
             'cliente':  _str(ws.cell(1, 3).value),
             'contacto': contacto_f1 or contacto_l1,
             'elaboro':  elaboro_f2 or ('' if is_l2_date else elaboro_l2),
             'fecha':    _excel_iso_date(l2_val) if is_l2_date else _excel_iso_date(elaboro_l2),
             'tipo_cambio': _resolver_tipo_cambio(ws),
+            'iva_pct':  iva_pct,  # None si no se pudo determinar
         }
 
         eq_items, mo_items, cmo_items = [], [], []
         # Equipamiento: 6 hasta antes de "Mano de obra".
         eq_end = mo_section_start_row or cmo_header_row or analisis_row or (ws.max_row + 1)
         for r in range(6, eq_end):
-            self._parse_eq_row(ws, r, eq_items, summary_kw=())
+            in_venta = (rows_venta is None) or (r in rows_venta)
+            in_costo = (rows_costo is None) or (r in rows_costo)
+            if not in_venta:
+                # Fuera de venta: la fila no cuenta como item. Si parece
+                # rótulo de sub-sección (texto suelto), la emitimos como
+                # header para preservar el árbol visual.
+                self._maybe_emit_header_only(ws, r, eq_items)
+                continue
+            # Dentro del rango de venta. Si NO está en costo, marcamos el
+            # item como "venta sin costo" (costoUnitario=0 forzado).
+            self._parse_eq_row(
+                ws, r, eq_items,
+                summary_kw=(),
+                force_zero_cost=(not in_costo),
+            )
 
         # MO: del header de tabla hasta el header de CMO (- 1).
         if mo_header_row:
@@ -556,6 +601,102 @@ class IametV2Resumen(IametV1Marcadores):
                 return r
         return ws.max_row + 1
 
+    # ── Helpers de fórmulas ──────────────────────────────────────
+    _SUM_RE = re.compile(r'H(\d+)\s*:\s*H(\d+)', re.IGNORECASE)
+    _IVA_RE = re.compile(r'(\d+(?:\.\d+)?)\s*%')
+
+    def _formula_text(self, cell):
+        """Extrae el texto literal de la fórmula, sea ArrayFormula o str."""
+        v = getattr(cell, 'value', cell)
+        if v is None:
+            return ''
+        if hasattr(v, 'text'):  # openpyxl ArrayFormula
+            return str(v.text or '')
+        if isinstance(v, str) and v.startswith('='):
+            return v
+        return ''
+
+    def _extract_subtotal_rows(self, ws_formulas):
+        """Devuelve `(rows_venta, rows_costo)` con las filas incluidas
+        en SUM(H...) y SUM(K...) respectivamente. El Excel a veces
+        excluye filas del costo aunque las incluya en venta (item de
+        venta sin costo asignado), así que necesitamos los dos sets.
+
+        Si el sheet no tiene fórmulas SUM, devuelve `(None, None)` y
+        no filtramos nada."""
+        if ws_formulas is None:
+            return (None, None)
+        rows_venta = set()
+        rows_costo = set()
+        any_sum = False
+        # Rangos de col H = SUM(H<a>:H<b>) → venta incluida
+        sum_h = re.compile(r'H(\d+)\s*:\s*H(\d+)', re.IGNORECASE)
+        sum_k = re.compile(r'K(\d+)\s*:\s*K(\d+)', re.IGNORECASE)
+        for r in range(1, ws_formulas.max_row + 1):
+            txt_h = self._formula_text(ws_formulas.cell(r, 8))
+            if txt_h and 'SUM' in txt_h.upper():
+                any_sum = True
+                for m in sum_h.finditer(txt_h):
+                    a, b = int(m.group(1)), int(m.group(2))
+                    if a > b: a, b = b, a
+                    rows_venta.update(range(a, b + 1))
+            txt_k = self._formula_text(ws_formulas.cell(r, 11))
+            if txt_k and 'SUM' in txt_k.upper():
+                for m in sum_k.finditer(txt_k):
+                    a, b = int(m.group(1)), int(m.group(2))
+                    if a > b: a, b = b, a
+                    rows_costo.update(range(a, b + 1))
+        return (rows_venta, rows_costo) if any_sum else (None, None)
+
+    def _extract_iva_pct(self, ws_formulas, analisis_row):
+        """Detecta IVA buscando una fórmula `=...*X%` cerca del Análisis
+        de Costos (en col H, rows analisis_row..analisis_row+10).
+        Devuelve float (8.0, 16.0, etc.) o None."""
+        if ws_formulas is None or not analisis_row:
+            return None
+        for r in range(analisis_row, min(analisis_row + 10, ws_formulas.max_row + 1)):
+            txt = self._formula_text(ws_formulas.cell(r, 8))
+            if not txt:
+                continue
+            m = self._IVA_RE.search(txt)
+            if m:
+                try:
+                    pct = float(m.group(1))
+                    if 0 < pct < 100:
+                        return pct
+                except (TypeError, ValueError):
+                    continue
+        return None
+
+    def _maybe_emit_header_only(self, ws, r, eq_items):
+        """Para filas FUERA de los rangos de subtotales: si la fila luce
+        como un sub-rótulo (texto en col A o B, sin item completo),
+        la emitimos como header. Si no, la ignoramos.
+        Esto preserva los rótulos de sub-secciones (ej. "ELEVACIÓN" en R181)
+        que no entran en sus propios rangos de SUM."""
+        col_a = ws.cell(r, 1).value
+        col_b = ws.cell(r, 2).value
+        col_c = ws.cell(r, 3).value
+        col_d = ws.cell(r, 4).value
+        col_e = ws.cell(r, 5).value
+        ca_str = _str(col_a)
+        cb_str = _str(col_b)
+        cd_str = _str(col_d)
+        # Header de tabla (la fila "Marca | Descripcion | ..."): skip total.
+        if ca_str.lower() == 'marca' and cd_str.lower() in ('descripcion', 'descripción', ''):
+            return
+        # Sub-rótulo en col A: texto en A, B/C/D/E vacíos
+        if (ca_str and not cb_str and not col_c
+                and not cd_str and (col_e is None or col_e == '')):
+            _emit_eq_header(eq_items, ca_str)
+            return
+        # Sub-rótulo en col B (Jacuzzi): texto en B, A/C/D/E vacíos
+        if (cb_str and not ca_str and not col_c
+                and not cd_str and (col_e is None or col_e == '')):
+            _emit_eq_header(eq_items, cb_str)
+            return
+        # Resto (filas plantilla, items excluidos del subtotal): ignorar.
+
 
 # ── Registry ────────────────────────────────────────────────────
 PROFILES = [
@@ -579,16 +720,20 @@ def detect_profile(ws):
     return best, score
 
 
-def detect_and_parse(ws):
-    """Devuelve dict con la data parseada + metadata del perfil
-    detectado, o None si ningún perfil supera el umbral.
+def detect_and_parse(ws, ws_formulas=None):
+    """Devuelve dict con la data parseada + metadata del perfil detectado,
+    o None si ningún perfil supera el umbral.
+
+    `ws_formulas` (opcional) es el mismo sheet pero abierto con
+    `data_only=False` para leer fórmulas. Perfiles que las usen (ej. v2)
+    podrán filtrar items que el Excel excluyó del subtotal.
 
     Output:
         {
           'profile_id':   'iamet_v2_resumen',
           'profile_name': '…',
           'confidence':   85,
-          'meta':         {...},
+          'meta':         {...},  # incluye 'iva_pct' si se detectó
           'eq_items':     [...],
           'mo_items':     [...],
           'cmo_items':    [...],
@@ -604,7 +749,7 @@ def detect_and_parse(ws):
             'all_scores': all_scores,
             'error': 'No se reconoció el formato del Excel.',
         }
-    parsed = profile.parse(ws)
+    parsed = profile.parse(ws, ws_formulas=ws_formulas)
     parsed['profile_id'] = profile.id
     parsed['profile_name'] = profile.name
     parsed['confidence'] = score
