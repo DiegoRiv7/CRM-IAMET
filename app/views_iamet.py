@@ -1657,8 +1657,33 @@ def api_oc_actualizar(request, oc_id):
 
     if 'precio_unitario' in data:
         oc.precio_unitario = _dec(data['precio_unitario'])
+
+    # Si cambia la cantidad, hay que ajustar partida.cantidad_pendiente
+    # con el delta. Validamos que el nuevo total comprado de esa partida
+    # no exceda la cantidad de la partida (mín 0 pendiente).
     if 'cantidad' in data:
-        oc.cantidad = _dec(data['cantidad'])
+        nueva_cantidad = _dec(data['cantidad'])
+        if nueva_cantidad <= 0:
+            return JsonResponse({'success': False, 'error': 'La cantidad debe ser mayor a 0'}, status=400)
+        delta = nueva_cantidad - (oc.cantidad or Decimal('0'))
+        if oc.partida:
+            partida = oc.partida
+            # Si delta > 0 (subir cantidad) → no debe exceder pendiente actual.
+            if delta > 0 and delta > partida.cantidad_pendiente:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'No alcanza el pendiente. Disponibles: {float(partida.cantidad_pendiente)} unidades.',
+                }, status=400)
+            partida.cantidad_pendiente = (partida.cantidad_pendiente or Decimal('0')) - delta
+            if partida.cantidad_pendiente < 0:
+                partida.cantidad_pendiente = Decimal('0')
+            # Recalc status
+            if partida.cantidad_pendiente == 0:
+                partida.status = 'closed'
+            else:
+                partida.status = 'ordered' if partida.ordenes_compra.exists() else 'pending'
+            partida.save()
+        oc.cantidad = nueva_cantidad
 
     date_fields = ['fecha_emision', 'fecha_entrega_esperada', 'fecha_entrega_real']
     for field in date_fields:
@@ -1674,12 +1699,29 @@ def api_oc_actualizar(request, oc_id):
 @require_http_methods(["DELETE"])
 def api_oc_eliminar(request, oc_id):
     try:
-        oc = ProyectoOrdenCompra.objects.select_related('proyecto').get(id=oc_id)
+        oc = ProyectoOrdenCompra.objects.select_related('proyecto', 'partida').get(id=oc_id)
     except ProyectoOrdenCompra.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'OC no encontrada'}, status=404)
     if not _check_access(request.user, oc.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    # Devolver la cantidad de la OC al pendiente de la partida.
+    partida = oc.partida
+    cantidad_devuelta = oc.cantidad or Decimal('0')
     oc.delete()
+    if partida:
+        partida.cantidad_pendiente = (partida.cantidad_pendiente or Decimal('0')) + cantidad_devuelta
+        # Cap por la cantidad total de la partida (defensivo).
+        if partida.cantidad_pendiente > (partida.cantidad or Decimal('0')):
+            partida.cantidad_pendiente = partida.cantidad
+        # Recalc status: si quedan OCs → ordered; si no → pending.
+        if partida.cantidad_pendiente == 0:
+            partida.status = 'closed'
+        elif partida.ordenes_compra.exists():
+            partida.status = 'ordered'
+        else:
+            partida.status = 'pending'
+        partida.save()
     return JsonResponse({'success': True})
 
 

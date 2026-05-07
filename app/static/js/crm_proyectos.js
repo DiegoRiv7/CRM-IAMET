@@ -1349,13 +1349,16 @@
                                 '<div style="display:flex;flex-direction:column;gap:4px;padding:8px 0;">';
                         partidaOCs.forEach(function(oc) {
                             var ocAmount = oc.monto_total || ((oc.cantidad || 0) * (oc.precio_unitario || 0));
-                            html += '<div style="display:flex;align-items:center;gap:12px;font-size:0.75rem;color:#636366;padding:4px 8px;border-radius:6px;background:rgba(0,122,255,0.04);">' +
+                            var ocJson = encodeURIComponent(JSON.stringify(oc));
+                            var partidaJson = encodeURIComponent(JSON.stringify(item));
+                            html += '<div style="display:flex;align-items:center;gap:12px;font-size:0.75rem;color:#636366;padding:6px 10px;border-radius:6px;background:rgba(0,122,255,0.04);position:relative;">' +
                                 '<span style="color:#007aff;font-weight:600;">' + (oc.numero_oc || 'OC') + '</span>' +
                                 '<span>' + (oc.cantidad || 0) + ' uds</span>' +
                                 '<span>' + (oc.proveedor || '\u2014') + '</span>' +
                                 '<span class="proy-badge ' + statusClass(oc.status) + '" style="font-size:0.68rem;padding:1px 6px;">' + statusLabel(oc.status) + '</span>' +
                                 '<span style="color:#8e8e93;">' + fmtDate(oc.fecha_emision) + '</span>' +
                                 '<span style="margin-left:auto;font-weight:600;">' + fmtMoney(ocAmount) + '</span>' +
+                                '<button class="proy-oc-menu-btn" data-oc="' + ocJson + '" data-partida="' + partidaJson + '" onclick="event.stopPropagation();proyOcMenuToggle(this)" style="background:none;border:none;cursor:pointer;font-size:1rem;color:#8e8e93;padding:2px 8px;border-radius:6px;line-height:1;" title="Opciones">\u22ef</button>' +
                             '</div>';
                         });
                         html += '</div></td></tr>';
@@ -4312,6 +4315,145 @@
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
         return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    //  OC: menú contextual (Editar / Eliminar)
+    // ═════════════════════════════════════════════════════════════
+    window.proyOcMenuToggle = function (btn) {
+        _closeOcMenu();
+        var oc = JSON.parse(decodeURIComponent(btn.getAttribute('data-oc')));
+        var partida = JSON.parse(decodeURIComponent(btn.getAttribute('data-partida') || '%7B%7D'));
+        var menu = document.createElement('div');
+        menu.id = 'proyOcContextMenu';
+        menu.style.cssText = 'position:absolute;right:0;top:24px;z-index:10600;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.18);padding:6px 0;min-width:170px;';
+        var items = [
+            { label: 'Editar', color: '#1d1d1f', action: 'edit' },
+            { label: 'Eliminar', color: '#EF4444', action: 'delete' },
+        ];
+        var h = '';
+        items.forEach(function (mi) {
+            h += '<button data-action="' + mi.action + '" style="display:flex;align-items:center;width:100%;padding:9px 16px;border:none;background:none;cursor:pointer;font-size:0.8rem;color:' + mi.color + ';text-align:left;" onmouseover="this.style.background=\'#f5f5f7\'" onmouseout="this.style.background=\'none\'">' +
+                 '<span style="font-weight:500;">' + mi.label + '</span></button>';
+        });
+        menu.innerHTML = h;
+        btn.parentElement.appendChild(menu);
+        menu.querySelectorAll('button').forEach(function (b) {
+            b.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var action = b.getAttribute('data-action');
+                _closeOcMenu();
+                if (action === 'edit') _openEditOcDialog(oc, partida);
+                else if (action === 'delete') _confirmDeleteOc(oc);
+            });
+        });
+    };
+
+    function _closeOcMenu() {
+        var existing = document.getElementById('proyOcContextMenu');
+        if (existing) existing.remove();
+    }
+    document.addEventListener('click', _closeOcMenu);
+
+    function _openEditOcDialog(oc, partida) {
+        var existing = document.getElementById('proyDialogoEditarOc');
+        if (existing) existing.remove();
+        var pendiente = (partida && partida.cantidad_pendiente) || 0;
+        var ocCantActual = parseFloat(oc.cantidad || 0);
+        var maxCant = pendiente + ocCantActual; // pendiente actual + lo que ya tenía esta OC
+
+        var ov = document.createElement('div');
+        ov.id = 'proyDialogoEditarOc';
+        ov.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10700;align-items:center;justify-content:center;';
+        ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+
+        ov.innerHTML =
+            '<div style="background:#fff;border-radius:16px;padding:24px;width:min(460px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.25);">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">' +
+                    '<h3 style="margin:0;font-size:1.05rem;">Editar orden de compra ' + (oc.numero_oc ? '(' + oc.numero_oc + ')' : '') + '</h3>' +
+                    '<button onclick="document.getElementById(\'proyDialogoEditarOc\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#8e8e93;">×</button>' +
+                '</div>' +
+                (partida && partida.descripcion ? '<div style="font-size:0.74rem;color:#86868B;margin-bottom:14px;">Partida: <b>' + (partida.descripcion || '') + '</b> · Pendiente actual: ' + pendiente + ' · Cantidad disponible para esta OC: hasta <b>' + maxCant + '</b></div>' : '') +
+                '<div style="display:flex;flex-direction:column;gap:12px;">' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                        '<div><label style="font-size:0.72rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Cantidad</label>' +
+                            '<input type="number" id="proyOcEditCant" class="proy-info-input" min="0.01" step="0.01" max="' + maxCant + '" value="' + ocCantActual + '"></div>' +
+                        '<div><label style="font-size:0.72rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Precio unitario</label>' +
+                            '<input type="number" id="proyOcEditPrecio" class="proy-info-input" min="0" step="0.01" value="' + parseFloat(oc.precio_unitario || 0) + '"></div>' +
+                    '</div>' +
+                    '<div><label style="font-size:0.72rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Proveedor</label>' +
+                        '<input type="text" id="proyOcEditProv" class="proy-info-input" value="' + (oc.proveedor || '').replace(/"/g, '&quot;') + '"></div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                        '<div><label style="font-size:0.72rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Fecha emisión</label>' +
+                            '<input type="date" id="proyOcEditFEmi" class="proy-info-input" value="' + (oc.fecha_emision || '') + '"></div>' +
+                        '<div><label style="font-size:0.72rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Entrega esperada</label>' +
+                            '<input type="date" id="proyOcEditFEnt" class="proy-info-input" value="' + (oc.fecha_entrega_esperada || '') + '"></div>' +
+                    '</div>' +
+                    '<div><label style="font-size:0.72rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Estado</label>' +
+                        '<select id="proyOcEditStatus" class="proy-info-input">' +
+                            ['draft','sent','received','cancelled'].map(function (s) {
+                                var labels = { draft: 'Borrador', sent: 'Enviada', received: 'Recibida', cancelled: 'Cancelada' };
+                                return '<option value="' + s + '"' + (oc.status === s ? ' selected' : '') + '>' + (labels[s] || s) + '</option>';
+                            }).join('') +
+                        '</select></div>' +
+                    '<div><label style="font-size:0.72rem;font-weight:600;color:#636366;display:block;margin-bottom:4px;">Notas</label>' +
+                        '<textarea id="proyOcEditNotas" class="proy-info-input" rows="2">' + (oc.notas || '') + '</textarea></div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">' +
+                    '<button class="proy-btn proy-btn-outline" onclick="document.getElementById(\'proyDialogoEditarOc\').remove()">Cancelar</button>' +
+                    '<button class="proy-btn proy-btn-primary" onclick="proyOcGuardar(' + oc.id + ')">Guardar</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(ov);
+    }
+
+    window.proyOcGuardar = function (ocId) {
+        var payload = {
+            cantidad: parseFloat(document.getElementById('proyOcEditCant').value || 0),
+            precio_unitario: parseFloat(document.getElementById('proyOcEditPrecio').value || 0),
+            proveedor: document.getElementById('proyOcEditProv').value || '',
+            fecha_emision: document.getElementById('proyOcEditFEmi').value || null,
+            fecha_entrega_esperada: document.getElementById('proyOcEditFEnt').value || null,
+            status: document.getElementById('proyOcEditStatus').value || 'draft',
+            notas: document.getElementById('proyOcEditNotas').value || '',
+        };
+        if (!payload.cantidad || payload.cantidad <= 0) {
+            alert('La cantidad debe ser mayor a 0');
+            return;
+        }
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        fetch('/app/api/iamet/oc/' + ocId + '/actualizar/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        }).then(function (r) { return r.json(); }).then(function (j) {
+            if (j && j.success) {
+                var d = document.getElementById('proyDialogoEditarOc');
+                if (d) d.remove();
+                if (typeof renderPartidas === 'function') renderPartidas(currentProjectId);
+            } else {
+                alert((j && j.error) || 'No se pudo guardar.');
+            }
+        }).catch(function () { alert('Error de red.'); });
+    };
+
+    function _confirmDeleteOc(oc) {
+        var msg = 'Eliminar la orden de compra' + (oc.numero_oc ? ' "' + oc.numero_oc + '"' : '') +
+                  '?\n\nLas ' + (oc.cantidad || 0) + ' unidades regresarán al pendiente de la partida.';
+        if (!confirm(msg)) return;
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        fetch('/app/api/iamet/oc/' + oc.id + '/eliminar/', {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+        }).then(function (r) { return r.json(); }).then(function (j) {
+            if (j && j.success) {
+                if (typeof renderPartidas === 'function') renderPartidas(currentProjectId);
+            } else {
+                alert((j && j.error) || 'No se pudo eliminar.');
+            }
+        }).catch(function () { alert('Error de red.'); });
     }
 
     // ── Sync manual de partidas desde la última volumetría ───────
