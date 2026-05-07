@@ -1423,6 +1423,58 @@ textarea.cv-input,
     margin-top: -2px;
 }
 
+/* ─── Card destacado: Ganancia en pesos ──────────────────────────
+   Vive abajo del IVA en la columna de configuración del resumen.
+   Estilo "destacado": fondo verde menta sólido (no soft) para que
+   el monto en MXN sea lo primero que se vea al cerrar la cotización. */
+.cv-fin-highlight {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: var(--cv-radius);
+    background: linear-gradient(180deg, #ECFDF5 0%, #D1FAE5 100%);
+    border: 1px solid #A7F3D0;
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.08);
+    min-width: 110px;
+    margin-top: 4px;
+}
+.cv-fin-highlight-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #047857;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    user-select: none;
+}
+.cv-fin-highlight-value {
+    font-family: var(--cv-mono);
+    font-size: 19px;
+    font-weight: 700;
+    color: #064E3B;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+}
+.cv-fin-highlight-value.cv-fin-highlight-empty {
+    color: #6EE7B7;
+    font-weight: 600;
+}
+.cv-fin-highlight-currency {
+    font-size: 11px;
+    font-weight: 600;
+    color: #047857;
+    margin-left: 2px;
+    letter-spacing: 0.04em;
+}
+.cv-fin-highlight-hint {
+    font-size: 10.5px;
+    color: #047857;
+    opacity: 0.78;
+    font-weight: 500;
+    margin-top: 1px;
+}
+
 /* ─── Filas legacy del resumen financiero (si se renderizan) ───── */
 .cv-fin-row {
     display: flex;

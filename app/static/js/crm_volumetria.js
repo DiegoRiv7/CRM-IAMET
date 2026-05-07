@@ -1577,7 +1577,38 @@
                     'value="' + esc(ivaVal) + '" placeholder="16" ' + disabled + ' />' +
                  '<span class="cv-fin-config-suffix">%</span>' +
              '</label>';
+        // Card destacado: Ganancia en pesos. Se actualiza en vivo desde
+        // updateFinValuesAndStats() — el contenido se inyecta via render
+        // por separado para no perder el foco de los inputs de TC/IVA.
+        h += '<div class="cv-fin-highlight" data-role="fin-highlight">' +
+             renderFinHighlight() +
+             '</div>';
         h += '</div>';
+        return h;
+    }
+
+    /** Card destacado de "Ganancia en pesos" — debajo del IVA en la
+     *  columna de configuración. Calculado a partir de la ganancia
+     *  total × tipo de cambio. Si no hay TC, muestra placeholder. */
+    function renderFinHighlight() {
+        var t = calcTotals();
+        var tc = num(S.volumetria && S.volumetria.tipo_cambio);
+        var gananciaMxn = tc > 0 ? t.ganancia * tc : 0;
+        var h = '';
+        h += '<div class="cv-fin-highlight-label">Ganancia en pesos</div>';
+        if (tc > 0) {
+            h += '<div class="cv-fin-highlight-value cv-mono">' +
+                    esc(fmtMoney(gananciaMxn)) +
+                    ' <span class="cv-fin-highlight-currency">MXN</span>' +
+                 '</div>';
+            h += '<div class="cv-fin-highlight-hint">' +
+                    'Ganancia ' + esc(fmtMoney(t.ganancia)) +
+                    ' × TC ' + esc(tc.toFixed(2)) +
+                 '</div>';
+        } else {
+            h += '<div class="cv-fin-highlight-value cv-fin-highlight-empty">— MXN</div>';
+            h += '<div class="cv-fin-highlight-hint">Captura el TC para ver el monto</div>';
+        }
         return h;
     }
 
@@ -1621,15 +1652,13 @@
         h += '</div></div>';
 
         // ── Columna derecha: Total Cotización ─────────────────────
+        // Nota: "Ganancia en pesos" se muestra en un card destacado
+        // aparte (debajo del IVA en la columna de configuración).
         h += '<div class="cv-fin-col">';
         h += '<div class="cv-fin-col-title">Total Cotización</div>';
         h += '<div class="cv-fin-col-body">';
         h += finCell('Sub-Total',                            fmtMoney(t.subtotalVenta));
         h += finCell('IVA (' + fmtPct(t.iva_pct) + ')',      fmtMoney(t.iva));
-        // Ganancia en pesos = total de ganancia × TC. Solo se muestra si hay TC.
-        if (tc > 0) {
-            h += finCell('Ganancia en pesos',                fmtMoney(gananciaMxn) + ' MXN', 'cv-fin-pct');
-        }
         h += finCell('Total con IVA',                        fmtMoney(t.totalConIva), 'cv-fin-grand');
         h += finCell('Margen',                               fmtPct(t.margen), (t.margen < 20 ? 'cv-fin-pct cv-fin-pct-low' : 'cv-fin-pct'));
         if (tc > 0) {
@@ -1655,11 +1684,14 @@
 
     /** Actualiza solo los renglones de valores del card financiero,
      *  preservando el foco de los inputs de TC/IVA mientras el usuario
-     *  los está editando. También refresca el card de stats (tablas/items). */
+     *  los está editando. También refresca el card destacado de
+     *  "Ganancia en pesos" (que vive en la columna de configuración). */
     function updateFinValuesAndStats() {
         if (!S.container) return;
         var valuesEl = S.container.querySelector('.cv-fin-values');
         if (valuesEl) valuesEl.innerHTML = renderFinValues();
+        var highlightEl = S.container.querySelector('[data-role="fin-highlight"]');
+        if (highlightEl) highlightEl.innerHTML = renderFinHighlight();
     }
 
     function finRow(label, value, cls) {
