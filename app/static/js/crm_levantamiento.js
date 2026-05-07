@@ -4319,8 +4319,9 @@
             html += '</div>';
             html += '</div>';
             html += '</div>';
-            // Resumen de partidas (sin costos — vendedor nunca los ve)
-            html += '<div class="lvc-vol-body">' + _detail3(d) + '</div>';
+            // Card compacto: solo título + resumen ("134 equipamiento · 24
+            // mano de obra · 5 costos") + botón Exportar. Para ver el
+            // detalle de partidas el vendedor abre el PDF/Excel.
             html += '</div>';
             return html;
         }).join('');
