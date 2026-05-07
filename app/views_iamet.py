@@ -3327,6 +3327,247 @@ def api_volumetria_eliminar(request, volumetria_id):
     return JsonResponse({'success': True})
 
 
+# ─── Generar Cotización a partir de la Volumetría ───────────────
+#
+# Endpoint llamado desde el menú "Exportar > Generar cotización" de la
+# vista de consulta del vendedor. Crea una `Cotizacion` + `DetalleCotizacion`
+# usando el equipamiento de la volumetría (sin costos internos), genera el
+# PDF con el template de cotizaciones existente y lo sube al Drive de la
+# oportunidad para que quede disponible junto a las demás cotizaciones.
+#
+# Reglas de inclusión:
+#   • Equipamiento → SÍ se incluye como partidas.
+#   • Mano de Obra → NO se incluye (decisión actual).
+#   • Costos Adicionales → NO se incluye (son costos internos nuestros).
+#
+# Marca del documento (Bajanet / Iamet): por ahora hardcoded a Bajanet,
+# pero leemos `lev.fase1_data['marca_documento']` o `lev.fase2_data
+# ['marca_documento']` si en el futuro el ingeniero la captura al
+# arrancar el levantamiento. Cuando exista el campo se usa, sino fallback.
+
+@login_required
+@require_http_methods(['POST'])
+def api_volumetria_generar_cotizacion(request, volumetria_id):
+    from .models import Cotizacion, DetalleCotizacion, ArchivoOportunidad
+    from .views_cotizaciones import _build_cotizacion_pdf_payload
+    from django.core.files.base import ContentFile
+    from django.db import transaction
+    from decimal import Decimal as _D
+
+    try:
+        vol = ProyectoVolumetria.objects.select_related(
+            'levantamiento__proyecto'
+        ).get(id=volumetria_id)
+    except ProyectoVolumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+
+    lev = vol.levantamiento
+    if not lev or not lev.proyecto:
+        return JsonResponse({'success': False, 'error': 'Volumetría sin levantamiento o proyecto asociado'}, status=400)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    # Vendedor: solo puede generar cotizaciones de volumetrías completadas.
+    if _user_es_solo_lectura_levantamiento(request.user) and vol.status != 'completada':
+        return JsonResponse({
+            'success': False,
+            'error': 'Solo se pueden generar cotizaciones de volumetrías completadas',
+        }, status=403)
+
+    proyecto = lev.proyecto
+    oportunidad = getattr(proyecto, 'oportunidad', None)
+    if not oportunidad:
+        return JsonResponse({
+            'success': False,
+            'error': 'El proyecto no tiene oportunidad vinculada — la cotización no tiene a dónde ir.',
+        }, status=400)
+
+    cliente = getattr(oportunidad, 'cliente', None)
+    if not cliente:
+        return JsonResponse({
+            'success': False,
+            'error': 'La oportunidad no tiene cliente asociado.',
+        }, status=400)
+
+    # Construir contexto v4 sin costos (precios al cliente).
+    ctx = _build_volumetria_ctx(
+        lev, sin_costos=True,
+        data_override=vol.data, volumetria_obj=vol,
+    )
+    sections_eq = ctx.get('sections_eq') or []
+    if not sections_eq or not any((s.get('rows') or []) for s in sections_eq):
+        return JsonResponse({
+            'success': False,
+            'error': 'La volumetría no tiene equipamiento capturado para cotizar.',
+        }, status=400)
+
+    # Marca del documento — preparado para configuración futura.
+    f1 = lev.fase1_data or {}
+    f2 = lev.fase2_data or {}
+    marca_doc = (
+        (f1.get('marca_documento') or '').strip()
+        or (f2.get('marca_documento') or '').strip()
+        or 'Bajanet'
+    )
+    tipo_cot = 'Iamet' if marca_doc.lower() == 'iamet' else 'Bajanet'
+
+    # IVA: snapshot de la volumetría (se guarda como porcentaje, ej 8 → 0.08).
+    try:
+        iva_pct_dec = _D(str(vol.iva_pct or 8))
+    except Exception:
+        iva_pct_dec = _D('8')
+    iva_rate = (iva_pct_dec / _D('100')).quantize(_D('0.01'))
+
+    # Nombre legible para el PDF / título de la cotización.
+    nombre_cot = (
+        (lev.nombre or 'Cotización').strip()
+        + (' - ' + vol.nombre.strip() if vol.nombre else '')
+    )[:255]
+
+    marcas_validas = {m for m, _ in DetalleCotizacion.MARCA_CHOICES}
+
+    with transaction.atomic():
+        cotizacion = Cotizacion.objects.create(
+            titulo=nombre_cot,
+            cliente=cliente,
+            usuario_final='',
+            oportunidad=oportunidad,
+            descripcion=f"Generada automáticamente desde la volumetría #{vol.id} ({vol.nombre or 'sin nombre'}).",
+            nombre_cotizacion=nombre_cot,
+            iva_rate=iva_rate,
+            moneda='USD',
+            tipo_cotizacion=tipo_cot,
+            created_by=request.user,
+        )
+
+        orden = 0
+        subtotal = _D('0.00')
+
+        def _emitir_titulo(texto):
+            nonlocal orden
+            DetalleCotizacion.objects.create(
+                cotizacion=cotizacion,
+                nombre_producto=(texto or '')[:255],
+                descripcion='',
+                cantidad=0,
+                precio_unitario=_D('0.00'),
+                descuento_porcentaje=_D('0.00'),
+                precio_con_descuento=_D('0.00'),
+                total=_D('0.00'),
+                marca=None,
+                no_parte='',
+                orden=orden,
+                tipo='titulo',
+            )
+            orden += 1
+
+        for sec in sections_eq:
+            sec_titulo = (sec.get('titulo') or '').strip()
+            if sec_titulo:
+                _emitir_titulo(sec_titulo)
+            for r in (sec.get('rows') or []):
+                # Headers inline (rótulos) → también van como título de
+                # sub-sección dentro de la cotización.
+                if r.get('is_header'):
+                    txt = (r.get('texto') or '').strip()
+                    if txt:
+                        _emitir_titulo(txt)
+                    continue
+
+                # Cantidad — el modelo Cotizacion la guarda como entero.
+                # Volumetría puede traer floats (ej. metros), pero para
+                # cotizaciones reales casi siempre son piezas. Redondeamos
+                # con piso de 1 si la cantidad de captura era > 0.
+                try:
+                    qty_raw = float(r.get('qty') or 0)
+                except (TypeError, ValueError):
+                    qty_raw = 0
+                if qty_raw <= 0:
+                    continue
+                qty = max(1, int(round(qty_raw)))
+
+                # Precio unitario: ya viene con descuento de venta aplicado,
+                # así que NO usamos descuento_porcentaje en la línea.
+                try:
+                    precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
+                except Exception:
+                    precio_unit = _D('0.00')
+                total_row = (precio_unit * qty).quantize(_D('0.01'))
+
+                # Marca: si está en el catálogo restringido del modelo la
+                # guardamos en el campo marca. Si no, la prependemos al
+                # nombre del producto para que no se pierda.
+                marca_raw = (r.get('marca') or '').strip()
+                marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
+
+                # Nombre del producto — preferimos el no. parte; fallback a
+                # marca; fallback a la primera línea de la descripción.
+                parte_raw = (r.get('parte') or '').strip()
+                desc_raw = (r.get('desc') or '').strip()
+                nombre = parte_raw or marca_raw or (desc_raw[:80] if desc_raw else 'Producto')
+                if not marca_db and marca_raw:
+                    nombre = (marca_raw + ' ' + nombre).strip()
+
+                DetalleCotizacion.objects.create(
+                    cotizacion=cotizacion,
+                    nombre_producto=nombre[:255],
+                    descripcion=desc_raw,
+                    cantidad=qty,
+                    precio_unitario=precio_unit,
+                    descuento_porcentaje=_D('0.00'),
+                    precio_con_descuento=precio_unit,
+                    total=total_row,
+                    marca=marca_db,
+                    no_parte=parte_raw[:100],
+                    orden=orden,
+                    tipo='producto',
+                )
+                subtotal += total_row
+                orden += 1
+
+        iva_amount = (subtotal * iva_rate).quantize(_D('0.01'))
+        cotizacion.subtotal = subtotal.quantize(_D('0.01'))
+        cotizacion.iva_amount = iva_amount
+        cotizacion.total = (cotizacion.subtotal + iva_amount).quantize(_D('0.01'))
+        cotizacion.save()
+
+    # ── PDF + subida al Drive de la oportunidad ──────────────────
+    try:
+        pdf_bytes, pdf_name = _build_cotizacion_pdf_payload(cotizacion, request_user=request.user)
+    except Exception as e:
+        # No abortamos la cotización si el PDF falla — queda creada y
+        # editable desde el flujo manual; pero avisamos al cliente.
+        return JsonResponse({
+            'success': False,
+            'cotizacion_id': cotizacion.id,
+            'error': f'La cotización se creó pero el PDF falló: {e}',
+        }, status=500)
+
+    archivo_filename = f"{pdf_name}.pdf"
+    archivo = ArchivoOportunidad.objects.create(
+        nombre_original=archivo_filename,
+        archivo=ContentFile(pdf_bytes, name=archivo_filename),
+        tipo_archivo='pdf',
+        tamaño=len(pdf_bytes),
+        oportunidad=oportunidad,
+        carpeta=None,  # raíz del Drive
+        subido_por=request.user,
+        extension='pdf',
+        mime_type='application/pdf',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'cotizacion_id': cotizacion.id,
+        'pdf_url': f'/app/cotizacion/view/{cotizacion.id}/',
+        'archivo_id': archivo.id,
+        'oportunidad_id': oportunidad.id,
+        'tipo_cotizacion': tipo_cot,
+        'total': float(cotizacion.total),
+        'moneda': cotizacion.moneda,
+    })
+
+
 # ─── Importar Excel legacy → schema v4 ──────────────────────────
 #
 # Reactivación de la feature original `api_importar_excel` (sobre el

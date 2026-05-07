@@ -4259,17 +4259,57 @@
         if (menu) menu.classList.toggle('is-open');
     };
 
-    // Stub: el usuario definirá el flujo de cotización después.
-    // Por ahora cierra el dropdown y avisa que está pendiente.
+    // Genera una cotización a partir de la volumetría completada.
+    // Llama al endpoint, abre el PDF en pestaña nueva y refresca la lista
+    // de cotizaciones de la oportunidad si está visible.
     window.lvcGenerarCotizacion = function (volId, levId) {
+        // Cierra cualquier menú abierto
         var menus = document.querySelectorAll('.lvc-export-menu.is-open');
         menus.forEach(function (m) { m.classList.remove('is-open'); });
-        try { console.log('[cotizacion] (TODO) volId=' + volId + ' levId=' + levId); } catch (e) {}
+
         if (typeof lwToast === 'function') {
-            lwToast('Generar cotización — próximamente', 'info');
-        } else {
-            alert('Generar cotización — próximamente');
+            lwToast('Generando cotización…', 'info');
         }
+
+        // CSRF token desde la cookie (Django default)
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+
+        fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+        }).then(function (r) {
+            return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+        }).then(function (res) {
+            if (!res.ok || !res.data || res.data.success !== true) {
+                var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                if (typeof lwToast === 'function') lwToast(msg, 'error');
+                else alert(msg);
+                return;
+            }
+            // Abre el PDF de la cotización recién creada en pestaña nueva.
+            // Si el bloqueo de popups lo impide, cae al onclick natural.
+            try {
+                window.open(res.data.pdf_url, '_blank');
+            } catch (e) {
+                location.href = res.data.pdf_url;
+            }
+            if (typeof lwToast === 'function') {
+                lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+            }
+            // Refresca la lista de cotizaciones de la oportunidad si el
+            // widget está visible (vendedor pudo abrirlo en paralelo).
+            try {
+                if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                    window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                }
+            } catch (e) { /* defensivo */ }
+        }).catch(function (err) {
+            var msg = 'Error de red al generar cotización';
+            if (typeof lwToast === 'function') lwToast(msg, 'error');
+            else alert(msg);
+            try { console.error('[cotizacion]', err); } catch (e) {}
+        });
     };
 
     // Click fuera de cualquier menú abierto → cerrarlo.
