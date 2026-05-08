@@ -516,6 +516,22 @@ document.addEventListener('click', function(ev) {
         if (vendedorName) vendedorName.textContent = vendedorNombre;
         if (clienteAvatar) clienteAvatar.textContent = getInitials(data.cliente || '');
         if (clienteName) clienteName.textContent = data.cliente || '-';
+
+        // Asignado por (supervisor/admin que delegó el prospecto al vendedor)
+        var asigRow = document.getElementById('wpAsignadoPorRow');
+        var asigDiv = document.getElementById('wpAsignadoPorDivider');
+        var asigAvatar = document.getElementById('wpAsignadoPorAvatar');
+        var asigName = document.getElementById('wpAsignadoPorName');
+        var por = (data.asignado_por || '').trim();
+        if (por) {
+            if (asigAvatar) asigAvatar.textContent = getInitials(por);
+            if (asigName) asigName.textContent = por;
+            if (asigRow) asigRow.style.display = '';
+            if (asigDiv) asigDiv.style.display = '';
+        } else {
+            if (asigRow) asigRow.style.display = 'none';
+            if (asigDiv) asigDiv.style.display = 'none';
+        }
     }
 
     // ── Pipeline ──

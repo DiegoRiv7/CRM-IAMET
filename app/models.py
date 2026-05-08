@@ -3893,6 +3893,11 @@ class Prospecto(models.Model):
     ]
 
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prospectos')
+    asignado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='prospectos_asignados',
+        help_text='Usuario (supervisor/admin) que asignó este prospecto al vendedor.'
+    )
     nombre = models.CharField(max_length=200, verbose_name="Nombre del Prospecto")
     cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='prospectos')
     contacto = models.ForeignKey('Contacto', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospectos')
@@ -4320,9 +4325,12 @@ class ProspectoComentario(models.Model):
 
 class ProspectoActividad(models.Model):
     TIPO_CHOICES = [
+        ('visita', 'Visita'),
         ('llamada', 'Llamada'),
         ('correo', 'Correo'),
+        ('campana', 'Campaña'),
         ('reunion', 'Reunión'),
+        ('reunion_virtual', 'Reunión virtual'),
         ('tarea', 'Tarea'),
         ('otro', 'Otro'),
     ]
