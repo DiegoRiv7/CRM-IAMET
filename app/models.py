@@ -4633,6 +4633,33 @@ class GanttFase(models.Model):
         return f'{self.nombre} — {self.proyecto.nombre}'
 
 
+class RecursoMaterial(models.Model):
+    """Recurso material/equipo/herramienta que puede asignarse a una
+    o varias actividades del Gantt. Sirve para detectar conflictos
+    cuando el mismo recurso es asignado en proyectos paralelos.
+    """
+    TIPO_CHOICES = [
+        ('equipo', 'Equipo'),
+        ('herramienta', 'Herramienta'),
+        ('material', 'Material'),
+        ('vehiculo', 'Vehículo'),
+        ('otro', 'Otro'),
+    ]
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, default='')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otro')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = 'Recurso Material'
+        verbose_name_plural = 'Recursos Materiales'
+
+    def __str__(self):
+        return f'{self.nombre} ({self.get_tipo_display()})'
+
+
 class GanttActividad(models.Model):
     """Actividad/tarea dentro del diagrama de Gantt de un proyecto."""
     proyecto = models.ForeignKey(
@@ -4643,6 +4670,7 @@ class GanttActividad(models.Model):
         null=True, blank=True,
     )
     nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, null=True)
     fecha_inicio = models.DateField()
     duracion_dias = models.PositiveIntegerField(default=1)
     progreso = models.IntegerField(
@@ -4660,6 +4688,9 @@ class GanttActividad(models.Model):
     )
     recursos = models.ManyToManyField(
         User, blank=True, related_name='gantt_actividades_asignadas',
+    )
+    recursos_materiales = models.ManyToManyField(
+        RecursoMaterial, blank=True, related_name='gantt_actividades',
     )
     actividad_calendario = models.ForeignKey(
         Actividad, null=True, blank=True, on_delete=models.SET_NULL,

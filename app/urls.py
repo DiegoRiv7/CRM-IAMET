@@ -431,6 +431,11 @@ urlpatterns = [
     path('api/proyecto/<int:proyecto_id>/gantt/fase/', views_proyectos.api_gantt_fase_crear, name='api_gantt_fase_crear'),
     path('api/gantt/fase/<int:fase_id>/', views_proyectos.api_gantt_fase, name='api_gantt_fase'),
     path('api/gantt/actividad/<int:actividad_id>/cascada/', views_proyectos.api_gantt_cascada, name='api_gantt_cascada'),
+    # Autocomplete de usuarios y recursos materiales (Gantt)
+    path('api/iamet/usuarios/buscar/', views_iamet.api_gantt_usuarios_buscar, name='api_gantt_usuarios_buscar'),
+    path('api/iamet/recursos/buscar/', views_iamet.api_gantt_recursos, name='api_gantt_recursos_buscar'),
+    path('api/iamet/recursos/', views_iamet.api_gantt_recursos, name='api_gantt_recursos_crear'),
+    path('api/iamet/recursos/<int:recurso_id>/conflictos/', views_iamet.api_gantt_recurso_conflictos, name='api_gantt_recurso_conflictos'),
 
     # ── Compras (módulo administrador) ──────────────────────────────────
     path('api/compras/productos/', views_compras.productos_list_create, name='compras_productos_list'),

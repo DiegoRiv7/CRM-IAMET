@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, ProyectoIAMET, GanttFase, GanttActividad
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, ProyectoIAMET, GanttFase, GanttActividad, RecursoMaterial
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -4712,6 +4712,7 @@ def _serializar_actividad(act):
         'id': act.id,
         'fase_id': act.fase_id,
         'nombre': act.nombre,
+        'descripcion': act.descripcion or '',
         'fecha_inicio': act.fecha_inicio.isoformat(),
         'duracion_dias': act.duracion_dias,
         'progreso': act.progreso,
@@ -4722,9 +4723,71 @@ def _serializar_actividad(act):
             {'id': u.id, 'nombre': u.get_full_name() or u.username}
             for u in act.recursos.all()
         ],
+        'recursos_materiales': [
+            {
+                'id': r.id,
+                'nombre': r.nombre,
+                'tipo': r.tipo,
+                'tipo_label': r.get_tipo_display(),
+            }
+            for r in act.recursos_materiales.all()
+        ],
         'actividad_calendario_id': act.actividad_calendario_id,
         'orden': act.orden,
     }
+
+
+def _sync_actividad_calendario(act, creado_por):
+    """Sincroniza (crea o actualiza) el evento del calendario global vinculado
+    a una GanttActividad. Idempotente: si ya hay un Actividad ligado, lo
+    actualiza; si no, lo crea y deja el FK seteado.
+
+    Reglas:
+      titulo            <- act.nombre
+      descripcion       <- act.descripcion or ''
+      tipo_actividad    <- 'tarea'
+      fecha_inicio      <- act.fecha_inicio @ 09:00 (zona del proyecto)
+      fecha_fin         <- act.fecha_fin @ 17:00
+      participantes     <- act.recursos (mismos users)
+      creado_por        <- creado_por (user de la request) cuando se crea
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo('America/Tijuana')
+    except Exception:
+        tz = None
+
+    fi = datetime.combine(act.fecha_inicio, time(9, 0), tzinfo=tz) if tz else datetime.combine(act.fecha_inicio, time(9, 0))
+    ff = datetime.combine(act.fecha_fin, time(17, 0), tzinfo=tz) if tz else datetime.combine(act.fecha_fin, time(17, 0))
+
+    cal = act.actividad_calendario
+    if cal:
+        cal.titulo = act.nombre
+        cal.descripcion = act.descripcion or ''
+        cal.fecha_inicio = fi
+        cal.fecha_fin = ff
+        cal.tipo_actividad = 'tarea'
+        cal.save()
+    else:
+        cal = Actividad.objects.create(
+            titulo=act.nombre,
+            descripcion=act.descripcion or '',
+            tipo_actividad='tarea',
+            fecha_inicio=fi,
+            fecha_fin=ff,
+            creado_por=creado_por,
+            color='#3B82F6',
+        )
+        act.actividad_calendario = cal
+        act.save(update_fields=['actividad_calendario'])
+
+    # Sincronizar participantes con los recursos (users) de la actividad Gantt.
+    try:
+        cal.participantes.set(list(act.recursos.all()))
+    except Exception:
+        pass
+
+    return cal
 
 
 def _serializar_fase(fase):
@@ -4813,10 +4876,15 @@ def api_gantt_proyecto(request, proyecto_id):
         except (ValueError, TypeError):
             return JsonResponse({'error': 'progreso debe ser 0-100'}, status=400)
 
+        descripcion_val = data.get('descripcion')
+        if descripcion_val is not None:
+            descripcion_val = str(descripcion_val).strip() or None
+
         act = GanttActividad.objects.create(
             proyecto=proyecto,
             fase=fase,
             nombre=nombre,
+            descripcion=descripcion_val,
             fecha_inicio=fecha_inicio,
             duracion_dias=duracion_dias,
             progreso=progreso,
@@ -4825,20 +4893,38 @@ def api_gantt_proyecto(request, proyecto_id):
             orden=data.get('orden', 0),
         )
 
-        # ── Crear actividad de calendario vinculada ─────────────────────
+        # ── Recursos (users) inline al crear (opcional) ─────────────────
+        rec_ids = data.get('recursos')
+        if isinstance(rec_ids, list):
+            try:
+                act.recursos.set(User.objects.filter(id__in=[int(x) for x in rec_ids]))
+            except (ValueError, TypeError):
+                pass
+
+        # ── Recursos materiales inline al crear (opcional) ──────────────
+        rec_mat_ids = data.get('recursos_materiales')
+        if isinstance(rec_mat_ids, list):
+            try:
+                act.recursos_materiales.set(
+                    RecursoMaterial.objects.filter(id__in=[int(x) for x in rec_mat_ids])
+                )
+            except (ValueError, TypeError):
+                pass
+
+        # ── Dependencias inline al crear (opcional) ─────────────────────
+        dep_ids = data.get('dependencias')
+        if isinstance(dep_ids, list):
+            try:
+                deps = GanttActividad.objects.filter(
+                    id__in=[int(x) for x in dep_ids], proyecto=proyecto,
+                )
+                act.dependencias.set(deps)
+            except (ValueError, TypeError):
+                pass
+
+        # ── Crear / sincronizar actividad de calendario ─────────────────
         try:
-            from zoneinfo import ZoneInfo
-            tz = ZoneInfo('America/Tijuana')
-            cal = Actividad.objects.create(
-                titulo=nombre,
-                tipo_actividad='tarea',
-                fecha_inicio=datetime.combine(fecha_inicio, time(8, 0), tzinfo=tz),
-                fecha_fin=datetime.combine(act.fecha_fin, time(17, 0), tzinfo=tz),
-                creado_por=request.user,
-                color='#3B82F6',
-            )
-            act.actividad_calendario = cal
-            act.save(update_fields=['actividad_calendario'])
+            _sync_actividad_calendario(act, request.user)
         except Exception as e:
             logging.getLogger(__name__).warning('Gantt: error creando actividad calendario: %s', e)
 
@@ -4868,6 +4954,14 @@ def api_gantt_actividad(request, actividad_id):
             if not nombre:
                 return JsonResponse({'error': 'El nombre no puede estar vacio'}, status=400)
             act.nombre = nombre
+
+        # Descripcion (TextField, opcional/null)
+        if 'descripcion' in data:
+            desc_val = data['descripcion']
+            if desc_val is None or str(desc_val).strip() == '':
+                act.descripcion = None
+            else:
+                act.descripcion = str(desc_val).strip()
 
         # Fecha inicio
         if 'fecha_inicio' in data:
@@ -4944,30 +5038,6 @@ def api_gantt_actividad(request, actividad_id):
 
         act.save()
 
-        # ── Sincronizar con calendario ──────────────────────────────────
-        try:
-            from zoneinfo import ZoneInfo
-            tz = ZoneInfo('America/Tijuana')
-            if act.actividad_calendario:
-                cal = act.actividad_calendario
-                cal.fecha_inicio = datetime.combine(act.fecha_inicio, time(8, 0), tzinfo=tz)
-                cal.fecha_fin = datetime.combine(act.fecha_fin, time(17, 0), tzinfo=tz)
-                cal.titulo = act.nombre
-                cal.save()
-            else:
-                cal = Actividad.objects.create(
-                    titulo=act.nombre,
-                    tipo_actividad='tarea',
-                    fecha_inicio=datetime.combine(act.fecha_inicio, time(8, 0), tzinfo=tz),
-                    fecha_fin=datetime.combine(act.fecha_fin, time(17, 0), tzinfo=tz),
-                    creado_por=request.user,
-                    color='#3B82F6',
-                )
-                act.actividad_calendario = cal
-                act.save(update_fields=['actividad_calendario'])
-        except Exception as e:
-            logging.getLogger(__name__).warning('Gantt: error sincronizando calendario: %s', e)
-
         # M2M: dependencias
         if 'dependencias' in data:
             dep_ids = data['dependencias']
@@ -4976,18 +5046,43 @@ def api_gantt_actividad(request, actividad_id):
             deps = GanttActividad.objects.filter(id__in=dep_ids, proyecto=act.proyecto)
             act.dependencias.set(deps)
 
-        # M2M: recursos
+        # M2M: recursos (users)
         if 'recursos' in data:
             rec_ids = data['recursos']
             if not isinstance(rec_ids, list):
                 return JsonResponse({'error': 'recursos debe ser una lista de ids'}, status=400)
             act.recursos.set(User.objects.filter(id__in=rec_ids))
 
+        # M2M: recursos_materiales (RecursoMaterial)
+        if 'recursos_materiales' in data:
+            rec_mat_ids = data['recursos_materiales']
+            if not isinstance(rec_mat_ids, list):
+                return JsonResponse({'error': 'recursos_materiales debe ser una lista de ids'}, status=400)
+            act.recursos_materiales.set(
+                RecursoMaterial.objects.filter(id__in=rec_mat_ids)
+            )
+
+        # ── Sincronizar con calendario ──────────────────────────────────
+        # Idempotente: actualiza si ya existe el ligado, o crea uno nuevo.
+        try:
+            _sync_actividad_calendario(act, request.user)
+        except Exception as e:
+            logging.getLogger(__name__).warning('Gantt: error sincronizando calendario: %s', e)
+
         return JsonResponse({'success': True, 'actividad': _serializar_actividad(act)})
 
     # ── DELETE ──────────────────────────────────────────────────────────
     if request.method == 'DELETE':
+        # Eliminar tambien el evento de calendario ligado (si existe).
+        cal = act.actividad_calendario
         act.delete()
+        if cal:
+            try:
+                cal.delete()
+            except Exception as e:
+                logging.getLogger(__name__).warning(
+                    'Gantt: error eliminando actividad calendario ligada: %s', e
+                )
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Metodo no permitido'}, status=405)

@@ -1138,6 +1138,13 @@
         <label for="proyActTitulo" class="proy-label">Nombre de la actividad *</label>
         <input type="text" id="proyActTitulo" class="proy-input" placeholder="Ej: Instalacion de cableado estructurado">
       </div>
+      <!-- Descripción -->
+      <div class="proy-field">
+        <label for="proyActDescripcion" class="proy-label">Descripción</label>
+        <textarea id="proyActDescripcion" class="proy-input" rows="3"
+                  placeholder="Detalles, alcance, notas…"
+                  style="resize:vertical;min-height:64px;font-family:inherit;"></textarea>
+      </div>
       <!-- Fase + Hito -->
       <div class="proy-field-row">
         <div class="proy-field" style="flex:2;">
@@ -1194,11 +1201,33 @@
           <input type="number" id="proyActIngreso" class="proy-input" min="0" step="100" value="0" placeholder="0.00">
         </div>
       </div>
-      <!-- Responsables -->
-      <div class="proy-field">
-        <label class="proy-label">Responsables / Recursos</label>
-        <div id="proyActPersonalList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;padding:4px;background:#fafafa;">
-          <div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando equipo del proyecto...</div>
+      <!-- Responsables (users) + Recursos materiales (dos columnas) -->
+      <div class="proy-act-recursos-row">
+        <!-- Columna izquierda: Responsables -->
+        <div class="proy-act-recursos-col">
+          <label class="proy-label">Responsables</label>
+          <div class="proy-act-search-wrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-act-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="proyActUsuarioSearch" class="proy-input proy-act-search-input"
+                   placeholder="Buscar usuario…" autocomplete="off">
+            <div id="proyActUsuarioDropdown" class="proy-act-autocomplete-dropdown" style="display:none;"></div>
+          </div>
+          <div id="proyActUsuariosChips" class="proy-act-chips-wrap" data-empty-msg="Aún sin responsables">
+            <span class="proy-act-chips-empty">Aún sin responsables</span>
+          </div>
+        </div>
+        <!-- Columna derecha: Recursos materiales -->
+        <div class="proy-act-recursos-col">
+          <label class="proy-label">Recursos materiales</label>
+          <div class="proy-act-search-wrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-act-search-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <input type="text" id="proyActRecursoSearch" class="proy-input proy-act-search-input"
+                   placeholder="Buscar recurso (equipo, herramienta, material…)" autocomplete="off">
+            <div id="proyActRecursoDropdown" class="proy-act-autocomplete-dropdown" style="display:none;"></div>
+          </div>
+          <div id="proyActRecursosChips" class="proy-act-chips-wrap" data-empty-msg="Sin recursos asignados">
+            <span class="proy-act-chips-empty">Sin recursos asignados</span>
+          </div>
         </div>
       </div>
       <!-- Dependencias (predecesoras) -->
@@ -1213,6 +1242,40 @@
       <button class="proy-btn proy-btn-outline" id="proyActBtnEliminar" style="margin-right:auto;display:none;color:#dc2626;border-color:#fecaca;" onclick="proyectosEliminarActividadGantt()">Eliminar</button>
       <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoActividad')">Cancelar</button>
       <button class="proy-btn proy-btn-primary" id="proyActBtnCrear" onclick="proyectosGuardarActividad()">Crear Actividad</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal de advertencia de conflicto de recurso -->
+<div class="widget-overlay" id="proyDialogoConflictoRecurso" style="z-index:10300;display:none;"
+     onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:520px;">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="proy-dialog-title" style="margin:0;">Recurso ocupado</h3>
+          <div style="font-size:0.75rem;color:#6E6E73;margin-top:2px;">Conflicto detectado en el rango de fechas</div>
+        </div>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoConflictoRecurso')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <p id="proyConflictoIntro" style="font-size:0.84rem;color:#1d1d1f;margin:0 0 12px;"></p>
+      <div id="proyConflictoLista" style="border:1px solid #fee2e2;border-radius:10px;padding:8px;background:#fff7f7;max-height:220px;overflow-y:auto;font-family:'Plus Jakarta Sans',sans-serif;"></div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoConflictoRecurso')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyConflictoConfirmBtn" style="background:#dc2626;border-color:#dc2626;">
+        Asignar de todos modos
+      </button>
     </div>
   </div>
 </div>

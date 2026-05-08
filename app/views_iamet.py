@@ -6321,3 +6321,248 @@ def api_levantamiento_offline_sync(request):
         'levantamiento_id': lev.id,
         'evidencias': resultado_evidencias,
     })
+
+
+# ═══════════════════════════════════════════════════════════════
+#  Programa de Obra (Gantt) — autocomplete de usuarios y recursos
+# ═══════════════════════════════════════════════════════════════
+
+def _gantt_user_color(seed):
+    """Color determinístico para avatar (mismo set que el frontend)."""
+    palette = ['#6366f1', '#0891b2', '#16a34a', '#d97706', '#dc2626',
+               '#2563eb', '#8b5cf6', '#ec4899', '#0d9488']
+    n = 0
+    try:
+        n = int(seed)
+    except (TypeError, ValueError):
+        for ch in str(seed or ''):
+            n += ord(ch)
+    return palette[abs(n) % len(palette)]
+
+
+def _gantt_user_initials(nombre):
+    parts = (nombre or '').strip().split()
+    if not parts:
+        return '·'
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return (parts[0][:1] + parts[1][:1]).upper()
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_gantt_usuarios_buscar(request):
+    """GET /api/iamet/usuarios/buscar/?q=texto&limit=10
+    Autocomplete genérico de usuarios para el modal de actividad Gantt.
+
+    Resp 200: {success, results: [{id, nombre, initials, color, rol}]}
+    """
+    from django.contrib.auth.models import User
+    from .models import UserProfile
+
+    q = (request.GET.get('q') or '').strip()
+    try:
+        limit = min(max(int(request.GET.get('limit') or 10), 1), 25)
+    except (TypeError, ValueError):
+        limit = 10
+
+    qs = User.objects.filter(is_active=True)
+    if q:
+        qs = qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(username__icontains=q) |
+            Q(email__icontains=q)
+        )
+    qs = qs.select_related('userprofile').order_by('first_name', 'last_name', 'username')[:limit]
+
+    results = []
+    for u in qs:
+        nombre = (u.get_full_name() or u.username).strip()
+        rol = ''
+        try:
+            if hasattr(u, 'userprofile') and u.userprofile:
+                rol = u.userprofile.get_rol_display() if u.userprofile.rol else ''
+        except UserProfile.DoesNotExist:
+            rol = ''
+        results.append({
+            'id': u.id,
+            'nombre': nombre,
+            'username': u.username,
+            'initials': _gantt_user_initials(nombre),
+            'color': _gantt_user_color(u.id),
+            'rol': rol,
+        })
+
+    return JsonResponse({'success': True, 'results': results})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def api_gantt_recursos(request):
+    """
+    GET  /api/iamet/recursos/buscar/?q=texto&limit=10  → busca recursos materiales
+    POST /api/iamet/recursos/                          → crea un recurso
+
+    Mantenido como una sola vista para compartir validación; el ruteo del
+    autocomplete usa GET y el de creación usa POST.
+
+    POST body JSON: { nombre, tipo?, descripcion? }
+    """
+    from .models import RecursoMaterial
+
+    if request.method == 'GET':
+        q = (request.GET.get('q') or '').strip()
+        try:
+            limit = min(max(int(request.GET.get('limit') or 10), 1), 25)
+        except (TypeError, ValueError):
+            limit = 10
+
+        qs = RecursoMaterial.objects.all()
+        if q:
+            qs = qs.filter(
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q)
+            )
+        qs = qs.order_by('nombre')[:limit]
+
+        results = [
+            {
+                'id': r.id,
+                'nombre': r.nombre,
+                'descripcion': r.descripcion or '',
+                'tipo': r.tipo,
+                'tipo_label': r.get_tipo_display(),
+            }
+            for r in qs
+        ]
+        return JsonResponse({'success': True, 'results': results})
+
+    # POST → crear
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON invalido'}, status=400)
+
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        return JsonResponse({'success': False, 'error': 'El nombre es obligatorio'}, status=400)
+
+    tipo = (data.get('tipo') or 'otro').strip()
+    valid_tipos = {t for t, _ in RecursoMaterial.TIPO_CHOICES}
+    if tipo not in valid_tipos:
+        tipo = 'otro'
+
+    descripcion = (data.get('descripcion') or '').strip()
+
+    # Idempotencia razonable: si existe uno con el mismo nombre+tipo, devolverlo.
+    existente = RecursoMaterial.objects.filter(
+        nombre__iexact=nombre, tipo=tipo
+    ).first()
+    if existente:
+        return JsonResponse({
+            'success': True,
+            'created': False,
+            'recurso': {
+                'id': existente.id,
+                'nombre': existente.nombre,
+                'descripcion': existente.descripcion or '',
+                'tipo': existente.tipo,
+                'tipo_label': existente.get_tipo_display(),
+            },
+        })
+
+    recurso = RecursoMaterial.objects.create(
+        nombre=nombre, tipo=tipo, descripcion=descripcion
+    )
+    return JsonResponse({
+        'success': True,
+        'created': True,
+        'recurso': {
+            'id': recurso.id,
+            'nombre': recurso.nombre,
+            'descripcion': recurso.descripcion or '',
+            'tipo': recurso.tipo,
+            'tipo_label': recurso.get_tipo_display(),
+        },
+    }, status=201)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_gantt_recurso_conflictos(request, recurso_id):
+    """
+    GET /api/iamet/recursos/<id>/conflictos/?fecha_inicio=YYYY-MM-DD
+                                            &fecha_fin=YYYY-MM-DD
+                                            &exclude_actividad=<id>
+
+    Devuelve actividades Gantt en cualquier proyecto donde el recurso está
+    asignado y se traslapa con [fecha_inicio, fecha_fin].
+
+    Resp 200: { success, conflictos: [
+        { actividad_id, actividad_nombre, proyecto_id, proyecto_nombre,
+          fecha_inicio, fecha_fin } ] }
+    """
+    from datetime import date as _date, timedelta
+    from .models import RecursoMaterial, GanttActividad
+
+    recurso = RecursoMaterial.objects.filter(id=recurso_id).first()
+    if not recurso:
+        return JsonResponse({'success': False, 'error': 'Recurso no encontrado'}, status=404)
+
+    fi_str = (request.GET.get('fecha_inicio') or '').strip()
+    ff_str = (request.GET.get('fecha_fin') or '').strip()
+    if not fi_str or not ff_str:
+        return JsonResponse({'success': False,
+                             'error': 'fecha_inicio y fecha_fin son obligatorios'},
+                            status=400)
+    try:
+        fi = _date.fromisoformat(fi_str)
+        ff = _date.fromisoformat(ff_str)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'fechas invalidas (YYYY-MM-DD)'},
+                            status=400)
+    if ff < fi:
+        return JsonResponse({'success': False,
+                             'error': 'fecha_fin debe ser >= fecha_inicio'},
+                            status=400)
+
+    exclude_id = request.GET.get('exclude_actividad')
+    try:
+        exclude_id = int(exclude_id) if exclude_id else None
+    except (TypeError, ValueError):
+        exclude_id = None
+
+    qs = (
+        recurso.gantt_actividades
+        .select_related('proyecto')
+        .all()
+    )
+    if exclude_id:
+        qs = qs.exclude(id=exclude_id)
+
+    conflictos = []
+    for a in qs:
+        a_ini = a.fecha_inicio
+        a_fin = a_ini + timedelta(days=a.duracion_dias or 1)
+        # Solapamiento [a_ini, a_fin] vs [fi, ff]
+        if a_fin < fi or a_ini > ff:
+            continue
+        conflictos.append({
+            'actividad_id': a.id,
+            'actividad_nombre': a.nombre,
+            'proyecto_id': a.proyecto_id,
+            'proyecto_nombre': getattr(a.proyecto, 'nombre', '') or '',
+            'fecha_inicio': a_ini.isoformat(),
+            'fecha_fin': a_fin.isoformat(),
+        })
+
+    return JsonResponse({
+        'success': True,
+        'recurso': {
+            'id': recurso.id,
+            'nombre': recurso.nombre,
+            'tipo': recurso.tipo,
+        },
+        'conflictos': conflictos,
+    })

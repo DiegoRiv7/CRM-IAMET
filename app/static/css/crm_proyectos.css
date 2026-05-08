@@ -4321,16 +4321,18 @@ select.proy-info-input {
 }
 .proy-gantt-month span { display: inline-block; }
 
-/* Líneas verticales sutiles dentro del cuerpo (vía gradient) */
+/* Líneas verticales sutiles dentro del cuerpo (vía gradient).
+   El número de subdivisiones lo provee `--proy-gantt-units` (set en JS).
+   Fallback a 12 si la variable no está definida. */
 .proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right {
     background-image: linear-gradient(
         to right,
-        transparent calc(100%/12 - 1px),
-        rgba(0, 0, 0, 0.045) calc(100%/12 - 1px),
-        rgba(0, 0, 0, 0.045) calc(100%/12),
-        transparent calc(100%/12)
+        transparent calc(100% / var(--proy-gantt-units, 12) - 1px),
+        rgba(0, 0, 0, 0.045) calc(100% / var(--proy-gantt-units, 12) - 1px),
+        rgba(0, 0, 0, 0.045) calc(100% / var(--proy-gantt-units, 12)),
+        transparent calc(100% / var(--proy-gantt-units, 12))
     );
-    background-size: calc(100%/12) 100%;
+    background-size: calc(100% / var(--proy-gantt-units, 12)) 100%;
     background-repeat: repeat-x;
 }
 
@@ -4856,20 +4858,78 @@ select.proy-info-input {
 }
 
 /* ── ZOOM RESPONSIVE ────────────────────────────────────────────── */
-.proy-gantt-grid[data-units="52"] .proy-gantt-month {
+/* Cada zoom (semana/mes/trimestre/ano) tiene su look propio. La variable
+   --proy-gantt-units controla la rejilla vertical; aquí ajustamos el
+   header (typografía, padding) por zoom. */
+.proy-gantt-grid[data-zoom="semana"] .proy-gantt-month {
     font-size: 0.6rem;
+    padding: 6px 0;
+    letter-spacing: 0;
+}
+.proy-gantt-grid[data-zoom="semana"] .proy-gantt-month-primary {
+    font-size: 0.72rem;
     padding: 8px 0;
+    background: linear-gradient(180deg, #fafafa, #f3f4f6);
+    border-bottom: 1px solid var(--proy-wm-border);
 }
-.proy-gantt-grid[data-units="4"] .proy-gantt-month {
-    font-size: 0.78rem;
-    font-weight: 700;
+.proy-gantt-grid[data-zoom="trimestre"] .proy-gantt-month-primary {
+    font-size: 0.95rem;
+    font-weight: 800;
+    padding: 14px 0 12px;
+    background: linear-gradient(180deg, #f5f3ff, #ede9fe);
+    color: var(--proy-wm-text) !important;
+    border-bottom: 1px solid var(--proy-wm-border);
+    letter-spacing: 0.02em;
+    border-right: 2px solid var(--proy-wm-border-2);
+}
+.proy-gantt-grid[data-zoom="trimestre"] .proy-gantt-month {
+    font-size: 0.74rem;
+    padding: 9px 0;
+}
+.proy-gantt-grid[data-zoom="ano"] .proy-gantt-month-primary {
+    font-size: 1.4rem;
+    font-weight: 800;
+    padding: 18px 0 14px;
+    background: linear-gradient(180deg, #fefce8, #fef9c3);
+    color: var(--proy-wm-text) !important;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--proy-wm-border);
+}
+.proy-gantt-grid[data-zoom="ano"] .proy-gantt-month {
+    font-size: 0.95rem;
     padding: 12px 0;
+    font-weight: 700;
 }
-.proy-gantt-grid[data-units="52"] .proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right {
-    background-size: calc(100% / 52) 100%;
+.proy-gantt-grid[data-zoom="mes"] .proy-gantt-month {
+    /* Default — se mantiene el look base de mes */
 }
-.proy-gantt-grid[data-units="4"] .proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right {
-    background-size: calc(100% / 4) 100%;
+
+/* Visual hint extra: división mas notable entre quarters en trimestre */
+.proy-gantt-grid[data-zoom="trimestre"] .proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right {
+    background-image:
+        linear-gradient(
+            to right,
+            transparent calc(100% / 12 - 1px),
+            rgba(0, 0, 0, 0.045) calc(100% / 12 - 1px),
+            rgba(0, 0, 0, 0.045) calc(100% / 12),
+            transparent calc(100% / 12)
+        ),
+        linear-gradient(
+            to right,
+            transparent calc(100% / 4 - 2px),
+            rgba(99, 102, 241, 0.18) calc(100% / 4 - 2px),
+            rgba(99, 102, 241, 0.18) calc(100% / 4),
+            transparent calc(100% / 4)
+        );
+    background-size: calc(100% / 12) 100%, calc(100% / 4) 100%;
+    background-repeat: repeat-x, repeat-x;
+}
+
+/* Header de doble fila */
+.proy-gantt-row-header-primary .proy-gantt-col-right { display: flex; }
+.proy-gantt-row-header-secondary .proy-gantt-col-right { display: flex; }
+.proy-gantt-row-header-secondary {
+    border-top: 1px dashed var(--proy-wm-border-2);
 }
 
 /* ── PRINT ──────────────────────────────────────────────────────── */
@@ -5321,4 +5381,251 @@ select.proy-info-input {
   .proy-fin-filters { flex-wrap: wrap; }
   .proy-fin-concepto { max-width: 180px; }
 }
+
+
+/* ════════════════════════════════════════════════════════════════════
+   GANTT — Mejoras (vista financiera, autocomplete + chips, modal)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── KPIs financieros en el header del Gantt ─────────────────────── */
+.proy-gantt-fin-kpis {
+    display: flex;
+    gap: 18px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.proy-gantt-fin-kpi {
+    background: var(--proy-wm-card);
+    border: 1px solid var(--proy-wm-border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-width: 130px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.proy-gantt-fin-kpi-lbl {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--proy-wm-muted) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.proy-gantt-fin-kpi-val {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--proy-wm-text) !important;
+    margin-top: 2px;
+}
+.proy-gantt-fin-kpi-cost { color: #d97706 !important; }
+.proy-gantt-fin-kpi-rev  { color: #16a34a !important; }
+.proy-gantt-fin-kpi-pos  { color: #16a34a !important; }
+.proy-gantt-fin-kpi-neg  { color: #dc2626 !important; }
+.proy-gantt-fin-kpi-sub {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--proy-wm-muted) !important;
+}
+
+/* ── Modal de actividad: dos columnas Responsables / Recursos ────── */
+.proy-act-recursos-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 6px;
+}
+@media (max-width: 720px) {
+    .proy-act-recursos-row { grid-template-columns: 1fr; }
+}
+.proy-act-recursos-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.proy-act-recursos-col .proy-label {
+    margin-bottom: 0;
+}
+.proy-act-search-wrap {
+    position: relative;
+}
+.proy-act-search-wrap .proy-act-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+.proy-act-search-input {
+    padding-left: 32px !important;
+}
+.proy-act-autocomplete-dropdown {
+    position: absolute;
+    z-index: 10250;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--proy-wm-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    padding: 4px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.proy-act-ac-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s;
+    font-family: inherit;
+}
+.proy-act-ac-item:hover { background: #F5F5F7; }
+.proy-act-ac-item.proy-act-ac-create {
+    border-top: 1px dashed var(--proy-wm-border-2);
+    margin-top: 4px;
+    padding-top: 10px;
+}
+.proy-act-ac-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.66rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.proy-act-ac-tipo {
+    background: #ede9fe;
+    color: #6d28d9;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+}
+.proy-act-ac-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+.proy-act-ac-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1d1d1f;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.proy-act-ac-meta {
+    font-size: 0.7rem;
+    color: var(--proy-wm-muted) !important;
+}
+.proy-act-ac-empty {
+    padding: 12px 10px;
+    font-size: 0.78rem;
+    color: var(--proy-wm-muted) !important;
+    text-align: center;
+}
+
+/* ── Chips seleccionados ─────────────────────────────────────────── */
+.proy-act-chips-wrap {
+    min-height: 38px;
+    border: 1px dashed var(--proy-wm-border-2);
+    border-radius: 10px;
+    padding: 6px;
+    background: #fafafa;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+}
+.proy-act-chips-empty {
+    font-size: 0.74rem;
+    color: var(--proy-wm-muted) !important;
+    padding: 6px 8px;
+    font-style: italic;
+}
+.proy-act-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid var(--proy-wm-border);
+    border-radius: 999px;
+    padding: 3px 8px 3px 4px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--proy-wm-text) !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    max-width: 100%;
+}
+.proy-act-chip-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.proy-act-chip-tipo {
+    background: #ede9fe;
+    color: #6d28d9;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+.proy-act-chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+.proy-act-chip-remove {
+    background: transparent;
+    border: none;
+    color: var(--proy-wm-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.proy-act-chip-remove:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Versión específica para chips de recursos materiales */
+.proy-act-chip-recurso { background: #f5f3ff; border-color: #ddd6fe; }
+.proy-act-chip-user { background: #eff6ff; border-color: #dbeafe; }
 
