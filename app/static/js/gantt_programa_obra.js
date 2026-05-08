@@ -565,7 +565,15 @@
         // Botón "+ Fase" (secundario)
         var btnAddPhase = el('button', { className: 'gantt-btn', onClick: function () { self._showAddPhaseModal(); } }, ['+ Fase']);
 
-        return el('div', { className: 'gantt-toolbar' }, [btnAdd, btnAddPhase, this._btnDel, this._btnToggleFases, this._btnFinancial, spacer, zoomGroup]);
+        // Botón Expandir / Pantalla completa (Mejora 1)
+        this._btnFullscreen = el('button', {
+            className: 'gantt-btn gantt-btn-icon',
+            title: 'Pantalla completa',
+            onClick: function () { self._toggleFullscreen(); }
+        });
+        this._btnFullscreen.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Pantalla completa</span>';
+
+        return el('div', { className: 'gantt-toolbar' }, [btnAdd, btnAddPhase, this._btnDel, this._btnToggleFases, this._btnFinancial, spacer, this._btnFullscreen, zoomGroup]);
     };
 
     /* -------------------------------------------
@@ -1717,6 +1725,16 @@
         var t = hit.task;
         this.selectedTaskId = t.id;
 
+        // Track mousedown origin to detect "click without drag"
+        // (used to open the detail drawer on simple click — Mejora 2).
+        this._mouseDownInfo = {
+            x: e.clientX,
+            y: e.clientY,
+            taskId: t.id,
+            zone: hit.zone,
+            t: Date.now()
+        };
+
         if (hit.zone === 'connector') {
             // Start connecting mode — drag line from this task
             var barX = t.start * this.colW;
@@ -1824,7 +1842,25 @@
     };
 
     Gantt.prototype._onMouseUp = function (e) {
-        if (!this.dragState) return;
+        // Mejora 2 — single-click sobre una barra abre el drawer de detalles.
+        // Si dragState está activo pero no hubo movimiento real, también
+        // contamos como click (drag cancelado).
+        var clickInfo = this._mouseDownInfo;
+        this._mouseDownInfo = null;
+
+        if (!this.dragState) {
+            if (clickInfo && clickInfo.zone === 'body') {
+                var dx = Math.abs(e.clientX - clickInfo.x);
+                var dy = Math.abs(e.clientY - clickInfo.y);
+                if (dx < 4 && dy < 4) {
+                    var taskC = this._taskById(clickInfo.taskId);
+                    if (taskC && !taskC.isPhase) {
+                        this._openDrawer(taskC.id);
+                    }
+                }
+            }
+            return;
+        }
 
         var taskId = this.dragState.taskId;
         var dragType = this.dragState.type;
@@ -1874,10 +1910,16 @@
             return;
         }
 
+        var wasMove = (dragType === 'move');
         this.dragState = null;
         this._connectingFrom = null;
 
-        if (t) {
+        // Mejora 2 — si fue un "move" sin desplazamiento real, abrir drawer.
+        var dxC = clickInfo ? Math.abs(e.clientX - clickInfo.x) : 99;
+        var dyC = clickInfo ? Math.abs(e.clientY - clickInfo.y) : 99;
+        var noMove = wasMove && dxC < 4 && dyC < 4;
+
+        if (t && !noMove) {
             // Persist to server
             this._persistTask(t);
             // Also cascade on server
@@ -1885,6 +1927,10 @@
         }
 
         this._render();
+
+        if (noMove && t && !t.isPhase) {
+            this._openDrawer(t.id);
+        }
     };
 
     Gantt.prototype._onMouseMove = function (e) {
@@ -2901,11 +2947,808 @@
         createNextPhase();
     };
 
+    /* ============================================================
+       MEJORA 1 — PANTALLA COMPLETA DEL GANTT
+       ============================================================ */
+    Gantt.prototype._toggleFullscreen = function () {
+        var container = this.container;
+        if (!container) return;
+        var alreadyOpen = container.classList.contains('proy-gantt-fullscreen');
+        if (alreadyOpen) {
+            this._exitFullscreen();
+        } else {
+            this._enterFullscreen();
+        }
+    };
+
+    Gantt.prototype._enterFullscreen = function () {
+        var self = this;
+        this.container.classList.add('proy-gantt-fullscreen');
+        document.body.classList.add('proy-gantt-fullscreen-active');
+
+        // Botón salir
+        if (!this._fsExitBtn) {
+            var btn = document.createElement('button');
+            btn.className = 'proy-gantt-fs-exit';
+            btn.type = 'button';
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Salir de pantalla completa</span>';
+            btn.addEventListener('click', function () { self._exitFullscreen(); });
+            this._fsExitBtn = btn;
+        }
+        document.body.appendChild(this._fsExitBtn);
+
+        // ESC para salir
+        if (!this._fsKeyHandler) {
+            this._fsKeyHandler = function (e) {
+                if (e.key === 'Escape' && self.container.classList.contains('proy-gantt-fullscreen')) {
+                    // Si el drawer está abierto, cerrarlo primero (no salir del FS)
+                    var drawer = document.getElementById('ganttActDrawer');
+                    if (drawer && drawer.classList.contains('is-open')) return;
+                    self._exitFullscreen();
+                }
+            };
+            document.addEventListener('keydown', this._fsKeyHandler);
+        }
+
+        // Forzar resize del canvas tras layout
+        setTimeout(function () { self._render(); }, 50);
+    };
+
+    Gantt.prototype._exitFullscreen = function () {
+        this.container.classList.remove('proy-gantt-fullscreen');
+        document.body.classList.remove('proy-gantt-fullscreen-active');
+        if (this._fsExitBtn && this._fsExitBtn.parentNode) {
+            this._fsExitBtn.parentNode.removeChild(this._fsExitBtn);
+        }
+        var self = this;
+        setTimeout(function () { self._render(); }, 50);
+    };
+
+    /* ============================================================
+       MEJORA 2 — DRAWER LATERAL DE DETALLES
+       ============================================================ */
+    Gantt.prototype._openDrawer = function (taskId) {
+        var t = this._taskById(taskId);
+        if (!t || t.isPhase) return;
+        var self = this;
+
+        // Inyectar referencia global única para que las funciones del HTML
+        // (window.proyGantt*) puedan operar sobre la última instancia.
+        window._proyGanttCurrentInstance = this;
+        window._proyGanttCurrentTaskId   = taskId;
+
+        var drawer = document.getElementById('ganttActDrawer');
+        var overlay = document.getElementById('ganttActDrawerOverlay');
+        if (!drawer || !overlay) {
+            console.warn('Gantt: drawer markup no presente en el DOM');
+            return;
+        }
+
+        this._renderDrawer(t);
+
+        drawer.classList.add('is-open');
+        drawer.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('proy-gantt-drawer-open');
+
+        // ESC cierra drawer
+        if (!this._drawerKeyHandler) {
+            this._drawerKeyHandler = function (e) {
+                if (e.key === 'Escape') {
+                    var dr = document.getElementById('ganttActDrawer');
+                    if (dr && dr.classList.contains('is-open')) {
+                        // No cerrar si fullscreen de actividad está abierto
+                        var fs = document.getElementById('ganttActFullscreen');
+                        if (fs && fs.classList.contains('is-open')) return;
+                        self._closeDrawer();
+                    }
+                }
+            };
+            document.addEventListener('keydown', this._drawerKeyHandler);
+        }
+    };
+
+    Gantt.prototype._closeDrawer = function () {
+        var drawer = document.getElementById('ganttActDrawer');
+        var overlay = document.getElementById('ganttActDrawerOverlay');
+        if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); }
+        if (overlay) { overlay.classList.remove('is-open'); overlay.setAttribute('aria-hidden', 'true'); }
+        // Mantener bloqueo si el Gantt o el fullscreen de actividad siguen abiertos
+        var fs = document.getElementById('ganttActFullscreen');
+        var ganttFs = this.container && this.container.classList.contains('proy-gantt-fullscreen');
+        var actFs = fs && fs.classList.contains('is-open');
+        if (!ganttFs && !actFs) {
+            document.body.classList.remove('proy-gantt-drawer-open');
+        } else {
+            document.body.classList.remove('proy-gantt-drawer-open');
+        }
+    };
+
+    Gantt.prototype._taskStatus = function (t) {
+        // Devuelve {label, cls} entre LISTA, ACTIVA, ATRASADA, COMPLETADA.
+        if ((t.progress || 0) >= 100) return { label: 'COMPLETADA', cls: 'gantt-status-completada' };
+        var todayDay = daysBetween(this.projectStart, new Date());
+        if (todayDay < t.start) return { label: 'LISTA', cls: 'gantt-status-lista' };
+        if (todayDay >= t.start + t.dur) return { label: 'ATRASADA', cls: 'gantt-status-atrasada' };
+        return { label: 'ACTIVA', cls: 'gantt-status-activa' };
+    };
+
+    Gantt.prototype._fmtDateLong = function (d) {
+        return d.getDate() + ' ' + MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
+    };
+
+    Gantt.prototype._initialsOf = function (name) {
+        if (!name) return '?';
+        var p = String(name).trim().split(/\s+/);
+        var i = (p[0] || '?').charAt(0).toUpperCase();
+        if (p.length > 1) i += p[1].charAt(0).toUpperCase();
+        return i;
+    };
+
+    Gantt.prototype._renderDrawer = function (t) {
+        var self = this;
+        var $ = function (id) { return document.getElementById(id); };
+
+        // Tags
+        var phase = t.parent ? this._taskById(t.parent) : null;
+        var faseTag = $('ganttDrawerFaseTag');
+        if (faseTag) {
+            faseTag.textContent = phase ? phase.name : 'Sin fase';
+            faseTag.style.display = phase ? '' : 'none';
+        }
+        var status = this._taskStatus(t);
+        var statusTag = $('ganttDrawerStatusTag');
+        if (statusTag) {
+            statusTag.textContent = status.label;
+            statusTag.className = 'gantt-drawer-tag gantt-drawer-tag--status ' + status.cls;
+        }
+
+        // Title
+        var title = $('ganttDrawerTitle');
+        if (title) title.textContent = t.name || 'Actividad';
+
+        // Resumen — fechas
+        var sd = addDays(this.projectStart, t.start);
+        var ed = addDays(this.projectStart, t.start + t.dur);
+        var fIni = $('ganttDrawerFechaInicio'); if (fIni) fIni.textContent = this._fmtDateLong(sd);
+        var fFin = $('ganttDrawerFechaFin');    if (fFin) fFin.textContent = this._fmtDateLong(ed);
+        var dur  = $('ganttDrawerDuracion');    if (dur)  dur.textContent  = t.dur + ' días';
+        var rest = $('ganttDrawerDiasRestantes');
+        if (rest) {
+            var todayDay = daysBetween(this.projectStart, new Date());
+            var endDay = t.start + t.dur;
+            var diff = endDay - todayDay;
+            if ((t.progress || 0) >= 100) rest.textContent = 'Completada';
+            else if (diff < 0) rest.textContent = Math.abs(diff) + ' días vencida';
+            else rest.textContent = diff + ' días';
+        }
+
+        // Avance
+        var av = $('ganttDrawerAvanceTxt');  if (av) av.textContent = (t.progress || 0) + '%';
+        var fill = $('ganttDrawerAvanceFill');
+        if (fill) {
+            fill.style.width = Math.min(100, t.progress || 0) + '%';
+            fill.style.background = (t.progress || 0) >= 100 ? '#10B981' : '#3B82F6';
+        }
+
+        // Descripción — la obtenemos del backend (campo `descripcion`)
+        var desc = $('ganttDrawerDescripcion');
+        if (desc) {
+            var d = (t.descripcion || '').trim();
+            if (d) {
+                desc.textContent = d;
+                desc.classList.remove('is-empty');
+            } else {
+                desc.textContent = 'Sin descripción';
+                desc.classList.add('is-empty');
+            }
+        }
+
+        // Responsables
+        var resp = $('ganttDrawerResponsables');
+        if (resp) {
+            resp.innerHTML = '';
+            var rs = (t.res || []);
+            if (rs.length === 0) {
+                resp.textContent = 'Sin responsables';
+                resp.classList.add('gantt-drawer-chips--placeholder');
+            } else {
+                resp.classList.remove('gantt-drawer-chips--placeholder');
+                rs.forEach(function (r) {
+                    var nombre = (typeof r === 'object') ? (r.nombre || r.username || ('#' + r.id)) : ('Usuario #' + r);
+                    var ini = self._initialsOf(nombre);
+                    var chip = el('span', { className: 'gantt-drawer-chip' });
+                    var av2 = el('span', {
+                        className: 'gantt-drawer-avatar',
+                        style: { background: self._resAvatarColor ? self._resAvatarColor(nombre) : '#3B82F6' }
+                    }, [ini]);
+                    chip.appendChild(av2);
+                    chip.appendChild(document.createTextNode(nombre));
+                    resp.appendChild(chip);
+                });
+            }
+        }
+
+        // Recursos materiales (placeholder — modelo no existe todavía)
+        var mat = $('ganttDrawerMateriales');
+        if (mat) {
+            mat.innerHTML = 'Próximamente';
+            mat.classList.add('gantt-drawer-chips--placeholder');
+        }
+
+        // Dependencias
+        var depsPrev = $('ganttDrawerDepsPrev');
+        var depsNext = $('ganttDrawerDepsNext');
+        if (depsPrev) {
+            depsPrev.innerHTML = '';
+            var prev = (t.deps || []);
+            if (prev.length === 0) depsPrev.textContent = '—';
+            else {
+                prev.forEach(function (id) {
+                    var dt = self._taskById(id);
+                    var btn = el('button', {
+                        className: 'gantt-drawer-deplink',
+                        onClick: function () { if (dt) self._openDrawer(dt.id); }
+                    }, [dt ? dt.name : ('Actividad #' + id)]);
+                    depsPrev.appendChild(btn);
+                });
+            }
+        }
+        if (depsNext) {
+            depsNext.innerHTML = '';
+            var nextList = this.tasks.filter(function (x) {
+                return !x.isPhase && (x.deps || []).indexOf(t.id) !== -1;
+            });
+            if (nextList.length === 0) depsNext.textContent = '—';
+            else {
+                nextList.forEach(function (dt) {
+                    var btn = el('button', {
+                        className: 'gantt-drawer-deplink',
+                        onClick: function () { self._openDrawer(dt.id); }
+                    }, [dt.name]);
+                    depsNext.appendChild(btn);
+                });
+            }
+        }
+
+        // Financiero
+        var costo = $('ganttDrawerCosto'); if (costo) costo.textContent = fmtMoney(t.cost || 0);
+        var ing = $('ganttDrawerIngreso'); if (ing) ing.textContent = fmtMoney(t.income || 0);
+        var marg = $('ganttDrawerMargen');
+        if (marg) {
+            var m = (t.income || 0) - (t.cost || 0);
+            marg.textContent = (m >= 0 ? '+' : '-') + fmtMoney(Math.abs(m));
+            marg.style.color = m >= 0 ? '#10B981' : '#EF4444';
+        }
+
+        // En el calendario
+        var calSec = $('ganttDrawerCalSection');
+        var calLink = $('ganttDrawerCalLink');
+        if (calSec && calLink) {
+            if (t.actividad_calendario_id) {
+                calSec.style.display = '';
+                calLink.dataset.actividadId = t.actividad_calendario_id;
+            } else {
+                calSec.style.display = 'none';
+            }
+        }
+
+        // Si nos faltan campos (descripcion no llegó del API en _parseData),
+        // pedimos los detalles del backend y refrescamos.
+        if (!t._detalleHidratado) {
+            this._hydrateTaskDetail(t);
+        }
+    };
+
+    /* Si el GET inicial /api/proyecto/<id>/gantt/ no incluye descripcion,
+       hacemos un GET adicional para hidratar el task. */
+    Gantt.prototype._hydrateTaskDetail = function (t) {
+        var self = this;
+        // Estrategia ligera: refrescamos el árbol completo si falta data
+        // y luego repintamos el drawer si sigue abierto.
+        if (typeof t.descripcion === 'string') return;
+        _fetch('/app/api/proyecto/' + this.proyectoId + '/gantt/').then(function (data) {
+            (data.actividades || []).forEach(function (a) {
+                var local = self._taskById(a.id);
+                if (local) {
+                    local.descripcion = a.descripcion || '';
+                    local.actividad_calendario_id = a.actividad_calendario_id || null;
+                    local._detalleHidratado = true;
+                }
+            });
+            // Repintar drawer si todavía está abierto sobre el mismo task
+            var drawer = document.getElementById('ganttActDrawer');
+            if (drawer && drawer.classList.contains('is-open') && window._proyGanttCurrentTaskId === t.id) {
+                self._renderDrawer(self._taskById(t.id) || t);
+            }
+        }).catch(function () {});
+    };
+
+    /* ============================================================
+       MEJORA 3 — VISTA FULLSCREEN DE ACTIVIDAD
+       ============================================================ */
+    Gantt.prototype._openActivityFullscreen = function (taskId) {
+        var self = this;
+        var t = this._taskById(taskId);
+        if (!t) return;
+        window._proyGanttCurrentInstance = this;
+        window._proyGanttCurrentTaskId   = taskId;
+
+        var fs = document.getElementById('ganttActFullscreen');
+        if (!fs) return;
+        document.body.classList.add('proy-gantt-fullscreen-active');
+
+        this._renderActivityFullscreen(t);
+
+        fs.classList.add('is-open');
+        fs.setAttribute('aria-hidden', 'false');
+
+        // Default a tab "detalles"
+        this._setActivityFullscreenTab('detalles');
+
+        // Cargar comentarios
+        this._fetchAndRenderComments(t.id);
+        this._fetchAndRenderArchivos(t.id);
+
+        // ESC para cerrar
+        if (!this._fsActKeyHandler) {
+            this._fsActKeyHandler = function (e) {
+                if (e.key === 'Escape') {
+                    var f = document.getElementById('ganttActFullscreen');
+                    if (f && f.classList.contains('is-open')) {
+                        self._closeActivityFullscreen();
+                    }
+                }
+            };
+            document.addEventListener('keydown', this._fsActKeyHandler);
+        }
+    };
+
+    Gantt.prototype._closeActivityFullscreen = function () {
+        var fs = document.getElementById('ganttActFullscreen');
+        if (fs) {
+            fs.classList.remove('is-open');
+            fs.setAttribute('aria-hidden', 'true');
+        }
+        // Si el Gantt estaba en pantalla completa, mantener bloqueo del body.
+        if (!this.container.classList.contains('proy-gantt-fullscreen')) {
+            document.body.classList.remove('proy-gantt-fullscreen-active');
+        }
+        // También cerrar drawer si estaba abierto detrás
+        this._closeDrawer();
+    };
+
+    Gantt.prototype._setActivityFullscreenTab = function (tabName) {
+        var fs = document.getElementById('ganttActFullscreen');
+        if (!fs) return;
+        fs.querySelectorAll('.gantt-act-fs-tab').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.fsTab === tabName);
+        });
+        fs.querySelectorAll('.gantt-act-fs-pane').forEach(function (p) {
+            p.classList.toggle('active', p.dataset.fsPane === tabName);
+        });
+    };
+
+    Gantt.prototype._renderActivityFullscreen = function (t) {
+        var self = this;
+        var $ = function (id) { return document.getElementById(id); };
+        var phase = t.parent ? this._taskById(t.parent) : null;
+        var faseNombre = phase ? phase.name : 'Sin fase';
+
+        var faseBC = $('ganttActFsFase'); if (faseBC) faseBC.textContent = faseNombre;
+        var titBC  = $('ganttActFsTitulo'); if (titBC) titBC.textContent = t.name || 'Actividad';
+
+        var heroFase = $('ganttActFsHeroFase'); if (heroFase) heroFase.textContent = faseNombre;
+        var status = this._taskStatus(t);
+        var heroStatus = $('ganttActFsHeroStatus');
+        if (heroStatus) {
+            heroStatus.textContent = status.label;
+            heroStatus.className = 'gantt-drawer-tag gantt-drawer-tag--status ' + status.cls;
+        }
+        var heroTit = $('ganttActFsHeroTitulo'); if (heroTit) heroTit.textContent = t.name || 'Actividad';
+
+        // Avance
+        var avTxt = $('ganttActFsHeroAvanceTxt'); if (avTxt) avTxt.textContent = (t.progress || 0) + '%';
+        var avFill = $('ganttActFsHeroAvanceFill');
+        if (avFill) {
+            avFill.style.width = Math.min(100, t.progress || 0) + '%';
+            avFill.style.background = (t.progress || 0) >= 100 ? '#10B981' : '#3B82F6';
+        }
+
+        // Fechas
+        var sd = addDays(this.projectStart, t.start);
+        var ed = addDays(this.projectStart, t.start + t.dur);
+        var fIni = $('ganttActFsFechaInicio'); if (fIni) fIni.textContent = this._fmtDateLong(sd);
+        var fFin = $('ganttActFsFechaFin');    if (fFin) fFin.textContent = this._fmtDateLong(ed);
+        var dur  = $('ganttActFsDuracion');    if (dur)  dur.textContent  = t.dur + ' días';
+        var rest = $('ganttActFsDiasRestantes');
+        if (rest) {
+            var todayDay = daysBetween(this.projectStart, new Date());
+            var endDay = t.start + t.dur;
+            var diff = endDay - todayDay;
+            if ((t.progress || 0) >= 100) rest.textContent = 'Completada';
+            else if (diff < 0) rest.textContent = Math.abs(diff) + ' días vencida';
+            else rest.textContent = diff + ' días';
+        }
+
+        // Equipo
+        var team = $('ganttActFsResponsables');
+        if (team) {
+            team.innerHTML = '';
+            var rs = (t.res || []);
+            if (rs.length === 0) {
+                team.textContent = 'Sin responsables';
+            } else {
+                rs.forEach(function (r) {
+                    var nombre = (typeof r === 'object') ? (r.nombre || r.username || ('#' + r.id)) : ('Usuario #' + r);
+                    var rol = (typeof r === 'object' && r.rol) ? r.rol : '';
+                    var ini = self._initialsOf(nombre);
+                    var bg = self._resAvatarColor ? self._resAvatarColor(nombre) : '#3B82F6';
+                    var info = el('div', { className: 'gantt-act-fs-team-info' }, [
+                        el('span', { className: 'gantt-act-fs-team-name' }, [nombre]),
+                        rol ? el('span', { className: 'gantt-act-fs-team-role' }, [rol]) : null
+                    ].filter(Boolean));
+                    var member = el('div', { className: 'gantt-act-fs-team-member' }, [
+                        el('span', { className: 'gantt-act-fs-team-avatar', style: { background: bg } }, [ini]),
+                        info
+                    ]);
+                    team.appendChild(member);
+                });
+            }
+        }
+
+        // Materiales (placeholder)
+        var mat = $('ganttActFsMateriales');
+        if (mat) {
+            mat.textContent = 'Próximamente';
+            mat.classList.add('gantt-drawer-chips--placeholder');
+        }
+
+        // Financiero
+        var costo = $('ganttActFsCosto'); if (costo) costo.textContent = fmtMoney(t.cost || 0);
+        var ing = $('ganttActFsIngreso'); if (ing) ing.textContent = fmtMoney(t.income || 0);
+        var marg = $('ganttActFsMargen');
+        if (marg) {
+            var m = (t.income || 0) - (t.cost || 0);
+            marg.textContent = (m >= 0 ? '+' : '-') + fmtMoney(Math.abs(m));
+            marg.style.color = m >= 0 ? '#10B981' : '#EF4444';
+        }
+
+        // Descripción
+        var desc = $('ganttActFsDescripcion');
+        if (desc) {
+            var d = (t.descripcion || '').trim();
+            if (d) {
+                desc.textContent = d;
+                desc.classList.remove('is-empty');
+            } else {
+                desc.textContent = 'Sin descripción';
+                desc.classList.add('is-empty');
+            }
+        }
+    };
+
+    Gantt.prototype._fetchAndRenderComments = function (taskId) {
+        var self = this;
+        var thread = document.getElementById('ganttActFsComentariosThread');
+        if (!thread) return;
+        thread.innerHTML = '<div class="gantt-act-fs-empty">Cargando comentarios…</div>';
+
+        _fetch('/app/api/gantt/actividad/' + taskId + '/comentarios/').then(function (resp) {
+            if (!resp || !resp.success) {
+                thread.innerHTML = '<div class="gantt-act-fs-empty">Error al cargar comentarios</div>';
+                return;
+            }
+            self._renderComments(resp.items || []);
+        }).catch(function () {
+            thread.innerHTML = '<div class="gantt-act-fs-empty">Error al cargar comentarios</div>';
+        });
+    };
+
+    Gantt.prototype._renderComments = function (items) {
+        var self = this;
+        var thread = document.getElementById('ganttActFsComentariosThread');
+        if (!thread) return;
+        thread.innerHTML = '';
+        if (!items || items.length === 0) {
+            thread.innerHTML = '<div class="gantt-act-fs-empty">Aún no hay comentarios. Sé el primero en comentar.</div>';
+            return;
+        }
+        items.forEach(function (c) {
+            var ini = self._initialsOf(c.autor_nombre || '?');
+            var bg = self._resAvatarColor ? self._resAvatarColor(c.autor_nombre || '?') : '#B45309';
+            var fechaTxt = '';
+            if (c.created_at) {
+                try {
+                    var d = new Date(c.created_at);
+                    fechaTxt = d.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+                } catch (e) { fechaTxt = c.created_at; }
+            }
+            var meta = el('div', { className: 'gantt-act-fs-comment-meta' }, [
+                el('span', { className: 'gantt-act-fs-comment-author' }, [c.autor_nombre || '—']),
+                el('span', { className: 'gantt-act-fs-comment-date' }, [fechaTxt])
+            ]);
+            var body = el('div', { className: 'gantt-act-fs-comment-body' }, [
+                meta,
+                el('div', { className: 'gantt-act-fs-comment-text' }, [c.texto || ''])
+            ]);
+            var children = [
+                el('span', { className: 'gantt-act-fs-comment-avatar', style: { background: bg } }, [ini]),
+                body
+            ];
+            // Botón borrar (best-effort; backend valida permiso)
+            var delBtn = el('button', {
+                className: 'gantt-act-fs-comment-delete',
+                title: 'Eliminar',
+                onClick: function () { self._deleteComment(c.id); }
+            });
+            delBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+            children.push(delBtn);
+
+            var card = el('div', { className: 'gantt-act-fs-comment' }, children);
+            thread.appendChild(card);
+        });
+    };
+
+    Gantt.prototype._postComment = function (texto) {
+        var self = this;
+        var taskId = window._proyGanttCurrentTaskId;
+        if (!taskId || !texto) return;
+        _fetch('/app/api/gantt/actividad/' + taskId + '/comentarios/', {
+            method: 'POST',
+            body: { texto: texto }
+        }).then(function (resp) {
+            if (resp && resp.success) {
+                var input = document.getElementById('ganttActFsComentarioInput');
+                if (input) input.value = '';
+                self._fetchAndRenderComments(taskId);
+            } else {
+                alert((resp && resp.error) || 'No se pudo guardar el comentario');
+            }
+        }).catch(function () { alert('Error de red al guardar el comentario'); });
+    };
+
+    Gantt.prototype._deleteComment = function (commentId) {
+        var self = this;
+        if (!confirm('¿Eliminar este comentario?')) return;
+        _fetch('/app/api/gantt/actividad/comentario/' + commentId + '/', { method: 'DELETE' })
+            .then(function (resp) {
+                if (resp && resp.success) {
+                    var taskId = window._proyGanttCurrentTaskId;
+                    if (taskId) self._fetchAndRenderComments(taskId);
+                } else {
+                    alert((resp && resp.error) || 'No se pudo eliminar');
+                }
+            }).catch(function () { alert('Error de red'); });
+    };
+
+    Gantt.prototype._fetchAndRenderArchivos = function (taskId) {
+        var self = this;
+        var list = document.getElementById('ganttActFsArchivosList');
+        if (!list) return;
+        list.innerHTML = '<div class="gantt-act-fs-empty">Cargando archivos…</div>';
+        _fetch('/app/api/gantt/actividad/' + taskId + '/archivos/').then(function (resp) {
+            if (!resp || !resp.success) {
+                list.innerHTML = '<div class="gantt-act-fs-empty">Error al cargar archivos</div>';
+                return;
+            }
+            self._renderArchivos(resp.items || []);
+        }).catch(function () {
+            list.innerHTML = '<div class="gantt-act-fs-empty">Error al cargar archivos</div>';
+        });
+    };
+
+    Gantt.prototype._renderArchivos = function (items) {
+        var self = this;
+        var list = document.getElementById('ganttActFsArchivosList');
+        if (!list) return;
+        list.innerHTML = '';
+        if (!items || items.length === 0) {
+            list.innerHTML = '<div class="gantt-act-fs-empty">Aún no hay archivos. Súbelos arriba.</div>';
+            return;
+        }
+        items.forEach(function (f) {
+            var fechaTxt = '';
+            if (f.created_at) {
+                try {
+                    var d = new Date(f.created_at);
+                    fechaTxt = d.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+                } catch (e) { fechaTxt = f.created_at; }
+            }
+            var icon = el('div', { className: 'gantt-act-fs-archivo-icon' });
+            icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+            var info = el('div', { className: 'gantt-act-fs-archivo-info' }, [
+                el('div', { className: 'gantt-act-fs-archivo-name' }, [f.nombre || '—']),
+                el('div', { className: 'gantt-act-fs-archivo-meta' }, [
+                    (f.autor_nombre || '—') + ' · ' + fechaTxt
+                ])
+            ]);
+            var del = el('button', {
+                className: 'gantt-act-fs-archivo-delete',
+                title: 'Eliminar',
+                onClick: function (ev) { ev.preventDefault(); ev.stopPropagation(); self._deleteArchivo(f.id); }
+            });
+            del.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+            var row = el('a', {
+                className: 'gantt-act-fs-archivo',
+                href: f.url || '#',
+                target: '_blank',
+                rel: 'noopener'
+            }, [icon, info, del]);
+            list.appendChild(row);
+        });
+    };
+
+    Gantt.prototype._uploadArchivo = function (file) {
+        var self = this;
+        var taskId = window._proyGanttCurrentTaskId;
+        if (!taskId || !file) return;
+        var fd = new FormData();
+        fd.append('archivo', file);
+        fd.append('nombre', file.name || 'archivo');
+        // Llamada directa con CSRF (el helper _fetch no maneja FormData de la forma que necesitamos sin Content-Type)
+        var headers = { 'X-CSRFToken': _csrf() };
+        fetch('/app/api/gantt/actividad/' + taskId + '/archivos/', {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            body: fd
+        }).then(function (r) { return r.json(); }).then(function (resp) {
+            if (resp && resp.success) {
+                self._fetchAndRenderArchivos(taskId);
+            } else {
+                alert((resp && resp.error) || 'No se pudo subir el archivo');
+            }
+        }).catch(function () { alert('Error de red al subir el archivo'); });
+    };
+
+    Gantt.prototype._deleteArchivo = function (archivoId) {
+        var self = this;
+        if (!confirm('¿Eliminar este archivo?')) return;
+        _fetch('/app/api/gantt/actividad/archivo/' + archivoId + '/', { method: 'DELETE' })
+            .then(function (resp) {
+                if (resp && resp.success) {
+                    var taskId = window._proyGanttCurrentTaskId;
+                    if (taskId) self._fetchAndRenderArchivos(taskId);
+                } else {
+                    alert((resp && resp.error) || 'No se pudo eliminar');
+                }
+            }).catch(function () { alert('Error de red'); });
+    };
+
+    /* ============================================================
+       Sobre _parseData: hidratamos descripcion para que el drawer la
+       muestre sin tener que disparar fetch extra cada vez.
+       ============================================================ */
+    var _origParseData = Gantt.prototype._parseData;
+    Gantt.prototype._parseData = function (data) {
+        _origParseData.call(this, data);
+        var self = this;
+        (data.actividades || []).forEach(function (a) {
+            var local = self._taskById(a.id);
+            if (local) {
+                local.descripcion = a.descripcion || '';
+                local.actividad_calendario_id = a.actividad_calendario_id || null;
+                local._detalleHidratado = true;
+            }
+        });
+    };
+
+    /* ============================================================
+       BRIDGES públicos para el HTML del template
+       ============================================================ */
+    function _currentInst() { return window._proyGanttCurrentInstance || null; }
+    function _currentTaskId() { return window._proyGanttCurrentTaskId || null; }
+
+    window.proyGanttCloseDrawer = function () {
+        var inst = _currentInst();
+        if (inst) inst._closeDrawer();
+    };
+
+    window.proyGanttDrawerToggleSection = function (key) {
+        var sec = document.querySelector('.gantt-drawer-section[data-section="' + key + '"]');
+        if (sec) sec.classList.toggle('is-collapsed');
+    };
+
+    window.proyGanttDrawerEditar = function () {
+        var inst = _currentInst();
+        var tid = _currentTaskId();
+        if (!inst || !tid) return;
+        // Si fullscreen de actividad está abierto, lo cerramos (el modal
+        // de edición existe dentro del root del Gantt y debe verse encima).
+        var fs = document.getElementById('ganttActFullscreen');
+        if (fs && fs.classList.contains('is-open')) {
+            inst._closeActivityFullscreen();
+        }
+        // Reusamos el modal existente del Gantt: _showResourceModal —
+        // ese es el "modal de edición" actual del flujo dblclick.
+        inst._showResourceModal(tid);
+    };
+
+    window.proyGanttDrawerFullscreen = function () {
+        var inst = _currentInst();
+        var tid = _currentTaskId();
+        if (!inst || !tid) return;
+        inst._openActivityFullscreen(tid);
+    };
+
+    window.proyGanttDrawerEliminar = function () {
+        var inst = _currentInst();
+        var tid = _currentTaskId();
+        if (!inst || !tid) return;
+        if (!confirm('¿Eliminar esta actividad?')) return;
+
+        // Eliminar tanto local como en servidor. Reusa la lógica existente
+        // pero forzando el id objetivo.
+        inst.selectedTaskId = tid;
+        inst._deleteSelected();
+        inst._closeDrawer();
+    };
+
+    window.proyGanttDrawerOpenCalendar = function () {
+        // Best-effort: si hay un módulo de calendario disponible, abrir
+        // el detalle. Si no, simplemente hacer scroll/cerrar.
+        var link = document.getElementById('ganttDrawerCalLink');
+        var actId = link && link.dataset ? link.dataset.actividadId : null;
+        if (actId && typeof window.proyectosVerActividadDetalle === 'function') {
+            window.proyectosVerActividadDetalle(parseInt(actId, 10));
+        }
+    };
+
+    window.proyGanttActFullscreenSetTab = function (name) {
+        var inst = _currentInst();
+        if (inst) inst._setActivityFullscreenTab(name);
+    };
+
+    window.proyGanttActFullscreenClose = function () {
+        var inst = _currentInst();
+        if (inst) inst._closeActivityFullscreen();
+    };
+
+    window.proyGanttActFullscreenEnviarComentario = function () {
+        var inst = _currentInst();
+        if (!inst) return;
+        var input = document.getElementById('ganttActFsComentarioInput');
+        var v = input ? (input.value || '').trim() : '';
+        if (!v) { if (input) input.focus(); return; }
+        inst._postComment(v);
+    };
+
+    window.proyGanttActFullscreenSubirArchivo = function (file) {
+        var inst = _currentInst();
+        if (inst && file) inst._uploadArchivo(file);
+    };
+
+    /* Bridges expuestos para uso programático externo (Mejora 2/3) */
+    window._proyGanttOpenDrawer = function (taskId) {
+        var inst = _currentInst();
+        if (inst) inst._openDrawer(taskId);
+    };
+    window._proyActividadFullscreenOpen = function (taskId) {
+        var inst = _currentInst();
+        if (inst) inst._openActivityFullscreen(taskId);
+    };
+    window._proyActividadFullscreenClose = function () {
+        var inst = _currentInst();
+        if (inst) inst._closeActivityFullscreen();
+    };
+    window._proyGanttFullscreenToggle = function () {
+        var inst = _currentInst();
+        if (inst) inst._toggleFullscreen();
+    };
+    window._proyGanttCloseDrawer = function () {
+        var inst = _currentInst();
+        if (inst) inst._closeDrawer();
+    };
+
     /* ===========================================
        GLOBAL INIT FUNCTION
        =========================================== */
     window.initGanttProgramaObra = function (containerId, proyectoId) {
-        return new Gantt(containerId, proyectoId);
+        var inst = new Gantt(containerId, proyectoId);
+        window._proyGanttCurrentInstance = inst;
+        return inst;
     };
 
 })();

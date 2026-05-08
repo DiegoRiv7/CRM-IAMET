@@ -1546,3 +1546,256 @@
     </div>
   </div>
 </div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     DRAWER: DETALLES DE ACTIVIDAD GANTT  (Mejora 2)
+     Slide-in desde la derecha. Single-click sobre una barra abre este
+     panel; el modal de edición sigue abriéndose con dblclick / botón.
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="ganttActDrawerOverlay" class="gantt-drawer-overlay" aria-hidden="true"
+     onclick="if(event.target===this) window.proyGanttCloseDrawer && window.proyGanttCloseDrawer();"></div>
+<aside id="ganttActDrawer" class="gantt-drawer" aria-hidden="true" role="dialog" aria-labelledby="ganttDrawerTitle">
+  <header class="gantt-drawer-header">
+    <div class="gantt-drawer-header-main">
+      <div id="ganttDrawerTags" class="gantt-drawer-tags">
+        <span id="ganttDrawerFaseTag" class="gantt-drawer-tag gantt-drawer-tag--fase">Fase</span>
+        <span id="ganttDrawerStatusTag" class="gantt-drawer-tag gantt-drawer-tag--status">LISTA</span>
+      </div>
+      <h3 id="ganttDrawerTitle" class="gantt-drawer-title">Actividad</h3>
+    </div>
+    <button type="button" class="gantt-drawer-close" aria-label="Cerrar"
+            onclick="window.proyGanttCloseDrawer && window.proyGanttCloseDrawer();">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </header>
+  <div class="gantt-drawer-body">
+    <!-- Resumen -->
+    <section class="gantt-drawer-section" data-section="resumen">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('resumen')">
+        <span>Resumen</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div class="gantt-drawer-grid">
+          <div><div class="gantt-drawer-label">Inicio</div><div id="ganttDrawerFechaInicio" class="gantt-drawer-value">—</div></div>
+          <div><div class="gantt-drawer-label">Fin</div><div id="ganttDrawerFechaFin" class="gantt-drawer-value">—</div></div>
+          <div><div class="gantt-drawer-label">Duración</div><div id="ganttDrawerDuracion" class="gantt-drawer-value">—</div></div>
+          <div><div class="gantt-drawer-label">Días restantes</div><div id="ganttDrawerDiasRestantes" class="gantt-drawer-value">—</div></div>
+        </div>
+        <div class="gantt-drawer-progress-wrap">
+          <div class="gantt-drawer-progress-row">
+            <span class="gantt-drawer-label">Avance</span>
+            <span id="ganttDrawerAvanceTxt" class="gantt-drawer-value">0%</span>
+          </div>
+          <div class="gantt-drawer-progress-bar"><div id="ganttDrawerAvanceFill" class="gantt-drawer-progress-fill"></div></div>
+        </div>
+      </div>
+    </section>
+    <!-- Descripción -->
+    <section class="gantt-drawer-section" data-section="descripcion">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('descripcion')">
+        <span>Descripción</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div id="ganttDrawerDescripcion" class="gantt-drawer-desc">Sin descripción</div>
+      </div>
+    </section>
+    <!-- Responsables -->
+    <section class="gantt-drawer-section" data-section="responsables">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('responsables')">
+        <span>Responsables</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div id="ganttDrawerResponsables" class="gantt-drawer-chips">Sin responsables</div>
+      </div>
+    </section>
+    <!-- Recursos materiales -->
+    <section class="gantt-drawer-section" data-section="materiales">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('materiales')">
+        <span>Recursos materiales</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div id="ganttDrawerMateriales" class="gantt-drawer-chips gantt-drawer-chips--placeholder">Próximamente</div>
+      </div>
+    </section>
+    <!-- Dependencias -->
+    <section class="gantt-drawer-section" data-section="dependencias">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('dependencias')">
+        <span>Dependencias</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div class="gantt-drawer-deps-block">
+          <div class="gantt-drawer-label">Predecesoras</div>
+          <div id="ganttDrawerDepsPrev" class="gantt-drawer-deplist">—</div>
+        </div>
+        <div class="gantt-drawer-deps-block">
+          <div class="gantt-drawer-label">Sucesoras</div>
+          <div id="ganttDrawerDepsNext" class="gantt-drawer-deplist">—</div>
+        </div>
+      </div>
+    </section>
+    <!-- Financiero -->
+    <section class="gantt-drawer-section" data-section="financiero">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('financiero')">
+        <span>Financiero</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div class="gantt-drawer-grid">
+          <div><div class="gantt-drawer-label">Costo</div><div id="ganttDrawerCosto" class="gantt-drawer-value">$0</div></div>
+          <div><div class="gantt-drawer-label">Ingreso</div><div id="ganttDrawerIngreso" class="gantt-drawer-value">$0</div></div>
+          <div><div class="gantt-drawer-label">Margen</div><div id="ganttDrawerMargen" class="gantt-drawer-value">$0</div></div>
+        </div>
+      </div>
+    </section>
+    <!-- En el calendario -->
+    <section class="gantt-drawer-section" data-section="calendario" id="ganttDrawerCalSection" style="display:none;">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('calendario')">
+        <span>En el calendario</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <a id="ganttDrawerCalLink" class="gantt-drawer-callink" href="#" onclick="event.preventDefault(); window.proyGanttDrawerOpenCalendar && window.proyGanttDrawerOpenCalendar();">Ver en calendario →</a>
+      </div>
+    </section>
+  </div>
+  <footer class="gantt-drawer-footer">
+    <button type="button" class="gantt-drawer-btn gantt-drawer-btn--danger"
+            onclick="window.proyGanttDrawerEliminar && window.proyGanttDrawerEliminar();">
+      Eliminar
+    </button>
+    <div class="gantt-drawer-footer-spacer"></div>
+    <button type="button" class="gantt-drawer-btn"
+            onclick="window.proyGanttDrawerFullscreen && window.proyGanttDrawerFullscreen();">
+      Pantalla completa
+    </button>
+    <button type="button" class="gantt-drawer-btn gantt-drawer-btn--primary"
+            onclick="window.proyGanttDrawerEditar && window.proyGanttDrawerEditar();">
+      Editar
+    </button>
+  </footer>
+</aside>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     VISTA FULLSCREEN DE ACTIVIDAD  (Mejora 3)
+     Sub-tabs: Detalles · Comentarios · Archivos · Historial
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="ganttActFullscreen" class="gantt-act-fullscreen" aria-hidden="true">
+  <header class="gantt-act-fs-header">
+    <div class="gantt-act-fs-breadcrumb">
+      <button type="button" class="gantt-act-fs-back" onclick="window.proyGanttActFullscreenClose && window.proyGanttActFullscreenClose();">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al cronograma
+      </button>
+      <span class="gantt-act-fs-bc-sep">·</span>
+      <span class="gantt-act-fs-bc-fase" id="ganttActFsFase">Fase</span>
+      <span class="gantt-act-fs-bc-sep">·</span>
+      <span class="gantt-act-fs-bc-act" id="ganttActFsTitulo">Actividad</span>
+    </div>
+    <nav class="gantt-act-fs-tabs" role="tablist">
+      <button type="button" class="gantt-act-fs-tab active" data-fs-tab="detalles"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('detalles');">Detalles</button>
+      <button type="button" class="gantt-act-fs-tab" data-fs-tab="comentarios"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('comentarios');">Comentarios</button>
+      <button type="button" class="gantt-act-fs-tab" data-fs-tab="archivos"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('archivos');">Archivos</button>
+      <button type="button" class="gantt-act-fs-tab" data-fs-tab="historial"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('historial');">Historial</button>
+    </nav>
+  </header>
+
+  <main class="gantt-act-fs-body">
+    <!-- ── Detalles ─────────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane active" data-fs-pane="detalles">
+      <div class="gantt-act-fs-hero">
+        <div class="gantt-act-fs-hero-tags">
+          <span id="ganttActFsHeroFase" class="gantt-drawer-tag gantt-drawer-tag--fase">Fase</span>
+          <span id="ganttActFsHeroStatus" class="gantt-drawer-tag gantt-drawer-tag--status">LISTA</span>
+        </div>
+        <h1 id="ganttActFsHeroTitulo" class="gantt-act-fs-hero-titulo">Actividad</h1>
+        <div class="gantt-act-fs-hero-progress">
+          <div class="gantt-act-fs-hero-progress-row">
+            <span class="gantt-drawer-label">Avance</span>
+            <span id="ganttActFsHeroAvanceTxt" class="gantt-drawer-value">0%</span>
+          </div>
+          <div class="gantt-drawer-progress-bar"><div id="ganttActFsHeroAvanceFill" class="gantt-drawer-progress-fill"></div></div>
+        </div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Fechas</h2>
+        <div class="gantt-act-fs-cards">
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Inicio</div><div id="ganttActFsFechaInicio" class="gantt-act-fs-card-value">—</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Fin</div><div id="ganttActFsFechaFin" class="gantt-act-fs-card-value">—</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Duración</div><div id="ganttActFsDuracion" class="gantt-act-fs-card-value">—</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Días restantes</div><div id="ganttActFsDiasRestantes" class="gantt-act-fs-card-value">—</div></div>
+        </div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Equipo</h2>
+        <div id="ganttActFsResponsables" class="gantt-act-fs-team">Sin responsables</div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Recursos materiales</h2>
+        <div id="ganttActFsMateriales" class="gantt-act-fs-mat-grid gantt-drawer-chips--placeholder">Próximamente</div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Financiero</h2>
+        <div class="gantt-act-fs-cards">
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Costo</div><div id="ganttActFsCosto" class="gantt-act-fs-card-value">$0</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Ingreso</div><div id="ganttActFsIngreso" class="gantt-act-fs-card-value">$0</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Margen</div><div id="ganttActFsMargen" class="gantt-act-fs-card-value">$0</div></div>
+        </div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Descripción</h2>
+        <div id="ganttActFsDescripcion" class="gantt-act-fs-descripcion">Sin descripción</div>
+      </div>
+    </section>
+
+    <!-- ── Comentarios ──────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane" data-fs-pane="comentarios">
+      <div class="gantt-act-fs-thread" id="ganttActFsComentariosThread">
+        <div class="gantt-act-fs-empty">Cargando comentarios…</div>
+      </div>
+      <form class="gantt-act-fs-form" onsubmit="event.preventDefault(); window.proyGanttActFullscreenEnviarComentario && window.proyGanttActFullscreenEnviarComentario();">
+        <textarea id="ganttActFsComentarioInput" rows="3" placeholder="Escribe un comentario…"></textarea>
+        <button type="submit" class="gantt-drawer-btn gantt-drawer-btn--primary">Comentar</button>
+      </form>
+    </section>
+
+    <!-- ── Archivos ─────────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane" data-fs-pane="archivos">
+      <div class="gantt-act-fs-archivos-actions">
+        <input type="file" id="ganttActFsArchivoInput" style="display:none;"
+               onchange="window.proyGanttActFullscreenSubirArchivo && window.proyGanttActFullscreenSubirArchivo(this.files[0]);">
+        <button type="button" class="gantt-drawer-btn gantt-drawer-btn--primary"
+                onclick="document.getElementById('ganttActFsArchivoInput').click();">
+          + Subir archivo
+        </button>
+      </div>
+      <div id="ganttActFsArchivosList" class="gantt-act-fs-archivos-list">
+        <div class="gantt-act-fs-empty">Cargando archivos…</div>
+      </div>
+    </section>
+
+    <!-- ── Historial ────────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane" data-fs-pane="historial">
+      <div class="gantt-act-fs-empty gantt-act-fs-empty--placeholder">
+        <div style="font-size:1rem;font-weight:700;margin-bottom:6px;">Historial de cambios</div>
+        <div>Próximamente. Aquí verás cambios de progreso, fechas y asignaciones de la actividad.</div>
+      </div>
+    </section>
+  </main>
+</div>

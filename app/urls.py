@@ -436,6 +436,11 @@ urlpatterns = [
     path('api/iamet/recursos/buscar/', views_iamet.api_gantt_recursos, name='api_gantt_recursos_buscar'),
     path('api/iamet/recursos/', views_iamet.api_gantt_recursos, name='api_gantt_recursos_crear'),
     path('api/iamet/recursos/<int:recurso_id>/conflictos/', views_iamet.api_gantt_recurso_conflictos, name='api_gantt_recurso_conflictos'),
+    # Drawer de actividad: comentarios y archivos
+    path('api/gantt/actividad/<int:actividad_id>/comentarios/', views_proyectos.api_gantt_actividad_comentarios, name='api_gantt_actividad_comentarios'),
+    path('api/gantt/actividad/comentario/<int:comentario_id>/', views_proyectos.api_gantt_actividad_comentario_detalle, name='api_gantt_actividad_comentario_detalle'),
+    path('api/gantt/actividad/<int:actividad_id>/archivos/', views_proyectos.api_gantt_actividad_archivos, name='api_gantt_actividad_archivos'),
+    path('api/gantt/actividad/archivo/<int:archivo_id>/', views_proyectos.api_gantt_actividad_archivo_detalle, name='api_gantt_actividad_archivo_detalle'),
 
     # ── Compras (módulo administrador) ──────────────────────────────────
     path('api/compras/productos/', views_compras.productos_list_create, name='compras_productos_list'),

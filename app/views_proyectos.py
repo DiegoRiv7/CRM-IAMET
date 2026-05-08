@@ -20,7 +20,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, ProyectoIAMET, GanttFase, GanttActividad, RecursoMaterial
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, ProyectoIAMET, GanttFase, GanttActividad, RecursoMaterial, GanttActividadComentario, GanttActividadArchivo
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -4711,16 +4711,22 @@ def _serializar_actividad(act):
     return {
         'id': act.id,
         'fase_id': act.fase_id,
+        'fase_nombre': act.fase.nombre if act.fase_id else '',
         'nombre': act.nombre,
         'descripcion': act.descripcion or '',
         'fecha_inicio': act.fecha_inicio.isoformat(),
+        'fecha_fin': act.fecha_fin.isoformat(),
         'duracion_dias': act.duracion_dias,
         'progreso': act.progreso,
         'costo_estimado': str(act.costo_estimado),
         'ingreso_estimado': str(act.ingreso_estimado),
         'dependencias': list(act.dependencias.values_list('id', flat=True)),
         'recursos': [
-            {'id': u.id, 'nombre': u.get_full_name() or u.username}
+            {
+                'id': u.id,
+                'nombre': u.get_full_name() or u.username,
+                'username': u.username,
+            }
             for u in act.recursos.all()
         ],
         'recursos_materiales': [
@@ -4734,6 +4740,8 @@ def _serializar_actividad(act):
         ],
         'actividad_calendario_id': act.actividad_calendario_id,
         'orden': act.orden,
+        'created_at': act.created_at.isoformat() if act.created_at else None,
+        'updated_at': act.updated_at.isoformat() if act.updated_at else None,
     }
 
 
@@ -4876,15 +4884,11 @@ def api_gantt_proyecto(request, proyecto_id):
         except (ValueError, TypeError):
             return JsonResponse({'error': 'progreso debe ser 0-100'}, status=400)
 
-        descripcion_val = data.get('descripcion')
-        if descripcion_val is not None:
-            descripcion_val = str(descripcion_val).strip() or None
-
         act = GanttActividad.objects.create(
             proyecto=proyecto,
             fase=fase,
             nombre=nombre,
-            descripcion=descripcion_val,
+            descripcion=(data.get('descripcion') or '').strip(),
             fecha_inicio=fecha_inicio,
             duracion_dias=duracion_dias,
             progreso=progreso,
@@ -4955,13 +4959,9 @@ def api_gantt_actividad(request, actividad_id):
                 return JsonResponse({'error': 'El nombre no puede estar vacio'}, status=400)
             act.nombre = nombre
 
-        # Descripcion (TextField, opcional/null)
+        # Descripcion
         if 'descripcion' in data:
-            desc_val = data['descripcion']
-            if desc_val is None or str(desc_val).strip() == '':
-                act.descripcion = None
-            else:
-                act.descripcion = str(desc_val).strip()
+            act.descripcion = (data['descripcion'] or '').strip()
 
         # Fecha inicio
         if 'fecha_inicio' in data:
@@ -5230,4 +5230,139 @@ def api_gantt_cascada(request, actividad_id):
         'success': True,
         'actualizadas': actualizadas,
     })
+
+
+# ── Comentarios y archivos de actividad Gantt (drawer + fullscreen) ─────
+
+def _serializar_comentario_gantt(c):
+    autor = c.autor
+    if autor:
+        nombre = autor.get_full_name() or autor.username
+        username = autor.username
+        autor_id = autor.id
+    else:
+        nombre = '—'
+        username = ''
+        autor_id = None
+    return {
+        'id': c.id,
+        'texto': c.texto,
+        'autor_id': autor_id,
+        'autor_nombre': nombre,
+        'autor_username': username,
+        'created_at': c.created_at.isoformat() if c.created_at else None,
+    }
+
+
+def _serializar_archivo_gantt(f):
+    autor = f.autor
+    nombre_autor = (autor.get_full_name() or autor.username) if autor else '—'
+    return {
+        'id': f.id,
+        'nombre': f.nombre or (f.archivo.name.rsplit('/', 1)[-1] if f.archivo else ''),
+        'url': f.archivo.url if f.archivo else '',
+        'autor_id': autor.id if autor else None,
+        'autor_nombre': nombre_autor,
+        'created_at': f.created_at.isoformat() if f.created_at else None,
+    }
+
+
+@login_required
+def api_gantt_actividad_comentarios(request, actividad_id):
+    """GET — lista comentarios de una actividad. POST — crea uno nuevo."""
+    act = get_object_or_404(GanttActividad, id=actividad_id)
+
+    if request.method == 'GET':
+        items = [
+            _serializar_comentario_gantt(c)
+            for c in act.comentarios.select_related('autor').all()
+        ]
+        return JsonResponse({'success': True, 'items': items})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'JSON invalido'}, status=400)
+
+        texto = (data.get('texto') or '').strip()
+        if not texto:
+            return JsonResponse({'error': 'El texto es obligatorio'}, status=400)
+
+        c = GanttActividadComentario.objects.create(
+            actividad=act,
+            autor=request.user,
+            texto=texto,
+        )
+        return JsonResponse(
+            {'success': True, 'comentario': _serializar_comentario_gantt(c)},
+            status=201,
+        )
+
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+
+@login_required
+def api_gantt_actividad_comentario_detalle(request, comentario_id):
+    """DELETE — elimina un comentario (solo el autor o staff)."""
+    c = get_object_or_404(GanttActividadComentario, id=comentario_id)
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+    if not (request.user.is_staff or (c.autor_id == request.user.id)):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    c.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+def api_gantt_actividad_archivos(request, actividad_id):
+    """GET — lista archivos. POST (multipart) — sube uno nuevo."""
+    act = get_object_or_404(GanttActividad, id=actividad_id)
+
+    if request.method == 'GET':
+        items = [
+            _serializar_archivo_gantt(f)
+            for f in act.archivos.select_related('autor').all()
+        ]
+        return JsonResponse({'success': True, 'items': items})
+
+    if request.method == 'POST':
+        upload = request.FILES.get('archivo')
+        if not upload:
+            return JsonResponse({'error': 'archivo es obligatorio'}, status=400)
+
+        nombre = (request.POST.get('nombre') or upload.name).strip()
+        f = GanttActividadArchivo.objects.create(
+            actividad=act,
+            autor=request.user,
+            archivo=upload,
+            nombre=nombre,
+        )
+        return JsonResponse(
+            {'success': True, 'archivo': _serializar_archivo_gantt(f)},
+            status=201,
+        )
+
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+
+@login_required
+def api_gantt_actividad_archivo_detalle(request, archivo_id):
+    """DELETE — elimina un archivo (solo el autor o staff)."""
+    f = get_object_or_404(GanttActividadArchivo, id=archivo_id)
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+    if not (request.user.is_staff or (f.autor_id == request.user.id)):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    try:
+        if f.archivo:
+            f.archivo.delete(save=False)
+    except Exception:
+        pass
+    f.delete()
+    return JsonResponse({'success': True})
 

@@ -4670,7 +4670,7 @@ class GanttActividad(models.Model):
         null=True, blank=True,
     )
     nombre = models.CharField(max_length=200)
-    descripcion = models.TextField(blank=True, null=True)
+    descripcion = models.TextField(blank=True, default='')
     fecha_inicio = models.DateField()
     duracion_dias = models.PositiveIntegerField(default=1)
     progreso = models.IntegerField(
@@ -4711,6 +4711,53 @@ class GanttActividad(models.Model):
 
     def __str__(self):
         return f'{self.nombre} — {self.proyecto.nombre}'
+
+
+class GanttActividadComentario(models.Model):
+    """Comentario simple sobre una actividad Gantt."""
+    actividad = models.ForeignKey(
+        GanttActividad, on_delete=models.CASCADE, related_name='comentarios',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='gantt_comentarios',
+    )
+    texto = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Comentario Gantt'
+        verbose_name_plural = 'Comentarios Gantt'
+
+    def __str__(self):
+        return f'Comentario {self.id} — {self.actividad.nombre}'
+
+
+def _gantt_archivo_upload_path(instance, filename):
+    return f'gantt_actividades/{instance.actividad_id}/{filename}'
+
+
+class GanttActividadArchivo(models.Model):
+    """Archivo asociado a una actividad Gantt."""
+    actividad = models.ForeignKey(
+        GanttActividad, on_delete=models.CASCADE, related_name='archivos',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='gantt_archivos',
+    )
+    archivo = models.FileField(upload_to=_gantt_archivo_upload_path)
+    nombre = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Archivo Gantt'
+        verbose_name_plural = 'Archivos Gantt'
+
+    def __str__(self):
+        return self.nombre or self.archivo.name
 
 
 # ============================================================
