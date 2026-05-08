@@ -1956,22 +1956,28 @@
 
 
     // =========================================
-    //  RENDER: PROGRAMA DE OBRA  (nuevo Gantt visual)
+    //  RENDER: PROGRAMA DE OBRA  (Gantt visual PRO)
     // =========================================
     //
-    //   Diseno basado en el "Cronograma 2026" del Claude Design (Gantt.jsx):
-    //   - Header con titulo + pill "Hoy: <fecha>" + filtros (Todas/Activas/Completadas).
-    //   - Tabla 12 meses con barras posicionadas segun start/duracion.
-    //   - Linea vertical roja en la posicion del dia de hoy.
-    //   - Leyenda de categorias (Planificacion / Cimentacion / Estructura / etc.).
+    //   Cronograma profesional al nivel MS Project / Primavera / Smartsheet.
+    //   Estructura:
+    //     Header con titulo + KPIs + acciones (+ Fase / + Actividad / Imprimir / CSV)
+    //     Toolbar: filtros (Todas/Activas/Completadas/Atrasadas) + zoom + busqueda + vista
+    //     Tabla: columna izquierda con Fase (collapsable) > Actividades anidadas
+    //            columna derecha con grid de meses + barras + linea de hoy
+    //     SVG overlay para dependencias (flechas Finish-to-Start)
+    //     Tooltip rico al hover, drag para mover/resize, context menu, etc.
     //
-    //   Datos: /app/api/proyecto/{id}/gantt/  (fases + actividades del modelo
-    //   GanttFase / GanttActividad).  Si el proyecto no tiene aun ninguna
-    //   fase ni actividad Gantt, mostramos un empty state.
+    //   Datos:  /app/api/proyecto/{id}/gantt/  (fases + actividades)
+    //   POST:   /app/api/proyecto/{id}/gantt/        -> crea actividad
+    //   POST:   /app/api/proyecto/{id}/gantt/fase/   -> crea fase
+    //   PUT:    /app/api/gantt/actividad/{id}/       -> actualiza actividad
+    //   PUT:    /app/api/gantt/fase/{id}/            -> actualiza fase
+    //   DEL:    /app/api/gantt/actividad/{id}/       -> elimina actividad
+    //   DEL:    /app/api/gantt/fase/{id}/            -> elimina fase + cascada
     // =========================================
 
-    // Categorias inferidas a partir del nombre de la fase (heuristica simple
-    // -- la BD no tiene categoria todavia; ver reporte del agente para el TODO).
+    // Categorias inferidas a partir del nombre (heuristica + override manual)
     var _PROY_GANTT_CATEGORIES = [
         { id: 'planificacion', label: 'Planificación', color: '#6366f1',
           tokens: ['planif', 'planeac', 'arranque', 'inicio', 'kickoff', 'kick-off', 'permis', 'preparac', 'demolic', 'limpiez', 'levant', 'diagnost', 'topograf'] },
@@ -2005,15 +2011,6 @@
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // Convierte una fecha en posicion decimal de mes RELATIVA al inicio del
-    // ano `yearStart` (0 = 1 de enero de yearStart).
-    function _proyGanttDateToMonthFloat(d, yearStart) {
-        var monthsFromYearStart = (d.getFullYear() - yearStart) * 12 + d.getMonth();
-        var daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        var dayFraction = (d.getDate() - 1) / daysInMonth;
-        return monthsFromYearStart + dayFraction;
-    }
-
     function _proyGanttFmtFechaCorta(d) {
         var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
         return d.getDate() + ' ' + meses[d.getMonth()] + ' ' + d.getFullYear();
@@ -2021,31 +2018,35 @@
 
     function _proyGanttFmtFechaLarga(d) {
         var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-        return d.getDate() + ' ' + meses[d.getMonth()] + ' ' + d.getFullYear();
+        return d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
     }
 
-    // Estado de filtro (Todas / Activas / Completadas).  Persiste durante la sesion.
-    var _proyGanttFiltro = 'todo';
-    // Zoom de tiempo: 'mes' (default), 'semana', 'trimestre', 'ano'
-    var _proyGanttZoom = 'mes';
-    // Vista: 'gantt' (default) o 'lista'
-    var _proyGanttVista = 'gantt';
-    // Filtros adicionales
-    var _proyGanttFiltroResp = '';   // user.id como string, '' = todos
-    var _proyGanttFiltroCat = '';    // category.id, '' = todas
-    // Cache del fetch crudo (fases + actividades) para reusar
-    // desde el form de "+ Actividad" sin volver a pegarle al backend.
-    var _proyGanttData = null;
-    // Cache de miembros del proyecto cargados para el form de actividades
-    var _proyGanttMiembros = [];
-    // Modo del modal de actividad: 'crear' o 'editar'.  Si editar, contiene id.
-    var _proyActEditId = null;
-    // Set de ids de dependencias (predecesoras) seleccionados en el form.
-    var _proyActDeps = {};
-    // Bandera para no atar el listener resize multiples veces
-    var _proyGanttResizeBound = false;
+    // Estado (persiste durante la sesión)
+    var _proyGanttFiltro       = 'todo';        // todo | activo | completado | atrasado
+    var _proyGanttZoom         = 'mes';         // semana | mes | trimestre | ano
+    var _proyGanttVista        = 'gantt';       // gantt | lista
+    var _proyGanttFiltroResp   = '';
+    var _proyGanttFiltroCat    = '';
+    var _proyGanttBusqueda     = '';
+    var _proyGanttCollapsed    = {};            // map { faseId: true } (sólo cliente)
+    var _proyGanttData         = null;
+    var _proyGanttMiembros     = [];
+    var _proyActEditId         = null;
+    var _proyActDeps           = {};
+    var _proyFaseEditId        = null;
+    var _proyGanttResizeBound  = false;
+    var _actividadSelectedUsers = {};
+    var _proyGanttPendingScroll = true;        // primer render hace auto-scroll a hoy
 
-    // opts (opcional): { containerId, projectDetail }
+    // Configuración de zoom — controla el rango temporal y el ancho mínimo
+    var _PROY_GANTT_ZOOM_CFG = {
+        ano:       { units: 4,   minWidthPerUnit: 150 },   // 4 trimestres
+        trimestre: { units: 12,  minWidthPerUnit: 80 },    // 12 meses, mas anchos
+        mes:       { units: 12,  minWidthPerUnit: 64 },    // 12 meses
+        semana:    { units: 52,  minWidthPerUnit: 36 }     // 52 semanas
+    };
+
+    // ─── ENTRY POINT ────────────────────────────────────────────────────
     function renderProgramaObra(projectId, opts) {
         opts = opts || {};
         var containerId = opts.containerId || 'proyProgramaContainer';
@@ -2055,7 +2056,6 @@
         var detail = opts.projectDetail || _cachedProjectDetail;
         if (opts.projectDetail) { _cachedProjectDetail = detail; currentProjectId = projectId; }
 
-        // Loading inmediato
         container.innerHTML = '<div class="proy-gantt-loading">Cargando cronograma…</div>';
 
         _fetch('/app/api/proyecto/' + projectId + '/gantt/').then(function(data) {
@@ -2067,21 +2067,12 @@
         });
     }
 
-    // Configuración de zoom
-    // unidad = ancho de cada celda en porcentaje del totalUnits
-    var _PROY_GANTT_ZOOM_CFG = {
-        ano:        { units: 4,   minWidth: 760,   labelFn: '_zlAno',        subdivLabel: 'Trimestre' },
-        trimestre:  { units: 12,  minWidth: 760,   labelFn: '_zlMes',        subdivLabel: 'Mes' },
-        mes:        { units: 12,  minWidth: 760,   labelFn: '_zlMes',        subdivLabel: 'Mes' },
-        semana:     { units: 52,  minWidth: 1800,  labelFn: '_zlSem',        subdivLabel: 'Semana' }
-    };
-
+    // ─── RENDER PRINCIPAL ───────────────────────────────────────────────
     function _proyGanttRender(container, projectId, detail, data) {
         var fases = (data.fases || []).slice();
         var actividades = (data.actividades || []).slice();
 
-        // Determinar ano/rango: tomar fecha_inicio del proyecto si existe; si no,
-        // tomar el min(fecha_inicio) de las actividades; fallback al ano en curso.
+        // Determinar año del eje (proyecto.fecha_inicio o min(actividad))
         var yearStart = (new Date()).getFullYear();
         if (detail && detail.fecha_inicio) {
             yearStart = parseInt(String(detail.fecha_inicio).slice(0, 4), 10);
@@ -2094,111 +2085,172 @@
             if (minDate) yearStart = parseInt(minDate.slice(0, 4), 10);
         }
 
-        // Configuración de zoom
         var zoomCfg = _PROY_GANTT_ZOOM_CFG[_proyGanttZoom] || _PROY_GANTT_ZOOM_CFG.mes;
         var totalUnits = zoomCfg.units;
-
-        // Empty state -- no hay fases ni actividades en el Gantt
-        if (!fases.length && !actividades.length) {
-            container.innerHTML = _proyGanttEmptyState(projectId, detail);
-            var emptyBtn = container.querySelector('.proy-gantt-empty .proy-gantt-cta');
-            if (emptyBtn) {
-                emptyBtn.addEventListener('click', function() {
-                    if (typeof _openActividadForm === 'function') _openActividadForm(_isoToday());
-                });
-            }
-            return;
-        }
-
         var hoy = new Date(); hoy.setHours(12, 0, 0, 0);
         var hoyUnit = _proyGanttDateToUnit(hoy, yearStart, _proyGanttZoom);
 
-        // Construir filas (con flag esHito y guardar acts originales)
-        var rows = _proyGanttBuildRows(fases, actividades, yearStart, totalUnits, hoyUnit);
+        // Empty state global (sin fases ni actividades)
+        if (!fases.length && !actividades.length) {
+            container.innerHTML = _proyGanttEmptyState();
+            _proyGanttBindEmptyState(container, projectId, detail);
+            return;
+        }
 
+        // Construye filas en orden Fase → Actividades hijas → fases sin acts → actividades sueltas
+        var rows = _proyGanttBuildRows(fases, actividades, yearStart, totalUnits, hoyUnit);
         var avanceGlobal = _proyGanttAvanceGlobal(rows);
 
-        // Catalogo dinámico de responsables / categorías para los filtros
-        var respMap = {};
-        var catMap = {};
+        // Catalogos para filtros
+        var respMap = {}; var catMap = {};
         rows.forEach(function(r) {
-            (r.responsables || []).forEach(function(u) {
-                if (u && u.id != null) respMap[u.id] = u;
-            });
+            (r.responsables || []).forEach(function(u) { if (u && u.id != null) respMap[u.id] = u; });
             if (r.category) catMap[r.category.id] = r.category;
         });
         var responsablesCat = Object.keys(respMap).map(function(k) { return respMap[k]; });
         var categoriasCat = Object.keys(catMap).map(function(k) { return catMap[k]; });
 
-        var rowsVisibles = rows.filter(function(r) {
-            if (_proyGanttFiltro === 'activo' && !r.isActive) return false;
-            if (_proyGanttFiltro === 'completado' && r.progress < 100) return false;
-            if (_proyGanttFiltro === 'atrasado' && !(r.isActive && r.progress < r.expectedProgress - 5)) return false;
-            if (_proyGanttFiltroResp) {
-                var rid = parseInt(_proyGanttFiltroResp, 10);
-                var found = (r.responsables || []).some(function(u) { return u.id === rid; });
-                if (!found) return false;
-            }
-            if (_proyGanttFiltroCat && r.category && r.category.id !== _proyGanttFiltroCat) return false;
-            return true;
-        });
+        // Filtros + busqueda + colapso de fases
+        var rowsVisibles = _proyGanttFilterRows(rows, hoyUnit);
+
+        // Conteos para los filtros (siempre del set completo, no del filtrado)
+        var counts = _proyGanttCounts(rows);
 
         var hoyDentroRango = hoyUnit >= 0 && hoyUnit <= totalUnits;
         var todayLeftPct = (Math.max(0, Math.min(totalUnits, hoyUnit)) / totalUnits) * 100;
 
-        var html = '';
-        html += '<div class="proy-gantt-root">';
+        // ── HTML ──
+        var html = '<div class="proy-gantt-root">';
 
-        // ── Header con título + KPIs + acciones ──────────────────────────
-        html += '<div class="proy-gantt-header">';
+        // Header
+        html += _proyGanttHeaderHTML(detail, yearStart, fases.length, rows, avanceGlobal, hoy, counts);
+
+        // Toolbar
+        html += _proyGanttToolbarHTML(responsablesCat, categoriasCat, counts);
+
+        // Cuerpo (gantt o lista)
+        if (_proyGanttVista === 'lista') {
+            html += _proyGanttListaHTML(rowsVisibles);
+        } else {
+            html += _proyGanttHTML(rowsVisibles, totalUnits, hoyDentroRango, todayLeftPct, hoy, yearStart, zoomCfg, fases);
+        }
+
+        // Leyenda
+        html += _proyGanttLegendHTML();
+
+        html += '</div>'; // /root
+        container.innerHTML = html;
+
+        _proyGanttAttachHandlers(container, projectId, detail, data, rowsVisibles, totalUnits, fases);
+    }
+
+    function _proyGanttCounts(rows) {
+        var c = { todo: 0, activo: 0, completado: 0, atrasado: 0 };
+        rows.forEach(function(r) {
+            if (r.type !== 'actividad') return;
+            c.todo++;
+            if (r.progress >= 100) c.completado++;
+            else if (r.isActive && r.progress < (r.expectedProgress - 5)) c.atrasado++;
+            else if (r.isActive) c.activo++;
+        });
+        return c;
+    }
+
+    function _proyGanttFilterRows(rows, hoyUnit) {
+        var q = (_proyGanttBusqueda || '').toLowerCase().trim();
+        // Set de fases que tienen al menos una hija que pase los filtros (para no "huerfanar" fases)
+        var faseTienePasada = {};
+        rows.forEach(function(r) {
+            if (r.type !== 'actividad') return;
+            if (!_proyGanttRowPasses(r, q)) return;
+            if (r.parentFaseId) faseTienePasada[r.parentFaseId] = true;
+        });
+        return rows.filter(function(r) {
+            if (r.type === 'fase') {
+                // mostramos la fase si pasa el filtro propio O si alguna hija pasa
+                if (faseTienePasada[r.faseId]) return true;
+                return _proyGanttRowPasses(r, q);
+            }
+            // actividad: si su fase está colapsada, ocultar (excepto si hay búsqueda)
+            if (r.parentFaseId && _proyGanttCollapsed[r.parentFaseId] && !q) return false;
+            return _proyGanttRowPasses(r, q);
+        });
+    }
+
+    function _proyGanttRowPasses(r, q) {
+        if (_proyGanttFiltro === 'activo' && !r.isActive) return false;
+        if (_proyGanttFiltro === 'completado' && r.progress < 100) return false;
+        if (_proyGanttFiltro === 'atrasado' && !(r.isActive && r.progress < r.expectedProgress - 5)) return false;
+        if (_proyGanttFiltroResp) {
+            var rid = parseInt(_proyGanttFiltroResp, 10);
+            var found = (r.responsables || []).some(function(u) { return u.id === rid; });
+            if (!found) return false;
+        }
+        if (_proyGanttFiltroCat && r.category && r.category.id !== _proyGanttFiltroCat) return false;
+        if (q && r.name.toLowerCase().indexOf(q) === -1) return false;
+        return true;
+    }
+
+    // ─── HEADER ────────────────────────────────────────────────────────
+    function _proyGanttHeaderHTML(detail, yearStart, nFases, rows, avanceGlobal, hoy, counts) {
+        var nActs = counts.todo;
+        var proyName = (detail && detail.nombre) ? _proyGanttEsc(detail.nombre) : 'Proyecto';
+        var html = '<div class="proy-gantt-header">';
         html += '  <div class="proy-gantt-header-left">';
         html += '    <h2 class="proy-gantt-title">Cronograma ' + yearStart + '</h2>';
-        html += '    <p class="proy-gantt-subtitle">' + rows.length + ' ' +
-                (rows.length === 1 ? 'línea' : 'líneas') +
-                ' · Avance hoy: ' + Math.round(avanceGlobal) + '% · ' +
-                _proyGanttContarHitos(rows) + ' hitos</p>';
+        html += '    <p class="proy-gantt-subtitle">' + proyName +
+                ' &middot; <strong>' + nFases + '</strong> ' + (nFases === 1 ? 'fase' : 'fases') +
+                ' &middot; <strong>' + nActs + '</strong> ' + (nActs === 1 ? 'actividad' : 'actividades') +
+                ' &middot; Avance hoy: <strong>' + Math.round(avanceGlobal) + '%</strong></p>';
         html += '  </div>';
         html += '  <div class="proy-gantt-header-right">';
         html += '    <div class="proy-gantt-today-pill">';
         html += '      <span class="proy-gantt-today-dot"></span>';
         html += '      <span class="proy-gantt-today-text">Hoy: ' + _proyGanttFmtFechaCorta(hoy) + '</span>';
         html += '    </div>';
-        // Vista (Gantt | Lista)
-        html += '    <div class="proy-gantt-filter proy-gantt-vista">';
-        ['gantt','lista'].forEach(function(v) {
-            var isActive = (_proyGanttVista === v);
-            html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
-                    '" data-vista="' + v + '">' + (v === 'gantt' ? 'Gantt' : 'Lista') + '</button>';
-        });
-        html += '    </div>';
-        // Zoom (solo aplica si vista=gantt)
-        if (_proyGanttVista === 'gantt') {
-            html += '    <div class="proy-gantt-filter proy-gantt-zoom">';
-            ['semana','mes','trimestre','ano'].forEach(function(z) {
-                var labels = {semana:'Semana', mes:'Mes', trimestre:'Trim.', ano:'Año'};
-                var isActive = (_proyGanttZoom === z);
-                html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
-                        '" data-zoom="' + z + '">' + labels[z] + '</button>';
-            });
-            html += '    </div>';
-        }
+        // Imprimir
+        html += '    <button type="button" class="proy-gantt-icon-btn" id="proyGanttBtnPrint" title="Imprimir cronograma">';
+        html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>';
+        html += '      <span>Imprimir</span></button>';
+        // CSV
         html += '    <button type="button" class="proy-gantt-icon-btn" id="proyGanttBtnExport" title="Exportar CSV">';
         html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
         html += '      <span>CSV</span></button>';
-        html += '    <button type="button" class="proy-gantt-cta" id="proyGanttBtnNueva">+ Actividad</button>';
+        // CTA principal: + Fase
+        html += '    <button type="button" class="proy-gantt-cta proy-gantt-cta-fase" id="proyGanttBtnNuevaFase" title="Crear una nueva fase">+ Fase</button>';
+        // CTA: + Actividad
+        html += '    <button type="button" class="proy-gantt-cta" id="proyGanttBtnNueva" title="Crear una nueva actividad">+ Actividad</button>';
         html += '  </div>';
         html += '</div>';
+        return html;
+    }
 
-        // ── Toolbar (estado + responsable + categoría) ───────────────────
-        html += '<div class="proy-gantt-toolbar">';
+    // ─── TOOLBAR ───────────────────────────────────────────────────────
+    function _proyGanttToolbarHTML(responsablesCat, categoriasCat, counts) {
+        var html = '<div class="proy-gantt-toolbar">';
+        // Filtros estado
         html += '  <div class="proy-gantt-filter">';
-        ['todo','activo','completado','atrasado'].forEach(function(f) {
-            var labels = {todo:'Todas', activo:'Activas', completado:'Completadas', atrasado:'Atrasadas'};
-            var isActive = (_proyGanttFiltro === f);
+        var filterCfg = [
+            { id: 'todo', label: 'Todas', count: counts.todo },
+            { id: 'activo', label: 'Activas', count: counts.activo },
+            { id: 'completado', label: 'Completadas', count: counts.completado },
+            { id: 'atrasado', label: 'Atrasadas', count: counts.atrasado }
+        ];
+        filterCfg.forEach(function(f) {
+            var isActive = (_proyGanttFiltro === f.id);
             html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
-                    '" data-filter="' + f + '">' + labels[f] + '</button>';
+                    '" data-filter="' + f.id + '">' + f.label +
+                    ' <span class="proy-gantt-filter-count">' + f.count + '</span></button>';
         });
         html += '  </div>';
+
+        // Busqueda
+        html += '  <div class="proy-gantt-search">';
+        html += '    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+        html += '    <input type="search" id="proyGanttSearch" placeholder="Buscar actividad…" value="' + _proyGanttEsc(_proyGanttBusqueda) + '">';
+        html += '  </div>';
+
+        // Filtro responsable
         if (responsablesCat.length) {
             html += '  <select class="proy-gantt-select" id="proyGanttFiltroResp">';
             html += '<option value="">Todos los responsables</option>';
@@ -2217,66 +2269,87 @@
             });
             html += '  </select>';
         }
-        html += '</div>';
 
-        // ── Render gantt o lista ────────────────────────────────────────
-        if (_proyGanttVista === 'lista') {
-            html += _proyGanttListaHTML(rowsVisibles);
-        } else {
-            html += _proyGanttHTML(rowsVisibles, rows, totalUnits, hoyDentroRango, todayLeftPct, hoy, yearStart, zoomCfg);
+        // Spacer para empujar zoom y vista a la derecha
+        html += '  <div class="proy-gantt-toolbar-spacer"></div>';
+
+        // Zoom (solo si vista=gantt)
+        if (_proyGanttVista === 'gantt') {
+            html += '  <div class="proy-gantt-filter proy-gantt-zoom">';
+            ['semana','mes','trimestre','ano'].forEach(function(z) {
+                var labels = {semana:'Sem', mes:'Mes', trimestre:'Trim', ano:'Año'};
+                var isActive = (_proyGanttZoom === z);
+                html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
+                        '" data-zoom="' + z + '">' + labels[z] + '</button>';
+            });
+            html += '  </div>';
         }
 
-        // Leyenda
-        html += '<div class="proy-gantt-legend">';
-        html += '  <span class="proy-gantt-legend-label">Fases:</span>';
+        // Vista (Gantt | Lista)
+        html += '  <div class="proy-gantt-filter proy-gantt-vista">';
+        ['gantt','lista'].forEach(function(v) {
+            var isActive = (_proyGanttVista === v);
+            html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
+                    '" data-vista="' + v + '">' + (v === 'gantt' ? 'Gantt' : 'Lista') + '</button>';
+        });
+        html += '  </div>';
+
+        html += '</div>';
+        return html;
+    }
+
+    // ─── LEGEND ───────────────────────────────────────────────────────
+    function _proyGanttLegendHTML() {
+        var html = '<div class="proy-gantt-legend">';
+        html += '<span class="proy-gantt-legend-label">Categorías:</span>';
         _PROY_GANTT_CATEGORIES.forEach(function(c) {
             html += '<span class="proy-gantt-legend-item">' +
                     '<span class="proy-gantt-legend-dot" style="background:' + c.color + ';"></span>' +
                     c.label + '</span>';
         });
-        html += '  <span class="proy-gantt-legend-item proy-gantt-legend-today">' +
+        html += '<span class="proy-gantt-legend-item proy-gantt-legend-today">' +
                 '<span class="proy-gantt-legend-line"></span>Hoy</span>';
-        html += '  <span class="proy-gantt-legend-item">' +
+        html += '<span class="proy-gantt-legend-item">' +
                 '<svg width="10" height="10" viewBox="0 0 24 24" style="vertical-align:middle"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#a16207"/></svg>' +
                 ' Hito</span>';
+        html += '<span class="proy-gantt-legend-item">' +
+                '<span class="proy-gantt-legend-tip-late"></span> Atrasada</span>';
+        html += '<span class="proy-gantt-legend-help">Tip: Shift+arrastrar la barra para mover la actividad. Click derecho abre menú.</span>';
         html += '</div>';
-
-        html += '</div>'; // /root
-        container.innerHTML = html;
-
-        _proyGanttAttachHandlers(container, projectId, detail, data, rowsVisibles);
+        return html;
     }
 
-    function _proyGanttContarHitos(rows) {
-        var n = 0;
-        rows.forEach(function(r) {
-            if (r.type === 'actividad' && r.esHito) n++;
-        });
-        return n;
-    }
+    // ─── GANTT VISUAL ──────────────────────────────────────────────────
+    function _proyGanttHTML(rowsVisibles, totalUnits, hoyDentroRango, todayLeftPct, hoy, yearStart, zoomCfg, fases) {
+        var minWidth = totalUnits * zoomCfg.minWidthPerUnit;
 
-    function _proyGanttHTML(rowsVisibles, rowsAll, totalUnits, hoyDentroRango, todayLeftPct, hoy, yearStart, zoomCfg) {
         var html = '<div class="proy-gantt-card">';
-        html += '  <div class="proy-gantt-scroll">';
-        html += '    <div class="proy-gantt-grid" style="min-width:' + zoomCfg.minWidth + 'px;" data-units="' + totalUnits + '">';
+        html += '  <div class="proy-gantt-scroll" id="proyGanttScroll">';
+        html += '    <div class="proy-gantt-grid" style="min-width:' + minWidth + 'px;" data-units="' + totalUnits + '">';
 
-        // Row header (eje X)
+        // Header del eje X (subdivisiones)
         html += '<div class="proy-gantt-row proy-gantt-row-header">';
         html += '  <div class="proy-gantt-col-left">';
         html += '    <span class="proy-gantt-col-left-label">Fase / Actividad</span>';
         html += '  </div>';
         html += '  <div class="proy-gantt-col-right">';
-        // Subdivisiones del eje
+        // Eje superior (período mayor) si zoom semana/mes
         var subdivs = _proyGanttSubdivisions(_proyGanttZoom, yearStart, hoy);
         subdivs.forEach(function(sd) {
-            html += '<div class="proy-gantt-month' + (sd.isCurrent ? ' is-current' : '') + '">' + sd.label + '</div>';
+            html += '<div class="proy-gantt-month' + (sd.isCurrent ? ' is-current' : '') + '">' +
+                    '<span>' + sd.label + '</span></div>';
         });
+        // Linea hoy en el header
+        if (hoyDentroRango) {
+            html += '<div class="proy-gantt-today-line proy-gantt-today-line-header" style="left:' + todayLeftPct.toFixed(3) + '%;"></div>';
+        }
         html += '  </div>';
         html += '</div>';
 
         if (!rowsVisibles.length) {
             html += '<div class="proy-gantt-row proy-gantt-row-empty">';
-            html += '  <div class="proy-gantt-col-left"><span style="color:var(--proy-wm-muted, #94a3b8);font-size:12px;">Sin filas para este filtro</span></div>';
+            html += '  <div class="proy-gantt-col-left">' +
+                    '<span style="color:#94a3b8;font-size:0.78rem;">Sin filas para este filtro</span></div>';
             html += '  <div class="proy-gantt-col-right"></div>';
             html += '</div>';
         }
@@ -2285,40 +2358,162 @@
             html += _proyGanttRowHTML(r, totalUnits, hoyDentroRango, todayLeftPct);
         });
 
-        // Capa SVG global de dependencias (overlay sobre el grid). Calculamos
-        // por encima de las filas: mapeamos cada actividad a y-center y x-end / x-start.
-        html += _proyGanttDepsSVG(rowsVisibles, totalUnits);
+        // SVG overlay de dependencias (placeholder; coords se calculan post-render)
+        html += _proyGanttDepsSVG(rowsVisibles);
 
         html += '    </div>'; // /grid
-        html += '  </div>'; // /scroll
-        html += '</div>'; // /card
+        html += '  </div>';   // /scroll
+        html += '</div>';     // /card
 
-        // Tooltip floating container (shared)
+        // Tooltip flotante (compartido)
         html += '<div class="proy-gantt-tooltip" id="proyGanttTooltip" style="display:none;"></div>';
+
+        // Drag confirm overlay (controlado dinámicamente)
+        html += '<div class="proy-gantt-drag-confirm" id="proyGanttDragConfirm" style="display:none;"></div>';
+
+        // Context menu
+        html += '<div class="proy-gantt-ctxmenu" id="proyGanttCtxMenu" style="display:none;"></div>';
 
         return html;
     }
 
+    function _proyGanttRowHTML(r, totalUnits, hoyDentroRango, todayLeftPct) {
+        var leftPct = (r.startUnit / totalUnits) * 100;
+        var widthPct = (r.durationUnits / totalUnits) * 100;
+        var fillPct = Math.max(0, Math.min(100, r.progress));
+        var done = (r.progress >= 100);
+        var atrasada = r.isActive && r.progress < (r.expectedProgress - 5);
+
+        var statusTag = '';
+        if (done) {
+            statusTag = '<span class="proy-gantt-tag proy-gantt-tag-done">✓ Lista</span>';
+        } else if (atrasada) {
+            var diasAtraso = Math.round(((+r.fechaFin) - Date.now()) / 86400000);
+            var atrasoTxt = (diasAtraso < 0) ? 'Vencida ' + Math.abs(diasAtraso) + 'd' : 'Atrasada';
+            statusTag = '<span class="proy-gantt-tag proy-gantt-tag-late">' + atrasoTxt + '</span>';
+        } else if (r.isActive) {
+            statusTag = '<span class="proy-gantt-tag proy-gantt-tag-active">Activa</span>';
+        }
+
+        var avatarsHtml = '';
+        var avs = (r.responsables || []).slice(0, 3);
+        avs.forEach(function(u, i) {
+            var nombre = u.nombre || u.username || '';
+            var ini = _initials(nombre) || '·';
+            var bg = _proyGanttAvatarColor(u.id || i);
+            avatarsHtml += '<span class="proy-gantt-avatar" title="' + _proyGanttEsc(nombre) + '" style="background:' + bg + ';">' + _proyGanttEsc(ini) + '</span>';
+        });
+        if ((r.responsables || []).length > 3) {
+            avatarsHtml += '<span class="proy-gantt-avatar proy-gantt-avatar-more">+' + (r.responsables.length - 3) + '</span>';
+        }
+
+        var rangoTxt = _proyGanttFmtFechaLarga(r.fechaInicio) + ' → ' + _proyGanttFmtFechaLarga(r.fechaFin);
+
+        var rowClasses = 'proy-gantt-row';
+        if (r.type === 'fase') rowClasses += ' proy-gantt-row-fase';
+        if (r.type === 'actividad' && r.parentFaseId) rowClasses += ' proy-gantt-row-child';
+        if (r.type === 'actividad' && r.esHito) rowClasses += ' proy-gantt-row-milestone';
+
+        var dataAttrs = ' data-row-id="' + r.id + '"';
+        if (r.type === 'actividad') dataAttrs += ' data-act-id="' + r.actId + '"';
+        if (r.type === 'fase') dataAttrs += ' data-fase-id="' + r.faseId + '"';
+
+        var html = '<div class="' + rowClasses + '"' + dataAttrs + ' title="' + _proyGanttEsc(r.name) + ' · ' + rangoTxt + '">';
+        // Columna izquierda
+        html += '<div class="proy-gantt-col-left">';
+        if (r.type === 'fase') {
+            // Chevron + dot + actividades count + boton inline "+ Actividad"
+            var collapsed = !!_proyGanttCollapsed[r.faseId];
+            html += '<button type="button" class="proy-gantt-chevron' + (collapsed ? ' is-collapsed' : '') +
+                    '" data-fase-id="' + r.faseId + '" aria-label="Plegar fase">' +
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+                    '</button>';
+        }
+        // Indicador color
+        if (r.type === 'actividad' && r.esHito) {
+            html += '<svg class="proy-gantt-row-diamond" width="11" height="11" viewBox="0 0 24 24"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#a16207"/></svg>';
+        } else {
+            html += '<span class="proy-gantt-row-dot" style="background:' + r.color + ';"></span>';
+        }
+        // Info
+        html += '<div class="proy-gantt-row-info">';
+        html += '  <div class="proy-gantt-row-name">' + _proyGanttEsc(r.name) + '</div>';
+        html += '  <div class="proy-gantt-row-meta">';
+        if (statusTag) html += statusTag;
+        html += '    <span class="proy-gantt-row-pct">' + Math.round(r.progress) + '%</span>';
+        if (r.actividadesCount > 0) {
+            html += '<span class="proy-gantt-row-acts">' + r.actividadesCount + ' ' + (r.actividadesCount === 1 ? 'actividad' : 'actividades') + '</span>';
+        }
+        html += '  </div>';
+        html += '</div>';
+        // Avatars
+        if (avatarsHtml) html += '<div class="proy-gantt-row-avatars">' + avatarsHtml + '</div>';
+        // Boton inline solo para fases: + Actividad
+        if (r.type === 'fase') {
+            html += '<button type="button" class="proy-gantt-row-addact" data-fase-id="' + r.faseId + '" title="Agregar actividad a esta fase">' +
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                    '</button>';
+        }
+        html += '</div>'; // /col-left
+
+        // Columna derecha
+        html += '<div class="proy-gantt-col-right">';
+        if (hoyDentroRango) {
+            html += '<div class="proy-gantt-today-line" style="left:' + todayLeftPct.toFixed(3) + '%;"></div>';
+        }
+        if (r.type === 'actividad' && r.esHito) {
+            // Hito: rombo
+            html += '<div class="proy-gantt-milestone" style="left:' + leftPct.toFixed(3) + '%;" data-row-id="' + r.id + '" data-act-id="' + r.actId + '">';
+            html += '  <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="' + (done ? '#16a34a' : '#a16207') + '" stroke="#fff" stroke-width="1.5"/></svg>';
+            html += '</div>';
+        } else if (r.type === 'fase' && r.isEmpty) {
+            // Fase vacia: placeholder discreto en col-right (sin barra)
+            html += '<div class="proy-gantt-fase-empty">Sin actividades · <span class="proy-gantt-fase-empty-link" data-fase-id="' + r.faseId + '">+ Agregar</span></div>';
+        } else if (widthPct < 0.05) {
+            // Actividad fuera del rango visible
+            html += '<div class="proy-gantt-bar-track is-outofrange" style="left:' + Math.max(0, Math.min(99, leftPct)).toFixed(3) + '%;width:0.5%;background:' + r.color + ';"' + dataAttrs + ' title="Actividad fuera del rango visible"></div>';
+        } else {
+            // Barra normal
+            var atrasadaCls = atrasada ? ' is-late' : '';
+            if (r.type === 'fase') atrasadaCls += ' proy-gantt-bar-fase';
+            html += '<div class="proy-gantt-bar-track' + atrasadaCls + '" style="left:' + leftPct.toFixed(3) + '%;width:' + widthPct.toFixed(3) + '%;background:' + r.color + '22;border-color:' + r.color + ';"' + dataAttrs + '>';
+            html += '  <div class="proy-gantt-bar-fill" style="width:' + fillPct.toFixed(3) + '%;background:' + r.color + ';"></div>';
+            // Etiqueta dentro de la barra (si cabe)
+            if (widthPct > 8) {
+                var labelColor = (fillPct > 35) ? '#fff' : '#1c1917';
+                html += '<div class="proy-gantt-bar-label" style="color:' + labelColor + ';">' + Math.round(r.progress) + '%</div>';
+            }
+            // Handle de resize (solo para actividades reales)
+            if (r.type === 'actividad' && !r.esHito) {
+                html += '<span class="proy-gantt-bar-handle" title="Arrastra para cambiar duración"></span>';
+            }
+            html += '</div>';
+        }
+        html += '</div>'; // /col-right
+        html += '</div>'; // /row
+        return html;
+    }
+
+    // ─── LISTA ─────────────────────────────────────────────────────────
     function _proyGanttListaHTML(rows) {
         var html = '<div class="proy-gantt-card proy-gantt-list-card">';
-        html += '  <table class="proy-gantt-table">';
-        html += '    <thead><tr>';
-        html += '      <th>Fase / Actividad</th>';
-        html += '      <th>Categoría</th>';
-        html += '      <th>Inicio</th>';
-        html += '      <th>Fin</th>';
-        html += '      <th>Duración</th>';
-        html += '      <th>Progreso</th>';
-        html += '      <th>Responsables</th>';
-        html += '      <th>Estado</th>';
-        html += '      <th></th>';
-        html += '    </tr></thead><tbody>';
+        html += '<table class="proy-gantt-table">';
+        html += '<thead><tr>';
+        html += '<th>Fase / Actividad</th>';
+        html += '<th>Categoría</th>';
+        html += '<th>Inicio</th>';
+        html += '<th>Fin</th>';
+        html += '<th>Días</th>';
+        html += '<th>Avance</th>';
+        html += '<th>Responsables</th>';
+        html += '<th>Estado</th>';
+        html += '<th></th>';
+        html += '</tr></thead><tbody>';
         if (!rows.length) {
-            html += '<tr><td colspan="9" style="padding:24px;text-align:center;color:#94a3b8;font-size:0.8rem;">Sin filas para este filtro</td></tr>';
+            html += '<tr><td colspan="9" class="proy-gantt-table-empty">Sin filas para este filtro</td></tr>';
         }
         rows.forEach(function(r) {
-            var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000);
-            if (dias < 1) dias = 1;
+            var dias = Math.max(1, Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000));
             var avs = '';
             (r.responsables || []).slice(0, 3).forEach(function(u) {
                 var nombre = u.nombre || u.username || '';
@@ -2328,12 +2523,16 @@
             if ((r.responsables || []).length > 3) {
                 avs += '<span class="proy-gantt-avatar proy-gantt-avatar-more">+' + (r.responsables.length - 3) + '</span>';
             }
-            var estado = (r.progress >= 100) ? '<span class="proy-gantt-tag proy-gantt-tag-done">Lista</span>' :
+            var done = (r.progress >= 100);
+            var atrasada = r.isActive && r.progress < (r.expectedProgress - 5);
+            var estado = done ? '<span class="proy-gantt-tag proy-gantt-tag-done">Lista</span>' :
+                         atrasada ? '<span class="proy-gantt-tag proy-gantt-tag-late">Atrasada</span>' :
                          r.isActive ? '<span class="proy-gantt-tag proy-gantt-tag-active">Activa</span>' :
-                         '<span class="proy-gantt-tag" style="background:#f1f5f9;color:#64748b;">Pendiente</span>';
+                         '<span class="proy-gantt-tag proy-gantt-tag-pending">Pendiente</span>';
             var hito = (r.type === 'actividad' && r.esHito) ?
                 '<svg width="10" height="10" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#a16207"/></svg>' : '';
-            html += '<tr' + (r.type === 'fase' ? ' class="proy-gantt-tr-fase"' : '') + '>';
+            var trCls = (r.type === 'fase') ? ' class="proy-gantt-tr-fase"' : (r.type === 'actividad' && r.parentFaseId ? ' class="proy-gantt-tr-child"' : '');
+            html += '<tr' + trCls + '>';
             html += '<td><span class="proy-gantt-row-dot" style="background:' + r.color + ';display:inline-block;margin-right:6px;"></span>' + hito + _proyGanttEsc(r.name) + '</td>';
             html += '<td><span style="color:' + r.color + ';font-weight:600;font-size:0.72rem;">' + _proyGanttEsc(r.category.label) + '</span></td>';
             html += '<td>' + _proyGanttFmtFechaCorta(r.fechaInicio) + '</td>';
@@ -2342,74 +2541,106 @@
             html += '<td><div class="proy-gantt-list-progress"><div style="width:' + Math.min(100, r.progress) + '%;background:' + r.color + ';"></div></div><span style="font-size:0.7rem;color:#64748b;margin-left:6px;">' + Math.round(r.progress) + '%</span></td>';
             html += '<td><div class="proy-gantt-row-avatars">' + (avs || '<span style="color:#cbd5e1;font-size:0.7rem;">—</span>') + '</div></td>';
             html += '<td>' + estado + '</td>';
-            // Botón editar (sólo actividades)
-            html += '<td>' + (r.type === 'actividad' ?
-                '<button type="button" class="proy-gantt-row-edit" data-act-id="' + r.actId + '" title="Editar">✎</button>' : '') + '</td>';
+            // Acciones
+            html += '<td style="text-align:right;">';
+            if (r.type === 'actividad') {
+                html += '<button type="button" class="proy-gantt-row-edit" data-act-id="' + r.actId + '" title="Editar">' +
+                        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' +
+                        '</button>';
+            } else {
+                html += '<button type="button" class="proy-gantt-row-edit-fase" data-fase-id="' + r.faseId + '" title="Editar fase">' +
+                        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' +
+                        '</button>';
+            }
+            html += '</td>';
             html += '</tr>';
         });
-        html += '  </tbody></table>';
+        html += '</tbody></table>';
         html += '</div>';
         return html;
     }
 
-    /**
-     * Genera placeholder SVG para dependencias.  Las coords reales se
-     * calculan post-render con `_proyGanttDrawDeps` (porque dependen del
-     * tamaño físico del col-right que sólo conocemos tras el inserción
-     * del DOM).
-     */
-    function _proyGanttDepsSVG(rowsVisibles, totalUnits) {
+    // ─── DEPS SVG ──────────────────────────────────────────────────────
+    function _proyGanttDepsSVG(rowsVisibles) {
         var hayDeps = rowsVisibles.some(function(r) {
             return r.type === 'actividad' && r.dependencias && r.dependencias.length;
         });
         if (!hayDeps) return '';
         return '<svg class="proy-gantt-deps-svg" id="proyGanttDepsSvg" preserveAspectRatio="none">' +
-            '<defs><marker id="proyGanttArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
-            '<path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker></defs>' +
+            '<defs>' +
+              '<marker id="proyGanttArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+                '<path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>' +
+              '</marker>' +
+              '<marker id="proyGanttArrowHi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+                '<path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>' +
+              '</marker>' +
+            '</defs>' +
             '</svg>';
     }
 
-    /**
-     * Después de inyectar el HTML, calcula las coords reales de cada
-     * dependencia en pixels y las dibuja en el SVG overlay.
-     */
-    function _proyGanttDrawDeps(container, rowsVisibles, totalUnits) {
+    function _proyGanttDrawDeps(container, rowsVisibles) {
         var svg = container.querySelector('#proyGanttDepsSvg');
         if (!svg) return;
         var grid = container.querySelector('.proy-gantt-grid');
-        var firstRight = grid ? grid.querySelector('.proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right') : null;
-        if (!grid || !firstRight) return;
+        if (!grid) return;
+        var rowEls = grid.querySelectorAll('.proy-gantt-row:not(.proy-gantt-row-header)');
+        if (!rowEls.length) return;
+
+        // Mapa actId -> { y, xStart, xEnd } en pixels relativos a `grid`
+        var firstRight = grid.querySelector('.proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right');
+        if (!firstRight) return;
+        var leftCol = grid.querySelector('.proy-gantt-col-left');
+        var leftWidth = leftCol ? leftCol.offsetWidth : 240;
         var rightWidth = firstRight.offsetWidth;
-        var rowH = 52; // como en CSS
-        var headerH = grid.querySelector('.proy-gantt-row-header') ?
-            grid.querySelector('.proy-gantt-row-header').offsetHeight : 41;
+        var headerH = grid.querySelector('.proy-gantt-row-header').offsetHeight;
+
+        // Configurar SVG con tamaño absoluto del grid
+        var gridRect = grid.getBoundingClientRect();
+        svg.setAttribute('width', gridRect.width);
+        svg.setAttribute('height', gridRect.height);
+        svg.setAttribute('viewBox', '0 0 ' + gridRect.width + ' ' + gridRect.height);
+        svg.style.left = '0';
+        svg.style.width = gridRect.width + 'px';
+        svg.style.height = gridRect.height + 'px';
 
         // Limpiar paths previos
         var oldPaths = svg.querySelectorAll('path.proy-gantt-dep-path');
         Array.prototype.forEach.call(oldPaths, function(p) { p.parentNode.removeChild(p); });
 
+        var rowYs = {};   // actId -> y center
+        var actBars = {}; // actId -> { x0, x1 }
+        Array.prototype.forEach.call(rowEls, function(row) {
+            var actId = parseInt(row.getAttribute('data-act-id'), 10);
+            if (!actId) return;
+            var rect = row.getBoundingClientRect();
+            var bar = row.querySelector('.proy-gantt-bar-track[data-act-id], .proy-gantt-milestone[data-act-id]');
+            if (!bar) return;
+            var barRect = bar.getBoundingClientRect();
+            rowYs[actId] = (rect.top - gridRect.top) + (rect.height / 2);
+            actBars[actId] = {
+                x0: barRect.left - gridRect.left,
+                x1: barRect.right - gridRect.left
+            };
+        });
+
         var ns = 'http://www.w3.org/2000/svg';
-        rowsVisibles.forEach(function(toR, toIdx) {
+        rowsVisibles.forEach(function(toR) {
             if (toR.type !== 'actividad' || !toR.dependencias || !toR.dependencias.length) return;
-            var toY = headerH + toIdx * rowH + rowH / 2;
             (toR.dependencias || []).forEach(function(depId) {
-                var fromIdx = -1;
-                var fromR = null;
-                for (var i = 0; i < rowsVisibles.length; i++) {
-                    if (rowsVisibles[i].type === 'actividad' && rowsVisibles[i].actId === depId) {
-                        fromIdx = i; fromR = rowsVisibles[i]; break;
-                    }
-                }
-                if (fromR == null) return;
-                var fromY = headerH + fromIdx * rowH + rowH / 2;
-                // x in pixels (relative to col-right)
-                var fromX = ((fromR.startUnit + fromR.durationUnits) / totalUnits) * rightWidth;
-                var toX = (toR.startUnit / totalUnits) * rightWidth;
+                if (!actBars[depId] || !actBars[toR.actId]) return;
+                var fromX = actBars[depId].x1;
+                var fromY = rowYs[depId];
+                var toX = actBars[toR.actId].x0;
+                var toY = rowYs[toR.actId];
+                if (fromX == null || toX == null) return;
+
+                // Curva en S con offset
                 var dx = 14;
                 var d = 'M ' + fromX + ' ' + fromY +
-                        ' L ' + (fromX + dx) + ' ' + fromY +
-                        ' L ' + (fromX + dx) + ' ' + toY +
-                        ' L ' + toX + ' ' + toY;
+                        ' C ' + (fromX + dx) + ' ' + fromY + ', ' +
+                                (toX - dx) + ' ' + toY + ', ' +
+                                (toX - 1) + ' ' + toY;
+
                 var path = document.createElementNS(ns, 'path');
                 path.setAttribute('d', d);
                 path.setAttribute('stroke', '#94a3b8');
@@ -2417,7 +2648,7 @@
                 path.setAttribute('fill', 'none');
                 path.setAttribute('stroke-dasharray', '3,3');
                 path.setAttribute('marker-end', 'url(#proyGanttArrow)');
-                path.setAttribute('data-from', String(fromR.actId));
+                path.setAttribute('data-from', String(depId));
                 path.setAttribute('data-to', String(toR.actId));
                 path.setAttribute('class', 'proy-gantt-dep-path');
                 svg.appendChild(path);
@@ -2425,29 +2656,45 @@
         });
     }
 
-    function _proyGanttAttachHandlers(container, projectId, detail, data, rowsVisibles) {
+    // ─── HANDLERS ──────────────────────────────────────────────────────
+    function _proyGanttAttachHandlers(container, projectId, detail, data, rowsVisibles, totalUnits, fases) {
         var rerender = function() { _proyGanttRender(container, projectId, detail, data); };
 
-        // Calcular y dibujar dependencias (necesita DOM ya inyectado)
+        // Dibujar dependencias post-layout y bind resize
         if (_proyGanttVista === 'gantt') {
-            var totalUnits = (_PROY_GANTT_ZOOM_CFG[_proyGanttZoom] || _PROY_GANTT_ZOOM_CFG.mes).units;
-            _proyGanttDrawDeps(container, rowsVisibles, totalUnits);
-            // Re-dibujar al cambiar el tamaño (resize)
+            // requestAnimationFrame para esperar al layout
+            requestAnimationFrame(function() { _proyGanttDrawDeps(container, rowsVisibles); });
+
+            // Auto-scroll a "hoy"
+            if (_proyGanttPendingScroll) {
+                _proyGanttPendingScroll = false;
+                requestAnimationFrame(function() {
+                    var scroll = container.querySelector('#proyGanttScroll');
+                    var todayLine = container.querySelector('.proy-gantt-today-line-header');
+                    if (scroll && todayLine) {
+                        var leftCol = container.querySelector('.proy-gantt-col-left');
+                        var leftWidth = leftCol ? leftCol.offsetWidth : 240;
+                        var todayPct = parseFloat(todayLine.style.left) || 0;
+                        var rightWidth = scroll.scrollWidth - leftWidth;
+                        var scrollTo = Math.max(0, (todayPct / 100) * rightWidth - scroll.clientWidth / 3);
+                        scroll.scrollLeft = scrollTo;
+                    }
+                });
+            }
+
             if (!_proyGanttResizeBound) {
                 _proyGanttResizeBound = true;
                 window.addEventListener('resize', function() {
                     var c = el('proyProgramaContainer');
                     if (c && _proyGanttVista === 'gantt') {
-                        var u = (_PROY_GANTT_ZOOM_CFG[_proyGanttZoom] || _PROY_GANTT_ZOOM_CFG.mes).units;
-                        // Necesitamos reconstruir rows para el resize, lo hacemos via rerender:
-                        // pero rerender es local, así que llamamos _proyGanttRedrawDeps si tenemos snapshot.
-                        // Para evitar bloqueos, no rerendemos al resize: solo recalculamos paths con el snapshot actual.
+                        // re-dibujar deps con coords actualizadas
+                        _proyGanttDrawDeps(c, rowsVisibles);
                     }
                 });
             }
         }
 
-        // Filter buttons (estado)
+        // Filtros estado
         Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-filter-btn[data-filter]'), function(btn) {
             btn.addEventListener('click', function() {
                 _proyGanttFiltro = btn.getAttribute('data-filter') || 'todo';
@@ -2465,44 +2712,135 @@
         Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-filter-btn[data-zoom]'), function(btn) {
             btn.addEventListener('click', function() {
                 _proyGanttZoom = btn.getAttribute('data-zoom') || 'mes';
+                _proyGanttPendingScroll = true;  // re-centrar hoy en el nuevo zoom
                 rerender();
             });
         });
-        // Filtro por responsable
+        // Filtro responsable
         var selResp = el('proyGanttFiltroResp');
         if (selResp) selResp.addEventListener('change', function() {
-            _proyGanttFiltroResp = this.value || '';
-            rerender();
+            _proyGanttFiltroResp = this.value || ''; rerender();
         });
-        // Filtro por categoría
+        // Filtro categoria
         var selCat = el('proyGanttFiltroCat');
         if (selCat) selCat.addEventListener('change', function() {
-            _proyGanttFiltroCat = this.value || '';
-            rerender();
+            _proyGanttFiltroCat = this.value || ''; rerender();
+        });
+        // Buqueda
+        var searchEl = el('proyGanttSearch');
+        if (searchEl) {
+            var dt = null;
+            searchEl.addEventListener('input', function() {
+                clearTimeout(dt);
+                var v = searchEl.value;
+                dt = setTimeout(function() {
+                    _proyGanttBusqueda = v;
+                    rerender();
+                    setTimeout(function() {
+                        var x = el('proyGanttSearch'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); }
+                    }, 0);
+                }, 200);
+            });
+            // Cmd+F atajo: solo si el container es visible
+            if (!_proyGanttSearchBound) {
+                _proyGanttSearchBound = true;
+                document.addEventListener('keydown', function(e) {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+                        var pane = el('proyPane_programa');
+                        if (pane && pane.offsetParent) {
+                            e.preventDefault();
+                            var s = el('proyGanttSearch'); if (s) s.focus();
+                        }
+                    }
+                });
+            }
+        }
+
+        // CTAs
+        var btnNueva = el('proyGanttBtnNueva');
+        if (btnNueva) btnNueva.addEventListener('click', function() {
+            // Si no hay fases, mostrar mensaje guía
+            if (!fases || !fases.length) {
+                _proyGanttShowToast('Crea primero una fase para organizar tus actividades.', 'info', {
+                    actionLabel: '+ Fase',
+                    onAction: function() { _openFaseForm(); }
+                });
+                return;
+            }
+            _openActividadForm(_isoToday());
+        });
+        var btnFase = el('proyGanttBtnNuevaFase');
+        if (btnFase) btnFase.addEventListener('click', function() { _openFaseForm(); });
+
+        // Export CSV
+        var exportBtn = el('proyGanttBtnExport');
+        if (exportBtn) exportBtn.addEventListener('click', function() { _proyGanttExportCSV(rowsVisibles, detail); });
+
+        // Imprimir
+        var printBtn = el('proyGanttBtnPrint');
+        if (printBtn) printBtn.addEventListener('click', function() {
+            document.body.classList.add('proy-gantt-printing');
+            setTimeout(function() {
+                window.print();
+                setTimeout(function() { document.body.classList.remove('proy-gantt-printing'); }, 500);
+            }, 100);
         });
 
-        // CTA "+ Actividad"
-        var ctaBtn = el('proyGanttBtnNueva');
-        if (ctaBtn) {
-            ctaBtn.addEventListener('click', function() {
-                if (typeof _openActividadForm === 'function') _openActividadForm(_isoToday());
+        // Chevrons (plegar/desplegar fases)
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-chevron'), function(ch) {
+            ch.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var fid = parseInt(ch.getAttribute('data-fase-id'), 10);
+                if (!fid) return;
+                _proyGanttCollapsed[fid] = !_proyGanttCollapsed[fid];
+                rerender();
             });
-        }
-        // Exportar CSV
-        var exportBtn = el('proyGanttBtnExport');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', function() {
-                _proyGanttExportCSV(rowsVisibles, detail);
-            });
-        }
+        });
 
-        // Hover de barras → tooltip rico
+        // Boton inline "+ Actividad" en una fase
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-row-addact'), function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var fid = parseInt(btn.getAttribute('data-fase-id'), 10);
+                _openActividadForm(_isoToday(), { faseId: fid });
+            });
+        });
+
+        // Link "+ Agregar" dentro de fila de fase vacia
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-fase-empty-link'), function(a) {
+            a.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var fid = parseInt(a.getAttribute('data-fase-id'), 10);
+                _openActividadForm(_isoToday(), { faseId: fid });
+            });
+        });
+
+        // Click en fase (col-left) → editar fase
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-row-fase .proy-gantt-row-info'), function(el2) {
+            el2.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var row = el2.closest('.proy-gantt-row-fase');
+                if (!row) return;
+                var fid = parseInt(row.getAttribute('data-fase-id'), 10);
+                _openFaseForm(fid);
+            });
+        });
+        // Editar fase desde lista
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-row-edit-fase'), function(b) {
+            b.addEventListener('click', function() {
+                var fid = parseInt(b.getAttribute('data-fase-id'), 10);
+                if (fid) _openFaseForm(fid);
+            });
+        });
+
+        // Tooltip + click + drag + context menu sobre barras / hitos
         var tooltip = el('proyGanttTooltip');
-        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-bar-track[data-row-id], .proy-gantt-milestone[data-row-id]'), function(bar) {
-            bar.addEventListener('mouseenter', function(e) {
-                var rid = bar.getAttribute('data-row-id');
-                var r = rowsVisibles.filter(function(x) { return x.id === rid; })[0];
-                if (!r) return;
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-bar-track[data-act-id], .proy-gantt-milestone[data-act-id]'), function(bar) {
+            var rid = bar.getAttribute('data-row-id');
+            var r = rowsVisibles.filter(function(x) { return x.id === rid; })[0];
+            if (!r) return;
+
+            bar.addEventListener('mouseenter', function() {
                 if (tooltip) {
                     tooltip.innerHTML = _proyGanttTooltipHTML(r);
                     tooltip.style.display = 'block';
@@ -2512,32 +2850,183 @@
             bar.addEventListener('mousemove', function(e) {
                 if (!tooltip) return;
                 var rect = container.getBoundingClientRect();
-                tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
-                tooltip.style.top  = (e.clientY - rect.top + 12) + 'px';
+                var x = e.clientX - rect.left + 14;
+                var y = e.clientY - rect.top + 14;
+                // Clamp para no salir de la pantalla
+                var ttW = tooltip.offsetWidth || 280;
+                if (x + ttW > rect.width - 12) x = e.clientX - rect.left - ttW - 14;
+                tooltip.style.left = x + 'px';
+                tooltip.style.top  = y + 'px';
             });
             bar.addEventListener('mouseleave', function() {
                 if (tooltip) tooltip.style.display = 'none';
                 _proyGanttHighlightDeps(container, null, false);
             });
-            // Click para editar (solo actividades)
-            bar.addEventListener('click', function() {
+            // Click → editar
+            bar.addEventListener('click', function(e) {
+                if (e.shiftKey) return;  // shift-drag se maneja aparte
+                if (bar._wasDragged) { bar._wasDragged = false; return; }
                 var actId = parseInt(bar.getAttribute('data-act-id'), 10);
-                if (actId) {
-                    if (typeof _openActividadForm === 'function') _openActividadForm(null, { editId: actId });
-                }
+                if (actId) _openActividadForm(null, { editId: actId });
             });
-            // Drag visual: shift mantenido = mover barra horizontalmente
-            _proyGanttAttachDrag(bar, rowsVisibles, container, projectId, detail, data);
+            // Right click → context menu
+            bar.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                _proyGanttShowCtxMenu(e.clientX, e.clientY, r, container);
+            });
+            // Drag (shift+arrastrar) o resize por handle
+            _proyGanttAttachDrag(bar, r, container, projectId, detail, totalUnits);
         });
 
-        // Click en filas (lista) → editar
+        // Click derecho en filas → context menu (también para clicks fuera de la barra)
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-row[data-act-id]'), function(row) {
+            row.addEventListener('contextmenu', function(e) {
+                if (e.target.closest('.proy-gantt-bar-track, .proy-gantt-milestone')) return;  // ya manejado
+                e.preventDefault();
+                var rid = row.getAttribute('data-row-id');
+                var r = rowsVisibles.filter(function(x) { return x.id === rid; })[0];
+                if (r) _proyGanttShowCtxMenu(e.clientX, e.clientY, r, container);
+            });
+        });
+
+        // Editar desde lista
         Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-row-edit'), function(b) {
             b.addEventListener('click', function() {
                 var aid = parseInt(b.getAttribute('data-act-id'), 10);
-                if (aid && typeof _openActividadForm === 'function') {
-                    _openActividadForm(null, { editId: aid });
+                if (aid) _openActividadForm(null, { editId: aid });
+            });
+        });
+
+        // Cerrar context menu al click fuera
+        if (!_proyGanttCtxBound) {
+            _proyGanttCtxBound = true;
+            document.addEventListener('click', function(e) {
+                var menu = el('proyGanttCtxMenu');
+                if (menu && !menu.contains(e.target)) menu.style.display = 'none';
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    var m = el('proyGanttCtxMenu'); if (m) m.style.display = 'none';
+                    var dc = el('proyGanttDragConfirm'); if (dc) dc.style.display = 'none';
                 }
             });
+        }
+    }
+    var _proyGanttCtxBound = false;
+    var _proyGanttSearchBound = false;
+
+    function _proyGanttShowCtxMenu(x, y, r, container) {
+        var menu = el('proyGanttCtxMenu');
+        if (!menu) return;
+        if (r.type !== 'actividad') {
+            // Para fase: editar / + actividad / eliminar
+            menu.innerHTML =
+                '<button type="button" data-action="edit-fase">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' +
+                  'Editar fase</button>' +
+                '<button type="button" data-action="add-act-fase">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                  '+ Actividad</button>' +
+                '<button type="button" data-action="delete-fase" class="proy-gantt-ctxmenu-danger">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+                  'Eliminar fase</button>';
+        } else {
+            menu.innerHTML =
+                '<button type="button" data-action="edit">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' +
+                  'Editar actividad</button>' +
+                '<button type="button" data-action="duplicate">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+                  'Duplicar</button>' +
+                ((r.dependencias || []).length ? '<button type="button" data-action="show-deps">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 6h12"/><path d="M15 18H3"/></svg>' +
+                  'Ver dependencias (' + r.dependencias.length + ')</button>' : '') +
+                '<button type="button" data-action="delete" class="proy-gantt-ctxmenu-danger">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+                  'Eliminar</button>';
+        }
+        menu.style.display = 'block';
+        // Posicion (clamp a viewport)
+        var menuW = 180;
+        var px = Math.min(x, window.innerWidth - menuW - 12);
+        var py = Math.min(y, window.innerHeight - 200);
+        menu.style.left = px + 'px';
+        menu.style.top  = py + 'px';
+
+        // Bind
+        Array.prototype.forEach.call(menu.querySelectorAll('button[data-action]'), function(b) {
+            b.addEventListener('click', function() {
+                var act = b.getAttribute('data-action');
+                menu.style.display = 'none';
+                if (act === 'edit')          _openActividadForm(null, { editId: r.actId });
+                else if (act === 'duplicate') _proyGanttDuplicarActividad(r);
+                else if (act === 'show-deps') _proyGanttShowDepsHighlight(container, r);
+                else if (act === 'delete')    _proyGanttEliminarActividadConfirm(r);
+                else if (act === 'edit-fase') _openFaseForm(r.faseId);
+                else if (act === 'add-act-fase') _openActividadForm(_isoToday(), { faseId: r.faseId });
+                else if (act === 'delete-fase') _proyGanttEliminarFaseConfirm(r);
+            });
+        });
+    }
+
+    function _proyGanttShowDepsHighlight(container, r) {
+        _proyGanttHighlightDeps(container, r, true);
+        setTimeout(function() { _proyGanttHighlightDeps(container, null, false); }, 2500);
+    }
+
+    function _proyGanttDuplicarActividad(r) {
+        if (!_proyGanttData) return;
+        var orig = (_proyGanttData.actividades || []).filter(function(a) { return a.id === r.actId; })[0];
+        if (!orig) return;
+        var payload = {
+            nombre: orig.nombre + ' (copia)',
+            fecha_inicio: orig.fecha_inicio,
+            duracion_dias: orig.duracion_dias,
+            progreso: 0,
+            costo_estimado: orig.costo_estimado,
+            ingreso_estimado: orig.ingreso_estimado,
+            fase_id: orig.fase_id || null,
+        };
+        _fetch('/app/api/proyecto/' + currentProjectId + '/gantt/', { method: 'POST', body: payload })
+            .then(function(resp) {
+                if (resp && resp.success) {
+                    _showToast('Actividad duplicada');
+                    renderProgramaObra(currentProjectId);
+                } else {
+                    alert('Error al duplicar');
+                }
+            }).catch(function() { alert('Error de conexión'); });
+    }
+
+    function _proyGanttEliminarActividadConfirm(r) {
+        proyConfirm('Eliminar actividad', '¿Seguro que quieres eliminar “' + r.name + '”? Esta acción no se puede deshacer.', {
+            textoConfirmar: 'Eliminar',
+            onConfirm: function() {
+                _fetch('/app/api/gantt/actividad/' + r.actId + '/', { method: 'DELETE' }).then(function(resp) {
+                    if (resp && resp.success) {
+                        _showToast('Actividad eliminada');
+                        renderProgramaObra(currentProjectId);
+                    } else { alert('Error al eliminar'); }
+                });
+            }
+        });
+    }
+
+    function _proyGanttEliminarFaseConfirm(r) {
+        var n = r.actividadesCount || 0;
+        var msg = n > 0
+            ? '¿Eliminar la fase “' + r.name + '” y sus ' + n + ' actividad' + (n === 1 ? '' : 'es') + '? Esta acción no se puede deshacer.'
+            : '¿Eliminar la fase “' + r.name + '”?';
+        proyConfirm('Eliminar fase', msg, {
+            textoConfirmar: 'Eliminar fase',
+            onConfirm: function() {
+                _fetch('/app/api/gantt/fase/' + r.faseId + '/', { method: 'DELETE' }).then(function(resp) {
+                    if (resp && resp.success) {
+                        _showToast('Fase eliminada');
+                        renderProgramaObra(currentProjectId);
+                    } else { alert('Error al eliminar fase'); }
+                });
+            }
         });
     }
 
@@ -2549,95 +3038,212 @@
             var toId = parseInt(p.getAttribute('data-to'), 10);
             if (on && r && r.actId && (fromId === r.actId || toId === r.actId)) {
                 p.setAttribute('stroke', '#dc2626');
-                p.setAttribute('stroke-width', '2');
+                p.setAttribute('stroke-width', '2.5');
                 p.setAttribute('stroke-dasharray', '0');
+                p.setAttribute('marker-end', 'url(#proyGanttArrowHi)');
             } else {
                 p.setAttribute('stroke', '#94a3b8');
                 p.setAttribute('stroke-width', '1.4');
                 p.setAttribute('stroke-dasharray', '3,3');
+                p.setAttribute('marker-end', 'url(#proyGanttArrow)');
             }
         });
     }
 
+    // ─── TOOLTIP RICO ──────────────────────────────────────────────────
     function _proyGanttTooltipHTML(r) {
-        var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000);
-        if (dias < 1) dias = 1;
+        var dias = Math.max(1, Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000));
         var hoy = new Date(); hoy.setHours(12, 0, 0, 0);
         var diasRest = Math.round(((+r.fechaFin) - (+hoy)) / 86400000);
-        var diasRestTxt = (diasRest < 0)
-            ? ('<span style="color:#dc2626;font-weight:600;">' + Math.abs(diasRest) + ' días vencido</span>')
-            : (diasRest === 0 ? '<span style="color:#a16207;font-weight:600;">Vence hoy</span>'
-                              : '<span style="color:#16a34a;font-weight:600;">' + diasRest + ' días restantes</span>');
+        var diasRestTxt;
+        if (r.progress >= 100) {
+            diasRestTxt = '<span style="color:#34d399;font-weight:700;">Completada</span>';
+        } else if (diasRest < 0) {
+            diasRestTxt = '<span style="color:#f87171;font-weight:700;">' + Math.abs(diasRest) + ' días vencido</span>';
+        } else if (diasRest === 0) {
+            diasRestTxt = '<span style="color:#fbbf24;font-weight:700;">Vence hoy</span>';
+        } else {
+            diasRestTxt = '<span style="color:#34d399;font-weight:700;">' + diasRest + ' días restantes</span>';
+        }
         var resps = (r.responsables || []).map(function(u) { return u.nombre || u.username || 'Usuario'; });
-        var hitoTag = (r.type === 'actividad' && r.esHito) ? '<span style="background:#fef3c7;color:#a16207;padding:1px 6px;border-radius:3px;font-size:0.62rem;font-weight:700;margin-left:6px;">HITO</span>' : '';
+        var hitoTag = (r.type === 'actividad' && r.esHito) ? '<span class="proy-gantt-tt-tag" style="background:#fef3c7;color:#a16207;">HITO</span>' : '';
+        var faseTag = (r.type === 'fase') ? '<span class="proy-gantt-tt-tag" style="background:#e0e7ff;color:#4338ca;">FASE</span>' : '';
         var depsCount = (r.dependencias || []).length;
-        var html = '<div class="proy-gantt-tt-title">' + _proyGanttEsc(r.name) + hitoTag + '</div>';
+
+        var html = '<div class="proy-gantt-tt-title">' + _proyGanttEsc(r.name) + hitoTag + faseTag + '</div>';
         html += '<div class="proy-gantt-tt-cat" style="color:' + r.color + ';">' + _proyGanttEsc(r.category.label) + '</div>';
         html += '<div class="proy-gantt-tt-row">' +
                 '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
-                _proyGanttFmtFechaLarga(r.fechaInicio) + ' → ' + _proyGanttFmtFechaLarga(r.fechaFin) + ' (' + dias + 'd)</div>';
+                _proyGanttFmtFechaCorta(r.fechaInicio) + ' → ' + _proyGanttFmtFechaCorta(r.fechaFin) + ' (' + dias + 'd)</div>';
         html += '<div class="proy-gantt-tt-row">' +
                 '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
-                'Avance: <strong>' + Math.round(r.progress) + '%</strong></div>';
+                'Avance: <strong>' + Math.round(r.progress) + '%</strong>' +
+                ' (esperado ' + Math.round(r.expectedProgress) + '%)</div>';
         html += '<div class="proy-gantt-tt-row">' + diasRestTxt + '</div>';
         if (resps.length) {
             html += '<div class="proy-gantt-tt-row">' +
-                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
                     resps.slice(0, 4).join(', ') + (resps.length > 4 ? ' +' + (resps.length - 4) : '') + '</div>';
         }
         if (depsCount) {
-            html += '<div class="proy-gantt-tt-row" style="color:#94a3b8;">Depende de ' + depsCount + ' actividad' + (depsCount === 1 ? '' : 'es') + '</div>';
+            html += '<div class="proy-gantt-tt-row" style="opacity:0.85;">Depende de ' + depsCount + ' actividad' + (depsCount === 1 ? '' : 'es') + '</div>';
+        }
+        if (r.costo > 0 || r.ingreso > 0) {
+            var costo = r.costo ? '$' + Number(r.costo).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—';
+            var ingreso = r.ingreso ? '$' + Number(r.ingreso).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—';
+            html += '<div class="proy-gantt-tt-row" style="opacity:0.85;">Costo ' + costo + ' · Ingreso ' + ingreso + '</div>';
         }
         return html;
     }
 
-    /** Drag visual minimalista: avisa "próximamente persistir". */
-    function _proyGanttAttachDrag(bar, rowsVisibles, container, projectId, detail, data) {
-        var rid = bar.getAttribute('data-row-id');
-        var r = rowsVisibles.filter(function(x) { return x.id === rid; })[0];
-        if (!r || r.type !== 'actividad') return;  // Solo actividades, no fases (auto-calculadas)
-        if (r.esHito) return;
+    // ─── DRAG (shift-arrastrar mover, handle = resize) ─────────────────
+    function _proyGanttAttachDrag(bar, r, container, projectId, detail, totalUnits) {
+        if (r.type !== 'actividad') return;
+        if (r.esHito) return;  // hitos no se redimensionan
 
         var dragging = false;
+        var resizing = false;
         var startX = 0;
         var origLeft = 0;
-        var trackParent;
+        var origWidth = 0;
+        var trackParent = null;
+
+        var handle = bar.querySelector('.proy-gantt-bar-handle');
+
+        function onMouseMove(e) {
+            if (!dragging && !resizing) return;
+            e.preventDefault();
+            var dx = e.clientX - startX;
+            var pw = trackParent.offsetWidth;
+            if (resizing) {
+                var newWidthPx = Math.max(8, origWidth + dx);
+                var pct = (newWidthPx / pw) * 100;
+                bar.style.width = pct + '%';
+            } else if (dragging) {
+                var newLeftPx = origLeft + dx;
+                newLeftPx = Math.max(0, Math.min(pw - origWidth, newLeftPx));
+                var pct2 = (newLeftPx / pw) * 100;
+                bar.style.left = pct2 + '%';
+            }
+            bar._wasDragged = true;
+        }
+
+        function onMouseUp(e) {
+            if (!dragging && !resizing) return;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            bar.style.cursor = '';
+            bar.classList.remove('is-dragging');
+            // Calcular nuevas fechas a partir de left/width finales
+            var pw = trackParent.offsetWidth;
+            var newLeftPx = (parseFloat(bar.style.left) / 100) * pw;
+            var newWidthPx = (parseFloat(bar.style.width) / 100) * pw;
+            var newStartUnit = (newLeftPx / pw) * totalUnits;
+            var newDurUnits = (newWidthPx / pw) * totalUnits;
+            // Convertir unidades a fecha
+            var yearStart = (_proyGanttData.proyecto_inicio) ? parseInt(String(_proyGanttData.proyecto_inicio).slice(0,4),10) : (new Date()).getFullYear();
+            if (detail && detail.fecha_inicio) yearStart = parseInt(String(detail.fecha_inicio).slice(0,4),10);
+            var newIni = _proyGanttUnitToDate(newStartUnit, yearStart, _proyGanttZoom);
+            var newDurDias;
+            if (resizing) {
+                var newFin = _proyGanttUnitToDate(newStartUnit + newDurUnits, yearStart, _proyGanttZoom);
+                newDurDias = Math.max(1, Math.round((newFin - newIni) / 86400000));
+            } else {
+                newDurDias = r.fechaFin && r.fechaInicio ? Math.max(1, Math.round((r.fechaFin - r.fechaInicio) / 86400000)) : 1;
+            }
+            // Toast confirm
+            var oldIni = r.fechaInicio;
+            var oldFin = r.fechaFin;
+            var newFinDate = new Date(newIni.getTime() + newDurDias * 86400000);
+
+            _proyGanttShowDragConfirm({
+                titulo: resizing ? 'Cambiar duración' : 'Mover actividad',
+                actividad: r.name,
+                oldStart: oldIni, oldEnd: oldFin,
+                newStart: newIni, newEnd: newFinDate,
+                onAccept: function() {
+                    _fetch('/app/api/gantt/actividad/' + r.actId + '/', {
+                        method: 'PUT',
+                        body: {
+                            fecha_inicio: newIni.toISOString().slice(0, 10),
+                            duracion_dias: newDurDias
+                        }
+                    }).then(function(resp) {
+                        if (resp && resp.success) {
+                            _showToast('Cambios guardados');
+                            renderProgramaObra(currentProjectId);
+                        } else {
+                            alert('Error al guardar cambios');
+                            renderProgramaObra(currentProjectId);
+                        }
+                    }).catch(function() {
+                        alert('Error de conexión');
+                        renderProgramaObra(currentProjectId);
+                    });
+                },
+                onCancel: function() {
+                    renderProgramaObra(currentProjectId);
+                }
+            });
+
+            dragging = false;
+            resizing = false;
+        }
 
         bar.addEventListener('mousedown', function(e) {
-            // Solo arrastrar con shift+click
-            if (!e.shiftKey) return;
+            // Resize si click sobre el handle
+            if (e.target === handle) {
+                resizing = true;
+            } else if (e.shiftKey) {
+                dragging = true;
+            } else {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
-            dragging = true;
             startX = e.clientX;
-            trackParent = bar.parentElement;  // .proy-gantt-col-right
-            var leftPx = parseFloat(bar.style.left) || 0;
-            // bar.style.left puede ser %; convertir
-            if (bar.style.left.indexOf('%') !== -1) {
-                origLeft = (parseFloat(bar.style.left) / 100) * trackParent.offsetWidth;
-            } else {
-                origLeft = leftPx;
-            }
-            bar.style.transition = 'none';
-            bar.style.cursor = 'grabbing';
+            trackParent = bar.parentElement;
+            // origLeft / origWidth en pixels
+            var pw = trackParent.offsetWidth;
+            origLeft = (parseFloat(bar.style.left) / 100) * pw;
+            origWidth = (parseFloat(bar.style.width) / 100) * pw;
+            bar.style.cursor = resizing ? 'ew-resize' : 'grabbing';
+            bar.classList.add('is-dragging');
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         });
-        document.addEventListener('mousemove', function(e) {
-            if (!dragging) return;
-            var dx = e.clientX - startX;
-            var newLeftPx = origLeft + dx;
-            var pct = (newLeftPx / trackParent.offsetWidth) * 100;
-            bar.style.left = pct + '%';
-        });
-        document.addEventListener('mouseup', function(e) {
-            if (!dragging) return;
-            dragging = false;
-            bar.style.cursor = '';
-            _showToast('Próximamente: persistir cambio (usa el botón ✎ en la lista)');
-            // Restaurar posición original (por ahora solo visual)
-            setTimeout(function() {
-                _proyGanttRender(container, projectId, detail, data);
-            }, 1200);
-        });
+    }
+
+    function _proyGanttShowDragConfirm(opts) {
+        var dc = el('proyGanttDragConfirm');
+        if (!dc) return;
+        var fmt = _proyGanttFmtFechaCorta;
+        dc.innerHTML =
+            '<div class="proy-gantt-drag-card">' +
+              '<div class="proy-gantt-drag-title">' + _proyGanttEsc(opts.titulo) + '</div>' +
+              '<div class="proy-gantt-drag-act">' + _proyGanttEsc(opts.actividad) + '</div>' +
+              '<div class="proy-gantt-drag-row">' +
+                '<span class="proy-gantt-drag-label">Inicio</span>' +
+                '<span class="proy-gantt-drag-old">' + fmt(opts.oldStart) + '</span>' +
+                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
+                '<span class="proy-gantt-drag-new">' + fmt(opts.newStart) + '</span>' +
+              '</div>' +
+              '<div class="proy-gantt-drag-row">' +
+                '<span class="proy-gantt-drag-label">Fin</span>' +
+                '<span class="proy-gantt-drag-old">' + fmt(opts.oldEnd) + '</span>' +
+                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
+                '<span class="proy-gantt-drag-new">' + fmt(opts.newEnd) + '</span>' +
+              '</div>' +
+              '<div class="proy-gantt-drag-actions">' +
+                '<button type="button" class="proy-gantt-drag-cancel">Cancelar</button>' +
+                '<button type="button" class="proy-gantt-drag-accept">Confirmar</button>' +
+              '</div>' +
+            '</div>';
+        dc.style.display = 'flex';
+        var cancelBtn = dc.querySelector('.proy-gantt-drag-cancel');
+        var acceptBtn = dc.querySelector('.proy-gantt-drag-accept');
+        cancelBtn.addEventListener('click', function() { dc.style.display = 'none'; if (opts.onCancel) opts.onCancel(); });
+        acceptBtn.addEventListener('click', function() { dc.style.display = 'none'; if (opts.onAccept) opts.onAccept(); });
     }
 
     function _proyGanttExportCSV(rows, detail) {
@@ -2646,36 +3252,24 @@
         var headers = ['Tipo','Nombre','Categoria','Fase_Padre','Inicio','Fin','Duracion_dias','Progreso_pct','Responsables','Estado','Hito','Costo','Ingreso'];
         var lines = [headers.join(sep)];
         rows.forEach(function(r) {
-            var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000);
-            if (dias < 1) dias = 1;
+            var dias = Math.max(1, Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000));
             var resps = (r.responsables || []).map(function(u) { return u.nombre || u.username || ''; }).join(' / ');
             var estado = r.progress >= 100 ? 'Completada' : (r.isActive ? 'Activa' : 'Pendiente');
             var fila = [
-                r.type,
-                _csvCell(r.name),
-                r.category.label,
-                _csvCell(r.parentName || ''),
-                r.fechaInicio.toISOString().slice(0,10),
-                r.fechaFin.toISOString().slice(0,10),
-                dias,
-                Math.round(r.progress),
-                _csvCell(resps),
-                estado,
-                (r.esHito ? 'Sí' : 'No'),
-                r.costo || 0,
-                r.ingreso || 0
+                r.type, _csvCell(r.name), r.category.label, _csvCell(r.parentName || ''),
+                r.fechaInicio.toISOString().slice(0,10), r.fechaFin.toISOString().slice(0,10),
+                dias, Math.round(r.progress), _csvCell(resps), estado,
+                (r.esHito ? 'Sí' : 'No'), r.costo || 0, r.ingreso || 0
             ];
             lines.push(fila.join(sep));
         });
-        var csv = '﻿' + lines.join('\r\n');  // BOM para Excel
+        var csv = '﻿' + lines.join('\r\n');
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         var a = document.createElement('a');
         var url = URL.createObjectURL(blob);
         a.href = url;
         a.download = 'gantt_' + nombreProy + '_' + (new Date()).toISOString().slice(0,10) + '.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
         _showToast('Cronograma exportado');
     }
@@ -2689,7 +3283,7 @@
         return s;
     }
 
-    /** Convierte una fecha en posicion decimal de "unidad" segun zoom. */
+    // ─── CALCULOS DE FECHAS / UNIDADES ─────────────────────────────────
     function _proyGanttDateToUnit(d, yearStart, zoom) {
         var year = d.getFullYear();
         var month = d.getMonth();
@@ -2697,28 +3291,43 @@
         var daysInMonth = new Date(year, month + 1, 0).getDate();
         var dayFraction = (day - 1) / daysInMonth;
         var monthsFromStart = (year - yearStart) * 12 + month;
-        if (zoom === 'ano') {
-            // 4 trimestres = 4 unidades. Cada año son 4 unidades.
-            return (monthsFromStart / 3) + (dayFraction * (1/3));
-        }
-        if (zoom === 'trimestre') {
-            // 12 meses = 12 unidades por año
-            return monthsFromStart + dayFraction;
-        }
-        if (zoom === 'mes') {
-            return monthsFromStart + dayFraction;
-        }
+        if (zoom === 'ano') return (monthsFromStart / 3) + (dayFraction * (1/3));
+        if (zoom === 'trimestre' || zoom === 'mes') return monthsFromStart + dayFraction;
         if (zoom === 'semana') {
-            // 52 semanas en el año
             var jan1 = new Date(yearStart, 0, 1);
-            var diffMs = d - jan1;
-            var diffDays = diffMs / 86400000;
-            return diffDays / 7;
+            return ((d - jan1) / 86400000) / 7;
         }
         return monthsFromStart + dayFraction;
     }
 
-    /** Genera labels para el eje X según el zoom. */
+    function _proyGanttUnitToDate(u, yearStart, zoom) {
+        if (zoom === 'ano') {
+            var monthsFloat = u * 3;
+            return _monthsFromStartToDate(monthsFloat, yearStart);
+        }
+        if (zoom === 'trimestre' || zoom === 'mes') {
+            return _monthsFromStartToDate(u, yearStart);
+        }
+        if (zoom === 'semana') {
+            var jan1 = new Date(yearStart, 0, 1);
+            var ms = jan1.getTime() + u * 7 * 86400000;
+            var d = new Date(ms); d.setHours(12, 0, 0, 0);
+            return d;
+        }
+        return _monthsFromStartToDate(u, yearStart);
+    }
+
+    function _monthsFromStartToDate(monthsFloat, yearStart) {
+        var monthsInt = Math.floor(monthsFloat);
+        var monthFrac = monthsFloat - monthsInt;
+        var year = yearStart + Math.floor(monthsInt / 12);
+        var month = monthsInt % 12;
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        var day = Math.round(monthFrac * daysInMonth) + 1;
+        var d = new Date(year, month, day, 12, 0, 0);
+        return d;
+    }
+
     function _proyGanttSubdivisions(zoom, yearStart, hoy) {
         var arr = [];
         if (zoom === 'ano') {
@@ -2730,21 +3339,21 @@
         } else if (zoom === 'trimestre' || zoom === 'mes') {
             var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
             meses.forEach(function(m, i) {
-                arr.push({ label: m, isCurrent: (hoy.getFullYear() === yearStart && i === hoy.getMonth()) });
+                arr.push({ label: m + ' ' + yearStart.toString().slice(2), isCurrent: (hoy.getFullYear() === yearStart && i === hoy.getMonth()) });
             });
         } else if (zoom === 'semana') {
             for (var w = 1; w <= 52; w++) {
                 var jan1 = new Date(yearStart, 0, 1);
                 var d = new Date(jan1.getTime() + (w - 1) * 7 * 86400000);
-                var label = 'S' + w;
-                var weekStart = d, weekEnd = new Date(d.getTime() + 6 * 86400000);
-                var isCur = (hoy >= weekStart && hoy <= weekEnd);
-                arr.push({ label: label, isCurrent: isCur });
+                var weekEnd = new Date(d.getTime() + 6 * 86400000);
+                var isCur = (hoy >= d && hoy <= weekEnd);
+                arr.push({ label: 'S' + w, isCurrent: isCur });
             }
         }
         return arr;
     }
 
+    // ─── CONSTRUIR FILAS ───────────────────────────────────────────────
     function _proyGanttBuildRows(fases, actividades, yearStart, totalUnits, hoyUnit) {
         var byFase = {};
         actividades.forEach(function(a) {
@@ -2752,45 +3361,51 @@
             if (!byFase[k]) byFase[k] = [];
             byFase[k].push(a);
         });
-
         var rows = [];
-
+        // Fases ordenadas (vienen ya ordenadas por backend)
         fases.forEach(function(f) {
             var acts = byFase[f.id] || [];
-            if (!acts.length) return;
-            var row = _proyGanttFaseRow(f, acts, yearStart, totalUnits, hoyUnit);
-            if (row) rows.push(row);
-            // Empujar las actividades hijas inmediatamente después de su fase
+            var faseRow = _proyGanttFaseRow(f, acts, yearStart, totalUnits, hoyUnit);
+            if (faseRow) rows.push(faseRow);
+            // Hijas
             acts.slice().sort(function(a, b) {
+                if (a.orden !== b.orden) return (a.orden || 0) - (b.orden || 0);
                 return (a.fecha_inicio || '').localeCompare(b.fecha_inicio || '');
             }).forEach(function(a) {
                 var ar = _proyGanttActividadRow(a, yearStart, totalUnits, hoyUnit);
                 if (ar) {
                     ar.parentName = f.nombre;
+                    ar.parentFaseId = f.id;
                     rows.push(ar);
                 }
             });
         });
-
-        // Actividades sin fase
+        // Actividades sin fase (huérfanas)
         (byFase['__sinfase__'] || []).forEach(function(a) {
-            var row = _proyGanttActividadRow(a, yearStart, totalUnits, hoyUnit);
-            if (row) {
-                row.parentName = '';
-                rows.push(row);
-            }
+            var ar = _proyGanttActividadRow(a, yearStart, totalUnits, hoyUnit);
+            if (ar) { ar.parentName = ''; rows.push(ar); }
         });
-
         return rows;
     }
 
     function _proyGanttFaseRow(fase, acts, yearStart, totalUnits, hoyUnit) {
-        var minStart = null;
-        var maxEnd = null;
-        var totalDias = 0;
-        var sumaProgresoPond = 0;
-        var responsableMap = {};
-        var sumaCosto = 0, sumaIngreso = 0;
+        if (!acts.length) {
+            // Fase vacia: aún se muestra la fila (sin barra)
+            return {
+                type: 'fase', id: 'f' + fase.id, faseId: fase.id, name: fase.nombre || 'Fase',
+                startUnit: 0, durationUnits: 0, rawStart: 0, rawEnd: 0,
+                progress: 0, expectedProgress: 0,
+                category: _proyGanttCategoryFor(fase.nombre),
+                color: _proyGanttCategoryFor(fase.nombre).color,
+                responsables: [], isActive: false, actividadesCount: 0,
+                fechaInicio: new Date(yearStart, 0, 1, 12, 0), fechaFin: new Date(yearStart, 0, 1, 12, 0),
+                esHito: false, costo: 0, ingreso: 0, dependencias: [],
+                isEmpty: true
+            };
+        }
+        var minStart = null; var maxEnd = null;
+        var totalDias = 0; var sumaProgresoPond = 0;
+        var responsableMap = {}; var sumaCosto = 0; var sumaIngreso = 0;
         acts.forEach(function(a) {
             if (!a.fecha_inicio) return;
             var ini = new Date(a.fecha_inicio + 'T12:00:00');
@@ -2798,54 +3413,30 @@
             if (!minStart || ini < minStart) minStart = ini;
             if (!maxEnd || fin > maxEnd) maxEnd = fin;
             var dias = a.duracion_dias || 1;
-            totalDias += dias;
-            sumaProgresoPond += dias * (a.progreso || 0);
+            totalDias += dias; sumaProgresoPond += dias * (a.progreso || 0);
             sumaCosto += parseFloat(a.costo_estimado || 0) || 0;
             sumaIngreso += parseFloat(a.ingreso_estimado || 0) || 0;
-            (a.recursos || []).forEach(function(r) {
-                if (!responsableMap[r.id]) responsableMap[r.id] = r;
-            });
+            (a.recursos || []).forEach(function(r) { if (!responsableMap[r.id]) responsableMap[r.id] = r; });
         });
         if (!minStart || !maxEnd) return null;
-
         var startU = _proyGanttDateToUnit(minStart, yearStart, _proyGanttZoom);
         var endU = _proyGanttDateToUnit(maxEnd, yearStart, _proyGanttZoom);
         var clampedStart = Math.max(0, Math.min(totalUnits, startU));
         var clampedEnd = Math.max(0, Math.min(totalUnits, endU));
-        if (clampedEnd - clampedStart <= 0) return null;
-
         var progress = totalDias > 0 ? Math.round(sumaProgresoPond / totalDias) : 0;
         var category = _proyGanttCategoryFor(fase.nombre);
         var isActive = (startU <= hoyUnit && endU >= hoyUnit);
         var responsables = Object.keys(responsableMap).map(function(k) { return responsableMap[k]; });
-
-        // Progreso esperado (para detectar atrasados)
         var expectedProgress = 0;
         if (hoyUnit >= endU) expectedProgress = 100;
         else if (hoyUnit > startU) expectedProgress = ((hoyUnit - startU) / (endU - startU)) * 100;
-
         return {
-            type: 'fase',
-            id: 'f' + fase.id,
-            faseId: fase.id,
-            name: fase.nombre || 'Fase',
-            startUnit: clampedStart,
-            durationUnits: clampedEnd - clampedStart,
-            rawStart: startU,
-            rawEnd: endU,
-            progress: progress,
-            expectedProgress: expectedProgress,
-            category: category,
-            color: category.color,
-            responsables: responsables,
-            isActive: isActive,
-            actividadesCount: acts.length,
-            fechaInicio: minStart,
-            fechaFin: maxEnd,
-            esHito: false,
-            costo: sumaCosto,
-            ingreso: sumaIngreso,
-            dependencias: []
+            type: 'fase', id: 'f' + fase.id, faseId: fase.id, name: fase.nombre || 'Fase',
+            startUnit: clampedStart, durationUnits: Math.max(0, clampedEnd - clampedStart),
+            rawStart: startU, rawEnd: endU, progress: progress, expectedProgress: expectedProgress,
+            category: category, color: category.color, responsables: responsables, isActive: isActive,
+            actividadesCount: acts.length, fechaInicio: minStart, fechaFin: maxEnd,
+            esHito: false, costo: sumaCosto, ingreso: sumaIngreso, dependencias: []
         };
     }
 
@@ -2858,36 +3449,18 @@
         var endU = _proyGanttDateToUnit(fin, yearStart, _proyGanttZoom);
         var clampedStart = Math.max(0, Math.min(totalUnits, startU));
         var clampedEnd = Math.max(0, Math.min(totalUnits, endU));
-        // Para hitos permitimos durationUnits == 0 (el render lo trata especial)
         var esHito = (dur <= 1);
-        if (!esHito && clampedEnd - clampedStart <= 0) return null;
-
         var category = _proyGanttCategoryFor(a.nombre);
         var isActive = (startU <= hoyUnit && endU >= hoyUnit);
-
         var expectedProgress = 0;
         if (hoyUnit >= endU) expectedProgress = 100;
         else if (hoyUnit > startU) expectedProgress = ((hoyUnit - startU) / Math.max(0.0001, endU - startU)) * 100;
-
         return {
-            type: 'actividad',
-            id: 'a' + a.id,
-            actId: a.id,
-            name: a.nombre || 'Actividad',
-            startUnit: clampedStart,
-            durationUnits: Math.max(0, clampedEnd - clampedStart),
-            rawStart: startU,
-            rawEnd: endU,
-            progress: a.progreso || 0,
-            expectedProgress: expectedProgress,
-            category: category,
-            color: category.color,
-            responsables: a.recursos || [],
-            isActive: isActive,
-            actividadesCount: 0,
-            fechaInicio: ini,
-            fechaFin: fin,
-            esHito: esHito,
+            type: 'actividad', id: 'a' + a.id, actId: a.id, name: a.nombre || 'Actividad',
+            startUnit: clampedStart, durationUnits: Math.max(0, clampedEnd - clampedStart),
+            rawStart: startU, rawEnd: endU, progress: a.progreso || 0, expectedProgress: expectedProgress,
+            category: category, color: category.color, responsables: a.recursos || [], isActive: isActive,
+            actividadesCount: 0, fechaInicio: ini, fechaFin: fin, esHito: esHito,
             costo: parseFloat(a.costo_estimado || 0) || 0,
             ingreso: parseFloat(a.ingreso_estimado || 0) || 0,
             dependencias: a.dependencias || []
@@ -2895,116 +3468,14 @@
     }
 
     function _proyGanttAvanceGlobal(rows) {
-        if (!rows.length) return 0;
-        // Sólo contamos filas tipo "actividad" para evitar contar dos veces
-        // (la fase es agregada de las actividades).
         var actsRows = rows.filter(function(r) { return r.type === 'actividad'; });
-        if (!actsRows.length) {
-            // Fallback al cálculo anterior por durationUnits
-            var totalDur = 0, sum = 0;
-            rows.forEach(function(r) {
-                totalDur += r.durationUnits;
-                sum += r.durationUnits * r.progress;
-            });
-            return totalDur > 0 ? (sum / totalDur) : 0;
-        }
-        var totalDias = 0, sumaPond = 0;
+        if (!actsRows.length) return 0;
+        var totalDias = 0; var sumaPond = 0;
         actsRows.forEach(function(r) {
-            var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000) || 1;
-            totalDias += dias;
-            sumaPond += dias * r.progress;
+            var dias = Math.max(1, Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000));
+            totalDias += dias; sumaPond += dias * r.progress;
         });
         return totalDias > 0 ? (sumaPond / totalDias) : 0;
-    }
-
-    function _proyGanttRowHTML(r, totalUnits, hoyDentroRango, todayLeftPct) {
-        var leftPct = (r.startUnit / totalUnits) * 100;
-        var widthPct = (r.durationUnits / totalUnits) * 100;
-        var fillPct = Math.max(0, Math.min(100, r.progress));
-        var done = (r.progress >= 100);
-        var atrasada = r.isActive && r.progress < (r.expectedProgress - 5);
-
-        var statusTag = '';
-        if (done) {
-            statusTag = '<span class="proy-gantt-tag proy-gantt-tag-done">✓ LISTA</span>';
-        } else if (atrasada) {
-            statusTag = '<span class="proy-gantt-tag proy-gantt-tag-late">ATRASADA</span>';
-        } else if (r.isActive) {
-            statusTag = '<span class="proy-gantt-tag proy-gantt-tag-active">ACTIVA</span>';
-        }
-
-        var avatarsHtml = '';
-        var avs = (r.responsables || []).slice(0, 3);
-        avs.forEach(function(u, i) {
-            var nombre = u.nombre || u.username || '';
-            var ini = _initials(nombre) || '·';
-            var bg = _proyGanttAvatarColor(u.id || i);
-            avatarsHtml += '<span class="proy-gantt-avatar" title="' + _proyGanttEsc(nombre) + '" style="background:' + bg + ';">' + _proyGanttEsc(ini) + '</span>';
-        });
-        if ((r.responsables || []).length > 3) {
-            avatarsHtml += '<span class="proy-gantt-avatar proy-gantt-avatar-more">+' + (r.responsables.length - 3) + '</span>';
-        }
-
-        var rangoTxt = _proyGanttFmtFechaLarga(r.fechaInicio) + ' → ' + _proyGanttFmtFechaLarga(r.fechaFin);
-
-        var showLabelInside = widthPct > 8;
-        var labelColor = (fillPct > 30) ? '#fff' : r.color;
-
-        var rowClasses = 'proy-gantt-row';
-        if (r.type === 'fase') rowClasses += ' proy-gantt-row-fase';
-        if (r.type === 'actividad' && r.parentName) rowClasses += ' proy-gantt-row-child';
-
-        var html = '<div class="' + rowClasses + '" data-row-id="' + r.id + '" title="' + _proyGanttEsc(r.name) + ' · ' + rangoTxt + '">';
-        html += '  <div class="proy-gantt-col-left">';
-        // Hitos: rombo en lugar de cuadradito
-        if (r.type === 'actividad' && r.esHito) {
-            html += '    <svg class="proy-gantt-row-diamond" width="12" height="12" viewBox="0 0 24 24"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#a16207"/></svg>';
-        } else {
-            html += '    <span class="proy-gantt-row-dot" style="background:' + r.color + ';"></span>';
-        }
-        html += '    <div class="proy-gantt-row-info">';
-        html += '      <div class="proy-gantt-row-name">' + _proyGanttEsc(r.name) + '</div>';
-        html += '      <div class="proy-gantt-row-meta">';
-        if (statusTag) html += statusTag;
-        html += '        <span class="proy-gantt-row-pct">' + Math.round(r.progress) + '%</span>';
-        if (r.actividadesCount > 0) {
-            html += '<span class="proy-gantt-row-acts">' + r.actividadesCount + ' actividad' + (r.actividadesCount === 1 ? '' : 'es') + '</span>';
-        }
-        html += '      </div>';
-        html += '    </div>';
-        html += '    <div class="proy-gantt-row-avatars">' + avatarsHtml + '</div>';
-        html += '  </div>';
-
-        html += '  <div class="proy-gantt-col-right">';
-        if (hoyDentroRango) {
-            html += '<div class="proy-gantt-today-line" style="left:' + todayLeftPct.toFixed(3) + '%;"></div>';
-        }
-        // Hito: rombo
-        if (r.type === 'actividad' && r.esHito) {
-            // El hito se ancla al startUnit. Usamos un ancho fijo absoluto.
-            var dataAttrs = ' data-row-id="' + r.id + '" data-act-id="' + r.actId + '"';
-            html += '<div class="proy-gantt-milestone" style="left:' + leftPct.toFixed(3) + '%;"' + dataAttrs + '>';
-            html += '  <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="' + (done ? '#16a34a' : '#a16207') + '" stroke="#fff" stroke-width="1.5"/></svg>';
-            html += '</div>';
-        } else {
-            // Barra normal
-            var dataAttrs = ' data-row-id="' + r.id + '"';
-            if (r.type === 'actividad') dataAttrs += ' data-act-id="' + r.actId + '"';
-            var atrasadaCls = atrasada ? ' is-late' : '';
-            html += '    <div class="proy-gantt-bar-track' + atrasadaCls + '" style="left:' + leftPct.toFixed(3) + '%;width:' + widthPct.toFixed(3) + '%;background:' + r.color + '20;border-color:' + r.color + '40;"' + dataAttrs + '>';
-            html += '      <div class="proy-gantt-bar-fill" style="width:' + fillPct.toFixed(3) + '%;background:' + r.color + ';"></div>';
-            if (showLabelInside) {
-                html += '<div class="proy-gantt-bar-label" style="color:' + labelColor + ';">' + Math.round(r.progress) + '%</div>';
-            }
-            // Handle de redimensión (solo actividades, no fases)
-            if (r.type === 'actividad' && !r.esHito) {
-                html += '<span class="proy-gantt-bar-handle" title="Mantén Shift y arrastra para mover (próximamente persistir)"></span>';
-            }
-            html += '    </div>';
-        }
-        html += '  </div>';
-        html += '</div>';
-        return html;
     }
 
     function _proyGanttAvatarColor(seed) {
@@ -3014,17 +3485,55 @@
         return palette[Math.abs(n) % palette.length];
     }
 
-    function _proyGanttEmptyState(projectId, detail) {
-        var html = '<div class="proy-gantt-empty">';
-        html += '  <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="#cbd5e1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 4v16"/><path d="M16 14h2"/></svg>';
+    // ─── EMPTY STATE ───────────────────────────────────────────────────
+    function _proyGanttEmptyState() {
+        var html = '<div class="proy-gantt-root">';
+        html += '<div class="proy-gantt-empty">';
+        html += '  <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#cbd5e1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 4v16"/><path d="M16 14h4"/><path d="M16 17h2"/></svg>';
         html += '  <h3>Aún no hay cronograma</h3>';
-        html += '  <p>Crea tu primera actividad para empezar a ver el Programa de Obra como un Gantt visual.</p>';
-        html += '  <button type="button" class="proy-gantt-cta">+ Crear primera actividad</button>';
+        html += '  <p>Empieza creando una <strong>Fase</strong> (Planificación, Cimentación, Estructura…) y dentro de ella agrega tus actividades.</p>';
+        html += '  <div class="proy-gantt-empty-actions">';
+        html += '    <button type="button" class="proy-gantt-cta proy-gantt-cta-fase" id="proyGanttBtnEmptyFase">+ Crear primera Fase</button>';
+        html += '    <button type="button" class="proy-gantt-icon-btn" id="proyGanttBtnEmptyAct">+ Actividad sin fase</button>';
+        html += '  </div>';
+        html += '</div>';
         html += '</div>';
         return html;
     }
 
-    // Exponer para reutilizacion desde el wizard del levantamiento.
+    function _proyGanttBindEmptyState(container, projectId, detail) {
+        var bf = container.querySelector('#proyGanttBtnEmptyFase');
+        if (bf) bf.addEventListener('click', function() { _openFaseForm(); });
+        var ba = container.querySelector('#proyGanttBtnEmptyAct');
+        if (ba) ba.addEventListener('click', function() { _openActividadForm(_isoToday()); });
+    }
+
+    // Toast con accion (ej: "+ Fase")
+    function _proyGanttShowToast(msg, kind, opts) {
+        opts = opts || {};
+        var existing = document.getElementById('proyToast');
+        if (existing) existing.remove();
+        var toast = document.createElement('div');
+        toast.id = 'proyToast';
+        var bg = (kind === 'info') ? '#1f2937' : '#1D1D1F';
+        toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:' + bg + ';color:#fff;padding:14px 22px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.25);transition:opacity 0.3s;display:flex;align-items:center;gap:12px;font-family:Plus Jakarta Sans,sans-serif;';
+        toast.innerHTML = '<span>' + _proyGanttEsc(msg) + '</span>';
+        if (opts.actionLabel) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = opts.actionLabel;
+            btn.style.cssText = 'background:#2563eb;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;';
+            btn.onclick = function() {
+                if (opts.onAction) opts.onAction();
+                toast.remove();
+            };
+            toast.appendChild(btn);
+        }
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.style.opacity = '0'; }, 4000);
+        setTimeout(function() { toast.remove(); }, 4500);
+    }
+
     window.proyectosRenderProgramaObra = renderProgramaObra;
 
 
@@ -3032,12 +3541,9 @@
     //  ACTIVIDAD FORM (PROGRAMA DE OBRA)
     // =========================================
 
-    // Set de ids de responsables seleccionados en el form (string -> true).
-    var _actividadSelectedUsers = {};
-
     function _getDayNameSpanish(dateStr) {
         var d = new Date(dateStr + 'T12:00:00');
-        var names = ['Domingo','Lunes','Martes','Mi\u00E9rcoles','Jueves','Viernes','S\u00E1bado'];
+        var names = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
         return names[d.getDay()];
     }
 
@@ -3047,9 +3553,7 @@
         return d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
     }
 
-    function _isoToday() {
-        return (new Date()).toISOString().split('T')[0];
-    }
+    function _isoToday() { return (new Date()).toISOString().split('T')[0]; }
     function _isoAddDays(iso, days) {
         var d = new Date(iso + 'T12:00:00');
         d.setDate(d.getDate() + days);
@@ -3061,11 +3565,6 @@
         return Math.round((b - a) / 86400000);
     }
 
-    /**
-     * Abre el modal de "Nueva/Editar Actividad" del Gantt.
-     * - dateStr (opcional): fecha de inicio sugerida (YYYY-MM-DD).
-     * - opts.editId: id de GanttActividad existente para edicion.
-     */
     function _openActividadForm(dateStr, opts) {
         opts = opts || {};
         var dlg = el('proyDialogoActividad');
@@ -3090,7 +3589,6 @@
             }
         }
 
-        // Header
         var titEl = el('proyActDialogTitle');
         if (titEl) titEl.textContent = isEdit ? 'Editar Actividad' : 'Nueva Actividad';
         var btnCrearEl = el('proyActBtnCrear');
@@ -3098,13 +3596,12 @@
         var btnElimEl = el('proyActBtnEliminar');
         if (btnElimEl) btnElimEl.style.display = isEdit ? 'inline-flex' : 'none';
 
-        // Reset / poblar campos b\u00E1sicos
         var fechaIni = (actividad && actividad.fecha_inicio) || dateStr || _isoToday();
         var fechaFin;
         if (actividad) {
             fechaFin = _isoAddDays(actividad.fecha_inicio, actividad.duracion_dias || 1);
         } else {
-            fechaFin = _isoAddDays(fechaIni, 1);
+            fechaFin = _isoAddDays(fechaIni, 3);  // default 3 días
         }
 
         if (el('proyActTitulo')) {
@@ -3118,51 +3615,38 @@
         if (el('proyActCosto')) el('proyActCosto').value = actividad ? (actividad.costo_estimado || 0) : 0;
         if (el('proyActIngreso')) el('proyActIngreso').value = actividad ? (actividad.ingreso_estimado || 0) : 0;
 
-        // Hito (duracion 1 dia)
         var hitoChk = el('proyActEsHito');
-        var esHito = actividad ? ((actividad.duracion_dias || 1) <= 1 && _diffDays(actividad.fecha_inicio, _isoAddDays(actividad.fecha_inicio, actividad.duracion_dias || 1)) <= 1) : false;
+        var esHito = actividad ? ((actividad.duracion_dias || 1) <= 1) : false;
         if (hitoChk) hitoChk.checked = esHito;
 
-        // Subt\u00EDtulo (label de fecha) \u2014 informativo
         var label = el('proyActFechaLabel');
         if (label) {
-            try {
-                label.textContent = _getDayNameSpanish(fechaIni) + ', ' + _fmtDateLong(fechaIni);
-            } catch (e) {
-                label.textContent = 'Cronograma del proyecto';
-            }
+            try { label.textContent = _getDayNameSpanish(fechaIni) + ', ' + _fmtDateLong(fechaIni); }
+            catch (e) { label.textContent = 'Cronograma del proyecto'; }
         }
 
-        // Cargar fases del cache
-        _populateFasesSelect(actividad ? actividad.fase_id : null);
+        // Fase: si llega faseId desde "+ Actividad" inline, pre-seleccionar
+        var preFaseId = (opts.faseId != null) ? opts.faseId : (actividad ? actividad.fase_id : null);
+        _populateFasesSelect(preFaseId);
 
-        // Marcar responsables ya asignados en edicion
         if (actividad && Array.isArray(actividad.recursos)) {
-            actividad.recursos.forEach(function(r) {
-                _actividadSelectedUsers[r.id] = true;
-            });
+            actividad.recursos.forEach(function(r) { _actividadSelectedUsers[r.id] = true; });
         }
-        // Marcar dependencias actuales
         if (actividad && Array.isArray(actividad.dependencias)) {
             actividad.dependencias.forEach(function(id) { _proyActDeps[id] = true; });
         }
 
-        // Mostrar modal antes de las cargas async para feedback inmediato
         dlg.style.display = 'flex';
 
-        // Cargar miembros del proyecto + render checkboxes
         _loadMiembrosDelProyecto();
-        // Render dependencias (excluye la actividad misma)
         _renderDependenciasOptions(actividad ? actividad.id : null);
 
-        // Recalcular duracion al cambiar fechas
         var iniEl = el('proyActFechaInicio');
         var finEl = el('proyActFechaFin');
         if (iniEl) iniEl.onchange = _refreshDuracionLabel;
         if (finEl) finEl.onchange = _refreshDuracionLabel;
         _refreshDuracionLabel();
 
-        // Hito toggle: forzar fecha_fin = fecha_inicio
         if (hitoChk) {
             hitoChk.onchange = function() {
                 var wrap = el('proyActFechaFinWrap');
@@ -3179,11 +3663,9 @@
                 }
                 _refreshDuracionLabel();
             };
-            // Aplicar estado actual del checkbox
             hitoChk.onchange();
         }
 
-        // Sincronizar slider y number de progreso
         var rng = el('proyActProgresoRange');
         var num = el('proyActProgreso');
         if (rng && num) {
@@ -3192,12 +3674,10 @@
                 var v = parseInt(num.value, 10);
                 if (isNaN(v)) v = 0;
                 v = Math.max(0, Math.min(100, v));
-                num.value = v;
-                rng.value = v;
+                num.value = v; rng.value = v;
             };
         }
 
-        // Focus al input principal para feedback rapido
         setTimeout(function() {
             var t = el('proyActTitulo');
             if (t) t.focus();
@@ -3209,20 +3689,16 @@
         var finEl = el('proyActFechaFin');
         var lbl = el('proyActDuracionTxt');
         if (!iniEl || !finEl || !lbl) return;
-        if (!iniEl.value || !finEl.value) {
-            lbl.textContent = 'Duraci\u00F3n: \u2014';
-            return;
-        }
+        if (!iniEl.value || !finEl.value) { lbl.textContent = 'Duración: —'; return; }
         var dias = Math.max(1, _diffDays(iniEl.value, finEl.value));
-        if (dias === 0) dias = 1;  // Hito visual minimo 1
-        lbl.textContent = 'Duraci\u00F3n: ' + dias + ' d\u00EDa' + (dias === 1 ? '' : 's');
+        lbl.textContent = 'Duración: ' + dias + ' día' + (dias === 1 ? '' : 's');
     }
 
     function _populateFasesSelect(selectedFaseId) {
         var selEl = el('proyActFase');
         if (!selEl) return;
         var fases = (_proyGanttData && Array.isArray(_proyGanttData.fases)) ? _proyGanttData.fases : [];
-        var html = '<option value="">\u2014 Sin fase (independiente) \u2014</option>';
+        var html = '<option value="">— Sin fase (independiente) —</option>';
         fases.forEach(function(f) {
             var selAttr = (selectedFaseId === f.id) ? ' selected' : '';
             html += '<option value="' + f.id + '"' + selAttr + '>' + _proyGanttEsc(f.nombre) + '</option>';
@@ -3231,30 +3707,20 @@
         if (selectedFaseId) selEl.value = String(selectedFaseId);
     }
 
-    /**
-     * Carga los miembros del proyecto desde el detalle cacheado o
-     * llamando al endpoint del proyecto.  Pinta checkboxes en
-     * #proyActPersonalList.
-     */
     function _loadMiembrosDelProyecto() {
         var container = el('proyActPersonalList');
         if (!container) return;
-
-        // Intentamos primero overview.equipo del detalle cacheado
         var miembros = _miembrosFromDetail(_cachedProjectDetail);
         if (miembros && miembros.length) {
             _proyGanttMiembros = miembros;
             _renderMiembrosCheckboxes(miembros);
             return;
         }
-
-        // Fallback: pegar al detalle del proyecto
         if (!currentProjectId) {
             container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Sin proyecto activo</div>';
             return;
         }
         container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando equipo del proyecto...</div>';
-
         _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/').then(function(resp) {
             if (!resp || !resp.success) {
                 container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">No se pudo cargar el equipo</div>';
@@ -3265,13 +3731,13 @@
             var ms = _miembrosFromDetail(detail);
             _proyGanttMiembros = ms;
             if (!ms.length) {
-                container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">A\u00FAn no hay miembros en el proyecto.<br>Agrega gente desde el bot\u00F3n "+" del topbar.</div>';
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Aún no hay miembros en el proyecto.<br>Agrega gente desde el botón "+" del topbar.</div>';
                 return;
             }
             _renderMiembrosCheckboxes(ms);
         }).catch(function(err) {
             console.error('[gantt] error cargando miembros:', err);
-            container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error de conexi\u00F3n</div>';
+            container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error de conexión</div>';
         });
     }
 
@@ -3287,13 +3753,8 @@
                 };
             });
         }
-        // Fallback: usuario asignado (creador) si est\u00E1
         if (detail.usuario_id) {
-            return [{
-                id: detail.usuario_id,
-                nombre: detail.usuario_nombre || 'Asignado',
-                iniciales: _initials(detail.usuario_nombre || 'A'),
-            }];
+            return [{ id: detail.usuario_id, nombre: detail.usuario_nombre || 'Asignado', iniciales: _initials(detail.usuario_nombre || 'A') }];
         }
         return [];
     }
@@ -3309,14 +3770,12 @@
         users.forEach(function(u) {
             var checked = _actividadSelectedUsers[u.id] ? ' checked' : '';
             var bg = _proyGanttAvatarColor(u.id);
-            html += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s;" ' +
-                'onmouseover="this.style.background=\'#F5F5F7\'" onmouseout="this.style.background=\'transparent\'">' +
+            html += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s;color:#1d1d1f;" onmouseover="this.style.background=\'#F5F5F7\'" onmouseout="this.style.background=\'transparent\'">' +
                 '<input type="checkbox" value="' + u.id + '"' + checked +
-                ' onchange="proyActToggleUser(' + u.id + ', this.checked)" ' +
-                'style="width:16px;height:16px;accent-color:#2563eb;flex-shrink:0;">' +
+                ' onchange="proyActToggleUser(' + u.id + ', this.checked)" style="width:16px;height:16px;accent-color:#2563eb;flex-shrink:0;">' +
                 '<div style="width:28px;height:28px;border-radius:50%;background:' + bg + ';color:#fff;font-size:0.6rem;line-height:28px;text-align:center;flex-shrink:0;font-weight:700;">' + _proyGanttEsc(u.iniciales || _initials(u.nombre)) + '</div>' +
                 '<div style="flex:1;min-width:0;">' +
-                    '<div style="font-size:0.8rem;font-weight:500;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _proyGanttEsc(u.nombre) + '</div>' +
+                    '<div style="font-size:0.82rem;font-weight:500;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _proyGanttEsc(u.nombre) + '</div>' +
                 '</div>' +
                 '</label>';
         });
@@ -3328,20 +3787,15 @@
         var list = el('proyActDependenciasList');
         if (!wrap || !list) return;
         var acts = (_proyGanttData && Array.isArray(_proyGanttData.actividades)) ? _proyGanttData.actividades : [];
-        // Excluir la actividad actual (no puede depender de s\u00ED misma)
         var opts = acts.filter(function(a) { return a.id !== currentActId; });
-        if (!opts.length) {
-            wrap.style.display = 'none';
-            return;
-        }
+        if (!opts.length) { wrap.style.display = 'none'; return; }
         wrap.style.display = '';
         var html = '';
         opts.forEach(function(a) {
             var checked = _proyActDeps[a.id] ? ' checked' : '';
-            html += '<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.78rem;color:#1d1d1f;">' +
+            html += '<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;color:#1d1d1f;">' +
                 '<input type="checkbox" value="' + a.id + '"' + checked +
-                ' onchange="proyActToggleDep(' + a.id + ', this.checked)" ' +
-                'style="width:14px;height:14px;accent-color:#2563eb;">' +
+                ' onchange="proyActToggleDep(' + a.id + ', this.checked)" style="width:14px;height:14px;accent-color:#2563eb;">' +
                 '<span>' + _proyGanttEsc(a.nombre) + '</span>' +
                 '<span style="color:#94a3b8;font-size:0.7rem;margin-left:auto;">' + _proyGanttEsc(a.fecha_inicio) + '</span>' +
                 '</label>';
@@ -3350,29 +3804,16 @@
     }
 
     window.proyActToggleUser = function(userId, checked) {
-        if (checked) {
-            _actividadSelectedUsers[userId] = true;
-        } else {
-            delete _actividadSelectedUsers[userId];
-        }
+        if (checked) _actividadSelectedUsers[userId] = true;
+        else delete _actividadSelectedUsers[userId];
     };
-
     window.proyActToggleDep = function(actId, checked) {
         if (checked) _proyActDeps[actId] = true;
         else delete _proyActDeps[actId];
     };
 
-    /**
-     * Crea o actualiza una GanttActividad.  Usa los endpoints reales
-     * del Gantt:
-     *   POST /app/api/proyecto/{id}/gantt/      \u2192 crear
-     *   PUT  /app/api/gantt/actividad/{id}/    \u2192 editar
-     */
     window.proyectosGuardarActividad = function() {
-        if (!currentProjectId) {
-            alert('No hay proyecto activo.');
-            return;
-        }
+        if (!currentProjectId) { alert('No hay proyecto activo.'); return; }
         var titulo = el('proyActTitulo') ? el('proyActTitulo').value.trim() : '';
         if (!titulo) {
             if (el('proyActTitulo')) {
@@ -3386,18 +3827,11 @@
         var fechaIni = el('proyActFechaInicio') ? el('proyActFechaInicio').value : '';
         var fechaFin = el('proyActFechaFin') ? el('proyActFechaFin').value : '';
         var esHito = el('proyActEsHito') ? el('proyActEsHito').checked : false;
-        if (!fechaIni) {
-            alert('La fecha de inicio es obligatoria.');
-            return;
-        }
+        if (!fechaIni) { alert('La fecha de inicio es obligatoria.'); return; }
         var duracionDias;
-        if (esHito) {
-            duracionDias = 1;
-        } else {
-            if (!fechaFin) {
-                alert('La fecha de fin es obligatoria.');
-                return;
-            }
+        if (esHito) duracionDias = 1;
+        else {
+            if (!fechaFin) { alert('La fecha de fin es obligatoria.'); return; }
             duracionDias = Math.max(1, _diffDays(fechaIni, fechaFin));
         }
 
@@ -3414,28 +3848,20 @@
         var dependencias = Object.keys(_proyActDeps).map(function(k) { return parseInt(k, 10); });
 
         var payloadCrear = {
-            nombre: titulo,
-            fecha_inicio: fechaIni,
-            duracion_dias: duracionDias,
-            progreso: progreso,
-            costo_estimado: costo,
-            ingreso_estimado: ingreso,
+            nombre: titulo, fecha_inicio: fechaIni, duracion_dias: duracionDias,
+            progreso: progreso, costo_estimado: costo, ingreso_estimado: ingreso,
             fase_id: faseId ? parseInt(faseId, 10) : null,
         };
 
         var btn = el('proyActBtnCrear');
         var lblOriginal = btn ? btn.textContent : '';
-        if (btn) { btn.disabled = true; btn.textContent = 'Guardando\u2026'; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
 
         var url, method, body;
         if (_proyActEditId) {
             url = '/app/api/gantt/actividad/' + _proyActEditId + '/';
             method = 'PUT';
-            // En PUT podemos mandar todo en un solo request (incluye M2M)
-            body = Object.assign({}, payloadCrear, {
-                recursos: responsables,
-                dependencias: dependencias,
-            });
+            body = Object.assign({}, payloadCrear, { recursos: responsables, dependencias: dependencias });
         } else {
             url = '/app/api/proyecto/' + currentProjectId + '/gantt/';
             method = 'POST';
@@ -3448,13 +3874,9 @@
                 alert('Error al guardar actividad: ' + ((resp && resp.error) || 'Error desconocido'));
                 return;
             }
-
-            // Si es CREAR y hay responsables/dependencias, hacemos un PUT
-            // adicional para asignarlos (el POST inicial no soporta M2M).
             if (!_proyActEditId && (responsables.length || dependencias.length) && resp.actividad && resp.actividad.id) {
                 _fetch('/app/api/gantt/actividad/' + resp.actividad.id + '/', {
-                    method: 'PUT',
-                    body: { recursos: responsables, dependencias: dependencias },
+                    method: 'PUT', body: { recursos: responsables, dependencias: dependencias }
                 }).then(function() {
                     _onActividadGuardada(btn, lblOriginal, _proyActEditId ? 'Actividad actualizada' : 'Actividad creada');
                 }).catch(function() {
@@ -3466,7 +3888,7 @@
         }).catch(function(err) {
             if (btn) { btn.disabled = false; btn.textContent = lblOriginal; }
             console.error('[gantt] error guardando actividad:', err);
-            alert('Error de conexi\u00F3n al guardar la actividad.');
+            alert('Error de conexión al guardar la actividad.');
         });
     };
 
@@ -3481,7 +3903,7 @@
     window.proyectosEliminarActividadGantt = function() {
         if (!_proyActEditId) return;
         var id = _proyActEditId;
-        proyConfirm('Eliminar actividad', '\u00BFSeguro que quieres eliminar esta actividad del cronograma?', {
+        proyConfirm('Eliminar actividad', '¿Seguro que quieres eliminar esta actividad del cronograma?', {
             textoConfirmar: 'Eliminar',
             onConfirm: function() {
                 _fetch('/app/api/gantt/actividad/' + id + '/', { method: 'DELETE' }).then(function(resp) {
@@ -3490,24 +3912,161 @@
                         _proyActEditId = null;
                         renderProgramaObra(currentProjectId);
                         _showToast('Actividad eliminada');
-                    } else {
-                        alert('Error al eliminar actividad');
-                    }
-                }).catch(function() {
-                    alert('Error de conexi\u00F3n al eliminar.');
-                });
+                    } else { alert('Error al eliminar actividad'); }
+                }).catch(function() { alert('Error de conexión al eliminar.'); });
             }
         });
     };
 
-    // Exponer para invocacion desde HTML inline (header del Gantt) o desde
-    // otros modulos.  El IIFE encierra la funcion, asi que sin window.* el
-    // boton del DOM no podia llamarla.
     window.proyectosAbrirNuevaActividad = function(dateStr) {
         _openActividadForm(dateStr || _isoToday(), {});
     };
     window.proyectosEditarActividadGantt = function(actId) {
         _openActividadForm(null, { editId: actId });
+    };
+
+
+    // =========================================
+    //  FASE FORM (PROGRAMA DE OBRA)
+    // =========================================
+
+    function _openFaseForm(faseId) {
+        var dlg = el('proyDialogoFase');
+        if (!dlg) {
+            console.error('[gantt] modal #proyDialogoFase no encontrado');
+            alert('No se pudo abrir el formulario de fase. Recarga la página.');
+            return;
+        }
+        _proyFaseEditId = faseId || null;
+        var isEdit = !!faseId;
+
+        var fase = null;
+        if (isEdit && _proyGanttData && Array.isArray(_proyGanttData.fases)) {
+            fase = _proyGanttData.fases.filter(function(f) { return f.id === faseId; })[0] || null;
+        }
+
+        var titEl = el('proyFaseDialogTitle');
+        if (titEl) titEl.textContent = isEdit ? 'Editar Fase' : 'Nueva Fase';
+        var btnCrear = el('proyFaseBtnCrear');
+        if (btnCrear) btnCrear.textContent = isEdit ? 'Guardar cambios' : 'Crear Fase';
+        var btnElim = el('proyFaseBtnEliminar');
+        if (btnElim) btnElim.style.display = isEdit ? 'inline-flex' : 'none';
+
+        var nombreEl = el('proyFaseNombre');
+        if (nombreEl) {
+            nombreEl.value = fase ? (fase.nombre || '') : '';
+            nombreEl.style.borderColor = '';
+            nombreEl.oninput = _refreshFaseCategoriaPreview;
+        }
+
+        // Sugerencias rápidas
+        _renderFaseSugerencias();
+
+        _refreshFaseCategoriaPreview();
+
+        dlg.style.display = 'flex';
+        setTimeout(function() {
+            var t = el('proyFaseNombre'); if (t) t.focus();
+        }, 50);
+    }
+
+    function _renderFaseSugerencias() {
+        var list = el('proyFaseSugList');
+        if (!list) return;
+        var html = '';
+        var sugs = ['Planificación', 'Permisos', 'Cimentación', 'Estructura', 'Instalaciones', 'Acabados', 'Pruebas y Puesta en Marcha', 'Entrega'];
+        sugs.forEach(function(s) {
+            var c = _proyGanttCategoryFor(s);
+            html += '<button type="button" class="proy-gantt-sug-chip" style="border-color:' + c.color + '40;color:' + c.color + ';" data-name="' + _proyGanttEsc(s) + '">' +
+                    '<span style="width:7px;height:7px;border-radius:2px;background:' + c.color + ';display:inline-block;margin-right:5px;"></span>' +
+                    s + '</button>';
+        });
+        list.innerHTML = html;
+        Array.prototype.forEach.call(list.querySelectorAll('.proy-gantt-sug-chip'), function(b) {
+            b.addEventListener('click', function() {
+                var nombreEl = el('proyFaseNombre');
+                if (nombreEl) { nombreEl.value = b.getAttribute('data-name'); _refreshFaseCategoriaPreview(); }
+            });
+        });
+    }
+
+    function _refreshFaseCategoriaPreview() {
+        var nombreEl = el('proyFaseNombre');
+        var dot = el('proyFaseCategoriaDot');
+        var lbl = el('proyFaseCategoriaLabel');
+        var name = nombreEl ? nombreEl.value : '';
+        var c = _proyGanttCategoryFor(name);
+        if (dot) dot.style.background = c.color;
+        if (lbl) { lbl.textContent = c.label; lbl.style.color = c.color; }
+    }
+
+    window.proyectosGuardarFase = function() {
+        if (!currentProjectId) { alert('No hay proyecto activo.'); return; }
+        var nombreEl = el('proyFaseNombre');
+        var nombre = nombreEl ? nombreEl.value.trim() : '';
+        if (!nombre) {
+            if (nombreEl) { nombreEl.style.borderColor = '#FF3B30'; nombreEl.focus(); }
+            return;
+        }
+        if (nombreEl) nombreEl.style.borderColor = '';
+
+        var btn = el('proyFaseBtnCrear');
+        var lblOriginal = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+        var url, method, body;
+        if (_proyFaseEditId) {
+            url = '/app/api/gantt/fase/' + _proyFaseEditId + '/';
+            method = 'PUT';
+            body = { nombre: nombre };
+        } else {
+            url = '/app/api/proyecto/' + currentProjectId + '/gantt/fase/';
+            method = 'POST';
+            body = { nombre: nombre };
+        }
+
+        _fetch(url, { method: method, body: body }).then(function(resp) {
+            if (btn) { btn.disabled = false; btn.textContent = lblOriginal; }
+            if (!resp || !resp.success) {
+                alert('Error al guardar fase: ' + ((resp && resp.error) || 'Error desconocido'));
+                return;
+            }
+            var wasEdit = !!_proyFaseEditId;
+            proyectosCerrarDialogo('proyDialogoFase');
+            _proyFaseEditId = null;
+            renderProgramaObra(currentProjectId);
+            _showToast(wasEdit ? 'Fase actualizada' : 'Fase creada');
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.textContent = lblOriginal; }
+            console.error('[gantt] error guardando fase:', err);
+            alert('Error de conexión al guardar la fase.');
+        });
+    };
+
+    window.proyectosEliminarFase = function() {
+        if (!_proyFaseEditId) return;
+        var id = _proyFaseEditId;
+        // Contar actividades antes de eliminar
+        var n = 0;
+        if (_proyGanttData && Array.isArray(_proyGanttData.actividades)) {
+            n = _proyGanttData.actividades.filter(function(a) { return a.fase_id === id; }).length;
+        }
+        var msg = n > 0
+            ? '¿Eliminar la fase y sus ' + n + ' actividad' + (n === 1 ? '' : 'es') + '? Esta acción no se puede deshacer.'
+            : '¿Eliminar la fase?';
+        proyConfirm('Eliminar fase', msg, {
+            textoConfirmar: 'Eliminar fase',
+            onConfirm: function() {
+                _fetch('/app/api/gantt/fase/' + id + '/', { method: 'DELETE' }).then(function(resp) {
+                    if (resp && resp.success) {
+                        proyectosCerrarDialogo('proyDialogoFase');
+                        _proyFaseEditId = null;
+                        renderProgramaObra(currentProjectId);
+                        _showToast('Fase eliminada');
+                    } else { alert('Error al eliminar fase'); }
+                }).catch(function() { alert('Error de conexión al eliminar.'); });
+            }
+        });
     };
 
     function _showToast(message) {
@@ -3516,7 +4075,7 @@
 
         var toast = document.createElement('div');
         toast.id = 'proyToast';
-        toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1D1D1F;color:#fff;padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.2);transition:opacity 0.3s;';
+        toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1D1D1F;color:#fff;padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.2);transition:opacity 0.3s;font-family:Plus Jakarta Sans,sans-serif;';
         toast.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>' +
             message + '</div>';

@@ -3694,17 +3694,18 @@ select.proy-info-input {
   .proy-detail-page .proy-detail-card { padding: 18px 16px 0; }
 }
 
-}
-
 /* ═══════════════════════════════════════════════════════════════
-   PROGRAMA DE OBRA — GANTT VISUAL (cronograma 2026)
+   PROGRAMA DE OBRA — GANTT PRO (cronograma profesional)
    ═══════════════════════════════════════════════════════════════
-   Diseño basado en el Gantt del Claude Design.  Look "warm modern":
-   fondo crema, cards blancas, tipografía Plus Jakarta Sans,
-   barras coloreadas por categoría y línea vertical roja del "hoy".
-   Variables --proy-wm-* definidas aquí porque aún no existen en el
-   resto del módulo.  Si se centralizan en el futuro, este bloque
-   las heredará. */
+   Look estilo MS Project / Smartsheet adaptado al CRM IAMET:
+   fondo crema cálido, cards blancas con bordes suaves, tipografía
+   Plus Jakarta Sans, barras coloreadas por categoría y línea
+   vertical roja del "hoy".
+
+   Reglas de contraste: TODOS los textos heredan colores de
+   variables --proy-wm-* (oscuros sobre claros) y los botones tienen
+   color/background explícitos para evitar que estilos globales del
+   widget-card-lg los pinten en blanco. */
 
 :root {
     --proy-wm-bg:        #fafaf9;
@@ -3716,18 +3717,23 @@ select.proy-info-input {
     --proy-wm-muted:     #94a3b8;
     --proy-wm-muted-2:   #c4bfba;
     --proy-wm-blue:      #2563eb;
-    --proy-wm-blue-soft: rgba(37, 99, 235, 0.05);
+    --proy-wm-blue-soft: rgba(37, 99, 235, 0.06);
     --proy-wm-blue-bg:   #eff6ff;
     --proy-wm-red:       #dc2626;
     --proy-wm-red-bg:    #fef2f2;
     --proy-wm-red-bd:    #fecaca;
     --proy-wm-green:     #16a34a;
     --proy-wm-green-bg:  #f0fdf4;
+    --proy-wm-amber:     #a16207;
+    --proy-wm-amber-bg:  #fef3c7;
     --proy-wm-row-hover: #f8faff;
+    --proy-wm-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --proy-wm-shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 #proyProgramaContainer {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--proy-wm-text);
 }
 
 .proy-gantt-loading,
@@ -3735,7 +3741,7 @@ select.proy-info-input {
     text-align: center;
     padding: 48px 24px;
     color: var(--proy-wm-text-2);
-    font-size: 13px;
+    font-size: 0.85rem;
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .proy-gantt-error button {
@@ -3756,18 +3762,19 @@ select.proy-info-input {
     border-radius: 14px;
     padding: 18px 18px 22px;
     border: 1px solid var(--proy-wm-border);
+    color: var(--proy-wm-text);
 }
 
-/* Header */
+/* ── HEADER ───────────────────────────────────────────────────────── */
 .proy-gantt-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     flex-wrap: wrap;
     gap: 12px;
 }
-.proy-gantt-header-left { min-width: 0; flex: 1 1 240px; }
+.proy-gantt-header-left { min-width: 0; flex: 1 1 280px; }
 .proy-gantt-header-right {
     display: flex;
     align-items: center;
@@ -3777,42 +3784,50 @@ select.proy-info-input {
 .proy-gantt-title {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: var(--proy-wm-text);
     letter-spacing: -0.01em;
+    line-height: 1.2;
 }
 .proy-gantt-subtitle {
-    margin: 4px 0 0;
+    margin: 5px 0 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.82rem;
     color: var(--proy-wm-text-2);
+    line-height: 1.4;
+}
+.proy-gantt-subtitle strong {
+    font-weight: 700;
+    color: var(--proy-wm-text);
 }
 
+/* Pill "Hoy: ..." — fondo rojo suave + texto rojo (alto contraste) */
 .proy-gantt-today-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: var(--proy-wm-red-bg);
+    background: var(--proy-wm-red-bg) !important;
     border: 1px solid var(--proy-wm-red-bd);
     border-radius: 8px;
     padding: 6px 12px;
 }
 .proy-gantt-today-dot {
-    width: 7px;
-    height: 7px;
+    width: 7px; height: 7px;
     border-radius: 50%;
     background: var(--proy-wm-red);
     box-shadow: 0 0 6px rgba(220, 38, 38, 0.4);
+    flex-shrink: 0;
 }
 .proy-gantt-today-text {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--proy-wm-red);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--proy-wm-red) !important;
     font-family: 'Plus Jakarta Sans', sans-serif;
     letter-spacing: 0.01em;
 }
 
+/* ── BOTONES (filtros, vista, zoom) ─────────────────────────────── */
 .proy-gantt-filter {
     display: inline-flex;
     gap: 2px;
@@ -3820,68 +3835,214 @@ select.proy-info-input {
     background: #fff;
     border: 1px solid var(--proy-wm-border-2);
     border-radius: 8px;
+    flex-shrink: 0;
 }
 .proy-gantt-filter-btn {
-    padding: 5px 12px;
+    padding: 6px 12px;
     border: none;
     background: transparent;
-    color: var(--proy-wm-text-2);
+    color: var(--proy-wm-text-2) !important;
     border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 500;
+    font-size: 0.72rem;
+    font-weight: 600;
     cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
     transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    line-height: 1;
 }
-.proy-gantt-filter-btn:hover { color: var(--proy-wm-text); }
+.proy-gantt-filter-btn:hover {
+    color: var(--proy-wm-text) !important;
+    background: rgba(37, 99, 235, 0.05);
+}
 .proy-gantt-filter-btn.is-active {
-    background: var(--proy-wm-blue);
-    color: #fff;
-    font-weight: 600;
+    background: var(--proy-wm-blue) !important;
+    color: #fff !important;
     box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
 }
+.proy-gantt-filter-count {
+    background: rgba(0, 0, 0, 0.08);
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: inherit;
+}
+.proy-gantt-filter-btn.is-active .proy-gantt-filter-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
 
+/* CTAs principales: + Fase / + Actividad */
 .proy-gantt-cta {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 7px 14px;
+    padding: 8px 14px;
     background: var(--proy-wm-blue);
-    color: #fff;
-    border: none;
+    color: #fff !important;
+    border: 1px solid var(--proy-wm-blue);
     border-radius: 8px;
     font-size: 0.78rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
     box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
-    transition: background 0.15s, transform 0.1s;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    line-height: 1;
 }
-.proy-gantt-cta:hover { background: #1d4ed8; }
+.proy-gantt-cta:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+}
 .proy-gantt-cta:active { transform: translateY(1px); }
+.proy-gantt-cta-fase {
+    background: #6366f1;
+    border-color: #6366f1;
+    box-shadow: 0 1px 3px rgba(99, 102, 241, 0.25);
+}
+.proy-gantt-cta-fase:hover {
+    background: #4f46e5;
+    border-color: #4f46e5;
+}
 
-/* Card / scroll */
+/* Botón ícono pequeño (Imprimir, CSV) — texto VISIBLE */
+.proy-gantt-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    background: #fff !important;
+    color: var(--proy-wm-text-2) !important;
+    border: 1px solid var(--proy-wm-border-2);
+    border-radius: 8px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.15s;
+    line-height: 1;
+}
+.proy-gantt-icon-btn:hover {
+    border-color: var(--proy-wm-blue);
+    color: var(--proy-wm-blue) !important;
+    background: var(--proy-wm-blue-soft) !important;
+}
+.proy-gantt-icon-btn svg {
+    flex-shrink: 0;
+}
+
+/* ── TOOLBAR (filtros, busqueda, zoom, vista) ───────────────────── */
+.proy-gantt-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 0;
+    flex-wrap: wrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.proy-gantt-toolbar-spacer {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.proy-gantt-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid var(--proy-wm-border-2);
+    border-radius: 8px;
+    padding: 0 10px;
+    height: 32px;
+    color: var(--proy-wm-muted);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    flex: 0 1 220px;
+    min-width: 140px;
+}
+.proy-gantt-search:focus-within {
+    border-color: var(--proy-wm-blue);
+    box-shadow: 0 0 0 3px var(--proy-wm-blue-soft);
+}
+.proy-gantt-search svg {
+    flex-shrink: 0;
+    color: var(--proy-wm-muted);
+}
+.proy-gantt-search input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--proy-wm-text) !important;
+    flex: 1;
+    min-width: 0;
+    line-height: 1;
+}
+.proy-gantt-search input::placeholder { color: var(--proy-wm-muted); }
+
+.proy-gantt-select {
+    background: #fff;
+    border: 1px solid var(--proy-wm-border-2);
+    border-radius: 8px;
+    padding: 0 28px 0 10px;
+    height: 32px;
+    font-size: 0.74rem;
+    color: var(--proy-wm-text-2) !important;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 140px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+}
+.proy-gantt-select:hover { border-color: var(--proy-wm-blue); }
+.proy-gantt-select:focus {
+    border-color: var(--proy-wm-blue);
+    box-shadow: 0 0 0 3px var(--proy-wm-blue-soft);
+}
+
+/* ── CARD + SCROLL ───────────────────────────────────────────────── */
 .proy-gantt-card {
     background: var(--proy-wm-card);
     border: 1px solid var(--proy-wm-border-2);
     border-radius: 14px;
     overflow: hidden;
+    box-shadow: var(--proy-wm-shadow-sm);
 }
 .proy-gantt-scroll {
     overflow-x: auto;
     overflow-y: hidden;
+    /* Custom scrollbar */
+    scrollbar-width: thin;
 }
+.proy-gantt-scroll::-webkit-scrollbar { height: 9px; }
+.proy-gantt-scroll::-webkit-scrollbar-track { background: var(--proy-wm-bg); }
+.proy-gantt-scroll::-webkit-scrollbar-thumb { background: var(--proy-wm-border-2); border-radius: 5px; }
+.proy-gantt-scroll::-webkit-scrollbar-thumb:hover { background: var(--proy-wm-muted); }
+
 .proy-gantt-grid {
     min-width: 760px;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    position: relative;
 }
 
-/* Filas */
+/* ── FILAS ─────────────────────────────────────────────────────── */
 .proy-gantt-row {
     display: flex;
     align-items: stretch;
     border-bottom: 1px solid var(--proy-wm-border);
     transition: background 0.12s ease;
+    min-height: 52px;
 }
 .proy-gantt-row:last-child { border-bottom: none; }
 .proy-gantt-row:not(.proy-gantt-row-header):hover {
@@ -3891,7 +4052,12 @@ select.proy-info-input {
 .proy-gantt-row-header {
     background: var(--proy-wm-bg);
     border-bottom: 1px solid var(--proy-wm-border-2);
+    min-height: 38px;
+    position: sticky;
+    top: 0;
+    z-index: 7;
 }
+
 .proy-gantt-row-empty {
     padding: 24px 0;
     text-align: center;
@@ -3900,24 +4066,60 @@ select.proy-info-input {
     justify-content: center;
 }
 
-/* Columna izquierda (220px) */
+/* ── COLUMNA IZQUIERDA ─────────────────────────────────────────── */
 .proy-gantt-col-left {
-    width: 240px;
-    min-width: 240px;
+    width: 280px;
+    min-width: 280px;
     padding: 12px 14px;
     border-right: 1px solid var(--proy-wm-border-2);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     box-sizing: border-box;
+    background: inherit;
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    background: #fff;
 }
+.proy-gantt-row-header .proy-gantt-col-left {
+    background: var(--proy-wm-bg);
+}
+.proy-gantt-row:not(.proy-gantt-row-header):hover .proy-gantt-col-left {
+    background: var(--proy-wm-row-hover);
+}
+
 .proy-gantt-col-left-label {
     font-size: 0.66rem;
-    font-weight: 600;
-    color: var(--proy-wm-muted-2);
+    font-weight: 700;
+    color: var(--proy-wm-muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Chevron de plegado (solo fases) */
+.proy-gantt-chevron {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: transparent;
+    color: var(--proy-wm-text-2);
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, transform 0.18s;
+    padding: 0;
+}
+.proy-gantt-chevron:hover { background: rgba(0, 0, 0, 0.06); }
+.proy-gantt-chevron.is-collapsed {
+    transform: rotate(-90deg);
+}
+.proy-gantt-chevron svg {
+    pointer-events: none;
 }
 
 .proy-gantt-row-dot {
@@ -3929,16 +4131,24 @@ select.proy-info-input {
 .proy-gantt-row-info {
     flex: 1;
     min-width: 0;
+    cursor: default;
+}
+.proy-gantt-row-fase .proy-gantt-row-info {
+    cursor: pointer;
 }
 .proy-gantt-row-name {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 600;
-    color: var(--proy-wm-text);
+    color: var(--proy-wm-text) !important;
     font-family: 'Plus Jakarta Sans', sans-serif;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.3;
+}
+.proy-gantt-row-fase .proy-gantt-row-name {
+    font-weight: 700;
+    font-size: 0.86rem;
 }
 .proy-gantt-row-meta {
     display: flex;
@@ -3948,34 +4158,80 @@ select.proy-info-input {
     flex-wrap: wrap;
 }
 .proy-gantt-row-pct {
-    font-size: 0.66rem;
+    font-size: 0.68rem;
     color: var(--proy-wm-muted);
-    font-weight: 500;
+    font-weight: 600;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    font-variant-numeric: tabular-nums;
 }
 .proy-gantt-row-acts {
-    font-size: 0.66rem;
-    color: var(--proy-wm-muted);
+    font-size: 0.68rem;
+    color: var(--proy-wm-text-2);
     font-family: 'Plus Jakarta Sans', sans-serif;
+    background: rgba(99, 102, 241, 0.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.proy-gantt-row-fase {
+    background: linear-gradient(180deg, #fbfafa 0%, transparent 100%);
+}
+.proy-gantt-row-fase .proy-gantt-col-left {
+    background: linear-gradient(180deg, #fbfafa 0%, #ffffff 100%);
+}
+.proy-gantt-row-fase:hover .proy-gantt-col-left {
+    background: var(--proy-wm-row-hover);
+}
+.proy-gantt-row-child .proy-gantt-col-left {
+    padding-left: 36px;
+    background: #fdfdfd;
+}
+.proy-gantt-row-child:hover .proy-gantt-col-left {
+    background: var(--proy-wm-row-hover);
+}
+.proy-gantt-row-child .proy-gantt-row-name {
+    font-weight: 500;
+    font-size: 0.78rem;
+    color: var(--proy-wm-text-2) !important;
 }
 
+/* Tags de estado */
 .proy-gantt-tag {
     font-size: 0.6rem;
-    padding: 2px 6px;
-    border-radius: 3px;
+    padding: 2px 7px;
+    border-radius: 4px;
     font-weight: 700;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
 }
 .proy-gantt-tag-active {
-    background: var(--proy-wm-blue-bg);
-    color: var(--proy-wm-blue);
+    background: var(--proy-wm-blue-bg) !important;
+    color: var(--proy-wm-blue) !important;
 }
 .proy-gantt-tag-done {
-    background: var(--proy-wm-green-bg);
-    color: var(--proy-wm-green);
+    background: var(--proy-wm-green-bg) !important;
+    color: var(--proy-wm-green) !important;
+}
+.proy-gantt-tag-late {
+    background: var(--proy-wm-red-bg) !important;
+    color: var(--proy-wm-red) !important;
+    animation: proyGanttPulse 1.6s ease-in-out infinite;
+}
+.proy-gantt-tag-pending {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+}
+@keyframes proyGanttPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
 }
 
+/* Avatares */
 .proy-gantt-row-avatars {
     display: inline-flex;
     align-items: center;
@@ -3993,7 +4249,7 @@ select.proy-info-input {
     justify-content: center;
     font-size: 0.6rem;
     font-weight: 700;
-    color: #fff;
+    color: #fff !important;
     font-family: 'Plus Jakarta Sans', sans-serif;
     border: 1.5px solid #fff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
@@ -4005,56 +4261,77 @@ select.proy-info-input {
     font-size: 0.55rem;
 }
 
-/* Columna derecha (área de barras) */
+/* Boton inline + Actividad junto al nombre de la fase */
+.proy-gantt-row-addact {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1px dashed var(--proy-wm-border-2);
+    background: #fff;
+    color: var(--proy-wm-text-2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    padding: 0;
+}
+.proy-gantt-row-addact:hover {
+    border-color: var(--proy-wm-blue);
+    border-style: solid;
+    color: var(--proy-wm-blue);
+    background: var(--proy-wm-blue-soft);
+}
+
+/* ── COLUMNA DERECHA (área de barras) ───────────────────────────── */
 .proy-gantt-col-right {
     flex: 1;
     display: flex;
     position: relative;
     min-height: 52px;
-    /* grid de meses dibujado con linear-gradient para ahorrar nodos DOM */
-    background-image: linear-gradient(
-        to right,
-        transparent calc(100%/12 - 1px),
-        rgba(0, 0, 0, 0.04) calc(100%/12 - 1px),
-        rgba(0, 0, 0, 0.04) calc(100%/12),
-        transparent calc(100%/12)
-    );
-    background-size: calc(100%/12) 100%;
-    background-repeat: repeat-x;
+    box-sizing: border-box;
 }
-
 .proy-gantt-row-header .proy-gantt-col-right {
-    background-image: none;
     min-height: auto;
+    flex: 1;
+    display: flex;
+    position: relative;
 }
 
-/* Mes (header) */
+/* Mes (header) — hereda sub divisions del data-units */
 .proy-gantt-month {
     flex: 1;
-    padding: 12px 0;
+    padding: 10px 0;
     text-align: center;
     border-right: 1px solid var(--proy-wm-border);
     font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--proy-wm-muted-2);
+    font-weight: 600;
+    color: var(--proy-wm-muted) !important;
     font-family: 'Plus Jakarta Sans', sans-serif;
     letter-spacing: 0.02em;
     box-sizing: border-box;
+    min-width: 0;
 }
 .proy-gantt-month:last-child { border-right: none; }
 .proy-gantt-month.is-current {
     background: var(--proy-wm-blue-soft);
-    color: var(--proy-wm-blue);
+    color: var(--proy-wm-blue) !important;
     font-weight: 700;
 }
+.proy-gantt-month span { display: inline-block; }
 
-/* Resaltar columna del mes actual (col del cuerpo) — usamos un overlay */
-.proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    pointer-events: none;
+/* Líneas verticales sutiles dentro del cuerpo (vía gradient) */
+.proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right {
+    background-image: linear-gradient(
+        to right,
+        transparent calc(100%/12 - 1px),
+        rgba(0, 0, 0, 0.045) calc(100%/12 - 1px),
+        rgba(0, 0, 0, 0.045) calc(100%/12),
+        transparent calc(100%/12)
+    );
+    background-size: calc(100%/12) 100%;
+    background-repeat: repeat-x;
 }
 
 /* Línea de hoy */
@@ -4064,13 +4341,17 @@ select.proy-info-input {
     bottom: 0;
     width: 2px;
     background: var(--proy-wm-red);
-    opacity: 0.6;
+    opacity: 0.65;
     z-index: 5;
-    box-shadow: 0 0 6px rgba(220, 38, 38, 0.4);
+    box-shadow: 0 0 6px rgba(220, 38, 38, 0.35);
     pointer-events: none;
 }
+.proy-gantt-today-line-header {
+    height: 100%;
+    z-index: 7;
+}
 
-/* Barra (track + fill) */
+/* ── BARRAS ─────────────────────────────────────────────────────── */
 .proy-gantt-bar-track {
     position: absolute;
     top: 50%;
@@ -4081,14 +4362,61 @@ select.proy-info-input {
     box-sizing: border-box;
     overflow: hidden;
     z-index: 1;
+    cursor: pointer;
+    transition: filter 0.15s, box-shadow 0.15s;
+    min-width: 4px;
 }
+.proy-gantt-bar-track:hover {
+    filter: brightness(0.96);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    z-index: 2;
+}
+.proy-gantt-bar-track.is-dragging {
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+    z-index: 8;
+}
+.proy-gantt-bar-track.is-late {
+    border-color: var(--proy-wm-red) !important;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.18);
+}
+.proy-gantt-bar-fase {
+    height: 14px;
+    border-radius: 4px;
+    opacity: 0.75;
+    cursor: default;
+    pointer-events: none;
+}
+.proy-gantt-bar-track.is-outofrange {
+    opacity: 0.4;
+    border: none;
+    height: 14px;
+    border-radius: 50%;
+}
+.proy-gantt-fase-empty {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.74rem;
+    color: var(--proy-wm-muted) !important;
+    font-style: italic;
+}
+.proy-gantt-fase-empty-link {
+    color: var(--proy-wm-blue) !important;
+    cursor: pointer;
+    font-weight: 600;
+    font-style: normal;
+    margin-left: 6px;
+}
+.proy-gantt-fase-empty-link:hover { text-decoration: underline; }
 .proy-gantt-bar-fill {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     border-radius: 4px;
-    opacity: 0.88;
+    opacity: 0.95;
     transition: width 0.6s ease;
 }
 .proy-gantt-bar-label {
@@ -4098,35 +4426,352 @@ select.proy-info-input {
     align-items: center;
     padding-left: 8px;
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     font-family: 'Plus Jakarta Sans', sans-serif;
     white-space: nowrap;
     overflow: hidden;
     z-index: 2;
+    pointer-events: none;
 }
 
-/* Leyenda */
+/* Handle de redimension a la derecha de la barra */
+.proy-gantt-bar-handle {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: ew-resize;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.15s;
+    z-index: 3;
+}
+.proy-gantt-bar-track:hover .proy-gantt-bar-handle {
+    background: rgba(0, 0, 0, 0.2);
+}
+.proy-gantt-bar-handle:hover {
+    background: var(--proy-wm-blue) !important;
+}
+
+/* Hitos: rombo dorado posicionado encima del eje */
+.proy-gantt-milestone {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.proy-gantt-milestone:hover {
+    transform: translate(-50%, -50%) scale(1.3);
+    z-index: 6;
+}
+.proy-gantt-milestone svg {
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.18));
+}
+.proy-gantt-row-diamond {
+    flex-shrink: 0;
+}
+
+/* ── DEPENDENCIAS SVG OVERLAY ───────────────────────────────────── */
+.proy-gantt-deps-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 4;
+    overflow: visible;
+}
+.proy-gantt-dep-path {
+    transition: stroke 0.15s, stroke-width 0.15s, stroke-dasharray 0.15s;
+}
+
+/* ── TOOLTIP RICO ──────────────────────────────────────────────── */
+.proy-gantt-tooltip {
+    position: absolute;
+    background: rgba(28, 25, 23, 0.96);
+    color: #f1f5f9 !important;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.76rem;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 320px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    line-height: 1.5;
+}
+.proy-gantt-tt-title {
+    font-weight: 700;
+    font-size: 0.86rem;
+    margin-bottom: 2px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.proy-gantt-tt-tag {
+    font-size: 0.58rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.proy-gantt-tt-cat {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+.proy-gantt-tt-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    color: #e5e5e5;
+}
+.proy-gantt-tt-row strong { color: #fff; }
+.proy-gantt-tt-row svg { opacity: 0.75; flex-shrink: 0; }
+
+/* ── DRAG CONFIRM ──────────────────────────────────────────────── */
+.proy-gantt-drag-confirm {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 10500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+}
+.proy-gantt-drag-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px 26px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    max-width: 460px;
+    width: 90%;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--proy-wm-text);
+}
+.proy-gantt-drag-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--proy-wm-text) !important;
+    margin-bottom: 4px;
+}
+.proy-gantt-drag-act {
+    font-size: 0.85rem;
+    color: var(--proy-wm-text-2) !important;
+    margin-bottom: 14px;
+}
+.proy-gantt-drag-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 0.82rem;
+    border-top: 1px solid var(--proy-wm-border);
+}
+.proy-gantt-drag-row:first-of-type { border-top: none; padding-top: 0; }
+.proy-gantt-drag-label {
+    font-weight: 700;
+    color: var(--proy-wm-muted);
+    width: 50px;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+}
+.proy-gantt-drag-old {
+    color: var(--proy-wm-text-2) !important;
+    text-decoration: line-through;
+}
+.proy-gantt-drag-new {
+    color: var(--proy-wm-blue) !important;
+    font-weight: 700;
+}
+.proy-gantt-drag-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 18px;
+    border-top: 1px solid var(--proy-wm-border);
+    padding-top: 16px;
+}
+.proy-gantt-drag-cancel,
+.proy-gantt-drag-accept {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.15s;
+}
+.proy-gantt-drag-cancel {
+    background: #fff;
+    color: var(--proy-wm-text-2) !important;
+    border-color: var(--proy-wm-border-2);
+}
+.proy-gantt-drag-cancel:hover {
+    border-color: var(--proy-wm-text-2);
+    color: var(--proy-wm-text) !important;
+}
+.proy-gantt-drag-accept {
+    background: var(--proy-wm-blue);
+    color: #fff !important;
+    border-color: var(--proy-wm-blue);
+}
+.proy-gantt-drag-accept:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+/* ── CONTEXT MENU ──────────────────────────────────────────────── */
+.proy-gantt-ctxmenu {
+    position: fixed;
+    background: #fff;
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18), 0 0 0 1px var(--proy-wm-border-2);
+    z-index: 10300;
+    min-width: 180px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.proy-gantt-ctxmenu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--proy-wm-text) !important;
+    text-align: left;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.proy-gantt-ctxmenu button:hover {
+    background: var(--proy-wm-row-hover);
+    color: var(--proy-wm-blue) !important;
+}
+.proy-gantt-ctxmenu button.proy-gantt-ctxmenu-danger:hover {
+    background: var(--proy-wm-red-bg);
+    color: var(--proy-wm-red) !important;
+}
+.proy-gantt-ctxmenu svg { flex-shrink: 0; opacity: 0.75; }
+
+/* ── LISTA (vista alterna) ─────────────────────────────────────── */
+.proy-gantt-list-card {
+    overflow-x: auto;
+}
+.proy-gantt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.82rem;
+    min-width: 760px;
+}
+.proy-gantt-table thead th {
+    text-align: left;
+    padding: 11px 14px;
+    background: var(--proy-wm-bg);
+    border-bottom: 1px solid var(--proy-wm-border-2);
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--proy-wm-muted) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+.proy-gantt-table tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--proy-wm-border);
+    color: var(--proy-wm-text) !important;
+    vertical-align: middle;
+    font-size: 0.82rem;
+}
+.proy-gantt-table tr.proy-gantt-tr-fase td {
+    background: linear-gradient(180deg, #f8fafc 0%, #fdfdfd 100%);
+    font-weight: 700;
+    color: var(--proy-wm-text) !important;
+}
+.proy-gantt-table tr.proy-gantt-tr-child td:first-child {
+    padding-left: 36px;
+}
+.proy-gantt-table tbody tr:hover td {
+    background: var(--proy-wm-row-hover);
+}
+.proy-gantt-table-empty {
+    padding: 28px 20px !important;
+    text-align: center;
+    color: var(--proy-wm-muted) !important;
+    font-size: 0.82rem;
+}
+.proy-gantt-list-progress {
+    display: inline-block;
+    width: 80px;
+    height: 6px;
+    background: #e7e5e4;
+    border-radius: 3px;
+    overflow: hidden;
+    vertical-align: middle;
+}
+.proy-gantt-list-progress > div {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s;
+}
+.proy-gantt-row-edit,
+.proy-gantt-row-edit-fase {
+    background: transparent;
+    border: 1px solid var(--proy-wm-border-2);
+    color: var(--proy-wm-text-2) !important;
+    border-radius: 6px;
+    padding: 5px 7px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+}
+.proy-gantt-row-edit:hover,
+.proy-gantt-row-edit-fase:hover {
+    border-color: var(--proy-wm-blue);
+    color: var(--proy-wm-blue) !important;
+    background: var(--proy-wm-blue-soft);
+}
+
+/* ── LEGEND ────────────────────────────────────────────────────── */
 .proy-gantt-legend {
     display: flex;
-    gap: 16px;
+    gap: 14px;
     margin-top: 14px;
     padding: 0 4px;
     align-items: center;
     flex-wrap: wrap;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--proy-wm-text-2);
 }
 .proy-gantt-legend-label {
     font-size: 0.7rem;
-    color: var(--proy-wm-muted-2);
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    color: var(--proy-wm-muted) !important;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 .proy-gantt-legend-item {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.72rem;
-    color: var(--proy-wm-text-2);
+    font-size: 0.74rem;
+    color: var(--proy-wm-text-2) !important;
+    font-weight: 500;
 }
 .proy-gantt-legend-dot {
     width: 10px;
@@ -4142,319 +4787,140 @@ select.proy-info-input {
     background: var(--proy-wm-red);
     border-radius: 1px;
 }
+.proy-gantt-legend-tip-late {
+    display: inline-block;
+    width: 14px;
+    height: 8px;
+    background: var(--proy-wm-red-bg);
+    border: 1.5px solid var(--proy-wm-red);
+    border-radius: 3px;
+}
+.proy-gantt-legend-help {
+    flex: 1 1 100%;
+    margin-top: 6px;
+    font-size: 0.7rem;
+    color: var(--proy-wm-muted) !important;
+    font-style: italic;
+    font-weight: 500;
+}
 
-/* Empty state */
+/* ── EMPTY STATE ───────────────────────────────────────────────── */
 .proy-gantt-empty {
     background: var(--proy-wm-card);
     border: 1px dashed var(--proy-wm-border-2);
     border-radius: 14px;
-    padding: 48px 24px;
+    padding: 56px 28px;
     text-align: center;
     font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.proy-gantt-empty h3 {
-    margin: 14px 0 6px;
-    font-size: 1rem;
-    font-weight: 700;
     color: var(--proy-wm-text);
 }
+.proy-gantt-empty h3 {
+    margin: 16px 0 6px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--proy-wm-text) !important;
+}
 .proy-gantt-empty p {
-    margin: 0 0 18px;
-    font-size: 0.82rem;
-    color: var(--proy-wm-text-2);
+    margin: 0 auto 22px;
+    font-size: 0.86rem;
+    color: var(--proy-wm-text-2) !important;
+    max-width: 480px;
+    line-height: 1.5;
+}
+.proy-gantt-empty p strong { color: var(--proy-wm-text); font-weight: 700; }
+.proy-gantt-empty-actions {
+    display: inline-flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
-/* Responsive */
+/* Sugerencias de fase (chips) */
+.proy-gantt-sug-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--proy-wm-border-2);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--proy-wm-text-2);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.proy-gantt-sug-chip:hover {
+    background: var(--proy-wm-blue-soft);
+    transform: translateY(-1px);
+}
+
+/* ── ZOOM RESPONSIVE ────────────────────────────────────────────── */
+.proy-gantt-grid[data-units="52"] .proy-gantt-month {
+    font-size: 0.6rem;
+    padding: 8px 0;
+}
+.proy-gantt-grid[data-units="4"] .proy-gantt-month {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 12px 0;
+}
+.proy-gantt-grid[data-units="52"] .proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right {
+    background-size: calc(100% / 52) 100%;
+}
+.proy-gantt-grid[data-units="4"] .proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right {
+    background-size: calc(100% / 4) 100%;
+}
+
+/* ── PRINT ──────────────────────────────────────────────────────── */
+@media print {
+    body.proy-gantt-printing > *:not(.widget-overlay) { display: none !important; }
+    body.proy-gantt-printing .widget-overlay { position: static !important; display: block !important; box-shadow: none !important; }
+    .proy-gantt-toolbar,
+    .proy-gantt-cta,
+    .proy-gantt-icon-btn,
+    .proy-gantt-ctxmenu,
+    .proy-gantt-tooltip,
+    .proy-gantt-drag-confirm,
+    .proy-gantt-row-addact,
+    .proy-gantt-row-edit,
+    .proy-gantt-row-edit-fase,
+    .proy-gantt-bar-handle { display: none !important; }
+    .proy-gantt-card { box-shadow: none !important; border-color: #999 !important; }
+    .proy-gantt-row { break-inside: avoid; }
+    .proy-gantt-scroll { overflow: visible !important; }
+    .proy-gantt-grid { min-width: 0 !important; width: 100% !important; }
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .proy-gantt-col-left {
+        width: 220px;
+        min-width: 220px;
+    }
+}
 @media (max-width: 768px) {
     .proy-gantt-root { padding: 12px 10px 16px; }
     .proy-gantt-header { gap: 10px; }
     .proy-gantt-header-right { gap: 6px; }
     .proy-gantt-title { font-size: 1.1rem; }
     .proy-gantt-subtitle { font-size: 0.76rem; }
-    .proy-gantt-col-left { width: 180px; min-width: 180px; padding: 10px 10px; gap: 8px; }
-    .proy-gantt-row-name { font-size: 0.74rem; }
+    .proy-gantt-col-left {
+        width: 180px;
+        min-width: 180px;
+        padding: 10px 10px;
+        gap: 7px;
+    }
+    .proy-gantt-row-name { font-size: 0.76rem; }
     .proy-gantt-cta { padding: 6px 10px; font-size: 0.72rem; }
+    .proy-gantt-icon-btn { padding: 6px 9px; font-size: 0.7rem; }
+    .proy-gantt-icon-btn span { display: none; }
     .proy-gantt-filter-btn { padding: 4px 8px; font-size: 0.66rem; }
     .proy-gantt-row-avatars { display: none; }
+    .proy-gantt-search { flex-basis: 100%; }
+    .proy-gantt-toolbar-spacer { display: none; }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   GANTT PRO — extensiones (zoom, hitos, tooltip, lista, deps).
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Toolbar secundaria (filtros estado/responsable/categoría) */
-.proy-gantt-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    padding: 8px 0 4px;
-    flex-wrap: wrap;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.proy-gantt-select {
-    background: #fff;
-    border: 1px solid var(--proy-wm-border-2);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 0.72rem;
-    color: var(--proy-wm-text-2);
-    font-family: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    min-width: 160px;
-    outline: none;
-    transition: border-color 0.15s;
-}
-.proy-gantt-select:hover { border-color: var(--proy-wm-blue); }
-.proy-gantt-select:focus { border-color: var(--proy-wm-blue); box-shadow: 0 0 0 3px var(--proy-wm-blue-soft); }
-
-/* Botón ícono pequeño (export CSV) */
-.proy-gantt-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 7px 12px;
-    background: #fff;
-    color: var(--proy-wm-text-2);
-    border: 1px solid var(--proy-wm-border-2);
-    border-radius: 8px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    transition: all 0.15s;
-}
-.proy-gantt-icon-btn:hover {
-    border-color: var(--proy-wm-blue);
-    color: var(--proy-wm-blue);
-}
-
-/* Tag ATRASADA */
-.proy-gantt-tag-late {
-    background: #fef2f2;
-    color: var(--proy-wm-red);
-    animation: proyGanttPulse 1.6s ease-in-out infinite;
-}
-@keyframes proyGanttPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.55; }
-}
-
-/* Borde rojo en barras atrasadas */
-.proy-gantt-bar-track.is-late {
-    border-color: var(--proy-wm-red) !important;
-    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
-}
-
-/* Hitos: rombo posicionado encima de la grilla */
-.proy-gantt-milestone {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 3;
-    cursor: pointer;
-    transition: transform 0.15s;
-}
-.proy-gantt-milestone:hover {
-    transform: translate(-50%, -50%) scale(1.25);
-    z-index: 6;
-}
-.proy-gantt-milestone svg {
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.18));
-}
-.proy-gantt-row-diamond {
-    flex-shrink: 0;
-}
-
-/* Handle del extremo derecho de la barra (resize visual) */
-.proy-gantt-bar-handle {
-    position: absolute;
-    right: -3px;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    cursor: ew-resize;
-    background: rgba(255,255,255,0.0);
-    border-radius: 0 6px 6px 0;
-    transition: background 0.15s;
-}
-.proy-gantt-bar-track:hover .proy-gantt-bar-handle {
-    background: rgba(0,0,0,0.12);
-}
-
-/* Click cursor para barras de actividad */
-.proy-gantt-bar-track[data-act-id] {
-    cursor: pointer;
-}
-.proy-gantt-bar-track[data-act-id]:hover {
-    filter: brightness(0.97);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-}
-
-/* Filas hijas (actividades dentro de una fase) */
-.proy-gantt-row-fase .proy-gantt-row-name {
-    font-weight: 700;
-    font-size: 0.84rem;
-}
-.proy-gantt-row-child .proy-gantt-col-left {
-    padding-left: 28px;
-    background: rgba(248, 250, 255, 0.4);
-}
-.proy-gantt-row-child .proy-gantt-row-name {
-    font-weight: 500;
-    font-size: 0.76rem;
-    color: var(--proy-wm-text-2);
-}
-
-/* Tooltip flotante (rico) */
-.proy-gantt-tooltip {
-    position: absolute;
-    background: rgba(28, 25, 23, 0.96);
-    color: #fff;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.74rem;
-    z-index: 1000;
-    pointer-events: none;
-    max-width: 320px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-    line-height: 1.45;
-}
-.proy-gantt-tt-title {
-    font-weight: 700;
-    font-size: 0.82rem;
-    margin-bottom: 2px;
-    display: flex;
-    align-items: center;
-}
-.proy-gantt-tt-cat {
-    font-size: 0.66rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 6px;
-    opacity: 0.9;
-}
-.proy-gantt-tt-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 3px;
-    color: #e5e5e5;
-}
-.proy-gantt-tt-row svg { opacity: 0.75; flex-shrink: 0; }
-
-/* Dependencias SVG overlay (colocado al ras del col-right) */
-.proy-gantt-deps-svg {
-    position: absolute;
-    top: 0;
-    left: 240px;        /* coincide con .proy-gantt-col-left.width */
-    right: 0;
-    bottom: 0;
-    width: calc(100% - 240px);
-    height: 100%;
-    pointer-events: none;
-    z-index: 4;
-    overflow: visible;
-}
-@media (max-width: 768px) {
-    .proy-gantt-deps-svg {
-        left: 180px;
-        width: calc(100% - 180px);
-    }
-}
-.proy-gantt-grid {
-    position: relative;
-}
-.proy-gantt-dep-path {
-    transition: stroke 0.15s, stroke-width 0.15s, stroke-dasharray 0.15s;
-}
-
-/* Vista LISTA (tabla limpia) */
-.proy-gantt-list-card {
-    overflow-x: auto;
-}
-.proy-gantt-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.78rem;
-}
-.proy-gantt-table thead th {
-    text-align: left;
-    padding: 10px 12px;
-    background: var(--proy-wm-bg);
-    border-bottom: 1px solid var(--proy-wm-border-2);
-    font-size: 0.66rem;
-    font-weight: 700;
-    color: var(--proy-wm-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-.proy-gantt-table tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--proy-wm-border);
-    color: var(--proy-wm-text);
-    vertical-align: middle;
-}
-.proy-gantt-table tr.proy-gantt-tr-fase td {
-    background: rgba(248, 250, 255, 0.45);
-    font-weight: 600;
-}
-.proy-gantt-table tbody tr:hover td {
-    background: var(--proy-wm-row-hover);
-}
-.proy-gantt-list-progress {
-    display: inline-block;
-    width: 72px;
-    height: 6px;
-    background: #e7e5e4;
-    border-radius: 3px;
-    overflow: hidden;
-    vertical-align: middle;
-}
-.proy-gantt-list-progress > div {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.4s;
-}
-.proy-gantt-row-edit {
-    background: transparent;
-    border: 1px solid var(--proy-wm-border-2);
-    color: var(--proy-wm-text-2);
-    border-radius: 6px;
-    padding: 4px 8px;
-    cursor: pointer;
-    font-size: 0.78rem;
-    transition: all 0.15s;
-}
-.proy-gantt-row-edit:hover {
-    border-color: var(--proy-wm-blue);
-    color: var(--proy-wm-blue);
-}
-
-/* Subdivisiones del eje X (más densas en zoom semana) */
-.proy-gantt-grid[data-units="52"] .proy-gantt-month {
-    font-size: 0.6rem;
-    padding: 8px 0;
-}
-.proy-gantt-grid[data-units="4"] .proy-gantt-month {
-    font-size: 0.74rem;
-    font-weight: 600;
-}
-.proy-gantt-grid[data-units="52"] .proy-gantt-col-right {
-    background-size: calc(100% / 52) 100%;
-}
-.proy-gantt-grid[data-units="4"] .proy-gantt-col-right {
-    background-size: calc(100% / 4) 100%;
-}
-
-.proy-gantt-list-card .proy-gantt-table {
-    min-width: 700px;
-}
 
 
 /* ════════════════════════════════════════════════════════════════════════════

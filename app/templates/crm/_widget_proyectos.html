@@ -1219,6 +1219,57 @@
 
 
 <!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR / EDITAR FASE (PROGRAMA DE OBRA — GANTT)
+     Conectado al modelo GanttFase.
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoFase" style="z-index:10200;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:520px;">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="proy-dialog-title" id="proyFaseDialogTitle" style="margin:0;color:#1d1d1f;">Nueva Fase</h3>
+          <div style="font-size:0.75rem;color:#6E6E73;margin-top:2px;">Agrupa actividades por etapa del proyecto</div>
+        </div>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoFase')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <div class="proy-field">
+        <label for="proyFaseNombre" class="proy-label">Nombre de la fase *</label>
+        <input type="text" id="proyFaseNombre" class="proy-input" placeholder="Ej: Cimentación, Estructura, Acabados…" maxlength="200">
+        <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">El color/categoría se infiere automáticamente del nombre.</div>
+      </div>
+      <div class="proy-field">
+        <label class="proy-label">Categoría sugerida</label>
+        <div id="proyFaseCategoriaPreview" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+          <span id="proyFaseCategoriaDot" style="width:12px;height:12px;border-radius:3px;background:#64748b;flex-shrink:0;"></span>
+          <span id="proyFaseCategoriaLabel" style="font-size:0.82rem;color:#1d1d1f;font-weight:600;">General</span>
+          <span style="font-size:0.7rem;color:#94a3b8;margin-left:auto;">Detectada por palabras clave</span>
+        </div>
+      </div>
+      <div class="proy-field" id="proyFaseSugWrap">
+        <label class="proy-label">Sugerencias rápidas</label>
+        <div id="proyFaseSugList" style="display:flex;flex-wrap:wrap;gap:6px;">
+          <!-- Render dinamico -->
+        </div>
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" id="proyFaseBtnEliminar" style="margin-right:auto;display:none;color:#dc2626;border-color:#fecaca;" onclick="proyectosEliminarFase()">Eliminar fase</button>
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoFase')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyFaseBtnCrear" onclick="proyectosGuardarFase()">Crear Fase</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
      WIDGET: DETALLE DE ACTIVIDAD (PROGRAMA DE OBRA)
      Estilo igual al widget de actividades de oportunidades
      ══════════════════════════════════════════════════════════════════ -->
