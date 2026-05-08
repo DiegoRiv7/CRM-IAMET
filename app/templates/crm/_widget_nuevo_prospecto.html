@@ -627,6 +627,10 @@
             var modal = document.getElementById('widgetNuevoProspecto');
             if (modal && modal.classList.contains('active')) {
                 _wpResetFormEmpty();
+                // Cargar vendedores cada vez que se abre el modal (más confiable
+                // que carga eager: garantiza que el endpoint se invoca aunque la
+                // primera carga al montar haya fallado).
+                if (typeof _wpLoadVendedores === 'function') _wpLoadVendedores(true);
                 setTimeout(function() {
                     _wpRefreshReadyState();
                     var tituloEl = document.getElementById('wpfNombre');
@@ -836,27 +840,41 @@
                      + '</div>';
             }).join('');
         }
-        function _wpLoadVendedores() {
-            if (_wpVendedoresCache || _wpVendedoresLoading) return;
+        function _wpLoadVendedores(force) {
+            if (_wpVendedoresLoading) return;
+            if (_wpVendedoresCache && !force) {
+                // ya cargada — solo re-renderizar al reabrir
+                _wpRenderAsigList('');
+                return;
+            }
             var list = document.getElementById('wpAsigList');
             if (list) list.innerHTML = '<div style="padding:14px;color:#86868B;font-size:0.78rem;text-align:center;">Cargando vendedores…</div>';
             _wpVendedoresLoading = true;
-            fetch('/app/api/admin/usuarios/').then(function(r) { return r.json(); }).then(function(data) {
-                _wpVendedoresLoading = false;
-                var arr = (data && data.usuarios) || [];
-                // Orden: supervisores arriba, después por nombre
-                arr.sort(function(a, b) {
-                    if (a.is_supervisor !== b.is_supervisor) return a.is_supervisor ? -1 : 1;
-                    var an = ((a.first_name || '') + ' ' + (a.last_name || '')).trim().toLowerCase();
-                    var bn = ((b.first_name || '') + ' ' + (b.last_name || '')).trim().toLowerCase();
-                    return an < bn ? -1 : (an > bn ? 1 : 0);
+            console.log('[NuevoProspecto] Cargando vendedores desde /app/api/admin/usuarios/');
+            fetch('/app/api/admin/usuarios/', { credentials: 'same-origin' })
+                .then(function(r) {
+                    console.log('[NuevoProspecto] HTTP', r.status, r.statusText);
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(data) {
+                    _wpVendedoresLoading = false;
+                    var arr = (data && data.usuarios) || [];
+                    console.log('[NuevoProspecto] vendedores recibidos:', arr.length);
+                    arr.sort(function(a, b) {
+                        if (a.is_supervisor !== b.is_supervisor) return a.is_supervisor ? -1 : 1;
+                        var an = ((a.first_name || '') + ' ' + (a.last_name || '')).trim().toLowerCase();
+                        var bn = ((b.first_name || '') + ' ' + (b.last_name || '')).trim().toLowerCase();
+                        return an < bn ? -1 : (an > bn ? 1 : 0);
+                    });
+                    _wpVendedoresCache = arr.filter(function(u) { return u.is_active !== false; });
+                    _wpRenderAsigList('');
+                })
+                .catch(function(err) {
+                    _wpVendedoresLoading = false;
+                    console.error('[NuevoProspecto] Error cargando vendedores:', err);
+                    if (list) list.innerHTML = '<div style="padding:14px;color:#FF3B30;font-size:0.78rem;text-align:center;">Error al cargar vendedores<br><span style="font-size:0.7rem;color:#86868B;">Revisa la consola (' + (err && err.message || 'error') + ')</span></div>';
                 });
-                _wpVendedoresCache = arr.filter(function(u) { return u.is_active !== false; });
-                _wpRenderAsigList('');
-            }).catch(function() {
-                _wpVendedoresLoading = false;
-                if (list) list.innerHTML = '<div style="padding:14px;color:#FF3B30;font-size:0.78rem;text-align:center;">Error al cargar vendedores</div>';
-            });
         }
         var asigBtnEl = document.getElementById('wpAsignadoBtn');
         if (asigBtnEl) {
