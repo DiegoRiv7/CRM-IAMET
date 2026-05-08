@@ -860,8 +860,13 @@
         }
         var asigBtnEl = document.getElementById('wpAsignadoBtn');
         if (asigBtnEl) {
-            // Cargar la primera vez que se abre
-            asigBtnEl.addEventListener('click', _wpLoadVendedores);
+            // Carga eager al montar el widget — más confiable que esperar al click.
+            // Si falla, reintenta on click. Una vez cargado, re-renderiza al abrir.
+            _wpLoadVendedores();
+            asigBtnEl.addEventListener('click', function() {
+                if (!_wpVendedoresCache && !_wpVendedoresLoading) _wpLoadVendedores();
+                else if (_wpVendedoresCache) _wpRenderAsigList(((document.getElementById('wpAsigSearch') || {}).value) || '');
+            });
             // Búsqueda en vivo
             var asigSearch = document.getElementById('wpAsigSearch');
             if (asigSearch) {
