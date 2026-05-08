@@ -3595,3 +3595,41 @@ select.proy-info-input {
 /* ============================================================================
    FIN bloque WARM MODERN
    ============================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DETALLE DE PROYECTO COMO TEMPLATE INLINE (no overlay)
+   ──────────────────────────────────────────────────────────────────────────
+   El detalle del proyecto vive en el flujo normal del DOM en lugar de un
+   modal/overlay. proyectosVerDetalle() oculta #proyectosSection y agrega
+   .is-open a este contenedor. Sin position:fixed, sin backdrop-filter, sin
+   bloqueo del scroll del body.
+   ════════════════════════════════════════════════════════════════════════════ */
+.proy-detail-page {
+  display: none;
+  width: 100%;
+  background: var(--proy-wm-bg, #fafaf9);
+  min-height: calc(100vh - 60px);
+}
+.proy-detail-page.is-open {
+  display: block;
+}
+
+/* Override: cuando el shell ya no es modal, el max-width / width de
+   crm_proyectos.css:421 deja de aplicar. La card interna ocupa todo el
+   ancho disponible y no necesita centrado. */
+.proy-detail-page .proy-detail-card {
+  max-width: none !important;
+  width: 100% !important;
+  background: var(--proy-wm-bg, #f1f5f9);
+  padding: 26px 36px 0;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+  max-height: none;
+}
+@media (max-width: 900px) {
+  .proy-detail-page .proy-detail-card { padding: 18px 16px 0; }
+}
+

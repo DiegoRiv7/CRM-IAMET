@@ -104,10 +104,14 @@
 
 
 <!-- ═══════════════════════════════════════════════════════════════
-     WIDGET: Detalle de Proyecto (overlay, z-index 10100)
+     PAGE: Detalle de Proyecto (inline, NO overlay)
+     ───────────────────────────────────────────────────────────────
+     Vive en el flujo normal del DOM (no es modal). Cuando se abre,
+     proyectosVerDetalle() oculta #proyectosSection y agrega .is-open
+     a este contenedor; al volver al listado, lo inverso.
      ═══════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay" id="widgetProyectoDetalle" style="z-index:10100;display:none;">
-  <div class="widget-card-lg proy-detail-card">
+<div class="proy-detail-page" id="widgetProyectoDetalle">
+  <div class="proy-detail-card">
 
     <!-- ═══ TOP BAR contextual del proyecto. Reemplaza visualmente al topbar
          del listado mientras el overlay está abierto. Estructura:

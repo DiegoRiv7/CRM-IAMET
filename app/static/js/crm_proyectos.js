@@ -1260,15 +1260,16 @@
         var tab = _proyDetailNormalizeTab(initialTab);
         currentTab = tab;
 
-        // Open the detail overlay + lock body scroll
-        var overlay = el('widgetProyectoDetalle');
-        if (overlay) overlay.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        // Inline: el detalle vive como página dentro del flujo, no como
+        // overlay. Ocultamos el listado completo y mostramos el detalle.
+        var section = el('proyectosSection');
+        if (section) section.style.display = 'none';
+        var detail = el('widgetProyectoDetalle');
+        if (detail) detail.classList.add('is-open');
 
-        // Mutate dynamic island: oculta el topbar del listado mientras
-        // estamos dentro del detalle. El topbar contextual del proyecto
-        // (.proy-v3-topbar dentro del overlay) reemplaza visualmente al
-        // del listado. proyectosVolverLista lo restaura.
+        // Mutate dynamic island: el topbar contextual del proyecto
+        // reemplaza al del listado. (El topbar del listado vive dentro
+        // de #proyectosSection que ya quedó oculto, pero por si acaso.)
         var listTop = el('proyListTopbar');
         if (listTop) listTop.style.display = 'none';
 
@@ -1301,13 +1302,13 @@
 
     window.proyectosVolverLista = function() {
         currentProjectId = null;
-        // Close the detail overlay + unlock body scroll
-        var overlay = el('widgetProyectoDetalle');
-        if (overlay) overlay.style.display = 'none';
-        document.body.style.overflow = '';
+        // Inline: cierra el detalle (quita .is-open) y restaura la lista.
+        var detail = el('widgetProyectoDetalle');
+        if (detail) detail.classList.remove('is-open');
+        var section = el('proyectosSection');
+        if (section) section.style.display = '';
 
-        // Restaurar topbar del listado (la dynamic island vuelve a su forma
-        // original con la c\u00e1psula de "Proyectos" + Filtro/Ordenar/Buscar/+Nuevo).
+        // Restaurar topbar del listado por si qued\u00f3 con display:none.
         var listTop = el('proyListTopbar');
         if (listTop) listTop.style.display = '';
 
@@ -3840,11 +3841,10 @@
     // =========================================
 
     document.addEventListener('click', function(e) {
-        // Close detail overlay when clicking on its backdrop
-        if (e.target && e.target.id === 'widgetProyectoDetalle') {
-            proyectosVolverLista();
-        }
-        // Close sub-dialogs when clicking on their backdrop
+        // El detalle ya no es overlay (se navega como template), así que
+        // el backdrop-click-to-close no aplica. Volver al listado se hace
+        // con el breadcrumb o el botón "Portafolio". Solo manejamos los
+        // sub-diálogos modales que sí siguen siendo overlay.
         if (e.target && e.target.classList.contains('proy-dialog-overlay')) {
             e.target.style.display = 'none';
         }
